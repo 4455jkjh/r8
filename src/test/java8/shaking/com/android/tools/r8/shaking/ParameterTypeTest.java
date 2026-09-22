@@ -58,22 +58,25 @@ class B112452064TestMain {
   }
 
   public static void main(String[] args) {
-    bazSuper1(new B112452064SuperInterface1() {
-      @Override
-      public void foo() {
-        System.out.println("Anonymous1::foo");
-      }
-    });
-    bazSub(new B112452064SubInterface() {
-      @Override
-      public void foo() {
-        System.out.println("Anonymous2::foo");
-      }
-      @Override
-      public void bar() {
-        System.out.println("Anonymous2::bar");
-      }
-    });
+    bazSuper1(
+        new B112452064SuperInterface1() {
+          @Override
+          public void foo() {
+            System.out.println("Anonymous1::foo");
+          }
+        });
+    bazSub(
+        new B112452064SubInterface() {
+          @Override
+          public void foo() {
+            System.out.println("Anonymous2::foo");
+          }
+
+          @Override
+          public void bar() {
+            System.out.println("Anonymous2::bar");
+          }
+        });
   }
 }
 
@@ -178,7 +181,10 @@ public class ParameterTypeTest extends TestBase {
     // class Foo implements SuperInterface /* supposed to implement SubInterface */
     ClassBuilder impl = jasminBuilder.addClass("Foo", "java/lang/Object", sup.name);
     impl.addDefaultConstructor();
-    impl.addVirtualMethod(foo.name, ImmutableList.of(), "V",
+    impl.addVirtualMethod(
+        foo.name,
+        ImmutableList.of(),
+        "V",
         ".limit locals 2",
         ".limit stack 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -197,7 +203,10 @@ public class ParameterTypeTest extends TestBase {
     // }
     ClassBuilder mainClass = jasminBuilder.addClass("Main");
     MethodSignature bar =
-        mainClass.addStaticMethod("bar", ImmutableList.of(sub.getDescriptor()), "V",
+        mainClass.addStaticMethod(
+            "bar",
+            ImmutableList.of(sub.getDescriptor()),
+            "V",
             ".limit locals 2",
             ".limit stack 2",
             "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -259,7 +268,10 @@ public class ParameterTypeTest extends TestBase {
     // class Foo implements SuperInterface /* supposed to implement SubInterface */
     ClassBuilder impl = jasminBuilder.addClass("Foo", "java/lang/Object", sup.name);
     impl.addDefaultConstructor();
-    impl.addVirtualMethod(foo.name, ImmutableList.of(), "V",
+    impl.addVirtualMethod(
+        foo.name,
+        ImmutableList.of(),
+        "V",
         ".limit locals 2",
         ".limit stack 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -278,7 +290,10 @@ public class ParameterTypeTest extends TestBase {
     // }
     ClassBuilder mainClass = jasminBuilder.addClass("Main");
     MethodSignature bar =
-        mainClass.addStaticMethod("bar", ImmutableList.of("[" + sub.getDescriptor()), "V",
+        mainClass.addStaticMethod(
+            "bar",
+            ImmutableList.of("[" + sub.getDescriptor()),
+            "V",
             ".limit locals 2",
             ".limit stack 2",
             "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -311,6 +326,7 @@ public class ParameterTypeTest extends TestBase {
               // Disable inlining to avoid the (short) tested method from being inlined and removed.
               options.inlinerOptions().enableInlining = false;
               options.callSiteOptimizationOptions().setEnabled(enableArgumentPropagation);
+              options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces();
             })
         .addDontObfuscate()
         .setMinApi(parameters)
@@ -359,14 +375,20 @@ public class ParameterTypeTest extends TestBase {
     //   /* supposed to implement SubInterface */
     ClassBuilder impl = jasminBuilder.addClass("Foo", "java/lang/Object", sup1.name, sup2.name);
     impl.addDefaultConstructor();
-    impl.addVirtualMethod(foo.name, ImmutableList.of(), "V",
+    impl.addVirtualMethod(
+        foo.name,
+        ImmutableList.of(),
+        "V",
         ".limit locals 2",
         ".limit stack 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
         "ldc \"" + foo.name + "\"",
         "invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V",
         "return");
-    impl.addVirtualMethod(bar.name, ImmutableList.of(), "V",
+    impl.addVirtualMethod(
+        bar.name,
+        ImmutableList.of(),
+        "V",
         ".limit locals 2",
         ".limit stack 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -385,7 +407,10 @@ public class ParameterTypeTest extends TestBase {
     // }
     ClassBuilder mainClass = jasminBuilder.addClass("Main");
     MethodSignature baz =
-        mainClass.addStaticMethod("baz", ImmutableList.of(sub.getDescriptor()), "V",
+        mainClass.addStaticMethod(
+            "baz",
+            ImmutableList.of(sub.getDescriptor()),
+            "V",
             ".limit locals 2",
             ".limit stack 2",
             "getstatic java/lang/System/out Ljava/io/PrintStream;",

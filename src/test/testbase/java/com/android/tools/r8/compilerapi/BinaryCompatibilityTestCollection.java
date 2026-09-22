@@ -11,6 +11,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -104,8 +105,8 @@ public abstract class BinaryCompatibilityTestCollection<T> {
     IntBox numberOfTestMethods = new IntBox(0);
     List<Path> classPaths =
         ImmutableList.<Path>builder()
-            .add(getJunitDependency())
-            .add(getHamcrest())
+            .add(TestDeps.getJunitJar())
+            .add(TestDeps.getHamcrestJar())
             .addAll(getTargetClasspath())
             .add(testJar)
             .build();
@@ -129,14 +130,6 @@ public abstract class BinaryCompatibilityTestCollection<T> {
             args.toArray(new String[0]));
     assertEquals(processResult.toString(), 0, processResult.exitCode);
     assertThat(processResult.stdout, containsString("OK (" + numberOfTestMethods.get() + " test"));
-  }
-
-  private static Path getJunitDependency() {
-    return ToolHelper.getJunitFromDeps();
-  }
-
-  private static Path getHamcrest() {
-    return ToolHelper.getHamcrestFromDeps();
   }
 
   public Path generateJarForCheckedInTestClasses(TestDataSourceSet testDataSourceSet)

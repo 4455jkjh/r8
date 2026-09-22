@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 
 public class MethodResolutionOptimizationInfoAnalysis {
 
@@ -103,7 +104,9 @@ public class MethodResolutionOptimizationInfoAnalysis {
      */
     @Override
     public void visit(DexProgramClass clazz) {
-      DownwardsTraversalState state = new DownwardsTraversalState(DexMethodSignatureSet.create());
+      DownwardsTraversalState state =
+          new DownwardsTraversalState(
+              DexMethodSignatureSet.create(), DexMethodSignatureSet.create());
       immediateSubtypingInfo.forEachImmediateProgramSuperClass(
           clazz,
           superClass -> {
@@ -112,23 +115,27 @@ public class MethodResolutionOptimizationInfoAnalysis {
                     .getOrDefault(superClass, DownwardsTraversalState.empty())
                     .asDownwardsTraversalState();
             state.add(superState);
-            for (DexEncodedMethod method : superClass.virtualMethods()) {
-              // No need to request optimization info for the (non-existing) overrides of final
-              // methods.
-              if (method.isFinal()) {
-                continue;
-              }
-              // If the method is not abstract and does not have any optimization info, there is no
-              // need to request the optimization info for overrides in subclasses, since the join
-              // of the optimization info becomes unknown anyway.
-              if ((method.isAbstract() && !superClass.isAnnotation())
-                  || !method.getOptimizationInfo().isDefault()) {
-                state.virtualMethodsInSuperClasses.add(method);
-              }
-            }
+            addVirtualMethodsInSuperClass(superClass, state::addVirtualMethodInSuperClass);
           });
       if (!state.isEmpty()) {
         states.put(clazz, state);
+      }
+    }
+
+    private void addVirtualMethodsInSuperClass(
+        DexProgramClass superClass, Consumer<DexEncodedMethod> fn) {
+      for (DexEncodedMethod method : superClass.virtualMethods()) {
+        // No need to request optimization info for the (non-existing) overrides of final methods.
+        if (method.isFinal()) {
+          continue;
+        }
+        // If the method is not abstract and does not have any optimization info, there is no
+        // need to request the optimization info for overrides in subclasses, since the join
+        // of the optimization info becomes unknown anyway.
+        if ((method.isAbstract() && !superClass.isAnnotation())
+            || !method.getOptimizationInfo().isDefault()) {
+          fn.accept(method);
+        }
       }
     }
 
@@ -160,7 +167,9 @@ public class MethodResolutionOptimizationInfoAnalysis {
           });
       ObjectAllocationInfoCollection objectAllocationInfoCollection =
           appViewWithLiveness.appInfo().getObjectAllocationInfoCollection();
-      if (objectAllocationInfoCollection.isImmediateInterfaceOfInstantiatedLambda(clazz)) {
+      if (objectAllocationInfoCollection.isImmediateInterfaceOfInstantiatedLambda(clazz)
+          || (clazz.isInterface()
+              && appView.getOpenClosedInterfacesCollection().isMaybeOpen(clazz))) {
         for (DexEncodedMethod method : clazz.virtualMethods()) {
           newState.joinMethodOptimizationInfo(
               appViewWithLiveness,
@@ -184,6 +193,21 @@ public class MethodResolutionOptimizationInfoAnalysis {
             newState.joinMethodOptimizationInfo(
                 appViewWithLiveness, method.getSignature(), method.getOptimizationInfo());
           }
+        }
+      }
+
+      // If the current class is a non-final kept class, then it is possible to dynamically load
+      // subclasses of this class. We therefore conservatively destroy all optimization info for
+      // library method overrides, since they may be overridden in the unknown subclasses without
+      // keep rules.
+      if (!clazz.isFinal() && appViewWithLiveness.getKeepInfo(clazz).isPinned(appView.options())) {
+        DexMethodSignatureSet libraryMethodOverridesInClassOrAbove =
+            DexMethodSignatureSet.create(state.virtualLibraryMethodOverridesInSuperClasses);
+        libraryMethodOverridesInClassOrAbove.addAllMethods(
+            clazz.virtualMethods(m -> m.isLibraryMethodOverride().isPossiblyTrue()));
+        for (DexMethodSignature method : libraryMethodOverridesInClassOrAbove) {
+          newState.joinMethodOptimizationInfo(
+              appViewWithLiveness, method, DefaultMethodOptimizationInfo.getInstance());
         }
       }
 
@@ -217,7 +241,7 @@ public class MethodResolutionOptimizationInfoAnalysis {
 
       DexMethodSignatureSet interfaceMethodsInClassOrAbove =
           DexMethodSignatureSet.create(state.virtualMethodsInSuperClasses);
-      interfaceMethodsInClassOrAbove.addAllMethods(iface.virtualMethods());
+      addVirtualMethodsInSuperClass(iface, interfaceMethodsInClassOrAbove::add);
 
       for (DexMethodSignature method : interfaceMethodsInClassOrAbove) {
         MethodResolutionResult resolutionResult =
@@ -259,15 +283,22 @@ public class MethodResolutionOptimizationInfoAnalysis {
   private static class DownwardsTraversalState extends TraversalState {
 
     private static final DownwardsTraversalState EMPTY =
-        new DownwardsTraversalState(DexMethodSignatureSet.empty());
+        new DownwardsTraversalState(DexMethodSignatureSet.empty(), DexMethodSignatureSet.empty());
 
     // The set of virtual methods in the super classes of the current class. For each method in this
     // set we want the subsequent upwards traversal to include the optimization info for any
     // overrides.
     DexMethodSignatureSet virtualMethodsInSuperClasses;
 
-    DownwardsTraversalState(DexMethodSignatureSet virtualMethodsInSuperClasses) {
+    // The subset of virtualMethodsInSuperClasses which are library method overrides.
+    DexMethodSignatureSet virtualLibraryMethodOverridesInSuperClasses;
+
+    DownwardsTraversalState(
+        DexMethodSignatureSet virtualMethodsInSuperClasses,
+        DexMethodSignatureSet virtualLibraryMethodOverridesInSuperClasses) {
       this.virtualMethodsInSuperClasses = virtualMethodsInSuperClasses;
+      this.virtualLibraryMethodOverridesInSuperClasses =
+          virtualLibraryMethodOverridesInSuperClasses;
     }
 
     static DownwardsTraversalState empty() {
@@ -276,9 +307,20 @@ public class MethodResolutionOptimizationInfoAnalysis {
 
     void add(DownwardsTraversalState state) {
       virtualMethodsInSuperClasses.addAll(state.virtualMethodsInSuperClasses);
+      virtualLibraryMethodOverridesInSuperClasses.addAll(
+          state.virtualLibraryMethodOverridesInSuperClasses);
+    }
+
+    void addVirtualMethodInSuperClass(DexEncodedMethod virtualMethodInSuperClass) {
+      virtualMethodsInSuperClasses.add(virtualMethodInSuperClass);
+      if (virtualMethodInSuperClass.isLibraryMethodOverride().isPossiblyTrue()) {
+        virtualLibraryMethodOverridesInSuperClasses.add(virtualMethodInSuperClass);
+      }
     }
 
     boolean isEmpty() {
+      assert !virtualMethodsInSuperClasses.isEmpty()
+          || virtualLibraryMethodOverridesInSuperClasses.isEmpty();
       return virtualMethodsInSuperClasses.isEmpty();
     }
 

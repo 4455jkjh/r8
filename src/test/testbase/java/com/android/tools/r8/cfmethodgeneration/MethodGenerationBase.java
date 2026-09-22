@@ -100,7 +100,9 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
           }
         };
 
-    File tempFile = File.createTempFile("output-", ".java");
+    Path base = ToolHelper.getR8TempPath();
+    Files.createDirectories(base);
+    File tempFile = File.createTempFile("output-", ".java", base.toFile());
 
     Map<DexEncodedMethod, String> generatedMethods = new HashMap<>();
     List<DexEncodedField> fields = new ArrayList<>();

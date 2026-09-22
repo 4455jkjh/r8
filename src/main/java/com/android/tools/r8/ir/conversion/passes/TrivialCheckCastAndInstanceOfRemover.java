@@ -19,6 +19,7 @@ import com.android.tools.r8.ir.analysis.type.TypeUtils;
 import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.CheckCast;
+import com.android.tools.r8.ir.code.DebugLocalWrite;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InstanceOf;
 import com.android.tools.r8.ir.code.Instruction;
@@ -29,7 +30,6 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.ir.optimize.CodeRewriter;
 import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizations;
 import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizations.UtilityMethodForCodeOptimizations;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -236,7 +236,7 @@ public class TrivialCheckCastAndInstanceOfRemover extends CodeRewriterPass<AppIn
       //
       // The DebugLocalWrite is not a user of the outvalue, we therefore have to wait and take the
       // CheckCast invalue users that includes the potential DebugLocalWrite.
-      CodeRewriter.removeOrReplaceByDebugLocalWrite(checkCast, it, inValue, outValue);
+      removeOrReplaceByDebugLocalWrite(checkCast, it, inValue, outValue);
       affectedValues.addAll(inValue.affectedValues());
       return RemoveCheckCastInstructionIfTrivialResult.REMOVED_CAST_DO_NARROW;
     }
@@ -470,5 +470,22 @@ public class TrivialCheckCastAndInstanceOfRemover extends CodeRewriterPass<AppIn
     DexProgramClass clazz = asProgramClassOrNull(appView.definitionFor(type));
     return clazz != null
         && !appView.appInfo().withLiveness().isInstantiatedDirectlyOrIndirectly(clazz);
+  }
+
+  private void removeOrReplaceByDebugLocalWrite(
+      Instruction currentInstruction, InstructionListIterator it, Value inValue, Value outValue) {
+    if (outValue.hasLocalInfo()
+        && outValue.getLocalInfo().isNotIdenticalTo(inValue.getLocalInfo())) {
+      DebugLocalWrite debugLocalWrite = new DebugLocalWrite(outValue, inValue);
+      it.replaceCurrentInstruction(debugLocalWrite);
+    } else {
+      if (outValue.hasLocalInfo()) {
+        assert outValue.getLocalInfo().isIdenticalTo(inValue.getLocalInfo());
+        // Should remove the end-marker before replacing the current instruction.
+        currentInstruction.removeDebugValue(outValue.getLocalInfo());
+      }
+      outValue.replaceUsers(inValue);
+      it.removeOrReplaceByDebugLocalRead();
+    }
   }
 }

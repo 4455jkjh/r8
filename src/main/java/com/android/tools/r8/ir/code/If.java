@@ -50,7 +50,10 @@ public class If extends JumpInstruction {
 
   public boolean isInstanceOfTest() {
     return isZeroTest()
-        && lhs().getAliasedValue().isDefinedByInstructionSatisfying(Instruction::isInstanceOf);
+        && lhs().getAliasedValue().isDefinedByInstructionSatisfying(Instruction::isInstanceOf)
+        // IFGE can cause isInstance true and isInstance false to hit the same branch, causing a
+        // trivial condition without any type knowledge.
+        && targetFromTrue() != targetFromFalse();
   }
 
   public boolean isNullTest() {

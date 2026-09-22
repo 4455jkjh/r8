@@ -4,7 +4,7 @@
 
 package com.android.tools.r8;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -13,14 +13,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class ArchiveClassFileProviderTest {
+@RunWith(Parameterized.class)
+public class ArchiveClassFileProviderTest extends TestBase {
 
-  @TempDir public Path tempRoot;
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
 
   public Path createZip() throws IOException {
+    Path tempRoot = temp.getRoot().toPath();
     Path zipFile = tempRoot.resolve("zipfile.zip");
     ZipOutputStream zipStream =
         new ZipOutputStream(new FileOutputStream(zipFile.toFile()), StandardCharsets.UTF_8);
@@ -43,7 +54,7 @@ public class ArchiveClassFileProviderTest {
 
   @Test
   public void testMultiReleaseJars() throws IOException {
-    Path jar = tempRoot.resolve("classes.jar");
+    Path jar = temp.getRoot().toPath().resolve("classes.jar");
     try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(jar))) {
       output.putNextEntry(new ZipEntry("META-INF/9/Test.class"));
       output.closeEntry();

@@ -18,3 +18,33 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "common-build-src"
+
+// This is duplicated in settings.gradle.kts, keep code in sync.
+fun resolveBuildCacheDir(repoRoot: File): File {
+  val gitFile = repoRoot.resolve(".git")
+  if (gitFile.isFile) {
+    try {
+      val gitDirLine = gitFile.useLines { lines -> lines.firstOrNull { it.startsWith("gitdir:") } }
+      if (gitDirLine != null) {
+        val gitDirStr = gitDirLine.removePrefix("gitdir:").trim()
+        val gitDir = repoRoot.resolve(gitDirStr).normalize()
+        val commonDirFile = gitDir.resolve("commondir")
+        val commonGitDir =
+          if (commonDirFile.isFile) {
+            gitDir.resolve(commonDirFile.readText().trim()).normalize()
+          } else {
+            gitDir.parentFile?.parentFile
+          }
+        val mainRepo = commonGitDir?.parentFile
+        if (mainRepo != null && mainRepo.isDirectory && mainRepo != repoRoot) {
+          return mainRepo.resolve(".buildcache")
+        }
+      }
+    } catch (_: Exception) {
+      // Fall through on error
+    }
+  }
+  return repoRoot.resolve(".buildcache")
+}
+
+buildCache { local { directory = resolveBuildCacheDir(rootDir.resolve("../..").normalize()) } }

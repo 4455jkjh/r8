@@ -94,9 +94,6 @@ public class InstructionList implements Iterable<Instruction> {
    * end.
    */
   public void addBefore(Instruction newInstruction, Instruction existingInstruction) {
-    if (existingInstruction != null) {
-      assert linearScanFinds(existingInstruction);
-    }
     if (size == 0) {
       assert existingInstruction == null;
       head = newInstruction;
@@ -216,7 +213,6 @@ public class InstructionList implements Iterable<Instruction> {
 
   /** Removes without doing any validation of in / out values. */
   public void removeIgnoreValues(Instruction target) {
-    assert linearScanFinds(target);
     target.block = null;
     Instruction prev = target.prev;
     Instruction next = target.next;
@@ -240,16 +236,6 @@ public class InstructionList implements Iterable<Instruction> {
     head = null;
     tail = null;
     size = 0;
-  }
-
-  // Non-assert uses should check instruction.block for containment. */
-  private boolean linearScanFinds(Instruction instruction) {
-    for (Instruction cur = head; cur != null; cur = cur.next) {
-      if (cur == instruction) {
-        return true;
-      }
-    }
-    return false;
   }
 
   public Stream<Instruction> stream() {

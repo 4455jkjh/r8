@@ -147,7 +147,8 @@ public class BackportedMethodListTest extends TestBase {
             " Options are:",
             "",
             "  --output <file>         # Output result in <file>.",
-            "  --min-api <number>      # Minimum Android API level for the application.",
+            "  --min-api <number>[.<number>]",
+            "                          # Minimum Android API level compatibility (default: 1).",
             "  --desugared-lib <file>  # Desugared library configuration (JSON from the"
                 + " configuration).",
             "  --lib <file>            # The compilation SDK library (android.jar).",

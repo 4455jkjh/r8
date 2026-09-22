@@ -7,7 +7,6 @@ package com.android.tools.r8;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileConsumerUtils;
 import com.android.tools.r8.profile.art.ArtProfileProviderUtils;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -119,28 +118,14 @@ public class L8CommandParser extends BaseCompilerCommandParser {
             (state, arg) ->
                 CompilerCommandParserUtils.addLibraryArgument(
                     state.builder.getAppBuilder(), arg, state.origin, state.builder.getReporter()))
-        .option1(
-            "--min-api",
-            "<number>",
-            "Minimum Android API level compatibility (default: "
-                + AndroidApiLevel.getDefault().getMajor()
-                + ").",
-            (state, arg) -> {
-              if (state.hasDefinedApiLevel) {
-                StringDiagnostic diagnostic =
-                    new StringDiagnostic("Cannot set multiple --min-api options", state.origin);
-                state.builder.error(diagnostic);
-              } else {
-                CliParserUtils.parsePositiveInt(
-                    arg,
-                    state.builder::setMinApiLevel,
-                    error ->
-                        state.builder.error(
-                            new StringDiagnostic(
-                                "Invalid argument to --min-api: " + error, state.origin)));
-                state.hasDefinedApiLevel = true;
-              }
-            })
+        .apply(
+            CliParserUtils.addMinApiOption(
+                state -> state.hasDefinedApiLevel,
+                (state, apiLevel) -> {
+                  state.builder.setMinApiLevel(apiLevel);
+                  state.hasDefinedApiLevel = true;
+                },
+                (state, error) -> state.builder.error(new StringDiagnostic(error, state.origin))))
         .option1(
             "--pg-conf",
             "<file>",

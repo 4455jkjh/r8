@@ -173,7 +173,6 @@ public abstract class TestRuntime {
     CfRuntime[] jdks =
         new CfRuntime[] {
           getCheckedInJdk8(),
-          getCheckedInJdk9(),
           getCheckedInJdk11(),
           getCheckedInJdk17(),
           getCheckedInJdk21(),

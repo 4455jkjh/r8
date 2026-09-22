@@ -466,7 +466,9 @@ public class DeviceRunner {
   }
 
   private static File createTempFile(String prefix, String suffix) throws IOException {
-    File tmp = File.createTempFile("r8-tests-" + prefix, suffix);
+    File base = ToolHelper.getR8TempPath().toFile();
+    base.mkdirs();
+    File tmp = File.createTempFile("r8-tests-" + prefix, suffix, base);
     tmp.deleteOnExit();
     return tmp;
   }

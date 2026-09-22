@@ -17,8 +17,10 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.Predicate;
 
 public class CliParserUtils {
 
@@ -131,6 +133,18 @@ public class CliParserUtils {
     }
   }
 
+  public static void parseUncheckedApiLevel(
+      String arg, Consumer<UncheckedApiLevel> handler, Consumer<String> errorConsumer) {
+    try {
+      handler.accept(UncheckedApiLevel.parse(arg));
+    } catch (IllegalArgumentException e) {
+      // Note that NumberFormatException is a subclass of IllegalArgumentException.
+      String rawMessage = e.getMessage();
+      String message = rawMessage == null ? "" : ", " + rawMessage;
+      errorConsumer.accept("Invalid API version: " + arg + message);
+    }
+  }
+
   public static DiagnosticsLevel parseDiagnosticsLevel(
       String level, Consumer<Diagnostic> errorHandler, Origin origin) {
     switch (level) {
@@ -204,5 +218,40 @@ public class CliParserUtils {
 
   public static <B> Consumer<CliParser<B>> addHelpOption(Consumer<B> action) {
     return parser -> parser.option0("--help", "Print usage information.", action, "-h");
+  }
+
+  /**
+   * Adds the {@code --min-api} option using {@link AndroidApiLevel#getDefault()} as the default API
+   * level listed in the option description.
+   */
+  public static <B> Consumer<CliParser<B>> addMinApiOption(
+      Predicate<B> hasDefinedApiLevel,
+      BiConsumer<B, UncheckedApiLevel> action,
+      BiConsumer<B, String> errorHandler) {
+    return addMinApiOption(hasDefinedApiLevel, action, errorHandler, AndroidApiLevel.getDefault());
+  }
+
+  public static <B> Consumer<CliParser<B>> addMinApiOption(
+      Predicate<B> hasDefinedApiLevel,
+      BiConsumer<B, UncheckedApiLevel> action,
+      BiConsumer<B, String> errorHandler,
+      AndroidApiLevel defaultApiLevel) {
+    return parser ->
+        parser.option1(
+            "--min-api",
+            "<number>[.<number>]",
+            "Minimum Android API level compatibility (default: "
+                + defaultApiLevel.getNumericString()
+                + ").",
+            (state, arg) -> {
+              if (hasDefinedApiLevel.test(state)) {
+                errorHandler.accept(state, "Cannot set multiple --min-api options");
+              } else {
+                parseUncheckedApiLevel(
+                    arg,
+                    apiLevel -> action.accept(state, apiLevel),
+                    error -> errorHandler.accept(state, "Invalid argument to --min-api: " + error));
+              }
+            });
   }
 }

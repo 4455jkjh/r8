@@ -182,12 +182,12 @@ public class EffectivelyTrivialPhiOptimization {
       return new SingleValueOrValue(worklist.getSeenSet());
     }
     if (foundDifferentOperandValuesWithSameAbstractValue) {
-      if (representativeOperandAbstractValue.isSingleValue()
-          && representativeOperandAbstractValue
-              .asSingleValue()
-              .isMaterializableInContext(appView, code.context())) {
-        return new SingleValueOrValue(
-            worklist.getSeenSet(), representativeOperandAbstractValue.asSingleValue());
+      if (representativeOperandAbstractValue.isSingleValue()) {
+        SingleValue singleValue = representativeOperandAbstractValue.asSingleValue();
+        if (singleValue.isMaterializableInContext(appView, code.context())
+            && !singleValue.materializationMayHaveSideEffects(appView, code.context())) {
+          return new SingleValueOrValue(worklist.getSeenSet(), singleValue);
+        }
       }
       // The computed value is not a constant.
       return null;

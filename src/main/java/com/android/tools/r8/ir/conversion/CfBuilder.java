@@ -50,9 +50,10 @@ import com.android.tools.r8.ir.code.StackValues;
 import com.android.tools.r8.ir.code.UninitializedThisLocalRead;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.Xor;
-import com.android.tools.r8.ir.conversion.passes.TrivialGotosCollapser;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalPredecessorBlocksRemover;
+import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
-import com.android.tools.r8.ir.optimize.PeepholeOptimizer;
 import com.android.tools.r8.ir.optimize.PhiOptimizations;
 import com.android.tools.r8.ir.optimize.peepholes.BasicBlockMuncher;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -199,17 +200,21 @@ public class CfBuilder {
     timing.end();
 
     TrivialGotosCollapser trivialGotosCollapser = new TrivialGotosCollapser(appView);
+    IdenticalPredecessorBlocksRemover identicalPredecessorBlocksRemover =
+        new IdenticalPredecessorBlocksRemover(appView);
+    IdenticalBlockSuffixSharer identicalBlockSuffixSharer =
+        new IdenticalBlockSuffixSharer(appView, SUFFIX_SHARING_OVERHEAD);
     timing.begin("BasicBlock peephole optimizations");
     for (int i = 0; i < PEEPHOLE_OPTIMIZATION_PASSES; i++) {
-      trivialGotosCollapser.run(code, timing);
-      PeepholeOptimizer.removeIdenticalPredecessorBlocks(code, registerAllocator);
-      PeepholeOptimizer.shareIdenticalBlockSuffix(code, registerAllocator, SUFFIX_SHARING_OVERHEAD);
+      trivialGotosCollapser.run(code, registerAllocator, timing);
+      identicalPredecessorBlocksRemover.run(code, registerAllocator, timing);
+      identicalBlockSuffixSharer.run(code, registerAllocator, timing);
     }
     timing.end();
 
     timing.time("Rewrite Iinc patterns", this::rewriteIincPatterns);
 
-    trivialGotosCollapser.run(code, timing);
+    trivialGotosCollapser.run(code, registerAllocator, timing);
     timing.begin("Remove redundant debug positions");
     DexBuilder.removeRedundantDebugPositions(appView, code);
     timing.end();

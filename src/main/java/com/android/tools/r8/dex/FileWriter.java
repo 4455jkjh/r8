@@ -51,6 +51,7 @@ import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.position.Position;
+import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.synthesis.SyntheticNaming;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DexVersion;
@@ -77,6 +78,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.zip.Adler32;
 
@@ -103,13 +105,21 @@ public class FileWriter {
   private final MixedSectionOffsets mixedSectionOffsets;
   private final VirtualFile virtualFile;
   private final boolean includeStringData;
+  private final Supplier<StartupProfile> startupProfileForWriting;
 
   public FileWriter(
       AppView<?> appView,
       ByteBufferProvider provider,
       ObjectToOffsetMapping mapping,
-      VirtualFile virtualFile) {
-    this(appView, new DexOutputBuffer(provider), mapping, virtualFile, true);
+      VirtualFile virtualFile,
+      Supplier<StartupProfile> startupProfileForWriting) {
+    this(
+        appView,
+        new DexOutputBuffer(provider),
+        mapping,
+        virtualFile,
+        startupProfileForWriting,
+        true);
   }
 
   public FileWriter(
@@ -117,6 +127,7 @@ public class FileWriter {
       DexOutputBuffer dexOutputBuffer,
       ObjectToOffsetMapping mapping,
       VirtualFile virtualFile,
+      Supplier<StartupProfile> startupProfileForWriting,
       boolean includeStringData) {
     this.appView = appView;
     this.graphLens = appView.graphLens();
@@ -126,6 +137,7 @@ public class FileWriter {
     this.mixedSectionOffsets = new MixedSectionOffsets(options);
     this.virtualFile = virtualFile;
     this.includeStringData = includeStringData;
+    this.startupProfileForWriting = startupProfileForWriting;
   }
 
   private NamingLens getNamingLens() {
@@ -215,7 +227,8 @@ public class FileWriter {
 
       // Sort the codes first, as their order might impact size due to alignment constraints.
       mixedSectionLayoutStrategy =
-          MixedSectionLayoutStrategy.create(appView, mixedSectionOffsets, virtualFile);
+          MixedSectionLayoutStrategy.create(
+              appView, mixedSectionOffsets, virtualFile, startupProfileForWriting);
       Collection<ProgramMethod> codes = mixedSectionLayoutStrategy.getCodeLayout();
 
       // Output the debug_info_items first, as they have no dependencies.

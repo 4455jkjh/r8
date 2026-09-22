@@ -18,7 +18,6 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DefaultUseRegistryWithResult;
 import com.android.tools.r8.graph.DexClassAndField;
-import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexItemFactory.BoxUnboxPrimitiveMethodRoundtrip;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
@@ -312,41 +311,80 @@ public class DefaultInliningOracle implements InliningOracle {
       return 0;
     }
     IRCode code = inliningIRProvider.get().getAndCacheInliningIR(invoke, target);
-    Iterable<Argument> arguments = code::argumentIterator;
-    DexItemFactory factory = appView.dexItemFactory();
     int increment = 0;
-    for (Argument argument : arguments) {
+    for (Argument argument : code.arguments()) {
       Value argumentValue = argument.outValue();
-      for (Instruction user : argumentValue.uniqueUsers()) {
-        if (user.isCheckCast()) {
-          CheckCast checkCastUser = user.asCheckCast();
-          TypeElement argumentType = invoke.getArgument(argument.getIndex()).getType();
-          TypeElement castType = checkCastUser.getType().toTypeElement(appView);
-          if (argumentType.lessThanOrEqual(castType, appView)) {
-            // We can remove the cast inside the inlinee.
-            increment += DexCheckCast.SIZE;
-          }
-        } else {
-          DexType argumentType = target.getArgumentType(argument.getIndex());
-          BoxUnboxPrimitiveMethodRoundtrip roundtrip =
-              factory.getBoxUnboxPrimitiveMethodRoundtrip(argumentType);
-          if (roundtrip == null) {
-            continue;
-          }
-          Value invokeArgument = invoke.getArgument(argument.getIndex()).getAliasedValue();
-          if (user.isInvokeMethod(roundtrip.getBoxIfPrimitiveElseUnbox())
-              && invokeArgument.isDefinedByInstructionSatisfying(
-                  definition ->
-                      definition.isInvokeMethod(roundtrip.getUnboxIfPrimitiveElseBox()))) {
-            // We can remove the unbox/box operation inside the inlinee.
-            increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
-            if (invokeArgument.numberOfAllUsers() == 1 && argumentValue.numberOfAllUsers() == 1) {
-              // We can remove the box/unbox operation inside the caller.
-              increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
-            }
-          }
+      Value invokeValue = invoke.getArgument(argument.getIndex());
+      increment +=
+          getInstructionLimitIncrementForUsersOf(
+              argument, argumentValue, invoke, invokeValue, target, argumentValue);
+    }
+    return increment;
+  }
+
+  private int getInstructionLimitIncrementForArgumentUser(
+      Argument argument,
+      Value argumentValue,
+      InvokeMethod invoke,
+      Value invokeValue,
+      ProgramMethod target,
+      Instruction user) {
+    int increment = 0;
+    if (user.isAssume()) {
+      increment +=
+          getInstructionLimitIncrementForUsersOf(
+              argument, argumentValue, invoke, invokeValue, target, user.outValue());
+    } else if (user.isCheckCast()) {
+      CheckCast checkCastUser = user.asCheckCast();
+      TypeElement argumentType = invokeValue.getType();
+      TypeElement castType = checkCastUser.getType().toTypeElement(appView);
+      if (argumentType.lessThanOrEqual(castType, appView)) {
+        // We can remove the cast inside the inlinee.
+        increment += DexCheckCast.SIZE;
+        // Check for unbox operations on the cast value.
+        if (appView.dexItemFactory().primitiveToBoxed.containsValue(checkCastUser.getType())) {
+          increment +=
+              getInstructionLimitIncrementForUsersOf(
+                  argument, argumentValue, invoke, invokeValue, target, checkCastUser.outValue());
         }
       }
+    } else if (invokeValue.getType().isClassType() || invokeValue.getType().isPrimitiveType()) {
+      DexType argumentType =
+          invokeValue.getType().isPrimitiveType()
+              ? target.getArgumentType(argument.getIndex())
+              : invokeValue.getType().asClassType().getClassType();
+      BoxUnboxPrimitiveMethodRoundtrip roundtrip =
+          appView.dexItemFactory().getBoxUnboxPrimitiveMethodRoundtrip(argumentType);
+      if (roundtrip == null) {
+        return 0;
+      }
+      Value invokeArgument = invokeValue.getAliasedValue();
+      if (user.isInvokeMethod(roundtrip.getBoxIfPrimitiveElseUnbox())
+          && invokeArgument.isDefinedByInstructionSatisfying(
+              definition -> definition.isInvokeMethod(roundtrip.getUnboxIfPrimitiveElseBox()))) {
+        // We can remove the unbox/box operation inside the inlinee.
+        increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
+        if (invokeArgument.numberOfAllUsers() == 1 && argumentValue.numberOfAllUsers() == 1) {
+          // We can remove the box/unbox operation inside the caller.
+          increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
+        }
+      }
+    }
+    return increment;
+  }
+
+  private int getInstructionLimitIncrementForUsersOf(
+      Argument argument,
+      Value argumentValue,
+      InvokeMethod invoke,
+      Value invokeValue,
+      ProgramMethod target,
+      Value value) {
+    int increment = 0;
+    for (Instruction user : value.uniqueUsers()) {
+      increment +=
+          getInstructionLimitIncrementForArgumentUser(
+              argument, argumentValue, invoke, invokeValue, target, user);
     }
     return increment;
   }
@@ -367,16 +405,21 @@ public class DefaultInliningOracle implements InliningOracle {
         // We can maybe remove a cast inside the inlinee.
         increment += DexCheckCast.SIZE;
       }
-      DexType argumentType = target.getArgumentType(argumentIndex);
-      BoxUnboxPrimitiveMethodRoundtrip roundtrip =
-          appView.dexItemFactory().getBoxUnboxPrimitiveMethodRoundtrip(argumentType);
-      if (roundtrip != null
-          && argument.isDefinedByInstructionSatisfying(
-              definition -> definition.isInvokeMethod(roundtrip.getUnboxIfPrimitiveElseBox()))) {
-        // We can maybe remove a unbox/box operation inside the inlinee.
-        increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
-        // We can maybe remove a box/unbox operation inside the caller.
-        increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
+      if (argument.getType().isClassType() || argument.getType().isPrimitiveType()) {
+        DexType argumentType =
+            argument.getType().isPrimitiveType()
+                ? target.getArgumentType(argumentIndex)
+                : argument.getType().asClassType().getClassType();
+        BoxUnboxPrimitiveMethodRoundtrip roundtrip =
+            appView.dexItemFactory().getBoxUnboxPrimitiveMethodRoundtrip(argumentType);
+        if (roundtrip != null
+            && argument.isDefinedByInstructionSatisfying(
+                definition -> definition.isInvokeMethod(roundtrip.getUnboxIfPrimitiveElseBox()))) {
+          // We can maybe remove a unbox/box operation inside the inlinee.
+          increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
+          // We can maybe remove a box/unbox operation inside the caller.
+          increment += DexInvokeStatic.SIZE + DexMoveResult.SIZE;
+        }
       }
     }
     return increment;

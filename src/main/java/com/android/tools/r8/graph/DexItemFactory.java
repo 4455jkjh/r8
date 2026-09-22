@@ -204,6 +204,7 @@ public class DexItemFactory {
   public final DexString unboxFloatMethodName = createString("floatValue");
   public final DexString unboxDoubleMethodName = createString("doubleValue");
 
+  public final DexString charAtMethodName = createString("charAt");
   public final DexString isEmptyMethodName = createString("isEmpty");
   public final DexString lengthMethodName = createString("length");
 
@@ -1003,6 +1004,15 @@ public class DexItemFactory {
       createStaticallyKnownType("Ljava/util/concurrent/ExecutorService;");
   public final DexType javaUtilConcurrentForkJoinPoolType =
       createStaticallyKnownType("Ljava/util/concurrent/ForkJoinPool;");
+  public final DexType javaUtilConcurrentAbstractExecutorService =
+      createStaticallyKnownType("Ljava/util/concurrent/AbstractExecutorService;");
+  public final DexType javaUtilConcurrentScheduledExecutorService =
+      createStaticallyKnownType("Ljava/util/concurrent/ScheduledExecutorService;");
+  public final DexType javaUtilConcurrentScheduledThreadPoolExecutor =
+      createStaticallyKnownType("Ljava/util/concurrent/ScheduledThreadPoolExecutor;");
+  public final DexType javaUtilConcurrentThreadPoolExecutor =
+      createStaticallyKnownType("Ljava/util/concurrent/ThreadPoolExecutor;");
+
   public final SunMiscUnsafeMethods sunMiscUnsafeMethods = new SunMiscUnsafeMethods();
 
   public final ObjectMethodsMembers objectMethodsMembers = new ObjectMethodsMembers();
@@ -1220,6 +1230,7 @@ public class DexItemFactory {
     for (DexMethod requireNonNullMethod : objectsMethods.requireNonNullMethods()) {
       builder.put(requireNonNullMethod, new int[] {0});
     }
+    builder.put(javaLangSystemMembers.arraycopy, new int[] {0, 2});
     return builder.build();
   }
 
@@ -2475,6 +2486,7 @@ public class DexItemFactory {
   public class JavaUtilArraysMethods {
 
     public final DexMethod asList;
+    public final DexMethod copyOfObjectArray;
     public final DexMethod hashCode =
         createMethod(arraysType, createProto(intType, objectArrayType), "hashCode");
     public final DexMethod hashCodeIntArray =
@@ -2522,7 +2534,7 @@ public class DexItemFactory {
       DexMethod copyOfShort =
           createMethod(
               arraysType, createProto(shortArrayType, shortArrayType, intType), copyOfMethodName);
-      DexMethod copyOfObject =
+      copyOfObjectArray =
           createMethod(
               arraysType, createProto(objectArrayType, objectArrayType, intType), copyOfMethodName);
       copyOfMethods =
@@ -2535,7 +2547,7 @@ public class DexItemFactory {
               copyOfInt,
               copyOfLong,
               copyOfShort,
-              copyOfObject);
+              copyOfObjectArray);
     }
   }
 
@@ -3565,6 +3577,9 @@ public class DexItemFactory {
 
   public class JavaLangReflectArrayMembers {
 
+    public final DexMethod newInstanceMethodWithLength =
+        createMethod(
+            javaLangReflectArrayType, createProto(objectType, classType, intType), "newInstance");
     public final DexMethod newInstanceMethodWithDimensions =
         createMethod(
             javaLangReflectArrayType,
@@ -4018,6 +4033,7 @@ public class DexItemFactory {
     public final DexField CASE_INSENSITIVE_ORDER =
         createField(stringType, javaUtilComparatorType, "CASE_INSENSITIVE_ORDER");
 
+    public final DexMethod charAt;
     public final DexMethod isEmpty;
     public final DexMethod length;
 
@@ -4075,6 +4091,7 @@ public class DexItemFactory {
       DexString[] stringArgs = {stringDescriptor};
       DexString[] stringIntArgs = {stringDescriptor, intDescriptor};
 
+      charAt = createMethod(stringDescriptor, charAtMethodName, charDescriptor, intArgs);
       concat = createMethod(stringDescriptor, concatMethodName, stringDescriptor, stringArgs);
       contains =
           createMethod(stringDescriptor, containsMethodName, booleanDescriptor, charSequenceArgs);

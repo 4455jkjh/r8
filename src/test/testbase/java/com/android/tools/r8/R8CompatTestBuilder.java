@@ -64,6 +64,7 @@ public class R8CompatTestBuilder
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
         buildMetadata != null ? buildMetadata.get() : null,
+        configurationAnalysisData,
         configurationAnalysisHtmlReport);
   }
 }

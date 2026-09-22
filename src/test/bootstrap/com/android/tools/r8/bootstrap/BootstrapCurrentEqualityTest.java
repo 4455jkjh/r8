@@ -81,7 +81,7 @@ public class BootstrapCurrentEqualityTest extends TestBase {
 
   private final TestParameters parameters;
 
-  @ClassRule public static TemporaryFolder testFolder = new TemporaryFolder();
+  @ClassRule public static TemporaryFolder testFolder = ToolHelper.getTemporaryFolderForTest();
 
   @BeforeClass
   public static void beforeAll() throws Exception {

@@ -1232,10 +1232,6 @@ public class ToolHelper {
     return Paths.get(JAVA_8_RUNTIME);
   }
 
-  public static Path getCoreLambdaStubs() {
-    return Paths.get(CORE_LAMBDA_STUBS);
-  }
-
   @Deprecated
   // Use getFirstSupportedAndroidJar(AndroidApiLevel) to specify a specific Android jar.
   public static Path getDefaultAndroidJar() {
@@ -1339,23 +1335,6 @@ public class ToolHelper {
     throw new Unreachable("Unable to find a most recent android.jar");
   }
 
-  public static Path getJdwpTestsCfJarPath(AndroidApiLevel minSdk) {
-    String jar =
-        minSdk.isLessThan(AndroidApiLevel.N)
-            ? "apache-harmony-jdwp-tests-host-preN.jar"
-            : "apache-harmony-jdwp-tests-host.jar";
-    return Paths.get(ToolHelper.THIRD_PARTY_DIR, "jdwp-tests", jar);
-  }
-
-  public static Path getJunitFromDeps() {
-    return Paths.get(DEPENDENCIES, "junit", "junit", "4.13.2", "junit-4.13.2.jar");
-  }
-
-  public static Path getHamcrestFromDeps() {
-    return Paths.get(
-        DEPENDENCIES, "org", "hamcrest", "hamcrest-core", "1.3", "hamcrest-core-1.3.jar");
-  }
-
   /**
    * Get the junit jar bundled with the framework.
    */
@@ -1373,12 +1352,22 @@ public class ToolHelper {
     protected void after() {} // instead of remove, do nothing
   }
 
+  public static Path getR8TempPath() {
+    String tmpDir = System.getProperty("test_dir");
+    if (tmpDir != null) {
+      return Paths.get(tmpDir);
+    }
+    return Paths.get("/tmp", "r8-temp");
+  }
+
   // For non-Linux platforms create the temporary directory in the repository root to simplify
   // running Art in a docker container
   public static TemporaryFolder getTemporaryFolderForTest() {
     String tmpDir = System.getProperty("test_dir");
     if (tmpDir == null) {
-      return new TemporaryFolder();
+      File r8Temp = getR8TempPath().toFile();
+      r8Temp.mkdirs();
+      return new TemporaryFolder(r8Temp);
     } else {
       return new RetainedTemporaryFolder(new java.io.File(tmpDir));
     }
@@ -1649,7 +1638,9 @@ public class ToolHelper {
 
   private static Path copyResourceToTempFile(java.net.URL resourceUrl, String fileName)
       throws IOException {
-    Path tempDir = Files.createTempDirectory("source-");
+    Path base = getR8TempPath();
+    Files.createDirectories(base);
+    Path tempDir = Files.createTempDirectory(base, "source-");
     tempDir.toFile().deleteOnExit();
     Path tempFile = tempDir.resolve(fileName);
     tempFile.toFile().deleteOnExit();
@@ -2340,9 +2331,11 @@ public class ToolHelper {
   }
 
   private static List<File> unzipDexFilesArchive(File zipFile) throws IOException {
-    File tmpDir = Files.createTempDirectory("r8-test-").toFile();
-    tmpDir.deleteOnExit();
-    return ZipUtils.unzip(zipFile.getAbsolutePath(), tmpDir);
+    Path base = getR8TempPath();
+    Files.createDirectories(base);
+    File tmpDirFile = Files.createTempDirectory(base, "r8-test-").toFile();
+    tmpDirFile.deleteOnExit();
+    return ZipUtils.unzip(zipFile.getAbsolutePath(), tmpDirFile);
   }
 
   private static void storeAsGoldenFiles(List<File> files, File destDir) throws IOException {

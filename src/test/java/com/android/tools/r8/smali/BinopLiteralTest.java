@@ -50,7 +50,8 @@ public class BinopLiteralTest extends SmaliTestBase {
 
   protected AndroidApp processApplication(AndroidApp application)
       throws CompilationFailedException {
-    return processApplication(application, opt -> opt.testing.enableBinopOptimization = false);
+    return processApplication(
+        application, opt -> opt.testing.enableIntLongArithmeticRewriter = false);
   }
 
   @Test

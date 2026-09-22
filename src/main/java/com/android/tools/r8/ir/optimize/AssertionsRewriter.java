@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.optimize;
 
 import com.android.tools.r8.AssertionsConfiguration;
+import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -22,12 +23,15 @@ import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.StaticGet;
-import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Throw;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
+import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AssertionConfigurationWithDefault;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.CachedPredicate;
 import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.internal.ThrowingCharIterator;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -42,7 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class AssertionsRewriter {
+public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
 
   private static class ConfigurationEntryWithDexString {
 
@@ -54,7 +58,7 @@ public class AssertionsRewriter {
       this.entry = configuration;
       switch (configuration.getScope()) {
         case PACKAGE:
-          if (configuration.getValue().length() == 0) {
+          if (configuration.getValue().isEmpty()) {
             value = dexItemFactory.createString("");
           } else {
             value =
@@ -109,16 +113,15 @@ public class AssertionsRewriter {
     }
   }
 
-  private final AppView<?> appView;
-  private final DexItemFactory dexItemFactory;
+  private final DeadCodeRemover deadCodeRemover;
   private final ConfigurationEntryWithDexString defaultConfiguration;
   private final List<ConfigurationEntryWithDexString> configuration;
   private final ConfigurationEntryWithDexString kotlinTransformation;
   private final boolean enabled;
 
   public AssertionsRewriter(AppView<?> appView) {
-    this.appView = appView;
-    this.dexItemFactory = appView.dexItemFactory();
+    super(appView);
+    this.deadCodeRemover = new DeadCodeRemover(appView);
     this.enabled = isEnabled(appView.options());
     if (!enabled) {
       defaultConfiguration = null;
@@ -136,6 +139,16 @@ public class AssertionsRewriter {
             .collect(Collectors.toList());
     kotlinTransformation =
         getTransformationForType(appView.dexItemFactory().kotlin().assertions().type);
+  }
+
+  @Override
+  protected String getRewriterId() {
+    return "AssertionsRewriter";
+  }
+
+  @Override
+  protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
+    return enabled;
   }
 
   // Static method used by other analyses to see if additional analysis is required to support
@@ -157,7 +170,7 @@ public class AssertionsRewriter {
           result = entry;
           break;
         case PACKAGE:
-          if (entry.value.length() == 0) {
+          if (entry.value.isEmpty()) {
             if (!type.descriptor.contains(dexItemFactory.descriptorSeparator)) {
               result = entry;
             }
@@ -288,8 +301,8 @@ public class AssertionsRewriter {
    * }
    * </pre>
    *
-   * <p>(actual code
-   * https://github.com/JetBrains/kotlin/blob/master/libraries/stdlib/jvm/src/kotlin/util/AssertionsJVM.kt)
+   * <p>(actual code <a
+   * href="https://github.com/JetBrains/kotlin/blob/master/libraries/stdlib/jvm/src/kotlin/util/AssertionsJVM.kt">...</a>)
    *
    * <p>The class:
    *
@@ -341,20 +354,12 @@ public class AssertionsRewriter {
    * NOTE: that in Kotlin the assertion condition is always calculated. So it is still present in
    * the code and even for AssertionTransformation.DISABLE.
    */
-  public void run(
-      DexEncodedMethod method, IRCode code, DeadCodeRemover deadCodeRemover, Timing timing) {
-    if (enabled) {
-      timing.begin("Rewrite assertions");
-      boolean needsDeadCodeRemoval = runInternal(method, code);
-      if (needsDeadCodeRemoval) {
-        AffectedValues affectedValues = code.removeUnreachableBlocks();
-        affectedValues.narrowingWithAssumeRemoval(appView, code);
-        code.removeRedundantBlocks();
-        deadCodeRemover.run(code, timing);
-      }
-      assert code.isConsistentSSA(appView);
-      timing.end();
-    }
+  @Override
+  protected CodeRewriterResult rewriteCode(IRCode code) {
+    assert enabled;
+    DexEncodedMethod method = code.context().getDefinition();
+    boolean changed = runInternal(method, code);
+    return CodeRewriterResult.hasChanged(changed);
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -363,17 +368,9 @@ public class AssertionsRewriter {
     if (configuration.isPassthrough()) {
       return false;
     }
-    DexEncodedMethod clinit;
-    // If the <clinit> of this class did not have have code to turn on assertions don't try to
-    // remove assertion code from the method (including <clinit> itself.
-    if (method.isClassInitializer()) {
-      clinit = method;
-    } else {
-      DexClass clazz = appView.definitionFor(method.getHolderType());
-      if (clazz == null) {
-        return false;
-      }
-      clinit = clazz.getClassInitializer();
+    DexClass clazz = appView.definitionFor(method.getHolderType());
+    if (clazz == null) {
+      return false;
     }
     // For the transformation to rewrite the throw with a callback collect information on the
     // blocks covered by the if (!$assertionsDisabled or ENABLED) condition together with weather
@@ -429,14 +426,12 @@ public class AssertionsRewriter {
               });
     }
     assert assertionEntryIfs.size() == throwSuccessorAfterHandler.size();
-    // For javac generated code it is assumed that the code in <clinit> will tell if the code
-    // in other methods of the class can have assertion checks.
-    boolean isInitializerEnablingJavaVmAssertions =
-        clinit != null && clinit.getOptimizationInfo().isInitializerEnablingJavaVmAssertions();
     // This code will process the assertion code in all methods including <clinit>.
     InstructionListIterator iterator = code.instructionListIterator();
     boolean changed = false;
     boolean needsDeadCodeRemoval = false;
+    CachedPredicate<FieldInstruction> isAssertionDisablingField =
+        new CachedPredicate<>(this::isAssertionDisablingField);
     while (iterator.hasNext()) {
       Instruction current = iterator.next();
       if (current.isInvokeMethod()) {
@@ -450,17 +445,14 @@ public class AssertionsRewriter {
           changed = true;
         }
       } else if (current.isStaticPut()) {
-        StaticPut staticPut = current.asStaticPut();
-        if (isInitializerEnablingJavaVmAssertions
-            && isUsingJavaAssertionsDisabledField(staticPut)) {
+        if (isAssertionDisablingField.test(current.asStaticPut())) {
           iterator.remove();
           changed = true;
         }
       } else if (current.isStaticGet()) {
         StaticGet staticGet = current.asStaticGet();
         // Rewrite $assertionsDisabled getter (only if the initializer enabled assertions).
-        if (isInitializerEnablingJavaVmAssertions
-            && isUsingJavaAssertionsDisabledField(staticGet)) {
+        if (isAssertionDisablingField.test(staticGet)) {
           // For assertion handler rewrite just leave the static get, as it will become dead code.
           if (!configuration.isAssertionHandler()) {
             iterator.replaceCurrentInstruction(
@@ -516,7 +508,14 @@ public class AssertionsRewriter {
     if (changed) {
       code.removeRedundantBlocks();
     }
-    return needsDeadCodeRemoval;
+    if (needsDeadCodeRemoval) {
+      AffectedValues affectedValues = code.removeUnreachableBlocks();
+      affectedValues.narrowingWithAssumeRemoval(appView, code);
+      code.removeRedundantBlocks();
+      // The deadCodeRemover timing is part of the AssertionsRewriter timing.
+      deadCodeRemover.run(code, Timing.empty());
+    }
+    return changed;
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -564,7 +563,7 @@ public class AssertionsRewriter {
 
   @SuppressWarnings("ReferenceEquality")
   private boolean isUsingJavaAssertionsDisabledField(FieldInstruction instruction) {
-    // This does not check the holder, as for inner classe the field is read from the outer class
+    // This does not check the holder, as for inner classes the field is read from the outer class
     // and not the class itself.
     return instruction.getField().getName() == dexItemFactory.assertionsDisabled
         && instruction.getField().getType() == dexItemFactory.booleanType;
@@ -616,5 +615,17 @@ public class AssertionsRewriter {
         .unlinkSinglePredecessorSiblingsAllowed();
     ifInstruction.lhs().removeUser(ifInstruction);
     iterator.replaceCurrentInstruction(new Goto());
+  }
+
+  private boolean isAssertionDisablingField(FieldInstruction instruction) {
+    if (!isUsingJavaAssertionsDisabledField(instruction)) {
+      return false;
+    }
+    DexClass clazz = appView.definitionFor(instruction.getField().getHolderType());
+    if (clazz == null) {
+      return false;
+    }
+    DexEncodedMethod clinit = clazz.getClassInitializer();
+    return clinit != null && clinit.getOptimizationInfo().isInitializerEnablingJavaVmAssertions();
   }
 }

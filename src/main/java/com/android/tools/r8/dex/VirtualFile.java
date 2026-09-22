@@ -48,11 +48,10 @@ public class VirtualFile {
   public final VirtualFileIndexedItemCollection indexedItems;
   private final IndexedItemTransaction transaction;
   private final FeatureSplit featureSplit;
-  private final StartupProfile startupProfile;
+  private StartupProfile startupProfile;
 
   private final DexString primaryClassDescriptor;
   private DebugRepresentation debugRepresentation;
-  private boolean startup = false;
   private HashCode checksumForBuildMetadata;
   private int sizeInBytesForBuildMetadata;
 
@@ -139,8 +138,16 @@ public class VirtualFile {
     return featureSplit != null ? featureSplit : FeatureSplit.BASE;
   }
 
+  public boolean isStartup() {
+    return !startupProfile.isEmpty();
+  }
+
   public StartupProfile getStartupProfile() {
     return startupProfile;
+  }
+
+  public void setStartupProfile(StartupProfile startupProfile) {
+    this.startupProfile = startupProfile;
   }
 
   public String getPrimaryClassDescriptor() {
@@ -156,14 +163,6 @@ public class VirtualFile {
   public DebugRepresentation getDebugRepresentation() {
     assert debugRepresentation != null;
     return debugRepresentation;
-  }
-
-  public void setStartup() {
-    startup = true;
-  }
-
-  public boolean isStartup() {
-    return startup;
   }
 
   public static String deriveCommonPrefixAndSanityCheck(List<String> fileNames) {
@@ -222,7 +221,6 @@ public class VirtualFile {
             lazyDexStringsCount,
             indexedItems.shortyCache,
             startupProfile,
-            this,
             timing);
   }
 

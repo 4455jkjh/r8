@@ -23,11 +23,12 @@ import java.io.StringWriter;
 @KeepForApi
 public class ExceptionDiagnostic implements Diagnostic {
 
+  private static final ThreadLocal<Boolean> IS_PRINTING_STACK_TRACE =
+      ThreadLocal.withInitial(() -> false);
+
   private final Throwable cause;
   private final Origin origin;
   private final Position position;
-
-  private boolean isPrintingStackTrace = false;
 
   public ExceptionDiagnostic(Throwable cause, Origin origin, Position position) {
     assert cause != null;
@@ -66,16 +67,16 @@ public class ExceptionDiagnostic implements Diagnostic {
 
   @Override
   public String getDiagnosticMessage() {
-    String message;
-    if (isPrintingStackTrace) {
-      message = cause.getMessage();
-    } else {
-      isPrintingStackTrace = true;
+    if (IS_PRINTING_STACK_TRACE.get()) {
+      return cause.getMessage();
+    }
+    IS_PRINTING_STACK_TRACE.set(true);
+    try {
       StringWriter out = new StringWriter();
       cause.printStackTrace(new PrintWriter(out));
-      message = out.toString();
-      isPrintingStackTrace = false;
+      return out.toString();
+    } finally {
+      IS_PRINTING_STACK_TRACE.remove();
     }
-    return message;
   }
 }

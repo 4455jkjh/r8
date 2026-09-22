@@ -31,7 +31,6 @@ import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.ir.optimize.CodeRewriter;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import java.util.Map;
@@ -40,17 +39,11 @@ import java.util.Set;
 public class EnqueuerDeferredTracingRewriter {
 
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
-  private final CodeRewriter codeRewriter;
   private final DeadCodeRemover deadCodeRemover;
 
   EnqueuerDeferredTracingRewriter(AppView<? extends AppInfoWithClassHierarchy> appView) {
     this.appView = appView;
-    this.codeRewriter = new CodeRewriter(appView);
     this.deadCodeRemover = new DeadCodeRemover(appView);
-  }
-
-  public CodeRewriter getCodeRewriter() {
-    return codeRewriter;
   }
 
   public DeadCodeRemover getDeadCodeRemover() {

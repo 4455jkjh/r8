@@ -24,7 +24,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.IRFinalizer;
+import com.android.tools.r8.ir.conversion.finalizer.IRFinalizer;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.info.bridge.BridgeAnalyzer;
 import com.android.tools.r8.ir.optimize.info.bridge.BridgeInfo;

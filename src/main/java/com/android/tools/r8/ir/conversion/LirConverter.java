@@ -16,6 +16,7 @@ import com.android.tools.r8.ir.analysis.TypeChecker;
 import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.analysis.proto.ProtoReferences;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.conversion.finalizer.IRFinalizer;
 import com.android.tools.r8.ir.conversion.passes.AdaptClassStringsRewriter;
 import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
@@ -70,7 +71,7 @@ public class LirConverter {
     assert appView.testing().isPreLirPhase();
     appView.testing().enterLirSupportedPhase();
     CodeRewriterPassCollection codeRewriterPassCollection =
-        new CodeRewriterPassCollection(
+        CodeRewriterPassCollection.create(
             new ConstResourceNumberRewriter(appView),
             new StringSwitchConverter(appView),
             new IdentifierNameStringMarker(appView));
@@ -324,7 +325,7 @@ public class LirConverter {
     d8AppView.setNamingLens(appView.getNamingLens());
     DeadCodeRemover deadCodeRemover = new DeadCodeRemover(d8AppView);
     CodeRewriterPassCollection codeRewriterPassCollection =
-        new CodeRewriterPassCollection(
+        CodeRewriterPassCollection.create(
             // Must run before DexItemBasedConstStringRemover.
             new StringSwitchRemover(d8AppView),
             new DexItemBasedConstStringRemover(d8AppView),

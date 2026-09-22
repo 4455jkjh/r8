@@ -27,8 +27,10 @@ import com.android.tools.r8.ir.code.InvokeSuper;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.SafeCheckCast;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
+import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -46,22 +48,33 @@ import java.util.Set;
  * invoke-virtual with the corresponding target.
  * </pre>
  */
-public class Devirtualizer {
-
-  private final AppView<AppInfoWithLiveness> appView;
-  private final InternalOptions options;
+public class Devirtualizer extends CodeRewriterPass<AppInfoWithLiveness> {
 
   public Devirtualizer(AppView<AppInfoWithLiveness> appView) {
-    this.appView = appView;
-    this.options = appView.options();
+    super(appView);
+    assert options.enableDevirtualization;
   }
 
+  @Override
+  protected String getRewriterId() {
+    return "Devirtualizer";
+  }
+
+  @Override
+  protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
+    return code.metadata().mayHaveInvokeInterface()
+        || code.metadata().mayHaveInvokeVirtual()
+        || code.metadata().mayHaveInvokeSuper();
+  }
+
+  @Override
   @SuppressWarnings("ReferenceEquality")
-  public void devirtualizeInvokeInterface(IRCode code) {
+  protected CodeRewriterResult rewriteCode(IRCode code) {
+    boolean changed = false;
     AffectedValues affectedValues = new AffectedValues();
     ProgramMethod context = code.context();
     Map<InvokeInterface, InvokeVirtual> devirtualizedCall = new IdentityHashMap<>();
-    DominatorTree dominatorTree = new DominatorTree(code);
+    DominatorTree dominatorTree = null;
     Map<Value, Map<DexType, Value>> castedReceiverCache = new IdentityHashMap<>();
     Set<SafeCheckCast> newCheckCastInstructions = Sets.newIdentityHashSet();
 
@@ -111,12 +124,17 @@ public class Devirtualizer {
               Value oldReceiver = newCheckCast.object();
               TypeElement oldReceiverType = oldReceiver.getType();
               TypeElement newReceiverType = newReceiver.getType();
-              if (newReceiverType.lessThanOrEqual(oldReceiverType, appView)
-                  && dominatorTree.dominatedBy(block, devirtualizedInvoke.getBlock())) {
-                assert nonNull.src() == oldReceiver;
-                assert !oldReceiver.hasLocalInfo();
-                oldReceiver.replaceSelectiveUsers(
-                    newReceiver, ImmutableSet.of(nonNull), ImmutableMap.of(), affectedValues);
+              if (newReceiverType.lessThanOrEqual(oldReceiverType, appView)) {
+                if (dominatorTree == null) {
+                  dominatorTree = new DominatorTree(code);
+                }
+                if (dominatorTree.dominatedBy(block, devirtualizedInvoke.getBlock())) {
+                  assert nonNull.src() == oldReceiver;
+                  assert !oldReceiver.hasLocalInfo();
+                  oldReceiver.replaceSelectiveUsers(
+                      newReceiver, ImmutableSet.of(nonNull), ImmutableMap.of(), affectedValues);
+                  assert changed;
+                }
               }
             }
           }
@@ -130,21 +148,22 @@ public class Devirtualizer {
           // the enclosing method into contexts outside the current class.
           if (options.testing.enableInvokeSuperToInvokeVirtualRewriting) {
             SingleResolutionResult<?> resolutionResult =
-                invoke.resolveMethod(appView).asSingleResolution();
+                invoke.resolveMethod(appView()).asSingleResolution();
             if (resolutionResult != null) {
               DispatchTargetLookupResult lookupResult =
-                  resolutionResult.lookupDispatchTarget(appView, invoke, context);
+                  resolutionResult.lookupDispatchTarget(appView(), invoke, context);
               if (lookupResult.isSingleResult()
                   && !lookupResult.getSingleDispatchTarget().getHolder().isInterface()) {
                 DexMethod invokedMethod = invoke.getInvokedMethod();
                 DispatchTargetLookupResult newLookupResult =
                     resolutionResult.lookupVirtualDispatchTarget(
-                        appView, invoke, invoke.getReceiver().getDynamicType(appView), context);
+                        appView(), invoke, invoke.getReceiver().getDynamicType(appView()), context);
                 if (lookupResult
                     .getSingleDispatchTarget()
                     .isStructurallyEqualTo(newLookupResult.getSingleDispatchTarget())) {
                   it.replaceCurrentInstruction(
                       new InvokeVirtual(invokedMethod, invoke.outValue(), invoke.arguments()));
+                  changed = true;
                   continue;
                 }
               }
@@ -155,8 +174,7 @@ public class Devirtualizer {
           DexMethod invokedMethod = invoke.getInvokedMethod();
           DexClass reboundTargetClass = rebindSuperInvokeToMostSpecific(invokedMethod, context);
           if (reboundTargetClass != null) {
-            DexMethod reboundMethod =
-                invokedMethod.withHolder(reboundTargetClass, appView.dexItemFactory());
+            DexMethod reboundMethod = invokedMethod.withHolder(reboundTargetClass, dexItemFactory);
             if (reboundMethod != invokedMethod
                 && !isRebindingNewClassIntoMainDex(context, reboundMethod)) {
               it.replaceCurrentInstruction(
@@ -165,6 +183,7 @@ public class Devirtualizer {
                       invoke.outValue(),
                       invoke.arguments(),
                       reboundTargetClass.isInterface()));
+              changed = true;
             }
           }
           continue;
@@ -178,6 +197,7 @@ public class Devirtualizer {
           if (reboundTarget != invokedMethod) {
             it.replaceCurrentInstruction(
                 new InvokeVirtual(reboundTarget, invoke.outValue(), invoke.arguments()));
+            changed = true;
           }
           continue;
         }
@@ -186,7 +206,7 @@ public class Devirtualizer {
           continue;
         }
         InvokeInterface invoke = current.asInvokeInterface();
-        DexClassAndMethod target = invoke.lookupSingleTarget(appView, context);
+        DexClassAndMethod target = invoke.lookupSingleTarget(appView(), context);
         if (target == null) {
           continue;
         }
@@ -197,7 +217,7 @@ public class Devirtualizer {
         }
 
         // Due to the potential downcast below, make sure the new target holder is visible.
-        if (AccessControl.isClassAccessible(holderClass, context, appView).isPossiblyFalse()) {
+        if (AccessControl.isClassAccessible(holderClass, context, appView()).isPossiblyFalse()) {
           continue;
         }
 
@@ -209,6 +229,7 @@ public class Devirtualizer {
         InvokeVirtual devirtualizedInvoke =
             new InvokeVirtual(target.getReference(), invoke.outValue(), invoke.inValues());
         it.replaceCurrentInstruction(devirtualizedInvoke);
+        changed = true;
         devirtualizedCall.put(invoke, devirtualizedInvoke);
 
         // We may need to add downcast together. E.g.,
@@ -255,8 +276,13 @@ public class Devirtualizer {
               } else {
                 dominatorBlock = cachedReceiverBlock;
               }
-              if (dominatorBlock != null && dominatorTree.dominatedBy(block, dominatorBlock)) {
-                newReceiver = cachedReceiver;
+              if (dominatorBlock != null) {
+                if (dominatorTree == null) {
+                  dominatorTree = new DominatorTree(code);
+                }
+                if (dominatorTree.dominatedBy(block, dominatorBlock)) {
+                  newReceiver = cachedReceiver;
+                }
               }
             }
 
@@ -288,8 +314,8 @@ public class Devirtualizer {
               if (blockWithDevirtualizedInvoke != block) {
                 // If we split, add the new checkcast at the end of the currently visiting block.
                 block.listIterator(block.getInstructions().size() - 1).add(checkCast);
-                // Update the dominator tree after the split.
-                dominatorTree = new DominatorTree(code);
+                // Invalidate the dominator tree after the split.
+                dominatorTree = null;
                 // Restore the cursor.
                 it = blockWithDevirtualizedInvoke.listIterator();
                 assert it.peekNext() == devirtualizedInvoke;
@@ -315,15 +341,17 @@ public class Devirtualizer {
         }
       }
     }
-    affectedValues.narrowingWithAssumeRemoval(appView, code);
-    code.removeRedundantBlocks();
-    assert code.isConsistentSSA(appView);
+    if (changed) {
+      affectedValues.narrowingWithAssumeRemoval(appView, code);
+      code.removeRedundantBlocks();
+    }
+    return CodeRewriterResult.hasChanged(changed);
   }
 
   /** This rebinds invoke-super instructions to their most specific target. */
   @SuppressWarnings("ReferenceEquality")
   private DexClass rebindSuperInvokeToMostSpecific(DexMethod target, ProgramMethod context) {
-    DexClassAndMethod method = appView.appInfo().lookupSuperTarget(target, context, appView);
+    DexClassAndMethod method = appInfo().lookupSuperTarget(target, context, appView());
     if (method == null) {
       return null;
     }
@@ -334,7 +362,7 @@ public class Devirtualizer {
       return null;
     }
 
-    if (AccessControl.isMemberAccessible(method, method.getHolder(), context, appView)
+    if (AccessControl.isMemberAccessible(method, method.getHolder(), context, appView())
         .isPossiblyFalse()) {
       return null;
     }
@@ -343,11 +371,11 @@ public class Devirtualizer {
       // We've found a library class as the new holder of the method. Since the library can only
       // rebind to the library class boundary. Search from the target upwards until we find a
       // library class.
-      DexClass lowerBound = appView.definitionFor(target.getHolderType(), context);
+      DexClass lowerBound = appView().definitionFor(target.getHolderType(), context);
       while (lowerBound != null
           && lowerBound.isProgramClass()
           && lowerBound != method.getHolder()) {
-        lowerBound = appView.definitionFor(lowerBound.superType, lowerBound.asProgramClass());
+        lowerBound = appView().definitionFor(lowerBound.superType, lowerBound.asProgramClass());
       }
       return lowerBound;
     }
@@ -373,13 +401,10 @@ public class Devirtualizer {
     }
 
     SingleResolutionResult<?> resolutionResult =
-        appView
-            .appInfo()
-            .resolveMethodOnClassLegacy(target.getHolderType(), target)
-            .asSingleResolution();
+        appInfo().resolveMethodOnClassLegacy(target.getHolderType(), target).asSingleResolution();
     if (resolutionResult == null
         || resolutionResult
-            .isAccessibleForVirtualDispatchFrom(context, appView)
+            .isAccessibleForVirtualDispatchFrom(context, appView())
             .isPossiblyFalse()) {
       // Method does not resolve or is not accessible.
       return target;
@@ -392,14 +417,15 @@ public class Devirtualizer {
     }
 
     SingleResolutionResult<?> newResolutionResult =
-        appView.appInfo().resolveMethodOnClassLegacy(receiverType, target).asSingleResolution();
+        appInfo().resolveMethodOnClassLegacy(receiverType, target).asSingleResolution();
     if (newResolutionResult == null
         || newResolutionResult
-            .isAccessibleForVirtualDispatchFrom(context, appView)
+            .isAccessibleForVirtualDispatchFrom(context, appView())
             .isPossiblyFalse()
         || !newResolutionResult
             .getResolvedMethod()
-            .isAtLeastAsVisibleAsOtherInSameHierarchy(resolutionResult.getResolutionPair(), appView)
+            .isAtLeastAsVisibleAsOtherInSameHierarchy(
+                resolutionResult.getResolutionPair(), appView())
         // isOverriding expects both arguments to be not private.
         || (!newResolutionResult.getResolvedMethod().isPrivateMethod()
             && !isOverriding(
@@ -418,8 +444,7 @@ public class Devirtualizer {
   }
 
   private boolean isRebindingNewClassIntoMainDex(ProgramMethod context, DexMethod reboundMethod) {
-    return !appView
-        .appInfo()
+    return !appInfo()
         .getMainDexInfo()
         .canRebindReference(context, reboundMethod, appView.getSyntheticItems());
   }

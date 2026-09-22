@@ -4,6 +4,7 @@
 package com.android.tools.r8.optimize.interfaces.analysis;
 
 import com.android.tools.r8.cf.code.CfArrayStore;
+import com.android.tools.r8.cf.code.CfFrame;
 import com.android.tools.r8.cf.code.CfInstanceFieldWrite;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
@@ -62,6 +63,8 @@ class CfOpenClosedInterfacesAnalysisHelper {
     ConcreteCfFrameState concreteState = state.asConcrete();
     if (instruction.isArrayStore()) {
       processArrayStore(instruction.asArrayStore(), concreteState);
+    } else if (instruction.isFrame()) {
+      processFrame(instruction.asFrame(), concreteState);
     } else if (instruction.isInstanceFieldPut()) {
       processInstanceFieldPut(instruction.asInstanceFieldPut(), concreteState);
     } else if (instruction.isInvoke()) {
@@ -97,6 +100,10 @@ class CfOpenClosedInterfacesAnalysisHelper {
         options);
   }
 
+  private void processFrame(CfFrame frame, ConcreteCfFrameState state) {
+    state.acceptAssignments(frame, this::processAssignment);
+  }
+
   private void processInstanceFieldPut(
       CfInstanceFieldWrite instanceFieldPut, ConcreteCfFrameState state) {
     state.peekStackElement(
@@ -129,6 +136,20 @@ class CfOpenClosedInterfacesAnalysisHelper {
         head -> processAssignment(head, staticFieldPut.getField().getType()), options);
   }
 
+  private void processAssignment(FrameType fromType, FrameType toType) {
+    if (toType.isInitializedNonNullReferenceTypeWithInterfaces()) {
+      processAssignment(
+          fromType,
+          toType
+              .asInitializedNonNullReferenceTypeWithInterfaces()
+              .getInitializedTypeWithInterfaces());
+    } else if (toType.isInitializedNonNullReferenceTypeWithoutInterfaces()) {
+      processAssignment(
+          fromType,
+          toType.asInitializedNonNullReferenceTypeWithoutInterfaces().getInitializedType());
+    }
+  }
+
   private void processAssignment(FrameType fromType, DexType toType) {
     if (fromType.isInitializedNonNullReferenceType()) {
       processAssignment(
@@ -149,18 +170,23 @@ class CfOpenClosedInterfacesAnalysisHelper {
     processAssignment(fromType, toType.toTypeElement(appView));
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private void processAssignment(TypeElement fromType, TypeElement toType) {
     // If the type is an interface type, then check that the assigned value is a subtype of the
     // interface type, or mark the interface as open.
-    if (!toType.isClassType()) {
+    while (toType.isArrayType() && fromType.isArrayType()) {
+      toType = toType.asArrayType().getMemberType();
+      fromType = fromType.asArrayType().getMemberType();
+    }
+    if (toType.isClassType()) {
+      processAssignment(fromType, toType.asClassType());
+    }
+  }
+
+  private void processAssignment(TypeElement fromType, ClassTypeElement toType) {
+    if (toType.getClassType().isNotIdenticalTo(dexItemFactory.objectType)) {
       return;
     }
-    ClassTypeElement toClassType = toType.asClassType();
-    if (toClassType.getClassType() != dexItemFactory.objectType) {
-      return;
-    }
-    InterfaceCollection interfaceCollection = toClassType.getInterfaces();
+    InterfaceCollection interfaceCollection = toType.getInterfaces();
     interfaceCollection.forEachKnownInterface(
         knownInterfaceType -> {
           DexClass knownInterface = appView.definitionFor(knownInterfaceType);

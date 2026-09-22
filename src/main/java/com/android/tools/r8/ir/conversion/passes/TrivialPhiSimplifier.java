@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.conversion.passes;
 
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
@@ -14,14 +15,31 @@ import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.utils.internal.SCC;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 
-public class TrivialPhiSimplifier {
+public class TrivialPhiSimplifier extends CodeRewriterPass<AppInfo> {
 
-  public static void ensureDirectStringNewToInit(AppView<?> appView, IRCode code) {
+  public TrivialPhiSimplifier(AppView<?> appView) {
+    super(appView);
+  }
+
+  @Override
+  protected String getRewriterId() {
+    return "TrivialPhiSimplifier";
+  }
+
+  @Override
+  protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
+    return true;
+  }
+
+  @Override
+  protected CodeRewriterResult rewriteCode(IRCode code) {
     boolean changed = false;
     DexItemFactory dexItemFactory = appView.dexItemFactory();
     for (InvokeDirect invoke : code.<InvokeDirect>instructions(Instruction::isInvokeDirect)) {
@@ -39,7 +57,7 @@ public class TrivialPhiSimplifier {
         changed = true;
       }
     }
-    assert !changed || code.isConsistentSSA(appView);
+    return CodeRewriterResult.hasChanged(changed);
   }
 
   private static NewInstance findNewInstance(Phi phi) {

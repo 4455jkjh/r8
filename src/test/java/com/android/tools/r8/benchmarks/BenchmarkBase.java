@@ -9,6 +9,7 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,6 +21,19 @@ public abstract class BenchmarkBase extends TestBase {
   // Benchmarks must be configured with the "none" runtime as each config defines a singleton
   // benchmark in golem.
   public static List<Object[]> parametersFromConfigs(Iterable<BenchmarkConfig> configs) {
+    if (System.getProperty("runtimes") == null
+        && System.getProperty("shard_count") != null
+        && System.getProperty("shard_number") != null) {
+      int shardCount = Integer.parseInt(System.getProperty("shard_count"));
+      int shardNumber = Integer.parseInt(System.getProperty("shard_number"));
+      List<BenchmarkConfig> sharded = new ArrayList<>();
+      for (BenchmarkConfig config : configs) {
+        if (Math.floorMod(config.getIdentifier().hashCode(), shardCount) == shardNumber) {
+          sharded.add(config);
+        }
+      }
+      configs = sharded;
+    }
     return buildParameters(configs, getTestParameters().withNoneRuntime().build());
   }
 

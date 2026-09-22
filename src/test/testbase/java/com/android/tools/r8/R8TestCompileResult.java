@@ -32,6 +32,7 @@ public class R8TestCompileResult extends R8TestCompileResultBase<R8TestCompileRe
       HashMap<String, Path> resourceShrinkerOutputForFeatures,
       TestDebugConsumer resourceShrinkerLogConsumer,
       R8BuildMetadata buildMetadata,
+      Box<byte[]> configurationAnalysisData,
       Box<String> configurationAnalysisHtmlReport) {
     super(
         state,
@@ -49,6 +50,7 @@ public class R8TestCompileResult extends R8TestCompileResultBase<R8TestCompileRe
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
         buildMetadata,
+        configurationAnalysisData,
         configurationAnalysisHtmlReport);
   }
 

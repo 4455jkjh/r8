@@ -26,7 +26,7 @@ import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.IRToLirFinalizer;
+import com.android.tools.r8.ir.conversion.finalizer.IRToLirFinalizer;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer.AtomicFieldUpdaterInfo;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Event;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reason;

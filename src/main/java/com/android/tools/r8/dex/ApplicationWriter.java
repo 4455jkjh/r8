@@ -70,6 +70,7 @@ import com.android.tools.r8.utils.internal.PredicateUtils;
 import com.android.tools.r8.utils.internal.SupplierUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.utils.timing.TimingMerger;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
@@ -278,13 +279,15 @@ public class ApplicationWriter {
       Timing timing)
       throws ExecutionException {
     TimingMerger merger = timing.beginMerger("Write files", executorService);
+    Supplier<StartupProfile> startupProfileForWriting =
+        Suppliers.memoize(() -> appView.getStartupProfile().toStartupProfileForWriting(appView));
     Collection<Timing> timings =
         ThreadUtils.processItemsWithResults(
             virtualFiles,
             virtualFile -> {
               Timing fileTiming =
                   timing.createThreadTiming("VirtualFile " + virtualFile.getId(), options);
-              writeVirtualFile(virtualFile, fileTiming, forcedStrings);
+              writeVirtualFile(virtualFile, fileTiming, forcedStrings, startupProfileForWriting);
               fileTiming.end();
               return fileTiming;
             },
@@ -529,7 +532,10 @@ public class ApplicationWriter {
   }
 
   protected void writeVirtualFile(
-      VirtualFile virtualFile, Timing timing, List<DexString> forcedStrings) {
+      VirtualFile virtualFile,
+      Timing timing,
+      List<DexString> forcedStrings,
+      Supplier<StartupProfile> startupProfileForWriting) {
     if (virtualFile.isEmpty()) {
       return;
     }
@@ -564,7 +570,9 @@ public class ApplicationWriter {
     timing.end();
 
     timing.begin("Write bytes");
-    ByteBufferResult result = writeDexFile(objectMapping, byteBufferProvider, virtualFile, timing);
+    ByteBufferResult result =
+        writeDexFile(
+            objectMapping, byteBufferProvider, virtualFile, startupProfileForWriting, timing);
     ByteDataView data =
         new ByteDataView(result.buffer.array(), result.buffer.arrayOffset(), result.length);
     timing.end();
@@ -834,8 +842,10 @@ public class ApplicationWriter {
       ObjectToOffsetMapping objectMapping,
       ByteBufferProvider provider,
       VirtualFile virtualFile,
+      Supplier<StartupProfile> startupProfileForWriting,
       Timing timing) {
-    FileWriter fileWriter = new FileWriter(appView, provider, objectMapping, virtualFile);
+    FileWriter fileWriter =
+        new FileWriter(appView, provider, objectMapping, virtualFile, startupProfileForWriting);
     // Collect the non-fixed sections.
     timing.time("collect", fileWriter::collect);
     // Generate and write the bytes.

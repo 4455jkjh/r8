@@ -12,9 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 interface MyConsumer<T> {
   void accept(T element);
@@ -87,9 +85,6 @@ class TestClass {
 
 public class B117849037 extends TestBase {
 
-  @Rule
-  public TemporaryFolder folder = new TemporaryFolder();
-
   public void compile(Path output) throws CompilationFailedException, IOException {
     testForD8()
         .addProgramClasses(TestClass.class, MyConsumer.class)
@@ -100,8 +95,8 @@ public class B117849037 extends TestBase {
 
   @Test
   public void testConsistentSynthesizedMapOutput() throws IOException, CompilationFailedException {
-    Path file1 = folder.getRoot().toPath().resolve("classes1.jar");
-    Path file2 = folder.getRoot().toPath().resolve("classes2.jar");
+    Path file1 = temp.getRoot().toPath().resolve("classes1.jar");
+    Path file2 = temp.getRoot().toPath().resolve("classes2.jar");
     compile(file1);
     compile(file2);
     assertTrue(Arrays.equals(Files.readAllBytes(file1), Files.readAllBytes(file2)));

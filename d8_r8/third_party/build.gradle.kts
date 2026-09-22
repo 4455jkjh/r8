@@ -17,7 +17,7 @@ val downloadLimitService =
     maxParallelUsages.set(30)
   }
 
-fun registerDependency(dep: ThirdPartyDependency): TaskProvider<DownloadDependency> {
+private fun registerDependency(dep: ThirdPartyDependency): TaskProvider<DownloadDependency> {
   // Task name must be unique and safe. packageNames should be unique.
   val taskName = "download_${dep.packageName}"
   return tasks.register(taskName, DownloadDependency::class) {
@@ -32,6 +32,34 @@ fun registerDependency(dep: ThirdPartyDependency): TaskProvider<DownloadDependen
 
 val publicTasks = allPublicDependencies().map { registerDependency(it) }
 val publicTestTasks = allPublicTestDependencies().map { registerDependency(it) }
+
+private fun registerTestDepArtifact(configurationName: String, artifact: Any, propName: String) {
+  configurations.consumable(configurationName) {
+    attributes { attribute(TEST_DEP_PROP, propName) }
+    outgoing.artifact(artifact)
+  }
+}
+
+private fun registerTestDep(
+  configurationName: String,
+  dep: ThirdPartyDependency,
+  propName: String,
+) {
+  val taskProvider = tasks.named<DownloadDependency>("download_${dep.packageName}")
+  registerTestDepArtifact(configurationName, taskProvider.flatMap { it.outputDir }, propName)
+}
+
+private fun registerTestDep(configurationName: String, dir: File, propName: String) {
+  registerTestDepArtifact(configurationName, dir, propName)
+}
+
+// 'dependencies' have to be treated differently since it contains files that Gradle uses to run.
+// This should be called 'dependencies' but that is reserved in gradle, so dependenciesBucket.
+registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencies"), "DEPENDENCIES")
+
+registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
+
+registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
 
 val internalTasks =
   if (!providers.gradleProperty("no_internal").isPresent) {

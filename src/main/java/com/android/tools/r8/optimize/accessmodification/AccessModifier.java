@@ -7,6 +7,7 @@ package com.android.tools.r8.optimize.accessmodification;
 import static com.android.tools.r8.dex.Constants.ACC_PRIVATE;
 import static com.android.tools.r8.dex.Constants.ACC_PROTECTED;
 import static com.android.tools.r8.dex.Constants.ACC_PUBLIC;
+import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -36,6 +37,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -115,19 +117,19 @@ public class AccessModifier {
   }
 
   private void publicizeClass(DexProgramClass clazz, BottomUpTraversalState traversalState) {
-    if (isAccessModificationAllowed(clazz, traversalState) && !clazz.getAccessFlags().isPublic()) {
+    if (isAccessModificationAllowed(clazz, traversalState)) {
       clazz.getAccessFlags().promoteToPublic();
     }
-
-    // Update inner class attribute.
-    // TODO(b/285494837): Carry-over from the legacy access modifier. We should never publicize
-    //  items unconditionally, but account for keep info.
-    InnerClassAttribute attr = clazz.getInnerClassAttributeForThisClass();
-    if (attr != null) {
-      int accessFlags = ((attr.getAccess() | ACC_PUBLIC) & ~ACC_PRIVATE) & ~ACC_PROTECTED;
-      clazz.replaceInnerClassAttributeForThisClass(
-          new InnerClassAttribute(
-              accessFlags, attr.getInner(), attr.getOuter(), attr.getInnerName()));
+    ListIterator<InnerClassAttribute> iterator = clazz.getInnerClasses().listIterator();
+    while (iterator.hasNext()) {
+      InnerClassAttribute attr = iterator.next();
+      DexProgramClass innerClass = asProgramClassOrNull(appView.definitionFor(attr.getInner()));
+      if (innerClass != null && isAccessModificationAllowed(innerClass, traversalState)) {
+        int accessFlags = ((attr.getAccess() | ACC_PUBLIC) & ~ACC_PRIVATE) & ~ACC_PROTECTED;
+        iterator.set(
+            new InnerClassAttribute(
+                accessFlags, attr.getInner(), attr.getOuter(), attr.getInnerName()));
+      }
     }
   }
 

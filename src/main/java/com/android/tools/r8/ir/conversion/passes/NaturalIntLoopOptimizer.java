@@ -648,19 +648,15 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     }
 
     private BasicBlock target(long phiValue) {
-      return target((int) phiValue);
-    }
-
-    private BasicBlock target(int phiValue) {
       if (comparison.isZeroTest()) {
-        return comparison.targetFromCondition(Integer.signum(phiValue));
+        return comparison.targetFromCondition(Long.signum(phiValue));
       }
       if (comparison.rhs().isConstNumber()) {
-        int comp = comparison.rhs().getDefinition().asConstNumber().getIntValue();
-        return comparison.targetFromCondition(Integer.signum(phiValue - comp));
+        long comp = comparison.rhs().getDefinition().asConstNumber().getIntValue();
+        return comparison.targetFromCondition(phiValue, comp);
       }
-      int comp = comparison.lhs().getDefinition().asConstNumber().getIntValue();
-      return comparison.targetFromCondition(Integer.signum(comp - phiValue));
+      long comp = comparison.lhs().getDefinition().asConstNumber().getIntValue();
+      return comparison.targetFromCondition(comp, phiValue);
     }
 
     public boolean has1Iteration() {

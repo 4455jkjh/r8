@@ -60,7 +60,7 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
       extraPasses.add(new StringConcatCreator(appView));
     }
 
-    this.codeRewriterPassCollection = new CodeRewriterPassCollection(extraPasses);
+    this.codeRewriterPassCollection = CodeRewriterPassCollection.create(extraPasses);
     this.enqueuer = enqueuer;
     this.typeChecker = new TypeChecker(appView, VerifyTypesHelper.create(appView));
   }

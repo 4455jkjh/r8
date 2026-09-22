@@ -147,6 +147,11 @@ public abstract class SingleFieldValue extends SingleValue {
   }
 
   @Override
+  public boolean materializationMayHaveSideEffects(AppView<?> appView, ProgramMethod context) {
+    return field.getHolderType().classInitializationMayHaveSideEffectsInContext(appView, context);
+  }
+
+  @Override
   public InstanceFieldInitializationInfo fixupAfterParametersChanged(
       ArgumentInfoCollection argumentInfoCollection) {
     return this;

@@ -18,6 +18,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.dex.MixedSectionLayoutStrategy;
 import com.android.tools.r8.errors.StartupClassesNonStartupFractionDiagnostic;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.ir.desugar.LambdaClass;
@@ -30,12 +31,12 @@ import com.android.tools.r8.startup.utils.MixedSectionLayoutInspector;
 import com.android.tools.r8.startup.utils.StartupTestingUtils;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.TypeReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
@@ -376,7 +377,10 @@ public class StartupSyntheticPlacementTest extends TestBase {
       CodeInspector inspector, SyntheticItemsTestUtils syntheticItems, boolean isD8) {
     return new MixedSectionLayoutInspector() {
       @Override
-      public void inspectClassDataLayout(int virtualFile, Collection<DexProgramClass> layout) {
+      public void inspectClassDataLayout(
+          int virtualFile,
+          Collection<DexProgramClass> layout,
+          MixedSectionLayoutStrategy layoutStrategy) {
         assertThat(
             layout,
             isEqualToClassDataLayout(

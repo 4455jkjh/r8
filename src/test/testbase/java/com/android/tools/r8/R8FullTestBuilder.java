@@ -62,6 +62,7 @@ public class R8FullTestBuilder
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
         buildMetadata != null ? buildMetadata.get() : null,
+        configurationAnalysisData,
         configurationAnalysisHtmlReport);
   }
 }

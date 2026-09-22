@@ -34,7 +34,6 @@ import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstNumber;
@@ -145,7 +144,6 @@ public class ClassInitializerDefaultsOptimization {
     this.dexItemFactory = appView.dexItemFactory();
   }
 
-  @SuppressWarnings("ReferenceEquality")
   public ClassInitializerDefaultsResult optimize(IRCode code, OptimizationFeedback feedback) {
     if (appView.options().debug) {
       return ClassInitializerDefaultsResult.empty();
@@ -182,7 +180,7 @@ public class ClassInitializerDefaultsOptimization {
           DexType fieldType = field.getReference().type;
           Value value = put.value().getAliasedValue();
           if (unnecessaryStaticPuts.contains(put)) {
-            if (fieldType == dexItemFactory.stringType) {
+            if (fieldType.isIdenticalTo(dexItemFactory.stringType)) {
               fieldsWithStaticValues.put(field, getDexStringValue(value, context.getHolder()));
             } else if (fieldType.isClassType() || fieldType.isArrayType()) {
               if (value.isZero()) {
@@ -195,21 +193,21 @@ public class ClassInitializerDefaultsOptimization {
               fieldsWithStaticValues.put(field, DexValueResourceNumber.create(resourceValue));
             } else {
               ConstNumber cnst = value.getConstInstruction().asConstNumber();
-              if (fieldType == dexItemFactory.booleanType) {
+              if (fieldType.isIdenticalTo(dexItemFactory.booleanType)) {
                 fieldsWithStaticValues.put(field, DexValueBoolean.create(cnst.getBooleanValue()));
-              } else if (fieldType == dexItemFactory.byteType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.byteType)) {
                 fieldsWithStaticValues.put(field, DexValueByte.create((byte) cnst.getIntValue()));
-              } else if (fieldType == dexItemFactory.shortType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.shortType)) {
                 fieldsWithStaticValues.put(field, DexValueShort.create((short) cnst.getIntValue()));
-              } else if (fieldType == dexItemFactory.intType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.intType)) {
                 fieldsWithStaticValues.put(field, DexValueInt.create(cnst.getIntValue()));
-              } else if (fieldType == dexItemFactory.longType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.longType)) {
                 fieldsWithStaticValues.put(field, DexValueLong.create(cnst.getLongValue()));
-              } else if (fieldType == dexItemFactory.floatType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.floatType)) {
                 fieldsWithStaticValues.put(field, DexValueFloat.create(cnst.getFloatValue()));
-              } else if (fieldType == dexItemFactory.doubleType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.doubleType)) {
                 fieldsWithStaticValues.put(field, DexValueDouble.create(cnst.getDoubleValue()));
-              } else if (fieldType == dexItemFactory.charType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.charType)) {
                 fieldsWithStaticValues.put(field, DexValueChar.create((char) cnst.getIntValue()));
               } else {
                 throw new Unreachable("Unexpected field type " + fieldType + ".");
@@ -251,7 +249,7 @@ public class ClassInitializerDefaultsOptimization {
       }
 
       // Remove the instructions collected for removal.
-      if (unnecessaryInstructions.size() > 0) {
+      if (!unnecessaryInstructions.isEmpty()) {
         IteratorUtils.removeIf(code.instructionListIterator(), unnecessaryInstructions::contains);
       }
     }
@@ -345,24 +343,23 @@ public class ClassInitializerDefaultsOptimization {
     return getDexStringValueForInvoke(invoke.getInvokedMethod(), holder);
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private DexValue getDexStringValueForInvoke(DexMethod invokedMethod, DexProgramClass holder) {
     if (appView
         .getKeepInfoOrDefault(holder, KeepClassInfo.top())
         .isMinificationAllowed(appView.options())) {
-      if (invokedMethod == dexItemFactory.classMethods.getName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(NAME));
       }
-      if (invokedMethod == dexItemFactory.classMethods.getCanonicalName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getCanonicalName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(CANONICAL_NAME));
       }
-      if (invokedMethod == dexItemFactory.classMethods.getSimpleName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getSimpleName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(SIMPLE_NAME));
       }
-      if (invokedMethod == dexItemFactory.classMethods.getTypeName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getTypeName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(TYPE_NAME));
       }
@@ -371,13 +368,13 @@ public class ClassInitializerDefaultsOptimization {
     }
 
     ClassNameMapping mapping = null;
-    if (invokedMethod == dexItemFactory.classMethods.getName) {
+    if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getName)) {
       mapping = NAME;
-    } else if (invokedMethod == dexItemFactory.classMethods.getCanonicalName) {
+    } else if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getCanonicalName)) {
       mapping = CANONICAL_NAME;
-    } else if (invokedMethod == dexItemFactory.classMethods.getSimpleName) {
+    } else if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getSimpleName)) {
       mapping = SIMPLE_NAME;
-    } else if (invokedMethod == dexItemFactory.classMethods.getTypeName) {
+    } else if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getTypeName)) {
       mapping = TYPE_NAME;
     }
     if (mapping != null) {
@@ -388,11 +385,10 @@ public class ClassInitializerDefaultsOptimization {
     return null;
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private Map<DexEncodedField, StaticPut> findFinalFieldPutsWhileCollectingUnnecessaryStaticPuts(
       IRCode code, ProgramMethod context, Set<StaticPut> unnecessaryStaticPuts) {
     Map<DexEncodedField, StaticPut> finalFieldPuts = Maps.newIdentityHashMap();
-    Map<DexField, Set<StaticPut>> isWrittenBefore = Maps.newIdentityHashMap();
+    Map<DexEncodedField, Set<StaticPut>> isWrittenBefore = Maps.newIdentityHashMap();
     Set<DexEncodedField> isReadBefore = Sets.newIdentityHashSet();
     final int color = code.reserveMarkingColor();
     try {
@@ -405,7 +401,7 @@ public class ClassInitializerDefaultsOptimization {
             // as long as the instructions do not throw.
             ArrayPut arrayPut = instruction.asArrayPut();
             if (arrayPut.instructionInstanceCanThrow(appView, context)) {
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
           } else if (instruction.isStaticGet()) {
             StaticGet get = instruction.asStaticGet();
@@ -414,47 +410,41 @@ public class ClassInitializerDefaultsOptimization {
               isReadBefore.add(field);
             } else {
               // Reading another field is only OK if the read does not have side-effects.
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
           } else if (instruction.isStaticPut()) {
             StaticPut put = instruction.asStaticPut();
-            if (put.getField().holder != context.getHolderType()) {
+            if (put.getField().getHolderType().isNotIdenticalTo(context.getHolderType())) {
               // Can cause clinit on another class which can read uninitialized static fields
               // of this class.
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
-            DexField fieldReference = put.getField();
-            DexEncodedField field = context.getHolder().lookupField(fieldReference);
+            DexEncodedField field = context.getHolder().lookupField(put.getField());
             Value value = put.value().getAliasedValue();
-            TypeElement valueType = value.getType();
             if (field != null) {
               if (isReadBefore.contains(field)) {
                 // Promoting this put to a class constant would cause a previous static-get
                 // instruction to read a different value.
                 continue;
               }
-              if (value.isDexItemBasedConstStringThatNeedsToComputeClassName()) {
-                continue;
-              }
               if (value.isConstant()) {
-                if (fieldReference.type.isReferenceType() && value.isZero()) {
+                if (field.getType().isReferenceType() && value.isZero()) {
                   finalFieldPuts.put(field, put);
                   unnecessaryStaticPuts.add(put);
                   // If this field has been written before, those static-put's up to this point are
                   // redundant. We should remove them all together; otherwise, remaining static-put
                   // that is not constant can change the program semantics. See b/138912149.
-                  if (isWrittenBefore.containsKey(fieldReference)) {
-                    unnecessaryStaticPuts.addAll(isWrittenBefore.get(fieldReference));
-                    isWrittenBefore.remove(fieldReference);
+                  if (isWrittenBefore.containsKey(field)) {
+                    unnecessaryStaticPuts.addAll(isWrittenBefore.remove(field));
                   }
                   continue;
-                } else if (fieldReference.type.isPrimitiveType()
-                    || fieldReference.type == dexItemFactory.stringType) {
+                } else if (field.getType().isPrimitiveType()
+                    || (field.getType().isIdenticalTo(dexItemFactory.stringType)
+                        && !value.isDexItemBasedConstStringThatNeedsToComputeClassName())) {
                   finalFieldPuts.put(field, put);
                   unnecessaryStaticPuts.add(put);
-                  if (isWrittenBefore.containsKey(fieldReference)) {
-                    unnecessaryStaticPuts.addAll(isWrittenBefore.get(fieldReference));
-                    isWrittenBefore.remove(fieldReference);
+                  if (isWrittenBefore.containsKey(field)) {
+                    unnecessaryStaticPuts.addAll(isWrittenBefore.remove(field));
                   }
                   continue;
                 }
@@ -465,29 +455,23 @@ public class ClassInitializerDefaultsOptimization {
                 // Collect put of class name constant as a potential default value.
                 finalFieldPuts.put(field, put);
                 unnecessaryStaticPuts.add(put);
-                if (isWrittenBefore.containsKey(fieldReference)) {
-                  unnecessaryStaticPuts.addAll(isWrittenBefore.get(fieldReference));
-                  isWrittenBefore.remove(fieldReference);
+                if (isWrittenBefore.containsKey(field)) {
+                  unnecessaryStaticPuts.addAll(isWrittenBefore.remove(field));
                 }
-                continue;
-              } else if (valueType.isReferenceType() && valueType.isDefinitelyNotNull()) {
-                finalFieldPuts.put(field, put);
                 continue;
               }
               // static-put that is reaching here can be redundant if the corresponding field is
               // rewritten with another constant (of course before being read).
               // However, if static-put is still remaining in `isWrittenBefore`, that indicates
               // the previous candidate as final field put is no longer valid.
-              isWrittenBefore
-                  .computeIfAbsent(fieldReference, ignore -> Sets.newIdentityHashSet())
-                  .add(put);
+              isWrittenBefore.computeIfAbsent(field, ignore -> Sets.newIdentityHashSet()).add(put);
             } else {
               // Writing another field is not OK.
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
           } else if (instruction.instructionMayHaveSideEffects(appView, context)) {
             // Some other instruction that has side-effects. Stop here.
-            return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+            return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
           } else {
             // TODO(b/120138731): This check should be removed when the Class.get*Name()
             // optimizations become enabled.
@@ -500,7 +484,8 @@ public class ClassInitializerDefaultsOptimization {
             if (instruction.isInvoke() && instruction.hasOutValue()) {
               Value outValue = instruction.outValue();
               if (outValue.hasNonDebugUsers()) {
-                return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+                return validateFinalFieldPuts(
+                    finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
               }
             }
           }
@@ -512,12 +497,13 @@ public class ClassInitializerDefaultsOptimization {
     } finally {
       code.returnMarkingColor(color);
     }
-    return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+    return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
   }
 
   private Map<DexEncodedField, StaticPut> validateFinalFieldPuts(
       Map<DexEncodedField, StaticPut> finalFieldPuts,
-      Map<DexField, Set<StaticPut>> isWrittenBefore) {
+      Map<DexEncodedField, Set<StaticPut>> isWrittenBefore,
+      Set<StaticPut> unnecessaryStaticPuts) {
     // If a field is rewritten again with other values that we can't represent as static encoded
     // values, that would be recorded at `isWrittenBefore`, which is used to collect and remove
     // redundant static-puts. The remnant indicates that the candidate for final field put is not
@@ -537,15 +523,19 @@ public class ClassInitializerDefaultsOptimization {
     // remaining. If other optimizations (most likely member value propagation) rely on encoded
     // values, leaving it can cause incorrect optimizations. Thus, we invalidate candidates of
     // final field puts at all.
-    isWrittenBefore.keySet().forEach(finalFieldPuts::remove);
+    for (DexEncodedField field : isWrittenBefore.keySet()) {
+      StaticPut removedPut = finalFieldPuts.remove(field);
+      if (removedPut != null) {
+        unnecessaryStaticPuts.removeIf(put -> put.getField().isIdenticalTo(field.getReference()));
+      }
+    }
     return finalFieldPuts;
   }
 
-  @SuppressWarnings("ReferenceEquality")
   // Check if the static put is a constant derived from the class holding the method.
   // This checks for java.lang.Class.get*Name.
   private boolean isClassNameConstantOf(DexClass clazz, StaticPut put) {
-    if (put.getField().type != dexItemFactory.stringType) {
+    if (put.getField().getType().isNotIdenticalTo(dexItemFactory.stringType)) {
       return false;
     }
     Value value = put.value().getAliasedValue();
@@ -555,7 +545,6 @@ public class ClassInitializerDefaultsOptimization {
     return isClassNameConstantOf(clazz, value.definition);
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private boolean isClassNameConstantOf(DexClass clazz, Instruction instruction) {
     if (instruction.isInvokeVirtual()) {
       InvokeVirtual invoke = instruction.asInvokeVirtual();
@@ -565,7 +554,7 @@ public class ClassInitializerDefaultsOptimization {
       Value inValue = invoke.inValues().get(0);
       return !inValue.isPhi()
           && inValue.definition.isConstClass()
-          && inValue.definition.asConstClass().getType() == clazz.type;
+          && inValue.definition.asConstClass().getType().isIdenticalTo(clazz.getType());
     }
     return false;
   }

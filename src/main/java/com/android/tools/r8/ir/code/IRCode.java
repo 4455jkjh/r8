@@ -527,6 +527,8 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   }
 
   public void removeBlocks(Collection<BasicBlock> blocksToRemove) {
+    // Collection#removeAll does not check the parameter is empty, and create an iterator to iterate
+    // over all the blocks if that guard is not present.
     if (!blocksToRemove.isEmpty()) {
       blocks.removeAll(blocksToRemove);
     }
@@ -1604,6 +1606,19 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     }
     returnMarkingColor(color);
     return unreachableBlocks;
+  }
+
+  public boolean unlinkCatchHandlerOnNonThrowableBlocks() {
+    boolean mayHaveIntroducedUnreachableBlocks = false;
+    for (BasicBlock block : blocks) {
+      if (block.hasCatchHandlers() && !block.canThrow()) {
+        for (BasicBlock target : block.getCatchHandlers().getUniqueTargets()) {
+          target.unlinkCatchHandler();
+          mayHaveIntroducedUnreachableBlocks = true;
+        }
+      }
+    }
+    return mayHaveIntroducedUnreachableBlocks;
   }
 
   public AffectedValues removeUnreachableBlocks() {

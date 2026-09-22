@@ -12,11 +12,12 @@ import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinCompilerTool;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +57,7 @@ public class KotlinEnumSwitchTest extends KotlinTestBase {
         // Use android.jar with java.lang.ClassValue.
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.U))
         // Add java.lang.invoke.LambdaMetafactory for class file generation.
-        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(ToolHelper.getCoreLambdaStubs()))
+        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(TestDeps.getCoreLambdaStubsJar()))
         .addProgramFiles(
             kotlinJars.getForConfiguration(kotlinParameters), kotlinc.getKotlinAnnotationJar())
         .addKeepMainRule("enumswitch.EnumSwitchKt")

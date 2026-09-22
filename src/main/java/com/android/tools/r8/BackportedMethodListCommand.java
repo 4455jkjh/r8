@@ -140,21 +140,14 @@ public class BackportedMethodListCommand {
             "<file>",
             "Output result in <file>.",
             (b, arg) -> b.setOutputPath(Paths.get(arg)))
-        .option1(
-            "--min-api",
-            "<number>",
-            "Minimum Android API level for the application.",
-            (b, arg) -> {
-              if (hasDefinedApiLevel.get()) {
-                b.error(new StringDiagnostic("Cannot set multiple --min-api options"));
-              } else {
-                CliParserUtils.parsePositiveInt(
-                    arg,
-                    b::setMinApiLevel,
-                    err -> b.error(new StringDiagnostic("Invalid argument to --min-api: " + err)));
-                hasDefinedApiLevel.set(true);
-              }
-            })
+        .apply(
+            CliParserUtils.addMinApiOption(
+                b -> hasDefinedApiLevel.get(),
+                (b, apiLevel) -> {
+                  b.setMinApiLevel(apiLevel);
+                  hasDefinedApiLevel.set(true);
+                },
+                (b, err) -> b.error(new StringDiagnostic(err))))
         .option1(
             "--desugared-lib",
             "<file>",
@@ -182,7 +175,7 @@ public class BackportedMethodListCommand {
   public static class Builder {
 
     private final Reporter reporter;
-    private UncheckedApiLevel minApiLevel = AndroidApiLevel.B.asUnchecked();
+    private UncheckedApiLevel minApiLevel = AndroidApiLevel.getDefault().asUnchecked();
     private List<StringResource> desugaredLibrarySpecificationResources = new ArrayList<>();
     private final AndroidApp.Builder app;
     private StringConsumer backportedMethodListConsumer;

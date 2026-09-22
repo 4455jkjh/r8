@@ -57,20 +57,20 @@ public abstract class CodeRewriterPass<T extends AppInfo> {
       MethodProcessor methodProcessor,
       MethodProcessingContext methodProcessingContext) {
     if (shouldRewriteCode(code, methodProcessor)) {
-      assert verifyConsistentCode(code, isAcceptingSSA(), "before");
+      assert verifyConsistentCode(code, "before");
       CodeRewriterResult result = rewriteCode(code, methodProcessor, methodProcessingContext);
-      assert result.hasChanged().isFalse() || verifyConsistentCode(code, isProducingSSA(), "after");
+      assert result.hasChanged().isFalse() || verifyConsistentCode(code, "after");
       return result;
     }
     return noChange();
   }
 
-  protected boolean verifyConsistentCode(IRCode code, boolean ssa, String preposition) {
+  protected boolean verifyConsistentCode(IRCode code, String preposition) {
     boolean result;
     String message =
         "Invalid code " + preposition + " " + getRewriterId() + " in " + code.context();
     try {
-      result = ssa ? code.isConsistentSSA(appView) : code.isConsistentGraph(appView, false);
+      result = code.isConsistentSSA(appView);
     } catch (AssertionError ae) {
       throw new AssertionError(message, ae);
     }
@@ -87,14 +87,6 @@ public abstract class CodeRewriterPass<T extends AppInfo> {
   }
 
   protected abstract String getRewriterId();
-
-  protected boolean isAcceptingSSA() {
-    return true;
-  }
-
-  protected boolean isProducingSSA() {
-    return true;
-  }
 
   protected CodeRewriterResult rewriteCode(IRCode code) {
     throw new Unreachable("Should Override or use overload");

@@ -88,6 +88,13 @@ dependencies {
   testbaseTestJarsScope(project(":testbase", "testJar"))
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
+  runtimeOnlyData(project(":tests_java_8", "runtimeOnlyDataElements"))
+  runtimeOnlyData(project(":tests_java_11", "runtimeOnlyDataElements"))
+  runtimeOnlyData(project(":tests_java_17", "runtimeOnlyDataElements"))
+  runtimeOnlyData(project(":tests_java_21", "runtimeOnlyDataElements"))
+  runtimeOnlyData(project(":tests_java_25", "runtimeOnlyDataElements"))
+  runtimeOnlyData(project(":tests_bootstrap", "runtimeOnlyDataElements"))
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
 }
 
@@ -174,6 +181,7 @@ tasks {
   // classpath at runtime.
   val relocateTestsForR8LibWithRelocatedDeps =
     register<SwissArmyKnifeTask>("relocateTestsForR8LibWithRelocatedDeps") {
+      outputs.doNotCacheIf("Large test jar (~23MB)") { true }
       executeRelocator(packageTests, "r8tests-relocated.jar")
     }
 
@@ -306,13 +314,13 @@ tasks {
   val generateTestKeepRulesR8LibWithRelocatedDeps =
     register<GenerateKeepRulesForR8LibTask>("generateTestKeepRulesR8LibWithRelocatedDeps") {
       r8LibJarMap = assembleR8LibWithRelocatedDeps.flatMap { it.outputPgMap }
-      keepRules = File(rootDir, "libs/r8lib-tests-keep.txt")
+      keepRules = File(rootDir, "build/libs/r8lib-tests-keep.txt")
     }
 
   val generateTestKeepRulesR8LibNoDeps =
     register<GenerateKeepRulesForR8LibTask>("generateTestKeepRulesR8LibNoDeps") {
       r8LibJarMap = assembleR8LibNoDeps.flatMap { it.outputPgMap }
-      keepRules = File(rootDir, "libs/r8lib-exclude-deps-tests-keep.txt")
+      keepRules = File(rootDir, "build/libs/r8lib-exclude-deps-tests-keep.txt")
     }
 
   fun SwissArmyKnifeTask.rewriteTestsForR8Lib(

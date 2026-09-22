@@ -10,6 +10,8 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
+import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.verticalclassmerging.IllegalAccessDetector;
 import com.android.tools.r8.verticalclassmerging.VerticalMergeGroup;
@@ -57,14 +59,22 @@ public class NoIllegalAccessesPolicy extends VerticalClassMergerPolicy {
         return true;
       }
     }
+    LazyBox<DexMethodSignatureSet> packagePrivateSuperMethods =
+        new LazyBox<>(() -> getPackagePrivateSuperMethodsInTargetPackage(source, target));
     for (DexEncodedMethod method : source.methods()) {
       if (!(method.isPublic() || method.isPrivate())) {
         return true;
       }
-      // Check if the target is overriding and narrowing the access.
       if (method.isPublic()) {
         DexEncodedMethod targetOverride = target.lookupVirtualMethod(method.getReference());
-        if (targetOverride != null && !targetOverride.isPublic()) {
+        if (targetOverride != null) {
+          // Check if target narrows access.
+          if (!targetOverride.isPublic()) {
+            return true;
+          }
+        } else if (method.isNonPrivateVirtualMethod()
+            && packagePrivateSuperMethods.computeIfAbsent().contains(method)) {
+          // Check if merging introduces an unintended package-private override.
           return true;
         }
       }
@@ -85,6 +95,30 @@ public class NoIllegalAccessesPolicy extends VerticalClassMergerPolicy {
             },
             DexEncodedMethod::hasCode);
     return result.shouldBreak();
+  }
+
+  private DexMethodSignatureSet getPackagePrivateSuperMethodsInTargetPackage(
+      DexProgramClass source, DexProgramClass target) {
+    DexMethodSignatureSet packagePrivateSuperMethods = DexMethodSignatureSet.create();
+    // These have to be tracked since children can widen access of parents package-private methods.
+    DexMethodSignatureSet seenPublicOrProtectedMethods = DexMethodSignatureSet.create();
+    DexClass current = appView.definitionFor(source.getSuperType());
+    while (current != null && !current.isLibraryClass()) {
+      if (current.isSamePackage(target)) {
+        for (DexEncodedMethod superMethod : current.virtualMethods()) {
+          if (superMethod.getAccessFlags().isPackagePrivate()) {
+            if (!seenPublicOrProtectedMethods.contains(superMethod)) {
+              packagePrivateSuperMethods.add(superMethod);
+            }
+          } else if (superMethod.isPublic() || superMethod.isProtectedMethod()) {
+            seenPublicOrProtectedMethods.add(superMethod);
+          }
+        }
+      }
+      // Search always has to continue since inheritance can go in and out of packages.
+      current = current.hasSuperType() ? appView.definitionFor(current.getSuperType()) : null;
+    }
+    return packagePrivateSuperMethods;
   }
 
   @Override

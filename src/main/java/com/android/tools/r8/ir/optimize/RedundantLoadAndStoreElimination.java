@@ -369,12 +369,14 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         // Add operand.
         operands.add(operand);
         // Update phi type.
+        TypeElement previousPhiType = phiType;
         phiType = phiType.join(operand.getType(), appView);
         // We need to be careful when two operands join to a less precise type, since the ART
         // verifier does not see the same bootclasspath. When the resulting phi type is different
         // from the operand type, we conservatively bail out if phi type is a library type.
-        if (operand.getType().isReferenceType()
-            && !operand.getType().equalUpToNullability(phiType)) {
+        if (phiType.isReferenceType()
+            && (!operand.getType().equalUpToNullability(phiType)
+                || !previousPhiType.equalUpToNullability(phiType))) {
           TypeElement baseType =
               phiType.isArrayType() ? phiType.asArrayType().getBaseType() : phiType;
           if (baseType.isClassType()) {
@@ -565,7 +567,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
               // field values to change. In that case, it must be handled above.
               assert !instruction.instructionMayTriggerMethodInvocation(appView, method);
 
-              // Clear the field writes.
+              // Clear state that cannot cross exceptional control flow edges.
               if (instruction.instructionInstanceCanThrow(appView, method)) {
                 activeState.clearMostRecentFieldWrites();
                 activeState.clearMostRecentInitClass();
@@ -787,10 +789,13 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     }
 
     private void handleArrayGet(InstructionListIterator it, ArrayGet arrayGet) {
+      // Clear state that cannot cross exceptional control flow edges.
       if (arrayGet.instructionInstanceCanThrow(appView, method)) {
-        // The read might not happen if the array get can throw.
         activeState.clearMostRecentFieldWrites();
+        // Init class should also be cleared, but it is always done below.
       }
+      // Clear class initialization since it might mutate the array.
+      activeState.clearMostRecentInitClass();
       if (arrayGet.array().hasLocalInfo()) {
         // The array may be modified through the debugger. Therefore subsequent reads of the same
         // array slot may not read this local.
@@ -820,15 +825,16 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       int index = arrayPut.indexOrDefault(-1);
       MemberType memberType = arrayPut.getMemberType();
 
-      // If the instruction can throw, we can't use any previous field stores for store-after-store
-      // elimination.
+      // Clear state that cannot cross exceptional control flow edges.
       if (arrayPut.instructionInstanceCanThrow(appView, method)) {
         activeState.clearMostRecentFieldWrites();
+        // Init class should also be cleared, but it is always done below.
       }
+      // Clear class initialization since it might mutate the array.
+      activeState.clearMostRecentInitClass();
 
       // An array-put instruction can potentially write the given array slot on all arrays because
-      // of
-      // aliases.
+      // of aliases.
       if (index < 0) {
         activeState.removeArraySlotValues(memberType);
       } else {
@@ -884,11 +890,10 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
     private void clearMostRecentInstanceFieldWrite(
         InstanceGet instanceGet, DexClassAndField field) {
-      // If the instruction can throw, we need to clear all most-recent-writes, since subsequent
-      // field
-      // writes (if any) are not guaranteed to be executed.
+      // Clear state that cannot cross exceptional control flow edges.
       if (instanceGet.instructionInstanceCanThrow(appView, method)) {
         activeState.clearMostRecentFieldWrites();
+        activeState.clearMostRecentInitClass();
       } else {
         activeState.clearMostRecentInstanceFieldWrite(field.getReference());
       }
@@ -900,9 +905,10 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       activeState.removeNonFinalInstanceFields(field.getReference());
 
       // If the instruction can throw, we can't use any previous field stores for store-after-store
-      // elimination.
+      // elimination or redundant init-class elimination.
       if (instancePut.instructionInstanceCanThrow(appView, method)) {
         activeState.clearMostRecentFieldWrites();
+        activeState.clearMostRecentInitClass();
       }
 
       // Update the value of the field to allow redundant load elimination.

@@ -72,6 +72,10 @@ public abstract class SingleValue extends AbstractValue implements InstanceField
   public abstract boolean isMaterializableInAllContexts(
       AppView<? extends AppInfoWithLiveness> appView);
 
+  public boolean materializationMayHaveSideEffects(AppView<?> appView, ProgramMethod context) {
+    return false;
+  }
+
   @Override
   public abstract SingleValue rewrittenWithLens(
       AppView<AppInfoWithLiveness> appView, DexType newType, GraphLens lens, GraphLens codeLens);

@@ -1216,7 +1216,15 @@ const ReportApp = {
       toggleBlockedByRuleCb: getById("toggle-blocked-by-rule-cb"),
     };
   },
-  populateHeaderInfo() {},
+  populateHeaderInfo() {
+    if (App.keepRadiusData?.title) {
+      document.title = App.keepRadiusData.title;
+      const headerLink = document.getElementById("header-link");
+      if (headerLink) {
+        headerLink.textContent = App.keepRadiusData.title;
+      }
+    }
+  },
   /**
    * Initializes all filters (Variants, Modules, etc.)
    */
@@ -2026,7 +2034,7 @@ const ReportApp = {
     `;
     if (module) {
       // Drilled Down Path
-      html += `<span class="${linkClass}" data-action="reset">R8 Optimization Levels</span>`;
+      html += `<span class="${linkClass}" data-action="reset">Optimization Levels</span>`;
       html += sep;
       if (pkg) {
         html += `<span class="${linkClass}" data-action="module" data-val="${escapeHTML(module)}">${escapeHTML(module)}</span>`;
@@ -2037,12 +2045,12 @@ const ReportApp = {
       }
     } else {
       // Global View
-      html = `<span class="${textClass}">R8 Optimization Levels</span>`;
+      html = `<span class="${textClass}">Optimization Levels</span>`;
     }
 
     const subtextHtml = `
       <div style="font-size: 0.75rem; color: var(--text-gray-500); font-weight: 400; margin-top: 0.25rem; text-transform: none; letter-spacing: normal; padding: 0rem 0.5rem;">
-        The percentage of your app’s codebase that R8 is allowed to shrink, optimize, and obfuscate. Achieving a higher percentage indicates a leaner, more performant application. The percentage here reflects the initial evaluation of the keep rules before optimizations. Although this percentage will change after further optimization, it is a very good proxy for analyzing the impact of keep rules. For the final percentage after all optimizations, build your app bundle, and see r8.json.
+        The percentage of your app’s codebase that the compiler is allowed to shrink, optimize, and obfuscate. Achieving a higher percentage indicates a leaner, more performant application. The percentage here reflects the initial evaluation of the keep rules before optimizations. Although this percentage will change after further optimization, it is a very good proxy for analyzing the impact of keep rules. For the final percentage after all optimizations, build your app bundle, and see r8.json.
       </div>
     `;
     bc.style.display = "flex";
@@ -2078,6 +2086,7 @@ const ReportApp = {
     });
   },
   render() {
+    this.populateHeaderInfo();
     this.updateBreadcrumbs();
     if (this.state.currentView === CONSTANTS.VIEWS.FILE_DETAILS) {
       App.renderFileDetailsView(this.state.drillContext.fileOriginId);

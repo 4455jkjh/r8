@@ -65,7 +65,6 @@ public class DebugByteCodeWriterTest {
         0,
         new HashMap<>(),
         StartupProfile.empty(),
-        null,
         Timing.empty());
   }
 

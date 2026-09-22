@@ -80,9 +80,12 @@ dependencies {
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":third_party", "jdwpTests"))
+  runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->
     partialTestClassesScope(project(childProject.path, "partialTestClasses"))
+    runtimeOnlyData(project(childProject.path, "runtimeOnlyDataElements"))
   }
   implementation(libs.playwright)
 }
@@ -233,6 +236,7 @@ subprojects {
     add("implementation", project(":keepanno", "keepannoClasses"))
     add("implementation", project(":testbase"))
     add("implementation", project(":testbase", "depsJar"))
+    runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   }
 
   tasks.withType<JavaCompile> { dependsOn(sharedDepsConfig) }

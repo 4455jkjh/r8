@@ -39,6 +39,9 @@ val sharedTestDepsConfig by
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
   sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
+  // Declare local runtime dependencies.
+  runtimeOnlyData(project(":third_party", "dependenciesBucket"))
+  runtimeOnlyData(project(":third_party", "jdwpTests"))
 }
 
 dependencies {

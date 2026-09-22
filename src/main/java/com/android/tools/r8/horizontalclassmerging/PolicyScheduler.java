@@ -37,6 +37,7 @@ import com.android.tools.r8.horizontalclassmerging.policies.NoKeepRules;
 import com.android.tools.r8.horizontalclassmerging.policies.NoKotlinMetadata;
 import com.android.tools.r8.horizontalclassmerging.policies.NoMethodHandleFromLambda;
 import com.android.tools.r8.horizontalclassmerging.policies.NoNativeMethods;
+import com.android.tools.r8.horizontalclassmerging.policies.NoReachabilitySensitive;
 import com.android.tools.r8.horizontalclassmerging.policies.NoRecords;
 import com.android.tools.r8.horizontalclassmerging.policies.NoResourceClasses;
 import com.android.tools.r8.horizontalclassmerging.policies.NoServiceLoaders;
@@ -169,6 +170,7 @@ public class PolicyScheduler {
         new NoInstanceFieldAnnotations(),
         new NoKotlinMetadata(),
         new NoNativeMethods(),
+        new NoReachabilitySensitive(),
         new NoServiceLoaders(appView),
         new NoRecords());
   }

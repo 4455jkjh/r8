@@ -29,6 +29,7 @@ dependencies {
   implementation(project(":main", "turboClassesOutput"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
 }
 
 tasks {

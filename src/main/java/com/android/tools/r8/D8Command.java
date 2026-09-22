@@ -580,10 +580,11 @@ public final class D8Command extends BaseCompilerCommand {
             new InternalGlobalSyntheticsProgramProvider(globalSyntheticsResourceProviders));
       }
 
-      // If compiling to CF with --no-desugaring then the target API is B for consistency with R8.
+      // If compiling to CF with --no-desugaring then the target API is the default for consistency
+      // with R8.
       var minApiLevel =
           programConsumer instanceof ClassFileConsumer && getDisableDesugaring()
-              ? AndroidApiLevel.B.asUnchecked()
+              ? AndroidApiLevel.getDefault().asUnchecked()
               : getUncheckedMinApiLevel();
 
       GlobalSyntheticsConsumer globalConsumer =

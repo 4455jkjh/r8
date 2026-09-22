@@ -229,4 +229,6 @@ message KeepRadiusContainer {
 
   // Build info.
   BuildInfo build_info = 15;
+
+  string title = 16;
 }

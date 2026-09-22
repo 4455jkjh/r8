@@ -296,9 +296,11 @@ public class CfFrameVerifier {
   private CfFrameState checkTarget(
       CfFrameState state, CfLabel label, Map<CfLabel, CfFrame> labelToFrameMap) {
     CfFrame destinationFrame = labelToFrameMap.get(label);
-    return destinationFrame != null
-        ? state.checkLocals(config, destinationFrame).checkStack(config, destinationFrame)
-        : CfFrameState.error("No destination frame");
+    if (destinationFrame != null) {
+      eventConsumer.acceptInstructionState(destinationFrame, state);
+      return state.checkLocals(config, destinationFrame).checkStack(config, destinationFrame);
+    }
+    return CfFrameState.error("No destination frame");
   }
 
   private TraversalContinuation<CfCodeDiagnostics, CfFrameState> computeInitialState() {

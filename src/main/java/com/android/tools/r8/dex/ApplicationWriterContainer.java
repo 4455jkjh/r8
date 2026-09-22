@@ -18,6 +18,7 @@ import com.android.tools.r8.dex.FileWriter.MapItem;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ObjectToOffsetMapping;
+import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.BitUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -60,7 +61,7 @@ class ApplicationWriterContainer extends ApplicationWriter {
     timing.begin("Write non container virtual files");
     for (VirtualFile virtualFile : virtualFilesOutsideContainer) {
       timing.begin("VirtualFile " + virtualFile.getId());
-      writeVirtualFile(virtualFile, timing, forcedStrings);
+      writeVirtualFile(virtualFile, timing, forcedStrings, StartupProfile::empty);
       timing.end();
     }
     timing.end();
@@ -249,7 +250,13 @@ class ApplicationWriterContainer extends ApplicationWriter {
       int offset,
       boolean includeStringData) {
     FileWriter fileWriter =
-        new FileWriter(appView, dexOutputBuffer, objectMapping, virtualFile, includeStringData);
+        new FileWriter(
+            appView,
+            dexOutputBuffer,
+            objectMapping,
+            virtualFile,
+            StartupProfile::empty,
+            includeStringData);
     // Collect the non-fixed sections.
     timing.time("collect", fileWriter::collect);
     // Generate and write the bytes.
