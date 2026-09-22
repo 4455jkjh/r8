@@ -729,9 +729,7 @@ public class IRConverter {
 
     if (devirtualizer != null) {
       assert code.verifyTypes(appView);
-      timing.begin("Devirtualize invoke interface");
-      devirtualizer.devirtualizeInvokeInterface(code);
-      timing.end();
+      devirtualizer.run(code, methodProcessor, methodProcessingContext, timing);
       previous = printMethod(code, "IR after devirtualizer (SSA)", previous);
     }
 
