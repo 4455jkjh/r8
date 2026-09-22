@@ -462,21 +462,21 @@ public class TestConfigurationHelper {
         )
       }
 
+      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
       val userDefinedCoresPerFork = System.getenv("R8_GRADLE_CORES_PER_FORK")
       val processors = Runtime.getRuntime().availableProcessors()
       // See https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html.
       if (!userDefinedCoresPerFork.isNullOrEmpty()) {
-        test.maxParallelForks = processors.div(userDefinedCoresPerFork.toInt())
+        test.maxParallelForks = maxOf(processors.div(userDefinedCoresPerFork.toInt()), 1)
+      } else if (isCiServer || processors <= 48) {
+        test.maxParallelForks = maxOf(processors.div(2), 1)
       } else {
         // On work machines this seems to give the best test execution time (without freezing).
         test.maxParallelForks = maxOf(processors.div(8), 1)
-        // On low cpu count machines (bots) we under subscribe, so increase the count.
-        if (processors == 32) {
-          test.maxParallelForks = 15
-        }
       }
+      val activeProcessorsPerFork = maxOf(processors.div(test.maxParallelForks), 4)
+      test.jvmArgs("-XX:ActiveProcessorCount=$activeProcessorsPerFork")
 
-      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
       val retry = test.extensions.getByType(TestRetryTaskExtension::class.java)
       if (isCiServer) {
         retry.maxRetries.set(2)
