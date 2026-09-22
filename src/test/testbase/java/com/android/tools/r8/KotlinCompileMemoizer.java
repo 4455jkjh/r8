@@ -4,13 +4,14 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompiler;
+import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinCompilerTool.KotlinLambdaGeneration;
 import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -20,11 +21,15 @@ public class KotlinCompileMemoizer {
 
   static class CompilerConfigurationKey {
 
+    private final KotlinCompilerVersion compilerVersion;
     private final KotlinTargetVersion targetVersion;
     private final KotlinLambdaGeneration lambdaGeneration;
 
     private CompilerConfigurationKey(
-        KotlinTargetVersion targetVersion, KotlinLambdaGeneration lambdaGeneration) {
+        KotlinCompilerVersion compilerVersion,
+        KotlinTargetVersion targetVersion,
+        KotlinLambdaGeneration lambdaGeneration) {
+      this.compilerVersion = compilerVersion;
       this.targetVersion = targetVersion;
       this.lambdaGeneration = lambdaGeneration;
     }
@@ -38,12 +43,14 @@ public class KotlinCompileMemoizer {
         return false;
       }
       CompilerConfigurationKey other = (CompilerConfigurationKey) o;
-      return targetVersion == other.targetVersion && lambdaGeneration == other.lambdaGeneration;
+      return compilerVersion == other.compilerVersion
+          && targetVersion == other.targetVersion
+          && lambdaGeneration == other.lambdaGeneration;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(targetVersion, lambdaGeneration);
+      return Objects.hash(compilerVersion, targetVersion, lambdaGeneration);
     }
   }
 
@@ -52,8 +59,7 @@ public class KotlinCompileMemoizer {
   private final TemporaryFolder temporaryFolder;
 
   private Consumer<KotlinCompilerTool> kotlinCompilerToolConsumer = x -> {};
-  private final Map<KotlinCompiler, Map<CompilerConfigurationKey, Path>> compiledPaths =
-      new IdentityHashMap<>();
+  private final Map<CompilerConfigurationKey, Path> compiledPaths = new HashMap<>();
 
   public KotlinCompileMemoizer(Collection<Path> sources) {
     this(sources, CfRuntime.getCheckedInJdk9(), null);
@@ -82,13 +88,9 @@ public class KotlinCompileMemoizer {
       KotlinCompiler compiler,
       KotlinTargetVersion targetVersion,
       KotlinLambdaGeneration lambdaGeneration) {
-    Map<CompilerConfigurationKey, Path> kotlinTargetVersionPathMap = compiledPaths.get(compiler);
-    if (kotlinTargetVersionPathMap == null) {
-      kotlinTargetVersionPathMap = new IdentityHashMap<>();
-      compiledPaths.put(compiler, kotlinTargetVersionPathMap);
-    }
-    return kotlinTargetVersionPathMap.computeIfAbsent(
-        new CompilerConfigurationKey(targetVersion, lambdaGeneration),
+    return compiledPaths.computeIfAbsent(
+        new CompilerConfigurationKey(
+            compiler.getCompilerVersion(), targetVersion, lambdaGeneration),
         ignored -> {
           try {
             KotlinCompilerTool kotlinc =
