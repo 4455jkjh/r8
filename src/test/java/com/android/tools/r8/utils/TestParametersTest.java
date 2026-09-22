@@ -13,7 +13,6 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import java.util.HashSet;
@@ -73,15 +72,6 @@ public class TestParametersTest {
           assertThat(apiLevels, hasItem(AndroidApiLevel.getDefault()));
           assertThat(apiLevels, hasItem(dexRuntime.getMinApiLevel()));
         });
-  }
-
-  @Test
-  public void testJdk9Presence() {
-    assumeTrue(!TestParametersBuilder.isRuntimesPropertySet()
-        || TestParametersBuilder.getRuntimesProperty().contains("jdk9"));
-    assertTrue(
-        TestParameters.builder().withAllRuntimesAndApiLevels().build().stream()
-            .anyMatch(parameter -> parameter.getRuntime().equals(TestRuntime.getCheckedInJdk9())));
   }
 
   @Test

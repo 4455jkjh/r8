@@ -45,7 +45,7 @@ public class RedundantJumboStringTest extends SmaliTestBase {
         "    return v0");
     smaliBuilder.addMainMethod(0, "    return-void");
 
-    testForD8(parameters.getBackend())
+    testForD8(parameters)
         .addProgramDexFileData(smaliBuilder.compile())
         .release()
         .run(parameters.getRuntime(), DEFAULT_CLASS_NAME)
