@@ -245,7 +245,6 @@ public final class ClassInliner {
         try (Timing t0 = timing.begin("Restore consistent SSA")) {
           code.removeAllDeadAndTrivialPhis(affectedValues);
           affectedValues.narrowingWithAssumeRemoval(appView, code);
-          assert code.isConsistentSSAAllowingRedundantBlocks(appView);
           rootsIterator.remove();
           repeat = true;
         }
@@ -266,6 +265,7 @@ public final class ClassInliner {
     }
 
     if (anyInlinedMethods) {
+      assert code.isConsistentSSAAllowingRedundantBlocks(appView);
       // If a method was inlined we may be able to remove check-cast instructions because we may
       // have more information about the types of the arguments at the call site. This is
       // particularly important for bridge methods.

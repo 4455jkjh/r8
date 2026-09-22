@@ -1184,8 +1184,6 @@ public class Inliner {
     classInitializationAnalysis.finish();
     code.removeAllDeadAndTrivialPhis(affectedValues);
     affectedValues.narrowingWithAssumeRemoval(appView, code);
-    assert code.isConsistentSSAAllowingRedundantBlocks(appView);
-    new R8MemberValuePropagation(appView).run(code);
   }
 
   private void inlineInvokes(

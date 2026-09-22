@@ -703,6 +703,10 @@ public class IRConverter {
       timing.end();
       assert code.verifyTypes(appView);
       previous = printMethod(code, "IR after inlining (SSA)", previous);
+      timing.begin("Propagate member values");
+      memberValuePropagation.run(code);
+      timing.end();
+      previous = printMethod(code, "IR after member-value propagation (SSA)", previous);
     }
 
     if (appView.appInfo().hasLiveness()) {
