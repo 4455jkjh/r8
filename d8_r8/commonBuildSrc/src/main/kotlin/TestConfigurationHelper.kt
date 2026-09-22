@@ -213,6 +213,10 @@ public class TestConfigurationHelper {
       }
     }
 
+    private fun classUsesBenchmarkConfigs(baseName: String): Boolean =
+      baseName.startsWith("com/android/tools/r8/benchmarks/") ||
+        baseName.startsWith("com/android/tools/r8/internal/benchmarks/")
+
     public fun setupTestTask(
       test: Test,
       isR8Lib: Boolean,
@@ -241,6 +245,9 @@ public class TestConfigurationHelper {
           )
         }
         println("NOTE: Running shard $shardNumber of $shardCount")
+        test.systemProperty("shard_count", shardCount.toString())
+        test.systemProperty("shard_number", shardNumber.toString())
+        val usesRuntimeSharding = !project.hasProperty("runtimes")
         test.exclude { element ->
           if (element.isDirectory) return@exclude false
           val path = element.path
@@ -248,6 +255,9 @@ public class TestConfigurationHelper {
           // We use the class name (path) to determine the shard.
           // Inner classes (e.g., MyTest$1.class) must fall into the same shard as the main class.
           val baseName = path.substringBefore("$").substringBefore(".class")
+          if (usesRuntimeSharding && classUsesBenchmarkConfigs(baseName)) {
+            return@exclude false
+          }
           Math.floorMod(baseName.hashCode(), shardCount) != shardNumber
         }
       }

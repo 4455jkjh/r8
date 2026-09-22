@@ -557,30 +557,13 @@ def perf_size():
 
 perf_size()
 
-presubmit_testers = [
-    "linux-default",
-    "linux-none",
-    "linux-jdk8",
-    "linux-jdk11",
-    "linux-jdk17",
-    "linux-jdk21",
-    "linux-jdk25",
-    "linux-android-4.0",
-    "linux-android-4.4",
-    "linux-android-5",
-    "linux-android-6",
-    "linux-android-7",
-    "linux-android-8",
-    "linux-android-9",
-    "linux-android-10",
-    "linux-android-12",
-    "linux-android-13",
-    "linux-android-14",
-    "linux-android-15",
-    "linux-android-16",
-    "linux-android-17",
-    "linux-perf-size",
-]
+r8_tester_with_default(
+    "linux-all",
+    ["--runtimes=all", "--all_tests", "--command_cache_dir=.ccache"],
+    bucket = "try",
+    trigger = False,
+    dimensions = get_dimensions(tester = True),
+)
 
 r8_tester_with_default(
     "presubmit",
@@ -590,8 +573,8 @@ r8_tester_with_default(
     dimensions = get_dimensions(coordinator = True),
     execution_timeout = 12 * time.hour,
     extra_properties = {
-        "testers": presubmit_testers,
-        "shard_count": 1,
+        "testers": ["linux-all", "linux-perf-size"],
+        "shard_count": 20,
     },
 )
 
