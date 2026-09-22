@@ -71,21 +71,16 @@ public class KeptPackagePrivateInnerAnnotationTest extends TestBase {
               // Top-level ClassFile access_flags remains package-private because Skip is kept.
               assertThat(skipSubject, isPackagePrivate());
 
-              // However, AccessModifier unconditionally promoted the InnerClassAttribute to public.
+              // InnerClassAttribute also remains package-private because Skip is kept.
               InnerClassAttribute innerClassAttribute =
                   skipSubject.getDexProgramClass().getInnerClassAttributeForThisClass();
               assertNotNull(innerClassAttribute);
               ClassAccessFlags innerAccessFlags =
                   ClassAccessFlags.fromSharedAccessFlags(innerClassAttribute.getAccess());
-              assertTrue(innerAccessFlags.isPublic());
+              assertFalse(innerAccessFlags.isPublic());
             })
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isCfRuntime(),
-            r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class),
-            // On ART, Class.getModifiers() also returns true (from the Dalvik InnerClass
-            // annotation), but ART's Proxy generator does not fail when defining the proxy.
-            r -> r.assertSuccessWithOutputLines("isPublic=true", "isSkippable=true"));
+        .assertSuccessWithOutputLines("isPublic=false", "isSkippable=true");
   }
 
   @Test
@@ -128,7 +123,7 @@ public class KeptPackagePrivateInnerAnnotationTest extends TestBase {
                 InnerClassAttribute skipAttrOnOuter =
                     getInnerClassAttribute(outerSubject, skipSubject);
                 assertNotNull(skipAttrOnOuter);
-                assertFalse(
+                assertTrue(
                     ClassAccessFlags.fromSharedAccessFlags(skipAttrOnOuter.getAccess()).isPublic());
               }
             })
