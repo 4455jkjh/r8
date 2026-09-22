@@ -54,6 +54,7 @@ public class ProtoReferences {
   public final DexString findLiteExtensionByNumberName;
   public final DexString newBuilderMethodName;
   public final DexString findValueByNumberName;
+  public final DexString getNumberMethodName;
 
   public final DexString protobufPackageDescriptorPrefix;
 
@@ -103,6 +104,7 @@ public class ProtoReferences {
     findLiteExtensionByNumberName = factory.createString("findLiteExtensionByNumber");
     newBuilderMethodName = factory.createString("newBuilder");
     findValueByNumberName = factory.createString("findValueByNumber");
+    getNumberMethodName = factory.createString("getNumber");
 
     // Other names.
     protobufPackageDescriptorPrefix = factory.createString("Lcom/google/protobuf/");

@@ -373,4 +373,12 @@ public class DexMethod extends DexMember<DexEncodedMethod, DexMethod> {
   public DexMethod withReturnType(DexType returnType, DexItemFactory dexItemFactory) {
     return withProto(getProto().withReturnType(returnType, dexItemFactory), dexItemFactory);
   }
+
+  public DexMethod withHolderAndName(
+      DexReference reference, DexString name, DexItemFactory dexItemFactory) {
+    DexType newHolder = reference.getContextType();
+    return newHolder.isIdenticalTo(holder) && name.isIdenticalTo(this.name)
+        ? this
+        : dexItemFactory.createMethod(newHolder, proto, name);
+  }
 }

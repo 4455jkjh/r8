@@ -35,6 +35,7 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
+import com.android.tools.r8.ir.analysis.proto.LargeProtoEnumRewriter;
 import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
@@ -328,6 +329,9 @@ public class R8 {
         MainDexListBuilder.checkForAssumedLibraryTypes(appView.appInfo());
       }
       DesugaredLibraryAmender.run(appView);
+      if (options.protoShrinking().isLargeProtoEnumRewritingEnabled()) {
+        LargeProtoEnumRewriter.run(appView, executorService, timing);
+      }
       InterfaceMethodRewriter.checkForAssumedLibraryTypes(appView.appInfo(), options);
       BackportedMethodRewriter.registerAssumedLibraryTypes(options);
       if (options.enableEnumUnboxing) {

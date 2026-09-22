@@ -382,6 +382,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     protoShrinking.enableGeneratedMessageLiteBuilderShrinking = true;
     protoShrinking.enableGeneratedExtensionRegistryShrinking = true;
     protoShrinking.enableEnumLiteProtoShrinking = true;
+    protoShrinking.enableLargeProtoEnumRewriting = true;
   }
 
   void disableAllOptimizations() {
@@ -2284,6 +2285,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // Breaks the Chrome build if this is not enabled because of MethodToInvoke switchMaps.
     // See b/174530756 for more details.
     public boolean enableProtoEnumSwitchMapShrinking = true;
+    public boolean enableLargeProtoEnumRewriting = false;
 
     public void disable() {
       enableGeneratedExtensionRegistryShrinking = false;
@@ -2307,6 +2309,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     @SuppressWarnings("ReferenceEquality")
     public boolean isEnumLiteProtoShrinkingEnabled() {
       return enableEnumLiteProtoShrinking;
+    }
+
+    public boolean isLargeProtoEnumRewritingEnabled() {
+      return enableLargeProtoEnumRewriting;
     }
 
     @SuppressWarnings("ReferenceEquality")
