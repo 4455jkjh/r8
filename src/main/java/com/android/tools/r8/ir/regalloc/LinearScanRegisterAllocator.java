@@ -18,9 +18,9 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Add;
 import com.android.tools.r8.ir.code.And;
 import com.android.tools.r8.ir.code.Argument;
-import com.android.tools.r8.ir.code.ArithmeticBinop;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockInstructionListIterator;
+import com.android.tools.r8.ir.code.Binop;
 import com.android.tools.r8.ir.code.CheckCast;
 import com.android.tools.r8.ir.code.DebugLocalWrite;
 import com.android.tools.r8.ir.code.DebugLocalsChange;
@@ -1447,8 +1447,8 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   }
 
   /*
-   * This method tries to promote arithmetic binary instruction to use the 2Addr form.
-   * To achieve this goal the output interval of the binary instruction is set with an hint
+   * This method tries to promote arithmetic and logical binary instructions to use the 2Addr form.
+   * To achieve this goal the output interval of the binary instruction is set with a hint
    * that is the left interval or the right interval if possible when intervals do not overlap.
    */
   private void setHintToPromote2AddrInstruction(LiveIntervals unhandledInterval) {
@@ -1456,8 +1456,8 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       return;
     }
     Value value = unhandledInterval.getValue();
-    if (value.isDefinedByInstructionSatisfying(Instruction::isArithmeticBinop)) {
-      ArithmeticBinop binop = value.getDefinition().asArithmeticBinop();
+    if (value.isDefinedByInstructionSatisfying(i -> i.isArithmeticBinop() || i.isLogicalBinop())) {
+      Binop binop = value.getDefinition().asBinop();
       Value left = binop.leftValue();
       if (left.getLiveIntervals() != null && !left.getLiveIntervals().overlaps(unhandledInterval)) {
         unhandledInterval.setHint(left.getLiveIntervals(), unhandled);
