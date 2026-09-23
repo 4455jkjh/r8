@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.redex;
 
-import static com.android.tools.r8.utils.codeinspector.AssertUtils.assertFailsCompilation;
 import static org.junit.Assert.assertNull;
 
 import com.android.tools.r8.CompilationMode;
@@ -40,14 +39,9 @@ public class NativeDebugPreservationTest extends TestBase {
 
   @Test
   public void testMapOutput() throws Exception {
-    assertFailsCompilation(
-        () ->
-            runTest(
-                testForD8(Backend.DEX)
-                    .apply(
-                        b ->
-                            b.getBuilder()
-                                .setProguardMapConsumer(StringConsumer.emptyConsumer()))));
+    runTest(
+        testForD8(Backend.DEX)
+            .apply(b -> b.getBuilder().setProguardMapConsumer(StringConsumer.emptyConsumer())));
   }
 
   public void runTest(D8TestBuilder d8Builder) throws Exception {

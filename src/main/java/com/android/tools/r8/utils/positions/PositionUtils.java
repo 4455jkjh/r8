@@ -49,7 +49,7 @@ public class PositionUtils {
     }
     // Otherwise debug info is only needed for code sequences with at least one position.
     DexDebugInfo debugInfo = code.getDebugInfo();
-    if (debugInfo == null) {
+    if (debugInfo == null || debugInfo.isNativePcBasedInfo()) {
       return false;
     }
     if (debugInfo.isPcBasedInfo()) {
