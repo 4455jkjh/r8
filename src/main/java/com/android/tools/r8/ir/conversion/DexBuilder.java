@@ -1349,7 +1349,7 @@ public class DexBuilder {
       int delta;
       if (maxTargetOffset < maxOffset) {
         // Backward branch: compute exact size (the target offset is set).
-        delta = getOffset() - targetInfo.getOffset();
+        delta = getOffset() - targetInfo.getOffset() - 1;
       } else {
         // Forward branch: over estimate the distance, but take into account the sizes
         // of instructions generated so far. That way the over estimation is only for the
