@@ -546,6 +546,7 @@ def perf_size():
             category = "perf",
             dimensions = get_dimensions(tester = True),
             trigger = bucket == "ci",
+            priority = 25 if bucket == "try" else 20,
             max_concurrent_invocations = 2,
             execution_timeout = time.minute * 30,
             expiration_timeout = time.hour * 35,
