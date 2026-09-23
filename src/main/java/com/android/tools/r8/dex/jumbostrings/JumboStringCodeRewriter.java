@@ -314,6 +314,9 @@ public class JumboStringCodeRewriter {
           AdvancePC advance = (AdvancePC) event;
           lastOriginalOffset += advance.delta;
           DexInstruction target = debugEventTargets.get(lastOriginalOffset);
+          if (target == null) {
+            break;
+          }
           int pcDelta = target.getOffset() - lastNewOffset;
           events.add(factory.createAdvancePC(pcDelta));
           lastNewOffset = target.getOffset();
@@ -321,6 +324,9 @@ public class JumboStringCodeRewriter {
           Default defaultEvent = (Default) event;
           lastOriginalOffset += defaultEvent.getPCDelta();
           DexInstruction target = debugEventTargets.get(lastOriginalOffset);
+          if (target == null) {
+            break;
+          }
           int lineDelta = defaultEvent.getLineDelta();
           int pcDelta = target.getOffset() - lastNewOffset;
           addDefaultEventWithAdvancePcIfNecessary(lineDelta, pcDelta, events, factory);
@@ -610,7 +616,8 @@ public class JumboStringCodeRewriter {
     }
   }
 
-  private void recordDebugEventTargets(Int2ReferenceMap<DexInstruction> offsetToInstruction) {
+  private void recordDebugEventTargets(
+      Int2ReferenceMap<DexInstruction> offsetToInstruction, DexInstruction lastInstruction) {
     EventBasedDebugInfo eventBasedInfo = DexDebugInfo.convertToEventBased(getCode(), factory);
     if (eventBasedInfo == null) {
       if (materializeInfoForNativePc.getAsBoolean()) {
@@ -628,13 +635,19 @@ public class JumboStringCodeRewriter {
         AdvancePC advance = (AdvancePC) event;
         address += advance.delta;
         DexInstruction target = offsetToInstruction.get(address);
-        assert target != null;
+        if (target == null) {
+          assert address > lastInstruction.getOffset();
+          break;
+        }
         debugEventTargets.put(address, target);
       } else if (event instanceof Default) {
         Default defaultEvent = (Default) event;
         address += defaultEvent.getPCDelta();
         DexInstruction target = offsetToInstruction.get(address);
-        assert target != null;
+        if (target == null) {
+          assert address > lastInstruction.getOffset();
+          break;
+        }
         debugEventTargets.put(address, target);
       }
     }
@@ -697,9 +710,9 @@ public class JumboStringCodeRewriter {
         }
       }
     }
-    recordInstructionTargets(offsetToInstruction);
-    recordDebugEventTargets(offsetToInstruction);
     DexInstruction lastInstruction = instructions[instructions.length - 1];
+    recordInstructionTargets(offsetToInstruction);
+    recordDebugEventTargets(offsetToInstruction, lastInstruction);
     recordTryAndHandlerTargets(offsetToInstruction, lastInstruction);
   }
 }
