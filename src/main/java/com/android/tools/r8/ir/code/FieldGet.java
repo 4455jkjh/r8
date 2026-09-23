@@ -25,13 +25,9 @@ public interface FieldGet extends InstructionOrValue {
 
   boolean isStaticGet();
 
-  StaticGet asStaticGet();
-
   boolean hasUsedOutValue();
 
   Value outValue();
-
-  void removeOrReplaceByDebugLocalRead();
 
   FieldResolutionResult resolveField(
       AppView<? extends AppInfoWithClassHierarchy> appView, ProgramMethod context);
