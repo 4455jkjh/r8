@@ -9,6 +9,7 @@ import com.android.tools.r8.KotlinCompilerTool.KotlinLambdaGeneration;
 import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
@@ -88,10 +89,13 @@ public class KotlinCompileMemoizer {
       KotlinCompiler compiler,
       KotlinTargetVersion targetVersion,
       KotlinLambdaGeneration lambdaGeneration) {
-    return compiledPaths.computeIfAbsent(
+    return compiledPaths.compute(
         new CompilerConfigurationKey(
             compiler.getCompilerVersion(), targetVersion, lambdaGeneration),
-        ignored -> {
+        (ignored, existingPath) -> {
+          if (existingPath != null && Files.exists(existingPath)) {
+            return existingPath;
+          }
           try {
             KotlinCompilerTool kotlinc =
                 temporaryFolder == null
