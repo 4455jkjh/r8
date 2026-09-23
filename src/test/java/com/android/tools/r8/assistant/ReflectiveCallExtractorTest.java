@@ -7,6 +7,7 @@ import static com.android.tools.r8.assistant.ReflectiveCallExtractor.extractRefl
 import static com.android.tools.r8.assistant.ReflectiveCallExtractor.printMethods;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -40,7 +41,7 @@ public class ReflectiveCallExtractorTest extends TestBase {
 
   @Test
   public void testGson() throws Exception {
-    test(ToolHelper.GSON, 20, 8);
+    test(TestDeps.getGsonJar(), 20, 8);
   }
 
   @Test

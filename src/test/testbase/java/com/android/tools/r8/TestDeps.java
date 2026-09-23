@@ -42,6 +42,7 @@ public class TestDeps {
     dependencies = new HashMap<>();
     dependencies.put("CORE_LAMBDA_STUBS", null);
     dependencies.put("DEPENDENCIES", null);
+    dependencies.put("GSON", null);
     dependencies.put("JDWP_TESTS", null);
   }
 
@@ -51,6 +52,14 @@ public class TestDeps {
 
   public static Path getCoreLambdaStubsJar() {
     return getDependencyPath("CORE_LAMBDA_STUBS", "core-lambda-stubs.jar");
+  }
+
+  public static Path getGsonJar() {
+    return getDependencyPath("GSON", "gson-2.10.1.jar");
+  }
+
+  public static Path getGsonKeepRules() {
+    return getDependencyPath("GSON", "gson.pro");
   }
 
   public static Path getJunitJar() {

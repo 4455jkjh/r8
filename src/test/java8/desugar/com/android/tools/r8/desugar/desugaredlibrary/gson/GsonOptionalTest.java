@@ -8,8 +8,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -56,7 +56,7 @@ public class GsonOptionalTest extends DesugaredLibraryTestBase {
     assumeTrue(libraryDesugaringSpecification.hasEmulatedInterfaceDesugaring(parameters));
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addProgramClassesAndInnerClasses(OptionalTestClass.class)
-        .addProgramFiles(ToolHelper.GSON)
+        .addProgramFiles(TestDeps.getGsonJar())
         .addKeepMainRule(OptionalTestClass.class)
         .addKeepRules(GSON_CONFIGURATION)
         .addKeepRules("-ignorewarnings")

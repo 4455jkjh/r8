@@ -59,6 +59,8 @@ registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencie
 
 registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
 
+registerTestDep("gson", ThirdPartyDeps.gson, "GSON")
+
 registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
 
 val internalTasks =

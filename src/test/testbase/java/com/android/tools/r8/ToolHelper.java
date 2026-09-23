@@ -252,11 +252,6 @@ public class ToolHelper {
   public static final Path JACOCO_ROOT = Paths.get(THIRD_PARTY_DIR, "jacoco", "0.8.6");
   public static final Path JACOCO_AGENT = JACOCO_ROOT.resolve(Paths.get("lib", "jacocoagent.jar"));
   public static final Path JACOCO_CLI = JACOCO_ROOT.resolve(Paths.get("lib", "jacococli.jar"));
-  public static final Path GSON =
-      Paths.get(THIRD_PARTY_DIR, "gson", "gson-2.10.1", "gson-2.10.1.jar");
-  // Currently Gson is still shipping without consumer keep rules.
-  public static final Path GSON_KEEP_RULES =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "gson", "gson-2.10.1", "gson.pro");
   public static final Path GUAVA_JRE =
       Paths.get(THIRD_PARTY_DIR, "guava", "guava-32.1.2-jre", "guava-32.1.2-jre.jar");
   public static final String PROGUARD_SETTINGS_FOR_INTERNAL_APPS =
