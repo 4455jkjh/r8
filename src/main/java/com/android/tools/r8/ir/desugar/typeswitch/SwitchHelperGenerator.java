@@ -271,7 +271,7 @@ public class SwitchHelperGenerator {
                         .setCode(
                             methodSig -> {
                               CfCode code = cfCodeGen.apply(methodSig);
-                              if (appView.options().hasMappingFileSupport()) {
+                              if (appView.options().shouldOutputMappingFile()) {
                                 return code.getCodeAsInlining(
                                     methodSig, true, context.getReference(), false, factory);
                               }

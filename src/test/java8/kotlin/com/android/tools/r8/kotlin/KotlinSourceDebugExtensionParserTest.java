@@ -55,8 +55,8 @@ public class KotlinSourceDebugExtensionParserTest extends TestBase {
         KotlinSourceDebugExtensionParser.parse(annotationData);
     assertNotNull(result);
     assertEquals(1, result.inlinePositionsCount());
-    assertEquals(1, (int) result.lookupInlinedPosition(1).getKey());
-    Position position = result.lookupInlinedPosition(1).getValue();
+    assertEquals(1, result.lookupInlinedPositionEntry(1).start);
+    Position position = result.lookupInlinedPosition(1);
     assertEquals("EnumSwitch.kt", position.getSource().getFileName());
     assertEquals("enumswitch/EnumSwitchKt", position.getSource().getPath());
     assertEquals(1, position.getRange().from);
@@ -97,20 +97,20 @@ public class KotlinSourceDebugExtensionParserTest extends TestBase {
         KotlinSourceDebugExtensionParser.parse(annotationData);
     assertNotNull(result);
     assertEquals(3, result.inlinePositionsCount());
-    assertEquals(1, (int) result.lookupInlinedPosition(1).getKey());
-    assertEquals(23, (int) result.lookupInlinedPosition(23).getKey());
-    assertEquals(24, (int) result.lookupInlinedPosition(24).getKey());
+    assertEquals(1, result.lookupInlinedPositionEntry(1).start);
+    assertEquals(23, result.lookupInlinedPositionEntry(23).start);
+    assertEquals(24, result.lookupInlinedPositionEntry(24).start);
 
     // Check that files are correctly parsed.
-    Position pos1 = result.lookupInlinedPosition(1).getValue();
+    Position pos1 = result.lookupInlinedPosition(1);
     assertEquals("Main.kt", pos1.getSource().getFileName());
     assertEquals("retrace/MainKt", pos1.getSource().getPath());
 
-    Position pos2 = result.lookupInlinedPosition(23).getValue();
+    Position pos2 = result.lookupInlinedPosition(23);
     assertEquals("InlineFunction.kt", pos2.getSource().getFileName());
     assertEquals("retrace/InlineFunctionKt", pos2.getSource().getPath());
 
-    Position pos3 = result.lookupInlinedPosition(24).getValue();
+    Position pos3 = result.lookupInlinedPosition(24);
     assertEquals("InlineFunction.kt", pos3.getSource().getFileName());
     assertEquals("retrace/InlineFunction", pos3.getSource().getPath());
 
@@ -318,8 +318,8 @@ public class KotlinSourceDebugExtensionParserTest extends TestBase {
     KotlinSourceDebugExtensionParserResult parsedResult =
         KotlinSourceDebugExtensionParser.parse(annotationData);
     assertNotNull(parsedResult);
-    assertEquals(24, (int) parsedResult.lookupInlinedPosition(25).getKey());
-    Position value = parsedResult.lookupInlinedPosition(25).getValue();
+    assertEquals(24, parsedResult.lookupInlinedPositionEntry(25).start);
+    Position value = parsedResult.lookupInlinedPosition(25);
     assertEquals(12, value.getRange().from);
     assertEquals(13, value.getRange().to);
   }

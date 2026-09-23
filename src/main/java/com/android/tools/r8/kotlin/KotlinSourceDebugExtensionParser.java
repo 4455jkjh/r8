@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.naming.Range;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
-import com.android.tools.r8.utils.internal.collections.SegmentTree;
+import com.android.tools.r8.utils.internal.collections.ImmutableDisjointIntRangeMap;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
@@ -172,7 +172,7 @@ public class KotlinSourceDebugExtensionParser {
         if (reader.isEOF()) {
           assert nextLine == null;
           return new KotlinSourceDebugExtensionParserResult(
-              inlineePositions.segmentTree, calleePositions.segmentTree);
+              inlineePositions.build(), calleePositions.build());
         }
         if (!nextLine.equals(SMAP_SECTION_KOTLIN_DEBUG_START)) {
           return null;
@@ -188,7 +188,7 @@ public class KotlinSourceDebugExtensionParser {
             "Unexpected EOF when parsing SMAP debug entries");
       }
       return new KotlinSourceDebugExtensionParserResult(
-          inlineePositions.segmentTree, calleePositions.segmentTree);
+          inlineePositions.build(), calleePositions.build());
     } catch (IOException | KotlinSourceDebugExtensionParserException e) {
       return null;
     }
@@ -296,9 +296,23 @@ public class KotlinSourceDebugExtensionParser {
         throw new KotlinSourceDebugExtensionParserException(
             "Could not find file with index " + fileIndex);
       }
-      Range range = new Range(originalStart, originalStart + (size - 1));
-      Position position = new Position(thisFileSource, range);
-      builder.segmentTree.add(target, target + (size - 1), position);
+      // https://jakarta.ee/specifications/debugging/2.0/jdsol-spec-2.0.pdf
+      // > Note that multiple LineInfo may map multiple input source lines to a single output source
+      // > line, when such a LineSection is being used to map output source lines to input source
+      // > lines, a first matching LineInfo rule applies.
+      //
+      // So entries should only add intervals where previous entries did not.
+      // `addUncoveredSubRanges` splits the interval into the sub-intervals not already covered.
+      builder.positions.addUncoveredSubRanges(
+          target,
+          target + (size - 1),
+          (subStart, subEnd) -> {
+            int delta = subStart - target;
+            int subSize = subEnd - subStart + 1;
+            int subOriginalStart = originalStart + delta;
+            Range subRange = new Range(subOriginalStart, subOriginalStart + (subSize - 1));
+            return new Position(thisFileSource, subRange);
+          });
     } catch (NumberFormatException e) {
       throw new KotlinSourceDebugExtensionParserException("Could not convert position to number");
     }
@@ -306,25 +320,30 @@ public class KotlinSourceDebugExtensionParser {
 
   public static class KotlinSourceDebugExtensionParserResult {
 
-    private final SegmentTree<Position> inlineePositions;
-    private final SegmentTree<Position> calleePositions;
+    private final ImmutableDisjointIntRangeMap<Position> inlineePositions;
+    private final ImmutableDisjointIntRangeMap<Position> calleePositions;
 
     public KotlinSourceDebugExtensionParserResult(
-        SegmentTree<Position> inlineePositions, SegmentTree<Position> calleePositions) {
+        ImmutableDisjointIntRangeMap<Position> inlineePositions,
+        ImmutableDisjointIntRangeMap<Position> calleePositions) {
       this.inlineePositions = inlineePositions;
       this.calleePositions = calleePositions;
     }
 
-    public SegmentTree<Position> getInlineePositions() {
+    public ImmutableDisjointIntRangeMap<Position> getInlineePositions() {
       return inlineePositions;
     }
 
-    public Map.Entry<Integer, Position> lookupInlinedPosition(int point) {
-      return inlineePositions.findEntry(point);
+    public ImmutableDisjointIntRangeMap.Entry<Position> lookupInlinedPositionEntry(int point) {
+      return inlineePositions.getEntry(point);
     }
 
-    public Map.Entry<Integer, Position> lookupCalleePosition(int point) {
-      return calleePositions.findEntry(point);
+    public Position lookupInlinedPosition(int point) {
+      return inlineePositions.get(point);
+    }
+
+    public Position lookupCalleePosition(int point) {
+      return calleePositions.get(point);
     }
 
     public int inlinePositionsCount() {
@@ -334,8 +353,13 @@ public class KotlinSourceDebugExtensionParser {
 
   public static class StratumBuilder {
 
-    SegmentTree<Position> segmentTree = new SegmentTree<>(false);
+    private final ImmutableDisjointIntRangeMap.Builder<Position> positions =
+        ImmutableDisjointIntRangeMap.builder();
     Map<Integer, Source> files = new HashMap<>();
+
+    public ImmutableDisjointIntRangeMap<Position> build() {
+      return positions.build();
+    }
   }
 
   public static class Source {

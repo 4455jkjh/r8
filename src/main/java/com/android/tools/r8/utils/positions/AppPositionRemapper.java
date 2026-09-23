@@ -5,8 +5,6 @@ package com.android.tools.r8.utils.positions;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.CfLineToMethodMapper;
 import com.android.tools.r8.utils.KotlinSourceDebugExtensionCollection;
 import com.android.tools.r8.utils.positions.ClassPositionRemapper.IdentityPositionRemapper;
 import com.android.tools.r8.utils.positions.ClassPositionRemapper.KotlinInlineFunctionAppPositionRemapper;
@@ -17,7 +15,7 @@ public interface AppPositionRemapper {
 
   ClassPositionRemapper createClassPositionRemapper(DexProgramClass clazz);
 
-  static AppPositionRemapper create(AppView<?> appView, AndroidApp inputApp, Timing timing) {
+  static AppPositionRemapper create(AppView<?> appView, Timing timing) {
     boolean identityMapping = appView.options().lineNumberOptimization.isOff();
     AppPositionRemapper positionRemapper =
         identityMapping
@@ -28,11 +26,7 @@ public interface AppPositionRemapper {
     // source debug extension annotation. Instantiate the kotlin remapper on top of the original
     // remapper to allow for remapping original positions to kotlin inline positions.
     var kotlinSourceDebugExtensions = KotlinSourceDebugExtensionCollection.create(appView, timing);
-    // For finding methods in Kotlin files based on SourceDebugExtensions, we use a line method map.
-    // We create it here to ensure it is only reading class files once.
-    var cfLineToMethodMapper =
-        CfLineToMethodMapper.create(inputApp, kotlinSourceDebugExtensions, timing);
     return new KotlinInlineFunctionAppPositionRemapper(
-        appView, positionRemapper, cfLineToMethodMapper, kotlinSourceDebugExtensions);
+        appView, positionRemapper, kotlinSourceDebugExtensions);
   }
 }

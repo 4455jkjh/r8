@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexClasspathClass;
 import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.profile.art.ArtProfileCollection;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.synthesis.CommittedSyntheticsCollection;
@@ -27,6 +28,7 @@ public class R8PartialD8Result {
   private final Collection<DexLibraryClass> outputLibraryClasses;
   private final StartupProfile startupProfile;
   private final CommittedSyntheticsCollection synthetics;
+  private final KotlinInlineMethodMap kotlinInlineMethodMap;
 
   public R8PartialD8Result(
       ArtProfileCollection artProfiles,
@@ -38,7 +40,8 @@ public class R8PartialD8Result {
       Collection<DexClasspathClass> outputClasspathClasses,
       Collection<DexLibraryClass> outputLibraryClasses,
       StartupProfile startupProfile,
-      CommittedSyntheticsCollection synthetics) {
+      CommittedSyntheticsCollection synthetics,
+      KotlinInlineMethodMap kotlinInlineMethodMap) {
     this.artProfiles = artProfiles;
     this.classToFeatureSplitMap = classToFeatureSplitMap;
     this.dexedClasses = dexedClasses;
@@ -49,6 +52,7 @@ public class R8PartialD8Result {
     this.outputLibraryClasses = outputLibraryClasses;
     this.startupProfile = startupProfile;
     this.synthetics = synthetics;
+    this.kotlinInlineMethodMap = kotlinInlineMethodMap;
   }
 
   public ArtProfileCollection getArtProfiles() {
@@ -89,5 +93,9 @@ public class R8PartialD8Result {
 
   public CommittedSyntheticsCollection getSynthetics() {
     return synthetics;
+  }
+
+  public KotlinInlineMethodMap getKotlinInlineMethodMap() {
+    return kotlinInlineMethodMap;
   }
 }

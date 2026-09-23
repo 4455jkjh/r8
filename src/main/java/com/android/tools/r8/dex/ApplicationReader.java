@@ -34,6 +34,7 @@ import com.android.tools.r8.graph.JarClassFileReader;
 import com.android.tools.r8.graph.LazyLoadedDexApplication;
 import com.android.tools.r8.graph.LazyLoadedDexApplication.AllClasses;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.shaking.MainDexInfo;
@@ -138,11 +139,15 @@ public class ApplicationReader {
       classReader.readSources();
       awaitReaderTaskCollection(tasks);
       flags = classReader.getDexApplicationReadFlags();
+      KotlinInlineMethodMap kotlinInlineMethodMap =
+          KotlinInlineMethodMap.create(
+              classReader.programClasses, options, factory, timing, executorService);
       return builder
           .addDataResourceProviders(inputApp.getProgramResourceProviders())
           .addProgramClasses(classReader.programClasses)
           .setFlags(flags)
           .setKeepDeclarations(classReader.getKeepDeclarations())
+          .setKotlinInlineMethodMap(kotlinInlineMethodMap)
           .build(timing);
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
@@ -187,6 +192,9 @@ public class ApplicationReader {
           ProgramClassCollection.resolveConflicts(classReader.programClasses, options));
       AllClasses allClasses = allClassesBuilder.build(options, timing);
       flags = classReader.getDexApplicationReadFlags();
+      KotlinInlineMethodMap kotlinInlineMethodMap =
+          KotlinInlineMethodMap.create(
+              allClasses.getProgramClasses(), options, factory, timing, executorService);
       return builder
           .addDataResourceProviders(inputApp.getProgramResourceProviders())
           .addProgramClasses(allClasses.getProgramClasses())
@@ -194,6 +202,7 @@ public class ApplicationReader {
           .replaceLibraryClasses(allClasses.getLibraryClasses())
           .setFlags(flags)
           .setKeepDeclarations(classReader.getKeepDeclarations())
+          .setKotlinInlineMethodMap(kotlinInlineMethodMap)
           .build(timing);
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);

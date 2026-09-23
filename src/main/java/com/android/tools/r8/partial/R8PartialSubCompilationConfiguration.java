@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.Target;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.LibraryDesugaringOptions;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.metadata.impl.R8PartialCompilationStatsMetadataBuilder;
 import com.android.tools.r8.profile.art.ArtProfile;
 import com.android.tools.r8.profile.art.ArtProfileCollection;
@@ -210,6 +211,7 @@ public abstract class R8PartialSubCompilationConfiguration {
     private StartupProfile startupProfile;
     private R8PartialCompilationStatsMetadataBuilder statsMetadataBuilder;
     private CommittedSyntheticsCollection synthetics;
+    private final KotlinInlineMethodMap kotlinInlineMethodMap;
 
     // Stores the missing class references from the D8 compilation unit in R8 partial.
     // We use this to ensure that calling AppInfoWithLiveness#definitionFor does not fail
@@ -228,6 +230,7 @@ public abstract class R8PartialSubCompilationConfiguration {
         StartupProfile startupProfile,
         R8PartialCompilationStatsMetadataBuilder statsMetadataBuilder,
         CommittedSyntheticsCollection synthetics,
+        KotlinInlineMethodMap kotlinInlineMethodMap,
         Timing timing) {
       super(flags, timing);
       this.artProfiles = artProfiles;
@@ -238,6 +241,7 @@ public abstract class R8PartialSubCompilationConfiguration {
       this.startupProfile = startupProfile;
       this.statsMetadataBuilder = statsMetadataBuilder;
       this.synthetics = synthetics;
+      this.kotlinInlineMethodMap = kotlinInlineMethodMap;
     }
 
     public ArtProfileCollection getArtProfiles() {
@@ -277,6 +281,10 @@ public abstract class R8PartialSubCompilationConfiguration {
     public CommittedSyntheticsCollection getSynthetics() {
       assert synthetics != null;
       return synthetics;
+    }
+
+    public KotlinInlineMethodMap getKotlinInlineMethodMap() {
+      return kotlinInlineMethodMap;
     }
 
     public void amendCompleteArtProfile(ArtProfile.Builder artProfileBuilder) {

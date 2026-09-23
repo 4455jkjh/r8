@@ -12,6 +12,7 @@ import static com.google.common.base.Predicates.alwaysTrue;
 import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.ClasspathClassCollection;
@@ -55,8 +56,9 @@ public class LazyLoadedDexApplication extends DexApplication {
       Map<DexType, DexClasspathClass> synthesizedClasspathClasses,
       LibraryClassCollection libraryClasses,
       List<KeepDeclaration> keepDeclarations,
+      KotlinInlineMethodMap kotlinInlineMethodMap,
       InternalOptions options) {
-    super(proguardMap, flags, dataResourceProviders, options);
+    super(proguardMap, flags, dataResourceProviders, kotlinInlineMethodMap, options);
     this.programClasses = programClasses;
     this.classpathClasses = classpathClasses;
     this.synthesizedClasspathClasses = synthesizedClasspathClasses;
@@ -439,6 +441,7 @@ public class LazyLoadedDexApplication extends DexApplication {
           synthesizedClasspathClasses,
           libraryClasses,
           keepDeclarations,
+          kotlinInlineMethodMap,
           options);
     }
   }

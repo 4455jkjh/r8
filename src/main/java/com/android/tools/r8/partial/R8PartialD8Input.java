@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.utils.InternalClasspathOrLibraryClassProvider;
 import com.android.tools.r8.utils.InternalProgramClassProvider;
 import com.android.tools.r8.utils.internal.MapUtils;
@@ -30,6 +31,7 @@ public class R8PartialD8Input {
   private final Map<DexType, DexLibraryClass> libraryClasses;
   private final DexApplicationReadFlags flags;
   private final List<KeepDeclaration> keepDeclarations;
+  private final KotlinInlineMethodMap kotlinInlineMethodMap;
 
   public R8PartialD8Input(
       Collection<DexProgramClass> d8Classes,
@@ -37,7 +39,8 @@ public class R8PartialD8Input {
       Collection<DexClasspathClass> classpathClasses,
       Collection<DexLibraryClass> libraryClasses,
       DexApplicationReadFlags flags,
-      List<KeepDeclaration> keepDeclarations) {
+      List<KeepDeclaration> keepDeclarations,
+      KotlinInlineMethodMap kotlinInlineMethodMap) {
     this.d8Classes = d8Classes;
     this.r8Classes = r8Classes;
     this.classpathClasses =
@@ -46,6 +49,7 @@ public class R8PartialD8Input {
         MapUtils.transform(libraryClasses, IdentityHashMap::new, DexClass::getType);
     this.flags = flags;
     this.keepDeclarations = keepDeclarations;
+    this.kotlinInlineMethodMap = kotlinInlineMethodMap;
   }
 
   public void configure(D8Command.Builder commandBuilder) throws IOException {
@@ -83,5 +87,9 @@ public class R8PartialD8Input {
 
   public List<KeepDeclaration> getKeepDeclarations() {
     return keepDeclarations;
+  }
+
+  public KotlinInlineMethodMap getKotlinInlineMethodMap() {
+    return kotlinInlineMethodMap;
   }
 }

@@ -331,7 +331,7 @@ public final class D8 {
       timing.end(); // post-converter
 
       reportSyntheticInformation(appView);
-      writeApplication(appView, inputApp, marker, executor, timing);
+      writeApplication(appView, marker, executor, timing);
 
       options.printWarnings();
     } catch (ExecutionException e) {
@@ -397,7 +397,6 @@ public final class D8 {
 
   private static void writeApplication(
       AppView<AppInfo> appView,
-      AndroidApp inputApp,
       Marker marker,
       ExecutorService executor,
       Timing timing)
@@ -407,9 +406,9 @@ public final class D8 {
       new R8PartialApplicationWriter(appView).write(executor);
     } else if (options.isGeneratingClassFiles()) {
       new CfApplicationWriter(appView, marker)
-          .write(options.getClassFileConsumer(), executor, timing, inputApp);
+          .write(options.getClassFileConsumer(), executor, timing);
     } else {
-      ApplicationWriter.create(appView, marker).write(executor, timing, inputApp);
+      ApplicationWriter.create(appView, marker).write(executor, timing);
     }
   }
 

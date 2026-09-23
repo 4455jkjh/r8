@@ -105,7 +105,8 @@ class R8Partial {
         app.classpathClasses(),
         app.libraryClasses(),
         app.getFlags(),
-        keepDeclarations);
+        keepDeclarations,
+        app.getKotlinInlineMethodMap());
   }
 
   private R8PartialD8Result runD8Step(R8PartialD8Input input, ExecutorService executor)
@@ -153,7 +154,8 @@ class R8Partial {
         subCompilationConfiguration.getOutputClasspathClasses(),
         subCompilationConfiguration.getOutputLibraryClasses(),
         subCompilationConfiguration.getStartupProfile(),
-        subCompilationConfiguration.getSynthetics());
+        subCompilationConfiguration.getSynthetics(),
+        input.getKotlinInlineMethodMap());
   }
 
   private void runR8Step(
@@ -250,6 +252,7 @@ class R8Partial {
             d8Result.getStartupProfile(),
             statsMetadataBuilder,
             d8Result.getSynthetics(),
+            d8Result.getKotlinInlineMethodMap(),
             timing);
     r8Options.setArtProfileOptions(
         new ArtProfileOptions(r8Options, options.getArtProfileOptions()));
