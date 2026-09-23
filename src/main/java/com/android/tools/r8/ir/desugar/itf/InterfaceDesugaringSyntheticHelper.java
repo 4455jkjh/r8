@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.desugar.itf;
 import static com.android.tools.r8.graph.InvalidCode.isInvalidCode;
 import static com.android.tools.r8.ir.desugar.itf.InterfaceMethodDesugaringEventConsumer.emptyInterfaceMethodDesugaringEventConsumer;
 
+import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.cf.code.CfInitClass;
 import com.android.tools.r8.cf.code.CfReturnVoid;
@@ -264,11 +265,28 @@ public class InterfaceDesugaringSyntheticHelper {
   }
 
   private boolean requiresEmulatedDispatch(DexClassAndMethod method) {
-    return method.isLibraryMethod()
+    return (method.isLibraryMethod() && !isAlreadyPresentOnFinalLibraryClass(method))
         || isEmulatedInterface(method.getHolderType())
         || machineDesugaredLibrarySpecification
             .getEmulatedVirtualRetargetThroughEmulatedInterface()
             .containsKey(method.getReference());
+  }
+
+  private boolean isAlreadyPresentOnFinalLibraryClass(DexClassAndMethod method) {
+    assert method.isLibraryMethod();
+    if (!method.getHolder().isFinal()
+        || !appView.apiLevelCompute().isEnabled()
+        || libraryDesugaringOptions
+            .getTypeRewriter()
+            .hasRewrittenTypeInSignature(method.getProto())) {
+      return false;
+    }
+    return appView
+        .apiLevelCompute()
+        .computeApiLevelForLibraryReferenceIgnoringDesugaredLibrary(
+            method.getReference(), ComputedApiLevel.unknown())
+        .isLessThanOrEqualTo(appView.computedMinApiLevel())
+        .isTrue();
   }
 
   DerivedMethod computeEmulatedInterfaceForwardingMethod(
