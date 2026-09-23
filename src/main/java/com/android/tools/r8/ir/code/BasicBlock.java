@@ -1221,10 +1221,8 @@ public class BasicBlock {
   }
 
   private BasicBlock getExceptionTrampolineTarget() {
-    if (!hasCatchHandlers()
-        && !hasPhis()
-        && exit().isGoto()
-        && (instructions.size() == 1 || (instructions.size() == 2 && entry().isMoveException()))) {
+    if (instructions.size() == 2 && entry().isMoveException() && exit().isGoto()) {
+      assert !hasCatchHandlers() : "Trampoline should not have catch handlers";
       return getUniqueNormalSuccessor();
     }
     return null;
@@ -1233,63 +1231,34 @@ public class BasicBlock {
   /**
    * Returns whether the given blocks are in the same try block.
    *
-   * <p>They are considered the same if all catch handlers have the same guards and point to the
-   * same block or are trampolines that point to the same block.
+   * <p>They are considered the same if all catch handlers have the same guards and are trampolines
+   * that point to the same block.
    */
   public boolean hasEquivalentCatchHandlers(BasicBlock other) {
-    return hasEquivalentCatchHandlers(other, false);
-  }
-
-  public boolean hasEquivalentCatchHandlers(BasicBlock other, boolean checkPhis) {
     if (this == other) {
-      return true;
-    }
-    if (hasCatchHandlers() != other.hasCatchHandlers()) {
-      return false;
-    }
-    if (!hasCatchHandlers()) {
       return true;
     }
     List<Integer> targets1 = catchHandlers.getAllTargets();
     List<Integer> targets2 = other.catchHandlers.getAllTargets();
+
     int numHandlers = targets1.size();
     if (numHandlers != targets2.size()) {
       return false;
     }
+    if (numHandlers == 0) {
+      return true;
+    }
+
     List<DexType> guards1 = catchHandlers.getGuards();
     List<DexType> guards2 = other.catchHandlers.getGuards();
     for (int i = 0; i < numHandlers; ++i) {
-      if (guards1.get(i).isNotIdenticalTo(guards2.get(i))) {
-        return false;
-      }
       BasicBlock catchBlock1 = successors.get(targets1.get(i));
       BasicBlock catchBlock2 = other.successors.get(targets2.get(i));
-      if (catchBlock1 == catchBlock2) {
-        if (checkPhis && catchBlock1.hasPhis()) {
-          return false;
-        }
-        continue;
-      }
       BasicBlock trampolineTarget = catchBlock1.getExceptionTrampolineTarget();
       if (trampolineTarget == null
-          || trampolineTarget != catchBlock2.getExceptionTrampolineTarget()) {
+          || trampolineTarget != catchBlock2.getExceptionTrampolineTarget()
+          || guards1.get(i).isNotIdenticalTo(guards2.get(i))) {
         return false;
-      }
-      if (checkPhis && trampolineTarget.hasPhis()) {
-        int predecessorIndex1 = trampolineTarget.getPredecessors().indexOf(catchBlock1);
-        int predecessorIndex2 = trampolineTarget.getPredecessors().indexOf(catchBlock2);
-        for (Phi phi : trampolineTarget.getPhis()) {
-          Value operand1 = phi.getOperand(predecessorIndex1);
-          Value operand2 = phi.getOperand(predecessorIndex2);
-          if (operand1 != operand2) {
-            if (!catchBlock1.entry().isMoveException()
-                || !catchBlock2.entry().isMoveException()
-                || operand1 != catchBlock1.entry().outValue()
-                || operand2 != catchBlock2.entry().outValue()) {
-              return false;
-            }
-          }
-        }
       }
     }
     return true;

@@ -9,19 +9,14 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.BasicBlock;
-import com.android.tools.r8.ir.code.FieldGet;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InstanceGet;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Phi;
-import com.android.tools.r8.ir.code.Position;
-import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
-import com.android.tools.r8.utils.internal.IterableUtils;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
@@ -39,215 +34,117 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return options.isRelease()
-        && (code.metadata().mayHaveInstanceGet() || code.metadata().mayHaveStaticGet());
+    return code.metadata().mayHaveInstanceGet();
   }
 
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code) {
     boolean changed = false;
-    for (BasicBlock block : ImmutableList.copyOf(code.getBlocks())) {
-      List<BasicBlock> successors = block.getNormalSuccessors();
-      if (successors.size() == 2 && matchingCatchHandlers(successors.get(0), successors.get(1))) {
-        assert IterableUtils.all(successors, succ -> succ.getPredecessors().size() == 1)
-            : "critical blocks should be split";
-        changed |= hoistFieldGet(code, block, successors);
-      }
-      List<BasicBlock> predecessors = block.getPredecessors();
-      if (predecessors.size() == 2) {
-        BasicBlock firstPredecessor = getEffectivePredecessor(predecessors.get(0));
-        BasicBlock secondPredecessor = getEffectivePredecessor(predecessors.get(1));
-        if (matchingCatchHandlers(firstPredecessor, secondPredecessor)) {
-          assert IterableUtils.all(predecessors, pred -> pred.getNormalSuccessors().size() == 1)
-              : "critical blocks should be split";
-          changed |= sinkFieldGet(code, block, firstPredecessor, secondPredecessor);
+    for (BasicBlock block : code.getBlocks()) {
+      // Try to hoist identical InstanceGets in two successors to this block:
+      List<BasicBlock> successors = block.getSuccessors();
+      // TODO(b/448586591: We should also be able to handle catch handlers by splitting the block we
+      // hoist into.
+      if (successors.size() == 2 && !block.hasCatchHandlers()) {
+        InstanceGet firstInstanceGet = findFirstInstanceGetInstruction(code, successors.get(0));
+        InstanceGet secondInstanceGet = findFirstInstanceGetInstruction(code, successors.get(1));
+        if (firstInstanceGet == null || secondInstanceGet == null) {
+          continue;
         }
+        Value firstReceiver = firstInstanceGet.object();
+        Value firstReceiverRoot = firstReceiver.getAliasedValue();
+
+        Value secondReceiver = secondInstanceGet.object();
+        DexField field = firstInstanceGet.getField();
+        if (firstReceiverRoot != secondReceiver.getAliasedValue()
+            || firstReceiver.isMaybeNull()
+            || secondReceiver.isMaybeNull()
+            || field.isNotIdenticalTo(secondInstanceGet.getField())) {
+          continue;
+        }
+        Value firstOutValue = firstInstanceGet.outValue();
+        Value secondOutValue = secondInstanceGet.outValue();
+        if (firstOutValue.hasLocalInfo() || secondOutValue.hasLocalInfo()) {
+          continue;
+        }
+        Value outValue = code.createValue(firstOutValue.getType());
+        Value newReceiver =
+            firstReceiver.getBlock() == firstInstanceGet.getBlock()
+                ? firstReceiverRoot
+                : firstReceiver;
+        InstanceGet hoistedInstanceGet = new InstanceGet(outValue, newReceiver, field);
+        hoistedInstanceGet.setPosition(firstInstanceGet.getPosition());
+        block.getInstructions().addBefore(hoistedInstanceGet, block.getLastInstruction());
+        removeOldInstructions(outValue, firstInstanceGet, secondInstanceGet);
+        changed = true;
+      }
+      // Try to sink shareable InstanceGets from two predecessors into this block:
+      List<BasicBlock> predecessors = block.getPredecessors();
+      if (predecessors.size() == 2 && !block.hasCatchHandlers()) {
+        BasicBlock firstPredecessor = predecessors.get(0);
+        BasicBlock secondPredecessor = predecessors.get(1);
+        // TODO(b/448586591: We should also be able to handle catch handlers by splitting the block
+        // we hoist into.
+        if (firstPredecessor.hasCatchHandlers() || secondPredecessor.hasCatchHandlers()) {
+          continue;
+        }
+        InstanceGet firstInstanceGet = getLastInstanceGet(code, firstPredecessor);
+        InstanceGet secondInstanceGet = getLastInstanceGet(code, secondPredecessor);
+        if (firstInstanceGet == null || secondInstanceGet == null) {
+          continue;
+        }
+        Value firstOutValue = firstInstanceGet.outValue();
+        Value secondOutValue = secondInstanceGet.outValue();
+        if (firstOutValue.hasLocalInfo()
+            || secondOutValue.hasLocalInfo()
+            || hasPhisThatWillBecomeInvalid(block, firstOutValue, secondOutValue)) {
+          continue;
+        }
+        Value firstReceiver = firstInstanceGet.object();
+        Value secondReceiver = secondInstanceGet.object();
+        if (firstReceiver.isMaybeNull() || secondReceiver.isMaybeNull()) {
+          continue;
+        }
+        DexField field = firstInstanceGet.getField();
+        if (field.isNotIdenticalTo(secondInstanceGet.getField())) {
+          continue;
+        }
+        Value receiver;
+        if (firstReceiver == secondReceiver) {
+          receiver = firstReceiver;
+        } else {
+          Value firstReceiverRoot = firstReceiver.getAliasedValue();
+          if (firstReceiverRoot == secondReceiver.getAliasedValue()) {
+            receiver = firstReceiverRoot;
+          } else {
+            TypeElement type = firstReceiver.getType().join(secondReceiver.getType(), appView);
+            Phi phi = code.createPhi(block, type);
+            phi.appendOperand(firstReceiver);
+            phi.appendOperand(secondReceiver);
+            receiver = phi;
+          }
+        }
+        Value outValue = code.createValue(firstOutValue.getType());
+        Instruction hoistedInstanceGet = new InstanceGet(outValue, receiver, field);
+        hoistedInstanceGet.setPosition(firstInstanceGet.getPosition());
+        block.getInstructions().addFirst(hoistedInstanceGet);
+        removeOldInstructions(outValue, firstInstanceGet, secondInstanceGet);
+        changed = true;
       }
     }
     if (changed) {
-      code.removeUnreachableBlocks();
       code.removeRedundantBlocks();
     }
     return CodeRewriterResult.hasChanged(changed);
   }
 
-  private BasicBlock getEffectivePredecessor(BasicBlock pred) {
-    if (pred.getInstructions().size() == 1
-        && pred.exit().isGoto()
-        && pred.getPhis().isEmpty()
-        && pred.getPredecessors().size() == 1
-        && pred.getUniquePredecessor().getNormalSuccessors().size() == 1) {
-      return pred.getUniquePredecessor();
-    }
-    return pred;
-  }
-
-  private boolean matchingCatchHandlers(BasicBlock block1, BasicBlock block2) {
-    return block1.hasEquivalentCatchHandlers(block2, true);
-  }
-
-  private boolean sinkFieldGet(
-      IRCode code, BasicBlock block, BasicBlock firstPredecessor, BasicBlock secondPredecessor) {
-    FieldGet firstFieldGet = getLastFieldGetInstruction(code, firstPredecessor);
-    FieldGet secondFieldGet = getLastFieldGetInstruction(code, secondPredecessor);
-    if (invalidCandidates(firstFieldGet, secondFieldGet)
-        || hasPhisThatWillBecomeInvalid(
-            block, firstFieldGet.outValue(), secondFieldGet.outValue())) {
-      return false;
-    }
-    DexField field = firstFieldGet.getField();
-    Value outValue = code.createValue(firstFieldGet.outValue().getType());
-    Instruction sunkInstruction;
-    if (firstFieldGet.isStaticGet()) {
-      if (invalidStaticGetCandidates(code, firstFieldGet, secondFieldGet)) {
-        return false;
-      }
-      sunkInstruction = new StaticGet(outValue, field);
-    } else {
-      InstanceGet firstInstanceGet = firstFieldGet.asInstanceGet();
-      InstanceGet secondInstanceGet = secondFieldGet.asInstanceGet();
-      Value firstReceiver = firstInstanceGet.object();
-      Value secondReceiver = secondInstanceGet.object();
-      if (firstReceiver.isMaybeNull() || secondReceiver.isMaybeNull()) {
-        return false;
-      }
-      Value receiver;
-      if (firstReceiver == secondReceiver) {
-        receiver = firstReceiver;
-      } else {
-        Value firstReceiverRoot = firstReceiver.getAliasedValue();
-        if (firstReceiverRoot == secondReceiver.getAliasedValue()) {
-          receiver = firstReceiverRoot;
-        } else {
-          TypeElement type = firstReceiver.getType().join(secondReceiver.getType(), appView);
-          Phi phi = code.createPhi(block, type);
-          phi.appendOperand(firstReceiver);
-          phi.appendOperand(secondReceiver);
-          receiver = phi;
-        }
-      }
-      sunkInstruction = new InstanceGet(outValue, receiver, field);
-    }
-    updatePosition(sunkInstruction, firstFieldGet);
-    insertSunkInstruction(code, block, firstPredecessor, sunkInstruction);
-    removeOldInstructions(outValue, firstFieldGet, secondFieldGet);
-    return true;
-  }
-
-  private static void updatePosition(Instruction sunkInstruction, FieldGet anyFieldGet) {
-    Position position = anyFieldGet.asFieldInstruction().getPosition();
-    // The two input positions may differ. We determinisically pick the first one.
-    sunkInstruction.setPosition(position);
-  }
-
-  private boolean hoistFieldGet(IRCode code, BasicBlock block, List<BasicBlock> successors) {
-    BasicBlock firstSuccessor = successors.get(0);
-    BasicBlock secondSuccessor = successors.get(1);
-    FieldGet firstFieldGet = findFirstFieldGetInstruction(code, firstSuccessor);
-    FieldGet secondFieldGet = findFirstFieldGetInstruction(code, secondSuccessor);
-    if (invalidCandidates(firstFieldGet, secondFieldGet)) {
-      return false;
-    }
-    DexField field = firstFieldGet.getField();
-    Value outValue = code.createValue(firstFieldGet.outValue().getType());
-    Instruction hoistedInstruction;
-    if (firstFieldGet.isStaticGet()) {
-      if (invalidStaticGetCandidates(code, firstFieldGet, secondFieldGet)) {
-        return false;
-      }
-      hoistedInstruction = new StaticGet(outValue, field);
-    } else {
-      InstanceGet firstInstanceGet = firstFieldGet.asInstanceGet();
-      InstanceGet secondInstanceGet = secondFieldGet.asInstanceGet();
-      Value firstReceiver = firstInstanceGet.object();
-      Value firstReceiverRoot = firstReceiver.getAliasedValue();
-      Value secondReceiver = secondInstanceGet.object();
-      if (firstReceiverRoot != secondReceiver.getAliasedValue()
-          || firstReceiver.isMaybeNull()
-          || secondReceiver.isMaybeNull()) {
-        return false;
-      }
-      Value newReceiver =
-          firstReceiver.getBlock() == firstInstanceGet.getBlock()
-              ? firstReceiverRoot
-              : firstReceiver;
-      hoistedInstruction = new InstanceGet(outValue, newReceiver, field);
-    }
-    updatePosition(hoistedInstruction, firstFieldGet);
-    insertHoistedInstruction(code, block, firstSuccessor, hoistedInstruction);
-    removeOldInstructions(outValue, firstFieldGet, secondFieldGet);
-    return true;
-  }
-
-  private boolean invalidStaticGetCandidates(
-      IRCode code, FieldGet firstFieldGet, FieldGet secondFieldGet) {
-    StaticGet firstStaticGet = firstFieldGet.asStaticGet();
-    StaticGet secondStaticGet = secondFieldGet.asStaticGet();
-    return firstStaticGet.instructionInstanceCanThrow(appView, code.context())
-        || secondStaticGet.instructionInstanceCanThrow(appView, code.context());
-  }
-
-  private static boolean invalidCandidates(FieldGet firstFieldGet, FieldGet secondFieldGet) {
-    if (firstFieldGet == null
-        || secondFieldGet == null
-        || firstFieldGet.isStaticGet() != secondFieldGet.isStaticGet()) {
-      return true;
-    }
-    DexField field1 = firstFieldGet.getField();
-    if (field1.isNotIdenticalTo(secondFieldGet.getField())) {
-      return true;
-    }
-    Value firstOutValue = firstFieldGet.outValue();
-    Value secondOutValue = secondFieldGet.outValue();
-    return firstOutValue.hasLocalInfo() || secondOutValue.hasLocalInfo();
-  }
-
-  private void insertHoistedInstruction(
-      IRCode code, BasicBlock block, BasicBlock firstSuccessor, Instruction hoistedInstruction) {
-    Instruction lastInstruction = block.getLastInstruction();
-    block.getInstructions().addBefore(hoistedInstruction, lastInstruction);
-    if (firstSuccessor.hasCatchHandlers()) {
-      BasicBlock hoistBlock =
-          hoistedInstruction != block.entry()
-              ? block.split(code, false, hoistedInstruction)
-              : block;
-      hoistBlock.split(code, false, lastInstruction);
-      hoistBlock.copyCatchHandlers(code, null, firstSuccessor, options);
-    }
-  }
-
-  private void insertSunkInstruction(
-      IRCode code, BasicBlock block, BasicBlock firstPredecessor, Instruction sunkInstruction) {
-    block.getInstructions().addFirst(sunkInstruction);
-    if (firstPredecessor.hasCatchHandlers() || block.hasCatchHandlers()) {
-      if (sunkInstruction.getNext() != null) {
-        block.split(code, false, sunkInstruction.getNext());
-      }
-      if (firstPredecessor.hasCatchHandlers()) {
-        block.copyCatchHandlers(code, null, firstPredecessor, options);
-      }
-    }
-  }
-
   private static void removeOldInstructions(
-      Value outValue, FieldGet firstFieldGet, FieldGet secondFieldGet) {
-    BasicBlock firstBlock = firstFieldGet.asFieldInstruction().getBlock();
-    BasicBlock secondBlock = secondFieldGet.asFieldInstruction().getBlock();
-    firstFieldGet.outValue().replaceUsers(outValue);
-    secondFieldGet.outValue().replaceUsers(outValue);
+      Value outValue, InstanceGet firstInstanceGet, InstanceGet secondInstanceGet) {
+    firstInstanceGet.outValue().replaceUsers(outValue);
+    secondInstanceGet.outValue().replaceUsers(outValue);
     outValue.uniquePhiUsers().forEach(Phi::removeTrivialPhi);
-    firstFieldGet.removeOrReplaceByDebugLocalRead();
-    secondFieldGet.removeOrReplaceByDebugLocalRead();
-    unlinkCatchHandlersIfNotThrowing(firstBlock);
-    unlinkCatchHandlersIfNotThrowing(secondBlock);
-  }
-
-  private static void unlinkCatchHandlersIfNotThrowing(BasicBlock block) {
-    if (block.hasCatchHandlers() && !block.canThrow()) {
-      for (BasicBlock catchHandler : block.getCatchHandlers().getUniqueTargets()) {
-        catchHandler.unlinkCatchHandler();
-      }
-    }
+    firstInstanceGet.removeOrReplaceByDebugLocalRead();
+    secondInstanceGet.removeOrReplaceByDebugLocalRead();
   }
 
   private boolean hasPhisThatWillBecomeInvalid(
@@ -266,31 +163,32 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
-  private FieldGet getLastFieldGetInstruction(IRCode code, BasicBlock block) {
+  private InstanceGet getLastInstanceGet(IRCode code, BasicBlock block) {
     Set<Value> seenValues = Sets.newIdentityHashSet();
     for (Instruction instruction = block.getLastInstruction();
         instruction != null;
         instruction = instruction.getPrev()) {
-      if (instruction.isFieldGet() && !seenValues.contains(instruction.outValue())) {
-        return instruction.asFieldGet();
-      }
       if (instruction.instructionMayHaveSideEffects(appView, code.context())) {
-        return null;
+        break;
       }
-      seenValues.addAll(instruction.inValues());
+      if (instruction.isInstanceGet() && !seenValues.contains(instruction.outValue())) {
+        return instruction.asInstanceGet();
+      } else {
+        seenValues.addAll(instruction.inValues());
+      }
     }
     return null;
   }
 
-  private FieldGet findFirstFieldGetInstruction(IRCode code, BasicBlock block) {
+  private InstanceGet findFirstInstanceGetInstruction(IRCode code, BasicBlock block) {
     for (Instruction instruction = block.entry();
         instruction != null;
         instruction = instruction.getNext()) {
-      if (instruction.isFieldGet()) {
-        return instruction.asFieldGet();
-      }
       if (instruction.instructionMayHaveSideEffects(appView, code.context())) {
-        return null;
+        break;
+      }
+      if (instruction.isInstanceGet()) {
+        return instruction.asInstanceGet();
       }
     }
     return null;
