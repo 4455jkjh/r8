@@ -1810,12 +1810,14 @@ public class KeepEdgeReader implements Opcodes {
 
     private static final String UsesReflectionToXXXClassConstant = "classConstant";
     private static final String UsesReflectionToXXXClassName = "className";
+    // NOTE: includeSubclasses is currently not part of the annotation specification, however it
+    // is still procesed if seen for testing until deciding on the final semantics for this.
     private static final String UsesReflectionToXXXIncludeSubclasses = "includeSubclasses";
 
     protected final ParsingContext parsingContext;
 
     protected KeepQualifiedClassNamePattern qualifiedName;
-    protected boolean includeSubclasses = false;
+    protected boolean includeSubclasses = true;
 
     UsesReflectionToXXXVisitor(
         AnnotationParsingContext parsingContext, AnnotationVisitor annotationVisitor) {
@@ -1827,12 +1829,6 @@ public class KeepEdgeReader implements Opcodes {
       assert UsesReflectionToXXXClassName.equals(UsesReflectionToConstruct.className);
       assert UsesReflectionToXXXClassName.equals(UsesReflectionToAccessMethod.className);
       assert UsesReflectionToXXXClassName.equals(UsesReflectionToAccessField.className);
-      assert UsesReflectionToXXXIncludeSubclasses.equals(
-          UsesReflectionToConstruct.includeSubclasses);
-      assert UsesReflectionToXXXIncludeSubclasses.equals(
-          UsesReflectionToAccessMethod.includeSubclasses);
-      assert UsesReflectionToXXXIncludeSubclasses.equals(
-          UsesReflectionToAccessField.includeSubclasses);
     }
 
     protected boolean maybeVisitQualifiedName(String name, Object value) {
@@ -2043,7 +2039,7 @@ public class KeepEdgeReader implements Opcodes {
     private final UserBindingsHelper bindingsHelper = new UserBindingsHelper();
 
     private KeepQualifiedClassNamePattern qualifiedName;
-    private boolean includeSubclasses = false;
+    private boolean includeSubclasses = true;
     private KeepMethodNamePattern methodName;
     private KeepMethodNamePattern methodNameKotlinDefault;
     private KeepMethodReturnTypePattern returnType = KeepMethodReturnTypePattern.any();
@@ -2255,7 +2251,7 @@ public class KeepEdgeReader implements Opcodes {
     private final UserBindingsHelper bindingsHelper = new UserBindingsHelper();
 
     private KeepQualifiedClassNamePattern qualifiedName;
-    private boolean includeSubclasses = false;
+    private boolean includeSubclasses = true;
     private KeepFieldNamePattern fieldName;
     private KeepFieldTypePattern fieldType = KeepFieldTypePattern.any();
 

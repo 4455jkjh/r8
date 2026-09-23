@@ -105,7 +105,7 @@ public class KeepUsesReflectionForInstantiationAnyArgsConstructorTest
 
   private static ExpectedRules getExpectedRulesJava(
       Class<?> conditionClass, String conditionMembers) {
-    return getExpectedRulesJava(conditionClass, false, conditionMembers);
+    return getExpectedRulesJava(conditionClass, true, conditionMembers);
   }
 
   private static ExpectedRules getExpectedRulesKotlin(String conditionClass) {
@@ -123,6 +123,14 @@ public class KeepUsesReflectionForInstantiationAnyArgsConstructorTest
                     .apply(setCondition)
                     .setKeepVariant("-keepclasseswithmembers")
                     .setConsequentClass("com.android.tools.r8.keepanno.androidx.kt.KeptClass")
+                    .setConsequentMembers("{ void <init>(...); }")
+                    .build())
+            .add(
+                ExpectedKeepRule.builder()
+                    .apply(setCondition)
+                    .setKeepVariant("-keepclasseswithmembers")
+                    .setConsequentExtendsClass(
+                        "com.android.tools.r8.keepanno.androidx.kt.KeptClass")
                     .setConsequentMembers("{ void <init>(...); }")
                     .build());
     return builder.build();
@@ -179,7 +187,7 @@ public class KeepUsesReflectionForInstantiationAnyArgsConstructorTest
   }
 
   @Test
-  public void testIncludeSubclasses() throws Exception {
+  public void testNoIncludeSubclasses() throws Exception {
     testExtractedRules(
         ImmutableList.of(
             setAnnotationOnMethod(
@@ -190,8 +198,8 @@ public class KeepUsesReflectionForInstantiationAnyArgsConstructorTest
                         .setAnnotationClass(
                             Reference.classFromClass(UsesReflectionToConstruct.class))
                         .setField("classConstant", KeptClass.class)
-                        .setField("includeSubclasses", true))),
-        getExpectedRulesJava(AnyConstructor.class, true, "{ void foo(java.lang.Class); }"));
+                        .setField("includeSubclasses", false))),
+        getExpectedRulesJava(AnyConstructor.class, false, "{ void foo(java.lang.Class); }"));
   }
 
   @Test
