@@ -22,8 +22,9 @@ REPOSITORIES = [
     "D-Gradle Plugins=https://plugins.gradle.org/m2/",
 ]
 
-with open(os.path.join(utils.REPO_ROOT, 'gradle', 'libs.versions.toml'), "rb") as f:
-  data = tomllib.load(f)
+with open(os.path.join(utils.REPO_ROOT, 'gradle', 'libs.versions.toml'),
+          "rb") as f:
+    data = tomllib.load(f)
 versions = data.get("versions", {})
 libraries = data.get("libraries", {})
 
@@ -31,10 +32,11 @@ BUILD_DEPENDENCIES = []
 PLUGIN_DEPENDENCIES = []
 for library, details in libraries.items():
     artifact = details["module"] + ":" + versions[details["version"]["ref"]]
-    if library.endswith("GradlePlugin" ):
+    if library.endswith("GradlePlugin") and library != "retryGradlePlugin":
         PLUGIN_DEPENDENCIES.append(artifact)
     else:
         BUILD_DEPENDENCIES.append(artifact)
+
 
 def dependencies_tar(dependencies_path):
     return os.path.join(os.path.dirname(dependencies_path),

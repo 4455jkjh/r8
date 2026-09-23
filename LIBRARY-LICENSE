@@ -134,6 +134,12 @@
   license: BSD 3-clause
   licenseUrl: https://github.com/protocolbuffers/protobuf/blob/main/LICENSE
   url: https://github.com/protocolbuffers/protobuf/
+- artifact: com.google.protobuf:protobuf-java-util
+  name: Protocol Buffers [Util]
+  copyrightHolder: Google Inc.
+  license: BSD 3-clause
+  licenseUrl: https://github.com/protocolbuffers/protobuf/blob/main/LICENSE
+  url: https://github.com/protocolbuffers/protobuf/
 - artifact: com.android.tools.layoutlib:layoutlib-api
   name: Android Tools layoutlib-api
   copyrightHolder: The Android Open Source Project

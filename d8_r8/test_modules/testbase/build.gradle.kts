@@ -69,6 +69,7 @@ dependencies {
   implementation(libs.kotlinReflect)
   implementation(libs.kotlinStdLib)
   implementation(libs.playwright)
+  implementation(libs.protobufUtil)
   implementation(libs.ddmLib)
   implementation(resolve(ThirdPartyDeps.jasmin, "jasmin-2.4.jar"))
   implementation(resolve(ThirdPartyDeps.jdwpTests, "apache-harmony-jdwp-tests-host.jar"))

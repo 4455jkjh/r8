@@ -290,8 +290,8 @@ const App = {
   init() {
     // Initialize Report (Main Grid)
     ReportApp.init();
-    // Load Protobuf Data in the Background
-    this.loadProtoData();
+    // Load JSON Data in the Background
+    this.loadJsonData();
     const headerLink = document.getElementById("header-link");
     if (headerLink) {
       headerLink.addEventListener("click", (e) => {
@@ -1062,27 +1062,12 @@ const App = {
         });
     }
   },
-  async loadProtoData() {
-    const embeddedProtoSchemaSource =
-      document.getElementById("keepradius-proto");
-    const embeddedProtoDataSource = document.getElementById("keepradius-data");
+  async loadJsonData() {
+    const embeddedJsonDataSource = document.getElementById("keepradius-data");
     try {
-      const root = protobuf.parse(embeddedProtoSchemaSource.textContent).root;
-      const data = embeddedProtoDataSource.textContent.trim();
-      const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-      const KeepRadiusContainer = root.lookupType(
-        "com.android.tools.r8.keepradius.proto.KeepRadiusContainer",
+      this.keepRadiusData = JSON.parse(
+        embeddedJsonDataSource.textContent.trim(),
       );
-      const message = KeepRadiusContainer.decode(bytes);
-      this.keepRadiusData = KeepRadiusContainer.toObject(message, {
-        longs: String,
-        enums: String,
-        bytes: String,
-        defaults: true,
-        arrays: true,
-        objects: true,
-        oneofs: true,
-      });
       // Extract and strip common prefix from file names
       if (this.keepRadiusData.fileOriginTable) {
         const filenames = this.keepRadiusData.fileOriginTable
