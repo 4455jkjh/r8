@@ -136,7 +136,7 @@ public class BasicBlockBehavioralSubsumption {
           return passesIdenticalValuesForPhis(
               instruction.getBlock(), otherInstruction.getBlock(), targetBlock);
         }
-        if (otherTargetBlock.hasPhis()) {
+        if (targetBlock.hasPhis() || otherTargetBlock.hasPhis()) {
           // TODO(b/136162993): handle this case.
           return false;
         }
@@ -191,6 +191,10 @@ public class BasicBlockBehavioralSubsumption {
       if (otherInstruction.isGoto() && otherVisited == null) {
         otherVisited = SetUtils.newIdentityHashSet(block);
       }
+    }
+
+    if (instruction == otherInstruction) {
+      return true;
     }
 
     if (instruction.isInvokeConstructor(appView.dexItemFactory())) {
