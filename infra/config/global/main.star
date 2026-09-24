@@ -384,7 +384,7 @@ def r8_tester_with_default(
         category = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
-        execution_timeout = time.hour,
+        execution_timeout = time.hour * 2,
         extra_properties = {}):
     r8_tester(
         name,
