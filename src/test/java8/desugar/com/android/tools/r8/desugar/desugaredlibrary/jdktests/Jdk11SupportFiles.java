@@ -8,6 +8,9 @@ import static com.android.tools.r8.TestBase.descriptor;
 import static com.android.tools.r8.TestBase.transformer;
 
 import com.android.tools.r8.ToolHelper;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -56,6 +59,8 @@ public class Jdk11SupportFiles {
   public static byte[] getTestNGMainRunner() throws Exception {
     return transformer(TestNGMainRunner.class)
         .setClassDescriptor("LTestNGMainRunner;")
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(TestNGMainRunner.class), "LTestNGMainRunner;")
         .replaceClassDescriptorInMethodInstructions(descriptor(TestNG.class), "Lorg/testng/TestNG;")
         .replaceClassDescriptorInMethodInstructions(
             descriptor(TextReporter.class), "Lorg/testng/reporters/TextReporter;")
@@ -63,35 +68,101 @@ public class Jdk11SupportFiles {
   }
 
   /** TestNGMainRunner used as the test runner in JDK11 tests. */
-  public static class TestNGMainRunner {
+  public static class TestNGMainRunner extends PrintStream implements Runnable {
 
-    private static void runTestNg(Class<?> testClass, int verbose) {
-      System.out.println("Running tests in " + testClass.getName());
-      TestNG testng = new TestNG(false);
-      testng.setTestClasses(new Class<?>[] {testClass});
-      testng.setVerbose(verbose);
-      // Deprecated API used because it works on Android unlike the recommended one.
-      testng.addListener(new TextReporter(testClass.getName(), verbose));
+    private static final ThreadLocal<ByteArrayOutputStream> THREAD_OUT = new ThreadLocal<>();
+
+    private final String className;
+    private final int verbose;
+    private final ByteArrayOutputStream buffer;
+
+    public TestNGMainRunner(
+        OutputStream out, String className, int verbose, ByteArrayOutputStream buffer) {
+      super(out, true);
+      this.className = className;
+      this.verbose = verbose;
+      this.buffer = buffer;
+    }
+
+    @Override
+    public void write(byte[] buf, int off, int len) {
+      ByteArrayOutputStream threadBuffer = THREAD_OUT.get();
+      if (threadBuffer != null) {
+        threadBuffer.write(buf, off, len);
+      } else {
+        super.write(buf, off, len);
+      }
+    }
+
+    @Override
+    public void write(int b) {
+      ByteArrayOutputStream threadBuffer = THREAD_OUT.get();
+      if (threadBuffer != null) {
+        threadBuffer.write(b);
+      } else {
+        super.write(b);
+      }
+    }
+
+    @Override
+    public void run() {
+      THREAD_OUT.set(buffer);
       try {
+        runTestNg(className, verbose);
+      } finally {
+        THREAD_OUT.remove();
+      }
+    }
+
+    private static void runTestNg(String className, int verbose) {
+      System.out.println("Running tests in " + className);
+      try {
+        Class<?> testClass = Class.forName(className);
+        TestNG testng = new TestNG(false);
+        testng.setTestClasses(new Class<?>[] {testClass});
+        testng.setVerbose(verbose);
+        // Deprecated API used because it works on Android unlike the recommended one.
+        testng.addListener(new TextReporter(testClass.getName(), verbose));
         testng.run();
-        System.out.print("Tests result in " + testClass.getName() + ": ");
-        if (testng.hasFailure()) {
-          System.out.println("FAILURE");
-        } else {
-          System.out.println("SUCCESS");
-        }
-      } catch (RuntimeException | Error e) {
-        System.out.print("Tests result in " + testClass.getName() + ": ");
-        System.out.println("ERROR");
-        e.printStackTrace();
+        System.out.println(
+            "Tests result in " + className + ": " + (testng.hasFailure() ? "FAILURE" : "SUCCESS"));
+      } catch (Throwable e) {
+        e.printStackTrace(System.out);
+        System.out.println("Tests result in " + className + ": ERROR");
       }
     }
 
     public static void main(String[] args) throws Exception {
       // First arg is the verbosity level.
-      // Second arg is the class to run.
+      // Subsequent args are the classes to run.
       int verbose = Integer.parseInt(args[0]);
-      runTestNg(Class.forName(args[1]), verbose);
+      if (args.length <= 2) {
+        for (int i = 1; i < args.length; i++) {
+          runTestNg(args[i], verbose);
+        }
+        return;
+      }
+      PrintStream origOut = System.out;
+      System.setOut(new TestNGMainRunner(origOut, null, 0, null));
+      try {
+        int count = args.length - 1;
+        ByteArrayOutputStream[] buffers = new ByteArrayOutputStream[count];
+        Thread[] threads = new Thread[count];
+        for (int i = 0; i < count; i++) {
+          buffers[i] = new ByteArrayOutputStream();
+          threads[i] = new Thread(new TestNGMainRunner(origOut, args[i + 1], verbose, buffers[i]));
+          threads[i].start();
+        }
+        for (int i = 0; i < count; i++) {
+          threads[i].join();
+        }
+        for (int i = 0; i < count; i++) {
+          origOut.write(buffers[i].toByteArray());
+        }
+        origOut.flush();
+      } finally {
+        System.setOut(origOut);
+      }
     }
   }
 
