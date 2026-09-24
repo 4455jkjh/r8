@@ -15,7 +15,6 @@ import com.android.tools.r8.DeviceRunner.DeviceRunnerConfigurationException;
 import com.android.tools.r8.ResourceShrinker.ReferenceChecker;
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.TestRuntime.CfRuntime;
-import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Kind;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.benchmarks.gc.CaptureGcResult;
@@ -606,9 +605,6 @@ public class ToolHelper {
       }
       result.add(getExecutable());
       result.addAll(options);
-      systemProperties.putIfAbsent(
-          "java.util.concurrent.ForkJoinPool.common.parallelism",
-          Integer.toString(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
       for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
         StringBuilder builder = new StringBuilder("-D");
         builder.append(entry.getKey());
@@ -2073,18 +2069,6 @@ public class ToolHelper {
       String... args)
       throws IOException {
     List<String> cmdline = new ArrayList<>(Arrays.asList(runtime.getJavaExecutable().toString()));
-    int activeProcessors = Runtime.getRuntime().availableProcessors();
-    if (runtime.isNewerThanOrEqual(CfVm.JDK11)
-        && vmArgs.stream().noneMatch(arg -> arg.startsWith("-XX:ActiveProcessorCount="))) {
-      cmdline.add("-XX:ActiveProcessorCount=" + activeProcessors);
-    }
-    if (vmArgs.stream()
-        .noneMatch(
-            arg -> arg.startsWith("-Djava.util.concurrent.ForkJoinPool.common.parallelism="))) {
-      cmdline.add(
-          "-Djava.util.concurrent.ForkJoinPool.common.parallelism="
-              + Math.max(1, activeProcessors - 1));
-    }
     cmdline.addAll(vmArgs);
     if (!bootClasspaths.isEmpty()) {
       cmdline.add(
