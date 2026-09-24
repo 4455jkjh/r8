@@ -249,7 +249,6 @@ common_test_options = [
     "--print-times",
     "--no_internal",
     "--one_line_per_test",
-    "--archive_failures",
 ]
 
 default_timeout = time.hour * 6
@@ -748,7 +747,6 @@ app_dump()
 def desugared_library():
     test_options = [
         "--one_line_per_test",
-        "--archive_failures",
         "--no_internal",
         "--no_arttests",
         "--desugared-library",
@@ -779,7 +777,7 @@ r8_builder(
     expiration_timeout = time.hour * 35,
     properties = {
         "builder_group": "internal.client.r8",
-        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-dev", "--one_line_per_test", "--archive_failures", "--no-internal", "*kotlin*", "*debug*"],
+        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-dev", "--one_line_per_test", "--no-internal", "*kotlin*", "*debug*"],
     },
 )
 
@@ -791,7 +789,7 @@ r8_builder(
     expiration_timeout = time.hour * 35,
     properties = {
         "builder_group": "internal.client.r8",
-        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-old", "--one_line_per_test", "--archive_failures", "--no-internal", "*kotlin*", "*debug*"],
+        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-old", "--one_line_per_test", "--no-internal", "*kotlin*", "*debug*"],
     },
 )
 

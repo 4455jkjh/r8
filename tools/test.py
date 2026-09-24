@@ -13,7 +13,6 @@ import shutil
 import subprocess
 import sys
 import time
-import uuid
 import glob
 
 import archive_desugar_jdk_libs
@@ -42,8 +41,6 @@ ALL_ART_VMS = [
 # is not a problem, no harm done except some logging in stdout.
 TIMEOUT_HANDLER_PERIOD = 60 * 18
 
-BUCKET = 'r8-test-results'
-
 NUMBER_OF_TEST_REPORTS = 5
 REPORTS_PATH = os.path.join(utils.BUILD, 'reports')
 REPORT_INDEX = ['tests', 'test', 'index.html']
@@ -64,16 +61,6 @@ def ParseOptions():
                         help='Do not run Google internal tests.',
                         default=False,
                         action='store_true')
-    result.add_argument('--archive-failures',
-                        '--archive_failures',
-                        help='Upload test results to cloud storage on failure.',
-                        default=False,
-                        action='store_true')
-    result.add_argument(
-        '--archive-failures-file-name',
-        '--archive_failures_file_name',
-        help='Set file name for the archived failures file name',
-        default=uuid.uuid4())
     result.add_argument('--only-internal',
                         '--only_internal',
                         help='Only run Google internal tests.',
@@ -322,41 +309,6 @@ def ParseOptions():
     if options.land_bypass_hooks:
         options.land = True
     return options, args
-
-
-def has_failures(classes_file):
-    with open(classes_file) as f:
-        contents = f.read()
-        # The report has a div tag with the percentage of tests that succeeded.
-        assert '<div class="percent">' in contents
-        return '<div class="percent">100%</div>' not in contents
-
-
-def should_upload(filename, absolute_filename):
-    # filename is relative to REPO_ROOT/build/reports/tests
-    if filename.startswith('test/packages'):
-        # We don't upload the package overview
-        return False
-    if filename.startswith('test/classes'):
-        return has_failures(absolute_filename)
-    # Always upload index, css and js
-    return True
-
-
-def archive_failures(options):
-    upload_dir = os.path.join(utils.REPO_ROOT, 'build', 'reports', 'tests')
-    file_name = options.archive_failures_file_name
-    destination_dir = 'gs://%s/%s/' % (BUCKET, file_name)
-    for (dir_path, dir_names, file_names) in os.walk(upload_dir):
-        for f in file_names:
-            absolute_file = os.path.join(dir_path, f)
-            relative_file = absolute_file[len(upload_dir) + 1:]
-            if (should_upload(relative_file, absolute_file)):
-                utils.upload_file_to_cloud_storage(
-                    absolute_file, destination_dir + relative_file)
-    url = 'https://storage.googleapis.com/%s/%s/test/index.html' % (BUCKET,
-                                                                    file_name)
-    print('Test results available at: %s' % url)
 
 
 def art_7_0_0_symlinks():
@@ -726,9 +678,6 @@ def test(options, args):
 
 
 def archive_and_return(return_code, options):
-    if return_code != 0:
-        if options.archive_failures:
-            archive_failures(options)
     if options.command_cache_stats:
         stats_dir = os.path.join(options.command_cache_dir, 'stats')
         cache_hit = 0
