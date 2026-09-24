@@ -4,6 +4,7 @@
 package com.android.tools.r8.kotlin.metadata.syntheticmethodforannotations;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
@@ -125,12 +126,12 @@ public class KotlinMetadataTest extends KotlinTestBase {
     return new JvmMethodSignature(method.name.toString(), descBuilder.toString());
   }
 
-  private void verifyRewrittenExtension(CodeInspector i) {
-    ClassSubject clazz = i.clazz(PACKAGE + ".Data$Companion");
+  private void verifyRewrittenExtension(CodeInspector inspector) {
+    ClassSubject clazz = inspector.clazz(PACKAGE + ".Data$Companion");
     List<KmPropertySubject> properties = clazz.getKmClass().getProperties();
     assertEquals(2, properties.size());
-    for (int i1 = 0; i1 < 2; i1++) {
-      KmPropertySubject kmPropertySubject = properties.get(i1);
+    for (int i = 0; i < 2; i++) {
+      KmPropertySubject kmPropertySubject = properties.get(i);
       assertTrue(kmPropertySubject.name().equals("All") || kmPropertySubject.name().equals("All2"));
       List<KmPropertyExtension> extensions =
           kmPropertySubject.getKmProperty().getExtensions$org_jetbrains_kotlin_kotlin_metadata();
@@ -143,6 +144,22 @@ public class KotlinMetadataTest extends KotlinTestBase {
                   m ->
                       toJvmMethodSignature(m.getMethod().getReference())
                           .equals(syntheticMethodForAnnotations)));
+    }
+  }
+
+  private void verifyNoSyntheticMethodForAnnotations(CodeInspector inspector) {
+    ClassSubject clazz = inspector.clazz(PACKAGE + ".Data$Companion");
+    List<KmPropertySubject> properties = clazz.getKmClass().getProperties();
+    assertEquals(2, properties.size());
+    for (int i = 0; i < 2; i++) {
+      KmPropertySubject kmPropertySubject = properties.get(i);
+      assertTrue(kmPropertySubject.name().equals("All") || kmPropertySubject.name().equals("All2"));
+      List<KmPropertyExtension> extensions =
+          kmPropertySubject.getKmProperty().getExtensions$org_jetbrains_kotlin_kotlin_metadata();
+      assertEquals(1, extensions.size());
+      JvmMethodSignature syntheticMethodForAnnotations =
+          ((JvmPropertyExtension) extensions.get(0)).getSyntheticMethodForAnnotations();
+      assertNull(syntheticMethodForAnnotations);
     }
   }
 
@@ -168,8 +185,8 @@ public class KotlinMetadataTest extends KotlinTestBase {
         .allowUnusedDontWarnPatterns()
         .allowDiagnosticMessages()
         .setMinApi(parameters)
-        .compile()
         .run(parameters.getRuntime(), MAIN)
+        .inspect(this::verifyNoSyntheticMethodForAnnotations)
         .assertSuccessWithOutputLines(EXPECTED_FALSE_OUTPUT);
   }
 }

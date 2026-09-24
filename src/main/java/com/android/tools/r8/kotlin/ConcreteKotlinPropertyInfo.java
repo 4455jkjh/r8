@@ -42,6 +42,7 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
   private final KotlinJvmMethodSignatureInfo setterSignature;
 
   private final KotlinJvmMethodSignatureInfo syntheticMethodForAnnotations;
+  private boolean hasSyntheticMethodForAnnotations;
 
   private final KotlinJvmMethodSignatureInfo syntheticMethodForDelegate;
   // Collection of context receiver types
@@ -71,6 +72,10 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
     this.syntheticMethodForAnnotations = syntheticMethodForAnnotations;
     this.syntheticMethodForDelegate = syntheticMethodForDelegate;
     this.contextParameters = contextParameters;
+  }
+
+  void setHasSyntheticMethodForAnnotations() {
+    hasSyntheticMethodForAnnotations = true;
   }
 
   public static ConcreteKotlinPropertyInfo create(
@@ -183,13 +188,17 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
               appView);
     }
     if (syntheticMethodForAnnotations != null) {
-      rewritten |=
-          syntheticMethodForAnnotations.rewrite(
-              newSignature ->
-                  JvmExtensionsKt.setSyntheticMethodForAnnotations(
-                      rewrittenKmProperty, newSignature),
-              syntheticMethodForAnnotationsMethod,
-              appView);
+      if (syntheticMethodForAnnotationsMethod != null || !hasSyntheticMethodForAnnotations) {
+        rewritten |=
+            syntheticMethodForAnnotations.rewrite(
+                newSignature ->
+                    JvmExtensionsKt.setSyntheticMethodForAnnotations(
+                        rewrittenKmProperty, newSignature),
+                syntheticMethodForAnnotationsMethod,
+                appView);
+      } else {
+        rewritten = true;
+      }
     }
     if (syntheticMethodForDelegate != null) {
       rewritten |=
