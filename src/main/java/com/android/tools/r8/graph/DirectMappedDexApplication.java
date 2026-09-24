@@ -12,7 +12,6 @@ import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.graph.LazyLoadedDexApplication.AllClasses;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
-import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;
@@ -54,9 +53,8 @@ public class DirectMappedDexApplication extends DexApplication {
       ImmutableCollection<DexClasspathClass> classpathClasses,
       ImmutableList<DataResourceProvider> dataResourceProviders,
       List<KeepDeclaration> keepDeclarations,
-      KotlinInlineMethodMap kotlinInlineMethodMap,
       InternalOptions options) {
-    super(proguardMap, flags, dataResourceProviders, kotlinInlineMethodMap, options);
+    super(proguardMap, flags, dataResourceProviders, options);
     this.programOrClasspathClasses = programOrClasspathClasses;
     this.libraryClasses = libraryClasses;
     this.programClasses = programClasses;
@@ -382,7 +380,6 @@ public class DirectMappedDexApplication extends DexApplication {
             newClasspathClasses,
             ImmutableList.copyOf(dataResourceProviders),
             keepDeclarations,
-            kotlinInlineMethodMap,
             options);
       }
     }

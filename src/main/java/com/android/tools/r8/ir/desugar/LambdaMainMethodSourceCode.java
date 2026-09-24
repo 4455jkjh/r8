@@ -264,7 +264,7 @@ final class LambdaMainMethodSourceCode {
       IntBox locals = new IntBox();
       IntBox stack = new IntBox();
       Position preamble =
-          !lambda.appView.options().shouldOutputMappingFile()
+          !lambda.appView.options().hasMappingFileSupport()
               ? null
               : SyntheticPosition.builder()
                   .setMethod(mainMethod)

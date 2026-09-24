@@ -214,7 +214,8 @@ public class R8 {
         command.getReporter(), () -> runInternal(app, options, executor));
   }
 
-  static void writeApplication(AppView<?> appView, ExecutorService executorService, Timing timing)
+  static void writeApplication(
+      AppView<?> appView, AndroidApp inputApp, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     InternalOptions options = appView.options();
     InspectorImpl.runInspections(options.outputInspections, appView.appInfo().classes());
@@ -223,9 +224,9 @@ public class R8 {
       assert marker != null;
       if (options.isGeneratingClassFiles()) {
         new CfApplicationWriter(appView, marker)
-            .write(options.getClassFileConsumer(), executorService, timing);
+            .write(options.getClassFileConsumer(), executorService, timing, inputApp);
       } else {
-        ApplicationWriter.create(appView, marker).write(executorService, timing);
+        ApplicationWriter.create(appView, marker).write(executorService, timing, inputApp);
       }
     } catch (IOException e) {
       throw new RuntimeException("Cannot write application", e);
@@ -305,11 +306,6 @@ public class R8 {
         timing.time("Close providers", () -> inputApp.closeInternalArchiveProviders());
         timing.begin("Create AppView");
         appView = AppView.createForR8(application, mainDexInfo);
-        if (options.partialSubCompilationConfiguration != null
-            && options.partialSubCompilationConfiguration.isR8()) {
-          appView.setKotlinInlineMethodMap(
-              options.partialSubCompilationConfiguration.asR8().getKotlinInlineMethodMap());
-        }
         timing.end();
         timing.time(
             "Set app services", () -> appView.setAppServices(AppServices.builder(appView).build()));
@@ -953,7 +949,7 @@ public class R8 {
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
-      writeApplication(appView, executorService, timing);
+      writeApplication(appView, inputApp, executorService, timing);
       ResourceWriter.legacyWriteResources(appView, dexFileContent);
 
       assert appView.getDontWarnConfiguration().validate(options);

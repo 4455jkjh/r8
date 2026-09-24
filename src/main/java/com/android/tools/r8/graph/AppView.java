@@ -39,7 +39,6 @@ import com.android.tools.r8.ir.optimize.library.LibraryMemberOptimizer;
 import com.android.tools.r8.ir.optimize.library.LibraryMethodSideEffectModelCollection;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutliner;
 import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
-import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.SeedMapper;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
@@ -160,7 +159,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private Set<DexMethod> cfByteCodePassThrough = ImmutableSet.of();
   private final Map<DexType, DexValueString> sourceDebugExtensions = new IdentityHashMap<>();
   private final Map<DexType, String> sourceFileForPrunedTypes = new IdentityHashMap<>();
-  private KotlinInlineMethodMap kotlinInlineMethodMap = null;
 
   // Types.
   private TypeElementFactory typeElementFactory = new TypeElementFactory();
@@ -230,8 +228,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     this.computedMinApiLevel =
         timing.time(
             "ApiLevel computed", () -> apiLevelCompute.computeInitialMinApiLevel(options()));
-    this.kotlinInlineMethodMap =
-        appInfo.app() != null ? appInfo.app().getKotlinInlineMethodMap() : null;
   }
 
   public boolean verifyMainThread() {
@@ -291,14 +287,11 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
             classToFeatureSplitMap,
             mainDexInfo,
             GlobalSyntheticsStrategy.forSingleOutputMode());
-    AppView<AppInfoWithClassHierarchy> appView =
-        new AppView<>(
-            appInfo,
-            ArtProfileCollection.createInitialArtProfileCollection(appInfo, appInfo.options()),
-            StartupProfile.createInitialStartupProfileForR8(application),
-            WholeProgramOptimizations.ON);
-    appView.setKotlinInlineMethodMap(application.getKotlinInlineMethodMap());
-    return appView;
+    return new AppView<>(
+        appInfo,
+        ArtProfileCollection.createInitialArtProfileCollection(appInfo, appInfo.options()),
+        StartupProfile.createInitialStartupProfileForR8(application),
+        WholeProgramOptimizations.ON);
   }
 
   public static <T extends AppInfo> AppView<T> createForL8(T appInfo) {
@@ -524,14 +517,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
 
   public DexValueString getSourceDebugExtensionForType(DexClass clazz) {
     return sourceDebugExtensions.get(clazz.type);
-  }
-
-  public KotlinInlineMethodMap getKotlinInlineMethodMap() {
-    return kotlinInlineMethodMap;
-  }
-
-  public void setKotlinInlineMethodMap(KotlinInlineMethodMap kotlinInlineMethodMap) {
-    this.kotlinInlineMethodMap = kotlinInlineMethodMap;
   }
 
   @Override

@@ -8,7 +8,6 @@ package com.android.tools.r8.graph;
 
 import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.ProgramResourceProvider;
-import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;
@@ -30,19 +29,16 @@ public abstract class DexApplication implements DexDefinitionSupplier {
   public final InternalOptions options;
   public final DexItemFactory dexItemFactory;
   private final DexApplicationReadFlags flags;
-  private final KotlinInlineMethodMap kotlinInlineMethodMap;
 
   /** Constructor should only be invoked by the DexApplication.Builder. */
   DexApplication(
       ClassNameMapper proguardMap,
       DexApplicationReadFlags flags,
       ImmutableList<DataResourceProvider> dataResourceProviders,
-      KotlinInlineMethodMap kotlinInlineMethodMap,
       InternalOptions options) {
     this.proguardMap = proguardMap;
     this.flags = flags;
     this.dataResourceProviders = dataResourceProviders;
-    this.kotlinInlineMethodMap = kotlinInlineMethodMap;
     this.options = options;
     this.dexItemFactory = options.itemFactory;
   }
@@ -142,10 +138,6 @@ public abstract class DexApplication implements DexDefinitionSupplier {
     return proguardMap;
   }
 
-  public KotlinInlineMethodMap getKotlinInlineMethodMap() {
-    return kotlinInlineMethodMap;
-  }
-
   public abstract static class Builder<S extends DexApplication, T extends Builder<S, T>> {
 
     private final List<DexProgramClass> programClasses = new ArrayList<>();
@@ -156,7 +148,6 @@ public abstract class DexApplication implements DexDefinitionSupplier {
     public final DexItemFactory dexItemFactory;
     ClassNameMapper proguardMap;
     DexApplicationReadFlags flags;
-    KotlinInlineMethodMap kotlinInlineMethodMap = null;
 
     public Builder(InternalOptions options) {
       this.options = options;
@@ -170,7 +161,6 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       programClasses.addAll(application.programClasses());
       dataResourceProviders.addAll(application.dataResourceProviders);
       proguardMap = application.getProguardMap();
-      kotlinInlineMethodMap = application.getKotlinInlineMethodMap();
       options = application.options;
       dexItemFactory = application.dexItemFactory;
     }
@@ -181,11 +171,6 @@ public abstract class DexApplication implements DexDefinitionSupplier {
 
     public DirectMappedDexApplication.Builder asDirect() {
       return null;
-    }
-
-    public T setKotlinInlineMethodMap(KotlinInlineMethodMap kotlinInlineMethodMap) {
-      this.kotlinInlineMethodMap = kotlinInlineMethodMap;
-      return self();
     }
 
     public T setFlags(DexApplicationReadFlags flags) {

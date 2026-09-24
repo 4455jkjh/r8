@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class ThreadUtils {
@@ -130,24 +129,6 @@ public class ThreadUtils {
     return tasks.awaitWithResults(predicate);
   }
 
-  public static <T, R, E extends Exception>
-      Collection<R> processItemsThatMatchesWithResultsThatMatches(
-          Collection<T> items,
-          Predicate<T> itemPredicate,
-          ThrowingFunction<T, R, E> consumer,
-          Predicate<R> resultPredicate,
-          InternalOptions options,
-          ExecutorService executorService)
-          throws ExecutionException {
-    TaskCollection<R> tasks = new TaskCollection<>(options.getThreadingModule(), executorService);
-    for (T item : items) {
-      if (itemPredicate.test(item)) {
-        tasks.submitUnchecked(() -> consumer.apply(item));
-      }
-    }
-    return tasks.awaitWithResults(resultPredicate);
-  }
-
   public static <T, E extends Exception> void processItemsThatMatches(
       Collection<T> items,
       Predicate<T> itemPredicate,
@@ -166,28 +147,6 @@ public class ThreadUtils {
         timing,
         timingMerger,
         (i, item) -> "Task " + i);
-  }
-
-  /** Does not process items where preprocessing returns null. */
-  public static <T, I, E extends Exception> void processItemsWithFilterPreprocessing(
-      Iterable<T> items,
-      Function<T, I> preprocessing,
-      ThrowingBiConsumer<T, I, E> consumer,
-      InternalOptions options,
-      ExecutorService executorService)
-      throws ExecutionException {
-    var tasks = new TaskCollection<>(options.getThreadingModule(), executorService);
-    for (T item : items) {
-      var info = preprocessing.apply(item);
-      if (info != null) {
-        tasks.submitUnchecked(
-            () -> {
-              consumer.accept(item, info);
-              return null;
-            });
-      }
-    }
-    tasks.await();
   }
 
   public static <T, E extends Exception> void processItemsThatMatches(

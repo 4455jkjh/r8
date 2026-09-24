@@ -50,6 +50,7 @@ import com.android.tools.r8.partial.R8PartialUtils;
 import com.android.tools.r8.profile.startup.StartupCompleteness;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.shaking.MainDexInfo;
+import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.DexVersion;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -260,6 +261,16 @@ public class ApplicationWriter {
     }
   }
 
+  private boolean willComputeProguardMap() {
+    return options.hasMappingFileSupport();
+  }
+
+  /** Writer that never needs the input app to deal with mapping info for kotlin. */
+  public void write(ExecutorService executorService, Timing timing)
+      throws IOException, ExecutionException {
+    assert !willComputeProguardMap();
+    write(executorService, timing, null);
+  }
 
   protected void writeVirtualFiles(
       ExecutorService executorService,
@@ -292,7 +303,7 @@ public class ApplicationWriter {
     }
   }
 
-  public void write(ExecutorService executorService, Timing timing)
+  public void write(ExecutorService executorService, Timing timing, AndroidApp inputApp)
       throws IOException, ExecutionException {
     timing.begin("DexApplication.write");
 
@@ -338,12 +349,13 @@ public class ApplicationWriter {
 
       // Now that the instruction offsets in each code object are fixed, compute the mapping file
       // content.
-      if (options.shouldOutputMappingFile()) {
+      if (willComputeProguardMap()) {
         // TODO(b/220999985): Refactor line number optimization to be per file and thread it above.
         DebugRepresentationPredicate representation =
             DebugRepresentation.fromFiles(virtualFiles, options);
         mapSupplierResult =
-            runAndWriteMap(appView, executorService, timing, originalSourceFiles, representation);
+            runAndWriteMap(
+                inputApp, appView, executorService, timing, originalSourceFiles, representation);
       } else if (options.convertPcBasedDebugInfoToNative) {
         convertPcBasedDebugInfoToNative(appView, executorService, timing);
       }
@@ -421,7 +433,7 @@ public class ApplicationWriter {
     DexItemFactory factory = appView.dexItemFactory();
     currentMarker.ifPresent(
         marker -> {
-          if (options.shouldOutputMappingFile()) {
+          if (willComputeProguardMap()) {
             lazyDexStrings.add(
                 new LazyDexString() {
 
@@ -443,7 +455,7 @@ public class ApplicationWriter {
     if (options.sourceFileProvider == null) {
       return OriginalSourceFiles.fromClasses();
     }
-    if (!options.shouldOutputMappingFile()) {
+    if (!willComputeProguardMap()) {
       rewriteSourceFile(appView.appInfo().classes(), null);
       return OriginalSourceFiles.unreachable();
     }
