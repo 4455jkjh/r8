@@ -115,7 +115,6 @@ public class TestConfigurationHelper {
             // result_sink uses `:` to separate case name components.
             .replace(Regex(": ?"), "=")
             .split(", ")
-            .filterNot { it.contains("dex-") || it.contains("jdk") }
         } else {
           emptyList()
         }
