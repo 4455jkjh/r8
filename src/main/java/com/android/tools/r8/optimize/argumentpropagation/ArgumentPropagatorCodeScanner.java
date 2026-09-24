@@ -359,7 +359,6 @@ public class ArgumentPropagatorCodeScanner {
               field,
               value,
               initialValue,
-              context,
               phiOperandValue -> computeFieldState(phiOperandValue, initialValue, field));
       if (inFlowState != null) {
         return inFlowState;
@@ -387,13 +386,13 @@ public class ArgumentPropagatorCodeScanner {
       }
     }
 
-    private BaseInFlow computeBaseInFlow(DexType staticType, Value value, ProgramMethod context) {
+    private BaseInFlow computeBaseInFlow(DexType staticType, Value value) {
       Value valueRoot = value.getAliasedValue();
       if (valueRoot.isArgument()) {
         MethodParameter inParameter =
             methodParameterFactory.create(
                 context, valueRoot.getDefinition().asArgument().getIndex());
-        if (!widenBaseInFlow(staticType, inParameter, context).isUnknown()) {
+        if (!widenBaseInFlow(staticType, inParameter).isUnknown()) {
           return inParameter;
         }
       } else if (valueRoot.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
@@ -401,7 +400,7 @@ public class ArgumentPropagatorCodeScanner {
         ProgramField field = fieldGet.resolveField(appView, context).getProgramField();
         if (field != null) {
           FieldValue fieldValue = fieldValueFactory.create(field);
-          if (!widenBaseInFlow(staticType, fieldValue, context).isUnknown()) {
+          if (!widenBaseInFlow(staticType, fieldValue).isUnknown()) {
             return fieldValue;
           }
         }
@@ -420,18 +419,17 @@ public class ArgumentPropagatorCodeScanner {
         ProgramMember<?, ?> target,
         Value value,
         Value initialValue,
-        ProgramMethod context,
         Function<Value, NonEmptyValueState> valueStateSupplier) {
       if (value != initialValue) {
         assert initialValue.getAliasedValue().isPhi();
-        return computeBaseInFlow(staticType, value, context);
+        return computeBaseInFlow(staticType, value);
       }
       Value valueRoot = value.getAliasedValue(aliasedValueConfiguration);
       if (valueRoot.isArgument()) {
         MethodParameter inParameter =
             methodParameterFactory.create(
                 context, valueRoot.getDefinition().asArgument().getIndex());
-        return castBaseInFlow(widenBaseInFlow(staticType, inParameter, context), value);
+        return castBaseInFlow(widenBaseInFlow(staticType, inParameter), value);
       } else if (valueRoot.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
         FieldGet fieldGet = valueRoot.getDefinition().asFieldGet();
         ProgramField field = fieldGet.resolveField(appView, context).getProgramField();
@@ -440,14 +438,13 @@ public class ArgumentPropagatorCodeScanner {
         }
         if (fieldGet.isInstanceGet()) {
           Value receiverValue = fieldGet.asInstanceGet().object();
-          BaseInFlow receiverInFlow = computeBaseInFlow(staticType, receiverValue, context);
+          BaseInFlow receiverInFlow = computeBaseInFlow(staticType, receiverValue);
           if (receiverInFlow != null
-              && receiverInFlow.equals(widenBaseInFlow(staticType, receiverInFlow, context))) {
+              && receiverInFlow.equals(widenBaseInFlow(staticType, receiverInFlow))) {
             return new InstanceFieldReadAbstractFunction(receiverInFlow, field.getReference());
           }
         }
-        return castBaseInFlow(
-            widenBaseInFlow(staticType, fieldValueFactory.create(field), context), value);
+        return castBaseInFlow(widenBaseInFlow(staticType, fieldValueFactory.create(field)), value);
       } else if (value.isPhi()) {
         // TODO(b/302281503): Replace IfThenElseAbstractFunction by ComputationTreeNode (?).
         return computeIfThenElseAbstractFunction(value.asPhi(), valueStateSupplier);
@@ -561,7 +558,7 @@ public class ArgumentPropagatorCodeScanner {
       return new CastAbstractFunction(inFlow.asBaseInFlow(), castType, nullability);
     }
 
-    private InFlow widenBaseInFlow(DexType staticType, BaseInFlow inFlow, ProgramMethod context) {
+    private InFlow widenBaseInFlow(DexType staticType, BaseInFlow inFlow) {
       if (inFlow.isFieldValue()) {
         if (isFieldValueAlreadyUnknown(staticType, inFlow.asFieldValue().getField())) {
           return AbstractValue.unknown();
@@ -580,11 +577,9 @@ public class ArgumentPropagatorCodeScanner {
         ProgramMember<?, ?> target,
         Value value,
         Value initialValue,
-        ProgramMethod context,
         Function<Value, NonEmptyValueState> valueStateSupplier) {
       assert value == initialValue || initialValue.getAliasedValue().isPhi();
-      InFlow inFlow =
-          computeInFlow(staticType, target, value, initialValue, context, valueStateSupplier);
+      InFlow inFlow = computeInFlow(staticType, target, value, initialValue, valueStateSupplier);
       if (inFlow != null && !inFlow.isUnknown()) {
         assert inFlow.isBaseInFlow()
             || inFlow.isAbstractComputation()
@@ -594,16 +589,13 @@ public class ArgumentPropagatorCodeScanner {
         return ConcreteValueState.create(staticType, inFlow);
       }
       if (value.isPhi()) {
-        return computePhiState(value.asPhi(), staticType, context, valueStateSupplier);
+        return computePhiState(value.asPhi(), staticType, valueStateSupplier);
       }
       return null;
     }
 
     private NonEmptyValueState computePhiState(
-        Phi phi,
-        DexType staticType,
-        ProgramMethod context,
-        Function<Value, NonEmptyValueState> valueStateSupplier) {
+        Phi phi, DexType staticType, Function<Value, NonEmptyValueState> valueStateSupplier) {
       // TODO(b/302281503): Consider extending this to include field edges as well.
       Set<Argument> arguments = Sets.newIdentityHashSet();
       Set<Value> nonArguments = Sets.newIdentityHashSet();
@@ -1011,7 +1003,6 @@ public class ArgumentPropagatorCodeScanner {
               singleTarget,
               value,
               initialValue,
-              context,
               phiOperandArgumentValue ->
                   computeParameterStateForNonReceiver(
                       invoke,
