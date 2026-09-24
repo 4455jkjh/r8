@@ -7,29 +7,29 @@ package com.android.tools.r8.horizontalclassmerging.policies;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedField;
-import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.horizontalclassmerging.MultiClassSameReferencePolicy;
 import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
+import com.android.tools.r8.utils.AndroidApiLevelUtils;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.util.Objects;
 
 public class SameInstanceFields extends MultiClassSameReferencePolicy<Multiset<InstanceFieldInfo>> {
 
-  private final DexItemFactory dexItemFactory;
+  private final AppView<? extends AppInfoWithClassHierarchy> appView;
 
   public SameInstanceFields(AppView<? extends AppInfoWithClassHierarchy> appView) {
-    this.dexItemFactory = appView.dexItemFactory();
+    this.appView = appView;
   }
 
   @Override
   public Multiset<InstanceFieldInfo> getMergeKey(DexProgramClass clazz) {
     Multiset<InstanceFieldInfo> fields = HashMultiset.create();
     for (DexEncodedField field : clazz.instanceFields()) {
-      fields.add(InstanceFieldInfo.createRelaxed(field, dexItemFactory));
+      fields.add(InstanceFieldInfo.createRelaxed(appView, field));
     }
     return fields;
   }
@@ -57,19 +57,25 @@ public class SameInstanceFields extends MultiClassSameReferencePolicy<Multiset<I
     }
 
     public static InstanceFieldInfo createRelaxed(
-        DexEncodedField field, DexItemFactory dexItemFactory) {
+        AppView<? extends AppInfoWithClassHierarchy> appView, DexEncodedField field) {
       return new InstanceFieldInfo(
-          field.getAccessFlags(),
-          field.getType().isReferenceType() ? dexItemFactory.objectType : field.getType());
+          field.getAccessFlags(), getRelaxedType(appView, field.getType()));
     }
 
     public FieldAccessFlags getAccessFlags() {
       return accessFlags;
     }
 
-    public InstanceFieldInfo toInfoWithRelaxedType(DexItemFactory dexItemFactory) {
-      return new InstanceFieldInfo(
-          accessFlags, type.isReferenceType() ? dexItemFactory.objectType : type);
+    public InstanceFieldInfo toInfoWithRelaxedType(
+        AppView<? extends AppInfoWithClassHierarchy> appView) {
+      return new InstanceFieldInfo(accessFlags, getRelaxedType(appView, type));
+    }
+
+    private static DexType getRelaxedType(
+        AppView<? extends AppInfoWithClassHierarchy> appView, DexType type) {
+      return type.isReferenceType() && AndroidApiLevelUtils.isApiSafeForReference(type, appView)
+          ? appView.dexItemFactory().objectType
+          : type;
     }
 
     @Override
