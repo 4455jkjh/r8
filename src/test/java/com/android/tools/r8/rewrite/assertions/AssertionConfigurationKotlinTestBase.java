@@ -144,7 +144,6 @@ public class AssertionConfigurationKotlinTestBase extends KotlinTestBase {
         .addKeepClassAndMembersRules(class1, class2)
         .setMinApi(parameters)
         .apply(builderConsumer)
-        .addRunClasspathFiles(kotlinStdlibLibraryForRuntime())
         .compile()
         .enableRuntimeAssertions(enableJvmAssertions)
         .run(parameters.getRuntime(), testClassKt)

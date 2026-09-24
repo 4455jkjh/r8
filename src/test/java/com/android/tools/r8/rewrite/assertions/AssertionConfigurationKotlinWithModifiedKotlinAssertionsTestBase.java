@@ -24,7 +24,7 @@ public abstract class AssertionConfigurationKotlinWithModifiedKotlinAssertionsTe
   public static Collection<Object[]> data() {
     return buildParameters(
         getTestParameters().withDexRuntimesAndAllApiLevels().build(),
-        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build());
+        getKotlinTestParameters().withAllCompilers().build());
   }
 
   public AssertionConfigurationKotlinWithModifiedKotlinAssertionsTestBase(

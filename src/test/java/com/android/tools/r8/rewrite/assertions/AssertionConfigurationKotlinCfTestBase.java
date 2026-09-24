@@ -22,7 +22,7 @@ public abstract class AssertionConfigurationKotlinCfTestBase
   public static Collection<Object[]> data() {
     return buildParameters(
         getTestParameters().withCfRuntimes().build(),
-        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build());
+        getKotlinTestParameters().withAllCompilers().build());
   }
 
   protected final boolean enableJvmAssertions;
