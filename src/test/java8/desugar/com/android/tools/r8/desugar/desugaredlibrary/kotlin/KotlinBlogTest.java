@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.desugar.desugaredlibrary.kotlin;
 
-import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_3_72;
 import static com.android.tools.r8.KotlinTestBase.getCompileMemoizer;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
 
@@ -16,7 +15,6 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
-import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestBuilder;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.internal.FileUtils;
@@ -55,7 +53,7 @@ public class KotlinBlogTest extends DesugaredLibraryTestBase {
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .build(),
-        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build(),
+        getKotlinTestParameters().withAllCompilers().build(),
         ImmutableList.of(LibraryDesugaringSpecification.JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
   }
@@ -78,7 +76,6 @@ public class KotlinBlogTest extends DesugaredLibraryTestBase {
       testForRuntime(parameters)
           .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
           .addProgramFiles(kotlinc.getKotlinStdlibJar())
-          .addProgramFiles(kotlinc.getKotlinReflectJar())
           .run(parameters.getRuntime(), PKG + ".BlogKt")
           .assertSuccessWithOutput(EXPECTED_OUTPUT);
       return;
@@ -86,21 +83,12 @@ public class KotlinBlogTest extends DesugaredLibraryTestBase {
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
         .addProgramFiles(kotlinc.getKotlinStdlibJar())
-        .addProgramFiles(kotlinc.getKotlinReflectJar())
         .applyIf(
             compilationSpecification.isProgramShrink(),
             builder -> builder.addProgramFiles(kotlinc.getKotlinAnnotationJar()))
         .addKeepMainRule(PKG + ".BlogKt")
-        .addKeepAllClassesRule()
         .addKeepAttributes(ProguardKeepAttributes.RUNTIME_VISIBLE_ANNOTATIONS)
         .allowDiagnosticMessages()
-        .applyIf(
-            kotlinParameters.getCompiler().isNot(KOTLINC_1_3_72),
-            DesugaredLibraryTestBuilder::allowUnusedDontWarnPatterns)
-        .applyIf(
-            kotlinParameters.getCompiler().isNot(KOTLINC_1_3_72)
-                && compilationSpecification == CompilationSpecification.R8_PARTIAL_EXCLUDE_L8SHRINK,
-            DesugaredLibraryTestBuilder::allowUnusedProguardConfigurationRules)
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), PKG + ".BlogKt")
