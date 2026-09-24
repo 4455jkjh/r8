@@ -16,72 +16,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class SystemUIBenchmarks extends BenchmarkBase {
+public abstract class SystemUIBenchmarks extends BenchmarkBase {
 
   private static final Path dir =
       Paths.get(ToolHelper.THIRD_PARTY_DIR, "closedsource-apps/systemui");
 
-  public SystemUIBenchmarks(BenchmarkConfig config, TestParameters parameters) {
+  protected SystemUIBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
-  }
-
-  @Parameters(name = "{0}")
-  public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
   }
 
   public static List<BenchmarkConfig> configs() {
     return ImmutableList.of(
-        AppDumpBenchmarkBuilder.builder()
-            .setName("SystemUIApp")
-            .setDumpDependencyPath(dir)
-            .setEnableResourceShrinking(true)
-            // TODO(b/373550435): Update dex2oat to enable checking absence of verification errors
-            //  on SystemUI.
-            .setEnableDex2OatVerification(false)
-            .setFromRevision(16457)
-            .buildR8(SystemUIBenchmarks::configure),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("SystemUIAppGc")
-            .setDumpDependencyPath(dir)
-            .setEnableGcTracking(true)
-            .setEnableResourceShrinking(true)
-            // TODO(b/373550435): Update dex2oat to enable checking absence of verification errors
-            //  on SystemUI.
-            .setEnableDex2OatVerification(false)
-            .setFromRevision(16457)
-            .buildR8(SystemUIBenchmarks::configure),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("SystemUIAppPartial")
-            .setDumpDependencyPath(dir)
-            .setEnableResourceShrinking(true)
-            // TODO(b/373550435): Update dex2oat to enable checking absence of verification errors
-            //  on SystemUI.
-            .setEnableDex2OatVerification(false)
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(SystemUIBenchmarks::configurePartialShrinking),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("SystemUIAppTreeShaking")
-            .setDumpDependencyPath(dir)
-            .setEnableResourceShrinking(true)
-            .setFromRevision(16457)
-            .setRuntimeOnly()
-            .buildR8(SystemUIBenchmarks::configureTreeShaking),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("SystemUIAppContainerDex")
-            .setDumpDependencyPath(dir)
-            .setEnableResourceShrinking(true)
-            .setEnableContainerDex(true)
-            // TODO(b/373550435): Update dex2oat to enable checking container DEX on SystemUI.
-            .setEnableDex2Oat(false)
-            .setFromRevision(16457)
-            .buildR8(SystemUIBenchmarks::configure));
+        SystemUIApp.config(),
+        SystemUIAppGc.config(),
+        SystemUIAppPartial.config(),
+        SystemUIAppTreeShaking.config(),
+        SystemUIAppContainerDex.config());
   }
 
   private static void configure(R8FullTestBuilder testBuilder) {
@@ -124,20 +79,113 @@ public class SystemUIBenchmarks extends BenchmarkBase {
                 });
   }
 
+  protected static AppDumpBenchmarkBuilder builder(String name) {
+    return AppDumpBenchmarkBuilder.builder()
+        .setName(name)
+        .setDumpDependencyPath(dir)
+        .setEnableResourceShrinking(true)
+        .setFromRevision(16457);
+  }
+
+  public static class SystemUIApp extends SystemUIBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("SystemUIApp")
+          // TODO(b/373550435): Update dex2oat to enable checking absence of verification errors
+          //  on SystemUI.
+          .setEnableDex2OatVerification(false)
+          .buildR8(SystemUIBenchmarks::configure);
+    }
+
+    public SystemUIApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
   @Ignore
-  @Test
-  @Override
-  public void testBenchmarks() throws Exception {
-    super.testBenchmarks();
+  public static class SystemUIAppGc extends SystemUIBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("SystemUIAppGc")
+          .setEnableGcTracking(true)
+          // TODO(b/373550435): Update dex2oat to enable checking absence of verification errors
+          //  on SystemUI.
+          .setEnableDex2OatVerification(false)
+          .buildR8(SystemUIBenchmarks::configure);
+    }
+
+    public SystemUIAppGc(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testSystemUIApp() throws Exception {
-    testBenchmarkWithName("SystemUIApp");
+  public static class SystemUIAppPartial extends SystemUIBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("SystemUIAppPartial")
+          // TODO(b/373550435): Update dex2oat to enable checking absence of verification errors
+          //  on SystemUI.
+          .setEnableDex2OatVerification(false)
+          .buildR8WithPartialShrinking(SystemUIBenchmarks::configurePartialShrinking);
+    }
+
+    public SystemUIAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testSystemUIAppPartial() throws Exception {
-    testBenchmarkWithName("SystemUIAppPartial");
+  @Ignore
+  public static class SystemUIAppTreeShaking extends SystemUIBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("SystemUIAppTreeShaking")
+          .setRuntimeOnly()
+          .buildR8(SystemUIBenchmarks::configureTreeShaking);
+    }
+
+    public SystemUIAppTreeShaking(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  @Ignore
+  public static class SystemUIAppContainerDex extends SystemUIBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("SystemUIAppContainerDex")
+          .setEnableContainerDex(true)
+          // TODO(b/373550435): Update dex2oat to enable checking container DEX on SystemUI.
+          .setEnableDex2Oat(false)
+          .buildR8(SystemUIBenchmarks::configure);
+    }
+
+    public SystemUIAppContainerDex(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 }

@@ -13,138 +13,38 @@ import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ComposeSamplesBenchmarks extends BenchmarkBase {
+public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
 
   private static final Path dir =
       Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps/android/compose-samples");
 
-  public ComposeSamplesBenchmarks(BenchmarkConfig config, TestParameters parameters) {
+  protected ComposeSamplesBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
-  }
-
-  @Parameters(name = "{0}")
-  public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
   }
 
   public static List<BenchmarkConfig> configs() {
     return ImmutableList.of(
-        AppDumpBenchmarkBuilder.builder()
-            .setName("CraneApp")
-            .setDumpDependencyPath(dir.resolve("crane"))
-            .setFromRevision(16457)
-            .buildR8(),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("CraneAppPartial")
-            .setDumpDependencyPath(dir.resolve("crane"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetLaggedApp")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetlagged"))
-            .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetLaggedAppPartial")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetlagged"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetNewsApp")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetnews"))
-            .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetNewsAppPartial")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetnews"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetCasterApp")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetcaster"))
-            .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureJetCasterApp),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetCasterAppPartial")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetcaster"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(ComposeSamplesBenchmarks::configureJetCasterAppPartial),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetChatApp")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetchat"))
-            .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetChatAppPartial")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetchat"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetSnackApp")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetsnack"))
-            .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("JetSnackAppPartial")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("jetsnack"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("OwlApp")
-            .setDumpDependencyPath(dir.resolve("owl"))
-            .setFromRevision(16457)
-            .buildR8(),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("OwlAppPartial")
-            .setDumpDependencyPath(dir.resolve("owl"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("ReplyApp")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("reply"))
-            .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("ReplyAppPartial")
-            .setEnableResourceShrinking(true)
-            .setResourcesProvidedInFeature()
-            .setDumpDependencyPath(dir.resolve("reply"))
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial));
+        CraneApp.config(),
+        CraneAppPartial.config(),
+        JetLaggedApp.config(),
+        JetLaggedAppPartial.config(),
+        JetNewsApp.config(),
+        JetNewsAppPartial.config(),
+        JetCasterApp.config(),
+        JetCasterAppPartial.config(),
+        JetChatApp.config(),
+        JetChatAppPartial.config(),
+        JetSnackApp.config(),
+        JetSnackAppPartial.config(),
+        OwlApp.config(),
+        OwlAppPartial.config(),
+        ReplyApp.config(),
+        ReplyAppPartial.config());
   }
 
   private static void configureWithOpenInterfaceSuppression(R8FullTestBuilder testBuilder) {
@@ -214,90 +114,293 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces());
   }
 
-  @Ignore
-  @Test
-  @Override
-  public void testBenchmarks() throws Exception {
-    super.testBenchmarks();
+  protected static AppDumpBenchmarkBuilder builder(String name, String app) {
+    return builder(name, app, true);
   }
 
-  @Test
-  public void testCraneApp() throws Exception {
-    testBenchmarkWithName("CraneApp");
+  protected static AppDumpBenchmarkBuilder builder(
+      String name, String app, boolean enableResourceShrinking) {
+    AppDumpBenchmarkBuilder builder =
+        AppDumpBenchmarkBuilder.builder()
+            .setName(name)
+            .setDumpDependencyPath(dir.resolve(app))
+            .setFromRevision(16457);
+    if (enableResourceShrinking) {
+      builder.setEnableResourceShrinking(true).setResourcesProvidedInFeature();
+    }
+    return builder;
   }
 
-  @Test
-  public void testCraneAppPartial() throws Exception {
-    testBenchmarkWithName("CraneAppPartial");
+  public static class CraneApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("CraneApp", "crane", false).buildR8();
+    }
+
+    public CraneApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetLaggedApp() throws Exception {
-    testBenchmarkWithName("JetLaggedApp");
+  public static class CraneAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("CraneAppPartial", "crane", false).buildR8WithPartialShrinking();
+    }
+
+    public CraneAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetLaggedAppPartial() throws Exception {
-    testBenchmarkWithName("JetLaggedAppPartial");
+  public static class JetLaggedApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetLaggedApp", "jetlagged")
+          .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
+    }
+
+    public JetLaggedApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetNewsApp() throws Exception {
-    testBenchmarkWithName("JetNewsApp");
+  public static class JetLaggedAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetLaggedAppPartial", "jetlagged")
+          .buildR8WithPartialShrinking(
+              ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
+    }
+
+    public JetLaggedAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetNewsAppPartial() throws Exception {
-    testBenchmarkWithName("JetNewsAppPartial");
+  public static class JetNewsApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetNewsApp", "jetnews")
+          .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
+    }
+
+    public JetNewsApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetCasterApp() throws Exception {
-    testBenchmarkWithName("JetCasterApp");
+  public static class JetNewsAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetNewsAppPartial", "jetnews")
+          .buildR8WithPartialShrinking(
+              ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
+    }
+
+    public JetNewsAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetCasterAppPartial() throws Exception {
-    testBenchmarkWithName("JetCasterAppPartial");
+  public static class JetCasterApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetCasterApp", "jetcaster")
+          .buildR8(ComposeSamplesBenchmarks::configureJetCasterApp);
+    }
+
+    public JetCasterApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetChatApp() throws Exception {
-    testBenchmarkWithName("JetChatApp");
+  public static class JetCasterAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetCasterAppPartial", "jetcaster")
+          .buildR8WithPartialShrinking(ComposeSamplesBenchmarks::configureJetCasterAppPartial);
+    }
+
+    public JetCasterAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetChatAppPartial() throws Exception {
-    testBenchmarkWithName("JetChatAppPartial");
+  public static class JetChatApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetChatApp", "jetchat")
+          .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
+    }
+
+    public JetChatApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetSnackApp() throws Exception {
-    testBenchmarkWithName("JetSnackApp");
+  public static class JetChatAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetChatAppPartial", "jetchat")
+          .buildR8WithPartialShrinking(
+              ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
+    }
+
+    public JetChatAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testJetSnackAppPartial() throws Exception {
-    testBenchmarkWithName("JetSnackAppPartial");
+  public static class JetSnackApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetSnackApp", "jetsnack")
+          .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
+    }
+
+    public JetSnackApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testOwlApp() throws Exception {
-    testBenchmarkWithName("OwlApp");
+  public static class JetSnackAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("JetSnackAppPartial", "jetsnack")
+          .buildR8WithPartialShrinking(
+              ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
+    }
+
+    public JetSnackAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testOwlAppPartial() throws Exception {
-    testBenchmarkWithName("OwlAppPartial");
+  public static class OwlApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("OwlApp", "owl", false).buildR8();
+    }
+
+    public OwlApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testReplyApp() throws Exception {
-    testBenchmarkWithName("ReplyApp");
+  public static class OwlAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("OwlAppPartial", "owl", false).buildR8WithPartialShrinking();
+    }
+
+    public OwlAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testReplyAppPartial() throws Exception {
-    testBenchmarkWithName("ReplyAppPartial");
+  public static class ReplyApp extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("ReplyApp", "reply")
+          .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
+    }
+
+    public ReplyApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class ReplyAppPartial extends ComposeSamplesBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("ReplyAppPartial", "reply")
+          .buildR8WithPartialShrinking(
+              ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
+    }
+
+    public ReplyAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 }

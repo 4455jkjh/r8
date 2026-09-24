@@ -38,155 +38,256 @@ import org.junit.runners.Parameterized.Parameters;
 
 /** Example of setting up a benchmark based on the testing infrastructure. */
 @RunWith(Parameterized.class)
-public class RetraceStackTraceBenchmark extends BenchmarkBase {
+public abstract class RetraceStackTraceBenchmark extends BenchmarkBase {
 
   private static final BenchmarkDependency benchmarkDependency =
       new BenchmarkDependency(
           "retraceBenchmark", "retrace_benchmark", Paths.get(ToolHelper.THIRD_PARTY_DIR));
 
-  @Parameters(name = "{0}")
-  public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
-  }
-
-  public RetraceStackTraceBenchmark(BenchmarkConfig config, TestParameters parameters) {
+  protected RetraceStackTraceBenchmark(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
   }
 
   /** Static method to add benchmarks to the benchmark collection. */
   public static List<BenchmarkConfig> configs() {
-    return ImmutableList.<BenchmarkConfig>builder()
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceLegacy("r8lib.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-250MB-DISK")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromDisk("r8lib-250MB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-250MB-MEM")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromMemory("r8lib-250MB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-250MB-PARTITION")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromPartition("r8lib-250MB.jar.map.partition"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-500MB-DISK")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromDisk("r8lib-500MB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-500MB-MEM")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromMemory("r8lib-500MB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-500MB-PARTITION")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromPartition("r8lib-500MB.jar.map.partition"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-750MB-DISK")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromDisk("r8lib-750MB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-750MB-MEM")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromMemory("r8lib-750MB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-750MB-PARTITION")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromPartition("r8lib-750MB.jar.map.partition"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-1GB-DISK")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromDisk("r8lib-1GB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-1GB-MEM")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromMemory("r8lib-1GB.jar.map"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
-        .add(
-            BenchmarkConfig.builder()
-                .setName("R8-1GB-PARTITION")
-                .setTarget(BenchmarkTarget.RETRACE)
-                .measureRunTime()
-                .setMethod(benchmarkRetraceFromPartition("r8lib-1GB.jar.map.partition"))
-                .setFromRevision(12266)
-                .measureWarmup()
-                .addDependency(benchmarkDependency)
-                .build())
+    return ImmutableList.of(
+        R8.config(),
+        R8250MBDisk.config(),
+        R8250MBMem.config(),
+        R8250MBPartition.config(),
+        R8500MBDisk.config(),
+        R8500MBMem.config(),
+        R8500MBPartition.config(),
+        R8750MBDisk.config(),
+        R8750MBMem.config(),
+        R8750MBPartition.config(),
+        R81GBDisk.config(),
+        R81GBMem.config(),
+        R81GBPartition.config());
+  }
+
+  private static BenchmarkConfig makeConfig(String name, BenchmarkMethod method) {
+    return BenchmarkConfig.builder()
+        .setName(name)
+        .setTarget(BenchmarkTarget.RETRACE)
+        .measureRunTime()
+        .setMethod(method)
+        .setFromRevision(12266)
+        .measureWarmup()
+        .addDependency(benchmarkDependency)
         .build();
+  }
+
+  public static class R8 extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8", benchmarkRetraceLegacy("r8lib.jar.map"));
+    }
+
+    public R8(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8250MBDisk extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-250MB-DISK", benchmarkRetraceFromDisk("r8lib-250MB.jar.map"));
+    }
+
+    public R8250MBDisk(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8250MBMem extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-250MB-MEM", benchmarkRetraceFromMemory("r8lib-250MB.jar.map"));
+    }
+
+    public R8250MBMem(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8250MBPartition extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig(
+          "R8-250MB-PARTITION", benchmarkRetraceFromPartition("r8lib-250MB.jar.map.partition"));
+    }
+
+    public R8250MBPartition(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8500MBDisk extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-500MB-DISK", benchmarkRetraceFromDisk("r8lib-500MB.jar.map"));
+    }
+
+    public R8500MBDisk(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8500MBMem extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-500MB-MEM", benchmarkRetraceFromMemory("r8lib-500MB.jar.map"));
+    }
+
+    public R8500MBMem(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8500MBPartition extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig(
+          "R8-500MB-PARTITION", benchmarkRetraceFromPartition("r8lib-500MB.jar.map.partition"));
+    }
+
+    public R8500MBPartition(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8750MBDisk extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-750MB-DISK", benchmarkRetraceFromDisk("r8lib-750MB.jar.map"));
+    }
+
+    public R8750MBDisk(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8750MBMem extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-750MB-MEM", benchmarkRetraceFromMemory("r8lib-750MB.jar.map"));
+    }
+
+    public R8750MBMem(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8750MBPartition extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig(
+          "R8-750MB-PARTITION", benchmarkRetraceFromPartition("r8lib-750MB.jar.map.partition"));
+    }
+
+    public R8750MBPartition(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R81GBDisk extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-1GB-DISK", benchmarkRetraceFromDisk("r8lib-1GB.jar.map"));
+    }
+
+    public R81GBDisk(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R81GBMem extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig("R8-1GB-MEM", benchmarkRetraceFromMemory("r8lib-1GB.jar.map"));
+    }
+
+    public R81GBMem(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R81GBPartition extends RetraceStackTraceBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeConfig(
+          "R8-1GB-PARTITION", benchmarkRetraceFromPartition("r8lib-1GB.jar.map.partition"));
+    }
+
+    public R81GBPartition(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
   public static BenchmarkMethod benchmarkRetraceLegacy(String mappingFileName) {

@@ -18,40 +18,23 @@ import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AGSABenchmarks extends BenchmarkBase {
+public abstract class AGSABenchmarks extends BenchmarkBase {
 
   private static final Path dir =
       Paths.get(ToolHelper.THIRD_PARTY_DIR, "closedsource-apps/agsa/20250412-v16.14.47");
 
-  public AGSABenchmarks(BenchmarkConfig config, TestParameters parameters) {
+  protected AGSABenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
   }
 
-  @Parameters(name = "{0}")
-  public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
-  }
-
   public static List<BenchmarkConfig> configs() {
-    return ImmutableList.of(
-        AppDumpBenchmarkBuilder.builder()
-            .setName("AGSA")
-            .setDumpDependencyPath(dir)
-            .setWarmupIterations(0)
-            .buildR8(AGSABenchmarks::configure),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("AGSATreeShaking")
-            .setDumpDependencyPath(dir)
-            .setRuntimeOnly()
-            .setWarmupIterations(0)
-            .buildR8(AGSABenchmarks::configureTreeShaking));
+    return ImmutableList.of(AGSA.config(), AGSATreeShaking.config());
   }
 
   private static void configure(R8FullTestBuilder testBuilder) {
@@ -89,22 +72,51 @@ public class AGSABenchmarks extends BenchmarkBase {
                     });
   }
 
-  @Ignore
   @Test
   @Override
   public void testBenchmarks() throws Exception {
+    assumeTrue(ToolHelper.isLocalDevelopment());
     super.testBenchmarks();
   }
 
-  @Test
-  public void testAGSA() throws Exception {
-    assumeTrue(ToolHelper.isLocalDevelopment());
-    testBenchmarkWithName("AGSA");
+  protected static AppDumpBenchmarkBuilder builder(String name) {
+    return AppDumpBenchmarkBuilder.builder()
+        .setName(name)
+        .setDumpDependencyPath(dir)
+        .setWarmupIterations(0);
   }
 
-  @Test
-  public void testAGSAPartial() throws Exception {
-    assumeTrue(ToolHelper.isLocalDevelopment());
-    testBenchmarkWithName("AGSATreeShaking");
+  public static class AGSA extends AGSABenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("AGSA").buildR8(AGSABenchmarks::configure);
+    }
+
+    public AGSA(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class AGSATreeShaking extends AGSABenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("AGSATreeShaking")
+          .setRuntimeOnly()
+          .buildR8(AGSABenchmarks::configureTreeShaking);
+    }
+
+    public AGSATreeShaking(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 }

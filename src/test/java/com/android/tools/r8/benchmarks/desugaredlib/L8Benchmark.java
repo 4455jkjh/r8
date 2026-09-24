@@ -38,20 +38,23 @@ public class L8Benchmark extends BenchmarkBase {
 
   @Parameters(name = "{0}")
   public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
+    return parametersFromConfig(config());
   }
 
   public static List<BenchmarkConfig> configs() {
-    return ImmutableList.of(
-        BenchmarkConfig.builder()
-            .setName("L8Benchmark")
-            .setTarget(BenchmarkTarget.D8)
-            .setFromRevision(12733)
-            .setMethod(L8Benchmark::run)
-            .addDependency(ANDROID_JAR)
-            .addDependency(LEGACY_CONF)
-            .measureRunTime()
-            .build());
+    return ImmutableList.of(config());
+  }
+
+  public static BenchmarkConfig config() {
+    return BenchmarkConfig.builder()
+        .setName("L8Benchmark")
+        .setTarget(BenchmarkTarget.D8)
+        .setFromRevision(12733)
+        .setMethod(L8Benchmark::run)
+        .addDependency(ANDROID_JAR)
+        .addDependency(LEGACY_CONF)
+        .measureRunTime()
+        .build();
   }
 
   public static void run(BenchmarkEnvironment environment) throws Exception {
