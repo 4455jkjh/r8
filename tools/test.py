@@ -49,6 +49,12 @@ REPORTS_PATH = os.path.join(utils.BUILD, 'reports')
 REPORT_INDEX = ['tests', 'test', 'index.html']
 VALID_RUNTIMES = ['none', 'jdk8', 'jdk9', 'jdk11', 'jdk17', 'jdk21', 'jdk25'
                  ] + ['dex-%s' % dexvm for dexvm in ALL_ART_VMS]
+CQ_RUNTIMES = [
+    rt for rt in VALID_RUNTIMES if rt not in [
+        'jdk8', 'jdk9', 'dex-7.0.0', 'dex-6.0.1', 'dex-5.1.1', 'dex-4.4.4',
+        'dex-4.0.4'
+    ]
+]
 
 
 def ParseOptions():
@@ -213,7 +219,7 @@ def ParseOptions():
         '--runtimes',
         default=None,
         help='Test parameter runtimes to use, separated by : (eg, none:jdk9).'
-        ' Special values include: all (for all runtimes)'
+        ' Special values include: all (for all runtimes), CQ (for CQ runtimes),'
         ' and empty (for no runtimes).')
     result.add_argument('--print-hanging-stacks',
                         '--print_hanging_stacks',
@@ -669,6 +675,8 @@ def test(options, args):
         elif options.runtimes == 'all':
             # An unset runtimes will configure all runtimes
             pass
+        elif options.runtimes == 'CQ':
+            gradle_args.append('-Pruntimes=%s' % ':'.join(CQ_RUNTIMES))
         else:
             prefixes = [
                 prefix.strip() for prefix in options.runtimes.split(':')
@@ -678,7 +686,7 @@ def test(options, args):
                 matches = [rt for rt in VALID_RUNTIMES if rt.startswith(prefix)]
                 if len(matches) == 0:
                     print("Invalid runtime prefix '%s'." % prefix)
-                    print("Must be just 'all', 'empty'," \
+                    print("Must be just 'all', 'CQ', 'empty'," \
                           " or a prefix of %s" % ', '.join(VALID_RUNTIMES))
                     sys.exit(1)
                 runtimes.extend(matches)

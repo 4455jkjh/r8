@@ -21,7 +21,7 @@ public abstract class BenchmarkBase extends TestBase {
   // Benchmarks must be configured with the "none" runtime as each config defines a singleton
   // benchmark in golem.
   public static List<Object[]> parametersFromConfigs(Iterable<BenchmarkConfig> configs) {
-    if (System.getProperty("runtimes") == null
+    if ((System.getProperty("runtimes") == null || System.getProperty("runtimes").contains("none"))
         && System.getProperty("shard_count") != null
         && System.getProperty("shard_number") != null) {
       int shardCount = Integer.parseInt(System.getProperty("shard_count"));

@@ -273,7 +273,9 @@ public class TestConfigurationHelper {
         println("NOTE: Running shard $shardNumber of $shardCount")
         test.systemProperty("shard_count", shardCount.toString())
         test.systemProperty("shard_number", shardNumber.toString())
-        val usesRuntimeSharding = !project.hasProperty("runtimes")
+        val usesRuntimeSharding =
+          !project.hasProperty("runtimes") ||
+            project.property("runtimes").toString().contains("none")
         test.exclude { element ->
           if (element.isDirectory) return@exclude false
           val path = element.path
