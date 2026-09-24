@@ -40,8 +40,9 @@ public class TypePropagationThroughPhiTest extends TestBase {
               assertEquals(
                   "java.lang.String",
                   mainClass.uniqueMethodWithOriginalName("foo").getParameter(0).getTypeName());
+              // TODO(b/309575527): Should be String.
               assertEquals(
-                  "java.lang.String",
+                  "java.lang.CharSequence",
                   mainClass.uniqueMethodWithOriginalName("bar").getParameter(0).getTypeName());
             });
   }
@@ -50,7 +51,7 @@ public class TypePropagationThroughPhiTest extends TestBase {
 
     static Object f;
 
-    {
+    static {
       f = System.currentTimeMillis() > 0 ? "Hello" : null;
     }
 
@@ -64,7 +65,7 @@ public class TypePropagationThroughPhiTest extends TestBase {
       if (System.currentTimeMillis() > 0) {
         s = o;
       } else if (System.currentTimeMillis() > 10) {
-        s = f;
+        s = (CharSequence) f;
       } else {
         s = "Goodbye!";
       }
