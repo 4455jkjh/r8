@@ -12,6 +12,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -63,16 +64,12 @@ public class ApiModelHorizontalMergeFieldTypeTest extends TestBase {
         .enableNeverClassInliningAnnotations()
         .apply(setMockApiLevelForClass(LibraryClassPresentSince31.class, mockLevel))
         .addHorizontallyMergedClassesInspector(
-            inspector ->
-                inspector.assertIsCompleteMergeGroup(A.class, B.class).assertNoOtherClassesMerged())
+            HorizontallyMergedClassesInspector::assertClassesNotMerged)
         .compile()
         .applyIf(
             addToBootClasspath(), b -> b.addBootClasspathClasses(LibraryClassPresentSince31.class))
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            addToBootClasspath(),
-            rr -> rr.assertSuccessWithOutputLines("null", "hello"),
-            rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        .assertSuccessWithOutputLines("null", "hello");
   }
 
   public static class LibraryClassPresentSince31 {}
