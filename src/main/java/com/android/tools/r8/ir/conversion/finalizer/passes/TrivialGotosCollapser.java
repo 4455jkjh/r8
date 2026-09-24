@@ -202,8 +202,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
       }
     }
     BasicBlock newFallthrough = fallthroughBlock.endOfGotoChain();
-    if (appView.options().testing.enableDeadSwitchCaseElimination
-        && newFallthrough != fallthroughBlock
+    if (newFallthrough != fallthroughBlock
         && block.getSuccessors().size() == 2
         && block.getSuccessors().contains(newFallthrough)) {
       block.replaceSuccessor(newFallthrough, fallthroughBlock);

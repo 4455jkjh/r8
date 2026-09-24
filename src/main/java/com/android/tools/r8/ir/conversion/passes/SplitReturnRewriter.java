@@ -36,9 +36,8 @@ public class SplitReturnRewriter extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    // Disable in tests that need dead switches to be left behind.
     assert options.isRelease();
-    return appView.options().getTestingOptions().enableDeadSwitchCaseElimination;
+    return true;
   }
 
   @Override

@@ -733,21 +733,19 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       BasicBlock block = blocksIterator.next();
       if (block.exit().isSwitch()) {
         Switch theSwitch = block.exit().asSwitch();
-        if (options.testing.enableDeadSwitchCaseElimination) {
-          SwitchCaseEliminator eliminator =
-              removeUnnecessarySwitchCases(code, theSwitch, switchCaseAnalyzer);
-          anySimplifications |= eliminator.canBeOptimized();
-          if (eliminator.mayHaveIntroducedUnreachableBlocks()) {
-            needToRemoveUnreachableBlocks = true;
-          }
-
-          if (block.exit().isGoto()) {
-            continue;
-          }
-
-          assert block.exit().isSwitch();
-          theSwitch = block.exit().asSwitch();
+        SwitchCaseEliminator eliminator =
+            removeUnnecessarySwitchCases(code, theSwitch, switchCaseAnalyzer);
+        anySimplifications |= eliminator.canBeOptimized();
+        if (eliminator.mayHaveIntroducedUnreachableBlocks()) {
+          needToRemoveUnreachableBlocks = true;
         }
+
+        if (block.exit().isGoto()) {
+          continue;
+        }
+
+        assert block.exit().isSwitch();
+        theSwitch = block.exit().asSwitch();
         if (theSwitch.isIntSwitch()) {
           anySimplifications |=
               rewriteIntSwitch(code, blocksIterator, block, theSwitch.asIntSwitch());

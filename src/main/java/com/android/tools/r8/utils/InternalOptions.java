@@ -2583,7 +2583,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableBridgeHoistingToSharedSyntheticSuperclass = false;
     public boolean enableBridgeHoistingToSharedSyntheticSuperclassReturnSpecialization = true;
     public boolean enableCheckCastAndInstanceOfRemoval = true;
-    public boolean enableDeadSwitchCaseElimination = true;
     public boolean disableEnqueuerDeferredTracingForWrittenReferenceFields =
         System.getProperty("com.android.tools.r8.disableEnqueuerDeferredTracing") != null;
     public boolean enableInvokeSuperToInvokeVirtualRewriting = true;
