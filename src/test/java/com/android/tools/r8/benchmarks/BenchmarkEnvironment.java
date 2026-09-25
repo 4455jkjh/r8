@@ -11,12 +11,12 @@ public class BenchmarkEnvironment {
 
   private final BenchmarkConfig config;
   private final TemporaryFolder temp;
-  private final boolean isGolem;
+  private final boolean isPerf;
 
-  public BenchmarkEnvironment(BenchmarkConfig config, TemporaryFolder temp, boolean isGolem) {
+  public BenchmarkEnvironment(BenchmarkConfig config, TemporaryFolder temp, boolean isPerf) {
     this.config = config;
     this.temp = temp;
-    this.isGolem = isGolem;
+    this.isPerf = isPerf;
   }
 
   public boolean failOnCodeSizeDifferences() {
@@ -31,30 +31,32 @@ public class BenchmarkEnvironment {
     return temp;
   }
 
-  public Path translateDependencyPath(String directoryName, Path location) {
-    return isGolem
-        ? getGolemDependencyRoot().resolve(directoryName)
-        : location.resolve(directoryName);
+  public boolean isPerf() {
+    return isPerf;
   }
 
-  public Path getGolemDependencyRoot() {
-    return Paths.get("benchmarks", config.getDependencyDirectoryName());
+  public boolean isTest() {
+    return !isPerf;
   }
 
   public boolean hasBenchmarkIterationsOverride() {
-    return System.getProperty("BENCHMARK_ITERATIONS") != null;
+    return isTest() || System.getProperty("BENCHMARK_ITERATIONS") != null;
   }
 
   public int getBenchmarkIterationsOverride() {
-    return Integer.parseInt(System.getProperty("BENCHMARK_ITERATIONS"));
+    return System.getProperty("BENCHMARK_ITERATIONS") != null
+        ? Integer.parseInt(System.getProperty("BENCHMARK_ITERATIONS"))
+        : 1;
   }
 
   public boolean hasBenchmarkWarmupIterationsOverride() {
-    return System.getProperty("BENCHMARK_WARMUP_ITERATIONS") != null;
+    return isTest() || System.getProperty("BENCHMARK_WARMUP_ITERATIONS") != null;
   }
 
   public int getBenchmarkWarmupIterationsOverride() {
-    return Integer.parseInt(System.getProperty("BENCHMARK_WARMUP_ITERATIONS"));
+    return System.getProperty("BENCHMARK_WARMUP_ITERATIONS") != null
+        ? Integer.parseInt(System.getProperty("BENCHMARK_WARMUP_ITERATIONS"))
+        : 0;
   }
 
   public boolean hasOutputPath() {
