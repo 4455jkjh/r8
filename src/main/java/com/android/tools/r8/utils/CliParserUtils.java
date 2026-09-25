@@ -6,6 +6,7 @@ package com.android.tools.r8.utils;
 import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.BaseCompilerCommand;
 import com.android.tools.r8.Diagnostic;
+import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.ParseFlagInfo;
 import com.android.tools.r8.ParseFlagInfoImpl;
@@ -128,18 +129,6 @@ public class CliParserUtils {
     }
   }
 
-  public static void parseApiLevel(
-      String arg, Consumer<AndroidApiLevel> handler, Consumer<String> errorConsumer) {
-    try {
-      handler.accept(AndroidApiLevel.parseAndroidApiLevel(arg));
-    } catch (IllegalArgumentException e) {
-      // Note that NumberFormatException is a subclass of IllegalArgumentException.
-      String rawMessage = e.getMessage();
-      String message = rawMessage == null ? "" : ", " + rawMessage;
-      errorConsumer.accept("Invalid API version: " + arg + message);
-    }
-  }
-
   public static void parseUncheckedApiLevel(
       String arg, Consumer<UncheckedApiLevel> handler, Consumer<String> errorConsumer) {
     try {
@@ -172,39 +161,6 @@ public class CliParserUtils {
                 origin));
         return null;
     }
-  }
-
-  /**
-   * @param diagnosticType either an empty string or a {@code :<class>} string.
-   * @param from the diagnostics level mapped from (see {@link #parseDiagnosticsLevel})
-   * @param to the diagnostics level mapped to (see {@link #parseDiagnosticsLevel})
-   * @param handler receives {@code diagnosticType} stripped of {@code :} and the two levels if
-   *     parsable.
-   */
-  public static void parseDiagnosticsMapping(
-      String diagnosticType,
-      String from,
-      String to,
-      Consumer<DiagnosticsMapping> handler,
-      Consumer<Diagnostic> errorHandler,
-      Origin origin) {
-    String diagnosticsClassName = "";
-    if (!diagnosticType.isEmpty()) {
-      if (diagnosticType.length() == 1 || diagnosticType.charAt(0) != ':') {
-        errorHandler.accept(
-            new StringDiagnostic(
-                "Invalid diagnostics type specification --map-diagnostics" + diagnosticType + ".",
-                origin));
-        return;
-      }
-      diagnosticsClassName = diagnosticType.substring(1);
-    }
-    DiagnosticsLevel fromLevel = parseDiagnosticsLevel(from, errorHandler, origin);
-    DiagnosticsLevel toLevel = parseDiagnosticsLevel(to, errorHandler, origin);
-    if (fromLevel != null && toLevel != null) {
-      handler.accept(new DiagnosticsMapping(diagnosticsClassName, fromLevel, toLevel));
-    }
-    // parseDiagnosticsLevel reports its own errors, so no reporting necessary.
   }
 
   public static class DiagnosticsMapping {
@@ -260,6 +216,83 @@ public class CliParserUtils {
                     error -> errorHandler.accept(state, "Invalid argument to --min-api: " + error));
               }
             });
+  }
+
+  public static <B> Consumer<CliParser<B>> addThreadCountOption(
+      BiConsumer<B, Integer> action,
+      Function<B, ? extends DiagnosticsHandler> getDiagnosticsHandler,
+      Function<B, Origin> getOrigin) {
+    return parser ->
+        parser.option1(
+            "--thread-count",
+            "<number>",
+            "Use <number> of threads. If not specified the number will be based on heuristics"
+                + " taking the number of cores into account.",
+            (state1, arg) ->
+                parsePositiveInt(
+                    arg,
+                    threadCount -> action.accept(state1, threadCount),
+                    error1 ->
+                        getDiagnosticsHandler
+                            .apply(state1)
+                            .error(
+                                new StringDiagnostic(
+                                    "Invalid argument to --thread-count: " + error1,
+                                    getOrigin.apply(state1)))));
+  }
+
+  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
+      BiConsumer<B, DiagnosticsMapping> action,
+      BiConsumer<B, Diagnostic> errorHandler,
+      Function<B, Origin> getOrigin) {
+    return parser ->
+        parser.prefix2(
+            "--map-diagnostics",
+            "[:<type>]",
+            "<from-level>",
+            "<to-level>",
+            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
+                + " <from-level> and <to-level> are one of 'none', 'info', 'warning', or 'error',"
+                + " and the optional <type> is either the simple or fully qualified Java type name"
+                + " of a diagnostic. If <type> is unspecified, all diagnostics at <from-level> will"
+                + " be mapped. Note that fatal compiler errors cannot be mapped.",
+            (state, suffix, fromLevel, toLevel) -> {
+              Consumer<Diagnostic> errorHandler1 = error -> errorHandler.accept(state, error);
+              Origin origin = getOrigin.apply(state);
+              String diagnosticsClassName = "";
+              if (!suffix.isEmpty()) {
+                if (suffix.length() == 1 || suffix.charAt(0) != ':') {
+                  errorHandler1.accept(
+                      new StringDiagnostic(
+                          "Invalid diagnostics type specification --map-diagnostics" + suffix + ".",
+                          origin));
+                  return;
+                }
+                diagnosticsClassName = suffix.substring(1);
+              }
+              DiagnosticsLevel fromLevel1 = parseDiagnosticsLevel(fromLevel, errorHandler1, origin);
+              DiagnosticsLevel toLevel1 = parseDiagnosticsLevel(toLevel, errorHandler1, origin);
+              if (fromLevel1 != null && toLevel1 != null) {
+                if (fromLevel1 == DiagnosticsLevel.NONE) {
+                  errorHandler1.accept(
+                      new StringDiagnostic("Cannot map from diagnostics level 'none'.", origin));
+                  return;
+                }
+                action.accept(
+                    state, new DiagnosticsMapping(diagnosticsClassName, fromLevel1, toLevel1));
+              }
+            });
+  }
+
+  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
+      Function<B, Reporter> getReporter, Function<B, Origin> getOrigin) {
+    return addMapDiagnosticsOption(
+        (state, mapping) ->
+            getReporter
+                .apply(state)
+                .addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
+        (state, error) -> getReporter.apply(state).error(error),
+        getOrigin);
   }
 
   public static <T, C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>

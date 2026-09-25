@@ -92,6 +92,18 @@ public abstract class CommandTestBase<C extends BaseCompilerCommand> extends Tes
   }
 
   @Test
+  public void mapDiagnosticsFromLevelNone() {
+    try {
+      DiagnosticsChecker.checkErrorsContains(
+          "Cannot map from diagnostics level 'none'",
+          handler -> parse(handler, "--map-diagnostics", "none", "warning"));
+      fail("Expected failure");
+    } catch (CompilationFailedException e) {
+      // Expected.
+    }
+  }
+
+  @Test
   public void errorsToWarnings() throws Exception {
     DiagnosticsChecker.checkWarningsContains(
         "Error",

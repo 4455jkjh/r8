@@ -49,7 +49,9 @@ public class LibraryAnalyzerCommandParserTest extends TestBase {
             "                          # Minimum API level to use for analysis.",
             "  --output <path>         # Path where to write analysis result (protobuf).",
             "  --repo <path>           # Path to local Maven repository.",
-            "  --thread-count <int>    # Number of threads to use.",
+            "  --thread-count <number> # Use <number> of threads. If not specified the number will"
+                + " be based on",
+            "                          # heuristics taking the number of cores into account.",
             "  --version",
             "  -v                      # Print version.",
             "  --help",

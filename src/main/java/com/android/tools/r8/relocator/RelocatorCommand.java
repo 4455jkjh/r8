@@ -460,34 +460,13 @@ public class RelocatorCommand {
                 String destination = arg.substring(separator + 2);
                 addMapping(source, destination, s.builder);
               })
-          .prefix2(
-              "--map-diagnostics",
-              "[:<type>]",
-              "<from-level>",
-              "<to-level>",
-              "Map diagnostics level.",
-              (s, suffix, fromLevel, toLevel) -> {
-                CliParserUtils.parseDiagnosticsMapping(
-                    suffix,
-                    fromLevel,
-                    toLevel,
-                    m ->
-                        s.builder
-                            .getReporter()
-                            .addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
-                    s.builder::error,
-                    s.origin);
-              })
-          .option1(
-              "--thread-count",
-              "<number>",
-              "A specified number of threads to run with.",
-              (s, arg) -> {
-                CliParserUtils.parsePositiveInt(
-                    arg,
-                    s.builder::setThreadCount,
-                    error -> s.builder.error(new StringDiagnostic(error, s.origin)));
-              })
+          .apply(
+              CliParserUtils.addMapDiagnosticsOption(s -> s.builder.getReporter(), s -> s.origin))
+          .apply(
+              CliParserUtils.addThreadCountOption(
+                  (s, threadCount) -> s.builder.setThreadCount(threadCount),
+                  s -> s.builder.getReporter(),
+                  s -> s.origin))
           .apply(CliParserUtils.addVersionOption(s -> s.builder.setPrintVersion(true)))
           .apply(CliParserUtils.addHelpOption(s -> s.builder.setPrintHelp(true)));
       return parser;
