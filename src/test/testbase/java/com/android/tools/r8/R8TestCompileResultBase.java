@@ -31,6 +31,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -77,7 +78,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
       List<ProguardConfigurationRule> syntheticProguardRules,
       String proguardMap,
       CollectingGraphConsumer graphConsumer,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       List<Path> features,
       List<ExternalArtProfile> residualArtProfiles,
       Path resourceShrinkerOutput,

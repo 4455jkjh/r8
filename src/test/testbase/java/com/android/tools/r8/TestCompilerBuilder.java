@@ -25,6 +25,7 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ForwardingOutputStream;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThrowingOutputStream;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.ArgumentPropagatorCodeScannerResultInspector;
 import com.android.tools.r8.utils.codeinspector.EnumUnboxingInspector;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
@@ -125,7 +126,7 @@ public abstract class TestCompilerBuilder<
   private StringConsumer mainDexListConsumer;
   // TODO(b/186010707): This could become implicit once min always be set when fixed.
   private boolean noMinApiLevel = false;
-  private int minApiLevel = -1;
+  private UncheckedApiLevel minApiLevel = null;
   private boolean optimizeMultidexForLinearAlloc = false;
   private Consumer<InternalOptions> optionsConsumer;
   private ByteArrayOutputStream stdout = null;
@@ -138,9 +139,10 @@ public abstract class TestCompilerBuilder<
 
   private Optional<Integer> isAndroidBuildVersionAdded = null;
 
-  private static final Map<Integer, Set<String>> allGlobalSynthetics = new ConcurrentHashMap<>();
+  private static final Map<UncheckedApiLevel, Set<String>> allGlobalSynthetics =
+      new ConcurrentHashMap<>();
 
-  private static final Map<Integer, Set<String>> definiteGlobalSynthetics =
+  private static final Map<UncheckedApiLevel, Set<String>> definiteGlobalSynthetics =
       new ConcurrentHashMap<>();
 
   LibraryDesugaringTestConfiguration libraryDesugaringTestConfiguration =
@@ -194,8 +196,8 @@ public abstract class TestCompilerBuilder<
     }
   }
 
-  public int getMinApiLevel() {
-    // TODO(b/186010707): Enable assert minApiLevel != -1;
+  public UncheckedApiLevel getMinApiLevel() {
+    // TODO(b/186010707): Enable assert minApiLevel != null;
     return minApiLevel;
   }
 
@@ -383,9 +385,9 @@ public abstract class TestCompilerBuilder<
       assert !builder.isMinApiLevelSet()
           : "Don't set the API level directly through BaseCompilerCommand.Builder in tests";
       // TODO(b/186010707): This will always be set when fixed.
-      int minApi =
-          getMinApiLevel() == -1
-              ? ToolHelper.getMinApiLevelForDexVm().getMajor()
+      UncheckedApiLevel minApi =
+          getMinApiLevel() == null
+              ? ToolHelper.getMinApiLevelForDexVm().asUnchecked()
               : getMinApiLevel();
       builder.setMinApiLevel(minApi);
     }
@@ -393,10 +395,7 @@ public abstract class TestCompilerBuilder<
         && backend.isDex()
         && (isD8TestBuilder() || isR8TestBuilder() || isR8PartialTestBuilder())
         && !isBenchmarkRunner) {
-      // TODO(b/356841164): Support minor version.
-      assert builder.getUncheckedMinApiLevel().getMinor() == 0
-          : "Minor API version not yet supported: " + builder.getUncheckedMinApiLevel();
-      int minApiLevel = builder.getUncheckedMinApiLevel().getMajor();
+      UncheckedApiLevel minApiLevel = builder.getUncheckedMinApiLevel();
       Consumer<InternalOptions> previousConsumer = optionsConsumer;
       optionsConsumer =
           options -> {
@@ -549,8 +548,13 @@ public abstract class TestCompilerBuilder<
     return setMinApi(minApi);
   }
 
+  @Deprecated
+  public final T setMinApi(int minApiMajor) {
+    return setMinApi(new UncheckedApiLevel(minApiMajor));
+  }
+
   public T setMinApi(AndroidApiLevel minApiLevel) {
-    return setMinApi(minApiLevel.getMajor());
+    return setMinApi(minApiLevel.asUnchecked());
   }
 
   public T setMinApi(TestParameters parameters) {
@@ -558,14 +562,14 @@ public abstract class TestCompilerBuilder<
     return self();
   }
 
-  public T setMinApi(int minApiLevel) {
-    assert minApiLevel != -1;
+  public T setMinApi(UncheckedApiLevel minApiLevel) {
+    assert minApiLevel != null;
     this.minApiLevel = minApiLevel;
     return self();
   }
 
   public T setNoMinApi() {
-    this.minApiLevel = -1;
+    this.minApiLevel = null;
     this.noMinApiLevel = true;
     return self();
   }
@@ -729,13 +733,13 @@ public abstract class TestCompilerBuilder<
     return compile().debugConfig(runtime);
   }
 
-  private static Set<String> computeAllGlobalSynthetics(int minApiLevel) {
+  private static Set<String> computeAllGlobalSynthetics(UncheckedApiLevel minApiLevel) {
     try {
       Set<String> generatedGlobalSynthetics = SetUtils.newConcurrentHashSet();
       GlobalSyntheticsGeneratorCommand command =
           GlobalSyntheticsGeneratorCommand.builder()
               .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.API_DATABASE_LEVEL))
-              .setMinApiLevel(minApiLevel)
+              .setMinApiLevel(minApiLevel.getMajor(), minApiLevel.getMinor())
               .setGlobalSyntheticsConsumer(
                   (data, context, handler) -> {
                     // Ignore the data and context, callback is hit below.
@@ -752,9 +756,9 @@ public abstract class TestCompilerBuilder<
     }
   }
 
-  private static Function<Integer, Set<String>> computeDefiniteGlobalSynthetics(
+  private static <T> Function<T, Set<String>> computeDefiniteGlobalSynthetics(
       InternalOptions options) {
-    return minApiLevel -> {
+    return ignored -> {
       ImmutableSet.Builder<String> builder = ImmutableSet.builder();
       GlobalSyntheticsGeneratorVerifier.forEachExpectedClass(
           options, type -> builder.add(type.toDescriptorString()));

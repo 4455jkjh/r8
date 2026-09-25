@@ -24,8 +24,19 @@ public interface MarkerInfo {
   /** True of the generating tool was the L8 compiler. */
   boolean isL8();
 
-  /** Get the min-api specified by the marker, or -1 if not defined. */
+  /**
+   * Get the min-api specified by the marker, or -1 if not defined.
+   *
+   * <p>Deprecation: use {@link #getMinApiMajor} and {@link #getMinApiMinor}.
+   */
+  @Deprecated
   int getMinApi();
+
+  /** Get the min-api major version specified by the marker, or -1 if not defined. */
+  int getMinApiMajor();
+
+  /** Get the min-api minor version specified by the marker, or -1 if not defined. */
+  int getMinApiMinor();
 
   /** True if the "backend" information is present or can be inferred for the tool. */
   boolean hasBackend();

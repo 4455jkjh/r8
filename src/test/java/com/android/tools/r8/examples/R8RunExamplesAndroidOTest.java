@@ -18,7 +18,6 @@ import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.OffOrAuto;
-import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
@@ -442,7 +441,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                 b.addLibraryFiles(
                     ToolHelper.getAndroidJar(
                         androidJarVersion == null
-                            ? new UncheckedApiLevel(b.getMinApiLevel())
+                            ? b.getMinApiLevel()
                             : androidJarVersion.asUnchecked()));
               })
           .collectSyntheticItems()

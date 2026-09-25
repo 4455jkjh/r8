@@ -362,8 +362,7 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
         testForR8(parameters.getBackend())
             .addProgramClasses(TestClass.class)
             .addKeepMainRule(TestClass.class)
-            // TODO(b/356841164): Use full version.
-            .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT.getMajor())
+            .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT)
             .compile()
             .getSyntheticProguardRules();
     for (ProguardConfigurationRule rule : rules) {

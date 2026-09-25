@@ -33,7 +33,7 @@ public class L8TestCompileResult extends TestCompileResult<L8TestCompileResult, 
       Path mapping,
       TestState state,
       OutputMode outputMode) {
-    super(state, app, apiLevel.getMajor(), outputMode);
+    super(state, app, apiLevel.asUnchecked(), outputMode);
     this.allKeepRules = allKeepRules;
     this.generatedKeepRules = generatedKeepRules;
     this.mapping = mapping;

@@ -9,6 +9,7 @@ import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.shaking.CollectingGraphConsumer;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.Box;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ public class R8PartialTestCompileResult
       List<ProguardConfigurationRule> syntheticProguardRules,
       String proguardMap,
       CollectingGraphConsumer graphConsumer,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       List<Path> features,
       List<ExternalArtProfile> residualArtProfiles,
       Path resourceShrinkerOutput,

@@ -5,8 +5,9 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -18,7 +19,7 @@ public class AssistantTestCompileResult
   private final Path initialOutput;
 
   public AssistantTestCompileResult(
-      Path initialOutput, TestState testState, AndroidApp androidApp, int minApi) {
+      Path initialOutput, TestState testState, AndroidApp androidApp, UncheckedApiLevel minApi) {
     super(testState, androidApp, minApi, OutputMode.DexIndexed);
     this.initialOutput = initialOutput;
   }

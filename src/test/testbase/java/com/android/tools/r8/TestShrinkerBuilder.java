@@ -15,6 +15,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
@@ -58,7 +59,7 @@ public abstract class TestShrinkerBuilder<
   // TODO(b/270021825): Look into if we can assert backend is DEX.
   @Override
   public T setMinApi(AndroidApiLevel minApiLevel) {
-    return backend == Backend.DEX ? super.setMinApi(minApiLevel.getMajor()) : self();
+    return backend == Backend.DEX ? super.setMinApi(minApiLevel) : self();
   }
 
   @Override
@@ -74,13 +75,8 @@ public abstract class TestShrinkerBuilder<
 
   // TODO(b/270021825): Look into if we can assert backend is DEX.
   @Override
-  public T setMinApi(int minApiLevel) {
-    return super.setMinApi(minApiLevel);
-  }
-
-  @Override
-  public int getMinApiLevel() {
-    return backend == Backend.DEX ? super.getMinApiLevel() : -1;
+  public UncheckedApiLevel getMinApiLevel() {
+    return backend == Backend.DEX ? super.getMinApiLevel() : null;
   }
 
   public T addClassObfuscationDictionary(String... names) throws IOException {

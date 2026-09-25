@@ -29,6 +29,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -315,7 +316,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
     Collection<Marker> markers = ExtractMarkerUtils.extractMarkersFromFile(output);
     assertEquals(1, markers.size());
     Marker marker = markers.iterator().next();
-    assertEquals(24, marker.getMinApi().intValue());
+    assertEquals(new UncheckedApiLevel(24, 0), marker.getMinApi());
     assertEquals(Tool.R8, marker.getTool());
   }
 

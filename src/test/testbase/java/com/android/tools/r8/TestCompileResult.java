@@ -27,6 +27,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.Matchers;
@@ -64,7 +65,7 @@ public abstract class TestCompileResult<
     extends TestBaseResult<CR, RR> {
 
   public final AndroidApp app;
-  public final int minApiLevel;
+  public final UncheckedApiLevel minApiLevel;
   private final OutputMode outputMode;
   final List<Path> additionalRunClassPath = new ArrayList<>();
   final List<Path> additionalBootClasspath = new ArrayList<>();
@@ -73,7 +74,8 @@ public abstract class TestCompileResult<
   private boolean withArtFrameworks = true;
   private LibraryDesugaringTestConfiguration libraryDesugaringTestConfiguration;
 
-  TestCompileResult(TestState state, AndroidApp app, int minApiLevel, OutputMode outputMode) {
+  TestCompileResult(
+      TestState state, AndroidApp app, UncheckedApiLevel minApiLevel, OutputMode outputMode) {
     super(state);
     this.app = app;
     this.minApiLevel = minApiLevel;
@@ -84,7 +86,7 @@ public abstract class TestCompileResult<
   TestCompileResult(
       TestState state,
       AndroidApp app,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       OutputMode outputMode,
       LibraryDesugaringTestConfiguration libraryDesugaringTestConfiguration) {
     super(state);

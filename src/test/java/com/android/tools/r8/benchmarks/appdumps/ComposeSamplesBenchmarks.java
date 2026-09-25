@@ -9,6 +9,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,7 +64,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
   private static void configureWithoutOpenInterfaceSuppression(R8FullTestBuilder testBuilder) {
     testBuilder
         // TODO(b/480100735): Remove once we have figured out how to deal with keepanno.
-        .setMinApi(24)
+        .setMinApi(new UncheckedApiLevel(24, 0))
         .allowUnnecessaryDontWarnWildcards()
         .allowUnusedDontWarnPatterns()
         .allowUnusedProguardConfigurationRules()
@@ -74,7 +75,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
       R8PartialTestBuilder testBuilder) {
     testBuilder
         // TODO(b/480100735): Remove once we have figured out how to deal with keepanno.
-        .setMinApi(24)
+        .setMinApi(new UncheckedApiLevel(24, 0))
         .allowUnnecessaryDontWarnWildcards()
         .allowUnusedDontWarnPatterns()
         .allowUnusedProguardConfigurationRules()

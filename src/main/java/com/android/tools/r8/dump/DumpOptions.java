@@ -62,7 +62,7 @@ public class DumpOptions {
   private final Backend backend;
   private final Tool tool;
   private final CompilationMode compilationMode;
-  private final int minApi;
+  private final UncheckedApiLevel minApi;
   private final boolean optimizeMultidexForLinearAlloc;
   private final int threadCount;
   private final DesugarState desugarState;
@@ -98,7 +98,7 @@ public class DumpOptions {
       Backend backend,
       Tool tool,
       CompilationMode compilationMode,
-      int minApi,
+      UncheckedApiLevel minApi,
       DesugaredLibrarySpecification desugaredLibrarySpecification,
       boolean optimizeMultidexForLinearAlloc,
       int threadCount,
@@ -248,7 +248,7 @@ public class DumpOptions {
         }
         return;
       case MIN_API_KEY:
-        builder.setMinApi(Integer.parseInt(value), 0);
+        builder.setMinApi(UncheckedApiLevel.parse(value));
         return;
       case OPTIMIZE_MULTIDEX_FOR_LINEAR_ALLOC_KEY:
         builder.setOptimizeMultidexForLinearAlloc(Boolean.parseBoolean(value));
@@ -312,7 +312,7 @@ public class DumpOptions {
     return isolatedSplits.orElse(false);
   }
 
-  public int getMinApi() {
+  public UncheckedApiLevel getMinApi() {
     return minApi;
   }
 
@@ -401,7 +401,7 @@ public class DumpOptions {
     private Backend backend = Backend.DEX;
     private Tool tool;
     private CompilationMode compilationMode;
-    private int minApi;
+    private UncheckedApiLevel minApi;
     private boolean optimizeMultidexForLinearAlloc;
     private int threadCount;
     private DesugarState desugarState;
@@ -467,8 +467,7 @@ public class DumpOptions {
     }
 
     public Builder setMinApi(UncheckedApiLevel apiLevel) {
-      assert apiLevel.getMinor() == 0 : "minor versions not yet supported: " + apiLevel;
-      this.minApi = apiLevel.getMajor();
+      this.minApi = apiLevel;
       return this;
     }
 

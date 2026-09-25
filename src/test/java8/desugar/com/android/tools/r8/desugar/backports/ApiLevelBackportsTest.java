@@ -88,7 +88,7 @@ public class ApiLevelBackportsTest extends TestBase {
   public void warningForFutureNonPlatformBuild() throws Exception {
     testForD8()
         .addProgramClassFileData(transformTestMathMultiplyExactLongInt())
-        .setMinApi(AndroidApiLevel.UNKNOWN.getMajor())
+        .setMinApi(AndroidApiLevel.UNKNOWN)
         .setOutputMode(OutputMode.DexFilePerClassFile)
         .compile()
         .assertOnlyWarnings()
@@ -111,8 +111,7 @@ public class ApiLevelBackportsTest extends TestBase {
   public void noWarningForPlatformBuild() throws Exception {
     testForD8()
         .addProgramClassFileData(transformTestMathMultiplyExactLongInt())
-        // TODO(b/356841164): Use full version.
-        .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT.getMajor())
+        .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT)
         .setOutputMode(OutputMode.DexFilePerClassFile)
         .compile()
         .assertNoMessages()

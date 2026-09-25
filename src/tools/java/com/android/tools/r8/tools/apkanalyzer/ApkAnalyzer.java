@@ -31,6 +31,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
@@ -201,7 +202,7 @@ public class ApkAnalyzer {
       System.out.println("dex_file_desugared_library_index=" + result.desugaredLibraryInfo.index);
       System.out.println("dex_file_desugared_library_size=" + result.desugaredLibraryInfo.size);
     }
-    Long minApi = getMinApi(result.dexMarkers);
+    UncheckedApiLevel minApi = getMinApi(result.dexMarkers);
     if (minApi != null) {
       System.out.println("min_api=" + minApi);
     }
@@ -304,7 +305,7 @@ public class ApkAnalyzer {
       sb.append(';');
       sb.append(';');
     }
-    Long minApi = getMinApi(result.dexMarkers);
+    UncheckedApiLevel minApi = getMinApi(result.dexMarkers);
     if (minApi != null) {
       sb.append(minApi).append(';');
     } else {
@@ -634,16 +635,16 @@ public class ApkAnalyzer {
     return dexMarkers;
   }
 
-  private static Long getMinApi(List<Marker> dexMarkers) {
-    Long commonMinApi = null;
+  private static UncheckedApiLevel getMinApi(List<Marker> dexMarkers) {
+    UncheckedApiLevel commonMinApi = null;
     for (Marker marker : dexMarkers) {
       if (!marker.hasMinApi()) {
         return null;
       }
-      long markerMinApi = marker.getMinApi();
+      UncheckedApiLevel markerMinApi = marker.getMinApi();
       if (commonMinApi == null) {
         commonMinApi = markerMinApi;
-      } else if (commonMinApi != markerMinApi) {
+      } else if (!commonMinApi.equals(markerMinApi)) {
         return null;
       }
     }

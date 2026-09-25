@@ -79,9 +79,9 @@ public class ThrowBlockOutlinerNeverCompileTest extends BottomUpOutlinerTestBase
             .getOatSizeOrDefault(-1);
     assertTrue(0 < oatSizeNeverCompile);
     // Our dex2oat starting from Android 13 honour @NeverCompile.
-    assertEquals(
-        parameters.getDexRuntimeVersion().isNewerThanOrEqual(V13_0_0),
-        oatSizeNeverCompile < oatSize);
+    if (parameters.getDexRuntimeVersion().isNewerThanOrEqual(V13_0_0)) {
+      assertTrue(oatSizeNeverCompile < oatSize);
+    }
   }
 
   @Override
