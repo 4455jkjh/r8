@@ -76,6 +76,8 @@ public class AppDumpBenchmarkBuilder {
   private boolean enableDex2OatVerification = true;
   private boolean enableGcTracking = false;
   private boolean runtimeOnly = false;
+  private boolean removeDontOptimize = false;
+  private boolean removeDontObfuscate = false;
   private int warmupIterations = 1;
   private final List<String> programPackages = new ArrayList<>();
 
@@ -159,9 +161,34 @@ public class AppDumpBenchmarkBuilder {
     return this;
   }
 
+  // Removes -dontoptimize from the dump's keep rules (e.g., from AGP's legacy
+  // proguard-android.txt) so that the benchmark exercises the R8 optimizer.
+  public AppDumpBenchmarkBuilder setRemoveDontOptimize() {
+    this.removeDontOptimize = true;
+    return this;
+  }
+
+  // Removes -dontobfuscate from the dump's keep rules so that the benchmark exercises the R8
+  // minifier.
+  public AppDumpBenchmarkBuilder setRemoveDontObfuscate() {
+    this.removeDontObfuscate = true;
+    return this;
+  }
+
   public AppDumpBenchmarkBuilder setWarmupIterations(int warmupIterations) {
     this.warmupIterations = warmupIterations;
     return this;
+  }
+
+  private String getKeepRules(CompilerDump dump) throws IOException {
+    String keepRules = FileUtils.readTextFile(dump.getProguardConfigFile());
+    if (removeDontOptimize) {
+      keepRules = StringUtils.replaceAll(keepRules, "-dontoptimize", "");
+    }
+    if (removeDontObfuscate) {
+      keepRules = StringUtils.replaceAll(keepRules, "-dontobfuscate", "");
+    }
+    return keepRules;
   }
 
   public AppDumpBenchmarkBuilder addProgramPackages(String... pkgs) {
@@ -365,8 +392,7 @@ public class AppDumpBenchmarkBuilder {
   }
 
   private static BenchmarkMethod internalRunR8(
-      AppDumpBenchmarkBuilder builder,
-      ThrowableConsumer<? super R8FullTestBuilder> configuration) {
+      AppDumpBenchmarkBuilder builder, ThrowableConsumer<? super R8FullTestBuilder> configuration) {
     return environment ->
         BenchmarkBase.runner(environment)
             .setWarmupIterations(builder.warmupIterations)
@@ -377,7 +403,8 @@ public class AppDumpBenchmarkBuilder {
                   TestBase.testForR8(environment.getTemp(), Backend.DEX)
                       .addProgramFiles(dump.getProgramArchive())
                       .addLibraryFiles(dump.getLibraryArchive())
-                      .addKeepRuleFiles(dump.getProguardConfigFile())
+                      .addClasspathFiles(dump.getClasspathArchive())
+                      .addKeepRules(builder.getKeepRules(dump))
                       .addOptionsModification(
                           options -> {
                             options.apiModelingOptions().androidApiExtensionPackages =
@@ -469,12 +496,11 @@ public class AppDumpBenchmarkBuilder {
                   TestBase.testForR8Partial(environment.getTemp())
                       .addProgramFiles(dump.getProgramArchive())
                       .addLibraryFiles(dump.getLibraryArchive())
+                      .addClasspathFiles(dump.getClasspathArchive())
                       .addKeepRules(
                           // TODO(b/392529669): Add support for proto shrinking.
                           StringUtils.replaceAll(
-                              FileUtils.readTextFile(dump.getProguardConfigFile()),
-                              "-shrinkunusedprotofields",
-                              ""))
+                              builder.getKeepRules(dump), "-shrinkunusedprotofields", ""))
                       .addR8PartialR8OptionsModification(
                           options -> {
                             options.apiModelingOptions().androidApiExtensionPackages =
@@ -554,6 +580,7 @@ public class AppDumpBenchmarkBuilder {
                   TestBase.testForD8(environment.getTemp(), Backend.DEX)
                       .addProgramFiles(dump.getProgramArchive())
                       .addLibraryFiles(dump.getLibraryArchive())
+                      .addClasspathFiles(dump.getClasspathArchive())
                       .setMinApi(dumpProperties.getMinApi())
                       .setMode(builder.compilationMode)
                       .applyIf(builder.enableLibraryDesugaring, b -> addDesugaredLibrary(b, dump))
