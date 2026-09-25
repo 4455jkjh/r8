@@ -997,7 +997,52 @@ public class ArgumentPropagatorCodeScanner {
         return ValueState.unused(parameterType);
       }
 
-      return computeNonReceiverValueState(value, value, singleTarget, parameterType);
+      return internalComputeParameterStateForNonReceiver(singleTarget, parameterType, value, value);
+    }
+
+    private NonEmptyValueState internalComputeParameterStateForNonReceiver(
+        ProgramMethod singleTarget, DexType parameterType, Value value, Value initialValue) {
+      assert value == initialValue || initialValue.getAliasedValue().isPhi();
+
+      // If the value is an argument of the enclosing method, then clearly we have no information
+      // about its abstract value. Instead of treating this as having an unknown runtime value, we
+      // instead record a flow constraint that specifies that all values that flow into the
+      // parameter of this enclosing method also flows into the corresponding parameter of the
+      // methods potentially called from this invoke instruction.
+      NonEmptyValueState inFlowState =
+          computeInFlowState(
+              parameterType,
+              singleTarget,
+              value,
+              initialValue,
+              phiOperandArgumentValue ->
+                  internalComputeParameterStateForNonReceiver(
+                      singleTarget, parameterType, phiOperandArgumentValue, initialValue));
+      if (inFlowState != null) {
+        return inFlowState;
+      }
+
+      // Only track the nullability for array types.
+      if (parameterType.isArrayType()) {
+        Nullability nullability = value.getType().nullability();
+        return ConcreteArrayTypeValueState.create(nullability);
+      }
+
+      AbstractValue abstractValue = abstractValueSupplier.getAbstractValue(value, appView, context);
+
+      // For class types, we track both the abstract value and the dynamic type. If both are
+      // unknown, then use ValueState.unknown().
+      if (parameterType.isClassType()) {
+        DynamicType dynamicType = value.getDynamicType(appView);
+        DynamicType widenedDynamicType =
+            WideningUtils.widenDynamicNonReceiverType(appView, dynamicType, parameterType);
+        return ConcreteClassTypeValueState.create(abstractValue, widenedDynamicType);
+      } else {
+        // For primitive types, we only track the abstract value, thus if the abstract value is
+        // unknown, we use ValueState.unknown().
+        assert parameterType.isPrimitiveType();
+        return ConcretePrimitiveTypeValueState.create(abstractValue);
+      }
     }
 
     private boolean isUnused(InvokeMethod invoke, ProgramMethod singleTarget, int argumentIndex) {
