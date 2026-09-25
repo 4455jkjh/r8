@@ -737,6 +737,7 @@ private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
       "kotlin-compiler-2.1.10",
       "kotlin-compiler-2.2.0",
       "kotlin-compiler-2.3.10",
+      "kotlin-compiler-2.4.20",
       "kotlin-compiler-dev",
     )
     .map { ThirdPartyDependency(it, Paths.get("third_party", "kotlin", it).toFile()) }
