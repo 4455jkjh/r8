@@ -43,6 +43,7 @@ public class TestDeps {
     dependencies.put("CORE_LAMBDA_STUBS", null);
     dependencies.put("DEPENDENCIES", null);
     dependencies.put("GSON", null);
+    dependencies.put("GUAVA_JRE", null);
     dependencies.put("JDWP_TESTS", null);
   }
 
@@ -60,6 +61,10 @@ public class TestDeps {
 
   public static Path getGsonKeepRules() {
     return getDependencyPath("GSON", "gson.pro");
+  }
+
+  public static Path getGuavaJreJar() {
+    return getDependencyPath("GUAVA_JRE", "guava-32.1.2-jre.jar");
   }
 
   public static Path getJunitJar() {

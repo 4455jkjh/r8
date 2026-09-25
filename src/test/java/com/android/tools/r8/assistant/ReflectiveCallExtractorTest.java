@@ -46,7 +46,7 @@ public class ReflectiveCallExtractorTest extends TestBase {
 
   @Test
   public void testGuava() throws Exception {
-    test(ToolHelper.GUAVA_JRE, 28, 11);
+    test(TestDeps.getGuavaJreJar(), 28, 11);
   }
 
   @Test

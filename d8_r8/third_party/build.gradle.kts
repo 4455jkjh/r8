@@ -61,6 +61,8 @@ registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_
 
 registerTestDep("gson", ThirdPartyDeps.gson, "GSON")
 
+registerTestDep("guavaJre", ThirdPartyDeps.guavaJre, "GUAVA_JRE")
+
 registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
 
 val internalTasks =

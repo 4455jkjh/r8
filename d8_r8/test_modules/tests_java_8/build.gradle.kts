@@ -81,6 +81,7 @@ dependencies {
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "gson"))
+  runtimeOnlyData(project(":third_party", "guavaJre"))
   runtimeOnlyData(project(":third_party", "jdwpTests"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
