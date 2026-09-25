@@ -611,7 +611,8 @@ def test(options, args):
                 timestamp_file,
                 print_stacks_timeout,
             ))
-    rotate_test_reports()
+    if not utils.is_bot():
+        rotate_test_reports()
 
     if options.print_times:
         gradle_args.append('-Pprint_times=true')
@@ -745,9 +746,10 @@ def timeout_handler(timestamp_file, timeout_handler_period):
 
 
 def report_dir_path(index):
-    if index == 0:
-        return REPORTS_PATH
-    return '%s%d' % (REPORTS_PATH, index)
+    p = REPORTS_PATH if index == 0 else '%s%d' % (REPORTS_PATH, index)
+    if utils.IsWindows():
+        p = '\\\\?\\' + os.path.abspath(p)
+    return p
 
 
 def report_index_path(index):

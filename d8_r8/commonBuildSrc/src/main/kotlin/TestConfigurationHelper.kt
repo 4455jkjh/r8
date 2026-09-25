@@ -506,6 +506,8 @@ public class TestConfigurationHelper {
 
       val retry = test.extensions.getByType(TestRetryTaskExtension::class.java)
       if (isCiServer) {
+        test.reports.html.required.set(false)
+        test.reports.junitXml.required.set(false)
         retry.maxRetries.set(2)
         // High maxFailures so parameterized tests aren't aborted from retries.
         retry.maxFailures.set(200)
