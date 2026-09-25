@@ -41,6 +41,7 @@ public class FlowExample {
       // tasks on the fork join pool to be finished. For the test to be completed we need such
       // tasks to finish.
       int seconds = 60;
+      executor.shutdown();
       executor.awaitTermination(seconds, TimeUnit.SECONDS);
     }
 

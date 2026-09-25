@@ -142,7 +142,7 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
 
   private static ExpectedRules getExpectedRulesJava(
       Class<?> conditionClass, String contitionMembers) {
-    return getExpectedRulesJava(conditionClass, false, contitionMembers);
+    return getExpectedRulesJava(conditionClass, true, contitionMembers);
   }
 
   private static ExpectedRules getExpectedRulesKotlin(String conditionClass) {
@@ -157,6 +157,14 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
                     .apply(setCondition)
                     .setKeepVariant("-keepclasseswithmembers")
                     .setConsequentClass("com.android.tools.r8.keepanno.androidx.kt.KeptClass")
+                    .setConsequentMembers("{ void <init>(); }")
+                    .build())
+            .add(
+                ExpectedKeepRule.builder()
+                    .apply(setCondition)
+                    .setKeepVariant("-keepclasseswithmembers")
+                    .setConsequentExtendsClass(
+                        "com.android.tools.r8.keepanno.androidx.kt.KeptClass")
                     .setConsequentMembers("{ void <init>(); }")
                     .build());
     return builder.build();
@@ -304,7 +312,7 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
   }
 
   @Test
-  public void testIncludeSubclasses() throws Exception {
+  public void testNoIncludeSubclasses() throws Exception {
     testExtractedRules(
         ImmutableList.of(
             setAnnotationOnMethod(
@@ -316,9 +324,9 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
                             Reference.classFromClass(UsesReflectionToConstruct.class))
                         .setField("classConstant", KeptClass.class)
                         .setArray("parameterTypes")
-                        .setField("includeSubclasses", true))),
+                        .setField("includeSubclasses", false))),
         getExpectedRulesJava(
-            OnlyNoArgsConstructorWithoutAnnotation.class, true, "{ void foo(java.lang.Class); }"));
+            OnlyNoArgsConstructorWithoutAnnotation.class, false, "{ void foo(java.lang.Class); }"));
   }
 
   @Test

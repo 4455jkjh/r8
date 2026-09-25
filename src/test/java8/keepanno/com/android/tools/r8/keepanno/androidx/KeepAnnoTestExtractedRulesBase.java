@@ -255,6 +255,12 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
         return this;
       }
 
+      public Builder setConsequentExtendsClass(String consequentClass) {
+        this.consequentClass = consequentClass;
+        this.extendsConsequentClass = true;
+        return this;
+      }
+
       public Builder setConsequentMembers(String consequentMembers) {
         this.consequentMembers = consequentMembers;
         return this;

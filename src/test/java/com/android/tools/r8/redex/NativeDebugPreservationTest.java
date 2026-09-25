@@ -6,6 +6,8 @@ package com.android.tools.r8.redex;
 import static org.junit.Assert.assertNull;
 
 import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.D8TestBuilder;
+import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -31,7 +33,18 @@ public class NativeDebugPreservationTest extends TestBase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testNoMapOutput() throws Exception {
+    runTest(testForD8(Backend.DEX));
+  }
+
+  @Test
+  public void testMapOutput() throws Exception {
+    runTest(
+        testForD8(Backend.DEX)
+            .apply(b -> b.getBuilder().setProguardMapConsumer(StringConsumer.emptyConsumer())));
+  }
+
+  public void runTest(D8TestBuilder d8Builder) throws Exception {
     // Ensure that when direct PC debugging is allowed, explicit debug info is not added.
     AndroidApiLevel initialMinAPi = AndroidApiLevel.CINNAMON_BUN;
     AndroidApiLevel reoptimizationMinApi = AndroidApiLevel.CINNAMON_BUN;
@@ -53,7 +66,7 @@ public class NativeDebugPreservationTest extends TestBase {
                 })
             .writeToZip();
 
-    testForD8(Backend.DEX)
+    d8Builder
         .setMinApi(reoptimizationMinApi)
         .setExperimentalReoptimizeDex(true)
         .setMode(CompilationMode.RELEASE)

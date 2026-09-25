@@ -187,7 +187,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     Switch insn = block.exit().asSwitch();
     BasicBlock fallthroughBlock = insn.fallthroughBlock();
     Set<BasicBlock> replacedBlocks = new HashSet<>();
-    for (int j = 0; j < insn.targetBlockIndices().length; j++) {
+    for (int j = 0; j < insn.targetBlockIndices().length && block.exit().isSwitch(); j++) {
       BasicBlock target = insn.targetBlock(j);
       if (target != fallthroughBlock) {
         BasicBlock newTarget = target.endOfGotoChain();
@@ -200,6 +200,14 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
           replacedBlocks.add(target);
         }
       }
+    }
+    BasicBlock newFallthrough = fallthroughBlock.endOfGotoChain();
+    if (appView.options().testing.enableDeadSwitchCaseElimination
+        && newFallthrough != fallthroughBlock
+        && block.getSuccessors().size() == 2
+        && block.getSuccessors().contains(newFallthrough)) {
+      block.replaceSuccessor(newFallthrough, fallthroughBlock);
+      newFallthrough.getMutablePredecessors().remove(block);
     }
   }
 }

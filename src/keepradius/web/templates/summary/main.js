@@ -5,73 +5,31 @@
 /**
  * R8 Configuration Analyzer — platform-wide dashboard.
  *
- * Reads a JSON array of base64-encoded KeepRadiusSummary protos from
- * <script id="keepradius-data">, decodes them with a hand-rolled
- * wire-format reader, and renders three views: System Health, Builds, and
- * Global Keep Rules.
+ * Reads a JSON array of KeepRadiusSummary JSON objects from
+ * <script id="keepradius-data">, and renders three views:
+ * System Health, Builds, and Global Keep Rules.
  *
  * Sections:
- *   1. Protobuf wire-format decoder (class Reader & decoders)
- *   2. Numeric + DOM helpers
- *   3. Data loading and platform aggregation
- *   4. Application state and router
- *   5. View renderers (header, system, builds, rules)
- *   6. Event delegation
- *   7. Boot
+ *   1. Numeric + DOM helpers
+ *   2. Data loading and platform aggregation
+ *   3. Application state and router
+ *   4. View renderers (header, system, builds, rules)
+ *   5. Event delegation
+ *   6. Boot
  */
 (function () {
   "use strict";
 
-  /* ==========================================================================
-     1. PROTOBUF SCHEMA INITIALIZATION
-     ========================================================================== */
-
-  const protoSchema = document.getElementById("keepradius-proto").textContent;
-  const root = protobuf.parse(protoSchema, { keepCase: true }).root;
-  const KeepRadiusSummary = root.lookupType(
-    "com.android.tools.r8.keepradius.proto.KeepRadiusSummary",
-  );
-
   /**
    * Returns a default empty KeepInfo struct.
-   * @returns {{item_count: number, no_obfuscation_count: number, no_optimization_count: number, no_shrinking_count: number}}
+   * @returns {{itemCount: number, noObfuscationCount: number, noOptimizationCount: number, noShrinkingCount: number}}
    */
   const emptyKeepInfo = () => ({
-    item_count: 0,
-    no_obfuscation_count: 0,
-    no_optimization_count: 0,
-    no_shrinking_count: 0,
+    itemCount: 0,
+    noObfuscationCount: 0,
+    noOptimizationCount: 0,
+    noShrinkingCount: 0,
   });
-
-  /**
-   * Decodes a KeepRadiusSummary proto payload using protobuf.js.
-   * @param {Uint8Array} buf
-   * @returns {object}
-   */
-  const decodeSummary = (buf) => {
-    const message = KeepRadiusSummary.decode(buf);
-    return KeepRadiusSummary.toObject(message, {
-      defaults: true,
-      arrays: true,
-      objects: true,
-      oneofs: true,
-      keepCase: true,
-    });
-  };
-
-  /**
-   * Converts a base64-encoded string to a Uint8Array byte buffer.
-   * @param {string} b64
-   * @returns {Uint8Array}
-   */
-  const base64ToBytes = (b64) => {
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-  };
 
   /* ==========================================================================
      2. NUMERIC + DOM HELPERS
@@ -139,7 +97,7 @@
    * @returns {{kept: number, noOpt: number, noShr: number, noObf: number, total: number}}
    */
   const buildKeptInfo = (summary) => {
-    const globalRules = summary.global_keep_rule_keep_radius || [];
+    const globalRules = summary.globalKeepRuleKeepRadius || [];
     const hasGlobalDontOptimize = globalRules.some(
       (r) => r.source === "-dontoptimize",
     );
@@ -149,30 +107,30 @@
 
     const getFacetInfo = (facetKey, facetSrc, totalCount) => {
       const src = facetSrc || emptyKeepInfo();
-      const kept = hasGlobalDontShrink ? totalCount : src.item_count || 0;
+      const kept = hasGlobalDontShrink ? totalCount : src.itemCount || 0;
       return {
         kept: kept,
-        noOpt: hasGlobalDontOptimize ? kept : src.no_optimization_count || 0,
-        noShr: hasGlobalDontShrink ? totalCount : src.no_shrinking_count || 0,
-        noObf: src.no_obfuscation_count || 0,
+        noOpt: hasGlobalDontOptimize ? kept : src.noOptimizationCount || 0,
+        noShr: hasGlobalDontShrink ? totalCount : src.noShrinkingCount || 0,
+        noObf: src.noObfuscationCount || 0,
         total: totalCount,
       };
     };
 
     const classes = getFacetInfo(
       "classes",
-      summary.kept_classes,
-      summary.live_class_count || 0,
+      summary.keptClasses,
+      summary.liveClassCount || 0,
     );
     const fields = getFacetInfo(
       "fields",
-      summary.kept_fields,
-      summary.live_field_count || 0,
+      summary.keptFields,
+      summary.liveFieldCount || 0,
     );
     const methods = getFacetInfo(
       "methods",
-      summary.kept_methods,
-      summary.live_method_count || 0,
+      summary.keptMethods,
+      summary.liveMethodCount || 0,
     );
 
     const declaredTotal = classes.total + fields.total + methods.total;
@@ -196,7 +154,7 @@
     summary.link || summary.name.replace(".pb", ".html");
 
   const hasGlobalRule = (summary, ruleName) => {
-    const globalRules = summary.global_keep_rule_keep_radius || [];
+    const globalRules = summary.globalKeepRuleKeepRadius || [];
     return globalRules.some((r) => r.source === ruleName);
   };
 
@@ -211,57 +169,55 @@
   const loadSummaries = () => {
     const dataEl = document.getElementById("keepradius-data");
     if (!dataEl) return [];
-    let encoded;
+    let items;
     try {
-      encoded = JSON.parse(dataEl.textContent.trim());
+      items = JSON.parse(dataEl.textContent.trim());
     } catch (err) {
       console.error("Failed to parse summaries JSON payload:", err);
       return [];
     }
-    if (!Array.isArray(encoded)) return [];
-    const decodedSummaries = [];
-    for (const item of encoded) {
+    if (!Array.isArray(items)) return [];
+    const summaries = [];
+    for (const item of items) {
       try {
-        const decoded = decodeSummary(base64ToBytes(item));
-
         // Pre-calculate expensive details once at load time
-        const info = buildKeptInfo(decoded);
+        const info = buildKeptInfo(item);
 
         // Combine regular and global rules for sorting
-        const rules = (decoded.keep_rule_keep_radius || []).map((r) => ({
+        const rules = (item.keepRuleKeepRadius || []).map((r) => ({
           source: r.source,
-          item_count: r.item_count,
+          itemCount: r.itemCount,
         }));
 
-        const globalRules = decoded.global_keep_rule_keep_radius || [];
+        const globalRules = item.globalKeepRuleKeepRadius || [];
         if (globalRules.length > 0) {
           const liveTotal =
-            (decoded.live_class_count || 0) +
-            (decoded.live_field_count || 0) +
-            (decoded.live_method_count || 0);
+            (item.liveClassCount || 0) +
+            (item.liveFieldCount || 0) +
+            (item.liveMethodCount || 0);
           for (const gr of globalRules) {
             rules.push({
               source: gr.source,
-              item_count: liveTotal,
+              itemCount: liveTotal,
             });
           }
         }
 
         const worstRules = rules
-          .sort((a, b) => (b.item_count || 0) - (a.item_count || 0))
+          .sort((a, b) => (b.itemCount || 0) - (a.itemCount || 0))
           .slice(0, 10);
 
-        decodedSummaries.push({
-          ...decoded,
-          nameLower: decoded.name.toLowerCase(),
+        summaries.push({
+          ...item,
+          nameLower: item.name.toLowerCase(),
           calculatedInfo: info,
           worstRules: worstRules,
         });
       } catch (err) {
-        console.error("Failed to decode protobuf entry:", err);
+        console.error("Failed to summarize item:", err);
       }
     }
-    return decodedSummaries;
+    return summaries;
   };
 
   const computePlatformTotals = (summaries) => {
@@ -332,20 +288,20 @@
       };
 
       // 1. Regular keep rules
-      const rules = summary.keep_rule_keep_radius || [];
+      const rules = summary.keepRuleKeepRadius || [];
       for (const rule of rules) {
         if (rule && rule.source) {
-          addRule(rule.source, rule.item_count || 0, false);
+          addRule(rule.source, rule.itemCount || 0, false);
         }
       }
 
       // 2. Global keep rules (implicitly apply to all live items)
-      const globalRules = summary.global_keep_rule_keep_radius || [];
+      const globalRules = summary.globalKeepRuleKeepRadius || [];
       if (globalRules.length > 0) {
         const liveTotal =
-          (summary.live_class_count || 0) +
-          (summary.live_field_count || 0) +
-          (summary.live_method_count || 0);
+          (summary.liveClassCount || 0) +
+          (summary.liveFieldCount || 0) +
+          (summary.liveMethodCount || 0);
         for (const rule of globalRules) {
           if (rule && rule.source) {
             addRule(rule.source, liveTotal, true);
@@ -911,11 +867,11 @@
         case "kept":
           return summary.calculatedInfo.kept;
         case "classes":
-          return summary.kept_classes?.item_count || 0;
+          return summary.keptClasses?.itemCount || 0;
         case "fields":
-          return summary.kept_fields?.item_count || 0;
+          return summary.keptFields?.itemCount || 0;
         case "methods":
-          return summary.kept_methods?.item_count || 0;
+          return summary.keptMethods?.itemCount || 0;
         case "noOpt":
           return summary.calculatedInfo.noOpt;
         case "noShr":
@@ -946,7 +902,7 @@
 
   const renderBuildRow = (summary) => {
     const info = summary.calculatedInfo;
-    const rules = summary.keep_rule_keep_radius || [];
+    const rules = summary.keepRuleKeepRadius || [];
     const worstRules = summary.worstRules;
     const canExpand = worstRules.length > 0;
     const isOpen = state.expandedBuilds.has(summary.name) && canExpand;
@@ -967,7 +923,7 @@
         <a class="build-name" href="${escapeHtml(buildLink(summary))}" title="${escapeHtml(summary.name)}">
           ${escapeHtml(summary.name)}
         </a>
-        <div class="build-meta">${fmt(info.total)} items · ${fmt(summary.keep_rule_count || rules.length)} keep rules</div>
+        <div class="build-meta">${fmt(info.total)} items · ${fmt(summary.keepRuleCount || rules.length)} keep rules</div>
       </div>
       ${renderNumCell(info.kept, pctStr(info.kept, info.total))}
       ${renderNumCell(info.facets.classes.kept, pctStr(info.facets.classes.kept, info.facets.classes.total))}
@@ -988,7 +944,7 @@
       .map(
         (rule) => `
   <div class="rule-line">
-    <span class="count">${fmt(rule.item_count || 0)}</span>
+    <span class="count">${fmt(rule.itemCount || 0)}</span>
     <code class="src">${escapeHtml(rule.source)}</code>
   </div>
 `,

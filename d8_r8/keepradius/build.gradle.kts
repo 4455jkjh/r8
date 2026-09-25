@@ -25,6 +25,7 @@ java {
 dependencies {
   compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(libs.protobuf)
+  compileOnly(libs.protobufUtil)
 }
 
 tasks {

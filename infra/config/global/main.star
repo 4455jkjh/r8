@@ -287,13 +287,14 @@ def get_dimensions(windows = False, internal = False, archive = False, tester = 
 def r8_builder(
         name,
         bucket = "ci",
-        priority = 26,
+        priority = None,
         trigger = True,
         category = None,
         triggering_policy = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
         **kwargs):
+    priority = priority if priority else (25 if bucket == "try" else 26)
     release = name.endswith("release")
     triggered = None
     if trigger:
@@ -337,7 +338,7 @@ def r8_tester(
         test_options,
         bucket = "ci",
         trigger = True,
-        priority = 26,
+        priority = None,
         dimensions = None,
         execution_timeout = default_timeout,
         expiration_timeout = time.hour * 35,
@@ -377,13 +378,13 @@ def r8_tester_with_default(
         name,
         test_options,
         bucket = "ci",
-        priority = 26,
+        priority = None,
         trigger = True,
         dimensions = None,
         category = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
-        execution_timeout = time.hour,
+        execution_timeout = time.hour * 2,
         extra_properties = {}):
     r8_tester(
         name,
@@ -429,7 +430,7 @@ def archivers():
                 max_batch_size = 1,
                 max_concurrent_invocations = 1,
             ),
-            priority = 25,
+            priority = 26 if desugar else 20,
             trigger = not desugar,
             properties = properties,
             execution_timeout = time.hour * 1,
@@ -545,6 +546,7 @@ def perf_size():
             category = "perf",
             dimensions = get_dimensions(tester = True),
             trigger = bucket == "ci",
+            priority = 25 if bucket == "try" else 20,
             max_concurrent_invocations = 2,
             execution_timeout = time.minute * 30,
             expiration_timeout = time.hour * 35,

@@ -80,12 +80,10 @@ public class MoveStringConstantsTest extends TestBase {
           // 'if' with "foo#3" is removed so now we have an unconditional call inside the branch.
           InstructionSubject::isIfEq,
 
-          // 'if' with "foo#4" is flipped, but the throwing branch is not moved to the end of the
-          // code
-          // (area for improvement?).
+          // 'if' with "foo#4" is not flipped because the throwing branch is not moved to the end
+          // of the code.
           insn -> insn.isConstString("StringConstants::foo#4", JumboStringMode.DISALLOW),
-          InstructionSubject::isIfEqz, // Flipped if
-          InstructionSubject::isGoto, // Jump around throwing branch.
+          InstructionSubject::isIfNez,
           InstructionSubject::isInvokeStatic, // Throwing branch.
           InstructionSubject::isThrow,
 

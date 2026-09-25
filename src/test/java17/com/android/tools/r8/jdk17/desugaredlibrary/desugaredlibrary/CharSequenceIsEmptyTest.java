@@ -7,13 +7,15 @@ package com.android.tools.r8.jdk17.desugaredlibrary.desugaredlibrary;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.SPECIFICATIONS_WITH_CF2CF;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
+import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.CharBuffer;
@@ -73,8 +75,25 @@ public class CharSequenceIsEmptyTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(Main.class)
         .noMinification()
+        .compile()
+        .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
+  }
+
+  private void inspect(CodeInspector inspector) {
+    if (compilationSpecification.isCfToCf()) {
+      return;
+    }
+    MethodSubject main = inspector.clazz(Main.class).uniqueMethodWithOriginalName("main");
+    assertEquals(
+        parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.G),
+        main.streamInstructions()
+            .anyMatch(
+                i ->
+                    i.isInvokeVirtual()
+                        && i.getMethod().getHolderType().toSourceString().equals("java.lang.String")
+                        && i.getMethod().getName().toString().equals("isEmpty")));
   }
 
   public static class Main {
@@ -141,7 +160,7 @@ public class CharSequenceIsEmptyTest extends DesugaredLibraryTestBase {
       CharBuffer buffer = CharBuffer.wrap("buffer");
       System.out.println(buffer.isEmpty());
       System.out.println(isEmpty(buffer));
-      String string = "string";
+      String string = System.currentTimeMillis() > 0 ? "string" : "";
       System.out.println(string.isEmpty());
       System.out.println(isEmpty(string));
       StringBuilder sb = new StringBuilder();

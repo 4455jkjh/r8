@@ -228,7 +228,11 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
 
   @Override
   public String toString() {
-    assert !hasInFlow();
-    return "ClassState(type: " + dynamicType + ", value: " + abstractValue + ")";
+    return "ClassState(type: "
+        + dynamicType
+        + ", value: "
+        + abstractValue
+        + (hasInFlow() ? ", inFlow: " + getInFlow() : "")
+        + ")";
   }
 }

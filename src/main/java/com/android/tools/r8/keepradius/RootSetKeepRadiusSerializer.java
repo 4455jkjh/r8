@@ -98,7 +98,7 @@ public class RootSetKeepRadiusSerializer {
     Map<RootSetKeepRadiusForRule, Collection<RootSetKeepRadiusForRule>> subsumedByInfo =
         keepRadius.getSubsumedByInfo(options);
     for (RootSetKeepRadiusForRule keepRadiusForRule : sortedKeepRadius) {
-      ruleIds.put(keepRadiusForRule, ruleIds.size());
+      ruleIds.put(keepRadiusForRule, ruleIds.size() + 1);
     }
     for (RootSetKeepRadiusForRule keepRadiusForRule : sortedKeepRadius) {
       int ruleId = ruleIds.getInt(keepRadiusForRule);
@@ -114,7 +114,7 @@ public class RootSetKeepRadiusSerializer {
       }
       container.addKeepRuleKeepRadiusTable(ruleProto);
     }
-    serializeGlobalKeepRuleBlastRadii(ruleIds.size());
+    serializeGlobalKeepRuleBlastRadii(ruleIds.size() + 1);
     keptClassInfos.values().forEach(container::addKeptClassInfoTable);
     keptFieldInfos.values().forEach(container::addKeptFieldInfoTable);
     keptMethodInfos.values().forEach(container::addKeptMethodInfoTable);
@@ -147,7 +147,7 @@ public class RootSetKeepRadiusSerializer {
               matchedClass,
               k ->
                   KeptClassInfo.newBuilder()
-                      .setId(keptClassInfos.size())
+                      .setId(keptClassInfos.size() + 1)
                       .setClassReferenceId(serializeTypeReference(k).getId())
                       .setFileOriginId(serializeOrigin(k).getId()));
       keepRadius.addClassKeepRadius(keptClassInfo.getId());
@@ -159,7 +159,7 @@ public class RootSetKeepRadiusSerializer {
               matchedField,
               k ->
                   KeptFieldInfo.newBuilder()
-                      .setId(keptFieldInfos.size())
+                      .setId(keptFieldInfos.size() + 1)
                       .setFieldReferenceId(serializeFieldReference(k).getId())
                       .setFileOriginId(serializeOrigin(k).getId()));
       keepRadius.addFieldKeepRadius(keptFieldInfo.getId());
@@ -171,7 +171,7 @@ public class RootSetKeepRadiusSerializer {
               matchedMethod,
               k ->
                   KeptMethodInfo.newBuilder()
-                      .setId(keptMethodInfos.size())
+                      .setId(keptMethodInfos.size() + 1)
                       .setMethodReferenceId(serializeMethodReference(k).getId())
                       .setFileOriginId(serializeOrigin(k).getId()));
       keepRadius.addMethodKeepRadius(keptMethodInfo.getId());
@@ -204,7 +204,8 @@ public class RootSetKeepRadiusSerializer {
   }
 
   private KeepConstraints serializeConstraints(RootSetKeepRadiusForRule keepRadiusForRule) {
-    KeepConstraints.Builder builder = KeepConstraints.newBuilder().setId(keepConstraints.size());
+    KeepConstraints.Builder builder =
+        KeepConstraints.newBuilder().setId(keepConstraints.size() + 1);
     ProguardKeepRuleModifiers modifiers = keepRadiusForRule.getRule().getModifiers();
     if (!modifiers.allowsObfuscation) {
       builder.addConstraints(KeepConstraint.DONT_OBFUSCATE);
@@ -231,7 +232,7 @@ public class RootSetKeepRadiusSerializer {
         k -> {
           FieldReference fieldReference =
               FieldReference.newBuilder()
-                  .setId(fieldReferences.size())
+                  .setId(fieldReferences.size() + 1)
                   .setClassReferenceId(serializeTypeReference(field.getHolderType()).getId())
                   .setTypeReferenceId(serializeTypeReference(field.getType()).getId())
                   .setName(field.getName().toString())
@@ -264,7 +265,7 @@ public class RootSetKeepRadiusSerializer {
         k -> {
           MethodReference methodReference =
               MethodReference.newBuilder()
-                  .setId(methodReferences.size())
+                  .setId(methodReferences.size() + 1)
                   .setClassReferenceId(serializeTypeReference(method.getHolderType()).getId())
                   .setProtoReferenceId(serializeProtoReference(method.getProto()).getId())
                   .setName(method.getName().toString())
@@ -291,7 +292,7 @@ public class RootSetKeepRadiusSerializer {
         origin,
         o -> {
           // TODO(b/441055269): Set the filename correctly.
-          FileOrigin.Builder fileOriginBuilder = FileOrigin.newBuilder().setId(origins.size());
+          FileOrigin.Builder fileOriginBuilder = FileOrigin.newBuilder().setId(origins.size() + 1);
           if (o instanceof PathOrigin) {
             fileOriginBuilder.setFilename(((PathOrigin) o).getPath().toString());
           } else {
@@ -346,7 +347,7 @@ public class RootSetKeepRadiusSerializer {
         k -> {
           ProtoReference protoReference =
               ProtoReference.newBuilder()
-                  .setId(protoReferences.size())
+                  .setId(protoReferences.size() + 1)
                   .setParametersId(serializeTypeReferenceList(proto.getParameters()).getId())
                   .setReturnTypeId(serializeTypeReference(proto.getReturnType()).getId())
                   .build();
@@ -361,7 +362,7 @@ public class RootSetKeepRadiusSerializer {
         k -> {
           TypeReference typeReference =
               TypeReference.newBuilder()
-                  .setId(typeReferences.size())
+                  .setId(typeReferences.size() + 1)
                   .setJavaDescriptor(type.toDescriptorString())
                   .build();
           container.addTypeReferenceTable(typeReference);
@@ -374,7 +375,7 @@ public class RootSetKeepRadiusSerializer {
         types,
         k -> {
           TypeReferenceList.Builder builder =
-              TypeReferenceList.newBuilder().setId(typeReferenceLists.size());
+              TypeReferenceList.newBuilder().setId(typeReferenceLists.size() + 1);
           for (DexType type : types) {
             builder.addTypeReferenceIds(serializeTypeReference(type).getId());
           }

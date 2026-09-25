@@ -19,7 +19,8 @@ import com.android.tools.r8.keepradius.proto.KeptClassInfo;
 import com.android.tools.r8.keepradius.proto.KeptFieldInfo;
 import com.android.tools.r8.keepradius.proto.KeptMethodInfo;
 import com.google.protobuf.AbstractMessage;
-import java.io.ByteArrayOutputStream;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -28,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -113,10 +113,10 @@ public class KeepRadiusHtmlReportGenerator {
   public static String generateHtmlReport(KeepRadiusContainer keepRadius) {
     String html = KeepRadiusHtmlReportTemplate.getHtmlTemplate();
     return html.replace(
-        "<script id=\"keepradius-data\" type=\"application/octet-stream\"></script>",
+        "<script id=\"keepradius-data\" type=\"application/json\"></script>",
         String.join(
             "",
-            "<script id=\"keepradius-data\" type=\"application/octet-stream\">",
+            "<script id=\"keepradius-data\" type=\"application/json\">",
             encodeMessageToString(keepRadius),
             "</script>"));
   }
@@ -130,20 +130,16 @@ public class KeepRadiusHtmlReportGenerator {
             "<script id=\"keepradius-data\" type=\"application/json\">[",
             keepRadiusSummaries.stream()
                 .map(KeepRadiusHtmlReportGenerator::encodeMessageToString)
-                .map(s -> "\"" + s + "\"")
                 .collect(Collectors.joining(",")),
             "]</script>"));
   }
 
   private static String encodeMessageToString(AbstractMessage message) {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try {
-      message.writeTo(baos);
-    } catch (IOException e) {
-      // Should not happen.
+      return JsonFormat.printer().alwaysPrintFieldsWithNoPresence().print(message);
+    } catch (InvalidProtocolBufferException e) {
       throw new UncheckedIOException(e);
     }
-    return Base64.getEncoder().encodeToString(baos.toByteArray());
   }
 
   // Helper method for converting a proto to a string in tests. Should only be used for testing.

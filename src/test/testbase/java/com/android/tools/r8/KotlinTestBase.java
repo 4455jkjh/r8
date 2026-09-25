@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class KotlinTestBase extends TestBase {
@@ -134,6 +135,11 @@ public abstract class KotlinTestBase extends TestBase {
       Collection<Path> sources, String sharedFolder) {
     return compileMemoizers.computeIfAbsent(
         sharedFolder, ignore -> new KotlinCompileMemoizer(sources));
+  }
+
+  @AfterClass
+  public static void tearDownCompileMemoizers() {
+    compileMemoizers.clear();
   }
 
   public ThrowableConsumer<R8TestCompileResult> assertUnusedKeepRuleForKotlinMetadata(

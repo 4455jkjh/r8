@@ -65,6 +65,7 @@ kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = 
 mockitoCore = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
 protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protobufUtil = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 protobufGradlePlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobufGradlePlugin" }
 retryGradlePlugin = { module = "org.gradle:test-retry-gradle-plugin", version.ref = "retryGradlePlugin" }
 smali = { module = "com.android.tools.smali:smali", version.ref = "smali" }
@@ -89,4 +90,5 @@ compilerDeps = ["androidxCollection",
     "guava",
     "kotlinMetadata",
     "protobuf",
+    "protobufUtil",
     "zipflinger"]

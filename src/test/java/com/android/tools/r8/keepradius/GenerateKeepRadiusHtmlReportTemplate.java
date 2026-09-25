@@ -76,17 +76,6 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
             "<link rel=\"stylesheet\" href=\"style.css\" />",
             String.join("", "<style>", FileUtils.readTextFile(getReportCssFile()), "</style>"));
 
-    // Embed proto schema.
-    html =
-        replace(
-            html,
-            "<script id=\"keepradius-proto\" type=\"text/plain\"></script>",
-            String.join(
-                "",
-                "<script id=\"keepradius-proto\" type=\"text/plain\">",
-                FileUtils.readTextFile(getProtoFile()),
-                "</script>"));
-
     // Embed JavaScript.
     html =
         replace(
@@ -113,17 +102,6 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
             html,
             "<link rel=\"stylesheet\" href=\"style.css\" />",
             String.join("", "<style>", FileUtils.readTextFile(getSummaryCssFile()), "</style>"));
-
-    // Embed proto schema.
-    html =
-        replace(
-            html,
-            "<script id=\"keepradius-proto\" type=\"text/plain\"></script>",
-            String.join(
-                "",
-                "<script id=\"keepradius-proto\" type=\"text/plain\">",
-                FileUtils.readTextFile(getSummaryProtoFile()),
-                "</script>"));
 
     // Embed JavaScript.
     html =
@@ -181,10 +159,6 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
     return Paths.get(ToolHelper.KEEP_RADIUS_WEB_DIR, "templates/report/style.css");
   }
 
-  private static Path getProtoFile() {
-    return Paths.get(ToolHelper.KEEP_RADIUS_PROTO_DIR, "keepradius.proto");
-  }
-
   private static Path getSummaryHtmlFile() {
     return Paths.get(ToolHelper.KEEP_RADIUS_WEB_DIR, "templates/summary/index.html");
   }
@@ -195,10 +169,6 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
 
   private static Path getSummaryCssFile() {
     return Paths.get(ToolHelper.KEEP_RADIUS_WEB_DIR, "templates/summary/style.css");
-  }
-
-  private static Path getSummaryProtoFile() {
-    return Paths.get(ToolHelper.KEEP_RADIUS_PROTO_DIR, "keepradiussummary.proto");
   }
 
   public static void main(String[] args) throws IOException {

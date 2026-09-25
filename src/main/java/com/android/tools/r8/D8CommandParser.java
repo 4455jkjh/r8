@@ -26,7 +26,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
-public class D8CommandParser extends BaseCompilerCommandParser {
+public class D8CommandParser {
 
   public static List<ParseFlagInfo> getFlags() {
     return CliParserUtils.getFlagInfos(createParser());
@@ -329,36 +329,8 @@ public class D8CommandParser extends BaseCompilerCommandParser {
             "<file>",
             "Output resulting main dex list in <file>.",
             (state, arg) -> state.builder.setMainDexListOutputPath(Paths.get(arg)))
-        .prefix0(
-            "--force-enable-assertions",
-            "[:[<class name>|<package name>...]]",
-            "Forcefully enable javac generated assertion code.",
-            (state, suffix) -> parseForceEnableAssertions(state.builder, suffix, state.origin),
-            "--force-ea")
-        .prefix0(
-            "--force-disable-assertions",
-            "[:[<class name>|<package name>...]]",
-            "Forcefully disable javac generated assertion code. This is the default handling of"
-                + " javac assertion code when generating DEX file format.",
-            (state, suffix) -> parseForceDisableAssertions(state.builder, suffix, state.origin),
-            "--force-da")
-        .prefix0(
-            "--force-passthrough-assertions",
-            "[:[<class name>|<package name>...]]",
-            "Don't change javac generated assertion code. This is the default handling of"
-                + " javac assertion code when generating class file format.",
-            (state, suffix) -> parseForcePassthroughAssertions(state.builder, suffix, state.origin),
-            "--force-pa")
-        .prefix0(
-            "--force-assertions-handler",
-            ":<handler method>[:[<class name>|<package name>...]]",
-            "Change javac and kotlinc generated assertion code to invoke the method <handler"
-                + " method> with each assertion error instead of throwing it. The <handler"
-                + " method> is specified as a class name followed by a dot and the method name."
-                + " The handler method must take a single argument of type java.lang.Throwable"
-                + " and have return type void.",
-            (state, suffix) -> parseForceAssertionsHandler(state.builder, suffix, state.origin),
-            "--force-ah")
+        .apply(
+            CliParserUtils.addForceAssertionOptions(state -> state.builder, state -> state.origin))
         .option1(
             "--thread-count",
             "<number>",

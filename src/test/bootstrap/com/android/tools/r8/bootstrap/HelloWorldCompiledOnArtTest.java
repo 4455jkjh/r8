@@ -12,8 +12,13 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
 import com.android.tools.r8.D8;
+import com.android.tools.r8.D8TestBuilder;
+import com.android.tools.r8.L8TestBuilder;
+import com.android.tools.r8.PartialCompilationTestParameters;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime;
+import com.android.tools.r8.TestState;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
@@ -27,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -84,7 +90,8 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
         writeTextToTempFile(keepMainProguardConfiguration(HELLO_NAME)).toAbsolutePath();
     Path helloInput = writeHelloProgramJar().toAbsolutePath();
     Path helloOutput = temp.newFolder("helloOutput").toPath().resolve("out.zip").toAbsolutePath();
-    compileR8ToDexWithD8()
+    compiledR8
+        .apply(parameters.getApiLevel())
         .run(
             parameters.getRuntime(),
             R8.class,
@@ -104,7 +111,8 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
   public void testHelloCompiledWithD8Dex() throws Exception {
     Path helloInput = writeHelloProgramJar().toAbsolutePath();
     Path helloOutput = temp.newFolder("helloOutput").toPath().resolve("out.zip").toAbsolutePath();
-    compileR8ToDexWithD8()
+    compiledR8
+        .apply(parameters.getApiLevel())
         .run(
             parameters.getRuntime(),
             D8.class,
@@ -121,6 +129,28 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
   private void verifyResult(Path helloOutput) throws IOException {
     ProcessResult processResult = ToolHelper.runArtRaw(helloOutput.toString(), HELLO_NAME);
     assertEquals(HELLO_EXPECTED, processResult.stdout);
+  }
+
+  @Override
+  public D8TestBuilder testForD8(Backend backend) {
+    return testForD8(getStaticTemp(), backend);
+  }
+
+  @Override
+  public L8TestBuilder testForL8(AndroidApiLevel apiLevel, Backend backend) {
+    return L8TestBuilder.create(apiLevel, backend, new TestState(getStaticTemp()));
+  }
+
+  private static final Function<AndroidApiLevel, DesugaredLibraryTestCompileResult<?>> compiledR8 =
+      memoizeFunction(HelloWorldCompiledOnArtTest::compileR8ToDexWithD8);
+
+  private static DesugaredLibraryTestCompileResult<?> compileR8ToDexWithD8(AndroidApiLevel apiLevel)
+      throws Exception {
+    TestParameters parameters =
+        new TestParameters(
+            TestRuntime.getDefaultDexRuntime(), apiLevel, PartialCompilationTestParameters.NONE);
+    return new HelloWorldCompiledOnArtTest(parameters, JDK11_PATH, D8_L8DEBUG)
+        .compileR8ToDexWithD8();
   }
 
   private DesugaredLibraryTestCompileResult<?> compileR8ToDexWithD8() throws Exception {

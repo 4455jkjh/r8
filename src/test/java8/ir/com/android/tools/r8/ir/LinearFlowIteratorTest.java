@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
@@ -51,18 +52,50 @@ public class LinearFlowIteratorTest extends TestBase {
     AndroidApp.Builder appBuilder = AndroidApp.builder();
     appBuilder.addClassProgramData(jasminBuilder.buildClasses());
 
-    // Build the code, and split the code into three blocks.
+    // Build the code, and split the block with the array access into two blocks, so that the
+    // const-number and the array-get are in two blocks connected by linear flow. The block is
+    // located by its content, since the block order in the code compiled by D8 is an artifact of
+    // the code layout chosen by the DEX code finalizer.
     AndroidApp app = compileWithD8(appBuilder.build());
     MethodSubject methodSubject =
         getMethodSubject(app, "foo", "void", "bar", ImmutableList.of("int"));
     IRCode code = methodSubject.buildIR();
     ListIterator<BasicBlock> blocks = code.listIterator();
-    blocks.next();
-    InstructionListIterator iter = blocks.next().listIterator();
+    BasicBlock block = blocks.next();
+    while (!hasArrayGet(block)) {
+      block = blocks.next();
+    }
+    InstructionListIterator iter = block.listIterator();
     iter.nextUntil(i -> !i.isConstNumber());
     iter.previous();
     iter.split(code, blocks);
     return code;
+  }
+
+  /** Returns the block with the array access, which is split in two by {@link #branchingCode()}. */
+  private static BasicBlock arrayGetBlock(IRCode code) {
+    for (BasicBlock block : code.blocks) {
+      if (hasArrayGet(block)) {
+        return block;
+      }
+    }
+    throw new AssertionError("Expected a block with an array-get instruction");
+  }
+
+  /** Returns the block with the const-number defining the index of the array access. */
+  private static BasicBlock constNumberBlock(IRCode code) {
+    BasicBlock arrayGetBlock = arrayGetBlock(code);
+    assertEquals(1, arrayGetBlock.getPredecessors().size());
+    return arrayGetBlock.getPredecessors().get(0);
+  }
+
+  private static boolean hasArrayGet(BasicBlock block) {
+    for (Instruction instruction : block.getInstructions()) {
+      if (instruction.isArrayGet()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private IRCode simpleCode() throws Exception {
@@ -169,14 +202,15 @@ public class LinearFlowIteratorTest extends TestBase {
   @Test
   public void doNotChangeToPreviousBlockWhenNotLinearFlow() throws Exception {
     IRCode code = branchingCode();
-    InstructionListIterator it = new LinearFlowInstructionListIterator(code.blocks.get(4));
+    // The const-number block is only reachable through the if-instruction in the entry block.
+    InstructionListIterator it = new LinearFlowInstructionListIterator(constNumberBlock(code));
     assert !it.hasPrevious();
   }
 
   @Test
   public void followLinearSubPathDown() throws Exception {
     IRCode code = branchingCode();
-    InstructionListIterator it = new LinearFlowInstructionListIterator(code.blocks.get(1));
+    InstructionListIterator it = new LinearFlowInstructionListIterator(constNumberBlock(code));
     Instruction current = null;
     while (it.hasNext()) {
       current = it.next();
@@ -187,7 +221,7 @@ public class LinearFlowIteratorTest extends TestBase {
   @Test
   public void followLinearSubPathUp() throws Exception {
     IRCode code = branchingCode();
-    InstructionListIterator it = new LinearFlowInstructionListIterator(code.blocks.get(2));
+    InstructionListIterator it = new LinearFlowInstructionListIterator(arrayGetBlock(code));
     Instruction current = null;
     while (it.hasPrevious()) {
       current = it.previous();

@@ -97,7 +97,7 @@ public interface ClassInstanceFieldsMerger {
       assert oldField.getType().isReferenceType();
       DexEncodedField newField =
           availableFieldsByRelaxedInfo
-              .get(InstanceFieldInfo.createRelaxed(oldField, appView.dexItemFactory()))
+              .get(InstanceFieldInfo.createRelaxed(appView, oldField))
               .removeFirst();
       assert newField != null;
       assert newField.getType().isReferenceType();
@@ -129,9 +129,7 @@ public interface ClassInstanceFieldsMerger {
     availableFieldsByExactInfo.forEach(
         (info, fields) ->
             availableFieldsByRelaxedInfo
-                .computeIfAbsent(
-                    info.toInfoWithRelaxedType(appView.dexItemFactory()),
-                    ignore -> new LinkedList<>())
+                .computeIfAbsent(info.toInfoWithRelaxedType(appView), ignore -> new LinkedList<>())
                 .addAll(fields));
     return availableFieldsByRelaxedInfo;
   }

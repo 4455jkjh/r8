@@ -10,6 +10,8 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.DexBuilder;
+import com.android.tools.r8.ir.conversion.finalizer.passes.BasicBlockReorderer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.BranchDiamondInverter;
 import com.android.tools.r8.ir.conversion.finalizer.passes.DebugLocalUpdater;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockPrefixSharer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
@@ -25,8 +27,6 @@ import com.android.tools.r8.utils.timing.Timing;
 
 public class IRToDexFinalizer extends IRFinalizer<DexCode> {
 
-  private static final int PEEPHOLE_OPTIMIZATION_PASSES = 2;
-
   private final DeadCodeRemover deadCodeRemover;
   private final InternalOptions options;
   private final TrivialGotosCollapser trivialGotosCollapser;
@@ -35,6 +35,8 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final IdenticalBlockPrefixSharer identicalBlockPrefixSharer;
   private final IdenticalBlockSuffixSharer identicalBlockSuffixSharer;
   private final DebugLocalUpdater debugLocalUpdater;
+  private final BranchDiamondInverter branchDiamondInverter;
+  private final BasicBlockReorderer basicBlockReorderer;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
     super(appView);
@@ -46,6 +48,8 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     identicalBlockPrefixSharer = new IdenticalBlockPrefixSharer(appView);
     identicalBlockSuffixSharer = new IdenticalBlockSuffixSharer(appView);
     debugLocalUpdater = new DebugLocalUpdater(appView);
+    branchDiamondInverter = new BranchDiamondInverter(appView);
+    this.basicBlockReorderer = new BasicBlockReorderer(this.appView);
   }
 
   @Override
@@ -91,19 +95,30 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
         new LinearScanRegisterAllocator(appView, code, timing);
     registerAllocator.allocateRegisters();
     timing.end();
-    timing.begin("Peephole optimize");
-    for (int i = 0; i < PEEPHOLE_OPTIMIZATION_PASSES; i++) {
+    trivialGotosCollapser.run(code, registerAllocator, timing);
+    debugLocalUpdater.run(code, registerAllocator, timing);
+    redundantInstructionsRemover.run(code, registerAllocator, timing);
+    boolean changed =
+        identicalPredecessorBlocksRemover
+            .run(code, registerAllocator, timing)
+            .hasChanged()
+            .isTrue();
+    changed |=
+        identicalBlockPrefixSharer.run(code, registerAllocator, timing).hasChanged().isTrue();
+    changed |=
+        identicalBlockSuffixSharer.run(code, registerAllocator, timing).hasChanged().isTrue();
+    changed |= branchDiamondInverter.run(code, registerAllocator, timing).hasChanged().isTrue();
+    if (changed) {
       trivialGotosCollapser.run(code, registerAllocator, timing);
       identicalPredecessorBlocksRemover.run(code, registerAllocator, timing);
-      redundantInstructionsRemover.run(code, registerAllocator, timing);
       identicalBlockPrefixSharer.run(code, registerAllocator, timing);
       identicalBlockSuffixSharer.run(code, registerAllocator, timing);
+      branchDiamondInverter.run(code, registerAllocator, timing);
     }
-    timing.end();
-    timing.begin("Clean up");
-    debugLocalUpdater.run(code, registerAllocator, timing);
+    // BasicBlockReorderer should be run near the end because other optimizations may change block
+    // ordering.
+    basicBlockReorderer.run(code, registerAllocator, timing);
     trivialGotosCollapser.run(code, registerAllocator, timing);
-    timing.end();
     return registerAllocator;
   }
 }

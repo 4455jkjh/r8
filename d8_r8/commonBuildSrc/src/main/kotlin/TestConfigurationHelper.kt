@@ -25,13 +25,19 @@ public class TestConfigurationHelper {
 
   public companion object {
 
+    private const val RESULT_SINK_BATCH_SIZE = 250
+    private const val TIMESTAMP_UPDATE_INTERVAL_MS = 10_000L
+
+    private val gson = Gson()
+    private val resultSinkBatch = mutableListOf<JsonObject>()
+
     private data class ResultSinkInfo(val address: String, val authToken: String)
 
     private val resultSinkInfo: ResultSinkInfo? by lazy {
       val luciContextPath = System.getenv("LUCI_CONTEXT") ?: return@lazy null
       try {
         val content = File(luciContextPath).readText()
-        val json = Gson().fromJson(content, JsonObject::class.java)
+        val json = gson.fromJson(content, JsonObject::class.java)
         val resultSink = json.getAsJsonObject("result_sink") ?: return@lazy null
         val address = resultSink.get("address")?.asString ?: return@lazy null
         val authToken = resultSink.get("auth_token")?.asString ?: return@lazy null
@@ -109,7 +115,6 @@ public class TestConfigurationHelper {
             // result_sink uses `:` to separate case name components.
             .replace(Regex(": ?"), "=")
             .split(", ")
-            .filterNot { it.contains("dex-") || it.contains("jdk") }
         } else {
           emptyList()
         }
@@ -193,19 +198,40 @@ public class TestConfigurationHelper {
           }
         }
 
-      val payloadObj =
-        JsonObject().apply { add("testResults", JsonArray().apply { add(testResultObj) }) }
+      resultSinkBatch.add(testResultObj)
+      if (
+        resultSinkBatch.size >= RESULT_SINK_BATCH_SIZE ||
+          result?.resultType == TestResult.ResultType.FAILURE
+      ) {
+        flushResultSink()
+      }
+    }
 
+    private fun flushResultSink() {
+      val info = resultSinkInfo ?: return
+      if (resultSinkBatch.isEmpty()) {
+        return
+      }
+      val batchToSend = resultSinkBatch.toList()
+      resultSinkBatch.clear()
+      sendResultSinkBatch(info, batchToSend)
+    }
+
+    private fun sendResultSinkBatch(info: ResultSinkInfo, batch: List<JsonObject>) {
+      val payloadObj =
+        JsonObject().apply { add("testResults", JsonArray().apply { batch.forEach { add(it) } }) }
       try {
         val url =
           URI("http://${info.address}/prpc/luci.resultsink.v1.Sink/ReportTestResults").toURL()
         val conn = url.openConnection() as HttpURLConnection
+        conn.connectTimeout = 5_000
+        conn.readTimeout = 10_000
         conn.requestMethod = "POST"
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", "application/json")
         conn.setRequestProperty("Authorization", "ResultSink ${info.authToken}")
         conn.outputStream.use {
-          it.write(Gson().toJson(payloadObj).toByteArray(StandardCharsets.UTF_8))
+          it.write(gson.toJson(payloadObj).toByteArray(StandardCharsets.UTF_8))
         }
         conn.inputStream.use { it.readBytes() }
       } catch (e: Exception) {
@@ -247,7 +273,9 @@ public class TestConfigurationHelper {
         println("NOTE: Running shard $shardNumber of $shardCount")
         test.systemProperty("shard_count", shardCount.toString())
         test.systemProperty("shard_number", shardNumber.toString())
-        val usesRuntimeSharding = !project.hasProperty("runtimes")
+        val usesRuntimeSharding =
+          !project.hasProperty("runtimes") ||
+            project.property("runtimes").toString().contains("none")
         test.exclude { element ->
           if (element.isDirectory) return@exclude false
           val path = element.path
@@ -353,6 +381,7 @@ public class TestConfigurationHelper {
           object : TestListener {
             val testTimes = mutableMapOf<TestDescriptor?, Long>()
             val maxPrintTimesCount = 200
+            var lastTimestampWrite = 0L
 
             override fun beforeSuite(desc: TestDescriptor?) {}
 
@@ -368,6 +397,10 @@ public class TestConfigurationHelper {
                 }
               }
               if (desc?.parent == null) {
+                if (updateTestTimestampPath != null) {
+                  File(updateTestTimestampPath).writeText(System.currentTimeMillis().toString())
+                }
+                flushResultSink()
                 println(
                   "Test results: ${result?.successfulTestCount} passed, ${result?.failedTestCount} failed, ${result?.skippedTestCount} skipped"
                 )
@@ -391,7 +424,11 @@ public class TestConfigurationHelper {
                 testTimes[desc] = Date().getTime() - testTimes[desc]!!
               }
               if (updateTestTimestampPath != null) {
-                File(updateTestTimestampPath).writeText(Date().getTime().toString())
+                val now = System.currentTimeMillis()
+                if (now - lastTimestampWrite >= TIMESTAMP_UPDATE_INTERVAL_MS) {
+                  lastTimestampWrite = now
+                  File(updateTestTimestampPath).writeText(now.toString())
+                }
               }
               if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
                 val exception = result.exception as Throwable
@@ -432,6 +469,7 @@ public class TestConfigurationHelper {
 
             override fun afterSuite(desc: TestDescriptor?, result: TestResult?) {
               if (desc?.parent == null) {
+                flushResultSink()
                 println(
                   "Test results: ${result?.successfulTestCount} passed, ${result?.failedTestCount} failed, ${result?.skippedTestCount} skipped"
                 )
@@ -462,21 +500,21 @@ public class TestConfigurationHelper {
         )
       }
 
+      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
       val userDefinedCoresPerFork = System.getenv("R8_GRADLE_CORES_PER_FORK")
       val processors = Runtime.getRuntime().availableProcessors()
       // See https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html.
       if (!userDefinedCoresPerFork.isNullOrEmpty()) {
-        test.maxParallelForks = processors.div(userDefinedCoresPerFork.toInt())
+        test.maxParallelForks = maxOf(processors.div(userDefinedCoresPerFork.toInt()), 1)
+      } else if (isCiServer || processors <= 48) {
+        test.maxParallelForks = maxOf(processors.div(2), 1)
       } else {
         // On work machines this seems to give the best test execution time (without freezing).
         test.maxParallelForks = maxOf(processors.div(8), 1)
-        // On low cpu count machines (bots) we under subscribe, so increase the count.
-        if (processors == 32) {
-          test.maxParallelForks = 15
-        }
       }
+      val activeProcessorsPerFork = maxOf(processors.div(test.maxParallelForks), 4)
+      test.jvmArgs("-XX:ActiveProcessorCount=$activeProcessorsPerFork")
 
-      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
       val retry = test.extensions.getByType(TestRetryTaskExtension::class.java)
       if (isCiServer) {
         retry.maxRetries.set(2)

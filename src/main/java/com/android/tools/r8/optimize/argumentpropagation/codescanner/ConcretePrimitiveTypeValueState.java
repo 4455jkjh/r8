@@ -165,7 +165,9 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
 
   @Override
   public String toString() {
-    assert !hasInFlow();
-    return "PrimitiveState(" + abstractValue + ")";
+    return "PrimitiveState("
+        + abstractValue
+        + (hasInFlow() ? ", inFlow: " + getInFlow() : "")
+        + ")";
   }
 }
