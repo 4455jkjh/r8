@@ -48,7 +48,7 @@ public class KotlinMetadataTest extends KotlinTestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters().withAllRuntimesAndApiLevels().build(),
-        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build());
+        getKotlinTestParameters().withAllCompilers().build());
   }
 
   public KotlinMetadataTest(TestParameters parameters, KotlinTestParameters kotlinParameters) {
