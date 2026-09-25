@@ -1354,7 +1354,7 @@ public class ToolHelper {
     if (tmpDir != null) {
       return Paths.get(tmpDir);
     }
-    return Paths.get("/tmp", "r8-temp");
+    return Paths.get(System.getProperty("java.io.tmpdir"), "r8-temp");
   }
 
   // For non-Linux platforms create the temporary directory in the repository root to simplify
