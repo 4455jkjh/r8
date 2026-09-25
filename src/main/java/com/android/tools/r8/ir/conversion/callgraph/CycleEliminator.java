@@ -9,13 +9,17 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -42,11 +46,63 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
     final int index;
     final N predecessor;
 
-    boolean processed;
-
     StackEntryInfo(int index, N predecessor) {
       this.index = index;
       this.predecessor = predecessor;
+    }
+  }
+
+  private class TargetStack {
+
+    private final List<N> elements = new ArrayList<>();
+    private final IntList processedPositions = new IntArrayList();
+
+    void push(N node) {
+      elements.add(node);
+    }
+
+    N peek() {
+      return elements.isEmpty() ? null : elements.get(elements.size() - 1);
+    }
+
+    void pop() {
+      int lastPosition = elements.size() - 1;
+      elements.remove(lastPosition);
+      if (!processedPositions.isEmpty()
+          && processedPositions.getInt(processedPositions.size() - 1) == lastPosition) {
+        processedPositions.removeInt(processedPositions.size() - 1);
+      }
+    }
+
+    boolean isEmpty() {
+      assert !elements.isEmpty() || processedPositions.isEmpty();
+      return elements.isEmpty();
+    }
+
+    boolean hasProcessedEntryInCycle(StackEntryInfo<N> cycleEntryInfo) {
+      if (processedPositions.isEmpty()) {
+        return false;
+      }
+      int lastProcessedPosition = processedPositions.getInt(processedPositions.size() - 1);
+      return stackEntryInfo.get(elements.get(lastProcessedPosition)).index > cycleEntryInfo.index;
+    }
+
+    N removeFirstUnprocessedEntryInCycle(StackEntryInfo<N> cycleEntryInfo) {
+      int low =
+          processedPositions.isEmpty()
+              ? 0
+              : processedPositions.getInt(processedPositions.size() - 1) + 1;
+      int high = elements.size() - 1;
+      while (low < high) {
+        int mid = (low + high) >>> 1;
+        if (stackEntryInfo.get(elements.get(mid)).index > cycleEntryInfo.index) {
+          high = mid;
+        } else {
+          low = mid + 1;
+        }
+      }
+      processedPositions.add(low);
+      return elements.get(low);
     }
   }
 
@@ -76,14 +132,14 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
   // Subset of the DFS stack, where the nodes on the stack are class initializers.
   //
   // This stack is used to efficiently compute if there is a class initializer on the stack.
-  private Deque<N> clinitCallStack = new ArrayDeque<>();
+  private final TargetStack clinitCallStack = new TargetStack();
 
   // Subset of the DFS stack, where the nodes on the stack satisfy that the edge from the
   // predecessor to the node itself is a field read edge.
   //
   // This stack is used to efficiently compute if there is a field read edge inside a cycle when
   // a cycle is found.
-  private Deque<N> writerStack = new ArrayDeque<>();
+  private final TargetStack writerStack = new TargetStack();
 
   // Set of nodes that have been visited entirely.
   private Set<N> marked = Sets.newIdentityHashSet();
@@ -274,12 +330,8 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
 
       // Otherwise, it is a call edge. Check if there is a field read edge in the cycle, and if
       // so, remove that edge.
-      if (!writerStack.isEmpty()
-          && removeIncomingEdgeOnStack(
-              writerStack.peek(),
-              calleeOrWriter,
-              calleeOrWriterStackEntryInfo,
-              this::removeFieldReadEdge)) {
+      if (removeIncomingEdgeOnStack(
+          writerStack, calleeOrWriter, calleeOrWriterStackEntryInfo, this::removeFieldReadEdge)) {
         continue;
       }
 
@@ -294,12 +346,8 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
 
       // Otherwise, check if there is a call edge to a <clinit> method in the cycle, and if so,
       // remove that edge.
-      if (!clinitCallStack.isEmpty()
-          && removeIncomingEdgeOnStack(
-              clinitCallStack.peek(),
-              calleeOrWriter,
-              calleeOrWriterStackEntryInfo,
-              this::removeCallEdge)) {
+      if (removeIncomingEdgeOnStack(
+          clinitCallStack, calleeOrWriter, calleeOrWriterStackEntryInfo, this::removeCallEdge)) {
         continue;
       }
 
@@ -371,25 +419,26 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
   }
 
   private boolean removeIncomingEdgeOnStack(
-      N target,
+      TargetStack targetStack,
       N currentCalleeOrWriter,
       StackEntryInfo<N> currentCalleeOrWriterStackEntryInfo,
       BiConsumer<N, N> edgeRemover) {
-    StackEntryInfo<N> targetStackEntryInfo = stackEntryInfo.get(target);
-    boolean cycleContainsTarget =
-        targetStackEntryInfo.index > currentCalleeOrWriterStackEntryInfo.index;
-    if (cycleContainsTarget) {
-      assert verifyCycleSatisfies(
-          currentCalleeOrWriter,
-          cycle -> cycle.contains(target) && cycle.contains(targetStackEntryInfo.predecessor));
-      if (!targetStackEntryInfo.processed) {
-        edgeRemover.accept(targetStackEntryInfo.predecessor, target);
-        revisit.add(target);
-        targetStackEntryInfo.processed = true;
-      }
+    if (targetStack.isEmpty()
+        || stackEntryInfo.get(targetStack.peek()).index
+            <= currentCalleeOrWriterStackEntryInfo.index) {
+      return false;
+    }
+    if (targetStack.hasProcessedEntryInCycle(currentCalleeOrWriterStackEntryInfo)) {
       return true;
     }
-    return false;
+    N target = targetStack.removeFirstUnprocessedEntryInCycle(currentCalleeOrWriterStackEntryInfo);
+    StackEntryInfo<N> targetStackEntryInfo = stackEntryInfo.get(target);
+    assert verifyCycleSatisfies(
+        currentCalleeOrWriter,
+        cycle -> cycle.contains(target) && cycle.contains(targetStackEntryInfo.predecessor));
+    edgeRemover.accept(targetStackEntryInfo.predecessor, target);
+    revisit.add(target);
+    return true;
   }
 
   // TODO(b/270398965): Replace LinkedList.
