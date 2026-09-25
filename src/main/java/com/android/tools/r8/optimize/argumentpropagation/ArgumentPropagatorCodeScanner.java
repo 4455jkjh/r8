@@ -336,52 +336,64 @@ public class ArgumentPropagatorCodeScanner {
     }
 
     private NonEmptyValueState computeFieldState(
-        FieldPut fieldPut, ProgramField resolvedField, Timing timing) {
+        FieldPut fieldPut, ProgramField field, Timing timing) {
       timing.begin("Compute field state for field-put");
       Value value = fieldPut.value();
-      NonEmptyValueState result = computeFieldState(value, value, resolvedField);
+      NonEmptyValueState result =
+          computeNonReceiverValueState(value, value, field, field.getType());
       timing.end();
       return result;
     }
 
-    private NonEmptyValueState computeFieldState(
-        Value value, Value initialValue, ProgramField field) {
+    private NonEmptyValueState computeNonReceiverValueState(
+        Value value, Value initialValue, ProgramMember<?, ?> target, DexType staticType) {
       assert value == initialValue || initialValue.getAliasedValue().isPhi();
 
-      TypeElement fieldType = field.getType().toTypeElement(appView);
-      if (!value.getType().lessThanOrEqual(fieldType, appView)) {
+      TypeElement staticTypeElement = staticType.toTypeElement(appView);
+      if (!value.getType().lessThanOrEqual(staticTypeElement, appView)) {
         return ValueState.unknown();
       }
 
+      // If the current value is an argument of the declaring method, then we have no information
+      // about its abstract value (yet). Instead of treating this as having an unknown runtime
+      // value, we record a flow constraint that specifies that all values that flow into the
+      // parameter of the declaring method also flows into the field or parameter being assigned.
       NonEmptyValueState inFlowState =
           computeInFlowState(
-              field.getType(),
-              field,
+              staticType,
+              target,
               value,
               initialValue,
-              phiOperandValue -> computeFieldState(phiOperandValue, initialValue, field));
+              phiOperandValue ->
+                  computeNonReceiverValueState(phiOperandValue, initialValue, target, staticType));
       if (inFlowState != null) {
         return inFlowState;
       }
 
-      if (field.getType().isArrayType()) {
+      // Only track the nullability for array types.
+      if (staticType.isArrayType()) {
         Nullability nullability = value.getType().nullability();
         return ConcreteArrayTypeValueState.create(nullability);
       }
 
       AbstractValue abstractValue = abstractValueSupplier.getAbstractValue(value, appView, context);
-      if (abstractValue.isUnknown()) {
+      if (abstractValue.isUnknown() && target.isField()) {
         abstractValue =
             getFallbackAbstractValueForField(
-                field, () -> value.computeObjectState(appView, context));
+                target.asField(), () -> value.computeObjectState(appView, context));
       }
-      if (field.getType().isClassType()) {
-        DynamicType dynamicType =
-            WideningUtils.widenDynamicNonReceiverType(
-                appView, value.getDynamicType(appView), field.getType());
-        return ConcreteClassTypeValueState.create(abstractValue, dynamicType);
+
+      if (staticType.isClassType()) {
+        // For class types, we track both the abstract value and the dynamic type. If both are
+        // unknown, then use ValueState.unknown().
+        DynamicType dynamicType = value.getDynamicType(appView);
+        DynamicType widenedDynamicType =
+            WideningUtils.widenDynamicNonReceiverType(appView, dynamicType, staticType);
+        return ConcreteClassTypeValueState.create(abstractValue, widenedDynamicType);
       } else {
-        assert field.getType().isPrimitiveType();
+        // For primitive types, we only track the abstract value, thus if the abstract value is
+        // unknown, we use ValueState.unknown().
+        assert staticType.isPrimitiveType();
         return ConcretePrimitiveTypeValueState.create(abstractValue);
       }
     }
@@ -1019,7 +1031,7 @@ public class ArgumentPropagatorCodeScanner {
       AbstractValue abstractValue = abstractValueSupplier.getAbstractValue(value, appView, context);
 
       // For class types, we track both the abstract value and the dynamic type. If both are
-      // unknown, then use UnknownParameterState.
+      // unknown, then use ValueState.unknown().
       if (parameterType.isClassType()) {
         DynamicType dynamicType = value.getDynamicType(appView);
         DynamicType widenedDynamicType =
@@ -1027,7 +1039,7 @@ public class ArgumentPropagatorCodeScanner {
         return ConcreteClassTypeValueState.create(abstractValue, widenedDynamicType);
       } else {
         // For primitive types, we only track the abstract value, thus if the abstract value is
-        // unknown, we use UnknownParameterState.
+        // unknown, we use ValueState.unknown().
         assert parameterType.isPrimitiveType();
         return ConcretePrimitiveTypeValueState.create(abstractValue);
       }
