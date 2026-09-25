@@ -233,10 +233,6 @@ public class ToolHelper {
 
   public static final String CORE_LAMBDA_STUBS =
       THIRD_PARTY_DIR + "core-lambda-stubs/core-lambda-stubs.jar";
-  public static final String JSR223_RI_JAR = THIRD_PARTY_DIR + "jsr223-api-1.0/jsr223-api-1.0.jar";
-  public static final String RHINO_ANDROID_JAR =
-      THIRD_PARTY_DIR + "rhino-android-1.1.1/rhino-android-1.1.1.jar";
-  public static final String RHINO_JAR = THIRD_PARTY_DIR + "rhino-1.7.10/rhino-1.7.10.jar";
   public static final String K2JVMCompiler = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler";
   private static final String ANDROID_JAR_PATTERN =
       THIRD_PARTY_DIR + "android_jar/lib-v%s/android.jar";
@@ -250,13 +246,8 @@ public class ToolHelper {
   public static final String JDK_11_TESTS_DIR = OPEN_JDK_DIR + "jdk-11-test/";
   public static final String JDK_11_TIME_TESTS_DIR = JDK_11_TESTS_DIR + "java/time/";
 
-  public static final Path JACOCO_ROOT = Paths.get(THIRD_PARTY_DIR, "jacoco", "0.8.6");
-  public static final Path JACOCO_AGENT = JACOCO_ROOT.resolve(Paths.get("lib", "jacocoagent.jar"));
-  public static final Path JACOCO_CLI = JACOCO_ROOT.resolve(Paths.get("lib", "jacococli.jar"));
   public static final String PROGUARD_SETTINGS_FOR_INTERNAL_APPS =
       THIRD_PARTY_DIR + "proguardsettings/";
-
-  public static final Path RETRACE_MAPS_DIR = Paths.get(THIRD_PARTY_DIR, "r8mappings");
 
   // TODO(b/270105162): These should be removed when finished transitioning.
   public static final Path R8_WITH_RELOCATED_DEPS_17_JAR =
@@ -2282,7 +2273,7 @@ public class ToolHelper {
     List<String> cmdline = new ArrayList<>();
     cmdline.add(TestRuntime.getSystemRuntime().asCf().getJavaExecutable().toString());
     cmdline.add("-jar");
-    cmdline.add(ToolHelper.JACOCO_CLI.toString());
+    cmdline.add(TestDeps.getJacocoCliJar().toString());
     cmdline.add("instrument");
     cmdline.add(sourceClassFiles.toString());
     cmdline.add("--dest");
@@ -2296,7 +2287,7 @@ public class ToolHelper {
     List<String> cmdline = new ArrayList<>();
     cmdline.add(TestRuntime.getSystemRuntime().asCf().getJavaExecutable().toString());
     cmdline.add("-jar");
-    cmdline.add(ToolHelper.JACOCO_CLI.toString());
+    cmdline.add(TestDeps.getJacocoCliJar().toString());
     cmdline.add("report");
     cmdline.add(jacocoExec.toString());
     cmdline.add("--classfiles");

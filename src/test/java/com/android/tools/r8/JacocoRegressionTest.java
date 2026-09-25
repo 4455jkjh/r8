@@ -42,7 +42,7 @@ public class JacocoRegressionTest extends TestBase implements Opcodes {
             path,
             String.format(
                 "-javaagent:%s=destfile=%s,dumponexit=true,output=file",
-                ToolHelper.JACOCO_AGENT, agentOutput),
+                TestDeps.getJacocoAgentJar(), agentOutput),
             name);
     assertEquals(1, result1.exitCode);
     assertTrue(result1.toString().contains("java.lang.VerifyError: Bad local variable type"));

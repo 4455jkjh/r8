@@ -57,13 +57,45 @@ private fun registerTestDep(configurationName: String, dir: File, propName: Stri
 // This should be called 'dependencies' but that is reserved in gradle, so dependenciesBucket.
 registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencies"), "DEPENDENCIES")
 
+registerTestDep("bundletool", ThirdPartyDeps.bundletool, "BUNDLETOOL")
+
 registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
 
 registerTestDep("gson", ThirdPartyDeps.gson, "GSON")
 
 registerTestDep("guavaJre", ThirdPartyDeps.guavaJre, "GUAVA_JRE")
 
+registerTestDep("jacoco", ThirdPartyDeps.jacoco, "JACOCO")
+
 registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
+
+registerTestDep("jsr223", ThirdPartyDeps.jsr223, "JSR223")
+
+registerTestDep("multidex", ThirdPartyDeps.multidex, "MULTIDEX")
+
+registerTestDep(
+  "processKeepRulesBinaryCompatibility",
+  ThirdPartyDeps.processKeepRulesBinaryCompatibility,
+  "PROCESS_KEEP_RULES_BINARY_COMPATIBILITY",
+)
+
+registerTestDep("r8Mappings", ThirdPartyDeps.r8Mappings, "R8_MAPPINGS")
+
+registerTestDep(
+  "retraceBinaryCompatibility",
+  ThirdPartyDeps.retraceBinaryCompatibility,
+  "RETRACE_BINARY_COMPATIBILITY",
+)
+
+registerTestDep(
+  "retracePartitionFormats",
+  ThirdPartyDeps.retracePartitionFormats,
+  "RETRACE_PARTITION_FORMATS",
+)
+
+registerTestDep("rhino", ThirdPartyDeps.rhino, "RHINO")
+
+registerTestDep("rhinoAndroid", ThirdPartyDeps.rhinoAndroid, "RHINO_ANDROID")
 
 val internalTasks =
   if (!providers.gradleProperty("no_internal").isPresent) {

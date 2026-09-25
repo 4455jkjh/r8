@@ -7,10 +7,10 @@ package com.android.tools.r8.retrace.partition;
 import static org.junit.Assert.assertNotNull;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.retrace.MappingPartitionMetadata;
 import com.android.tools.r8.retrace.PartitionMappingSupplier;
 import com.android.tools.r8.retrace.PartitionedToProguardMappingConverter;
@@ -43,8 +43,7 @@ public class RetracePartitionAndJoinIdentityTest extends TestBase {
   @Test
   public void testPartitionAndJoin() throws Exception {
     Path mappingFile =
-        ToolHelper.RETRACE_MAPS_DIR.resolve(
-            "ad5c3e88ef2bae5ef324eb225fbc57345cd57863-r8lib.jar.map");
+        TestDeps.getR8MappingsPath("ad5c3e88ef2bae5ef324eb225fbc57345cd57863-r8lib.jar.map");
     ProguardMapProducer proguardMapProducer = ProguardMapProducer.fromPath(mappingFile);
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     Map<String, byte[]> partitions = new HashMap<>();

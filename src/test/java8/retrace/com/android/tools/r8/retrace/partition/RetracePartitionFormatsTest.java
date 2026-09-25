@@ -10,6 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Consumer;
@@ -50,10 +50,6 @@ public class RetracePartitionFormatsTest extends TestBase {
     this.directory = directory;
   }
 
-  private static Path getPartitionDataRoot() {
-    return Paths.get(ToolHelper.THIRD_PARTY_DIR, "retrace", "partition_formats");
-  }
-
   private static Path getRetracedStacktracePath(Path directory) {
     return directory.resolve("retraced-stacktrace.txt");
   }
@@ -67,7 +63,7 @@ public class RetracePartitionFormatsTest extends TestBase {
   }
 
   private Path getDirectoryPath() {
-    return getPartitionDataRoot().resolve(directory);
+    return TestDeps.getRetracePartitionFormatsDir().resolve(directory);
   }
 
   @Test
@@ -113,7 +109,7 @@ public class RetracePartitionFormatsTest extends TestBase {
 
     LocalDate now = LocalDate.now();
     String datePrefix = "" + now.getYear() + now.getMonthValue() + now.getDayOfMonth();
-    Path directory = getPartitionDataRoot().resolve(datePrefix);
+    Path directory = TestDeps.getRetracePartitionFormatsDir().resolve(datePrefix);
     Path mapping = getPartitionedMapPath(directory);
     Path rawStacktrace = getRawStacktracePath(directory);
     Path retracedStacktrace = getRetracedStacktracePath(directory);
@@ -147,7 +143,7 @@ public class RetracePartitionFormatsTest extends TestBase {
     System.out.println("Remember to upload changes to cloud storage:");
     System.out.println(
         "(cd "
-            + getPartitionDataRoot().getParent()
+            + TestDeps.getRetracePartitionFormatsDir().getParent()
             + "; upload_to_google_storage.py -a --bucket r8-deps partition_formats)");
     System.out.println("==========================");
   }

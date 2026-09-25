@@ -80,9 +80,15 @@ dependencies {
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":third_party", "bundletool"))
   runtimeOnlyData(project(":third_party", "gson"))
   runtimeOnlyData(project(":third_party", "guavaJre"))
+  runtimeOnlyData(project(":third_party", "jacoco"))
   runtimeOnlyData(project(":third_party", "jdwpTests"))
+  runtimeOnlyData(project(":third_party", "jsr223"))
+  runtimeOnlyData(project(":third_party", "processKeepRulesBinaryCompatibility"))
+  runtimeOnlyData(project(":third_party", "rhino"))
+  runtimeOnlyData(project(":third_party", "rhinoAndroid"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->

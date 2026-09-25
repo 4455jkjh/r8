@@ -4,19 +4,16 @@
 
 package com.android.tools.r8.retrace.api;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.compilerapi.BinaryCompatibilityTestCollection;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.rules.TemporaryFolder;
 
 public class RetraceApiTestCollection
     extends BinaryCompatibilityTestCollection<RetraceApiBinaryTest> {
-
-  private static final Path BINARY_COMPATIBILITY_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "retrace", "binary_compatibility", "tests.jar");
 
   public static List<Class<? extends RetraceApiBinaryTest>> CLASSES_FOR_BINARY_COMPATIBILITY =
       ImmutableList.of(
@@ -68,7 +65,7 @@ public class RetraceApiTestCollection
 
   @Override
   public Path getCheckedInTestJar() {
-    return BINARY_COMPATIBILITY_JAR;
+    return TestDeps.getRetraceBinaryCompatibilityJar();
   }
 
   @Override

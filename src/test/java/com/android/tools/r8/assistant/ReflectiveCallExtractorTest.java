@@ -51,7 +51,7 @@ public class ReflectiveCallExtractorTest extends TestBase {
 
   @Test
   public void testJacoco() throws Exception {
-    test(ToolHelper.JACOCO_AGENT, 12, 0);
+    test(TestDeps.getJacocoAgentJar(), 12, 0);
   }
 
   @Test

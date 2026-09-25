@@ -10,10 +10,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.cf.CfVersion;
@@ -92,7 +92,7 @@ public class JacocoConstantDynamicGetDeclaredMethods extends TestBase {
     Path agentOutputOnTheFly = output.resolve("on-the-fly");
     testForJvm(parameters)
         .addProgramFiles(testClasses.getOriginal())
-        .enableJaCoCoAgent(ToolHelper.JACOCO_AGENT, agentOutputOnTheFly)
+        .enableJaCoCoAgent(TestDeps.getJacocoAgentJar(), agentOutputOnTheFly)
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutput(EXPECTED_OUTPUT_WITH_METHOD_HANDLES);
     checkJacocoReport(agentOutputOnTheFly);
@@ -101,7 +101,8 @@ public class JacocoConstantDynamicGetDeclaredMethods extends TestBase {
     Path agentOutputOffline = output.resolve("offline");
     testForJvm(parameters)
         .addProgramFiles(testClasses.getInstrumented())
-        .configureJaCoCoAgentForOfflineInstrumentedCode(ToolHelper.JACOCO_AGENT, agentOutputOffline)
+        .configureJaCoCoAgentForOfflineInstrumentedCode(
+            TestDeps.getJacocoAgentJar(), agentOutputOffline)
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutput(EXPECTED_OUTPUT_WITH_METHOD_HANDLES);
     checkJacocoReport(agentOutputOffline);
@@ -113,7 +114,7 @@ public class JacocoConstantDynamicGetDeclaredMethods extends TestBase {
     Path agentOutput = temp.newFolder().toPath().resolve("jacoco.exec");
     testForD8(parameters.getBackend())
         .addProgramFiles(testClasses.getInstrumented())
-        .addProgramFiles(ToolHelper.JACOCO_AGENT)
+        .addProgramFiles(TestDeps.getJacocoAgentJar())
         .setMinApi(parameters)
         .compile()
         .runWithJaCoCo(agentOutput, parameters.getRuntime(), MAIN_CLASS)
@@ -130,7 +131,7 @@ public class JacocoConstantDynamicGetDeclaredMethods extends TestBase {
     Path agentOutput = temp.newFolder().toPath().resolve("jacoco.exec");
     testForR8(parameters.getBackend())
         .addProgramFiles(testClasses.getInstrumented())
-        .addProgramFiles(ToolHelper.JACOCO_AGENT)
+        .addProgramFiles(TestDeps.getJacocoAgentJar())
         .setMinApi(parameters)
         .addKeepMainRules(TestRunner.class)
         .addKeepRules(
@@ -162,7 +163,7 @@ public class JacocoConstantDynamicGetDeclaredMethods extends TestBase {
     Path agentOutput = temp.newFolder().toPath().resolve("jacoco.exec");
     testForR8(parameters.getBackend())
         .addProgramFiles(testClasses.getInstrumented())
-        .addProgramFiles(ToolHelper.JACOCO_AGENT)
+        .addProgramFiles(TestDeps.getJacocoAgentJar())
         .setMinApi(parameters)
         .addKeepMainRules(TestRunner.class)
         .addKeepRules("-keep class ** { *** " + jacocoBootstrapMethodName + "(...); }")

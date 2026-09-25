@@ -3,20 +3,16 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.processkeeprules.api;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.compilerapi.BinaryCompatibilityTestCollection;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.rules.TemporaryFolder;
 
 public class ProcessKeepRulesApiTestCollection
     extends BinaryCompatibilityTestCollection<ProcessKeepRulesApiBinaryTest> {
-
-  private static final Path BINARY_COMPATIBILITY_JAR =
-      Paths.get(
-          ToolHelper.THIRD_PARTY_DIR, "processkeeprules", "binary_compatibility", "tests.jar");
 
   public static List<Class<? extends ProcessKeepRulesApiBinaryTest>>
       CLASSES_FOR_BINARY_COMPATIBILITY = ImmutableList.of(ProcessKeepRulesTest.ApiTest.class);
@@ -42,7 +38,7 @@ public class ProcessKeepRulesApiTestCollection
 
   @Override
   public Path getCheckedInTestJar() {
-    return BINARY_COMPATIBILITY_JAR;
+    return TestDeps.getProcessKeepRulesBinaryCompatibilityJar();
   }
 
   @Override

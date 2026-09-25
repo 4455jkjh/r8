@@ -7,20 +7,19 @@ package com.android.tools.r8.rewrite;
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestShrinkerBuilder;
-import com.android.tools.r8.ToolHelper;
-import java.nio.file.Paths;
 
 public class ScriptEngineTestBase extends TestBase {
   public void addRhinoForAndroid(TestBuilder<?, ?> builder) {
     builder
         // JSR 223: Scripting for the JavaTM Platform (https://jcp.org/en/jsr/detail?id=223).
-        .addProgramFiles(Paths.get(ToolHelper.JSR223_RI_JAR))
+        .addProgramFiles(TestDeps.getJsr223RiJar())
         // The Rhino implementation.
-        .addProgramFiles(Paths.get(ToolHelper.RHINO_JAR))
+        .addProgramFiles(TestDeps.getRhinoJar())
         // The rhino-android contains concrete implementation of sun.misc.Service
         // used by the JSR 223 RI, which is not in the Android runtime (except for N?).
-        .addProgramFiles(Paths.get(ToolHelper.RHINO_ANDROID_JAR));
+        .addProgramFiles(TestDeps.getRhinoAndroidJar());
     if (builder instanceof TestShrinkerBuilder) {
       ((TestShrinkerBuilder<?, ?, ?, ?, ?>) builder)
           // The rhino-android library have references to missing classes.

@@ -24,4 +24,6 @@ dependencies {
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
   runtimeOnlyData(project(":third_party", "gson"))
   runtimeOnlyData(project(":third_party", "guavaJre"))
+  runtimeOnlyData(project(":third_party", "jacoco"))
+  runtimeOnlyData(project(":third_party", "multidex"))
 }
