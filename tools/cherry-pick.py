@@ -111,7 +111,7 @@ def run(args, branch):
             git_new_branch(local_branch_name)
 
         subprocess.run(['git', 'cherry-pick', hash])
-        confirm_and_upload(local_branch_name, args, bugs, is_cherry_pick=True)
+        confirm_and_upload(local_branch_name, args, bugs)
         count = count + 1
 
     local_branch_name = 'cherry-%s-%d' % (branch, count)
@@ -152,7 +152,7 @@ def run(args, branch):
                 pass
 
 
-def confirm_and_upload(local_branch_name, args, bugs, is_cherry_pick=False):
+def confirm_and_upload(local_branch_name, args, bugs):
     if not args.yes:
         question = ('Ready to continue (cwd %s, will not upload to Gerrit)' %
                     os.getcwd()
@@ -173,26 +173,22 @@ def confirm_and_upload(local_branch_name, args, bugs, is_cherry_pick=False):
     # Compute the set of bug refs from the commit message after confirmation.
     # If done before a conflicting cherry-pick status will potentially include
     # references that are orthogonal to the pick.
-    if bugs is not None or is_cherry_pick:
+    if bugs != None:
         commit_message = subprocess.check_output(
-            ['git', 'log', '--format=%B', '-n', '1', 'HEAD']).decode('UTF-8')
-        if bugs is not None:
-            commit_lines = [l.strip() for l in commit_message.split('\n')]
-            for line in commit_lines:
-                bug = None
-                if line.startswith('Bug: '):
-                    bug = line.replace('Bug: ', '')
-                elif line.startswith('Fixed: '):
-                    bug = line.replace('Fixed: ', '')
-                elif line.startswith('Fixes: '):
-                    bug = line.replace('Fixes: ', '')
-                if bug:
-                    bugs.add(bug.replace('b/', '').strip())
-        if is_cherry_pick:
-            new_message = git_utils.AddPresubmitExcludeToCommitMessage(
-                commit_message)
-            if new_message != commit_message:
-                git_utils.GitAmendCommitMessage(new_message)
+            ['git', 'log', '--format=%B', '-n', '1', 'HEAD'])
+        commit_lines = [
+            l.strip() for l in commit_message.decode('UTF-8').split('\n')
+        ]
+        for line in commit_lines:
+            bug = None
+            if line.startswith('Bug: '):
+                bug = line.replace('Bug: ', '')
+            elif line.startswith('Fixed: '):
+                bug = line.replace('Fixed: ', '')
+            elif line.startswith('Fixes: '):
+                bug = line.replace('Fixes: ', '')
+            if bug:
+                bugs.add(bug.replace('b/', '').strip())
 
     cmd = ['git', 'cl', 'upload', '--bypass-hooks']
     if args.yes:

@@ -113,7 +113,7 @@ def prepare_release(args):
                 # Rewrite the version, commit and validate.
                 sed(old_version, version, R8_VERSION_FILE)
 
-                git_utils.GitCommit(version_commit_message(version))
+                git_utils.GitCommit(git_utils.VersionCommitMessage(version))
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash]).decode('utf-8')
@@ -139,8 +139,7 @@ def prepare_release(args):
     return make_release
 
 
-def version_commit_message(version):
-    return git_utils.VersionCommitMessage(version, exclude_presubmit=True)
+version_commit_message = git_utils.VersionCommitMessage
 
 
 def maybe_tag(args, version):
@@ -868,7 +867,8 @@ def prepare_branch(args):
                 sed(version_prefix + old_version, version_prefix + full_version,
                     R8_VERSION_FILE)
 
-                git_utils.GitCommit(version_commit_message(full_version))
+                git_utils.GitCommit(
+                    git_utils.VersionCommitMessage(full_version))
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash])
