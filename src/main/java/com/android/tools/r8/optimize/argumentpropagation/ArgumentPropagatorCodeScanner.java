@@ -928,12 +928,7 @@ public class ArgumentPropagatorCodeScanner {
         Value argumentValue = invoke.getArgument(argumentIndex);
         parameterStates.add(
             computeParameterStateForNonReceiver(
-                invoke,
-                singleTarget,
-                argumentIndex,
-                argumentValue,
-                argumentValue,
-                existingMethodState));
+                invoke, singleTarget, argumentIndex, argumentValue, existingMethodState));
       }
 
       // We simulate that the return value is used for methods with void return type. This ensures
@@ -975,10 +970,8 @@ public class ArgumentPropagatorCodeScanner {
         ProgramMethod singleTarget,
         int argumentIndex,
         Value value,
-        Value initialValue,
         ConcreteMonomorphicMethodStateOrBottom existingMethodState) {
       assert invoke.isInvokeStatic() || argumentIndex > 0;
-      assert value == initialValue || initialValue.getAliasedValue().isPhi();
 
       // Don't compute a state for this parameter if the stored state is already unknown.
       if (existingMethodState.isMonomorphic()
@@ -992,6 +985,13 @@ public class ArgumentPropagatorCodeScanner {
         return ValueState.unused(parameterType);
       }
 
+      return internalComputeParameterStateForNonReceiver(singleTarget, parameterType, value, value);
+    }
+
+    private NonEmptyValueState internalComputeParameterStateForNonReceiver(
+        ProgramMethod singleTarget, DexType parameterType, Value value, Value initialValue) {
+      assert value == initialValue || initialValue.getAliasedValue().isPhi();
+
       // If the value is an argument of the enclosing method, then clearly we have no information
       // about its abstract value. Instead of treating this as having an unknown runtime value, we
       // instead record a flow constraint that specifies that all values that flow into the
@@ -1004,13 +1004,8 @@ public class ArgumentPropagatorCodeScanner {
               value,
               initialValue,
               phiOperandArgumentValue ->
-                  computeParameterStateForNonReceiver(
-                      invoke,
-                      singleTarget,
-                      argumentIndex,
-                      phiOperandArgumentValue,
-                      initialValue,
-                      existingMethodState));
+                  internalComputeParameterStateForNonReceiver(
+                      singleTarget, parameterType, phiOperandArgumentValue, initialValue));
       if (inFlowState != null) {
         return inFlowState;
       }
