@@ -839,6 +839,11 @@ public abstract class TestCompilerBuilder<
     }
   }
 
+  public T setApiDatabasePath(Path apiDatabasePath) {
+    builder.setApiDatabasePath(apiDatabasePath);
+    return self();
+  }
+
   public T applyCompilerDump(CompilerDump dump) throws IOException {
     super.applyCompilerDump(dump);
     DumpOptions options = dump.getBuildProperties();
@@ -849,6 +854,7 @@ public abstract class TestCompilerBuilder<
             b.enableCoreLibraryDesugaring(
                 LibraryDesugaringTestConfiguration.forSpecification(
                     dump.getDesugaredLibraryFile())));
+    applyIf(dump.hasApiDatabase(), b -> b.setApiDatabasePath(dump.getApiDatabaseFile()));
     setMode(options.getCompilationMode());
     return self();
   }

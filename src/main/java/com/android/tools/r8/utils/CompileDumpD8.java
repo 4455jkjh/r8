@@ -54,7 +54,8 @@ public class CompileDumpD8 extends CompileDumpBase {
           "--startup-profile",
           "--desugared-lib",
           "--pg-map",
-          "--pg-map-output");
+          "--pg-map-output",
+          "--api-database");
 
   private static final List<String> VALID_OPTIONS_WITH_TWO_OPERANDS =
       Arrays.asList("--art-profile");
@@ -72,6 +73,7 @@ public class CompileDumpD8 extends CompileDumpBase {
     List<Path> startupProfileFiles = new ArrayList<>();
     Path pgMap = null;
     Path pgOutputMap = null;
+    Path apiDatabase = null;
     int minApi = 1;
     int threads = -1;
     BooleanBox enableMissingLibraryApiModeling = new BooleanBox(false);
@@ -157,6 +159,11 @@ public class CompileDumpD8 extends CompileDumpBase {
               pgOutputMap = Paths.get(operand);
               break;
             }
+          case "--api-database":
+            {
+              apiDatabase = Paths.get(operand);
+              break;
+            }
           default:
             throw new IllegalArgumentException("Unimplemented option: " + option);
         }
@@ -200,6 +207,12 @@ public class CompileDumpD8 extends CompileDumpBase {
             CompilerCommandDumpUtils.setEnableExperimentalMissingLibraryApiModeling(
                 commandBuilder, enableMissingLibraryApiModeling.get()),
         "Missing library api modeling not available.");
+    if (apiDatabase != null) {
+      Path finalApiDatabase = apiDatabase;
+      runIgnoreMissing(
+          () -> CompilerCommandDumpUtils.setApiDatabasePath(commandBuilder, finalApiDatabase),
+          "API database not available.");
+    }
     if (desugaredLibJson != null) {
       commandBuilder.addDesugaredLibraryConfiguration(readAllBytesJava7(desugaredLibJson));
     }

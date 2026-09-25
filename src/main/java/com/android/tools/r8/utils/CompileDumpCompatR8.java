@@ -72,7 +72,8 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
           "--partial-exclude",
           "--threads",
           "--startup-profile",
-          "--android-resources-usage-log");
+          "--android-resources-usage-log",
+          "--api-database");
 
   private static final List<String> VALID_OPTIONS_WITH_TWO_OPERANDS =
       Arrays.asList("--art-profile", "--feature-jar", "--android-resources");
@@ -125,6 +126,7 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
     Path androidResourcesInput = null;
     Path androidResourcesOutput = null;
     StringConsumer androidResourcesUsageLogConsumer = null;
+    Path apiDatabase = null;
     int minApi = 1;
     int threads = -1;
     BooleanBox enableMissingLibraryApiModeling = new BooleanBox(false);
@@ -249,6 +251,11 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
               }
               break;
             }
+          case "--api-database":
+            {
+              apiDatabase = Paths.get(operand);
+              break;
+            }
           default:
             throw new IllegalArgumentException("Unimplemented option: " + option);
         }
@@ -325,6 +332,12 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
             CompilerCommandDumpUtils.setEnableExperimentalMissingLibraryApiModeling(
                 commandBuilder, enableMissingLibraryApiModeling.get()),
         "Missing library api modeling not available.");
+    if (apiDatabase != null) {
+      Path finalApiDatabase = apiDatabase;
+      runIgnoreMissing(
+          () -> CompilerCommandDumpUtils.setApiDatabasePath(commandBuilder, finalApiDatabase),
+          "API database not available.");
+    }
     if (desugaredLibJson != null) {
       commandBuilder.addDesugaredLibraryConfiguration(readAllBytesJava7(desugaredLibJson));
     }

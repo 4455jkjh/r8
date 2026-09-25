@@ -37,4 +37,12 @@ public class CompilerCommandDumpUtils {
   public static void setProguardMapOutputPath(D8Command.Builder builder, Path pgOutputMap) {
     builder.setProguardMapOutputPath(pgOutputMap);
   }
+
+  public static void setApiDatabasePath(R8Command.Builder builder, Path apiDatabasePath) {
+    builder.setApiDatabasePath(apiDatabasePath);
+  }
+
+  public static void setApiDatabasePath(D8Command.Builder builder, Path apiDatabasePath) {
+    builder.setApiDatabasePath(apiDatabasePath);
+  }
 }
