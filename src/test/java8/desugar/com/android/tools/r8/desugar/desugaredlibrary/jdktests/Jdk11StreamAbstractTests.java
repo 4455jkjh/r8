@@ -19,8 +19,8 @@ import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -76,6 +76,7 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .withApiLevel(AndroidApiLevel.N)
+            .withoutCollapsedDexRuntimes()
             .build(),
         specs,
         ImmutableList.of(D8_L8SHRINK, D8CF2CF_L8DEBUG));
@@ -263,7 +264,7 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
         parameters.getApiLevel().isLessThan(AndroidApiLevel.N));
 
     DesugaredLibraryTestCompileResult<?> compileResult = compileStreamTestsToDex();
-    SingleTestRunResult<?> result = runAllTests(compileResult, successes);
+    TestRunResult<?> result = runAllTests(compileResult, successes);
     runSuccessfulTests(result, successes);
   }
 
@@ -348,7 +349,7 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
     }
   }
 
-  private SingleTestRunResult<?> runAllTests(
+  private TestRunResult<?> runAllTests(
       DesugaredLibraryTestCompileResult<?> compileResult, Map<String, String> successes)
       throws Exception {
     String verbosity = "2"; // Increase verbosity for debugging.
@@ -384,12 +385,14 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
     return stdOut.substring(startIndex, lineEnd + lineSeparator.length());
   }
 
-  private void runSuccessfulTests(SingleTestRunResult<?> result, Map<String, String> successes) {
+  private void runSuccessfulTests(TestRunResult<?> result, Map<String, String> successes) {
     for (String path : successes.keySet()) {
       String className = successes.get(path);
       assert className != null;
       String classStdOut =
-          result != null ? extractClassStdOut(result.getStdOut(), className) : null;
+          result != null
+              ? extractClassStdOut(result.asSingleRuntimeResult().getStdOut(), className)
+              : null;
       assertTrue(
           "Failure in " + path + "\n" + result,
           classStdOut != null
@@ -409,7 +412,7 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
 
     DesugaredLibraryTestCompileResult<?> compileResult = compileStreamTestsToDex();
     Map<String, String> successes = split(getSuccessfulTests(), getIndex());
-    SingleTestRunResult<?> result = runAllTests(compileResult, successes);
+    TestRunResult<?> result = runAllTests(compileResult, successes);
     runSuccessfulTests(result, successes);
   }
 

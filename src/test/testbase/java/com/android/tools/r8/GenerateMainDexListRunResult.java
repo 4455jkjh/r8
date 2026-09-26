@@ -7,17 +7,18 @@ package com.android.tools.r8;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.List;
 import java.util.function.Consumer;
+import org.hamcrest.Matcher;
 
-public class GenerateMainDexListRunResult
-    extends SingleTestRunResult<GenerateMainDexListRunResult> {
+public class GenerateMainDexListRunResult extends TestRunResult<GenerateMainDexListRunResult> {
 
   final TestState state;
   List<String> mainDexList;
 
   public GenerateMainDexListRunResult(List<String> mainDexList, TestState state) {
-    super(null, null, null, state);
+    super(null, null, state);
     this.mainDexList = mainDexList;
     this.state = state;
   }
@@ -47,5 +48,31 @@ public class GenerateMainDexListRunResult
   @Override
   protected GenerateMainDexListRunResult self() {
     return this;
+  }
+
+  @Override
+  public GenerateMainDexListRunResult assertSuccess() {
+    throw new Unreachable();
+  }
+
+  @Override
+  public GenerateMainDexListRunResult assertStdoutMatches(Matcher<String> matcher) {
+    throw new Unreachable();
+  }
+
+  @Override
+  public GenerateMainDexListRunResult assertStdoutLinesMatchesUnordered(
+      Iterable<Matcher<String>> lines) {
+    throw new Unreachable();
+  }
+
+  @Override
+  public GenerateMainDexListRunResult assertFailure() {
+    throw new Unreachable();
+  }
+
+  @Override
+  public GenerateMainDexListRunResult assertStderrMatches(Matcher<String> matcher) {
+    throw new Unreachable();
   }
 }

@@ -38,6 +38,7 @@ public class VarHandleTest extends TestBase {
         .withCfRuntimesStartingFromIncluding(CfVm.JDK11)
         .withDexRuntimes()
         .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

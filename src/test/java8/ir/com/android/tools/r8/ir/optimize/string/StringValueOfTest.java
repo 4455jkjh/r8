@@ -11,10 +11,10 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NeverPropagateValue;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ir.optimize.string.StringValueOfTest.TestClass.Foo;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -76,8 +76,7 @@ public class StringValueOfTest extends TestBase {
         instructionSubject.isConstString("null", JumboStringMode.ALLOW)).count();
   }
 
-  private void test(SingleTestRunResult<?> result, boolean isR8, boolean isRelease)
-      throws Exception {
+  private void test(TestRunResult<?> result, boolean isR8, boolean isRelease) throws Exception {
     CodeInspector codeInspector = result.inspector();
     ClassSubject mainClass = codeInspector.clazz(MAIN);
     MethodSubject mainMethod = mainClass.mainMethod();
@@ -104,7 +103,7 @@ public class StringValueOfTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForR8(parameters.getBackend())
             .addProgramClassesAndInnerClasses(MAIN)
             .enableConstantArgumentAnnotations()

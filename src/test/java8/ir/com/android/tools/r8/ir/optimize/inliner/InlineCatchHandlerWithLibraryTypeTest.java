@@ -60,7 +60,7 @@ public class InlineCatchHandlerWithLibraryTypeTest extends TestBase {
   @Parameters(name = "{0}, {1}")
   public static List<Object[]> params() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
         new TreeSet<>(EXCEPTIONS.keySet()));
   }
 

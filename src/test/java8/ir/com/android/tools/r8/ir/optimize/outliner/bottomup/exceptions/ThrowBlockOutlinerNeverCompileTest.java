@@ -10,8 +10,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
+import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerOptions;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerTestBase;
@@ -21,9 +22,18 @@ import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.Collection;
+import java.util.List;
 import org.junit.Test;
+import org.junit.runners.Parameterized.Parameters;
 
 public class ThrowBlockOutlinerNeverCompileTest extends BottomUpOutlinerTestBase {
+
+  @Parameters(name = "{0}, mode: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build(),
+        CompilationMode.values());
+  }
 
   @Test
   public void testD8() throws Exception {
@@ -39,8 +49,8 @@ public class ThrowBlockOutlinerNeverCompileTest extends BottomUpOutlinerTestBase
   }
 
   private void runTest(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testBuilder,
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> otherTestBuilder)
+      TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testBuilder,
+      TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> otherTestBuilder)
       throws Exception {
     long oatSize =
         testBuilder

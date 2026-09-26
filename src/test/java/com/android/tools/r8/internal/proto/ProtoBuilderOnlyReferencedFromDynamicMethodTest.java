@@ -10,8 +10,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.List;
@@ -93,7 +93,7 @@ public class ProtoBuilderOnlyReferencedFromDynamicMethodTest extends ProtoShrink
         isAbsent());
   }
 
-  private void checkRunResult(SingleTestRunResult<?> runResult) {
+  private void checkRunResult(TestRunResult<?> runResult) {
     runResult.applyIf(
         protoTestSources.getCorrespondingRuntime() == protoRuntime,
         rr ->

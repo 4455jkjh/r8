@@ -11,6 +11,7 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 
 public class ExternalR8TestCompileResult
@@ -73,7 +74,12 @@ public class ExternalR8TestCompileResult
   }
 
   @Override
-  protected ExternalR8TestRunResult createRunResult(TestRuntime runtime, ProcessResult result) {
-    return new ExternalR8TestRunResult(app, outputJar, proguardMap, runtime, result, state);
+  protected SingleTestRunResult createSingleRunResult(TestRuntime runtime, ProcessResult result) {
+    return new SingleTestRunResult(app, runtime, result, proguardMap, state);
+  }
+
+  @Override
+  protected ExternalR8TestRunResult createRunResult(List<SingleTestRunResult> results) {
+    return new ExternalR8TestRunResult(app, outputJar, proguardMap, state, results);
   }
 }

@@ -32,7 +32,7 @@ public class ArrayTargetLookupTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   public ArrayTargetLookupTest(TestParameters parameters) {

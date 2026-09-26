@@ -4,29 +4,22 @@
 
 package com.android.tools.r8;
 
-import static org.junit.Assert.assertNotNull;
-
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
-public class ExternalR8TestRunResult extends SingleTestRunResult<ExternalR8TestRunResult> {
+public class ExternalR8TestRunResult extends MultiTestRunResult<ExternalR8TestRunResult> {
 
   private final Path outputJar;
-  private final String proguardMap;
 
   public ExternalR8TestRunResult(
       AndroidApp app,
       Path outputJar,
       String proguardMap,
-      TestRuntime runtime,
-      ProcessResult result,
-      TestState state) {
-    super(app, runtime, result, state);
+      TestState state,
+      List<SingleTestRunResult> singleRunResults) {
+    super(app, proguardMap, state, singleRunResults);
     this.outputJar = outputJar;
-    this.proguardMap = proguardMap;
   }
 
   public Path outputJar() {
@@ -36,13 +29,5 @@ public class ExternalR8TestRunResult extends SingleTestRunResult<ExternalR8TestR
   @Override
   protected ExternalR8TestRunResult self() {
     return this;
-  }
-
-  @Override
-  public CodeInspector inspector() throws IOException {
-    // See comment in base class.
-    assertSuccess();
-    assertNotNull(app);
-    return new CodeInspector(app, proguardMap);
   }
 }

@@ -41,6 +41,7 @@ public class VarHandleNoDesugaredTypesInSignaturesNoAttributesTest extends TestB
         // same time there are VFY errors on stderr.
         .withDexRuntimesStartingFromExcluding(Version.V4_4_4)
         .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

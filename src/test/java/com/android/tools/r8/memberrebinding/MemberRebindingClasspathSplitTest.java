@@ -56,7 +56,7 @@ public class MemberRebindingClasspathSplitTest extends TestBase {
   @Parameters(name = "{0}, classpathsplit: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
         ImmutableList.of(
             new TestConfig(
                 "Both A and B on classpath",

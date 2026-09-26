@@ -44,7 +44,11 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
+        getTestParameters()
+            .withAllRuntimes()
+            .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         getJdk8Jdk11(),
         SPECIFICATIONS_WITH_CF2CF);
   }

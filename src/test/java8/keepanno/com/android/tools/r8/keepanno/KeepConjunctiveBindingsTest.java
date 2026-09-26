@@ -7,7 +7,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.SingleTestRunResult;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.keepanno.annotations.KeepBinding;
 import com.android.tools.r8.keepanno.annotations.KeepEdge;
 import com.android.tools.r8.keepanno.annotations.KeepTarget;
@@ -36,7 +36,7 @@ public class KeepConjunctiveBindingsTest extends KeepAnnoTestBase {
 
   @Test
   public void test() throws Exception {
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForKeepAnno(parameters)
             .addProgramClasses(getInputClasses())
             .addKeepMainRule(TestClass.class)

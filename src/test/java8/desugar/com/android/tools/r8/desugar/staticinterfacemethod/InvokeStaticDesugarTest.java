@@ -12,7 +12,6 @@ import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.DesugarTestConfiguration;
 import com.android.tools.r8.PartialCompilationTestParameters;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
@@ -20,10 +19,10 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -57,6 +56,7 @@ public class InvokeStaticDesugarTest extends TestBase {
             .withAllRuntimes()
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
+            .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());
   }
@@ -101,6 +101,12 @@ public class InvokeStaticDesugarTest extends TestBase {
         .collectSyntheticItems()
         .run(parameters.getRuntime(), Main.class)
         .applyIf(
+            // The reference javac run only sees the synthetics from the initial compilation.
+            DesugarTestConfiguration::isJavac,
+            r -> {
+              assertEquals(1, countSynthetics(r, initialCompileResult.getSyntheticItems(), null));
+              r.assertSuccessWithOutputLines(EXPECTED);
+            },
             // When double desugaring to API level below L two synthetics are seen.
             c ->
                 DesugarTestConfiguration.isDesugared(c)
@@ -112,7 +118,10 @@ public class InvokeStaticDesugarTest extends TestBase {
                             .isNewerThan(DexVm.ART_4_4_4_HOST))
                     && parameters.getApiLevel().isLessThan(AndroidApiLevel.L),
             r -> {
-              assertEquals(intermediate ? 1 : 2, countSynthetics(r, initialCompileResult));
+              assertEquals(
+                  intermediate ? 1 : 2,
+                  countSynthetics(
+                      r, r.getSyntheticItems(), initialCompileResult.getSyntheticItems()));
               r.assertSuccessWithOutputLines(EXPECTED);
             },
             // Don't inspect failing code, as inspection is only supported when run succeeds,
@@ -128,7 +137,10 @@ public class InvokeStaticDesugarTest extends TestBase {
             r -> r.assertFailureWithErrorThatMatches(containsString("java.lang.VerifyError")),
             // When double desugaring to API level L and above one synthetics seen.
             r -> {
-              assertEquals(1, countSynthetics(r, initialCompileResult));
+              assertEquals(
+                  1,
+                  countSynthetics(
+                      r, r.getSyntheticItems(), initialCompileResult.getSyntheticItems()));
               r.assertSuccessWithOutputLines(EXPECTED);
             });
   }
@@ -151,16 +163,11 @@ public class InvokeStaticDesugarTest extends TestBase {
   }
 
   private int countSynthetics(
-      SingleTestRunResult<?> r, TestCompileResult<?, ?> initialCompileResult) {
+      TestRunResult<?> r,
+      SyntheticItemsTestUtils syntheticItems,
+      SyntheticItemsTestUtils ignoreSyntheticItems) {
     try {
-      if (r.isJvmTestRunResult()) {
-        return getSyntheticMethods(r.inspector(), initialCompileResult.getSyntheticItems(), null)
-            .size();
-      } else {
-        return getSyntheticMethods(
-                r.inspector(), r.getSyntheticItems(), initialCompileResult.getSyntheticItems())
-            .size();
-      }
+      return getSyntheticMethods(r.inspector(), syntheticItems, ignoreSyntheticItems).size();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

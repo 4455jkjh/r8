@@ -12,9 +12,10 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,11 +45,10 @@ public class RetraceInlineeWithNullCheckInlinedTest extends TestBase {
   @Before
   public void setup() throws Exception {
     // Get the expected stack trace by running on the JVM.
-    expectedStackTrace =
-        testForRuntime(parameters)
-            .addProgramClasses(Caller.class, Foo.class)
-            .run(parameters.getRuntime(), Caller.class, getArgs())
-            .getStackTrace();
+    testForJvm(temp)
+        .addProgramClasses(Caller.class, Foo.class)
+        .run(TestRuntime.getDefaultCfRuntime(), Caller.class, getArgs())
+        .inspectStackTrace(stackTrace -> expectedStackTrace = stackTrace);
   }
 
   @Test

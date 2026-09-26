@@ -10,6 +10,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,15 +28,15 @@ public class RetraceInlineeWithNullCheckSequenceTest extends TestBase {
     return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
-  public StackTrace expectedStackTrace;
+  private static StackTrace expectedStackTrace;
 
   @Before
   public void setup() throws Exception {
     // Get the expected stack trace by running on the JVM.
     expectedStackTrace =
-        testForRuntime(parameters)
+        testForJvm(getStaticTemp())
             .addProgramClasses(Caller.class, Foo.class)
-            .run(parameters.getRuntime(), Caller.class)
+            .run(TestRuntime.getDefaultCfRuntime(), Caller.class)
             .assertFailureWithErrorThatThrows(NullPointerException.class)
             .getStackTrace();
   }

@@ -8,9 +8,9 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.D8TestRunResult;
-import com.android.tools.r8.JvmTestRunResult;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
@@ -143,7 +143,7 @@ public class InnerClassNameTestRunner extends TestBase {
   @Parameters(name = "{0} minify:{1} {2}")
   public static Collection<Object[]> parameters() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
         BooleanUtils.values(),
         TestNamingConfig.values());
   }
@@ -214,7 +214,7 @@ public class InnerClassNameTestRunner extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    JvmTestRunResult runResult = null;
+    SingleTestRunResult runResult = null;
     if (parameters.isCfRuntime()) {
       runResult =
           testForJvm(parameters)

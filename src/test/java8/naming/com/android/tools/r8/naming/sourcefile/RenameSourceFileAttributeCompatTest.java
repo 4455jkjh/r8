@@ -6,10 +6,10 @@ package com.android.tools.r8.naming.sourcefile;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ProguardVersion;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
@@ -45,22 +45,22 @@ public class RenameSourceFileAttributeCompatTest extends TestBase {
         .addKeepRules("-renamesourcefileattribute RenamedFile");
   }
 
-  private void checkSourceFileIsRemoved(SingleTestRunResult<?> result) throws Exception {
+  private void checkSourceFileIsRemoved(TestRunResult<?> result) throws Exception {
     String removalValue = result.isR8TestRunResult() ? "r8-map-id-42" : null;
     checkSourceFile(result, removalValue, removalValue, removalValue);
   }
 
-  private void checkSourceFileIsOriginal(SingleTestRunResult<?> result) throws Exception {
+  private void checkSourceFileIsOriginal(TestRunResult<?> result) throws Exception {
     String originalSourceFile = getOriginalSourceFile();
     checkSourceFile(result, originalSourceFile, originalSourceFile, originalSourceFile);
   }
 
-  private void checkSourceFileIsRenamed(SingleTestRunResult<?> result) throws Exception {
+  private void checkSourceFileIsRenamed(TestRunResult<?> result) throws Exception {
     checkSourceFile(result, "RenamedFile", "RenamedFile", "RenamedFile");
   }
 
   private void checkSourceFile(
-      SingleTestRunResult<?> result, String keptValue, String semiKeptValue, String nonKeptValue)
+      TestRunResult<?> result, String keptValue, String semiKeptValue, String nonKeptValue)
       throws Exception {
     result.assertFailure();
     result.inspectOriginalStackTrace(
@@ -92,14 +92,14 @@ public class RenameSourceFileAttributeCompatTest extends TestBase {
     return expectedSourceFileValue == null ? "Unknown Source" : expectedSourceFileValue;
   }
 
-  private <RR extends SingleTestRunResult<RR>> void testJustKeepMain(
+  private <RR extends TestRunResult<RR>> void testJustKeepMain(
       TestShrinkerBuilder<?, ?, ?, RR, ?> builder, boolean fullMode) throws Exception {
     // If the source file attribute is not kept then all compilers will strip it throughout.
     commonSetUp(builder);
     builder.run(parameters.getRuntime(), TestClass.class).apply(this::checkSourceFileIsRemoved);
   }
 
-  private <RR extends SingleTestRunResult<RR>> void testDontObfuscate(
+  private <RR extends TestRunResult<RR>> void testDontObfuscate(
       TestShrinkerBuilder<?, ?, ?, RR, ?> builder, boolean fullMode) throws Exception {
     // If minification is off then compat compilers retain it, full mode will remove it.
     commonSetUp(builder);
@@ -109,7 +109,7 @@ public class RenameSourceFileAttributeCompatTest extends TestBase {
         .applyIf(fullMode, this::checkSourceFileIsRemoved, this::checkSourceFileIsOriginal);
   }
 
-  private <RR extends SingleTestRunResult<RR>> void testDontOptimize(
+  private <RR extends TestRunResult<RR>> void testDontOptimize(
       TestShrinkerBuilder<?, ?, ?, RR, ?> builder, boolean fullMode) throws Exception {
     // No effect from -dontoptimize
     commonSetUp(builder);
@@ -119,7 +119,7 @@ public class RenameSourceFileAttributeCompatTest extends TestBase {
         .apply(this::checkSourceFileIsRemoved);
   }
 
-  private <RR extends SingleTestRunResult<RR>> void testDontShrink(
+  private <RR extends TestRunResult<RR>> void testDontShrink(
       TestShrinkerBuilder<?, ?, ?, RR, ?> builder, boolean fullMode) throws Exception {
     // No effect from -dontshrink
     commonSetUp(builder);
@@ -129,7 +129,7 @@ public class RenameSourceFileAttributeCompatTest extends TestBase {
         .apply(this::checkSourceFileIsRemoved);
   }
 
-  private <RR extends SingleTestRunResult<RR>> void testKeepSourceFileAttribute(
+  private <RR extends TestRunResult<RR>> void testKeepSourceFileAttribute(
       TestShrinkerBuilder<?, ?, ?, RR, ?> builder, boolean fullMode) throws Exception {
     commonSetUp(builder);
     builder
@@ -138,7 +138,7 @@ public class RenameSourceFileAttributeCompatTest extends TestBase {
         .apply(this::checkSourceFileIsRenamed);
   }
 
-  private <RR extends SingleTestRunResult<RR>> void runAllTests(
+  private <RR extends TestRunResult<RR>> void runAllTests(
       Supplier<TestShrinkerBuilder<?, ?, ?, RR, ?>> builder, boolean fullMode) throws Exception {
     testJustKeepMain(builder.get(), fullMode);
     testDontObfuscate(builder.get(), fullMode);

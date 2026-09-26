@@ -5,6 +5,7 @@ package com.android.tools.r8.ir.optimize;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.AppInfo;
@@ -41,11 +42,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ConstantRemovalTest {
+public class ConstantRemovalTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   public ConstantRemovalTest(TestParameters parameters) {

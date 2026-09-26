@@ -48,18 +48,15 @@ public class RetargetOverrideTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testRetargetOverride() throws Throwable {
-    String stdout =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(getClass())
-            .addKeepMainRule(Executor.class)
-            .run(
-                parameters.getRuntime(),
-                Executor.class,
-                Boolean.toString(parameters.getRuntime().isCf()))
-            .assertSuccess()
-            .getStdOut();
-    assertLines2By2Correct(stdout);
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Executor.class)
+        .run(
+            parameters.getRuntime(),
+            Executor.class,
+            Boolean.toString(parameters.getRuntime().isCf()))
+        .assertSuccess()
+        .inspectStdOut(this::assertLines2By2Correct);
   }
 
   static class Executor {

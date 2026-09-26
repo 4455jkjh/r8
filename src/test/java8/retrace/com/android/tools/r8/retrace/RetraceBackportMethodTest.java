@@ -9,10 +9,10 @@ import static com.android.tools.r8.naming.retrace.StackTrace.isSameExceptForLine
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
@@ -185,7 +185,7 @@ public class RetraceBackportMethodTest extends TestBase {
                             rr.getSyntheticItems())));
   }
 
-  private void checkRunResult(SingleTestRunResult<?> runResult) {
+  private void checkRunResult(TestRunResult<?> runResult) {
     runResult.assertFailureWithErrorThatThrows(ArithmeticException.class);
   }
 

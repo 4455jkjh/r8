@@ -14,11 +14,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -38,7 +38,11 @@ public class ApiModelMockAbstractMethodOnBaseToOutlineTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private boolean isGreaterOrEqualToMockLevel() {
@@ -126,7 +130,7 @@ public class ApiModelMockAbstractMethodOnBaseToOutlineTest extends TestBase {
         .apply(runResult -> checkOutput(runResult, true));
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult, boolean isRelease) {
+  private void checkOutput(TestRunResult<?> runResult, boolean isRelease) {
     if (isGreaterOrEqualToMockLevel()) {
       runResult.assertSuccessWithOutputLines(
           "OtherLibraryClass::foo", "SubLibraryClassAtLaterApiLevel::foo");

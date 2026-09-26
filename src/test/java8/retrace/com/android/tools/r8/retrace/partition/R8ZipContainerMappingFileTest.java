@@ -72,25 +72,25 @@ public class R8ZipContainerMappingFileTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     Path pgMapFile = temp.newFile("mapping.zip").toPath();
-    StackTrace originalStackTrace =
-        testForR8(parameters.getBackend())
-            .addInnerClasses(R8ZipContainerMappingFileTestClasses.class)
-            .setMinApi(parameters)
-            .addKeepMainRule(Main.class)
-            .addKeepAttributeSourceFile()
-            .addKeepAttributeLineNumberTable()
-            .setPartitionMapConsumer(createPartitionZipConsumer(pgMapFile))
-            .run(parameters.getRuntime(), Main.class)
-            .assertFailureWithErrorThatThrows(RuntimeException.class)
-            .getOriginalStackTrace();
-
-    assertTrue(Files.exists(pgMapFile));
-    BooleanBox calledFinished = new BooleanBox();
-    assertThat(
-        originalStackTrace.retrace(
-            createMappingSupplierFromPartitionZip(pgMapFile, calledFinished::set)),
-        isSame(EXPECTED));
-    assertTrue(calledFinished.get());
+    testForR8(parameters.getBackend())
+        .addInnerClasses(R8ZipContainerMappingFileTestClasses.class)
+        .setMinApi(parameters)
+        .addKeepMainRule(Main.class)
+        .addKeepAttributeSourceFile()
+        .addKeepAttributeLineNumberTable()
+        .setPartitionMapConsumer(createPartitionZipConsumer(pgMapFile))
+        .run(parameters.getRuntime(), Main.class)
+        .assertFailureWithErrorThatThrows(RuntimeException.class)
+        .inspectOriginalStackTrace(
+            originalStackTrace -> {
+              assertTrue(Files.exists(pgMapFile));
+              BooleanBox calledFinished = new BooleanBox();
+              assertThat(
+                  originalStackTrace.retrace(
+                      createMappingSupplierFromPartitionZip(pgMapFile, calledFinished::set)),
+                  isSame(EXPECTED));
+              assertTrue(calledFinished.get());
+            });
   }
 
   private PartitionMappingSupplier createMappingSupplierFromPartitionZip(

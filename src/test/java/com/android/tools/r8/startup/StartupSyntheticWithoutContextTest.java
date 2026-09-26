@@ -64,7 +64,11 @@ public class StartupSyntheticWithoutContextTest extends TestBase {
   public static List<Object[]> data() {
     return buildParameters(
         // N so that java.util.function.Consumer is present.
-        getTestParameters().withDexRuntimes().withApiLevel(AndroidApiLevel.N).build(),
+        getTestParameters()
+            .withDexRuntimes()
+            .withApiLevel(AndroidApiLevel.N)
+            .withoutCollapsedDexRuntimes()
+            .build(),
         BooleanUtils.values(),
         BooleanUtils.values());
   }

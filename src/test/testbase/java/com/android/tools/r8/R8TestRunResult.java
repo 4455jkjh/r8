@@ -4,36 +4,31 @@
 
 package com.android.tools.r8;
 
-import static org.junit.Assert.assertNotNull;
-
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.graphinspector.GraphInspector;
+import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-public class R8TestRunResult extends SingleTestRunResult<R8TestRunResult> {
+public class R8TestRunResult extends MultiTestRunResult<R8TestRunResult> {
 
   public interface GraphInspectorSupplier {
     GraphInspector get() throws IOException;
   }
 
-  private final String proguardMap;
   private final GraphInspectorSupplier graphInspector;
 
   public R8TestRunResult(
       AndroidApp app,
-      TestRuntime runtime,
-      ProcessResult result,
       String proguardMap,
       GraphInspectorSupplier graphInspector,
-      TestState state) {
-    super(app, runtime, result, state);
-    this.proguardMap = proguardMap;
+      TestState state,
+      List<SingleTestRunResult> singleRunResults) {
+    super(app, proguardMap, state, singleRunResults);
     this.graphInspector = graphInspector;
   }
 
@@ -47,20 +42,12 @@ public class R8TestRunResult extends SingleTestRunResult<R8TestRunResult> {
     return this;
   }
 
-  @Override
-  public StackTrace getStackTrace() {
-    return super.getStackTrace().retraceAllowExperimentalMapping(proguardMap);
-  }
-
-  @Override
-  protected CodeInspector internalGetCodeInspector() throws IOException {
-    assertNotNull(app);
-    return new CodeInspector(app, proguardMap);
-  }
-
   public <E extends Throwable> R8TestRunResult inspectOriginalStackTrace(
       ThrowingBiConsumer<StackTrace, CodeInspector, E> consumer) throws E, IOException {
-    consumer.accept(getOriginalStackTrace(), internalGetCodeInspector());
+    CodeInspector inspector = internalGetCodeInspector();
+    for (SingleTestRunResult singleResult : getSingleRunResults()) {
+      consumer.accept(singleResult.getOriginalStackTrace(), inspector);
+    }
     return self();
   }
 
@@ -77,7 +64,10 @@ public class R8TestRunResult extends SingleTestRunResult<R8TestRunResult> {
 
   public <E extends Throwable> R8TestRunResult inspectStackTrace(
       ThrowingBiConsumer<StackTrace, CodeInspector, E> consumer) throws E, IOException {
-    consumer.accept(getStackTrace(), internalGetCodeInspector());
+    CodeInspector inspector = internalGetCodeInspector();
+    for (SingleTestRunResult singleResult : getSingleRunResults()) {
+      consumer.accept(singleResult.getStackTrace(), inspector);
+    }
     return self();
   }
 

@@ -42,11 +42,12 @@ public class InterfaceFieldMethodHandleTest extends TestBase {
   @Parameters(name = "{0}, lookup:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        TestParameters.builder()
+        getTestParameters()
             // Runtimes without Handle APIs fail in various ways. Start testing beyond that point.
             .withDexRuntimesStartingFromExcluding(Version.V7_0_0)
             .withAllApiLevels()
             .withCfRuntimes()
+            .withoutCollapsedDexRuntimes()
             .build(),
         LookupType.values());
   }

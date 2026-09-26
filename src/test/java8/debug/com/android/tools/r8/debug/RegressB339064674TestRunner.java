@@ -26,7 +26,7 @@ public class RegressB339064674TestRunner extends DebugTestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection setup() {
-    return TestParameters.builder().withAllRuntimes().build();
+    return getTestParameters().withAllRuntimes().build();
   }
 
   public RegressB339064674TestRunner(TestParameters parameters) {

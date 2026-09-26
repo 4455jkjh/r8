@@ -11,7 +11,6 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -60,7 +59,7 @@ public class Java21CollectionTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimesAndAllApiLevels().build(),
+        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build(),
         // Note that JDK8 is completely broken here.
         ImmutableList.of(JDK11, JDK11_PATH),
         DEFAULT_SPECIFICATIONS);

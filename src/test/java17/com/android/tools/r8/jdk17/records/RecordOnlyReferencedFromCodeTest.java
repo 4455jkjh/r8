@@ -23,7 +23,11 @@ public class RecordOnlyReferencedFromCodeTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimesAndAllApiLevels().withPartialCompilation().build();
+    return getTestParameters()
+        .withDexRuntimesAndAllApiLevels()
+        .withPartialCompilation()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   @Test

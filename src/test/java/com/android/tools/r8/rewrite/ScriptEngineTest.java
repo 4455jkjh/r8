@@ -49,7 +49,7 @@ public class ScriptEngineTest extends ScriptEngineTestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   @Test

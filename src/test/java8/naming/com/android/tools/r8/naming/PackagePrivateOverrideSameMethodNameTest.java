@@ -17,10 +17,10 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.resolution.virtualtargets.package_a.ViewModel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,7 +37,8 @@ public class PackagePrivateOverrideSameMethodNameTest extends TestBase {
   @Parameters(name = "{0}, minification: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
+        BooleanUtils.values());
   }
 
   public PackagePrivateOverrideSameMethodNameTest(TestParameters parameters, boolean minification) {

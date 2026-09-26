@@ -6,8 +6,8 @@ package com.android.tools.r8.ir.optimize.outliner.bottomup.stringbuilders;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerTestBase;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.Outline;
@@ -30,8 +30,7 @@ public class StringBuilderOutlinerTest extends BottomUpOutlinerTestBase {
     runTest(testForR8(parameters).addKeepMainRule(Main.class));
   }
 
-  private void runTest(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testBuilder)
+  private void runTest(TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testBuilder)
       throws Exception {
     testBuilder
         .addInnerClasses(getClass())

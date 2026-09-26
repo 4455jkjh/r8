@@ -35,6 +35,7 @@ public class StaticInterfaceMethodReferenceTest extends TestBase {
             .withAllRuntimes()
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
+            .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());
   }

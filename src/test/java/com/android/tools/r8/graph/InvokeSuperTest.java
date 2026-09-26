@@ -32,7 +32,7 @@ public class InvokeSuperTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   final TestParameters parameters;

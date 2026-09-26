@@ -34,7 +34,11 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private final String CLASS_NAME = "Example";

@@ -7,11 +7,11 @@ package com.android.tools.r8.resolution;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V16_0_0;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,9 +26,10 @@ public class ObjectCloneInStaticInterfaceMethodTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder()
+    return getTestParameters()
         .withAllRuntimes()
         .withApiLevel(apiLevelWithDefaultInterfaceMethodsSupport())
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -42,7 +43,7 @@ public class ObjectCloneInStaticInterfaceMethodTest extends TestBase {
         .apply(this::checkOutput);
   }
 
-  private void addProgramInputs(TestBuilder<? extends SingleTestRunResult<?>, ?> builder)
+  private void addProgramInputs(TestBuilder<? extends TestRunResult<?>, ?> builder)
       throws Exception {
     builder
         .addProgramClasses(TestClass.class)
@@ -85,7 +86,7 @@ public class ObjectCloneInStaticInterfaceMethodTest extends TestBase {
             r -> r.assertFailureWithErrorThatThrows(VerifyError.class));
   }
 
-  private void checkOutput(SingleTestRunResult<?> r) {
+  private void checkOutput(TestRunResult<?> r) {
     if (parameters.isDexRuntimeVersionNewerThanOrEqual(V16_0_0)) {
       // TODO(b/454529390): ART 16 and above does not enforce protected access to Object.clone.
       //  As per the references issue this is WAI.

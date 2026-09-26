@@ -1142,7 +1142,7 @@ public class OutlineTest extends SmaliTestBase {
             })
         // Run the code and expect a parsable long.
         .run(parameters.getRuntime(), DEFAULT_MAIN_CLASS_NAME)
-        .apply(rr -> Long.parseLong(rr.getStdOut()));
+        .apply(rr -> Long.parseLong(rr.asSingleRuntimeResult().getStdOut()));
   }
 
   @Test
@@ -1914,12 +1914,13 @@ public class OutlineTest extends SmaliTestBase {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
     builder.addDefaultConstructor();
 
-    List<String> codeToOutline = ImmutableList.of(
-        "    invoke-interface      { v1 }, Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
-        "    invoke-interface      { v1 }, Ljava/util/Collection;->isEmpty()Z",
-        "    move-result         v0",
-        "    return              v0"
-    );
+    List<String> codeToOutline =
+        ImmutableList.of(
+            "    invoke-interface      { v1 },"
+                + " Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
+            "    invoke-interface      { v1 }, Ljava/util/Collection;->isEmpty()Z",
+            "    move-result         v0",
+            "    return              v0");
 
     String returnType = "boolean";
     MethodSignature signature1 =

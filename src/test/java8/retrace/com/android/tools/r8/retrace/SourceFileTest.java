@@ -100,10 +100,13 @@ public class SourceFileTest extends TestBase {
         addDummyArg
             ? compileResult.run(parameters.getRuntime(), Main.class, "foo")
             : compileResult.run(parameters.getRuntime(), Main.class);
-    runResult.assertFailureWithErrorThatMatches(containsString("Hello World!"));
-    StackTrace originalStackTrace = runResult.getOriginalStackTrace();
-    StackTrace retracedStackTrace = originalStackTrace.retrace(runResult.proguardMap());
-    runResult.inspectFailure(inspector -> consumer.accept(retracedStackTrace, inspector));
+    runResult
+        .assertFailureWithErrorThatMatches(containsString("Hello World!"))
+        .inspectOriginalStackTrace(
+            (originalStackTrace, inspector) -> {
+              StackTrace retracedStackTrace = originalStackTrace.retrace(runResult.proguardMap());
+              consumer.accept(retracedStackTrace, inspector);
+            });
   }
 
   public static class ClassWithoutCustomFileName {

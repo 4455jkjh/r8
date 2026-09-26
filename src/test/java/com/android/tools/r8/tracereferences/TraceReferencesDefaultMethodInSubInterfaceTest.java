@@ -40,6 +40,7 @@ public class TraceReferencesDefaultMethodInSubInterfaceTest extends TestBase {
         .withAllRuntimesAndApiLevels()
         .withAllApiLevelsAlsoForCf()
         .withNoneRuntime()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

@@ -61,8 +61,9 @@ public class MissingInterfaceTest extends TestBase {
                 parameters,
                 writeToJar(ImmutableList.of(ToolHelper.getClassAsBytes(GoingToBeMissed.class)))))
         .run(parameters.getRuntime(), TestClassForB112849320.class)
-        .forCfRuntime(r -> r.assertSuccessWithOutputLines(EXPECTED))
-        .otherwise(
+        .applyIf(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutputLines(EXPECTED),
             r -> {
               r.assertStdoutMatches(containsString("B112849320"));
               r.assertFailureWithErrorThatThrows(AbstractMethodError.class);

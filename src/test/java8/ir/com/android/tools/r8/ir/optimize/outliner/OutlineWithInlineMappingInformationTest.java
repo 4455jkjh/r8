@@ -9,9 +9,10 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.naming.retrace.StackTrace;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,16 +44,15 @@ public class OutlineWithInlineMappingInformationTest extends TestBase {
 
   @Before
   public void setup() throws Exception {
-    expectedStackTrace =
-        testForRuntime(parameters)
-            .addProgramClasses(TestClass.class, TestClass2.class, Greeter.class)
-            .run(
-                parameters.getRuntime(),
-                TestClass.class,
-                throwInFirstOutline ? "0" : "1",
-                throwOnFirstCall ? "0" : "1")
-            .assertFailureWithErrorThatThrows(ArrayStoreException.class)
-            .getStackTrace();
+    testForJvm(temp)
+        .addProgramClasses(TestClass.class, TestClass2.class, Greeter.class)
+        .run(
+            TestRuntime.getDefaultCfRuntime(),
+            TestClass.class,
+            throwInFirstOutline ? "0" : "1",
+            throwOnFirstCall ? "0" : "1")
+        .assertFailureWithErrorThatThrows(ArrayStoreException.class)
+        .inspectStackTrace(stackTrace -> expectedStackTrace = stackTrace);
   }
 
   @Test

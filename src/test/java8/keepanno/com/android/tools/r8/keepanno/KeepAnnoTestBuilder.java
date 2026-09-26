@@ -23,10 +23,10 @@ import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.R8TestCompileResultBase;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
@@ -130,9 +130,9 @@ public abstract class KeepAnnoTestBuilder {
 
   public abstract void compile() throws Exception;
 
-  public abstract SingleTestRunResult<?> run(Class<?> mainClass) throws Exception;
+  public abstract TestRunResult<?> run(Class<?> mainClass) throws Exception;
 
-  public abstract SingleTestRunResult<?> run(String mainClass) throws Exception;
+  public abstract TestRunResult<?> run(String mainClass) throws Exception;
 
   public KeepAnnoTestBuilder applyIf(
       boolean condition, ThrowableConsumer<KeepAnnoTestBuilder> consumer) {
@@ -216,7 +216,7 @@ public abstract class KeepAnnoTestBuilder {
 
   private static class ReferenceBuilder extends KeepAnnoTestBuilder {
 
-    private final TestBuilder<? extends SingleTestRunResult<?>, ?> builder;
+    private final TestBuilder<? extends TestRunResult<?>, ?> builder;
 
     public ReferenceBuilder(
         KeepAnnoParameters params,
@@ -288,12 +288,12 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
-    public SingleTestRunResult<?> run(Class<?> mainClass) throws Exception {
+    public TestRunResult<?> run(Class<?> mainClass) throws Exception {
       return builder.run(parameters().getRuntime(), mainClass);
     }
 
     @Override
-    public SingleTestRunResult<?> run(String mainClass) throws Exception {
+    public TestRunResult<?> run(String mainClass) throws Exception {
       return builder.run(parameters().getRuntime(), mainClass);
     }
   }
@@ -463,14 +463,14 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
-    public SingleTestRunResult<?> run(Class<?> mainClass) throws Exception {
+    public TestRunResult<?> run(Class<?> mainClass) throws Exception {
       R compileResult = builder.compile();
       compileResultConsumers.forEach(fn -> fn.accept(compileResult));
       return compileResult.run(parameters().getRuntime(), mainClass);
     }
 
     @Override
-    public SingleTestRunResult<?> run(String mainClass) throws Exception {
+    public TestRunResult<?> run(String mainClass) throws Exception {
       R compileResult = builder.compile();
       compileResultConsumers.forEach(fn -> fn.accept(compileResult));
       return compileResult.run(parameters().getRuntime(), mainClass);
@@ -662,14 +662,14 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
-    public SingleTestRunResult<?> run(Class<?> mainClass) throws Exception {
+    public TestRunResult<?> run(Class<?> mainClass) throws Exception {
       configConsumers.forEach(fn -> fn.accept(builder.getConfig()));
       extractedRulesConsumers.forEach(fn -> fn.accept(extractedRules));
       return builder.run(parameters().getRuntime(), mainClass);
     }
 
     @Override
-    public SingleTestRunResult<?> run(String mainClass) throws Exception {
+    public TestRunResult<?> run(String mainClass) throws Exception {
       configConsumers.forEach(fn -> fn.accept(builder.getConfig()));
       extractedRulesConsumers.forEach(fn -> fn.accept(extractedRules));
       return builder.run(parameters().getRuntime(), mainClass);
@@ -772,14 +772,14 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
-    public SingleTestRunResult<?> run(Class<?> mainClass) throws Exception {
+    public TestRunResult<?> run(Class<?> mainClass) throws Exception {
       configConsumers.forEach(fn -> fn.accept(builder.getConfig()));
       extractedRulesConsumers.forEach(fn -> fn.accept(extractedRules));
       return builder.run(parameters().getRuntime(), mainClass);
     }
 
     @Override
-    public SingleTestRunResult<?> run(String mainClass) throws Exception {
+    public TestRunResult<?> run(String mainClass) throws Exception {
       configConsumers.forEach(fn -> fn.accept(builder.getConfig()));
       extractedRulesConsumers.forEach(fn -> fn.accept(extractedRules));
       return builder.run(parameters().getRuntime(), mainClass);

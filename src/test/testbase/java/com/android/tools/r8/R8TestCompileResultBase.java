@@ -332,8 +332,13 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   }
 
   @Override
-  public R8TestRunResult createRunResult(TestRuntime runtime, ProcessResult result) {
-    return new R8TestRunResult(app, runtime, result, proguardMap, this::graphInspector, state);
+  protected SingleTestRunResult createSingleRunResult(TestRuntime runtime, ProcessResult result) {
+    return new SingleTestRunResult(app, runtime, result, proguardMap, state);
+  }
+
+  @Override
+  public R8TestRunResult createRunResult(List<SingleTestRunResult> results) {
+    return new R8TestRunResult(app, proguardMap, this::graphInspector, state, results);
   }
 
   public CR addFeatureSplitsToRunClasspathFiles() {

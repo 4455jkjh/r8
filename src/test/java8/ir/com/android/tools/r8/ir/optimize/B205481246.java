@@ -27,7 +27,7 @@ public class B205481246 extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection parameters() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   @Test

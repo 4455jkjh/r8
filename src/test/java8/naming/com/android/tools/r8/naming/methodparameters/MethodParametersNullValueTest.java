@@ -30,7 +30,11 @@ public class MethodParametersNullValueTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   public MethodParametersNullValueTest(TestParameters parameters) {

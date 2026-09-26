@@ -13,9 +13,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.ir.optimize.classinliner.code.C;
 import com.android.tools.r8.ir.optimize.classinliner.code.CodeTestClass;
@@ -81,7 +81,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
         ClassWithFinal.class
     };
     String javaOutput = runOnJava(main);
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .enableInliningAnnotations()
@@ -201,7 +201,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
         CodeTestClass.class
     };
     String javaOutput = runOnJava(main);
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .enableInliningAnnotations()
@@ -240,7 +240,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
         InvalidRootsTestClass.InitNeverReturnsNormally.class
     };
     String javaOutput = runOnJava(main);
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .enableConstantArgumentAnnotations()
@@ -299,7 +299,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
         LambdasTestClass.IfaceUtil.class
     };
     String javaOutput = runOnJava(main);
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .addKeepMainRule(main)

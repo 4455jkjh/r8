@@ -34,6 +34,7 @@ public class TypeSwitchTest extends TestBase {
         .withCfRuntimesStartingFromIncluding(CfVm.JDK21)
         .withDexRuntimes()
         .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

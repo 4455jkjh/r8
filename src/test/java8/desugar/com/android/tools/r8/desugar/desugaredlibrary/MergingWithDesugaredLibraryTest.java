@@ -48,7 +48,12 @@ public class MergingWithDesugaredLibraryTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevels().build(), getJdk8Jdk11());
+        getTestParameters()
+            .withDexRuntimes()
+            .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build(),
+        getJdk8Jdk11());
   }
 
   public MergingWithDesugaredLibraryTest(

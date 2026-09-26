@@ -7,10 +7,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import java.util.Collection;
@@ -63,8 +63,7 @@ public abstract class BottomUpOutlinerTestBase extends TestBase {
     assumeTrue(mode.isRelease());
   }
 
-  public void configure(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testBuilder) {
+  public void configure(TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testBuilder) {
     testBuilder
         .addOptionsModification(
             options -> {

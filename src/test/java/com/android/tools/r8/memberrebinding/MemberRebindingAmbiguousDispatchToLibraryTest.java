@@ -33,7 +33,11 @@ public class MemberRebindingAmbiguousDispatchToLibraryTest extends TestBase {
   @Parameters(name = "{0}, abstractMethodOnSuperClass: {1}, interfaceAsSymbolicReference {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevelsAlsoForCf().build(),
+        getTestParameters()
+            .withDexRuntimes()
+            .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         BooleanUtils.values(),
         BooleanUtils.values());
   }

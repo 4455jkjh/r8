@@ -7,8 +7,8 @@ package com.android.tools.r8.desugar.desugaredlibrary.test;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.D8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
@@ -41,7 +41,7 @@ public class CustomLibrarySpecification {
   }
 
   public void addLibraryClasses(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> builder) {
+      TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> builder) {
     builder.addLibraryClasses(classes).addLibraryFiles(jars);
   }
 }

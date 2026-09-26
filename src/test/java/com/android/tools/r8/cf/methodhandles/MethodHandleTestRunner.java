@@ -52,7 +52,8 @@ public class MethodHandleTestRunner extends TestBase {
   @Parameters(name = "{0}, lookup:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        TestParameters.builder().withAllRuntimesAndApiLevels().build(), LookupType.values());
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
+        LookupType.values());
   }
 
   public MethodHandleTestRunner(TestParameters parameters, LookupType lookupType) {

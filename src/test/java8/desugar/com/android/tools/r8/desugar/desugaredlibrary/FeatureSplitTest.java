@@ -45,7 +45,11 @@ public class FeatureSplitTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
+        getTestParameters()
+            .withDexRuntimes()
+            .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         getJdk8Jdk11(),
         ImmutableList.of(R8_L8DEBUG, R8_L8SHRINK));
   }

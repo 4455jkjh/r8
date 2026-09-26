@@ -37,7 +37,11 @@ public class GetDeclaredMethodsErrorRemovalTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   public GetDeclaredMethodsErrorRemovalTest(TestParameters parameters) {

@@ -29,7 +29,7 @@ public class DebugSetFileSmaliTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection parameters() {
-    return TestParameters.builder().withDexRuntimes().withApiLevel(AndroidApiLevel.B).build();
+    return getTestParameters().withDexRuntimes().withApiLevel(AndroidApiLevel.B).build();
   }
 
   private static final String CLASS_NAME = "Test";

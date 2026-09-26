@@ -4,14 +4,14 @@
 
 package com.android.tools.r8;
 
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApp;
+import java.util.List;
 
-public class AssistantTestRunResult extends SingleTestRunResult<AssistantTestRunResult> {
+public class AssistantTestRunResult extends MultiTestRunResult<AssistantTestRunResult> {
 
   public AssistantTestRunResult(
-      AndroidApp app, TestRuntime runtime, ProcessResult result, TestState state) {
-    super(app, runtime, result, state);
+      AndroidApp app, TestState state, List<SingleTestRunResult> singleRunResults) {
+    super(app, null, state, singleRunResults);
   }
 
   @Override

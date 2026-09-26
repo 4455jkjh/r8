@@ -12,9 +12,9 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.kotlin.TestKotlinClass;
@@ -147,7 +147,7 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
       String targetFieldName,
       String targetMethodName) throws Exception {
     String mainClassName = testMain.getClassName();
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForR8(Backend.DEX)
             .addProgramFiles(
                 compiledJars.getForConfiguration(kotlinParameters),

@@ -8,10 +8,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoMethodStaticizing;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,17 +34,10 @@ public class RetraceInlineeWithNullCheckFollowingImplicitReceiverNullCheckTest e
 
   @Before
   public void setup() throws Exception {
-    expectedStackTrace = getStackTrace();
-  }
-
-  private StackTrace getStackTrace(String... args) throws Exception {
-    SingleTestRunResult<?> runResult =
-        testForRuntime(parameters)
-            .addProgramClasses(Caller.class, Foo.class)
-            .run(parameters.getRuntime(), Caller.class, args);
-    return parameters.isCfRuntime()
-        ? runResult.map(StackTrace::extractFromJvm)
-        : StackTrace.extractFromArt(runResult.getStdErr(), parameters.asDexRuntime().getVm());
+    testForJvm(temp)
+        .addProgramClasses(Caller.class, Foo.class)
+        .run(TestRuntime.getDefaultCfRuntime(), Caller.class)
+        .inspectStackTrace(stackTrace -> expectedStackTrace = stackTrace);
   }
 
   @Test

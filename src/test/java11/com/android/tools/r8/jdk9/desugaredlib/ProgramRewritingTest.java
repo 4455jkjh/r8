@@ -16,9 +16,9 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -83,7 +83,11 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
             LibraryDesugaringSpecification.JDK11_DESCRIPTOR,
             "");
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
+        getTestParameters()
+            .withDexRuntimes()
+            .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         ImmutableList.of(JDK8, JDK11, jdk8CoreLambdaStubs, jdk11CoreLambdaStubs),
         DEFAULT_SPECIFICATIONS);
   }
@@ -100,7 +104,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
   @Test
   public void testRewriting() throws Throwable {
     Box<String> keepRules = new Box<>();
-    SingleTestRunResult<?> run =
+    TestRunResult<?> run =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
             .addInnerClassesAndStrippedOuter(getClass())
@@ -117,7 +121,10 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
                   }
                 })
             .run(parameters.getRuntime(), TEST_CLASS);
-    assertResultIsCorrect(run.getStdOut(), run.getStdErr(), keepRules.get());
+    assertResultIsCorrect(
+        run.asSingleRuntimeResult().getStdOut(),
+        run.asSingleRuntimeResult().getStdErr(),
+        keepRules.get());
   }
 
   private void assertResultIsCorrect(String stdOut, String stdErr, String keepRules) {

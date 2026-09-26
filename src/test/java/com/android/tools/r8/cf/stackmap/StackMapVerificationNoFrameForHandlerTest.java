@@ -7,7 +7,7 @@ package com.android.tools.r8.cf.stackmap;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.android.tools.r8.JvmTestRunResult;
+import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
@@ -49,7 +49,7 @@ public class StackMapVerificationNoFrameForHandlerTest extends TestBase {
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
-    JvmTestRunResult mainResult =
+    SingleTestRunResult mainResult =
         testForJvm(parameters)
             .addProgramClassFileData(
                 includeFrameInHandler

@@ -11,8 +11,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -141,7 +141,7 @@ public class ProtoBuilderShrinkingTest extends ProtoShrinkingTestBase {
     }
   }
 
-  private void checkRunResult(SingleTestRunResult<?> runResult, String main, boolean isR8) {
+  private void checkRunResult(TestRunResult<?> runResult, String main, boolean isR8) {
     if (main.equals("proto2.HasFlaggedOffExtensionBuilderTestClass")) {
       runResult.applyIf(
           !isR8 && protoRuntime.isEdition2023() && protoTestSources.isProto2(),

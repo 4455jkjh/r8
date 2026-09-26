@@ -8,10 +8,10 @@ import static com.android.tools.r8.references.Reference.classFromClass;
 import static com.android.tools.r8.references.Reference.methodFromMethod;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
@@ -39,6 +39,7 @@ public class InvokeCustomOnNonOverriddenInterfaceMethodTest extends TestBase {
         .withAllRuntimes()
         .withApiLevelsStartingAtIncluding(
             Ordered.max(apiLevelWithInvokeCustomSupport(), apiLevelWithConstMethodHandleSupport()))
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -55,7 +56,7 @@ public class InvokeCustomOnNonOverriddenInterfaceMethodTest extends TestBase {
         .apply(this::checkRunResult);
   }
 
-  private void checkRunResult(SingleTestRunResult<?> result) {
+  private void checkRunResult(TestRunResult<?> result) {
     if (parameters.isCfRuntime()
         || parameters.asDexRuntime().getVersion().isNewerThanOrEqual(Version.V10_0_0)) {
       result.assertSuccessWithOutputLines(EXPECTED);

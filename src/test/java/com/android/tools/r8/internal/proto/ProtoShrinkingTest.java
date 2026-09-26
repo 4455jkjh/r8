@@ -12,14 +12,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.R8TestRunResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.analysis.ProtoApplicationStats;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
@@ -148,7 +148,7 @@ public class ProtoShrinkingTest extends ProtoShrinkingTestBase {
     }
   }
 
-  private void checkRunResult(SingleTestRunResult<?> runResult) {
+  private void checkRunResult(TestRunResult<?> runResult) {
     runResult.applyIf(
         protoTestSources.getCorrespondingRuntime() == protoRuntime,
         rr ->

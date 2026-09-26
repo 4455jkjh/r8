@@ -35,7 +35,8 @@ public class ApiModelManualOutlineWithUnknownReturnTypeTest extends TestBase {
   @Parameters(name = "{0}, addedToLibraryHere: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
+        BooleanUtils.values());
   }
 
   private AndroidApiLevel runApiLevel() {

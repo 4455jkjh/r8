@@ -9,8 +9,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
@@ -78,7 +78,7 @@ public class LocaleDateGetEraTest extends DesugaredLibraryTestBase {
     checkResult(compileResult.run(parameters.getRuntime(), ExecutorIsoEra.class), IsoEra.class);
   }
 
-  private void checkResult(SingleTestRunResult<?> run, Class<?> eraClass) {
+  private void checkResult(TestRunResult<?> run, Class<?> eraClass) {
     if (parameters.getRuntime().isCf()
         && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)
         && eraClass == IsoEra.class

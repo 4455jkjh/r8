@@ -54,6 +54,7 @@ public class ConcurrentLinkedQueueTest extends DesugaredLibraryTestBase {
         getTestParameters()
             .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
             .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_MINIMAL, JDK11, JDK11_PATH),
         SPECIFICATIONS_WITH_CF2CF);

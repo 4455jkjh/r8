@@ -12,9 +12,9 @@ import static org.hamcrest.core.StringContains.containsString;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.hamcrest.core.AnyOf;
@@ -36,7 +36,7 @@ public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
   @Parameters(name = "{0}, optimize:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   private static final Class<? extends Throwable> EXPECTED_EXCEPTION = ClassCastException.class;

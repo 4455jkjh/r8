@@ -28,7 +28,11 @@ public class DuplicateClassTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   @Test
@@ -48,12 +52,12 @@ public class DuplicateClassTest extends TestBase {
             parameters.getDexRuntimeVersion().isDalvik(),
             result ->
                 assertThat(
-                    result.getStdErr(),
+                    result.asSingleRuntimeResult().getStdErr(),
                     containsString(
                         "DexOpt: not resolving ambiguous class 'Ljava/lang/Exception;'")),
             result ->
                 assertThat(
-                    result.getStdErr(),
+                    result.asSingleRuntimeResult().getStdErr(),
                     not(containsString("not resolving ambiguous class 'Ljava/lang/Exception;'"))));
   }
 

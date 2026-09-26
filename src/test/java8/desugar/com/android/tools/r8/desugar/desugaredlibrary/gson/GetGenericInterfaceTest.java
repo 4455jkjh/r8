@@ -58,16 +58,13 @@ public class GetGenericInterfaceTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testGeneric() throws Exception {
-    String stdOut =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(GetGenericInterfaceTest.class)
-            .addKeepMainRule(Executor.class)
-            .compile()
-            .run(parameters.getRuntime(), Executor.class)
-            .assertSuccess()
-            .getStdOut();
-    assertValidInterfaces(stdOut);
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(GetGenericInterfaceTest.class)
+        .addKeepMainRule(Executor.class)
+        .compile()
+        .run(parameters.getRuntime(), Executor.class)
+        .assertSuccess()
+        .inspectStdOut(this::assertValidInterfaces);
   }
 
   private void assertValidInterfaces(String stdOut) {

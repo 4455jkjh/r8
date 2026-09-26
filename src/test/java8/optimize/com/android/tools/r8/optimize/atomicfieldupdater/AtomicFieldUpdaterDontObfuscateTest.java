@@ -33,7 +33,7 @@ public class AtomicFieldUpdaterDontObfuscateTest extends AtomicFieldUpdaterBase 
   @Parameters(name = "{0}, dontObfuscate:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   @Test

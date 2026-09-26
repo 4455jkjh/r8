@@ -36,6 +36,7 @@ public class RecordHashCodeTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

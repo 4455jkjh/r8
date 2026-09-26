@@ -6,19 +6,19 @@ package com.android.tools.r8;
 
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApp;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
-public class Dex2OatTestRunResult extends SingleTestRunResult<Dex2OatTestRunResult> {
+public class Dex2OatTestRunResult extends MultiTestRunResult<Dex2OatTestRunResult> {
 
   private final Path oat;
 
   public Dex2OatTestRunResult(
-      AndroidApp app, Path oat, TestRuntime runtime, ProcessResult result, TestState state) {
-    super(app, runtime, result, state);
+      AndroidApp app, Path oat, TestState state, List<SingleTestRunResult> singleRunResults) {
+    super(app, null, state, singleRunResults);
     this.oat = oat;
   }
 
@@ -40,8 +40,10 @@ public class Dex2OatTestRunResult extends SingleTestRunResult<Dex2OatTestRunResu
   }
 
   private Dex2OatTestRunResult assertInStderr(String substring, boolean expected) {
-    assertSuccess();
-    assertEquals(expected, getStdErr().contains(substring));
+    for (SingleTestRunResult singleResult : getSingleRunResults()) {
+      singleResult.assertSuccess();
+      assertEquals(expected, singleResult.getStdErr().contains(substring));
+    }
     return self();
   }
 

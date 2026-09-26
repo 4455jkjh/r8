@@ -10,11 +10,11 @@ import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLeve
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8FullTestBuilder;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -148,7 +148,7 @@ public class ApiModelClassMergingPackagePrivateTest extends TestBase {
     }
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     runResult.assertSuccessWithOutputLines("Api1::foo", "Api2::foo");
   }
 

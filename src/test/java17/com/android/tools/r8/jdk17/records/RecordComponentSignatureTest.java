@@ -63,6 +63,7 @@ public class RecordComponentSignatureTest extends TestBase {
             .withCfRuntimesStartingFromIncluding(CfVm.JDK17)
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
+            .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());
   }

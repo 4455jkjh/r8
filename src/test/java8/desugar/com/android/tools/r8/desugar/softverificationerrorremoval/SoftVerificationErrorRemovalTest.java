@@ -24,7 +24,11 @@ public class SoftVerificationErrorRemovalTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   public SoftVerificationErrorRemovalTest(TestParameters parameters) {
@@ -40,7 +44,7 @@ public class SoftVerificationErrorRemovalTest extends TestBase {
             .compile()
             .run(parameters.getRuntime(), TestClass.class);
     assertVerificationErrorsPresent(
-        run.getStdErr(),
+        run.asSingleRuntimeResult().getStdErr(),
         parameters.getDexRuntimeVersion().isOlderThanOrEqual(ToolHelper.DexVm.Version.V4_4_4));
   }
 
@@ -65,7 +69,7 @@ public class SoftVerificationErrorRemovalTest extends TestBase {
             .setMinApi(parameters)
             .compile()
             .run(parameters.getRuntime(), TestClass.class);
-    assertVerificationErrorsPresent(run.getStdErr(), false);
+    assertVerificationErrorsPresent(run.asSingleRuntimeResult().getStdErr(), false);
   }
 
   static class TestClass {

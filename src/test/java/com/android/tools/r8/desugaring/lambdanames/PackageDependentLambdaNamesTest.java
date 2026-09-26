@@ -5,10 +5,10 @@ package com.android.tools.r8.desugaring.lambdanames;
 
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -39,7 +39,7 @@ public class PackageDependentLambdaNamesTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         testForRuntime(parameters)
             .addProgramClasses(StringConsumer.class)
             .addProgramClassFileData(getTestClass(), getA(), getB())

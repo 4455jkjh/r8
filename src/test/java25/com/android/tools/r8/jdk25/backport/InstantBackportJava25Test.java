@@ -45,6 +45,7 @@ public class InstantBackportJava25Test extends DesugaredLibraryTestBase {
             .withDexRuntimes()
             .withCfRuntime(CfVm.JDK25)
             .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK8, JDK11, JDK11_PATH),
         SPECIFICATIONS_WITH_CF2CF);

@@ -43,7 +43,7 @@ public class DefaultInterfaceMethodTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection params() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   private final TestParameters parameters;

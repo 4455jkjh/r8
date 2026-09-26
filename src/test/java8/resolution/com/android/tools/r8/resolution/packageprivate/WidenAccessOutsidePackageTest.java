@@ -43,7 +43,7 @@ public class WidenAccessOutsidePackageTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   public WidenAccessOutsidePackageTest(TestParameters parameters) {

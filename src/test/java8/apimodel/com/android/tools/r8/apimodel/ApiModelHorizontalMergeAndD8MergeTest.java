@@ -15,11 +15,11 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.GlobalSyntheticsTestingConsumer;
 import com.android.tools.r8.OutputMode;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -134,7 +134,7 @@ public class ApiModelHorizontalMergeAndD8MergeTest extends TestBase {
     }
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     runResult.assertSuccessWithOutputLinesIf(
         addToBootClasspath(), "LibraryClass::foo", "LibraryClass::bar");
     runResult.assertFailureWithErrorThatThrowsIf(!addToBootClasspath(), NoClassDefFoundError.class);

@@ -28,7 +28,11 @@ public class InvokeSuperInDefaultMethodResolvingToLibraryTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private static final String EXPECTED_OUTPUT = "8";

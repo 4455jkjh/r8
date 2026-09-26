@@ -27,6 +27,7 @@ public class Jdk8272564InvalidCodeTest extends TestBase {
         .withDexRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

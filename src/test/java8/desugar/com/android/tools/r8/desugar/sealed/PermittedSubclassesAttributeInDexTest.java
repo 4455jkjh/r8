@@ -41,6 +41,7 @@ public class PermittedSubclassesAttributeInDexTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

@@ -7,11 +7,11 @@ package com.android.tools.r8.memberrebinding;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -91,7 +91,7 @@ public class MemberRebindingFrontierTest extends TestBase {
                     .addRunClasspathClassFileData(removeFooMethod(I.class)));
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult, boolean r8) {
+  private void checkOutput(TestRunResult<?> runResult, boolean r8) {
     if (parameters.canUseDefaultAndStaticInterfaceMethods()) {
       runResult.assertSuccessWithOutputLines("I::foo");
       return;

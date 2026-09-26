@@ -3,8 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.base.Predicates;
@@ -21,14 +22,16 @@ public abstract class TestRunResultCollection<
         C extends Enum<C>, RR extends TestRunResultCollection<C, RR>>
     extends TestRunResult<RR> {
 
-  private final List<Pair<C, SingleTestRunResult<?>>> runs;
+  private final List<Pair<C, TestRunResult<?>>> runs;
 
-  public TestRunResultCollection(List<Pair<C, SingleTestRunResult<?>>> runs) {
+  public TestRunResultCollection(List<Pair<C, TestRunResult<?>>> runs) {
     this.runs = runs;
   }
 
-  private RR forEach(Consumer<TestRunResult<?>> fn) {
-    runs.forEach(r -> fn.accept(r.getSecond()));
+  private <E extends Throwable> RR forEach(ThrowingConsumer<TestRunResult<?>, E> fn) throws E {
+    for (Pair<C, TestRunResult<?>> run : runs) {
+      fn.accept(run.getSecond());
+    }
     return self();
   }
 
@@ -58,6 +61,23 @@ public abstract class TestRunResultCollection<
   }
 
   @Override
+  public <E extends Throwable> RR inspectStdOut(ThrowingConsumer<String, E> consumer) throws E {
+    return forEach(r -> r.inspectStdOut(consumer));
+  }
+
+  @Override
+  public <E extends Throwable> RR inspectStackTrace(ThrowingConsumer<StackTrace, E> consumer)
+      throws E {
+    return forEach(r -> r.inspectStackTrace(consumer));
+  }
+
+  @Override
+  public <E extends Throwable> RR inspectOriginalStackTrace(
+      ThrowingConsumer<StackTrace, E> consumer) throws E {
+    return forEach(r -> r.inspectOriginalStackTrace(consumer));
+  }
+
+  @Override
   public <E extends Throwable> RR inspect(ThrowingConsumer<CodeInspector, E> consumer)
       throws IOException, ExecutionException, E {
     return inspectIf(Predicates.alwaysTrue(), consumer);
@@ -69,14 +89,14 @@ public abstract class TestRunResultCollection<
     throw new Unimplemented();
   }
 
-  public RR applyIf(Predicate<C> filter, Consumer<SingleTestRunResult<?>> thenConsumer) {
+  public RR applyIf(Predicate<C> filter, Consumer<TestRunResult<?>> thenConsumer) {
     return applyIf(filter, thenConsumer, r -> {});
   }
 
   public RR applyIf(
       Predicate<C> filter,
-      Consumer<SingleTestRunResult<?>> thenConsumer,
-      Consumer<SingleTestRunResult<?>> elseConsumer) {
+      Consumer<TestRunResult<?>> thenConsumer,
+      Consumer<TestRunResult<?>> elseConsumer) {
     return applyIf(
         filter,
         thenConsumer,
@@ -89,10 +109,10 @@ public abstract class TestRunResultCollection<
 
   public RR applyIf(
       Predicate<C> filter1,
-      Consumer<SingleTestRunResult<?>> thenConsumer1,
+      Consumer<TestRunResult<?>> thenConsumer1,
       Predicate<C> filter2,
-      Consumer<SingleTestRunResult<?>> thenConsumer2,
-      Consumer<SingleTestRunResult<?>> elseConsumer) {
+      Consumer<TestRunResult<?>> thenConsumer2,
+      Consumer<TestRunResult<?>> elseConsumer) {
     return applyIf(
         filter1,
         thenConsumer1,
@@ -107,13 +127,13 @@ public abstract class TestRunResultCollection<
 
   public RR applyIf(
       Predicate<C> filter1,
-      Consumer<SingleTestRunResult<?>> thenConsumer1,
+      Consumer<TestRunResult<?>> thenConsumer1,
       Predicate<C> filter2,
-      Consumer<SingleTestRunResult<?>> thenConsumer2,
+      Consumer<TestRunResult<?>> thenConsumer2,
       Predicate<C> filter3,
-      Consumer<SingleTestRunResult<?>> thenConsumer3,
-      Consumer<SingleTestRunResult<?>> elseConsumer) {
-    for (Pair<C, SingleTestRunResult<?>> run : runs) {
+      Consumer<TestRunResult<?>> thenConsumer3,
+      Consumer<TestRunResult<?>> elseConsumer) {
+    for (Pair<C, TestRunResult<?>> run : runs) {
       if (filter1.test(run.getFirst())) {
         thenConsumer1.accept(run.getSecond());
       } else if (filter2.test(run.getFirst())) {
@@ -130,7 +150,7 @@ public abstract class TestRunResultCollection<
   public <E extends Throwable> RR inspectIf(
       Predicate<C> filter, ThrowingConsumer<CodeInspector, E> consumer)
       throws IOException, ExecutionException, E {
-    for (Pair<C, SingleTestRunResult<?>> run : runs) {
+    for (Pair<C, TestRunResult<?>> run : runs) {
       if (filter.test(run.getFirst())) {
         run.getSecond().inspect(consumer);
       }
@@ -140,7 +160,7 @@ public abstract class TestRunResultCollection<
 
   @Override
   public RR disassemble() throws IOException, ExecutionException {
-    for (Pair<C, SingleTestRunResult<?>> run : runs) {
+    for (Pair<C, TestRunResult<?>> run : runs) {
       String name = run.getFirst().name();
       System.out.println(name + " " + Strings.repeat("=", 80 - name.length() - 1));
       run.getSecond().disassemble();

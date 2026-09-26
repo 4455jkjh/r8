@@ -41,6 +41,7 @@ public class MinimalStartupDexTest extends TestBase {
     return getTestParameters()
         .withDexRuntimes()
         .withApiLevelsStartingAtIncluding(AndroidApiLevel.L)
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

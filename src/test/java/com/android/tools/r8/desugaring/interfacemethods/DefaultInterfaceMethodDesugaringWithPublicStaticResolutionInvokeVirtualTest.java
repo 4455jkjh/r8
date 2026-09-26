@@ -33,7 +33,11 @@ public class DefaultInterfaceMethodDesugaringWithPublicStaticResolutionInvokeVir
   @Parameterized.Parameters(name = "{0}, invalid:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
+        getTestParameters()
+            .withAllRuntimes()
+            .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         BooleanUtils.values());
   }
 

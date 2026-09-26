@@ -47,15 +47,12 @@ public class KeepRuleShrinkTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testMapProblem() throws Exception {
-    String stdOut =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(KeepRuleShrinkTest.class)
-            .addKeepMainRule(Executor.class)
-            .run(parameters.getRuntime(), Executor.class)
-            .assertSuccess()
-            .getStdOut();
-    assertLines2By2Correct(stdOut);
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(KeepRuleShrinkTest.class)
+        .addKeepMainRule(Executor.class)
+        .run(parameters.getRuntime(), Executor.class)
+        .assertSuccess()
+        .inspectStdOut(this::assertLines2By2Correct);
   }
 
   static class Executor {

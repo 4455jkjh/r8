@@ -8,8 +8,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
@@ -32,7 +32,11 @@ public class DesugaredLocalDateReflectionTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
+        getTestParameters()
+            .withDexRuntimes()
+            .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         getJdk8Jdk11(),
         DEFAULT_SPECIFICATIONS);
   }
@@ -48,7 +52,7 @@ public class DesugaredLocalDateReflectionTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testDate() throws Exception {
-    SingleTestRunResult<?> runResult =
+    TestRunResult<?> runResult =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
             .addInnerClasses(getClass())

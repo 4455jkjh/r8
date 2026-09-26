@@ -4,6 +4,7 @@
 package com.android.tools.r8.debug;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
@@ -83,6 +84,10 @@ import org.junit.rules.TestName;
  * https://docs.oracle.com/javase/8/docs/platform/jpda/jdwp/jdwp-protocol.html
  */
 public abstract class DebugTestBase extends TestBase {
+
+  public static TestParametersBuilder getTestParameters() {
+    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+  }
 
   // Set to true to enable verbose logs
   private static final boolean DEBUG_TESTS = false;

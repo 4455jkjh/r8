@@ -39,7 +39,12 @@ public class PreamblePositionTestRunner extends TestBase {
   @Parameters(name = "{0}, invertConditionals: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevels().build(), BooleanUtils.values());
+        getTestParameters()
+            .withDexRuntimes()
+            .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build(),
+        BooleanUtils.values());
   }
 
   @Test

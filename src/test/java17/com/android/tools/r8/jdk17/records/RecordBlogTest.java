@@ -57,6 +57,7 @@ public class RecordBlogTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -144,9 +145,14 @@ public class RecordBlogTest extends TestBase {
                       .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
                       .run(parameters.getRuntime(), RecordBlog.class)
                       .assertSuccess()
+                      .asSingleRuntimeResult()
                       .getStdOut();
             } else {
-              res = builder.run(parameters.getRuntime(), RecordBlog.class).getStdOut();
+              res =
+                  builder
+                      .run(parameters.getRuntime(), RecordBlog.class)
+                      .asSingleRuntimeResult()
+                      .getStdOut();
             }
             results.put(kr, res);
           } catch (Exception e) {

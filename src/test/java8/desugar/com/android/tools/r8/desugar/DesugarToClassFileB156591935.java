@@ -28,7 +28,7 @@ public class DesugarToClassFileB156591935 extends TestBase implements Opcodes {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withCfRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters().withCfRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   private final AndroidApiLevel apiLevel;

@@ -97,7 +97,7 @@ public class ProguardMapReaderTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   private Path mapFile = null;

@@ -95,6 +95,7 @@ public class FilesTest extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);

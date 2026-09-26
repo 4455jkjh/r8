@@ -13,11 +13,11 @@ import com.android.tools.r8.GlobalSyntheticsTestingConsumer;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.testing.AndroidBuildVersion;
@@ -159,7 +159,7 @@ public class ApiModelMockExceptionAndroidApiTest extends TestBase {
     compile.run(parameters.getRuntime(), Main.class).apply(this::checkOutput);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (isGreaterOrEqualToExceptionLevel()) {
       runResult.assertSuccessWithOutputLines("Caught LibraryException");
     } else {

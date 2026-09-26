@@ -34,7 +34,7 @@ public class LineNumberOptimizationTest extends DebugTestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection setup() {
-    return TestParameters.builder().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public LineNumberOptimizationTest(TestParameters parameters) {

@@ -52,6 +52,7 @@ public class RecordMergeTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

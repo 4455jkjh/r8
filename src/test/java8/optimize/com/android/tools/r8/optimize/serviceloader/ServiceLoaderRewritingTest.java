@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.optimize.serviceloader;
 
-import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V7_0_0;
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -164,7 +164,8 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
   @Parameterized.Parameters(name = "{0}, enableRewriting: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
+        BooleanUtils.values());
   }
 
   public ServiceLoaderRewritingTest(TestParameters parameters, boolean enableRewriting) {

@@ -17,18 +17,18 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.GlobalSyntheticsTestingConsumer;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class ApiModelD8GradleSetupTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   private void setupTestBuilder(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder) throws Exception {
@@ -213,7 +213,7 @@ public class ApiModelD8GradleSetupTest extends TestBase {
         .compile();
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     runResult.assertSuccessWithOutputLines(
         addToBootClasspath(LibraryClassOne.class) ? "LibraryClassOne::foo" : "Not calling foo()",
         addToBootClasspath(LibraryClassTwo.class) ? "LibraryClassTwo::bar" : "Not calling bar()",

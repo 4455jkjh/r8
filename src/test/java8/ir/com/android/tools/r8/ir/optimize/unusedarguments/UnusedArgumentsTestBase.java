@@ -11,9 +11,9 @@ import static org.junit.Assume.assumeFalse;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public abstract class UnusedArgumentsTestBase extends TestBase {
   @Parameters(name = "{0}, minification:{1}")
   public static Collection<Object[]> data() {
     return buildParameters(
-        TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   public void configure(R8FullTestBuilder builder) {

@@ -28,7 +28,7 @@ public class LoadInvokeLoadOptimizationTestRunner extends DebugTestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection setup() {
-    return TestParameters.builder().withAllRuntimes().build();
+    return getTestParameters().withAllRuntimes().build();
   }
 
   public LoadInvokeLoadOptimizationTestRunner(TestParameters parameters) {

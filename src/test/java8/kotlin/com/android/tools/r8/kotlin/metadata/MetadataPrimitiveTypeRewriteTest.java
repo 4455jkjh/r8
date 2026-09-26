@@ -11,9 +11,9 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.JvmTestRunResult;
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
+import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -116,7 +116,7 @@ public class MetadataPrimitiveTypeRewriteTest extends KotlinMetadataTestBase {
     if (expectingCompilationError) {
       return;
     }
-    final JvmTestRunResult runResult =
+    final SingleTestRunResult runResult =
         testForJvm(parameters)
             .addRunClasspathFiles(kotlinc.getKotlinStdlibJar(), libJar)
             .addClasspath(output)

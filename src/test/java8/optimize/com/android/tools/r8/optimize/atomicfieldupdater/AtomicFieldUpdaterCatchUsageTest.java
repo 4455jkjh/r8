@@ -39,7 +39,7 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test

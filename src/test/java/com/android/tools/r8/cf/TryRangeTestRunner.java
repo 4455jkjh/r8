@@ -43,7 +43,7 @@ public class TryRangeTestRunner extends TestBase {
 
   @Parameters
   public static TestParametersCollection data() {
-    return TestParameters.builder().withDefaultCfRuntime().build();
+    return getTestParameters().withDefaultCfRuntime().build();
   }
 
   @Parameter public TestParameters parameters;

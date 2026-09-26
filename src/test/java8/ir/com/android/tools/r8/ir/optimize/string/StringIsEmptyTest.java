@@ -10,10 +10,10 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestRunResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -51,8 +51,7 @@ public class StringIsEmptyTest extends TestBase {
         .assertSuccessWithOutput(JAVA_OUTPUT);
   }
 
-  private void test(SingleTestRunResult<?> result, int expectedStringIsEmptyCount)
-      throws Exception {
+  private void test(TestRunResult<?> result, int expectedStringIsEmptyCount) throws Exception {
     CodeInspector codeInspector = result.inspector();
     ClassSubject mainClass = codeInspector.clazz(MAIN);
     MethodSubject mainMethod = mainClass.mainMethod();

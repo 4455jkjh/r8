@@ -9,10 +9,10 @@ import static org.junit.Assert.assertEquals;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -34,7 +34,7 @@ public class InvokeSpecialInterfaceWithBridge3Test extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   @Test
@@ -46,7 +46,7 @@ public class InvokeSpecialInterfaceWithBridge3Test extends TestBase {
         .apply(this::inspectRunResult);
   }
 
-  private void inspectRunResult(SingleTestRunResult<?> runResult) {
+  private void inspectRunResult(TestRunResult<?> runResult) {
     if (parameters.isDexRuntime() && parameters.canUseDefaultAndStaticInterfaceMethods()) {
       // TODO(b/166210854): Runs really should fail, but since DEX does not have interface
       //  method references the VM will just dispatch.

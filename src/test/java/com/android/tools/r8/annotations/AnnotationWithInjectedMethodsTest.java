@@ -29,6 +29,7 @@ public class AnnotationWithInjectedMethodsTest extends EnumUnboxingTestBase {
     return getTestParameters()
         .withAllRuntimes()
         .withApiLevelsStartingAtIncluding(apiLevelWithDefaultInterfaceMethodsSupport())
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

@@ -122,7 +122,7 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
             parameters.isRandomPartialCompilation(),
             rr ->
                 rr.applyIf(
-                    rr.getExitCode() == 0,
+                    rr.asSingleRuntimeResult().getExitCode() == 0,
                     ignore -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT),
                     ignore -> rr.assertFailureWithErrorThatThrows(IllegalAccessError.class)),
             rr -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT));

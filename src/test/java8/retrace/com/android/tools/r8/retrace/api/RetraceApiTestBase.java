@@ -17,7 +17,7 @@ public abstract class RetraceApiTestBase extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   public RetraceApiTestBase(TestParameters parameters) {

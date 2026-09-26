@@ -196,11 +196,12 @@ public final class ConstructorRelaxationTest extends AccessRelaxationTestBase {
             .setMinApi(parameters)
             .run(parameters.getRuntime(), mainClass);
 
-    assertEquals(
-        expectedOutput,
-        result
-            .getStdOut()
-            .replace("java.lang.IncompatibleClassChangeError", "java.lang.IllegalAccessError"));
+    result.inspectStdOut(
+        stdOut ->
+            assertEquals(
+                expectedOutput,
+                stdOut.replace(
+                    "java.lang.IncompatibleClassChangeError", "java.lang.IllegalAccessError")));
 
     CodeInspector codeInspector = result.inspector();
     for (Class<?> clazz : CLASSES) {

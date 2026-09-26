@@ -7,8 +7,8 @@ package com.android.tools.r8.desugar.desugaredlibrary;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
@@ -44,7 +44,11 @@ public class DateTimeFormatterTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
+        getTestParameters()
+            .withDexRuntimes()
+            .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         getJdk8Jdk11(),
         DEFAULT_SPECIFICATIONS);
   }
@@ -60,7 +64,7 @@ public class DateTimeFormatterTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testFormatter() throws Throwable {
-    SingleTestRunResult<?> run =
+    TestRunResult<?> run =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
             .addInnerClasses(getClass())

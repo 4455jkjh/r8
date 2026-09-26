@@ -45,6 +45,7 @@ public class TwrSuppressedExceptionsTest extends TestBase {
         .withDexRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

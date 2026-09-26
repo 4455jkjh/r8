@@ -43,6 +43,7 @@ public class Jdk11ObjectsTests extends TestBase {
         .withDexRuntimesStartingFromIncluding(DexVm.Version.V8_1_0)
         .withMaximumApiLevel()
         .withCfRuntime(CfVm.JDK11)
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

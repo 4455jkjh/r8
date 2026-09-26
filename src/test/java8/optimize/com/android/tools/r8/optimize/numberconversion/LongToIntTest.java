@@ -38,7 +38,7 @@ public class LongToIntTest extends NumberConversionTestBase {
           Long.MAX_VALUE,
           Long.MIN_VALUE
         },
-        TestParameters.builder().withNoneRuntime().build());
+        getTestParameters().withNoneRuntime().build());
   }
 
   @Test

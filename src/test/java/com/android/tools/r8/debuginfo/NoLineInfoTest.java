@@ -39,7 +39,8 @@ public class NoLineInfoTest extends TestBase {
   @Parameters(name = "{0}, custom-sf:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
+        BooleanUtils.values());
   }
 
   public NoLineInfoTest(TestParameters parameters, boolean customSourceFile) {

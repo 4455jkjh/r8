@@ -40,7 +40,7 @@ public class EnumValueOfOptimizationTest extends TestBase {
     return buildParameters(
         BooleanUtils.values(),
         EnumKeepRules.values(),
-        getTestParameters().withAllRuntimesAndApiLevels().build());
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build());
   }
 
   @Test

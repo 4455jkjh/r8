@@ -8,11 +8,11 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -59,7 +59,7 @@ public class KeepExceptionsAttributeTest extends TestBase {
         .inspect(this::inspect);
   }
 
-  private void addInputs(TestBuilder<? extends SingleTestRunResult<?>, ?> builder) {
+  private void addInputs(TestBuilder<? extends TestRunResult<?>, ?> builder) {
     builder.addProgramClasses(E1.class, E2.class, I.class, A.class, B.class, TestClass.class);
   }
 

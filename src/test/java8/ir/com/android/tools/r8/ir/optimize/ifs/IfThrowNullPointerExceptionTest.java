@@ -34,7 +34,7 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection params() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   public IfThrowNullPointerExceptionTest(TestParameters parameters) {

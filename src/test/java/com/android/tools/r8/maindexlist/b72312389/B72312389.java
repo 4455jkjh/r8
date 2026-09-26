@@ -56,7 +56,7 @@ public class B72312389 extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   public B72312389(TestParameters parameters) {

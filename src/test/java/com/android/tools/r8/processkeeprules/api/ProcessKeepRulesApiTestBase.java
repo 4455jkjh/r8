@@ -16,7 +16,7 @@ public abstract class ProcessKeepRulesApiTestBase extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   public ProcessKeepRulesApiTestBase(TestParameters parameters) {

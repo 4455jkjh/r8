@@ -10,6 +10,7 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.naming.retraceproguard.StackTrace.StackTraceLine;
 import com.google.common.collect.ImmutableList;
@@ -19,6 +20,10 @@ import java.util.function.BiConsumer;
 import org.junit.Before;
 
 public abstract class RetraceTestBase extends TestBase {
+
+  public static TestParametersBuilder getTestParameters() {
+    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+  }
 
   protected TestParameters parameters;
   protected CompilationMode mode;
@@ -76,7 +81,8 @@ public abstract class RetraceTestBase extends TestBase {
             .assertFailure();
 
     // Extract actual stack trace and retraced stack trace from failed run result.
-    StackTrace actualStackTrace = StackTrace.extractFromArt(result.getStdErr());
+    StackTrace actualStackTrace =
+        StackTrace.extractFromArt(result.asSingleRuntimeResult().getStdErr());
     StackTrace retracedStackTrace =
         actualStackTrace.retrace(result.proguardMap(), temp.newFolder().toPath());
 

@@ -35,7 +35,7 @@ public class TreeShakingSpecificTest extends TestBase {
 
   @Parameters(name = "Backend: {1}")
   public static List<Object[]> data() {
-    return buildParameters(TestParameters.builder().withNoneRuntime().build(), Backend.values());
+    return buildParameters(getTestParameters().withNoneRuntime().build(), Backend.values());
   }
 
   public TreeShakingSpecificTest(TestParameters parameters, Backend backend) {

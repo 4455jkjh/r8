@@ -54,7 +54,7 @@ public class SanityCheck extends TestBase {
 
   @Parameters
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   public SanityCheck(TestParameters parameters) {

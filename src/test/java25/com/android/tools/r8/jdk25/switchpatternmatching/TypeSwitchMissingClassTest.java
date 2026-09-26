@@ -40,6 +40,7 @@ public class TypeSwitchMissingClassTest extends TestBase {
             .withCfRuntimesStartingFromIncluding(CfVm.JDK25)
             .withDexRuntimes()
             .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedDexRuntimes()
             .build(),
         List.of(new ClassHolder(C.class), new ClassHolder(Color.class)));
   }

@@ -122,10 +122,16 @@ public class PartitionMergeTest extends TestBase {
 
     // Retrace with the merged mapping file.
     assertThat(
-        runResult1.getOriginalStackTrace().retrace(PartitionMappingSupplier.fromPath(merged)),
+        runResult1
+            .asSingleRuntimeResult()
+            .getOriginalStackTrace()
+            .retrace(PartitionMappingSupplier.fromPath(merged)),
         isSame(expectedStackTrace1));
     assertThat(
-        runResult2.getOriginalStackTrace().retrace(PartitionMappingSupplier.fromPath(merged)),
+        runResult2
+            .asSingleRuntimeResult()
+            .getOriginalStackTrace()
+            .retrace(PartitionMappingSupplier.fromPath(merged)),
         isSame(expectedStackTrace2));
   }
 

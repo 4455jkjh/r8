@@ -25,7 +25,7 @@ public class BlockReorderingTest extends DebugTestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withDexRuntimes().withApiLevel(AndroidApiLevel.B).build();
+    return getTestParameters().withDexRuntimes().withApiLevel(AndroidApiLevel.B).build();
   }
 
   @Parameter public TestParameters parameters;

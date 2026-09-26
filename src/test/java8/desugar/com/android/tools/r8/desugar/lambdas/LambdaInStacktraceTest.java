@@ -47,7 +47,11 @@ public class LambdaInStacktraceTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   public LambdaInStacktraceTest(TestParameters parameters) {
@@ -88,6 +92,7 @@ public class LambdaInStacktraceTest extends TestBase {
             .addDontOptimize()
             .run(parameters.getRuntime(), TestRunner.class, Boolean.toString(isDalvik))
             .assertSuccess()
+            .asSingleRuntimeResult()
             .getStdOut();
     assertTrue(
         StringUtils.splitLines(stdout).stream()

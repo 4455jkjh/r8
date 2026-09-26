@@ -10,9 +10,9 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ProguardVersion;
 import com.android.tools.r8.SingleTestRunResult;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.base.Equivalence;
@@ -214,23 +214,20 @@ class StackTrace {
     return new StackTrace(internalExtractFromJvm(stderr), stderr);
   }
 
-  public static StackTrace extractFromJvm(SingleTestRunResult result) {
-    assertNotEquals(0, result.getExitCode());
-    return extractFromJvm(result.getStdErr());
+  public static StackTrace extractFromJvm(TestRunResult<?> result) {
+    SingleTestRunResult single = result.asSingleRuntimeResult();
+    assertNotEquals(0, single.getExitCode());
+    return extractFromJvm(single.getStdErr());
   }
 
-  public static StackTrace extract(SingleTestRunResult<?> result) {
-    Box<StackTrace> stackTraceBox = new Box<>();
-    result.forCfRuntime(
-        ignored -> {
-          stackTraceBox.set(extractFromJvm(result.getStdErr()));
-        });
-    result.forDexRuntimeSatisfying(
-        version -> true,
-        ignored -> {
-          stackTraceBox.set(extractFromArt(result.getStdErr()));
-        });
-    return stackTraceBox.get();
+  public static StackTrace extract(TestRunResult<?> result) {
+    SingleTestRunResult single = result.asSingleRuntimeResult();
+    if (single.runtime().isCf()) {
+      return extractFromJvm(single.getStdErr());
+    } else {
+      assert single.runtime().isDex();
+      return extractFromArt(single.getStdErr());
+    }
   }
 
   public StackTrace retrace(String map, Path tempFolder) throws IOException {

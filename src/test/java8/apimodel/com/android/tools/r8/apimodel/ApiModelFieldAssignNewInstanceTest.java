@@ -14,12 +14,12 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NoAccessModification;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -40,7 +40,7 @@ public class ApiModelFieldAssignNewInstanceTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   private AndroidApiLevel getMaxSupportedApiLevel() {
@@ -151,7 +151,7 @@ public class ApiModelFieldAssignNewInstanceTest extends TestBase {
         .isOutlinedFromBetween(getLibraryClass, AndroidApiLevel.L, mockApiLevel);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult, boolean apiModelingEnabled) {
+  private void checkOutput(TestRunResult<?> runResult, boolean apiModelingEnabled) {
     if (parameters.isCfRuntime()) {
       runResult.assertFailureWithErrorThatThrows(ClassNotFoundException.class);
     } else if (getMaxSupportedApiLevel().isGreaterThanOrEqualTo(mockApiLevel)) {

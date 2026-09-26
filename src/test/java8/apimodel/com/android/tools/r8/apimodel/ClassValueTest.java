@@ -33,7 +33,7 @@ public class ClassValueTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   private static final String EXPECTED_OUTPUT = StringUtils.lines(TestClass.class.getTypeName());

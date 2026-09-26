@@ -9,9 +9,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.NoVerticalClassMerging;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.transformers.ClassFileTransformer.LineTranslation;
 import com.android.tools.r8.transformers.MethodTransformer.MethodContext;
@@ -89,7 +89,7 @@ public class RetraceCompanionWithPreambleTest extends TestBase {
         .inspectStackTrace(RetraceCompanionWithPreambleTest::checkExpectedStackTrace);
   }
 
-  private void checkRunResult(SingleTestRunResult<?> runResult) {
+  private void checkRunResult(TestRunResult<?> runResult) {
     runResult.assertFailureWithErrorThatMatches(containsString("Throw It!"));
   }
 

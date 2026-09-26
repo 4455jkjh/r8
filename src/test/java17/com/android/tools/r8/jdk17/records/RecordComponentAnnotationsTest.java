@@ -210,6 +210,7 @@ public class RecordComponentAnnotationsTest extends TestBase {
             .withCfRuntimesStartingFromIncluding(CfVm.JDK17)
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
+            .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());
   }

@@ -12,10 +12,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
 import com.android.tools.r8.references.Reference;
@@ -158,7 +158,7 @@ public class ApiOutlineProfileRewritingTest extends TestBase {
         .assertContainsNoOtherRules();
   }
 
-  private void inspectRunResult(SingleTestRunResult<?> runResult) {
+  private void inspectRunResult(TestRunResult<?> runResult) {
     runResult.applyIf(
         isLibraryClassPresentInCurrentRuntime(),
         ignore -> runResult.assertSuccessWithOutputLines("class " + typeName(LibraryClass.class)),

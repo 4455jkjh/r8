@@ -13,10 +13,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.references.ClassReference;
@@ -116,19 +116,19 @@ public class RetraceLambdaTest extends TestBase {
             });
   }
 
-  private void checkRunResult(SingleTestRunResult<?> runResult) {
+  private void checkRunResult(TestRunResult<?> runResult) {
     runResult.assertFailureWithErrorThatMatches(containsString("Hello World!"));
   }
 
-  private void checkNoOutputSynthetics(SingleTestRunResult<?> runResult) throws IOException {
+  private void checkNoOutputSynthetics(TestRunResult<?> runResult) throws IOException {
     checkOutputSynthetics(runResult, 0);
   }
 
-  private void checkOneOutputSynthetic(SingleTestRunResult<?> runResult) throws IOException {
+  private void checkOneOutputSynthetic(TestRunResult<?> runResult) throws IOException {
     checkOutputSynthetics(runResult, 1);
   }
 
-  private void checkOutputSynthetics(SingleTestRunResult<?> runResult, int expectedSyntheticsCount)
+  private void checkOutputSynthetics(TestRunResult<?> runResult, int expectedSyntheticsCount)
       throws IOException {
     runResult.inspectFailure(
         inspector -> {

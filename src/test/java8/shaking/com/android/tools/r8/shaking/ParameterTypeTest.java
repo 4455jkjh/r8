@@ -12,9 +12,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.NoHorizontalClassMerging;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -89,7 +89,8 @@ public class ParameterTypeTest extends TestBase {
   @Parameters(name = "{1}, argument propagation: {0}")
   public static List<Object[]> data() {
     return buildParameters(
-        BooleanUtils.values(), getTestParameters().withAllRuntimesAndApiLevels().build());
+        BooleanUtils.values(),
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build());
   }
 
   public ParameterTypeTest(boolean enableArgumentPropagation, TestParameters parameters) {
@@ -339,7 +340,7 @@ public class ParameterTypeTest extends TestBase {
         .run(parameters.getRuntime(), mainClassName)
         .applyIf(
             enableArgumentPropagation || parameters.isCfRuntime(),
-            SingleTestRunResult::assertSuccess,
+            TestRunResult::assertSuccess,
             result ->
                 result.assertFailureWithErrorThatMatches(
                     containsString(

@@ -7,10 +7,10 @@ package com.android.tools.r8.graph.invokevirtual;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.NoVerticalClassMerging;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.Test;
@@ -71,7 +71,7 @@ public class InvokeVirtualPrivateBaseWithDefaultDirectInvokeTest extends TestBas
             r -> assertResultIsCorrect(r, true));
   }
 
-  public void assertResultIsCorrect(SingleTestRunResult<?> result, boolean nonDesugaredCf) {
+  public void assertResultIsCorrect(TestRunResult<?> result, boolean nonDesugaredCf) {
     boolean isNotDesugared =
         (nonDesugaredCf && parameters.isCfRuntime())
             || parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring();

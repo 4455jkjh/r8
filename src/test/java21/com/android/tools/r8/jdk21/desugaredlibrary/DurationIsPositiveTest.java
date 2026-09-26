@@ -38,7 +38,7 @@ public class DurationIsPositiveTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimesAndAllApiLevels().build(),
+        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build(),
         ImmutableList.of(JDK11, JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
   }

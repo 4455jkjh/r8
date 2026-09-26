@@ -33,7 +33,11 @@ public class ThreadLocalBackportTest extends DesugaredLibraryTestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private static final String EXPECTED_OUTPUT = StringUtils.lines("Hello, ", "world!");

@@ -12,8 +12,8 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -66,7 +66,11 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
+        getTestParameters()
+            .withAllRuntimes()
+            .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         ImmutableList.of(JDK11),
         ImmutableList.of(D8_L8SHRINK, R8_L8SHRINK));
   }
@@ -126,7 +130,7 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
         .applyIf(
             runtimeWithJavaTime(parameters),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
-            SingleTestRunResult::assertFailure);
+            TestRunResult::assertFailure);
   }
 
   @Test
@@ -143,7 +147,7 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
         .applyIf(
             runtimeWithJavaTime(parameters),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
-            SingleTestRunResult::assertFailure);
+            TestRunResult::assertFailure);
   }
 
   static class TestClass {

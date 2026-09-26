@@ -8,6 +8,7 @@ import static org.junit.Assert.fail;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -26,6 +27,10 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class JasminTestBase extends TestBase {
+
+  public static TestParametersBuilder getTestParameters() {
+    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+  }
 
   protected ProcessResult runOnJavaRaw(JasminBuilder builder, String main) throws Exception {
     Path out = temp.newFolder().toPath();

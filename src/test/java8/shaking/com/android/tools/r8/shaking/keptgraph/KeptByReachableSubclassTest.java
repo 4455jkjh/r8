@@ -32,7 +32,7 @@ public class KeptByReachableSubclassTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withCfRuntimes().build();
+    return getTestParameters().withCfRuntimes().build();
   }
 
   public KeptByReachableSubclassTest(TestParameters parameters) {

@@ -10,6 +10,7 @@ import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
@@ -33,6 +34,10 @@ import java.util.zip.ZipOutputStream;
 import org.junit.rules.TemporaryFolder;
 
 public class SplitterTestBase extends TestBase {
+
+  public static TestParametersBuilder getTestParameters() {
+    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+  }
 
   public static FeatureSplit simpleSplitProvider(
       FeatureSplit.Builder builder, Path outputPath, TemporaryFolder temp, Class<?>... classes) {

@@ -32,7 +32,8 @@ public class InvokeSpecialToSuperclassTest extends TestBase {
   @Parameters(name = "{0} class: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), CLASSES_TO_TEST);
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
+        CLASSES_TO_TEST);
   }
 
   public InvokeSpecialToSuperclassTest(TestParameters parameters, Class<?> holder) {

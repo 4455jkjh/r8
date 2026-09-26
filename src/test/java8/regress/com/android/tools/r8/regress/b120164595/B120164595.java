@@ -61,7 +61,11 @@ public class B120164595 extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   @Test

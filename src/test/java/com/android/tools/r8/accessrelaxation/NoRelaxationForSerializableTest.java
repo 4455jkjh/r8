@@ -108,6 +108,7 @@ public class NoRelaxationForSerializableTest extends AccessRelaxationTestBase {
             .withCfRuntimes()
             .withDexRuntimesEndingAtExcluding(Version.V17_0_0)
             .withApiLevelsStartingAtIncluding(AndroidApiLevel.K)
+            .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());
   }

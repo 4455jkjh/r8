@@ -17,13 +17,13 @@ import com.android.tools.r8.L8TestCompileResult;
 import com.android.tools.r8.LibraryDesugaringTestConfiguration;
 import com.android.tools.r8.R8PartialTestBuilder;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestCompilerBuilder.DiagnosticsConsumer;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
@@ -57,7 +57,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
   private final TestParameters parameters;
   private final LibraryDesugaringSpecification libraryDesugaringSpecification;
   private final CompilationSpecification compilationSpecification;
-  private final TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> builder;
+  private final TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> builder;
   private final List<ArtProfileForRewriting> l8ArtProfilesForRewriting = new ArrayList<>();
   private final List<String> l8ExtraKeepRules = new ArrayList<>();
   private Consumer<L8TestBuilder> l8TestBuilderConsumer = emptyConsumer();
@@ -90,7 +90,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
     builder.enableCoreLibraryDesugaring(libraryConfBuilder.build());
   }
 
-  private TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> generateBuilder() {
+  private TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> generateBuilder() {
     if (compilationSpecification.isCfToCf()) {
       assert !compilationSpecification.isProgramShrink();
       if (compilationSpecification.isL8Shrink()) {
@@ -515,7 +515,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
   public DesugaredLibraryTestCompileResult<T> compile()
       throws CompilationFailedException, IOException, ExecutionException {
     prepareCompilation();
-    TestCompileResult<?, ? extends SingleTestRunResult<?>> compile = builder.compile();
+    TestCompileResult<?, ? extends TestRunResult<?>> compile = builder.compile();
     return internalCompile(compile);
   }
 
@@ -523,13 +523,13 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
       DiagnosticsConsumer consumer)
       throws CompilationFailedException, IOException, ExecutionException {
     prepareCompilation();
-    TestCompileResult<?, ? extends SingleTestRunResult<?>> compile =
+    TestCompileResult<?, ? extends TestRunResult<?>> compile =
         builder.compileWithExpectedDiagnostics(consumer);
     return internalCompile(compile);
   }
 
   private DesugaredLibraryTestCompileResult<T> internalCompile(
-      TestCompileResult<?, ? extends SingleTestRunResult<?>> compile)
+      TestCompileResult<?, ? extends TestRunResult<?>> compile)
       throws CompilationFailedException, IOException {
     L8TestCompileResult l8Compile = compileDesugaredLibrary(compile);
     D8TestCompileResult customLibCompile = compileCustomLib();
@@ -554,7 +554,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
   }
 
   private L8TestCompileResult compileDesugaredLibrary(
-      TestCompileResult<?, ? extends SingleTestRunResult<?>> compile)
+      TestCompileResult<?, ? extends TestRunResult<?>> compile)
       throws CompilationFailedException, IOException {
     if (!compilationSpecification.isL8Shrink()) {
       return internalCompileDesugaredLibrary(null);
@@ -598,7 +598,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
   }
 
   public String collectKeepRulesWithTraceReferences(
-      TestCompileResult<?, ? extends SingleTestRunResult<?>> compileResult,
+      TestCompileResult<?, ? extends TestRunResult<?>> compileResult,
       L8TestCompileResult l8TestCompileResult)
       throws CompilationFailedException, IOException {
     Path generatedKeepRules = test.temp.newFile().toPath();
@@ -641,12 +641,12 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
     return this;
   }
 
-  public SingleTestRunResult<?> run(TestRuntime runtime, Class<?> mainClass, String... args)
+  public TestRunResult<?> run(TestRuntime runtime, Class<?> mainClass, String... args)
       throws ExecutionException, IOException, CompilationFailedException {
     return compile().run(runtime, mainClass.getTypeName(), args);
   }
 
-  public SingleTestRunResult<?> run(TestRuntime runtime, String mainClass, String... args)
+  public TestRunResult<?> run(TestRuntime runtime, String mainClass, String... args)
       throws ExecutionException, IOException, CompilationFailedException {
     return compile().run(runtime, mainClass, args);
   }

@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.SingleTestRunResult;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.retrace.MappingSupplier;
@@ -372,9 +373,10 @@ public class StackTrace {
         exceptionLine, internalExtractFromJvm(lines.subList(startLine, lines.size())), stderr);
   }
 
-  public static StackTrace extractFromJvm(SingleTestRunResult result) {
-    assertNotEquals(0, result.getExitCode());
-    return extractFromJvm(result.getStdErr());
+  public static StackTrace extractFromJvm(TestRunResult<?> result) {
+    SingleTestRunResult single = result.asSingleRuntimeResult();
+    assertNotEquals(0, single.getExitCode());
+    return extractFromJvm(single.getStdErr());
   }
 
   public StackTrace retraceAllowExperimentalMapping(String map) {

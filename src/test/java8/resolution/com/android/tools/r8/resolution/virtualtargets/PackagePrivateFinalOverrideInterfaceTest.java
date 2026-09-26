@@ -27,7 +27,7 @@ public class PackagePrivateFinalOverrideInterfaceTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   public PackagePrivateFinalOverrideInterfaceTest(TestParameters parameters) {

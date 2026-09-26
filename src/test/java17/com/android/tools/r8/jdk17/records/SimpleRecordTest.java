@@ -46,6 +46,7 @@ public class SimpleRecordTest extends TestBase {
             .withAllRuntimes()
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
+            .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());
   }

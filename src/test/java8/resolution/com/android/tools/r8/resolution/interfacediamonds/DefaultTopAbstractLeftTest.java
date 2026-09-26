@@ -34,7 +34,7 @@ public class DefaultTopAbstractLeftTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   public DefaultTopAbstractLeftTest(TestParameters parameters) {

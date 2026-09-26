@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-public class JvmTestBuilder extends TestBuilder<JvmTestRunResult, JvmTestBuilder> {
+public class JvmTestBuilder extends TestBuilder<SingleTestRunResult, JvmTestBuilder> {
 
   // Ordered list of classpath entries.
   private List<Path> classpath = new ArrayList<>();
@@ -57,18 +57,18 @@ public class JvmTestBuilder extends TestBuilder<JvmTestRunResult, JvmTestBuilder
 
   @Override
   @Deprecated
-  public JvmTestRunResult run(String mainClass) throws IOException {
+  public SingleTestRunResult run(String mainClass) throws IOException {
     return run(TestRuntime.getDefaultJavaRuntime(), mainClass);
   }
 
   @Override
-  public JvmTestRunResult run(TestRuntime runtime, String mainClass, String... args)
+  public SingleTestRunResult run(TestRuntime runtime, String mainClass, String... args)
       throws IOException {
     assert runtime.isCf();
     ProcessResult result =
         ToolHelper.runJava(
             runtime.asCf(), vmArguments, classpath, ObjectArrays.concat(mainClass, args));
-    return new JvmTestRunResult(builder.build(), runtime, result, getState());
+    return new SingleTestRunResult(builder.build(), runtime, result, getState());
   }
 
   @Override

@@ -5,10 +5,11 @@ package com.android.tools.r8.jdk11.nest.dex;
 
 import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersBuilder;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
@@ -19,6 +20,10 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public abstract class NestAttributesInDexTestBase extends TestBase {
 
+  public static TestParametersBuilder getTestParameters() {
+    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+  }
+
   protected TestParameters parameters;
 
   public NestAttributesInDexTestBase(TestParameters parameters) {
@@ -26,7 +31,7 @@ public abstract class NestAttributesInDexTestBase extends TestBase {
   }
 
   protected void assertEmitNestAnnotationsInDexIsFalse(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> builder) {
+      TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> builder) {
     builder.applyIf(
         parameters.getPartialCompilationTestParameters().isSome(),
         b ->
@@ -37,7 +42,7 @@ public abstract class NestAttributesInDexTestBase extends TestBase {
   }
 
   protected void configureEmitNestAnnotationsInDex(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> builder) {
+      TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> builder) {
     builder.applyIf(
         parameters.getPartialCompilationTestParameters().isSome(),
         b -> b.addR8PartialOptionsModification(o -> o.emitNestAnnotationsInDex = true),
@@ -45,7 +50,7 @@ public abstract class NestAttributesInDexTestBase extends TestBase {
   }
 
   protected void configureForceNestDesugaring(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> builder) {
+      TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> builder) {
     builder.applyIf(
         parameters.getPartialCompilationTestParameters().isSome(),
         b -> b.addR8PartialOptionsModification(o -> o.forceNestDesugaring = true),

@@ -17,8 +17,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -83,6 +83,7 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
             .build(),
         specs,
         ImmutableList.of(D8_L8DEBUG, D8_L8SHRINK));
@@ -298,8 +299,8 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
     int success = 0;
     List<String> failingClasses = new ArrayList<>();
     for (String mainTestClass : SUCCESSFUL_MAIN_TESTS) {
-      SingleTestRunResult<?> run = compileResult.run(parameters.getRuntime(), mainTestClass);
-      if (run.getExitCode() != 0) {
+      TestRunResult<?> run = compileResult.run(parameters.getRuntime(), mainTestClass);
+      if (run.asSingleRuntimeResult().getExitCode() != 0) {
         System.out.println("Main Fail " + mainTestClass);
         failingClasses.add(mainTestClass);
       } else {
@@ -307,10 +308,13 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
       }
     }
     for (String testNGTestClass : SUCCESSFUL_TESTNG_TESTS) {
-      SingleTestRunResult<?> result =
+      TestRunResult<?> result =
           compileResult.run(
               parameters.getRuntime(), "TestNGMainRunner", verbosity, testNGTestClass);
-      if (!result.getStdOut().contains(StringUtils.lines(testNGTestClass + ": SUCCESS"))) {
+      if (!result
+          .asSingleRuntimeResult()
+          .getStdOut()
+          .contains(StringUtils.lines(testNGTestClass + ": SUCCESS"))) {
         System.out.println("TestNG Fail " + testNGTestClass);
         failingClasses.add(testNGTestClass);
       } else {
@@ -358,12 +362,15 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
       compileResult.run(parameters.getRuntime(), mainTestClass).assertSuccess();
     }
     for (String testNGTestClass : SUCCESSFUL_TESTNG_TESTS) {
-      SingleTestRunResult<?> result =
+      TestRunResult<?> result =
           compileResult.run(
               parameters.getRuntime(), "TestNGMainRunner", verbosity, testNGTestClass);
       assertTrue(
           "Failure in " + testNGTestClass + "\n" + result,
-          result.getStdOut().contains(StringUtils.lines(testNGTestClass + ": SUCCESS")));
+          result
+              .asSingleRuntimeResult()
+              .getStdOut()
+              .contains(StringUtils.lines(testNGTestClass + ": SUCCESS")));
     }
   }
 }

@@ -12,12 +12,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 
 import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.apimodel.ApiModelingTestHelper.ApiModelingMethodVerificationHelper;
 import com.android.tools.r8.references.Reference;
@@ -43,7 +43,11 @@ public class ApiModelIndirectTargetWithSameApiLevelTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private boolean isGreaterOrEqualToMockLevel() {
@@ -122,7 +126,7 @@ public class ApiModelIndirectTargetWithSameApiLevelTest extends TestBase {
         .apply(result -> checkOutput(result, true));
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult, boolean isR8) {
+  private void checkOutput(TestRunResult<?> runResult, boolean isR8) {
     if (isGreaterOrEqualToMockLevel()) {
       runResult.assertSuccessWithOutputLines("LibraryClass::foo");
     } else if (isR8 && parameters.isCfRuntime()) {

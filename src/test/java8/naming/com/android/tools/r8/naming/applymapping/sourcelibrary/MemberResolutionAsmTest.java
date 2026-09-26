@@ -39,7 +39,7 @@ public class MemberResolutionAsmTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   public MemberResolutionAsmTest(TestParameters parameters) {

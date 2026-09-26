@@ -95,7 +95,11 @@ public class VirtualOverrideOfPrivateStaticMethodWithVirtualParentTest extends T
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevels().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private final TestParameters parameters;

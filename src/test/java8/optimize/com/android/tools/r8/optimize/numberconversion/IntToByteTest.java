@@ -27,7 +27,7 @@ public class IntToByteTest extends NumberConversionTestBase {
         new Integer[] {
           128, 65408, -65408, 42, -32, 0,
         },
-        TestParameters.builder().withNoneRuntime().build());
+        getTestParameters().withNoneRuntime().build());
   }
 
   @Test

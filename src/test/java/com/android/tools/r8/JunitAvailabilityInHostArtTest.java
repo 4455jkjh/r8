@@ -20,7 +20,11 @@ public class JunitAvailabilityInHostArtTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevels().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevels()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   public JunitAvailabilityInHostArtTest(TestParameters parameters) {

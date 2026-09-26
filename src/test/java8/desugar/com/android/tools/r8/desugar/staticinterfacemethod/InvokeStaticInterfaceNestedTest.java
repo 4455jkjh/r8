@@ -42,6 +42,7 @@ public class InvokeStaticInterfaceNestedTest extends TestBase {
             .withAllRuntimes()
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
+            .withoutCollapsedDexRuntimes()
             .build());
   }
 

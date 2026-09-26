@@ -10,10 +10,10 @@ import static org.junit.Assert.fail;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.L8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 public class DesugaredLibraryTestCompileResult<T extends DesugaredLibraryTestBase> {
 
   private final T test;
-  private final TestCompileResult<?, ? extends SingleTestRunResult<?>> compileResult;
+  private final TestCompileResult<?, ? extends TestRunResult<?>> compileResult;
   private final TestParameters parameters;
   private final CompilationSpecification compilationSpecification;
   private final D8TestCompileResult customLibCompile;
@@ -39,11 +39,11 @@ public class DesugaredLibraryTestCompileResult<T extends DesugaredLibraryTestBas
   private final List<ExternalArtProfile> l8ResidualArtProfiles;
   // In case of Cf2Cf desugaring the run on dex, the compileResult is the Cf desugaring result
   // while the runnableCompiledResult is the dexed compiledResult used to run on dex.
-  private final TestCompileResult<?, ? extends SingleTestRunResult<?>> runnableCompiledResult;
+  private final TestCompileResult<?, ? extends TestRunResult<?>> runnableCompiledResult;
 
   public DesugaredLibraryTestCompileResult(
       T test,
-      TestCompileResult<?, ? extends SingleTestRunResult<?>> compileResult,
+      TestCompileResult<?, ? extends TestRunResult<?>> compileResult,
       TestParameters parameters,
       CompilationSpecification compilationSpecification,
       D8TestCompileResult customLibCompile,
@@ -160,19 +160,19 @@ public class DesugaredLibraryTestCompileResult<T extends DesugaredLibraryTestBas
     return this;
   }
 
-  public SingleTestRunResult<?> run(TestRuntime runtime, Class<?> mainClass, String... args)
+  public TestRunResult<?> run(TestRuntime runtime, Class<?> mainClass, String... args)
       throws ExecutionException, IOException {
     return run(runtime, mainClass.getTypeName(), args);
   }
 
-  public SingleTestRunResult<?> run(TestRuntime runtime, String mainClassName, String... args)
+  public TestRunResult<?> run(TestRuntime runtime, String mainClassName, String... args)
       throws ExecutionException, IOException {
     return runnableCompiledResult.run(runtime, mainClassName, args);
   }
 
-  private TestCompileResult<?, ? extends SingleTestRunResult<?>> computeRunnableCompiledResult()
+  private TestCompileResult<?, ? extends TestRunResult<?>> computeRunnableCompiledResult()
       throws CompilationFailedException, IOException {
-    TestCompileResult<?, ? extends SingleTestRunResult<?>> runnable = convertToDexIfNeeded();
+    TestCompileResult<?, ? extends TestRunResult<?>> runnable = convertToDexIfNeeded();
     if (customLibCompile != null) {
       runnable.addRunClasspathFiles(customLibCompile.writeToZip());
     }
@@ -180,7 +180,7 @@ public class DesugaredLibraryTestCompileResult<T extends DesugaredLibraryTestBas
     return runnable;
   }
 
-  private TestCompileResult<?, ? extends SingleTestRunResult<?>> convertToDexIfNeeded()
+  private TestCompileResult<?, ? extends TestRunResult<?>> convertToDexIfNeeded()
       throws CompilationFailedException, IOException {
     if (!(compilationSpecification.isCfToCf() && parameters.getBackend().isDex())) {
       return compileResult;

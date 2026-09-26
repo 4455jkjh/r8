@@ -24,7 +24,7 @@ public class StepOutOfMethodWithUnusedReturnValueTestRunner extends DebugTestBas
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder()
+    return getTestParameters()
         .withDefaultCfRuntime()
         .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
         .withApiLevel(AndroidApiLevel.B)

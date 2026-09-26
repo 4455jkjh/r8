@@ -61,7 +61,11 @@ public class J$ExtensionTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimes().withAllApiLevels().build(),
+        getTestParameters()
+            .withAllRuntimes()
+            .withAllApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         getJdk8Jdk11(),
         ImmutableList.of(D8_L8DEBUG));
   }
@@ -116,6 +120,7 @@ public class J$ExtensionTest extends DesugaredLibraryTestBase {
               .setMinApi(parameters)
               .run(parameters.getRuntime(), MAIN_CLASS_NAME)
               .assertFailure()
+              .asSingleRuntimeResult()
               .getStdErr();
     }
     assertError(stderr, false);
@@ -158,6 +163,7 @@ public class J$ExtensionTest extends DesugaredLibraryTestBase {
             .addProgramFiles(compiledClasses)
             .run(parameters.getRuntime(), MAIN_CLASS_NAME)
             .assertFailure()
+            .asSingleRuntimeResult()
             .getStdErr();
     assertError(stdErr, true);
   }

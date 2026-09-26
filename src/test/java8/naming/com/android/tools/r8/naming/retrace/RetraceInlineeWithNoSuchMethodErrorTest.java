@@ -11,12 +11,13 @@ import com.android.tools.r8.KeepUnusedReturnValue;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestRunResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,28 +45,21 @@ public class RetraceInlineeWithNoSuchMethodErrorTest extends TestBase {
   @Before
   public void setup() throws Exception {
     // Get the expected stack trace by running on the JVM.
-    TestBuilder<? extends SingleTestRunResult<?>, ?> testBuilder =
-        testForRuntime(parameters)
-            .addProgramClasses(Caller.class)
-            .addProgramClassFileData(getFoo());
-    SingleTestRunResult<?> runResult;
+    TestBuilder<? extends TestRunResult<?>, ?> testBuilder =
+        testForJvm(temp).addProgramClasses(Caller.class).addProgramClassFileData(getFoo());
+    TestRunResult<?> runResult;
     if (throwReceiverNpe) {
       runResult =
           testBuilder
-              .run(parameters.getRuntime(), Caller.class, "foo")
+              .run(TestRuntime.getDefaultCfRuntime(), Caller.class, "foo")
               .assertFailureWithErrorThatThrows(NullPointerException.class);
     } else {
       runResult =
           testBuilder
-              .run(parameters.getRuntime(), Caller.class)
+              .run(TestRuntime.getDefaultCfRuntime(), Caller.class)
               .assertFailureWithErrorThatThrows(NoSuchMethodError.class);
     }
-    if (parameters.isCfRuntime()) {
-      expectedStackTrace = runResult.map(StackTrace::extractFromJvm);
-    } else {
-      expectedStackTrace =
-          StackTrace.extractFromArt(runResult.getStdErr(), parameters.asDexRuntime().getVm());
-    }
+    runResult.inspectStackTrace(stackTrace -> expectedStackTrace = stackTrace);
   }
 
   @Test

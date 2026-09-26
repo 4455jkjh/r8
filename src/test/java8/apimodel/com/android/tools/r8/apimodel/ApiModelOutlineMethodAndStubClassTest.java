@@ -11,10 +11,10 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.apimodel.ApiModelMockClassTest.TestClass;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -150,7 +150,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
             Main.class.getDeclaredMethod("main", String[].class), apiLevels.libraryMethodLevel);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (parameters.isDexRuntime()
         && parameters.getApiLevel().isGreaterThanOrEqualTo(apiLevels.libraryClassLevel)) {
       runResult.assertSuccessWithOutputLines("LibraryClass::foo");
