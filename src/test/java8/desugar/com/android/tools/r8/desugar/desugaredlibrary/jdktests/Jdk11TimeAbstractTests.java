@@ -18,46 +18,70 @@ import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.D8TestBuilder;
+import com.android.tools.r8.L8TestBuilder;
 import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
+import com.android.tools.r8.TestState;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.transformers.MethodTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
 public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
 
   private static final int SPLIT = 2;
-  private static final Path JDK_11_TCK_TEST_FILES_DIR =
-      Paths.get(ToolHelper.JDK_11_TIME_TESTS_DIR).resolve("tck");
-  private static final Path JDK_11_TIME_TEST_FILES_DIR =
-      Paths.get(ToolHelper.JDK_11_TIME_TESTS_DIR).resolve("test");
-  private static final String JDK_11_TIME_TEST_EXCLUDE = "TestZoneTextPrinterParser.java";
+  private static final Path JDK_11_TIME_TESTS_ROOT_DIR =
+      Paths.get(ToolHelper.JDK_11_TIME_TESTS_DIR);
+  private static Path JDK_11_TIME_TEST_CLASSES_DIR;
   private static Path[] JDK_11_TIME_TEST_COMPILED_FILES;
+  private static final Map<String, Path> TESTNG_SUPPORT_DEX_CACHE = new HashMap<>();
+  private static final Map<String, DesugaredLibraryTestCompileResult<?>> COMPILED_TIME_TESTS_CACHE =
+      new HashMap<>();
+
+  private static final String[] SUPPORT_CLASSES =
+      new String[] {
+        "test.java.time.AbstractTest",
+        "test.java.time.MockSimplePeriod",
+        "test.java.time.format.AbstractTestPrinterParser",
+        "test.java.time.temporal.MockFieldValue"
+      };
 
   final TestParameters parameters;
   final LibraryDesugaringSpecification libraryDesugaringSpecification;
   final CompilationSpecification compilationSpecification;
+  private boolean isFormatChrono;
+  private int splitIndex;
 
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
@@ -83,27 +107,110 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private static List<Path> getJdk11TimeTestFiles() throws Exception {
-    List<Path> tckFiles =
-        Files.walk(JDK_11_TCK_TEST_FILES_DIR)
-            .filter(path -> path.toString().endsWith(JAVA_EXTENSION))
-            .filter(path -> !path.toString().endsWith(JDK_11_TIME_TEST_EXCLUDE))
+  @Override
+  public D8TestBuilder testForD8(Backend backend) {
+    return testForD8(getStaticTemp(), backend);
+  }
+
+  @Override
+  public L8TestBuilder testForL8(AndroidApiLevel apiLevel, Backend backend) {
+    return L8TestBuilder.create(apiLevel, backend, new TestState(getStaticTemp()));
+  }
+
+  private static List<Path> getJdk11TimeTestFiles() {
+    Set<String> classNames = new LinkedHashSet<>();
+    Collections.addAll(classNames, SUPPORT_CLASSES);
+    Collections.addAll(classNames, RAW_TEMPORAL_SUCCESSES);
+    Collections.addAll(classNames, RAW_TEMPORAL_SUCCESSES_IF_BRIDGE);
+    Collections.addAll(classNames, RAW_TEMPORAL_SUCCESSES_UP_TO_14);
+    Collections.addAll(classNames, RAW_TEMPORAL_ISO_TESTS);
+    Collections.addAll(classNames, FORMAT_CHRONO_ISO_TESTS);
+    Collections.addAll(classNames, FORMAT_CHRONO_SUCCESSES);
+    Collections.addAll(classNames, FORMAT_CHRONO_SUCCESSES_UP_TO_11);
+    List<Path> files =
+        classNames.stream()
+            .map(
+                name -> JDK_11_TIME_TESTS_ROOT_DIR.resolve(name.replace('.', '/') + JAVA_EXTENSION))
             .collect(Collectors.toList());
-    List<Path> timeFiles =
-        Files.walk(JDK_11_TIME_TEST_FILES_DIR)
-            .filter(path -> path.toString().endsWith(JAVA_EXTENSION))
-            .filter(path -> !path.toString().endsWith(JDK_11_TIME_TEST_EXCLUDE))
-            .collect(Collectors.toList());
-    ArrayList<Path> files = new ArrayList<>();
-    files.addAll(timeFiles);
-    files.addAll(tckFiles);
-    assert files.size() > 0;
+    assert !files.isEmpty();
     return files;
+  }
+
+  // TestOffsetDateTime_instants#factory_ofInstant_allDaysInCycle already tests every day in a full
+  // 400-year Gregorian cycle (146,097 days). Narrow factory_ofInstant_history from 5,640 years
+  // (-2820..2820, 2.06M days) to (-5..5) and minYear/maxYear from 420 years to 5 years to avoid
+  // ~27s of redundant day-by-day iteration on ART per run.
+  private static void transformTestOffsetDateTimeInstants(Path classesDir) throws Exception {
+    Path classFile = classesDir.resolve("test/java/time/TestOffsetDateTime_instants.class");
+    byte[] transformed =
+        transformer(
+                classFile,
+                Reference.classFromTypeName("test.java.time.TestOffsetDateTime_instants"))
+            .addMethodTransformer(
+                new MethodTransformer() {
+                  @Override
+                  public void visitLdcInsn(Object value) {
+                    String methodName = getMethod().getMethodName();
+                    if (methodName.equals("factory_ofInstant_history")) {
+                      if (Long.valueOf(-2820L).equals(value)) {
+                        super.visitLdcInsn(-5L);
+                        return;
+                      }
+                      if (Long.valueOf(2820L).equals(value)) {
+                        super.visitLdcInsn(5L);
+                        return;
+                      }
+                    } else if (methodName.equals("factory_ofInstant_minYear")
+                        && Long.valueOf(Year.MIN_VALUE + 420L).equals(value)) {
+                      super.visitLdcInsn(Year.MIN_VALUE + 5L);
+                      return;
+                    } else if (methodName.equals("factory_ofInstant_maxYear")
+                        && Long.valueOf(Year.MAX_VALUE - 420L).equals(value)) {
+                      super.visitLdcInsn(Year.MAX_VALUE - 5L);
+                      return;
+                    }
+                    super.visitLdcInsn(value);
+                  }
+                })
+            .transform();
+    Files.write(classFile, transformed);
+  }
+
+  // TestIsoChronoImpl#provider_rangeVersusCalendar steps day-by-day from 1583 to 2100 (517 years =
+  // 188,822 days) twice (~16s on ART per run). Narrow to 1995..2005 (covering leap century 2000,
+  // standard leap years 1996/2004, and 53-week ISO years 1998/2004).
+  private static void transformTestIsoChronoImpl(Path classesDir) throws Exception {
+    Path classFile = classesDir.resolve("test/java/time/chrono/TestIsoChronoImpl.class");
+    byte[] transformed =
+        transformer(
+                classFile, Reference.classFromTypeName("test.java.time.chrono.TestIsoChronoImpl"))
+            .addMethodTransformer(
+                new MethodTransformer() {
+                  @Override
+                  public void visitIntInsn(int opcode, int operand) {
+                    if (getMethod().getMethodName().equals("provider_rangeVersusCalendar")
+                        && opcode == Opcodes.SIPUSH) {
+                      if (operand == 1583) {
+                        super.visitIntInsn(opcode, 1995);
+                        return;
+                      }
+                      if (operand == 2100) {
+                        super.visitIntInsn(opcode, 2005);
+                        return;
+                      }
+                    }
+                    super.visitIntInsn(opcode, operand);
+                  }
+                })
+            .transform();
+    Files.write(classFile, transformed);
   }
 
   @BeforeClass
   public static void compileJdk11TimeTests() throws Exception {
-    Path tmpDirectory = getStaticTemp().newFolder("time").toPath();
+    TESTNG_SUPPORT_DEX_CACHE.clear();
+    COMPILED_TIME_TESTS_CACHE.clear();
+    JDK_11_TIME_TEST_CLASSES_DIR = getStaticTemp().newFolder("time").toPath();
     List<String> options =
         Arrays.asList(
             "--add-reads",
@@ -114,11 +221,19 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         .addOptions(options)
         .addClasspathFiles(testNGPath(), jcommanderPath())
         .addSourceFiles(getJdk11TimeTestFiles())
-        .setOutputPath(tmpDirectory)
+        .setOutputPath(JDK_11_TIME_TEST_CLASSES_DIR)
         .compile();
+    transformTestOffsetDateTimeInstants(JDK_11_TIME_TEST_CLASSES_DIR);
+    transformTestIsoChronoImpl(JDK_11_TIME_TEST_CLASSES_DIR);
     JDK_11_TIME_TEST_COMPILED_FILES =
-        getAllFilesWithSuffixInDirectory(tmpDirectory, CLASS_EXTENSION);
+        getAllFilesWithSuffixInDirectory(JDK_11_TIME_TEST_CLASSES_DIR, CLASS_EXTENSION);
     assert JDK_11_TIME_TEST_COMPILED_FILES.length > 0;
+  }
+
+  @AfterClass
+  public static void clearCaches() {
+    TESTNG_SUPPORT_DEX_CACHE.clear();
+    COMPILED_TIME_TESTS_CACHE.clear();
   }
 
   // Following tests are also failing on the Bazel build, they cannot be run easily on
@@ -238,58 +353,145 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         || parameters.getDexRuntimeVersion().isNewerThan(Version.V10_0_0);
   }
 
-  public String[] getFormatChronoSuccesses() {
+  private static String[] getFormatChronoSuccesses(boolean isOlderThanV12, boolean isIsoCompliant) {
     List<String> allTests = new ArrayList<>();
     Collections.addAll(allTests, FORMAT_CHRONO_SUCCESSES);
-    if (parameters.getDexRuntimeVersion().isOlderThan(Version.V12_0_0)) {
+    if (isOlderThanV12) {
       // Formatting issues starting from 12.
       Collections.addAll(allTests, FORMAT_CHRONO_SUCCESSES_UP_TO_11);
     }
-    if (isJdk11IsoCompliant()) {
+    if (isIsoCompliant) {
       Collections.addAll(allTests, FORMAT_CHRONO_ISO_TESTS);
     }
     return allTests.toArray(new String[0]);
   }
 
-  public String[] getRawTemporalSuccesses() {
+  public String[] getFormatChronoSuccesses() {
+    this.isFormatChrono = true;
+    return getFormatChronoSuccesses(
+        parameters.getDexRuntimeVersion().isOlderThan(Version.V12_0_0), isJdk11IsoCompliant());
+  }
+
+  private static String[] getRawTemporalSuccesses(
+      boolean includeIsoTests, boolean isOlderThanV14, boolean includeBridgeTests) {
     List<String> allTests = new ArrayList<>();
-    if (!libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)
-        && parameters.getDexRuntimeVersion().isNewerThan(Version.V12_0_0)) {
+    if (includeIsoTests) {
       Collections.addAll(allTests, RAW_TEMPORAL_ISO_TESTS);
     }
     Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES);
-    if (parameters.getDexRuntimeVersion().isOlderThan(Version.V14_0_0)) {
+    if (isOlderThanV14) {
       // In 14 some reflection used in test fails.
       Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES_UP_TO_14);
     }
-    // The bridge is always present with JDK11 due to partial desugaring between 26 and 33.
-    // On JDK8 the bridge is absent in between 26 and 33.
-    if (libraryDesugaringSpecification != JDK8
-        || !parameters
-            .getApiLevel()
-            .isBetweenBothIncluded(AndroidApiLevel.O, AndroidApiLevel.Sv2)) {
+    if (includeBridgeTests) {
       Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES_IF_BRIDGE);
     }
     return allTests.toArray(new String[0]);
   }
 
+  public String[] getRawTemporalSuccesses() {
+    this.isFormatChrono = false;
+    // The bridge is always present with JDK11 due to partial desugaring between 26 and 33.
+    // On JDK8 the bridge is absent in between 26 and 33.
+    boolean includeBridgeTests =
+        libraryDesugaringSpecification != JDK8
+            || !parameters
+                .getApiLevel()
+                .isBetweenBothIncluded(AndroidApiLevel.O, AndroidApiLevel.Sv2);
+    return getRawTemporalSuccesses(
+        !libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)
+            && parameters.getDexRuntimeVersion().isNewerThan(Version.V12_0_0),
+        parameters.getDexRuntimeVersion().isOlderThan(Version.V14_0_0),
+        includeBridgeTests);
+  }
+
   String[] split(String[] input, int index) {
+    this.splitIndex = index;
     return Jdk11TestInputSplitter.split(input, index, SPLIT);
   }
 
-  void compileAndTestTime(String[] toRun) throws Exception {
-    if (toRun.length == 0) {
-      System.out.println("No tests to run, may happen while debugging.");
-      return;
+  private Path getTestNGSupportDex() throws Exception {
+    String key = parameters.getApiLevel() + ":" + libraryDesugaringSpecification;
+    Path cached = TESTNG_SUPPORT_DEX_CACHE.get(key);
+    if (cached != null) {
+      return cached;
     }
-    // The compilation time is significantly higher than the test time, it is important to compile
-    // once and test multiple times on the same artifact for test performance.
-    String verbosity = "2";
+    Path dexZip =
+        testForD8(getStaticTemp())
+            .addProgramFiles(testNGSupportProgramFiles())
+            .addLibraryFiles(libraryDesugaringSpecification.getLibraryFiles())
+            .setMinApi(parameters)
+            .compile()
+            .writeToZip();
+    TESTNG_SUPPORT_DEX_CACHE.put(key, dexZip);
+    return dexZip;
+  }
+
+  private List<Path> getFilesToCompileForSplit() {
+    Set<String> classNames = new HashSet<>();
+    Collections.addAll(classNames, SUPPORT_CLASSES);
+    if (isFormatChrono) {
+      for (boolean isOlderThanV12 : new boolean[] {false, true}) {
+        for (boolean isIsoCompliant : new boolean[] {false, true}) {
+          Collections.addAll(
+              classNames,
+              Jdk11TestInputSplitter.split(
+                  getFormatChronoSuccesses(isOlderThanV12, isIsoCompliant), splitIndex, SPLIT));
+        }
+      }
+    } else {
+      for (boolean includeIsoTests : new boolean[] {false, true}) {
+        for (boolean isOlderThanV14 : new boolean[] {false, true}) {
+          for (boolean includeBridgeTests : new boolean[] {false, true}) {
+            Collections.addAll(
+                classNames,
+                Jdk11TestInputSplitter.split(
+                    getRawTemporalSuccesses(includeIsoTests, isOlderThanV14, includeBridgeTests),
+                    splitIndex,
+                    SPLIT));
+          }
+        }
+      }
+    }
+    Set<String> prefixes = new HashSet<>();
+    for (String className : classNames) {
+      prefixes.add(JDK_11_TIME_TEST_CLASSES_DIR.resolve(className.replace('.', '/')).toString());
+    }
+    int classExtLen = CLASS_EXTENSION.length();
+    return Arrays.stream(JDK_11_TIME_TEST_COMPILED_FILES)
+        .filter(
+            file -> {
+              String fileStr = file.toString();
+              String withoutExt = fileStr.substring(0, fileStr.length() - classExtLen);
+              int dollarIdx = withoutExt.indexOf('$');
+              String outerPrefix = dollarIdx >= 0 ? withoutExt.substring(0, dollarIdx) : withoutExt;
+              return prefixes.contains(outerPrefix);
+            })
+        .collect(Collectors.toList());
+  }
+
+  private DesugaredLibraryTestCompileResult<?> compileTimeTestsToDex() throws Exception {
+    String key =
+        isFormatChrono
+            + ":"
+            + splitIndex
+            + ":"
+            + parameters.getApiLevel()
+            + ":"
+            + libraryDesugaringSpecification
+            + ":"
+            + compilationSpecification;
+    DesugaredLibraryTestCompileResult<?> cached = COMPILED_TIME_TESTS_CACHE.get(key);
+    if (cached != null) {
+      return cached;
+    }
+    List<Path> filesToCompile = getFilesToCompileForSplit();
+    Path testNGSupportDex = getTestNGSupportDex();
     DesugaredLibraryTestCompileResult<?> compileResult =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addProgramFiles(JDK_11_TIME_TEST_COMPILED_FILES)
-            .addProgramFiles(testNGSupportProgramFiles())
+            .addProgramFiles(filesToCompile)
+            .applyOnBuilder(b -> b.addClasspathFiles(testNGSupportProgramFiles()))
             .addProgramClassFileData(getTestNGMainRunner())
             .applyIf(
                 !libraryDesugaringSpecification.hasNioFileDesugaring(parameters),
@@ -306,10 +508,27 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
                                 "  private <init>(...);",
                                 "}")))
             .compile()
+            .addRunClasspathFiles(testNGSupportDex)
             .withArt6Plus64BitsLib();
+    COMPILED_TIME_TESTS_CACHE.put(key, compileResult);
+    return compileResult;
+  }
+
+  void compileAndTestTime(String[] toRun) throws Exception {
+    if (toRun.length == 0) {
+      System.out.println("No tests to run, may happen while debugging.");
+      return;
+    }
+    // The compilation time is significantly higher than the test time, it is important to compile
+    // once and test multiple times on the same artifact for test performance.
+    String verbosity = "2";
+    DesugaredLibraryTestCompileResult<?> compileResult = compileTimeTestsToDex();
+    List<String> args = new ArrayList<>(1 + toRun.length);
+    args.add(verbosity);
+    Collections.addAll(args, toRun);
+    SingleTestRunResult<?> result =
+        compileResult.run(parameters.getRuntime(), "TestNGMainRunner", args.toArray(new String[0]));
     for (String success : toRun) {
-      SingleTestRunResult<?> result =
-          compileResult.run(parameters.getRuntime(), "TestNGMainRunner", verbosity, success);
       if (result.getStdErr().contains("Couldn't find any tzdata")) {
         // TODO(b/134732760): fix missing time zone data.
       } else if (result.getStdErr().contains("no microsecond precision")) {

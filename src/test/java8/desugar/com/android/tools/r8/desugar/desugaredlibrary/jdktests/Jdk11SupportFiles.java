@@ -132,6 +132,11 @@ public class Jdk11SupportFiles {
       }
     }
 
+    private static boolean mutatesGlobalState(String className) {
+      return className.equals("test.java.time.TestZoneId")
+          || className.equals("test.java.time.format.TestUnicodeExtension");
+    }
+
     public static void main(String[] args) throws Exception {
       // First arg is the verbosity level.
       // Subsequent args are the classes to run.
@@ -151,10 +156,19 @@ public class Jdk11SupportFiles {
         for (int i = 0; i < count; i++) {
           buffers[i] = new ByteArrayOutputStream();
           threads[i] = new Thread(new TestNGMainRunner(origOut, args[i + 1], verbose, buffers[i]));
-          threads[i].start();
+          if (!mutatesGlobalState(args[i + 1])) {
+            threads[i].start();
+          }
         }
         for (int i = 0; i < count; i++) {
-          threads[i].join();
+          if (!mutatesGlobalState(args[i + 1])) {
+            threads[i].join();
+          }
+        }
+        for (int i = 0; i < count; i++) {
+          if (mutatesGlobalState(args[i + 1])) {
+            threads[i].run();
+          }
         }
         for (int i = 0; i < count; i++) {
           origOut.write(buffers[i].toByteArray());
