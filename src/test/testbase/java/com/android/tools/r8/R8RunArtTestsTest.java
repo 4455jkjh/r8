@@ -1120,10 +1120,25 @@ public abstract class R8RunArtTestsTest extends TestBase {
                   TestCondition.tools(DexTool.DX, DexTool.NONE), TestCondition.R8_COMPILER))
           // Produces wrong output when compiled in release mode, which we cannot express.
           .put("015-switch", TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_0_4)))
-          .put("074-gc-thrash", TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_0_4)))
-          .put(
-              "121-simple-suspend-check",
-              TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_4_4)))
+          // Tests that contain hardcoded sleeps and slow down test execution.
+          .put("002-sleep", TestCondition.any())
+          .put("030-bad-finalizer", TestCondition.any())
+          .put("033-class-init-deadlock", TestCondition.any())
+          .put("050-sync-test", TestCondition.any())
+          .put("051-thread", TestCondition.any())
+          .put("059-finalizer-throw", TestCondition.any())
+          .put("063-process-manager", TestCondition.any())
+          .put("067-preemptive-unpark", TestCondition.any())
+          .put("074-gc-thrash", TestCondition.any())
+          .put("079-phantom", TestCondition.any())
+          .put("083-compiler-regressions", TestCondition.any())
+          .put("084-class-init", TestCondition.any())
+          .put("099-vmdebug", TestCondition.any())
+          .put("109-suspend-check", TestCondition.any())
+          .put("121-simple-suspend-check", TestCondition.any())
+          .put("136-daemon-jni-shutdown", TestCondition.any())
+          .put("154-gc-loop", TestCondition.any())
+          .put("542-unresolved-access-check", TestCondition.any())
           .build();
 
   public static List<String> requireInliningToBeDisabled =
