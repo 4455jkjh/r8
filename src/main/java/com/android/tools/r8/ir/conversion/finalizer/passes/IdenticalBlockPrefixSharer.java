@@ -133,8 +133,11 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
         }
       }
 
-      // Check for commutativity (debug info).
-      if (!instruction.identicalPosition(block.exit(), allocator)
+      // Check for commutativity (debug info). The instructions in all successors already have the
+      // same position, so in release mode they do not need to share the exit instruction's
+      // position.
+      if (allocator.options().debug
+          && !instruction.identicalPosition(block.exit(), allocator)
           && !(block.exit().getPosition().isNone() && !block.exit().getDebugValues().isEmpty())) {
         return hasChanged;
       }
