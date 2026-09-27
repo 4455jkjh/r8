@@ -11,6 +11,7 @@ import java.io.PrintStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.Base64
@@ -165,6 +166,7 @@ public class TestConfigurationHelper {
       val testResultObj =
         JsonObject().apply {
           addProperty("statusV2", status)
+          addProperty("startTime", Instant.ofEpochMilli(result.startTime).toString())
           addProperty("duration", duration)
           add("testIdStructured", testIdStructuredObj)
 
