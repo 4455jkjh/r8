@@ -230,6 +230,7 @@ public class ArgumentPropagatorCodeScanner {
     private ComposableComputationTreeBuilder composableComputationTreeBuilder;
 
     // State used by internalComputeNonReceiverValueState.
+    private Map<Value, NonEmptyValueState> cache = new IdentityHashMap<>();
     private Value initialValue;
     private DexType staticType;
     private ProgramMember<?, ?> target;
@@ -311,15 +312,23 @@ public class ArgumentPropagatorCodeScanner {
         return ValueState.unknown();
       }
 
+      assert this.cache.isEmpty();
       assert this.initialValue == null;
+      assert this.staticType == null;
+      assert this.target == null;
       this.initialValue = value;
       this.staticType = staticType;
       this.target = target;
-      NonEmptyValueState result = internalComputeNonReceiverValueState(value);
+      NonEmptyValueState result = internalGetOrComputeNonReceiverValueState(value);
+      this.cache.clear();
       this.initialValue = null;
       this.staticType = null;
       this.target = null;
       return result;
+    }
+
+    private NonEmptyValueState internalGetOrComputeNonReceiverValueState(Value value) {
+      return cache.computeIfAbsent(value, this::internalComputeNonReceiverValueState);
     }
 
     private NonEmptyValueState internalComputeNonReceiverValueState(Value value) {
@@ -469,8 +478,8 @@ public class ArgumentPropagatorCodeScanner {
       if (condition.getSingleOpenVariable() == null) {
         return null;
       }
-      NonEmptyValueState leftValue = internalComputeNonReceiverValueState(phi.getOperand(0));
-      NonEmptyValueState rightValue = internalComputeNonReceiverValueState(phi.getOperand(1));
+      NonEmptyValueState leftValue = internalGetOrComputeNonReceiverValueState(phi.getOperand(0));
+      NonEmptyValueState rightValue = internalGetOrComputeNonReceiverValueState(phi.getOperand(1));
       if (leftValue.isUnknown() && rightValue.isUnknown()) {
         return null;
       }
@@ -624,14 +633,14 @@ public class ArgumentPropagatorCodeScanner {
                   }
                 }
               });
-      NonEmptyValueState state = internalComputeNonReceiverValueState(operands.get(0));
+      NonEmptyValueState state = internalGetOrComputeNonReceiverValueState(operands.get(0));
       for (int i = 1; i < operands.size(); i++) {
         Value operand = operands.get(i);
         state =
             state.mutableJoin(
                 appView,
                 appView.getDefaultAbstractValueJoiner(),
-                internalComputeNonReceiverValueState(operand),
+                internalGetOrComputeNonReceiverValueState(operand),
                 null,
                 staticType,
                 StateCloner.getIdentity());
