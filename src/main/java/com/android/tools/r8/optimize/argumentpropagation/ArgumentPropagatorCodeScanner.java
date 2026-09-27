@@ -231,7 +231,7 @@ public class ArgumentPropagatorCodeScanner {
 
     // State used by internalComputeNonReceiverValueState.
     private Map<Value, NonEmptyValueState> cache = new IdentityHashMap<>();
-    private Value initialValue;
+    private Set<Phi> seenPhis = Sets.newIdentityHashSet();
     private DexType staticType;
     private ProgramMember<?, ?> target;
 
@@ -313,15 +313,14 @@ public class ArgumentPropagatorCodeScanner {
       }
 
       assert this.cache.isEmpty();
-      assert this.initialValue == null;
+      assert this.seenPhis.isEmpty();
       assert this.staticType == null;
       assert this.target == null;
-      this.initialValue = value;
       this.staticType = staticType;
       this.target = target;
       NonEmptyValueState result = internalGetOrComputeNonReceiverValueState(value);
       this.cache.clear();
-      this.initialValue = null;
+      this.seenPhis.clear();
       this.staticType = null;
       this.target = null;
       return result;
@@ -332,10 +331,13 @@ public class ArgumentPropagatorCodeScanner {
     }
 
     private NonEmptyValueState internalComputeNonReceiverValueState(Value value) {
-      assert value == initialValue || initialValue.getAliasedValue().isPhi();
-
       if (value.isPhi()) {
-        return computePhiState(value.asPhi());
+        // In presence of recursive phis we fall back to computing the state of the phi from the
+        // phi type instead of from its operands.
+        Phi phi = value.asPhi();
+        if (seenPhis.add(phi)) {
+          return computePhiState(phi);
+        }
       }
 
       // If the current value is an argument of the declaring method, then we have no information
@@ -404,10 +406,6 @@ public class ArgumentPropagatorCodeScanner {
     //  same value multiple times.
     // TODO(b/302281503): Canonicalize computed in flow.
     private InFlow computeInFlow(Value value) {
-      if (value != initialValue) {
-        assert initialValue.getAliasedValue().isPhi();
-        return computeBaseInFlow(value);
-      }
       Value valueRoot = value.getAliasedValue(aliasedValueConfiguration);
       if (valueRoot.isArgument()) {
         MethodParameter inParameter =
@@ -479,8 +477,11 @@ public class ArgumentPropagatorCodeScanner {
         return null;
       }
       NonEmptyValueState leftValue = internalGetOrComputeNonReceiverValueState(phi.getOperand(0));
+      if (leftValue.isUnknown() || leftValue.asConcrete().hasNonBaseInFlow()) {
+        return null;
+      }
       NonEmptyValueState rightValue = internalGetOrComputeNonReceiverValueState(phi.getOperand(1));
-      if (leftValue.isUnknown() && rightValue.isUnknown()) {
+      if (rightValue.isUnknown() || rightValue.asConcrete().hasNonBaseInFlow()) {
         return null;
       }
       IfThenElseAbstractFunction result =
@@ -601,7 +602,6 @@ public class ArgumentPropagatorCodeScanner {
     }
 
     private NonEmptyValueState computeInFlowState(Value value) {
-      assert value == initialValue || initialValue.getAliasedValue().isPhi();
       InFlow inFlow = computeInFlow(value);
       if (inFlow != null && !inFlow.isUnknown()) {
         assert inFlow.isBaseInFlow()

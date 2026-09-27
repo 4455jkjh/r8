@@ -40,9 +40,8 @@ public class TypePropagationThroughPhiTest extends TestBase {
               assertEquals(
                   "java.lang.String",
                   mainClass.uniqueMethodWithOriginalName("foo").getParameter(0).getTypeName());
-              // TODO(b/309575527): Should be String.
               assertEquals(
-                  "java.lang.CharSequence",
+                  "java.lang.String",
                   mainClass.uniqueMethodWithOriginalName("bar").getParameter(0).getTypeName());
             });
   }
