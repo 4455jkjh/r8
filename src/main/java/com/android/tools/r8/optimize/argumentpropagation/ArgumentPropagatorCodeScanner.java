@@ -195,47 +195,6 @@ public class ArgumentPropagatorCodeScanner {
     return inFlowComparator;
   }
 
-  // TODO(b/296030319): Allow lookups in the FieldStateCollection using DexField keys to avoid the
-  //  need for definitionFor here.
-  private boolean isFieldValueAlreadyUnknown(DexType staticType, DexField field) {
-    return isFieldValueAlreadyUnknown(staticType, appView.definitionFor(field).asProgramField());
-  }
-
-  private boolean isFieldValueAlreadyUnknown(DexType staticType, ProgramField field) {
-    // Only allow early graph pruning when the two nodes have the same type. If the given field is
-    // unknown, but flows to a field or method parameter with a less precise type, we still want
-    // this type propagation to happen.
-    return fieldStates.get(field).isUnknown()
-        && field.getType().isIdenticalTo(staticType)
-        && !newlyUnknownFieldsInCurrentWave.contains(field);
-  }
-
-  protected boolean isMethodParameterAlreadyUnknown(
-      DexType staticType, MethodParameter methodParameter, ProgramMethod method) {
-    assert methodParameter.getMethod().isIdenticalTo(method.getReference());
-    if (methodParameter.getType().isNotIdenticalTo(staticType)) {
-      // Only allow early graph pruning when the two nodes have the same type. If the given method
-      // parameter is unknown, but flows to a field or method parameter with a less precise type,
-      // we still want this type propagation to happen.
-      return false;
-    }
-    MethodState methodState =
-        methodStates.get(
-            method.getDefinition().belongsToDirectPool() || isMonomorphicVirtualMethod(method)
-                ? method.getReference()
-                : getVirtualRootMethod(method));
-    if (methodState.isPolymorphic()) {
-      methodState = methodState.asPolymorphic().getMethodStateForBounds(DynamicType.unknown());
-    }
-    if (methodState.isMonomorphic()) {
-      ValueState parameterState =
-          methodState.asMonomorphic().getParameterState(methodParameter.getIndex());
-      return parameterState.isUnknown();
-    }
-    assert methodState.isBottom() || methodState.isUnknown();
-    return methodState.isUnknown();
-  }
-
   boolean isMonomorphicVirtualMethod(ProgramMethod method) {
     boolean isMonomorphicVirtualMethod = isMonomorphicVirtualMethod(method.getReference());
     assert method.getDefinition().belongsToVirtualPool() || !isMonomorphicVirtualMethod;
@@ -582,6 +541,47 @@ public class ArgumentPropagatorCodeScanner {
         }
       }
       return inFlow;
+    }
+
+    // TODO(b/296030319): Allow lookups in the FieldStateCollection using DexField keys to avoid the
+    //  need for definitionFor here.
+    private boolean isFieldValueAlreadyUnknown(DexType staticType, DexField field) {
+      return isFieldValueAlreadyUnknown(staticType, appView.definitionFor(field).asProgramField());
+    }
+
+    private boolean isFieldValueAlreadyUnknown(DexType staticType, ProgramField field) {
+      // Only allow early graph pruning when the two nodes have the same type. If the given field is
+      // unknown, but flows to a field or method parameter with a less precise type, we still want
+      // this type propagation to happen.
+      return fieldStates.get(field).isUnknown()
+          && field.getType().isIdenticalTo(staticType)
+          && !newlyUnknownFieldsInCurrentWave.contains(field);
+    }
+
+    protected boolean isMethodParameterAlreadyUnknown(
+        DexType staticType, MethodParameter methodParameter, ProgramMethod method) {
+      assert methodParameter.getMethod().isIdenticalTo(method.getReference());
+      if (methodParameter.getType().isNotIdenticalTo(staticType)) {
+        // Only allow early graph pruning when the two nodes have the same type. If the given method
+        // parameter is unknown, but flows to a field or method parameter with a less precise type,
+        // we still want this type propagation to happen.
+        return false;
+      }
+      MethodState methodState =
+          methodStates.get(
+              method.getDefinition().belongsToDirectPool() || isMonomorphicVirtualMethod(method)
+                  ? method.getReference()
+                  : getVirtualRootMethod(method));
+      if (methodState.isPolymorphic()) {
+        methodState = methodState.asPolymorphic().getMethodStateForBounds(DynamicType.unknown());
+      }
+      if (methodState.isMonomorphic()) {
+        ValueState parameterState =
+            methodState.asMonomorphic().getParameterState(methodParameter.getIndex());
+        return parameterState.isUnknown();
+      }
+      assert methodState.isBottom() || methodState.isUnknown();
+      return methodState.isUnknown();
     }
 
     private NonEmptyValueState computeInFlowState(
