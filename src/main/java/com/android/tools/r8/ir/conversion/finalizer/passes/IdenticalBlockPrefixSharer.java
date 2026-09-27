@@ -14,6 +14,7 @@ import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -40,7 +41,9 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
     boolean hasChanged = false;
     InstructionEquivalence equivalence = new InstructionEquivalence(allocator, code);
     Set<BasicBlock> blocksToBeRemoved = Sets.newIdentityHashSet();
-    for (BasicBlock block : code.blocks) {
+    Iterator<BasicBlock> iterator = code.blocks.descendingIterator();
+    while (iterator.hasNext()) {
+      BasicBlock block = iterator.next();
       hasChanged |=
           shareIdenticalBlockPrefixFromNormalSuccessors(
               block, blocksToBeRemoved, equivalence, allocator);
