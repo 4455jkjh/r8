@@ -24,7 +24,6 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.AliasedValueConfiguration;
-import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
 import com.android.tools.r8.ir.code.FieldGet;
 import com.android.tools.r8.ir.code.FieldPut;
@@ -87,8 +86,6 @@ import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -354,18 +351,19 @@ public class ArgumentPropagatorCodeScanner {
         return ValueState.unknown();
       }
 
+      if (value.isPhi()) {
+        return computePhiState(
+            value.asPhi(),
+            staticType,
+            phiOperandValue ->
+                computeNonReceiverValueState(phiOperandValue, initialValue, target, staticType));
+      }
+
       // If the current value is an argument of the declaring method, then we have no information
       // about its abstract value (yet). Instead of treating this as having an unknown runtime
       // value, we record a flow constraint that specifies that all values that flow into the
       // parameter of the declaring method also flows into the field or parameter being assigned.
-      NonEmptyValueState inFlowState =
-          computeInFlowState(
-              staticType,
-              target,
-              value,
-              initialValue,
-              phiOperandValue ->
-                  computeNonReceiverValueState(phiOperandValue, initialValue, target, staticType));
+      NonEmptyValueState inFlowState = computeInFlowState(staticType, target, value, initialValue);
       if (inFlowState != null) {
         return inFlowState;
       }
@@ -427,11 +425,7 @@ public class ArgumentPropagatorCodeScanner {
     //  same value multiple times.
     // TODO(b/302281503): Canonicalize computed in flow.
     private InFlow computeInFlow(
-        DexType staticType,
-        ProgramMember<?, ?> target,
-        Value value,
-        Value initialValue,
-        Function<Value, NonEmptyValueState> valueStateSupplier) {
+        DexType staticType, ProgramMember<?, ?> target, Value value, Value initialValue) {
       if (value != initialValue) {
         assert initialValue.getAliasedValue().isPhi();
         return computeBaseInFlow(staticType, value);
@@ -457,9 +451,6 @@ public class ArgumentPropagatorCodeScanner {
           }
         }
         return castBaseInFlow(widenBaseInFlow(staticType, fieldValueFactory.create(field)), value);
-      } else if (value.isPhi()) {
-        // TODO(b/302281503): Replace IfThenElseAbstractFunction by ComputationTreeNode (?).
-        return computeIfThenElseAbstractFunction(value.asPhi(), valueStateSupplier);
       } else if (target != null && appView.getComposeReferences().isComposable(target)) {
         if (composableComputationTreeBuilder == null) {
           composableComputationTreeBuilder =
@@ -477,6 +468,15 @@ public class ArgumentPropagatorCodeScanner {
           recordComputationTreePosition(node, value);
           return node;
         }
+      }
+      return null;
+    }
+
+    private NonEmptyValueState computeIfThenElseAbstractFunctionState(
+        Phi phi, DexType staticType, Function<Value, NonEmptyValueState> valueStateSupplier) {
+      IfThenElseAbstractFunction fn = computeIfThenElseAbstractFunction(phi, valueStateSupplier);
+      if (fn != null) {
+        return ConcreteValueState.create(staticType, fn);
       }
       return null;
     }
@@ -585,61 +585,49 @@ public class ArgumentPropagatorCodeScanner {
     }
 
     private NonEmptyValueState computeInFlowState(
-        DexType staticType,
-        ProgramMember<?, ?> target,
-        Value value,
-        Value initialValue,
-        Function<Value, NonEmptyValueState> valueStateSupplier) {
+        DexType staticType, ProgramMember<?, ?> target, Value value, Value initialValue) {
       assert value == initialValue || initialValue.getAliasedValue().isPhi();
-      InFlow inFlow = computeInFlow(staticType, target, value, initialValue, valueStateSupplier);
+      InFlow inFlow = computeInFlow(staticType, target, value, initialValue);
       if (inFlow != null && !inFlow.isUnknown()) {
         assert inFlow.isBaseInFlow()
             || inFlow.isAbstractComputation()
             || inFlow.isCastAbstractFunction()
-            || inFlow.isIfThenElseAbstractFunction()
             || inFlow.isInstanceFieldReadAbstractFunction();
         return ConcreteValueState.create(staticType, inFlow);
-      }
-      if (value.isPhi()) {
-        return computePhiState(value.asPhi(), staticType, valueStateSupplier);
       }
       return null;
     }
 
     private NonEmptyValueState computePhiState(
         Phi phi, DexType staticType, Function<Value, NonEmptyValueState> valueStateSupplier) {
+      // TODO(b/302281503): Replace IfThenElseAbstractFunction by ComputationTreeNode (?).
+      NonEmptyValueState fnState =
+          computeIfThenElseAbstractFunctionState(phi, staticType, valueStateSupplier);
+      if (fnState != null) {
+        return fnState;
+      }
+
       // TODO(b/302281503): Consider extending this to include field edges as well.
-      Set<Argument> arguments = Sets.newIdentityHashSet();
-      Set<Value> nonArguments = Sets.newIdentityHashSet();
+      List<Value> operands = new ArrayList<>();
       WorkList.newIdentityWorkList(phi)
           .process(
               (currentPhi, worklist) -> {
                 for (Value operand : currentPhi.getOperands()) {
                   if (operand.isPhi()) {
                     worklist.addIfNotSeen(operand.asPhi());
-                  } else if (operand.isArgument()) {
-                    arguments.add(operand.getDefinition().asArgument());
                   } else {
-                    nonArguments.add(operand);
+                    operands.add(operand);
                   }
                 }
               });
-      if (arguments.isEmpty()) {
-        return null;
-      }
-      Set<InFlow> inFlow = new HashSet<>(arguments.size());
-      for (Argument argument : arguments) {
-        inFlow.add(methodParameterFactory.create(context, argument.getIndex()));
-      }
-      NonEmptyValueState state = ConcreteValueState.create(staticType, inFlow);
-      List<Value> sortedNonArguments =
-          ListUtils.sort(nonArguments, Comparator.comparingInt(Value::getNumber));
-      for (Value nonArgument : sortedNonArguments) {
+      NonEmptyValueState state = valueStateSupplier.apply(operands.get(0));
+      for (int i = 1; i < operands.size(); i++) {
+        Value operand = operands.get(i);
         state =
             state.mutableJoin(
                 appView,
                 appView.getDefaultAbstractValueJoiner(),
-                valueStateSupplier.apply(nonArgument),
+                valueStateSupplier.apply(operand),
                 null,
                 staticType,
                 StateCloner.getIdentity());
