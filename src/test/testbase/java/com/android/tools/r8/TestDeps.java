@@ -46,6 +46,7 @@ public class TestDeps {
     dependencies.put("GSON", null);
     dependencies.put("GUAVA_JRE", null);
     dependencies.put("JACOCO", null);
+    dependencies.put("JAVA_BASE_EXTENSION", null);
     dependencies.put("JDWP_TESTS", null);
     dependencies.put("JSR223", null);
     dependencies.put("MULTIDEX", null);
@@ -87,6 +88,10 @@ public class TestDeps {
 
   public static Path getJacocoCliJar() {
     return getDependencyPath("JACOCO", "lib", "jacococli.jar");
+  }
+
+  public static Path getJavaBaseExtensionJar() {
+    return getDependency("JAVA_BASE_EXTENSION");
   }
 
   public static Path getJsr223RiJar() {
