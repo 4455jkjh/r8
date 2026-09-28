@@ -63,6 +63,7 @@ import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeMethods;
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.kotlin.KotlinMetadataUtils;
 import com.android.tools.r8.naming.IdentifierMinifier;
@@ -215,8 +216,7 @@ public class R8 {
         command.getReporter(), () -> runInternal(app, options, executor));
   }
 
-  static void writeApplication(
-      AppView<?> appView, AndroidApp inputApp, ExecutorService executorService, Timing timing)
+  static void writeApplication(AppView<?> appView, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     InternalOptions options = appView.options();
     InspectorImpl.runInspections(options.outputInspections, appView.appInfo().classes());
@@ -225,9 +225,9 @@ public class R8 {
       assert marker != null;
       if (options.isGeneratingClassFiles()) {
         new CfApplicationWriter(appView, marker)
-            .write(options.getClassFileConsumer(), executorService, timing, inputApp);
+            .write(options.getClassFileConsumer(), executorService, timing);
       } else {
-        ApplicationWriter.create(appView, marker).write(executorService, timing, inputApp);
+        ApplicationWriter.create(appView, marker).write(executorService, timing);
       }
     } catch (IOException e) {
       throw new RuntimeException("Cannot write application", e);
@@ -423,6 +423,9 @@ public class R8 {
             options.reporter, options.proguardSeedsConsumer, bytes.toString());
         ExceptionUtils.withFinishedResourceHandler(options.reporter, options.proguardSeedsConsumer);
       }
+
+      appView.setKotlinInlineMethodMap(
+          KotlinInlineMethodMap.createForR8(appViewWithLiveness, executorService, timing));
 
       if (options.isShrinking()) {
         // Mark dead proto extensions fields as neither being read nor written. This step must
@@ -953,7 +956,7 @@ public class R8 {
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
-      writeApplication(appView, inputApp, executorService, timing);
+      writeApplication(appView, executorService, timing);
       ResourceWriter.legacyWriteResources(appView, dexFileContent);
 
       assert appView.getDontWarnConfiguration().validate(options);

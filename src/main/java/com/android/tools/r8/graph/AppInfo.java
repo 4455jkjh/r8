@@ -212,6 +212,10 @@ public class AppInfo implements DexDefinitionSupplier {
         .toSingleClassWithProgramOverLibrary();
   }
 
+  public final DexProgramClass definitionForProgramTypeWithoutExistenceAssert(DexType type) {
+    return DexProgramClass.asProgramClassOrNull(definitionForWithoutExistenceAssert(type));
+  }
+
   public final boolean hasDefinitionForWithoutExistenceAssert(DexType type) {
     return definitionForWithoutExistenceAssert(type) != null;
   }

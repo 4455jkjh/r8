@@ -144,11 +144,11 @@ public class GlobalSyntheticsGenerator {
               assert GlobalSyntheticsGeneratorVerifier.verifyExpectedClassesArePresent(appView);
               if (options.isGeneratingDex()) {
                 ApplicationWriter.create(appView, options.getMarker())
-                    .write(executorService, timing, app);
+                    .write(executorService, timing);
               } else {
                 assert options.isGeneratingClassFiles();
                 new CfApplicationWriter(appView, options.getMarker())
-                    .write(options.getClassFileConsumer(), executorService, timing, app);
+                    .write(options.getClassFileConsumer(), executorService, timing);
               }
             } catch (ExecutionException e) {
               throw unwrapExecutionException(e);
