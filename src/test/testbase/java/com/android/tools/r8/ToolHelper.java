@@ -209,12 +209,10 @@ public class ToolHelper {
   public static final String EXAMPLES_ANDROID_O_DIR = TESTS_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_DIR = TESTS_DIR + "examplesAndroidP/";
   public static final String EXAMPLES_BUILD_DIR = THIRD_PARTY_DIR + "examples/";
-  public static final String EXAMPLES_CF_DIR = EXAMPLES_BUILD_DIR + "classes/";
   public static final String EXAMPLES_ANDROID_N_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidN/";
   public static final String EXAMPLES_ANDROID_O_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidP/";
   public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
-  public static final String KEEP_RADIUS_PROTO_DIR = getProjectRoot() + "src/keepradius/proto/";
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";
   public static final String KEEP_RADIUS_WEB_DIR = getProjectRoot() + "src/keepradius/web/";
 
@@ -222,9 +220,6 @@ public class ToolHelper {
       Paths.get(THIRD_PARTY_DIR).resolve("r8").resolve("r8_with_deps_17.jar");
 
   public static final String R8_TEST_BUCKET = "r8-test-results";
-
-  public static final String ASM_JAR = BUILD_DIR + "deps/asm-9.10.1.jar";
-  public static final String ASM_UTIL_JAR = BUILD_DIR + "deps/asm-util-9.10.1.jar";
 
   public static final String LINE_SEPARATOR = StringUtils.LINE_SEPARATOR;
   public static final String CLASSPATH_SEPARATOR = File.pathSeparator;

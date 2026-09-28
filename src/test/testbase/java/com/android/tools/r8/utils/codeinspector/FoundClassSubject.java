@@ -51,6 +51,9 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector.MappingWrapper;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Sets;
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +63,9 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import kotlin.metadata.jvm.KotlinClassMetadata;
 import org.junit.rules.TemporaryFolder;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.util.ASMifier;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 public class FoundClassSubject extends ClassSubject {
 
@@ -681,20 +687,15 @@ public class FoundClassSubject extends ClassSubject {
       ZipUtils.unzip(directory, tempOut);
       directory = tempOut.getAbsolutePath();
     }
-    List<String> command = new ArrayList<>();
-    command.add(
-        CfRuntime.getCheckedInJdk9().getJavaHome().resolve("bin").resolve("java").toString());
-    command.add("-cp");
-    command.add(ToolHelper.ASM_JAR + ":" + ToolHelper.ASM_UTIL_JAR);
-    command.add("org.objectweb.asm.util.ASMifier");
-    if (!debug) {
-      command.add("-debug");
-    }
-    command.add(Paths.get(directory, fileName).toString());
-    ProcessResult processResult = ToolHelper.runProcess(new ProcessBuilder(command));
-    assert processResult.exitCode == 0;
-    System.out.println(processResult.stdout);
-    return processResult.stdout;
+    byte[] bytes = Files.readAllBytes(Paths.get(directory, fileName));
+    StringWriter stringWriter = new StringWriter();
+    new ClassReader(bytes)
+        .accept(
+            new TraceClassVisitor(null, new ASMifier(), new PrintWriter(stringWriter)),
+            debug ? 0 : ClassReader.SKIP_DEBUG);
+    String stdout = stringWriter.toString();
+    System.out.println(stdout);
+    return stdout;
   }
 
   public MemberNaming getMethodMappingInfo(DexEncodedMethod dexMethod) {
