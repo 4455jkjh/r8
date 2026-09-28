@@ -52,6 +52,7 @@ CQ_RUNTIMES = [
         'dex-4.0.4'
     ]
 ]
+DRY_RUN_RUNTIMES = ['dex-default', 'jdk11', 'none']
 
 
 def ParseOptions():
@@ -207,7 +208,7 @@ def ParseOptions():
         default=None,
         help='Test parameter runtimes to use, separated by : (eg, none:jdk9).'
         ' Special values include: all (for all runtimes), CQ (for CQ runtimes),'
-        ' and empty (for no runtimes).')
+        ' dry-run (for dry-run runtimes), and empty (for no runtimes).')
     result.add_argument('--print-hanging-stacks',
                         '--print_hanging_stacks',
                         default=-1,
@@ -630,6 +631,8 @@ def test(options, args):
             pass
         elif options.runtimes == 'CQ':
             gradle_args.append('-Pruntimes=%s' % ':'.join(CQ_RUNTIMES))
+        elif options.runtimes == 'dry-run':
+            gradle_args.append('-Pruntimes=%s' % ':'.join(DRY_RUN_RUNTIMES))
         else:
             prefixes = [
                 prefix.strip() for prefix in options.runtimes.split(':')
@@ -639,7 +642,7 @@ def test(options, args):
                 matches = [rt for rt in VALID_RUNTIMES if rt.startswith(prefix)]
                 if len(matches) == 0:
                     print("Invalid runtime prefix '%s'." % prefix)
-                    print("Must be just 'all', 'CQ', 'empty'," \
+                    print("Must be just 'all', 'CQ', 'dry-run', 'empty'," \
                           " or a prefix of %s" % ', '.join(VALID_RUNTIMES))
                     sys.exit(1)
                 runtimes.extend(matches)

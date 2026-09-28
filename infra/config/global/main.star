@@ -567,6 +567,14 @@ r8_tester_with_default(
 )
 
 r8_tester_with_default(
+    "linux-dry-run",
+    ["--runtimes=dry-run", "--all_tests", "--command_cache_dir=.ccache"],
+    bucket = "try",
+    trigger = False,
+    dimensions = get_dimensions(tester = True),
+)
+
+r8_tester_with_default(
     "presubmit",
     [],
     bucket = "try",
@@ -579,9 +587,29 @@ r8_tester_with_default(
     },
 )
 
+r8_tester_with_default(
+    "presubmit-dry-run",
+    [],
+    bucket = "try",
+    trigger = False,
+    dimensions = get_dimensions(coordinator = True),
+    execution_timeout = 12 * time.hour,
+    extra_properties = {
+        "testers": ["linux-dry-run", "linux-perf-size"],
+        "shard_count": 20,
+    },
+)
+
 luci.cq_tryjob_verifier(
     builder = "try/presubmit",
     cq_group = "main-cq",
+    mode_allowlist = [cq.MODE_FULL_RUN],
+)
+
+luci.cq_tryjob_verifier(
+    builder = "try/presubmit-dry-run",
+    cq_group = "main-cq",
+    mode_allowlist = [cq.MODE_DRY_RUN],
 )
 
 r8_tester_with_default(
