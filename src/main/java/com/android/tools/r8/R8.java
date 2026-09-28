@@ -75,6 +75,7 @@ import com.android.tools.r8.optimize.MemberRebindingAnalysis;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLensFactory;
 import com.android.tools.r8.optimize.accessmodification.AccessModifier;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.VirtualRootMethodsAnalysis;
 import com.android.tools.r8.optimize.bridgehoisting.BridgeHoisting;
 import com.android.tools.r8.optimize.fields.FieldFinalizer;
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
@@ -854,6 +855,9 @@ public class R8 {
             new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
           }
         }
+
+        VirtualRootMethodsAnalysis.promoteClassesAndMethodsToFinal(
+            appView, executorService, timing);
 
         // Perform minification.
         if (options.getProguardConfiguration().hasApplyMappingFile()) {

@@ -54,6 +54,9 @@ public class FinalizeSubclassTest extends TestBase {
 
               ClassSubject cClassSubject = inspector.clazz(C.class);
               assertThat(cClassSubject, allOf(isPresent(), isFinal()));
+
+              ClassSubject dClassSubject = inspector.clazz(D.class);
+              assertThat(dClassSubject, not(isPresent()));
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("A.m()", "B.m()", "C.m()");
@@ -65,6 +68,13 @@ public class FinalizeSubclassTest extends TestBase {
       new A().m();
       new B().m();
       new C().m();
+      if (alwaysFalse()) {
+        new D().m();
+      }
+    }
+
+    static boolean alwaysFalse() {
+      return false;
     }
   }
 
@@ -88,13 +98,23 @@ public class FinalizeSubclassTest extends TestBase {
     }
   }
 
-  // Should become final.
+  // Should become final after D is pruned in the second round of tree shaking.
   @NeverClassInline
+  @NoVerticalClassMerging
   static class C extends B {
 
     @NeverInline
     void m() {
       System.out.println("C.m()");
+    }
+  }
+
+  @NeverClassInline
+  static class D extends C {
+
+    @NeverInline
+    void m() {
+      System.out.println("D.m()");
     }
   }
 }
