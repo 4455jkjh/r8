@@ -24,6 +24,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.finalizer.IRFinalizer;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.info.bridge.BridgeAnalyzer;
@@ -93,11 +94,11 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
   private void internalRun(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     Collection<Group> groups = createInitialGroups(appView);
-    ProfileCollectionAdditions profileCollectionAdditions =
-        ProfileCollectionAdditions.create(appView);
-    groups = refineGroups(groups, profileCollectionAdditions);
+    groups = refineGroups(groups);
     if (!groups.isEmpty()) {
-      rewriteApplication(groups);
+      ProfileCollectionAdditions profileCollectionAdditions =
+          ProfileCollectionAdditions.create(appView);
+      rewriteApplication(groups, profileCollectionAdditions);
       commitPendingSyntheticClasses(timing);
       updateArtProfiles(groups, profileCollectionAdditions);
       new BridgeHoisting(appView).run(executorService, timing);
@@ -121,11 +122,10 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     return groups.values();
   }
 
-  private Collection<Group> refineGroups(
-      Collection<Group> groups, ProfileCollectionAdditions profileCollectionAdditions) {
+  private Collection<Group> refineGroups(Collection<Group> groups) {
     Collection<Group> newGroups = new ArrayList<>();
     for (Group group : groups) {
-      Iterables.addAll(newGroups, refineGroup(group, profileCollectionAdditions));
+      Iterables.addAll(newGroups, refineGroup(group));
     }
     return newGroups;
   }
@@ -139,12 +139,10 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
    * subset of the bridges can be shared and there are no bridges with the same signature that have
    * different behavior).
    */
-  private Iterable<Group> refineGroup(
-      Group group, ProfileCollectionAdditions profileCollectionAdditions) {
+  private Iterable<Group> refineGroup(Group group) {
     List<Group> newGroups = new ArrayList<>();
     for (DexProgramClass clazz : group) {
-      BridgeSpecification bridgeSpecification =
-          getBridgeSpecification(clazz, profileCollectionAdditions);
+      BridgeSpecification bridgeSpecification = getBridgeSpecification(clazz);
       if (bridgeSpecification.isEmpty()) {
         continue;
       }
@@ -160,10 +158,8 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
   }
 
   // TODO(b/309575527): Avoid building IR for all methods.
-  private BridgeSpecification getBridgeSpecification(
-      DexProgramClass clazz, ProfileCollectionAdditions profileCollectionAdditions) {
+  private BridgeSpecification getBridgeSpecification(DexProgramClass clazz) {
     BridgeSpecification bridgeSpecification = new BridgeSpecification();
-    List<DexEncodedMethod> pendingMethods = new ArrayList<>();
     clazz.forEachProgramVirtualMethodMatching(
         DexEncodedMethod::hasCode,
         method -> {
@@ -172,7 +168,7 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
             return;
           }
 
-          IRCode code = method.buildIR(appView);
+          IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
           BridgeInfo bridgeInfo =
               BridgeAnalyzer.analyzeMethod(appView, method.getDefinition(), code);
           if (bridgeInfo == null
@@ -180,14 +176,14 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
             return;
           }
           if (bridgeInfo.isStaticBridgeExcludingReceiverInfo()) {
-            tryMaterializeSpecializedOverloadOnLambdaClass(
-                clazz,
-                method,
-                code,
-                bridgeInfo.asStaticBridgeExcludingReceiverInfo(),
-                bridgeSpecification,
-                pendingMethods,
-                profileCollectionAdditions);
+            StaticBridgeExcludingReceiverInfo staticBridgeInfo =
+                bridgeInfo.asStaticBridgeExcludingReceiverInfo();
+            DexMethod bridgeMethodReference =
+                getSpecializedMethodReferenceForLambdaClass(clazz, method, staticBridgeInfo);
+            if (bridgeMethodReference != null) {
+              bridgeSpecification.addBridge(method, bridgeMethodReference.getSignature());
+              getSimpleFeedback().setBridgeInfo(method, staticBridgeInfo);
+            }
           } else if (bridgeInfo.isVirtualBridgeInfo()) {
             VirtualBridgeInfo virtualBridgeInfo = bridgeInfo.asVirtualBridgeInfo();
             boolean isInvokedMethodPresentOnSuper =
@@ -204,34 +200,15 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
             getSimpleFeedback().setBridgeInfo(method, virtualBridgeInfo);
           }
         });
-
-    // Commit the synthesized methods, if any.
-    clazz.addVirtualMethods(pendingMethods);
-
     return bridgeSpecification;
   }
 
-  /**
-   * For a lambda class with a main method `Object apply(Object)` that targets a static javac
-   * synthetic method `Integer lambda$0(Integer)`, try to:
-   *
-   * <p>1. Insert a `Integer apply(Integer)` method that calls the `Integer lambda$0(Integer)`
-   * method.
-   *
-   * <p>2. Update the `Object apply(Object)` method to call the newly added overload.
-   */
-  private void tryMaterializeSpecializedOverloadOnLambdaClass(
-      DexProgramClass clazz,
-      ProgramMethod method,
-      IRCode code,
-      StaticBridgeExcludingReceiverInfo bridgeInfo,
-      BridgeSpecification bridgeSpecification,
-      List<DexEncodedMethod> pendingMethods,
-      ProfileCollectionAdditions profileCollectionAdditions) {
+  private DexMethod getSpecializedMethodReferenceForLambdaClass(
+      DexProgramClass clazz, ProgramMethod method, StaticBridgeExcludingReceiverInfo bridgeInfo) {
     SyntheticItems syntheticItems = appView.getSyntheticItems();
     if (!syntheticItems.isSynthetic(clazz)
         || !syntheticItems.hasKindThatMatches(clazz, (kind, n) -> kind.equals(n.LAMBDA))) {
-      return;
+      return null;
     }
 
     // For a lambda main method such as `Object apply(Object)` that targets a method
@@ -257,12 +234,54 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     MethodResolutionResult resolutionResult =
         appView.appInfo().resolveMethodOn(clazz, bridgeMethodReference);
     if (resolutionResult.isSingleResolution()) {
-      return;
+      return null;
     }
+    return bridgeMethodReference;
+  }
 
+  private void materializeSpecializedOverloadsOnLambdaClass(
+      DexProgramClass clazz,
+      BridgeSpecification bridgeSpecification,
+      ProfileCollectionAdditions profileCollectionAdditions) {
+    List<DexEncodedMethod> pendingMethods = new ArrayList<>();
+    bridgeSpecification.forEach(
+        (bridge, target) -> {
+          ProgramMethod method = clazz.lookupProgramMethod(bridge.withHolder(clazz, factory));
+          if (method == null) {
+            return;
+          }
+          BridgeInfo bridgeInfo = method.getOptimizationInfo().getBridgeInfo();
+          if (bridgeInfo == null || !bridgeInfo.isStaticBridgeExcludingReceiverInfo()) {
+            return;
+          }
+          materializeSpecializedOverloadOnLambdaClass(
+              clazz,
+              method,
+              bridgeInfo.asStaticBridgeExcludingReceiverInfo(),
+              target.withHolder(clazz, factory),
+              pendingMethods,
+              profileCollectionAdditions);
+        });
+    clazz.addVirtualMethods(pendingMethods);
+  }
+
+  /**
+   * For a lambda class with a main method `Object apply(Object)` that targets a static javac
+   * synthetic method `Integer lambda$0(Integer)`:
+   *
+   * <p>1. Insert a `Integer apply(Integer)` method that calls the `Integer lambda$0(Integer)`
+   * method.
+   *
+   * <p>2. Update the `Object apply(Object)` method to call the newly added overload.
+   */
+  private void materializeSpecializedOverloadOnLambdaClass(
+      DexProgramClass clazz,
+      ProgramMethod method,
+      StaticBridgeExcludingReceiverInfo bridgeInfo,
+      DexMethod bridgeMethodReference,
+      List<DexEncodedMethod> pendingMethods,
+      ProfileCollectionAdditions profileCollectionAdditions) {
     // Synthesize a bridge method on the lambda class with the target signature.
-    // TODO(b/309575527): Consider only materializing this method later if this actually leads to
-    //  any sharing.
     DexEncodedMethod bridgeMethod =
         method
             .getDefinition()
@@ -275,6 +294,8 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
         bridgeMethod.asProgramMethod(clazz), method);
 
     // Update the current method to call the bridge instead.
+    DexMethod bridgeTarget = bridgeInfo.getInvokedMethod();
+    IRCode code = method.buildIR(appView);
     InvokeStatic invoke =
         code.<InvokeStatic>instructions(
                 i ->
@@ -306,7 +327,6 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
 
     // Now the lambda main method is a virtual bridge to the newly synthesized method on the lambda.
     VirtualBridgeInfo virtualBridgeInfo = new VirtualBridgeInfo(bridgeMethodReference);
-    bridgeSpecification.addBridge(method, virtualBridgeInfo);
     getSimpleFeedback().setBridgeInfo(method, virtualBridgeInfo);
   }
 
@@ -325,7 +345,8 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     return null;
   }
 
-  private void rewriteApplication(Collection<Group> groups) {
+  private void rewriteApplication(
+      Collection<Group> groups, ProfileCollectionAdditions profileCollectionAdditions) {
     MainThreadContext mainThreadContext =
         appView.createProcessorContext().createMainThreadContext();
     for (Group group : groups) {
@@ -368,6 +389,8 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
 
       // Fixup class hierarchy.
       for (DexProgramClass clazz : group) {
+        materializeSpecializedOverloadsOnLambdaClass(
+            clazz, group.getBridgeSpecification(), profileCollectionAdditions);
         clazz.setSuperType(syntheticSuperclass.getType());
         clazz.setInterfaces(clazz.getInterfaces().removeIf(interfaces::contains));
       }
@@ -472,7 +495,11 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
         DexMethodSignatureMap.create();
 
     void addBridge(ProgramMethod method, VirtualBridgeInfo bridgeInfo) {
-      bridges.put(method, bridgeInfo.getInvokedMethod().getSignature());
+      addBridge(method, bridgeInfo.getInvokedMethod().getSignature());
+    }
+
+    void addBridge(ProgramMethod method, DexMethodSignature target) {
+      bridges.put(method, target);
     }
 
     boolean containsBridgeWithTarget(DexMethodSignature method, DexMethodSignature target) {
