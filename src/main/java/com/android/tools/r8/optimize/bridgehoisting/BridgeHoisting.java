@@ -342,12 +342,20 @@ public class BridgeHoisting {
       ProgramMethod representative, DexMethod methodToInvoke) {
     LirCode<Integer> code = representative.getDefinition().getCode().asLirCode();
     return code.newCodeWithRewrittenConstantPool(
-        item -> {
-          if (item instanceof DexMethod) {
-            assert methodToInvoke.match((DexMethod) item);
-            return methodToInvoke;
+        constant -> {
+          // Only rewrite the bridge target method reference. The constant pool may also contain
+          // primitive boxing/unboxing methods (e.g., Integer.valueOf, Integer.intValue), which
+          // must not be rewritten.
+          if (constant instanceof DexMethod) {
+            DexMethod methodConstant = (DexMethod) constant;
+            if (appView.dexItemFactory().unboxPrimitiveMethods.contains(methodConstant)) {
+              return methodConstant;
+            } else {
+              assert methodToInvoke.match(methodConstant);
+              return methodToInvoke;
+            }
           }
-          return item;
+          return constant;
         });
   }
 
