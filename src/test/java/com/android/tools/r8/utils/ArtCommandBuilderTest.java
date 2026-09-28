@@ -4,11 +4,14 @@
 package com.android.tools.r8.utils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Kind;
+import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -132,5 +135,38 @@ public class ArtCommandBuilderTest {
           SCRIPT + ToolHelper.getArtBinary(version) + FORK_JOIN_PARALLELISM + " Test hello world",
           builder.build());
     }
+  }
+
+  @Test
+  public void testProcessTimeout() {
+    Assume.assumeTrue(ToolHelper.isLinux());
+    ProcessBuilder wrapperBuilder =
+        new ProcessBuilder("/bin/bash", "-c", "echo out-msg; echo err-msg >&2; sleep 60 & wait");
+    RuntimeException wrapperException =
+        assertThrows(
+            RuntimeException.class,
+            () -> ToolHelper.runProcess(wrapperBuilder, System.out, 200, TimeUnit.MILLISECONDS));
+    assertTrue(
+        wrapperException.getMessage(),
+        wrapperException.getMessage().contains("Process timed out after 200 milliseconds"));
+    assertTrue(
+        wrapperException.getMessage(), wrapperException.getMessage().contains("STDOUT:\nout-msg"));
+    assertTrue(
+        wrapperException.getMessage(), wrapperException.getMessage().contains("STDERR:\nerr-msg"));
+
+    ProcessBuilder directBuilder =
+        new ProcessBuilder(
+            "/bin/bash", "-c", "echo direct-out; echo direct-err >&2; exec sleep 60");
+    RuntimeException directException =
+        assertThrows(
+            RuntimeException.class,
+            () -> ToolHelper.runProcess(directBuilder, System.out, 200, TimeUnit.MILLISECONDS));
+    assertTrue(
+        directException.getMessage(),
+        directException.getMessage().contains("Process timed out after 200 milliseconds"));
+    assertTrue(
+        directException.getMessage(), directException.getMessage().contains("STDOUT:\ndirect-out"));
+    assertTrue(
+        directException.getMessage(), directException.getMessage().contains("STDERR:\ndirect-err"));
   }
 }

@@ -60,7 +60,6 @@ import com.google.common.collect.Lists;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileReader;
@@ -69,6 +68,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -94,6 +94,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -955,24 +956,34 @@ public class ToolHelper {
 
   private static class StreamReader implements Runnable {
 
-    private InputStream stream;
-    private String result;
+    private final InputStream stream;
+    private final StringBuilder result = new StringBuilder();
 
     public StreamReader(InputStream stream) {
       this.stream = stream;
     }
 
-    public String getResult() {
-      return result;
+    public synchronized String getResult() {
+      return result.toString();
     }
 
     @Override
     public void run() {
-      try {
-        result = CharStreams.toString(new InputStreamReader(stream, StandardCharsets.UTF_8));
-        stream.close();
+      try (Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+        char[] buffer = new char[8192];
+        int read;
+        while ((read = reader.read(buffer)) != -1) {
+          synchronized (this) {
+            result.append(buffer, 0, read);
+          }
+        }
       } catch (IOException e) {
-        result = "Failed reading result for stream " + stream;
+        synchronized (this) {
+          if (result.length() > 0) {
+            result.append('\n');
+          }
+          result.append("Failed reading result for stream ").append(stream);
+        }
       }
     }
   }
@@ -2493,6 +2504,8 @@ public class ToolHelper {
     }
   }
 
+  private static final long ART_PROCESS_TIMEOUT_MINUTES = 10;
+
   private static ProcessResult runArtProcessRaw(ArtCommandBuilder builder) throws IOException {
     Assume.assumeTrue(artSupported() || dealsWithGoldenFiles());
     ProcessResult cachedResult = builder.getCachedResults();
@@ -2507,7 +2520,12 @@ public class ToolHelper {
         throw new RuntimeException(e);
       }
     } else {
-      result = runProcess(builder.asProcessBuilder());
+      result =
+          runProcess(
+              builder.asProcessBuilder(),
+              System.out,
+              ART_PROCESS_TIMEOUT_MINUTES,
+              TimeUnit.MINUTES);
     }
     builder.cacheResult(result);
     return result;
@@ -2834,6 +2852,11 @@ public class ToolHelper {
 
   public static ProcessResult runProcess(ProcessBuilder builder, PrintStream out)
       throws IOException {
+    return runProcess(builder, out, -1, null);
+  }
+
+  public static ProcessResult runProcess(
+      ProcessBuilder builder, PrintStream out, long timeout, TimeUnit unit) throws IOException {
     boolean printCwd = builder.directory() != null;
     if (printCwd) {
       out.println("(cd " + builder.directory() + "; ");
@@ -2843,10 +2866,15 @@ public class ToolHelper {
     if (printCwd) {
       out.println(")");
     }
-    return drainProcessOutputStreams(builder.start(), command);
+    return drainProcessOutputStreams(builder.start(), command, timeout, unit);
   }
 
   public static ProcessResult drainProcessOutputStreams(Process process, String command) {
+    return drainProcessOutputStreams(process, command, -1, null);
+  }
+
+  public static ProcessResult drainProcessOutputStreams(
+      Process process, String command, long timeout, TimeUnit unit) {
     // Drain stdout and stderr so that the process does not block. Read stdout and stderr
     // in parallel to make sure that neither buffer can get filled up which will cause the
     // C program to block in a call to write.
@@ -2857,7 +2885,26 @@ public class ToolHelper {
     stdoutThread.start();
     stderrThread.start();
     try {
-      process.waitFor();
+      if (timeout > 0 && unit != null) {
+        if (!process.waitFor(timeout, unit)) {
+          destroyProcess(process);
+          stdoutThread.join(TimeUnit.SECONDS.toMillis(5));
+          stderrThread.join(TimeUnit.SECONDS.toMillis(5));
+          throw new RuntimeException(
+              "Process timed out after "
+                  + timeout
+                  + " "
+                  + StringUtils.toLowerCase(unit.name())
+                  + ": "
+                  + command
+                  + "\nSTDOUT:\n"
+                  + stdoutReader.getResult()
+                  + "\nSTDERR:\n"
+                  + stderrReader.getResult());
+        }
+      } else {
+        process.waitFor();
+      }
       stdoutThread.join();
       stderrThread.join();
     } catch (InterruptedException e) {
@@ -2865,6 +2912,19 @@ public class ToolHelper {
     }
     return new ProcessResult(
         process.exitValue(), stdoutReader.getResult(), stderrReader.getResult(), command);
+  }
+
+  private static void destroyProcess(Process process) throws InterruptedException {
+    List<ProcessHandle> descendants = process.descendants().collect(Collectors.toList());
+    if (!descendants.isEmpty()) {
+      descendants.forEach(ProcessHandle::destroyForcibly);
+      if (process.waitFor(5, TimeUnit.SECONDS)) {
+        return;
+      }
+    }
+    process.destroyForcibly();
+    process.waitFor(5, TimeUnit.SECONDS);
+    process.descendants().forEach(ProcessHandle::destroyForcibly);
   }
 
   public static R8Command.Builder addProguardConfigurationConsumer(
