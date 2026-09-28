@@ -39,7 +39,6 @@ import com.android.tools.r8.ir.optimize.library.LibraryMemberOptimizer;
 import com.android.tools.r8.ir.optimize.library.LibraryMethodSideEffectModelCollection;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutliner;
 import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
-import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.SeedMapper;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
@@ -160,7 +159,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private Set<DexMethod> cfByteCodePassThrough = ImmutableSet.of();
   private final Map<DexType, DexValueString> sourceDebugExtensions = new IdentityHashMap<>();
   private final Map<DexType, String> sourceFileForPrunedTypes = new IdentityHashMap<>();
-  private KotlinInlineMethodMap kotlinInlineMethodMap = null;
 
   // Types.
   private TypeElementFactory typeElementFactory = new TypeElementFactory();
@@ -519,14 +517,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
 
   public DexValueString getSourceDebugExtensionForType(DexClass clazz) {
     return sourceDebugExtensions.get(clazz.type);
-  }
-
-  public KotlinInlineMethodMap getKotlinInlineMethodMap() {
-    return kotlinInlineMethodMap;
-  }
-
-  public void setKotlinInlineMethodMap(KotlinInlineMethodMap kotlinInlineMethodMap) {
-    this.kotlinInlineMethodMap = kotlinInlineMethodMap;
   }
 
   @Override

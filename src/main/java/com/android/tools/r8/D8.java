@@ -35,7 +35,6 @@ import com.android.tools.r8.ir.optimize.AssertionsRewriter;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
-import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.RecordRewritingNamingLens;
@@ -256,8 +255,6 @@ public final class D8 {
       if (options.testing.enableD8MetaInfServicesPassThrough) {
         appView.setAppServices(AppServices.builder(appView).build());
       }
-      appView.setKotlinInlineMethodMap(
-          KotlinInlineMethodMap.createForD8(appView, executor, timing));
       timing.end();
       new PrimaryD8L8IRConverter(appView, timing).convert(appView, executor);
       timing.begin("Post conversion");
@@ -334,7 +331,7 @@ public final class D8 {
       timing.end(); // post-converter
 
       reportSyntheticInformation(appView);
-      writeApplication(appView, marker, executor, timing);
+      writeApplication(appView, inputApp, marker, executor, timing);
 
       options.printWarnings();
     } catch (ExecutionException e) {
@@ -400,6 +397,7 @@ public final class D8 {
 
   private static void writeApplication(
       AppView<AppInfo> appView,
+      AndroidApp inputApp,
       Marker marker,
       ExecutorService executor,
       Timing timing)
@@ -409,9 +407,9 @@ public final class D8 {
       new R8PartialApplicationWriter(appView).write(executor);
     } else if (options.isGeneratingClassFiles()) {
       new CfApplicationWriter(appView, marker)
-          .write(options.getClassFileConsumer(), executor, timing);
+          .write(options.getClassFileConsumer(), executor, timing, inputApp);
     } else {
-      ApplicationWriter.create(appView, marker).write(executor, timing);
+      ApplicationWriter.create(appView, marker).write(executor, timing, inputApp);
     }
   }
 
