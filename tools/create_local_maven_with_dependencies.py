@@ -31,7 +31,12 @@ libraries = data.get("libraries", {})
 BUILD_DEPENDENCIES = []
 PLUGIN_DEPENDENCIES = []
 for library, details in libraries.items():
-    artifact = details["module"] + ":" + versions[details["version"]["ref"]]
+    if details["module"].endswith(".gradle.plugin"):
+        # Dependencies that end with .gradle.plugin are Gradle Plugin markers that are pom-only artifacts
+        artifact = details["module"] + ":pom:" + versions[details["version"]
+                                                          ["ref"]]
+    else:
+        artifact = details["module"] + ":" + versions[details["version"]["ref"]]
     if library.endswith("GradlePlugin") and library != "retryGradlePlugin":
         PLUGIN_DEPENDENCIES.append(artifact)
     else:

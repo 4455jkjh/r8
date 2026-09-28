@@ -14,6 +14,39 @@ pluginManagement {
   includeBuild(rootProject.projectDir.resolve("d8_r8/commonBuildSrc"))
 }
 
+/*
+When create_local_maven_with_dependencies.py tries to import androidx.build.gradle.gcpbuildcache:gcpbuildcache:1.0.2
+it fails to pull in org.jetbrains.kotlin:kotlin-stdlib-common:2.2.21 that is a .pom file without any jar. To work
+around it, we exclude it here. If create_local_maven_with_dependencies.py is ever fixed, buildscript and apply(plugin...
+sections can be replaced with:
+plugins {
+  id("androidx.build.gradle.gcpbuildcache") version "1.0.2"
+}
+ */
+buildscript {
+  repositories {
+    maven { url = uri("third_party/dependencies") }
+    maven { url = uri("third_party/dependencies_plugin") }
+  }
+  dependencies {
+    classpath("androidx.build.gradle.gcpbuildcache:gcpbuildcache:1.0.2") {
+      exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
+    }
+  }
+}
+
+apply(plugin = "androidx.build.gradle.gcpbuildcache")
+
+buildCache {
+  remote(androidx.build.gradle.gcpbuildcache.GcpBuildCache::class.java) {
+    projectId = "r8bot-265908"
+    bucketName = "r8-build-cache"
+    isPush =
+      System.getenv().containsKey("R8_BOT_COMPILE_ONLY") ||
+        System.getenv().containsKey("R8_BOT_SIZE")
+  }
+}
+
 dependencyResolutionManagement { repositories { maven { url = uri("third_party/dependencies") } } }
 
 // This is duplicated in d8_r8/commonBuildSrc/settings.gradle.kts, keep code in sync.

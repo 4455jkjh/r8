@@ -110,7 +110,9 @@ def run_gradle_in(gradle_cmd,
     ensure_deps()
     cmd = [gradle_cmd]
     # Changes to these flags should be copied to gradle_benchmark.scenarios.
-    args.extend(['--offline'])
+    if os.environ.get('R8_BOT_ARCHIVE') or os.environ.get('R8_BOT_RELEASE'):
+        # Make sure to run offline for release and archive builds
+        args.extend(['--offline'])
     if not any(
             arg.startswith('-Porg.gradle.java.installations.paths=')
             for arg in args):
