@@ -112,7 +112,9 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
   private Collection<Group> createInitialGroups(AppView<AppInfoWithLiveness> appView) {
     Map<DexClass, Group> groups = new LinkedHashMap<>();
     for (DexProgramClass clazz : appView.appInfo().classesWithDeterministicOrder()) {
-      if (!clazz.hasSuperType()) {
+      // Interfaces always have java.lang.Object as their supertype and cannot be given a class as
+      // their supertype. Also skip classes without a supertype (i.e., java.lang.Object).
+      if (clazz.isInterface() || !clazz.hasSuperType()) {
         continue;
       }
       DexClass superclass = appView.definitionFor(clazz.getSuperType());
@@ -165,8 +167,18 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     clazz.forEachProgramVirtualMethodMatching(
         DexEncodedMethod::hasCode,
         method -> {
+          // Skip methods that are pinned or allow code replacement. BridgeHoisting cannot hoist
+          // pinned bridge methods, and we cannot rely on the body of methods that may be replaced.
           KeepMethodInfo keepInfo = appView.getKeepInfo(method);
-          if (keepInfo.isCodeReplacementAllowed(appView.options())) {
+          if (keepInfo.isPinned(appView.options())
+              || keepInfo.isCodeReplacementAllowed(appView.options())) {
+            return;
+          }
+
+          // Require the bridge method to be public so that it remains accessible to callers in all
+          // packages when hoisted to the shared synthetic superclass (which is placed in the
+          // package of the group representative).
+          if (!method.getAccessFlags().isPublic()) {
             return;
           }
 
@@ -316,7 +328,11 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
                     .build())
             .setIsInterface(clazz.isInterface())
             .setMethod(bridgeMethodReference)
-            .setFreshOutValue(code, bridgeMethodReference.getReturnType().toTypeElement(appView))
+            .applyIf(
+                !bridgeMethodReference.getReturnType().isVoidType(),
+                builder ->
+                    builder.setFreshOutValue(
+                        code, bridgeMethodReference.getReturnType().toTypeElement(appView)))
             .setPosition(invoke)
             .build());
 
@@ -334,12 +350,14 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
   private Group getGroupForClass(
       Collection<Group> groups, DexProgramClass clazz, BridgeSpecification bridgeSpecification) {
     for (Group group : groups) {
+      // Maintain the group's BridgeSpecification as the intersection (subset) of the bridge
+      // specifications of all classes in the group.
       if (bridgeSpecification.lessThanOrEquals(group.getBridgeSpecification())) {
         group.addClass(clazz);
+        group.setBridgeSpecification(bridgeSpecification);
         return group;
       } else if (group.getBridgeSpecification().lessThanOrEquals(bridgeSpecification)) {
         group.addClass(clazz);
-        group.setBridgeSpecification(bridgeSpecification);
         return group;
       }
     }
