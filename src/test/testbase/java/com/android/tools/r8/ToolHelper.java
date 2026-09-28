@@ -372,7 +372,7 @@ public class ToolHelper {
       // TODO(b/204855476): Rename to DEFAULT alias once the checked in VM is removed.
       public static final Version NEW_DEFAULT = DEFAULT;
 
-      public static final Version LATEST_DEX2OAT = V12_0_0;
+      public static final Version LATEST_DEX2OAT = V16_0_0;
 
       Version(String shortName) {
         this.shortName = shortName;
@@ -1181,14 +1181,14 @@ public class ToolHelper {
       case DEFAULT:
       case V9_0_0:
       case V10_0_0:
-        return "arm64";
-      case V12_0_0:
       case V13_0_0:
       case V14_0_0:
       case V15_0_0:
-      case V17_0_0:
       case V16_0_0:
+      case V17_0_0:
       case MASTER:
+        return "arm64";
+      case V12_0_0:
         return "x86_64";
       default:
         throw new Unimplemented();
@@ -2743,7 +2743,7 @@ public class ToolHelper {
     if (!versionString.equals("33.10")) {
       command.add("--force-allow-oj-inlines");
     }
-    command.add("--instruction-set=x86_64");
+    command.add("--instruction-set=" + getArchString(vm));
 
     ProcessBuilder builder = new ProcessBuilder(command);
     return runProcess(builder);

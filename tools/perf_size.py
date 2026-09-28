@@ -176,8 +176,12 @@ def ensure_dependencies(options):
         os.path.join(utils.OPENSOURCE_DUMPS_DIR, SIZE_COMPILEDUMPS[c])
         for c in options.compiledumps
     }
-    dex2oat_host_dir = os.path.join(utils.TOOLS_DIR, 'linux',
-                                    dex2oat.DIRS[dex2oat.LATEST])
+    if dex2oat.LATEST in dex2oat.HOST_ART_VERSIONS:
+        dex2oat_host_dir = os.path.join(utils.TOOLS_DIR, 'linux',
+                                        dex2oat.DIRS[dex2oat.LATEST])
+    else:
+        dex2oat_host_dir = os.path.join(utils.THIRD_PARTY, 'dex2oat',
+                                        dex2oat.LATEST)
     deps_to_download.add(dex2oat_host_dir)
 
     for dep_path in sorted(deps_to_download):

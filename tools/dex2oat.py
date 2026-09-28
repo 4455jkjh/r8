@@ -12,9 +12,10 @@ import utils
 
 LINUX_DIR = os.path.join(utils.TOOLS_DIR, 'linux')
 
-LATEST = '12.0.0'
+LATEST = '36.0'
 
-VERSIONS = [
+# Versions of dex2oat from host ART builds in tools/linux (see DIRS).
+HOST_ART_VERSIONS = [
     '12.0.0',
     # TODO(b/258170524): Fix the broken dex2oat versions.
     # 'default',
@@ -24,6 +25,16 @@ VERSIONS = [
     '6.0.1',
     # '5.1.1',
 ]
+
+# Versions of standalone dex2oat in third_party/dex2oat.
+STANDALONE_VERSIONS = [
+    '33.10',
+    '35.14',
+    '36.0',
+    'head',
+]
+
+VERSIONS = HOST_ART_VERSIONS + STANDALONE_VERSIONS
 
 DIRS = {
     '12.0.0': 'host/art-12.0.0-beta4',
@@ -101,11 +112,10 @@ def Main():
     if len(args) != 1:
         print("Can only take a single dex/zip/jar/apk file as input.")
         return 1
-    if options.version not in VERSIONS and not os.path.exists(
-            os.path.join(utils.THIRD_PARTY, 'dex2oat', options.version)):
+    if options.version not in VERSIONS:
         print("Unknown version %s" % options.version)
         return 1
-    if options.dump_cfg and options.version in VERSIONS:
+    if options.dump_cfg and options.version in HOST_ART_VERSIONS:
         print(
             "--dump-cfg is only supported for standalone dex2oat versions (not host ART)."
         )
@@ -124,7 +134,7 @@ def run_host_dex2oat(options, args):
     oatfile = options.output
     versions = VERSIONS if options.all else [options.version]
     for version in versions:
-        if version in VERSIONS:
+        if version in HOST_ART_VERSIONS:
             dex2oat_from_host_art(options, dexfile, oatfile, version)
         else:
             dex2oat(options, dexfile, oatfile, version)
@@ -218,7 +228,7 @@ def dex2oat(options, dexfile, oatfile=None, version=None):
         if not oatfile:
             oatfile = os.path.join(temp, "out.oat")
         appimage = os.path.join(temp, 'classes.art')
-        arch = 'x86_64'
+        arch = 'arm64'
 
         cmd = [
             os.path.join(dex2oat_dir, 'x86_64', 'bin', 'dex2oat64'),
