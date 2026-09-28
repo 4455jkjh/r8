@@ -1489,7 +1489,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // If non null it must be and passed to the consumer.
   public InternalMapConsumer mapConsumer = null;
 
-  public boolean hasMappingFileSupport() {
+  public boolean shouldOutputMappingFile() {
     return mapConsumer != null;
   }
 

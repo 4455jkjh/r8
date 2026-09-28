@@ -24,7 +24,6 @@ import com.android.tools.r8.naming.ProguardMapSupplier.ProguardMapSupplierResult
 import com.android.tools.r8.naming.mappinginformation.MapVersionMappingInformation;
 import com.android.tools.r8.naming.mappinginformation.ResidualSignatureMappingInformation;
 import com.android.tools.r8.shaking.KeepInfoCollection;
-import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.ThreadUtils;
@@ -45,31 +44,26 @@ import java.util.concurrent.ExecutorService;
 public class LineNumberOptimizer {
 
   public static ProguardMapSupplierResult runAndWriteMap(
-      AndroidApp inputApp,
       AppView<?> appView,
       ExecutorService executorService,
       Timing timing,
       OriginalSourceFiles originalSourceFiles,
       DebugRepresentationPredicate representation)
       throws ExecutionException {
-    return new LineNumberOptimizer(
-            inputApp, appView, executorService, originalSourceFiles, representation)
+    return new LineNumberOptimizer(appView, executorService, originalSourceFiles, representation)
         .runAndWriteMap(timing);
   }
 
-  private final AndroidApp inputApp;
   private final AppView<?> appView;
   private final ExecutorService executorService;
   private final OriginalSourceFiles originalSourceFiles;
   private final DebugRepresentationPredicate representation;
 
   private LineNumberOptimizer(
-      AndroidApp inputApp,
       AppView<?> appView,
       ExecutorService executorService,
       OriginalSourceFiles originalSourceFiles,
       DebugRepresentationPredicate representation) {
-    this.inputApp = inputApp;
     this.appView = appView;
     this.executorService = executorService;
     this.originalSourceFiles = originalSourceFiles;
@@ -78,7 +72,8 @@ public class LineNumberOptimizer {
 
   @SuppressWarnings("InconsistentOverloads")
   private ProguardMapSupplierResult runAndWriteMap(Timing timing) throws ExecutionException {
-    assert appView.options().hasMappingFileSupport();
+    assert appView.options().shouldOutputMappingFile();
+    assert appView.getKotlinInlineMethodMap() != null;
 
     if (shouldWriteOriginalMappingFile()) {
       return writeOriginalMappingFile(timing);
@@ -165,7 +160,7 @@ public class LineNumberOptimizer {
       PositionToMappedRangeMapper positionToMappedRangeMapper, Timing timing)
       throws ExecutionException {
     timing.begin("Process classes");
-    AppPositionRemapper positionRemapper = AppPositionRemapper.create(appView, inputApp, timing);
+    AppPositionRemapper positionRemapper = AppPositionRemapper.create(appView, timing);
     Deque<ClassPositionMapping> worklist = new ConcurrentLinkedDeque<>();
     ThreadUtils.processItemsThatMatches(
         appView.appInfo().classes(),

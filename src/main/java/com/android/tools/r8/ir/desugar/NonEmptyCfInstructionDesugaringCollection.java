@@ -299,7 +299,7 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
     CfDesugaringInfoImpl desugaringInfo = new CfDesugaringInfoImpl(cfCode.bytecodeSizeUpperBound());
 
     Box<Position> currentPosition = new Box<>();
-    boolean maintainPositionForInlineInfo = appView.options().hasMappingFileSupport();
+    boolean maintainPositionForInlineInfo = appView.options().shouldOutputMappingFile();
     if (maintainPositionForInlineInfo) {
       currentPosition.set(cfCode.getPreamblePosition());
       if (!currentPosition.isSet()) {
