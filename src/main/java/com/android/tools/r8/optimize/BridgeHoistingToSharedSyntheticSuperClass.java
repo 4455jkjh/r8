@@ -62,10 +62,12 @@ import java.util.function.BiConsumer;
 public class BridgeHoistingToSharedSyntheticSuperClass {
 
   private final AppView<AppInfoWithLiveness> appView;
+  private final BridgeAnalyzer bridgeAnalyzer;
   private final DexItemFactory factory;
 
   BridgeHoistingToSharedSyntheticSuperClass(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
+    this.bridgeAnalyzer = new BridgeAnalyzer(appView);
     this.factory = appView.dexItemFactory();
   }
 
@@ -169,8 +171,7 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
           }
 
           IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
-          BridgeInfo bridgeInfo =
-              BridgeAnalyzer.analyzeMethod(appView, method.getDefinition(), code);
+          BridgeInfo bridgeInfo = bridgeAnalyzer.analyzeMethod(method.getDefinition(), code);
           if (bridgeInfo == null
               || bridgeInfo.getInvokedMethod().getProto().isIdenticalTo(method.getProto())) {
             return;
