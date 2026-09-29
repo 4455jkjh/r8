@@ -20,7 +20,10 @@ import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
+import com.android.tools.r8.ir.code.Argument;
+import com.android.tools.r8.ir.code.CheckCast;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
@@ -46,6 +49,9 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntListIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -295,16 +301,22 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
       List<DexEncodedMethod> pendingMethods,
       ProfileCollectionAdditions profileCollectionAdditions) {
     // Synthesize a bridge method on the lambda class with the target signature.
-    DexEncodedMethod bridgeMethod =
+    ProgramMethod bridgeMethod =
         method
             .getDefinition()
             .toTypeSubstitutedMethodAsInlining(
                 bridgeMethodReference,
                 factory,
-                builder -> builder.setIsLibraryMethodOverride(OptionalBool.FALSE));
-    pendingMethods.add(bridgeMethod);
-    profileCollectionAdditions.addMethodIfContextIsInProfile(
-        bridgeMethod.asProgramMethod(clazz), method);
+                builder ->
+                    builder
+                        .modifyAccessFlags(MethodAccessFlags::setSynthetic)
+                        .setIsLibraryMethodOverride(OptionalBool.FALSE))
+            .asProgramMethod(clazz);
+    pendingMethods.add(bridgeMethod.getDefinition());
+    profileCollectionAdditions.addMethodIfContextIsInProfile(bridgeMethod, method);
+
+    // Fixup bridge.
+    fixupBridgeMethodCode(bridgeMethod, method.getReference());
 
     // Update the current method to call the bridge instead.
     DexMethod bridgeTarget = bridgeInfo.getInvokedMethod();
@@ -345,6 +357,55 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     // Now the lambda main method is a virtual bridge to the newly synthesized method on the lambda.
     VirtualBridgeInfo virtualBridgeInfo = new VirtualBridgeInfo(bridgeMethodReference);
     getSimpleFeedback().setBridgeInfo(method, virtualBridgeInfo);
+  }
+
+  private void fixupBridgeMethodCode(ProgramMethod method, DexMethod originalMethod) {
+    assert method.getArity() == originalMethod.getArity();
+    IntList worklist = new IntArrayList(method.getParameters().size());
+    for (int parameterIndex = 0; parameterIndex < method.getParameters().size(); parameterIndex++) {
+      if (method.getParameter(parameterIndex).isPrimitiveType()
+          != originalMethod.getParameter(parameterIndex).isPrimitiveType()) {
+        worklist.add(method.getDefinition().getArgumentIndexFromParameterIndex(parameterIndex));
+      }
+    }
+    if (worklist.isEmpty()) {
+      return;
+    }
+    IRCode code = method.buildIR(appView);
+    Iterator<Argument> arguments = code.argumentIterator();
+    IntListIterator worklistIterator = worklist.iterator();
+    while (worklistIterator.hasNext()) {
+      int argumentIndex = worklistIterator.nextInt();
+      Argument argument = arguments.next();
+      while (argument.getIndex() != argumentIndex) {
+        argument = arguments.next();
+      }
+      Value argumentValue = argument.outValue();
+      if (argumentValue.getType().isPrimitiveType()) {
+        // Remove optional cast and unbox.
+        if (argumentValue.singleUniqueUser().isCheckCast()) {
+          CheckCast checkCast = argumentValue.singleUniqueUser().asCheckCast();
+          checkCast.outValue().replaceUsers(checkCast.object());
+          checkCast.remove();
+        }
+        InvokeVirtual invoke = argumentValue.singleUniqueUser().asInvokeVirtual();
+        assert appView.dexItemFactory().unboxPrimitiveMethods.contains(invoke.getInvokedMethod());
+        invoke.outValue().replaceUsers(invoke.getFirstArgument());
+        invoke.remove();
+      } else {
+        assert false;
+      }
+    }
+
+    IRFinalizer<?> finalizer =
+        code.getConversionOptions().getFinalizer(new DeadCodeRemover(appView), appView);
+    for (Instruction i : code.instructions()) {
+      if (i.isCheckCast() && i.getFirstOperand().getType().isPrimitiveType()) {
+        assert false;
+      }
+    }
+    Code newCode = finalizer.finalizeCode(code, BytecodeMetadataProvider.empty(), Timing.empty());
+    method.setCode(newCode, appView);
   }
 
   private Group getGroupForClass(
