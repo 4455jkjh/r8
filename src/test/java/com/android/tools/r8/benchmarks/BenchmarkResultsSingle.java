@@ -163,9 +163,15 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
   }
 
   @Override
+  public boolean hasDex2OatSizeResult() {
+    return !dex2OatSizeResults.isEmpty();
+  }
+
+  @Override
   public void addDex2OatSizeResult(long result) {
     verifyMetric(
         BenchmarkMetric.Dex2OatCodeSize, metrics.contains(BenchmarkMetric.Dex2OatCodeSize), true);
+    assertFalse(hasDex2OatSizeResult());
     dex2OatSizeResults.add(result);
   }
 

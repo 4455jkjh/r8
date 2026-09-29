@@ -15,7 +15,7 @@ public abstract class BenchmarkResultsAdapterBase {
       int iteration,
       Collection<?> results,
       IntToLongFunction getter) {
-    if (results.isEmpty()) {
+    if (iteration >= results.size()) {
       return;
     }
     long result = getter.applyAsLong(iteration);

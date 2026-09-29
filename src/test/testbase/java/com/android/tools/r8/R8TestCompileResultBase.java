@@ -470,7 +470,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   public CR benchmarkDex2OatCodeSize(
       BenchmarkResults results, boolean enableDex2Oat, boolean enableDex2OatVerification)
       throws IOException {
-    if (results.isBenchmarkingCodeSize()) {
+    if (results.isBenchmarkingCodeSize() && !results.hasDex2OatSizeResult()) {
       if (enableDex2Oat) {
         Dex2OatTestRunResult dex2OatTestRunResult =
             runDex2Oat(new DexRuntime(DexVm.Version.LATEST_DEX2OAT))
