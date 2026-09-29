@@ -1538,7 +1538,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
   }
 
   public final AbstractValue getAbstractValue(AppView<?> appView, ProgramMethod context) {
-    return getAbstractValue(appView, context, AbstractValueSupplier.unknown());
+    return getAbstractValue(appView, context, AbstractValueSupplier.shallow());
   }
 
   public final AbstractValue getAbstractValue(
