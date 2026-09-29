@@ -25,6 +25,10 @@ gradlePlugin {
     id = "r8-conventions"
     implementationClass = "R8ConventionPlugin"
   }
+  plugins.register("r8-non-java8-test-conventions") {
+    id = "r8-non-java8-test-conventions"
+    implementationClass = "R8NonJava8TestConventionPlugin"
+  }
 }
 
 kotlin { explicitApi() }

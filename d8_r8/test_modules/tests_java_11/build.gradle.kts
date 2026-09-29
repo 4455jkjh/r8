@@ -5,6 +5,7 @@
 plugins {
   `java-library`
   id("dependencies-plugin")
+  id("r8-non-java8-test-conventions")
 }
 
 val root = getRoot()
@@ -14,56 +15,7 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(11) }
 }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
-
-dependencies { sharedDepsScope(project(":third_party", "sharedDepsFiles")) }
-
 dependencies {
-  implementation(project(":main", "mainClassesOutput"))
-  implementation(project(":main", "mainResources"))
-  implementation(project(":main", "turboClassesOutput"))
-  implementation(project(":testbase"))
-  implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
   runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
-  runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
 }
-
-tasks {
-  withType<JavaCompile> { dependsOn(sharedDepsConfig) }
-
-  withType<Test> {
-    TestingState.setUpTestingState(this)
-    javaLauncher = getJavaLauncher(Jdk.JDK_11)
-    systemProperty(
-      "TEST_DATA_LOCATION",
-      layout.buildDirectory.dir("classes/java/test").get().toString(),
-    )
-    systemProperty(
-      "TESTBASE_DATA_LOCATION",
-      project(":testbase")
-        .tasks
-        .named<JavaCompile>("compileJava")
-        .get()
-        .outputs
-        .files
-        .asPath
-        .split(File.pathSeparator)[0],
-    )
-  }
-
-  register<Jar>("assembleTestJar") {
-    from(sourceSets.test.get().output)
-    // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
-    // Renaming
-    //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
-    //  the jar and not show red underlines. However, navigation to base classes will not work.
-    archiveFileName.set("not_named_tests_java_11.jar")
-  }
-}
-
-val testJar by configurations.consumable("testJar")
-
-artifacts { add(testJar.name, tasks.named("assembleTestJar")) }
