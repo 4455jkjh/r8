@@ -185,9 +185,9 @@ def CheckCopyrightInContents(f, contents, output_api, allow_old_copyright=None):
                     return None
                 else:
                     return output_api.PresubmitError(
-                        'Copyright found with old year in file: %s\n'
+                        'Copyright found with old year (%s) in file: %s\n'
                         'To allow old copyright years, run:\n'
-                        '  ALLOW_OLD_COPYRIGHT=true git cl ..' % f)
+                        '  ALLOW_OLD_COPYRIGHT=true git cl ..' % (year, f))
             else:
                 return output_api.PresubmitError(
                     'Copyright found with future year in file: %s' % f)
