@@ -8,13 +8,12 @@ import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,11 +29,8 @@ public class Jdk21Float16Test extends TestBase {
   private static final String FLOAT_16_NAN_TEST_NAME = "Binary16ConversionNaN";
 
   private static Path getTestPath(String name) {
-    return Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "float16-test", name + JAVA_EXTENSION);
+    return TestDeps.getJdk21Float16TestPath(name + JAVA_EXTENSION);
   }
-
-  private static final Path[] JDK_21_FLOAT_16_TEST_JAVA_FILES =
-      new Path[] {getTestPath(FLOAT_16_TEST_NAME), getTestPath(FLOAT_16_NAN_TEST_NAME)};
 
   private static Path[] JDK_21_FLOAT_16_TEST_CLASS_FILES;
 
@@ -51,7 +47,7 @@ public class Jdk21Float16Test extends TestBase {
     // Build test constants.
     Path output = getStaticTemp().newFolder("output").toPath();
     javac(TestRuntime.getCheckedInJdk21(), getStaticTemp())
-        .addSourceFiles(JDK_21_FLOAT_16_TEST_JAVA_FILES)
+        .addSourceFiles(getTestPath(FLOAT_16_TEST_NAME), getTestPath(FLOAT_16_NAN_TEST_NAME))
         .setOutputPath(output)
         .compile();
     JDK_21_FLOAT_16_TEST_CLASS_FILES =

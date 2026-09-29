@@ -13,6 +13,7 @@ import com.android.tools.r8.ArchiveClassFileProvider;
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.L8TestBuilder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -207,13 +208,7 @@ public class LibraryDesugaringSpecification {
       AndroidApiLevel androidJarLevel,
       Descriptor descriptor,
       CustomConversionVersion legacy) {
-    this(
-        name,
-        ImmutableSet.of(desugarJdkLibs, ToolHelper.getDesugarLibConversions(legacy)),
-        Paths.get(ToolHelper.LIBRARY_DESUGAR_SOURCE_DIR + specificationPath),
-        ImmutableSet.of(ToolHelper.getAndroidJar(androidJarLevel)),
-        descriptor,
-        "");
+    this(name, () -> desugarJdkLibs, specificationPath, androidJarLevel, descriptor, legacy);
   }
 
   // This can be used to build custom specifications for testing purposes.
@@ -236,7 +231,8 @@ public class LibraryDesugaringSpecification {
       CustomConversionVersion legacy) {
     this(
         name,
-        ImmutableSet.of(desugarJdkLibsSupplier, () -> ToolHelper.getDesugarLibConversions(legacy)),
+        ImmutableSet.of(
+            desugarJdkLibsSupplier, () -> TestDeps.getDesugarLibraryConversions(legacy)),
         null,
         Paths.get(ToolHelper.LIBRARY_DESUGAR_SOURCE_DIR + specificationPath),
         ImmutableSet.of(ToolHelper.getAndroidJar(androidJarLevel)),

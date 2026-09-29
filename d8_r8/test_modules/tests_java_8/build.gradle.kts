@@ -81,6 +81,9 @@ dependencies {
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "bundletool"))
+  runtimeOnlyData(project(":third_party", "compilerApi"))
+  runtimeOnlyData(project(":third_party", "composeExamplesChangedBitwiseValuePropagation"))
+  runtimeOnlyData(project(":third_party", "dagger"))
   runtimeOnlyData(project(":third_party", "gson"))
   runtimeOnlyData(project(":third_party", "guavaJre"))
   runtimeOnlyData(project(":third_party", "jacoco"))
@@ -89,6 +92,7 @@ dependencies {
   runtimeOnlyData(project(":third_party", "processKeepRulesBinaryCompatibility"))
   runtimeOnlyData(project(":third_party", "rhino"))
   runtimeOnlyData(project(":third_party", "rhinoAndroid"))
+  runtimeOnlyData(project(":third_party", "smali"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->

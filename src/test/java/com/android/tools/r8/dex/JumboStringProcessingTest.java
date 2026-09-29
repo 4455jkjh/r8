@@ -7,9 +7,9 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.dex.code.DexBase2Format;
 import com.android.tools.r8.dex.code.DexConst4;
 import com.android.tools.r8.dex.code.DexConstString;
@@ -39,7 +39,6 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -141,8 +140,7 @@ public class JumboStringProcessingTest extends TestBase {
     // const-string/jumbo replaced with const-string. Also one of the nops before the first
     // payload has been removed to make it valid dex file (correct alignment of the payload
     // instruction).
-    Path originalDexFile =
-        Paths.get(ToolHelper.SMALI_BUILD_DIR, "regression/78072750/78072750.dex");
+    Path originalDexFile = TestDeps.getSmaliPath("regression/78072750/78072750.dex");
     AndroidApp application =
         AndroidApp.builder()
             .addDexProgramData(Files.toByteArray(originalDexFile.toFile()), Origin.unknown())

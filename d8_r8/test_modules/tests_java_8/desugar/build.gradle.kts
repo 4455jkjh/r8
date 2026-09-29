@@ -29,6 +29,7 @@ val testngConfig by configurations.resolvable("testngConfig") { extendsFrom(test
 dependencies {
   testngScope(libs.testng)
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
   runtimeOnlyData(project(":third_party", "gson"))
   runtimeOnlyData(project(":third_party", "guavaJre"))
   runtimeOnlyData(project(":third_party", "jacoco"))

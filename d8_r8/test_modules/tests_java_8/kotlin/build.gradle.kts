@@ -23,4 +23,7 @@ tasks {
   }
 }
 
-dependencies { runtimeOnlyData(project(":third_party", "coreLambdaStubs")) }
+dependencies {
+  runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
+  runtimeOnlyData(project(":third_party", "kotlinxCoroutines"))
+}

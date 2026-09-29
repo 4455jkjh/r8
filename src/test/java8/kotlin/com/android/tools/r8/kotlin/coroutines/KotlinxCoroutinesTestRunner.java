@@ -9,6 +9,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.KotlinTestParameters;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -19,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,20 +31,24 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class KotlinxCoroutinesTestRunner extends KotlinMetadataTestBase {
 
-  private static final String PKG = "kotlinx-coroutines-1.3.6";
-  private static final Path BASE_LIBRARY =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "deps_all-1.3.6-SNAPSHOT.jar");
-  private static final Path TEST_SOURCES =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "kotlinx-coroutines-test-test-sources");
-  private static final List<Path> DEPENDENCIES =
-      ImmutableList.of(
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "atomicfu-0.14.3.jar"),
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "hamcrest-core-1.3.jar"),
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "junit-4.13.jar"),
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "kotlin-test-1.3.72.jar"),
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "kotlin-test-junit-1.3.71.jar"),
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "kotlinx.coroutines.testbase.jar"),
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, PKG, "kotlinx.coroutines.test.main.jar"));
+  private static Path getBaseLibrary() {
+    return TestDeps.getKotlinxCoroutinesPath("deps_all-1.3.6-SNAPSHOT.jar");
+  }
+
+  private static Path getTestSources() {
+    return TestDeps.getKotlinxCoroutinesPath("kotlinx-coroutines-test-test-sources");
+  }
+
+  private static List<Path> getDependencies() {
+    return ImmutableList.of(
+        TestDeps.getKotlinxCoroutinesPath("atomicfu-0.14.3.jar"),
+        TestDeps.getKotlinxCoroutinesPath("hamcrest-core-1.3.jar"),
+        TestDeps.getKotlinxCoroutinesPath("junit-4.13.jar"),
+        TestDeps.getKotlinxCoroutinesPath("kotlin-test-1.3.72.jar"),
+        TestDeps.getKotlinxCoroutinesPath("kotlin-test-junit-1.3.71.jar"),
+        TestDeps.getKotlinxCoroutinesPath("kotlinx.coroutines.testbase.jar"),
+        TestDeps.getKotlinxCoroutinesPath("kotlinx.coroutines.test.main.jar"));
+  }
 
   // Tests that do not run correctly in general - that is these tests are expected to fail always.
   private Set<String> notWorkingTests =
@@ -69,16 +73,18 @@ public class KotlinxCoroutinesTestRunner extends KotlinMetadataTestBase {
   public void runKotlinxCoroutinesTests_smoke() throws Exception {
     // TODO(b/179860018): Make run for 1.4.20
     assumeTrue(kotlinc.is(KOTLINC_1_3_72));
-    runTestsInJar(compileTestSources(BASE_LIBRARY), BASE_LIBRARY);
+    Path baseLibrary = getBaseLibrary();
+    runTestsInJar(compileTestSources(baseLibrary), baseLibrary);
   }
 
   @Test
   public void runKotlinxCoroutinesTests_r8() throws Exception {
     // TODO(b/179860018): Make run for 1.4.20
     assumeTrue(kotlinc.is(KOTLINC_1_3_72));
+    Path baseLibrary = getBaseLibrary();
     Path baseJar =
         testForR8(parameters.getBackend())
-            .addProgramFiles(BASE_LIBRARY)
+            .addProgramFiles(baseLibrary)
             .addKeepAllClassesRule()
             .addKeepAllAttributes()
             // The BASE_LIBRARY contains proguard rules that do not match.
@@ -95,7 +101,7 @@ public class KotlinxCoroutinesTestRunner extends KotlinMetadataTestBase {
             .inspect(
                 inspector ->
                     assertEqualMetadataWithStringPoolValidation(
-                        new CodeInspector(BASE_LIBRARY),
+                        new CodeInspector(baseLibrary),
                         inspector,
                         (addedStrings, addedNonInitStrings) -> {}))
             .writeToZip();
@@ -109,14 +115,14 @@ public class KotlinxCoroutinesTestRunner extends KotlinMetadataTestBase {
             "-Xuse-experimental=kotlinx.coroutines.InternalCoroutinesApi",
             "-Xuse-experimental=kotlinx.coroutines.ObsoleteCoroutinesApi",
             "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi")
-        .addClasspathFiles(DEPENDENCIES)
+        .addClasspathFiles(getDependencies())
         .addClasspathFiles(baseJar)
-        .addSourceFiles(TEST_SOURCES)
+        .addSourceFiles(getTestSources())
         .compile();
   }
 
   private void runTestsInJar(Path testJar, Path baseJar) throws Exception {
-    List<Path> dependencies = new ArrayList<>(DEPENDENCIES);
+    List<Path> dependencies = new ArrayList<>(getDependencies());
     dependencies.add(baseJar);
     dependencies.add(testJar);
     ZipUtils.iter(

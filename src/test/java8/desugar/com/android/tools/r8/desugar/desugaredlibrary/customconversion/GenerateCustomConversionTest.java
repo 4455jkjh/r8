@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.JavaCompilerTool;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime;
@@ -64,7 +65,7 @@ public class GenerateCustomConversionTest extends TestBase {
       assertTrue(message, Files.exists(newFile));
 
       // Assert the file matches the one in third_party.
-      Path thirdPartyFile = ToolHelper.getDesugarLibConversions(version);
+      Path thirdPartyFile = TestDeps.getDesugarLibraryConversions(version);
       uploadJarsToCloudStorageIfTestFails(
           (expected, actual) -> {
             verifySameFilesInJarInSameOrder(expected, actual);
@@ -161,6 +162,6 @@ public class GenerateCustomConversionTest extends TestBase {
 
   public static void main(String[] args) throws IOException {
     generateCustomConversions(
-        ToolHelper.getTemporaryFolderForTest(), Paths.get(ToolHelper.CUSTOM_CONVERSION_DIR));
+        ToolHelper.getTemporaryFolderForTest(), TestDeps.getDesugarLibraryConversionsDir());
   }
 }

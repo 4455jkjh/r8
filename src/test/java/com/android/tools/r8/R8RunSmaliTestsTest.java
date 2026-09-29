@@ -14,7 +14,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,8 +37,6 @@ public class R8RunSmaliTestsTest extends TestBase {
     return buildParameters(
         getTestParameters().withDexRuntimesAndAllApiLevels().build(), tests.keySet());
   }
-
-  private static final String SMALI_DIR = ToolHelper.SMALI_BUILD_DIR;
 
   private static Map<String, String> tests;
 
@@ -213,7 +210,7 @@ public class R8RunSmaliTestsTest extends TestBase {
 
   @Test
   public void SmaliTest() throws Exception {
-    Path originalDexFile = Paths.get(SMALI_DIR, directoryName, dexFileName);
+    Path originalDexFile = TestDeps.getSmaliPath(directoryName, dexFileName);
 
     if (failingOnX8.contains(directoryName)) {
       thrown.expect(CompilationFailedException.class);
@@ -226,7 +223,7 @@ public class R8RunSmaliTestsTest extends TestBase {
     boolean originalFailing =
         (originalFailingOnArtVersions.containsKey(version)
             && originalFailingOnArtVersions.get(version).contains(directoryName));
-    Path testJar = Paths.get(SMALI_DIR, directoryName, "Test.jar");
+    Path testJar = TestDeps.getSmaliPath(directoryName, "Test.jar");
     boolean testJarExists = testJar.toFile().exists();
     Path testJarDex = null;
     if (testJarExists) {

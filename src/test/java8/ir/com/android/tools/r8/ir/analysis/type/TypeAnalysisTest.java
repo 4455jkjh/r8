@@ -10,7 +10,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
@@ -35,7 +35,6 @@ import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -100,8 +99,7 @@ public class TypeAnalysisTest extends SmaliTestBase {
 
   @Test
   public void typeAnalysisTest() throws Exception {
-    byte[] content =
-        Files.readAllBytes(Paths.get(ToolHelper.SMALI_BUILD_DIR, dirName, smaliFileName));
+    byte[] content = Files.readAllBytes(TestDeps.getSmaliPath(dirName, smaliFileName));
     AndroidApp app = AndroidApp.builder().addDexProgramData(content, Origin.unknown()).build();
     AppView<AppInfo> appView = computeAppView(app);
     inspection.accept(appView, new CodeInspector(appView.appInfo().app()));

@@ -19,7 +19,6 @@ import static org.junit.Assert.assertFalse;
 import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -66,7 +65,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
             "JDK8_CL",
             ImmutableSet.of(
                 DESUGARED_JDK_8_LIB_JAR,
-                ToolHelper.getDesugarLibConversions(LEGACY),
+                TestDeps.getDesugarLibraryConversions(LEGACY),
                 TestDeps.getCoreLambdaStubsJar()),
             JDK8.getSpecification(),
             JDK8.getLibraryFiles(),
@@ -77,7 +76,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
             "JDK11_CL",
             ImmutableSet.of(
                 LibraryDesugaringSpecification.getTempLibraryJDK11Undesugar(),
-                ToolHelper.getDesugarLibConversions(LATEST),
+                TestDeps.getDesugarLibraryConversions(LATEST),
                 TestDeps.getCoreLambdaStubsJar()),
             JDK11.getSpecification(),
             JDK11.getLibraryFiles(),

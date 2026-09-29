@@ -5,6 +5,7 @@
 package com.android.tools.r8.cfmethodgeneration;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -20,15 +21,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public abstract class CodeGenerationBase extends TestBase {
-
-  private static final Path GOOGLE_KOTLIN_FORMAT_DIR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "google", "google-kotlin-format", "0.54");
-  private static final Path GOOGLE_KOTLIN_FORMAT_JAR =
-      GOOGLE_KOTLIN_FORMAT_DIR.resolve("ktfmt-0.54-jar-with-dependencies.jar");
-  private static final Path GOOGLE_JAVA_FORMAT_DIR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "google", "google-java-format", "1.24.0");
-  private static final Path GOOGLE_JAVA_FORMAT_JAR =
-      GOOGLE_JAVA_FORMAT_DIR.resolve("google-java-format-1.24.0-all-deps.jar");
 
   private enum KOTLIN_FORMAT_STYLE {
     GOOGLE,
@@ -65,7 +57,7 @@ public abstract class CodeGenerationBase extends TestBase {
             ImmutableList.of(
                 getJavaExecutable(),
                 "-jar",
-                GOOGLE_KOTLIN_FORMAT_JAR.toString(),
+                TestDeps.getGoogleKotlinFormatJar().toString(),
                 formatStyle == KOTLIN_FORMAT_STYLE.GOOGLE ? "--google-style" : "--kotlinlang-style",
                 tempFile.toAbsolutePath().toString()));
     String commandString = String.join(" ", builder.command());
@@ -91,7 +83,7 @@ public abstract class CodeGenerationBase extends TestBase {
                 "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
                 "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
                 "-jar",
-                GOOGLE_JAVA_FORMAT_JAR.toString(),
+                TestDeps.getGoogleJavaFormatJar().toString(),
                 tempFile.toAbsolutePath().toString()));
     String commandString = String.join(" ", builder.command());
     System.out.println(commandString);

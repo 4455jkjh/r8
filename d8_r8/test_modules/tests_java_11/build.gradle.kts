@@ -27,6 +27,7 @@ dependencies {
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
 }
 

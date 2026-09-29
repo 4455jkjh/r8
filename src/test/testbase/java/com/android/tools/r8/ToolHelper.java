@@ -20,7 +20,6 @@ import com.android.tools.r8.ToolHelper.DexVm.Kind;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.benchmarks.gc.CaptureGcResult;
 import com.android.tools.r8.cf.CfVersion;
-import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.AppView;
@@ -212,7 +211,6 @@ public class ToolHelper {
   public static final String EXAMPLES_ANDROID_N_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidN/";
   public static final String EXAMPLES_ANDROID_O_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidP/";
-  public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";
   public static final String KEEP_RADIUS_WEB_DIR = getProjectRoot() + "src/keepradius/web/";
 
@@ -227,8 +225,6 @@ public class ToolHelper {
   public static final String DEFAULT_DEX_FILENAME = "classes.dex";
   public static final String DEFAULT_PROGUARD_MAP_FILE = "proguard.map";
 
-  public static final String CORE_LAMBDA_STUBS =
-      THIRD_PARTY_DIR + "core-lambda-stubs/core-lambda-stubs.jar";
   public static final String K2JVMCompiler = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler";
   private static final String ANDROID_JAR_PATTERN =
       THIRD_PARTY_DIR + "android_jar/lib-v%s/android.jar";
@@ -237,7 +233,6 @@ public class ToolHelper {
   private static final AndroidApiLevel DEFAULT_MIN_SDK = AndroidApiLevel.I;
 
   public static final String OPEN_JDK_DIR = THIRD_PARTY_DIR + "openjdk/";
-  public static final String CUSTOM_CONVERSION_DIR = OPEN_JDK_DIR + "custom_conversion/";
   public static final String JAVA_8_RUNTIME = OPEN_JDK_DIR + "openjdk-rt-1.8/rt.jar";
   public static final String JDK_11_TESTS_DIR = OPEN_JDK_DIR + "jdk-11-test/";
   public static final String JDK_11_TIME_TESTS_DIR = JDK_11_TESTS_DIR + "java/time/";
@@ -281,12 +276,6 @@ public class ToolHelper {
       Paths.get(OPEN_JDK_DIR + "desugar_jdk_libs/desugar_jdk_libs.jar");
   public static final Path DESUGARED_JDK_11_LIB_JAR =
       Paths.get(OPEN_JDK_DIR + "desugar_jdk_libs_11/desugar_jdk_libs.jar");
-
-  public static final Path AAPT2 = Paths.get(THIRD_PARTY_DIR, "aapt2", "aapt2");
-
-  public static Path getDesugarLibConversions(CustomConversionVersion legacy) {
-    return Paths.get(CUSTOM_CONVERSION_DIR, legacy.getFileName());
-  }
 
   public static boolean isLocalDevelopment() {
     return System.getProperty("local_development", "0").equals("1");
@@ -2114,7 +2103,7 @@ public class ToolHelper {
   }
 
   public static ProcessResult runAapt2(String... args) throws IOException {
-    ArrayList<String> cmd = Lists.newArrayList(AAPT2.toString());
+    ArrayList<String> cmd = Lists.newArrayList(TestDeps.getAapt2().toString());
     cmd.addAll(Lists.newArrayList(args));
     ProcessBuilder builder = new ProcessBuilder(cmd);
     return runProcess(builder);

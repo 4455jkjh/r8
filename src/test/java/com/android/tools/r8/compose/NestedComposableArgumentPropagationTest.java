@@ -8,14 +8,13 @@ import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
@@ -23,10 +22,10 @@ import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.codeinspector.MinificationInspector;
 import com.android.tools.r8.utils.codeinspector.RepackagingInspector;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.function.BiFunction;
 import org.junit.BeforeClass;
@@ -76,11 +75,7 @@ public class NestedComposableArgumentPropagationTest extends TestBase {
   @BeforeClass
   public static void setup() throws IOException {
     dump = getStaticTemp().newFolder().toPath();
-    ZipUtils.unzip(
-        Paths.get(
-            ToolHelper.THIRD_PARTY_DIR,
-            "opensource-apps/compose-examples/changed-bitwise-value-propagation/dump.zip"),
-        dump);
+    ZipUtils.unzip(TestDeps.getComposeExamplesChangedBitwiseValuePropagationDumpZip(), dump);
   }
 
   public NestedComposableArgumentPropagationTest(TestParameters parameters) {
