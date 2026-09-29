@@ -1,6 +1,7 @@
 [versions]
+androidxAnnotation = "1.10.0"
 androidxCollection = "1.6.0"
-androidxTracing = "2.0.0-alpha05"
+androidxTracing = "2.0.3"
 # When updating update tools/asmifier.py and Toolhelper as well.
 asm = "9.10.1"
 ddmLib = "32.2.0"
@@ -31,6 +32,7 @@ tools = "31.5.0-alpha04"
 zipflinger = "9.0.0"
 
 [libraries]
+androidxAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
 androidxCollection = { module = "androidx.collection:collection", version.ref = "androidxCollection" }
 androidxTracingDriver = { module = "androidx.tracing:tracing", version.ref = "androidxTracing" }
 androidxTracingDriverDesktop = { module = "androidx.tracing:tracing-desktop", version.ref = "androidxTracing" }

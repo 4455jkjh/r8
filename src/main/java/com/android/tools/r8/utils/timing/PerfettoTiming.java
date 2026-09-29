@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.timing;
 
+import static androidx.tracing.Tasks_desktopKt.currentTaskId;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import androidx.tracing.CounterTrack;
@@ -13,7 +14,7 @@ import androidx.tracing.ThreadTrack;
 import androidx.tracing.TraceContext;
 import androidx.tracing.wire.TraceDriver;
 import androidx.tracing.wire.TraceSink;
-import androidx.tracing.wire.TraceSinkUtils;
+import androidx.tracing.wire.TraceSinks;
 import com.android.tools.r8.utils.InternalOptions;
 import java.io.File;
 import java.io.IOException;
@@ -58,14 +59,14 @@ public class PerfettoTiming extends TimingImplBase {
       sink = new TraceSink(sequenceId, bufferedSink, Dispatchers.getIO());
     } else {
       File directory = new File(options.perfettoTraceDumpDirectory);
-      sink = TraceSinkUtils.TraceSink(directory, sequenceId);
+      sink = TraceSinks.TraceSink(directory, sequenceId);
     }
     // Populates the process track correctly.
     traceDriver = new TraceDriver(sink);
     TraceContext traceContext = traceDriver.getContext();
     processTrack = traceContext.getProcess();
     mainThreadId = (int) Thread.currentThread().getId();
-    threadTrack = processTrack.getOrCreateThreadTrack(mainThreadId, "Main thread");
+    threadTrack = processTrack.getOrCreateThreadTrack(mainThreadId, currentTaskId(), "Main thread");
     begin(title);
     // Memory tracking requires an executor service.
     if (executorService != null) {
@@ -83,9 +84,9 @@ public class PerfettoTiming extends TimingImplBase {
                     }
                   }
                   // Update the memory counter every 1s.
-                  memoryTrack.setCounter(
+                  memoryTrack.setValue(
                       Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
-                  uncommittedDexItemsTrack.setCounter(
+                  uncommittedDexItemsTrack.setValue(
                       options.dexItemFactory().getNumberOfUncommittedItems());
                 }
               });
@@ -108,7 +109,8 @@ public class PerfettoTiming extends TimingImplBase {
         return Timing.empty();
       }
     }
-    ThreadTrack newThreadTrack = processTrack.getOrCreateThreadTrack(threadId, "Worker");
+    ThreadTrack newThreadTrack =
+        processTrack.getOrCreateThreadTrack(threadId, currentTaskId(), "Worker");
     return new PerfettoThreadTiming(this, newThreadTrack).begin(title);
   }
 
