@@ -27,6 +27,7 @@ public class TestConfigurationHelper {
   public companion object {
 
     private const val RESULT_SINK_BATCH_SIZE = 250
+    private const val MAX_STACKTRACE_LINES = 100
     private const val TIMESTAMP_UPDATE_INTERVAL_MS = 10_000L
 
     private val gson = Gson()
@@ -48,11 +49,39 @@ public class TestConfigurationHelper {
       }
     }
 
+    private fun formatStackTrace(exception: Throwable, truncate: Boolean): String {
+      val baos = ByteArrayOutputStream()
+      exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
+      val stackTrace = baos.toString(StandardCharsets.UTF_8)
+      return if (truncate) {
+        stackTrace.lineSequence().take(MAX_STACKTRACE_LINES).joinToString("\n")
+      } else {
+        stackTrace
+      }
+    }
+
+    private fun getStackTrace(
+      exception: Throwable,
+      rootDir: File,
+      isR8Lib: Boolean,
+      r8Jar: File?,
+      r8LibPartitionMapFile: File?,
+      printObfuscatedStacktraces: Boolean,
+      truncate: Boolean,
+    ): String {
+      val stackTrace = formatStackTrace(exception, truncate)
+      return if (isR8Lib) {
+        retrace(rootDir, r8Jar!!, r8LibPartitionMapFile!!, stackTrace, printObfuscatedStacktraces)
+      } else {
+        stackTrace
+      }
+    }
+
     private fun retrace(
       rootDir: File,
       r8jar: File,
       partitionMapFile: File,
-      exception: Throwable,
+      stackTrace: String,
       printObfuscatedStacktraces: Boolean,
     ): String {
       val out = StringBuilder()
@@ -72,8 +101,7 @@ public class TestConfigurationHelper {
           r8jar.toString(),
         )
       val process = ProcessBuilder(command).start()
-      process.outputStream.use { exception.printStackTrace(PrintStream(it)) }
-      process.outputStream.close()
+      process.outputStream.use { it.write(stackTrace.toByteArray(StandardCharsets.UTF_8)) }
       val processCompleted = process.waitFor(20L, TimeUnit.SECONDS) && process.exitValue() == 0
       out.append(process.inputStream.bufferedReader().use { it.readText() })
       if (!processCompleted) {
@@ -85,9 +113,7 @@ public class TestConfigurationHelper {
         out.append("\n\n--------------------------------------\n")
         out.append("OBFUSCATED STACKTRACE\n")
         out.append("--------------------------------------\n")
-        var baos = ByteArrayOutputStream()
-        exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
-        out.append(baos.toString())
+        out.append(stackTrace)
       }
       return out.toString()
     }
@@ -102,6 +128,7 @@ public class TestConfigurationHelper {
       r8Jar: File?,
       r8LibPartitionMapFile: File?,
       printObfuscatedStacktraces: Boolean,
+      stackTraceForResultSink: String? = null,
     ) {
       val info = resultSinkInfo ?: return
       if (desc == null || result == null || desc.className == null) return
@@ -132,14 +159,16 @@ public class TestConfigurationHelper {
 
       val stackTraceStr: String? =
         if (result.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
-          val exception = result.exception as Throwable
-          if (isR8Lib && r8Jar != null && r8LibPartitionMapFile != null) {
-            retrace(rootDir, r8Jar, r8LibPartitionMapFile, exception, printObfuscatedStacktraces)
-          } else {
-            val baos = ByteArrayOutputStream()
-            exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
-            baos.toString()
-          }
+          stackTraceForResultSink
+            ?: getStackTrace(
+              result.exception as Throwable,
+              rootDir,
+              isR8Lib,
+              r8Jar,
+              r8LibPartitionMapFile,
+              printObfuscatedStacktraces,
+              truncate = true,
+            )
         } else {
           null
         }
@@ -358,6 +387,7 @@ public class TestConfigurationHelper {
       val hasUpdateTestTimestamp = project.hasProperty("update_test_timestamp")
       val rootDir = project.getRoot()
       val printObfuscatedStacktraces = project.hasProperty("print_obfuscated_stacktraces")
+      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
 
       if (isR8Lib || oneLinePerTest || hasUpdateTestTimestamp) {
         val updateTestTimestampPath =
@@ -419,22 +449,22 @@ public class TestConfigurationHelper {
                   File(updateTestTimestampPath).writeText(now.toString())
                 }
               }
+              var stackTraceForResultSink: String? = null
               if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
                 val exception = result.exception as Throwable
-                if (isR8Lib) {
-                  println(
-                    retrace(
-                      rootDir,
-                      r8Jar!!,
-                      r8LibPartitionMapFile!!,
-                      exception,
-                      printObfuscatedStacktraces,
-                    )
+                val stackTrace =
+                  getStackTrace(
+                    exception,
+                    rootDir,
+                    isR8Lib,
+                    r8Jar,
+                    r8LibPartitionMapFile,
+                    printObfuscatedStacktraces,
+                    truncate = isCiServer,
                   )
-                } else {
-                  val baos = ByteArrayOutputStream()
-                  exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
-                  println(baos)
+                println(stackTrace)
+                if (isCiServer) {
+                  stackTraceForResultSink = stackTrace
                 }
               }
               reportToResultSink(
@@ -446,6 +476,7 @@ public class TestConfigurationHelper {
                 r8Jar,
                 r8LibPartitionMapFile,
                 printObfuscatedStacktraces,
+                stackTraceForResultSink,
               )
             }
           }
@@ -468,11 +499,14 @@ public class TestConfigurationHelper {
             override fun beforeTest(desc: TestDescriptor?) {}
 
             override fun afterTest(desc: TestDescriptor?, result: TestResult?) {
+              var stackTraceForResultSink: String? = null
               if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
                 val exception = result.exception as Throwable
-                val baos = ByteArrayOutputStream()
-                exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
-                println(baos)
+                val stackTrace = formatStackTrace(exception, truncate = isCiServer)
+                println(stackTrace)
+                if (isCiServer) {
+                  stackTraceForResultSink = stackTrace
+                }
               }
               reportToResultSink(
                 test,
@@ -483,13 +517,13 @@ public class TestConfigurationHelper {
                 r8Jar,
                 r8LibPartitionMapFile,
                 printObfuscatedStacktraces,
+                stackTraceForResultSink,
               )
             }
           }
         )
       }
 
-      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
       val userDefinedCoresPerFork = System.getenv("R8_GRADLE_CORES_PER_FORK")
       val processors = Runtime.getRuntime().availableProcessors()
       // See https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html.
