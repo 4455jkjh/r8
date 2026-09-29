@@ -228,6 +228,119 @@ def bug_fmt(bug):
     return "b/%s" % bug
 
 
+def prepare_studio(args):
+    assert len(args.version) == 1
+    assert os.path.exists(args.studio), ("Could not find STUDIO path %s" %
+                                         args.studio)
+
+    def commit_and_upload_studio(path,
+                                 options,
+                                 git_message,
+                                 topic,
+                                 presubmit=False):
+        with utils.ChangedWorkingDirectory(path):
+            if not options.use_existing_work_branch:
+                subprocess.check_call(
+                    ['git', 'commit', '-a', '-m', git_message])
+            else:
+                print('Not committing when --use-existing-work-branch. ' +
+                      'Commit message should be:\n\n' + git_message + '\n')
+            # Don't upload if requested not to, or if changes are not committed due
+            # to --use-existing-work-branch
+            if not options.no_upload and not options.use_existing_work_branch:
+                cmd = [
+                    'repo', 'upload', '.', '--verify', '--current-branch',
+                    f'--topic={topic}'
+                ]
+                if presubmit:
+                    cmd.append('--label=Presubmit-Ready+1')
+                subprocess.run(cmd, input=b'y\n', check=True)
+
+    def release_studio(options):
+        assert len(options.version) == 1
+        version = options.version[0]
+        print("Releasing for STUDIO")
+        if options.dry_run:
+            return 'DryRun: omitting studio release for %s' % version
+
+        change_name = 'update-r8'
+        topic = f'r8-{version}'
+        tools_base = os.path.join(args.studio, 'tools', 'base')
+        prebuilts_tools = os.path.join(args.studio, 'prebuilts', 'tools')
+        tools_buildsrc = os.path.join(args.studio, 'tools', 'buildSrc')
+
+        with utils.ChangedWorkingDirectory(args.studio):
+            if not options.use_existing_work_branch:
+                if not options.yes:
+                    answer = input(f'Abandon branch {change_name} [Y/n]:')
+                    if answer and answer.lower() != 'y':
+                        print(f'Aborting release for {version}')
+                        sys.exit(1)
+                subprocess.call(['repo', 'abandon', change_name])
+            if not options.no_sync:
+                subprocess.check_call(['repo', 'sync', '-cq', '-j', '16'])
+
+        # 1. Update tools/base and run maven_fetch.sh (which updates
+        # tools/base/bazel/maven/BUILD.maven and fetches prebuilts into
+        # prebuilts/tools).
+        with utils.ChangedWorkingDirectory(tools_base):
+            if not options.use_existing_work_branch:
+                subprocess.check_call(['repo', 'start', change_name])
+            artifacts_bzl = os.path.join('bazel', 'maven', 'artifacts.bzl')
+            sed(r'"com\.android\.tools:r8:[^"]+"',
+                f'"com.android.tools:r8:{version}"', artifacts_bzl)
+            maven_fetch = os.path.join('bazel', 'maven', 'maven_fetch.sh')
+            utils.PrintCmd([maven_fetch])
+            subprocess.check_call([maven_fetch])
+
+        with utils.ChangedWorkingDirectory(args.studio):
+            cmd = ['tools/base/bazel/bazel', 'shutdown']
+            utils.PrintCmd(cmd)
+            subprocess.check_call(cmd)
+
+        bugs = '\n'.join(map(lambda b: f'Bug: {b}',
+                             options.bug)) if options.bug else 'Bug: n/a'
+        git_message_update = f"""Update R8 to version {version}
+
+{bugs}
+Test: Existing"""
+
+        commit_and_upload_studio(tools_base, options, git_message_update, topic)
+
+        # 2. Create CL in prebuilts/tools with fetched artifacts.
+        with utils.ChangedWorkingDirectory(prebuilts_tools):
+            if not options.use_existing_work_branch:
+                subprocess.check_call(['repo', 'start', change_name])
+            m2_r8_dir = os.path.join('common', 'm2', 'repository', 'com',
+                                     'android', 'tools', 'r8', version)
+            subprocess.check_call(['git', 'add', m2_r8_dir])
+
+        git_message_prebuilts = f"""Add prebuilts for R8 {version}
+
+{bugs}
+Test: n/a"""
+
+        commit_and_upload_studio(prebuilts_tools, options,
+                                 git_message_prebuilts, topic)
+
+        # 3. Update tools/buildSrc/base/dependencies.properties.
+        with utils.ChangedWorkingDirectory(tools_buildsrc):
+            if not options.use_existing_work_branch:
+                subprocess.check_call(['repo', 'start', change_name])
+            dependencies_properties = os.path.join('base',
+                                                   'dependencies.properties')
+            sed(r'r8 = com\.android\.tools:r8:.*',
+                f'r8 = com.android.tools:r8:{version}', dependencies_properties)
+
+        commit_and_upload_studio(tools_buildsrc,
+                                 options,
+                                 git_message_update,
+                                 topic,
+                                 presubmit=True)
+
+    return release_studio
+
+
 def g4_cp(old, new, file):
     subprocess.check_call('g4 cp {%s,%s}/%s' % (old, new, file), shell=True)
 
@@ -1006,6 +1119,11 @@ def parse_options():
                         default=[],
                         action='append',
                         help='List of bugs for release version')
+    result.add_argument(
+        '--studio',
+        metavar=('<path>'),
+        help='Release for studio by setting the path to a studio '
+        'checkout')
     result.add_argument('--maven',
                         default=False,
                         action='store_true',
@@ -1022,7 +1140,7 @@ def parse_options():
                         '--use_existing_work_branch',
                         default=False,
                         action='store_true',
-                        help='Use existing work CL in google3')
+                        help='Use existing work branch/CL in studio/google3')
     result.add_argument('--delete-work-branch',
                         '--delete_work_branch',
                         default=False,
@@ -1033,6 +1151,10 @@ def parse_options():
                         default=False,
                         action='store_true',
                         help="Don't upload for code review")
+    result.add_argument('--yes',
+                        default=False,
+                        action='store_true',
+                        help='Answer "yes" to all questions')
     result.add_argument(
         '--dry-run',
         default=False,
@@ -1044,6 +1166,17 @@ def parse_options():
                         metavar=('<path>'),
                         help='Location for dry run output.')
     args = result.parse_args()
+
+    if args.studio and not args.update_desugar_library_in_studio:
+        if len(args.version) != 1:
+            print("ERROR: only one version supported for studio")
+            sys.exit(1)
+        semver = utils.check_basic_semver_version(args.version[0],
+                                                  allowPrerelease=True)
+        if not semver.larger_than(utils.SemanticVersion(9, 5, 17, 'dev')):
+            print("ERROR: Releasing to studio is only supported for R8 version "
+                  "9.5.18-dev or higher")
+            sys.exit(1)
 
     if args.google3:
         if len(args.version) != 1:
@@ -1061,13 +1194,13 @@ def main():
     targets_to_run = []
 
     if args.new_dev_branch:
-        if args.google3 or args.maven:
+        if args.google3 or args.studio or args.maven:
             print('Cannot create a branch and roll at the same time.')
             sys.exit(1)
         targets_to_run.append(prepare_branch(args))
 
     if args.dev_release:
-        if args.google3 or args.maven:
+        if args.google3 or args.studio or args.maven:
             print('Cannot create a dev release and roll at the same time.')
             sys.exit(1)
         targets_to_run.append(prepare_release(args))
@@ -1076,6 +1209,8 @@ def main():
 
     if args.google3:
         targets_to_run.append(prepare_google3(args))
+    if args.studio and not args.update_desugar_library_in_studio:
+        targets_to_run.append(prepare_studio(args))
     if args.maven:
         targets_to_run.append(prepare_maven(args))
 
