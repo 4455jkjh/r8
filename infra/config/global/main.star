@@ -567,6 +567,14 @@ r8_tester_with_default(
 )
 
 r8_tester_with_default(
+    "linux-cq",
+    ["--runtimes=CQ", "--all_tests", "--command_cache_dir=.ccache"],
+    bucket = "try",
+    trigger = False,
+    dimensions = get_dimensions(tester = True),
+)
+
+r8_tester_with_default(
     "linux-dry-run",
     ["--runtimes=dry-run", "--all_tests", "--command_cache_dir=.ccache"],
     bucket = "try",
@@ -596,7 +604,7 @@ r8_tester_with_default(
     execution_timeout = 12 * time.hour,
     extra_properties = {
         "testers": ["linux-dry-run", "linux-perf-size"],
-        "shard_count": 20,
+        "shard_count": 3,
     },
 )
 

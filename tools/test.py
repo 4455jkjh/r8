@@ -46,13 +46,8 @@ REPORTS_PATH = os.path.join(utils.BUILD, 'reports')
 REPORT_INDEX = ['tests', 'test', 'index.html']
 VALID_RUNTIMES = ['none', 'jdk8', 'jdk9', 'jdk11', 'jdk17', 'jdk21', 'jdk25'
                  ] + ['dex-%s' % dexvm for dexvm in ALL_ART_VMS]
-CQ_RUNTIMES = [
-    rt for rt in VALID_RUNTIMES if rt not in [
-        'jdk8', 'jdk9', 'dex-7.0.0', 'dex-6.0.1', 'dex-5.1.1', 'dex-4.4.4',
-        'dex-4.0.4'
-    ]
-]
 DRY_RUN_RUNTIMES = ['dex-default', 'jdk11', 'none']
+CQ_RUNTIMES = [rt for rt in VALID_RUNTIMES if rt not in DRY_RUN_RUNTIMES]
 
 
 def ParseOptions():
