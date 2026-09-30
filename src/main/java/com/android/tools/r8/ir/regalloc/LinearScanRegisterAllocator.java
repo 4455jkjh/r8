@@ -2261,8 +2261,11 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     // the next overlap.
     for (LiveIntervals intervals : inactive) {
       int inactiveRegister = intervals.getRegister();
-      if (inactiveRegister <= registerConstraint && unhandledInterval.overlaps(intervals)) {
+      if (hasUnblockedRegister(intervals, registerConstraint, freePositions)) {
         int nextOverlap = unhandledInterval.nextOverlap(intervals);
+        if (nextOverlap == -1) {
+          continue;
+        }
         for (int i = 0; i < intervals.requiredRegisters(); i++) {
           int register = inactiveRegister + i;
           if (register <= registerConstraint && !freePositions.isBlocked(register)) {
@@ -2282,6 +2285,19 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       }
     }
     return freePositions;
+  }
+
+  // Returns true if one of the registers of the given intervals is allowed by the register
+  // constraint and is not blocked in the given free positions.
+  private static boolean hasUnblockedRegister(
+      LiveIntervals intervals, int registerConstraint, RegisterPositions freePositions) {
+    for (int i = 0; i < intervals.requiredRegisters(); i++) {
+      int register = intervals.getRegister() + i;
+      if (register <= registerConstraint && !freePositions.isBlocked(register)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // Looks at surrounding alias live intervals and tries to assign similar registers to the current
