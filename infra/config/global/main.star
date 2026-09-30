@@ -292,6 +292,7 @@ def r8_builder(
         triggering_policy = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
+        properties = None,
         **kwargs):
     priority = priority if priority else (25 if bucket == "try" else 26)
     release = name.endswith("release")
@@ -307,6 +308,15 @@ def r8_builder(
         max_concurrent_invocations = max_concurrent_invocations,
     ) if bucket == "ci" else None)
 
+    properties = dict(properties) if properties else {}
+    env = dict(properties.get("env", {}))
+    if release:
+        env["R8_BOT_RELEASE"] = "1"
+    if bucket == "ci":
+        env["R8_BOT_POST_SUBMIT"] = "1"
+    if env:
+        properties["env"] = env
+
     luci.builder(
         name = name,
         bucket = bucket,
@@ -320,6 +330,7 @@ def r8_builder(
         triggering_policy = triggering_policy,
         executable = "rex",
         resultdb_settings = resultdb.settings(enable = True, bq_exports = None, history_options = None),
+        properties = properties,
         **kwargs
     )
     if bucket == "ci":
@@ -385,6 +396,10 @@ def r8_tester_with_default(
         max_concurrent_invocations = 1,
         execution_timeout = time.hour * 2,
         extra_properties = {}):
+    extra_properties = dict(extra_properties)
+    env = dict(extra_properties.get("env", {}))
+    env["R8_BOT_TESTER"] = "1"
+    extra_properties["env"] = env
     r8_tester(
         name,
         test_options + common_test_options,
@@ -419,6 +434,10 @@ def archivers():
                 properties["test_options"] = ["--variant=jdk11_legacy"]
             else:
                 properties["test_options"] = ["--variant=jdk8"]
+        else:
+            properties["env"] = {
+                "R8_BOT_ARCHIVE": "1",
+            }
 
         r8_builder(
             name,
@@ -535,6 +554,11 @@ r8_tester_with_default(
     bucket = "try",
     trigger = False,
     priority = 20,
+    extra_properties = {
+        "env": {
+            "R8_BOT_COMPILE_ONLY": "1",
+        },
+    },
 )
 
 def perf_size():
@@ -553,6 +577,9 @@ def perf_size():
                 "builder_group": "internal.client.r8",
                 "test_options": ["--upload-baseline"] if bucket == "ci" else [],
                 "test_wrapper": "tools/perf_size.py",
+                "env": {
+                    "R8_BOT_SIZE": "1",
+                },
             },
         )
 
