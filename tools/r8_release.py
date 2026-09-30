@@ -283,7 +283,7 @@ def prepare_studio(args):
             return 'DryRun: omitting studio release for %s' % version
 
         change_name = 'update-r8'
-        topic = f'r8-{version}'
+        topic = options.topic if options.topic else f'r8-{version}'
         tools_base = os.path.join(args.studio, 'tools', 'base')
         prebuilts_tools = os.path.join(args.studio, 'prebuilts', 'tools')
         tools_buildsrc = os.path.join(args.studio, 'tools', 'buildSrc')
@@ -302,10 +302,21 @@ def prepare_studio(args):
         # 1. Update tools/base and run maven_fetch.sh (which updates
         # tools/base/bazel/maven/BUILD.maven and fetches prebuilts into
         # prebuilts/tools).
+        previous_version = None
         with utils.ChangedWorkingDirectory(tools_base):
             if not options.use_existing_work_branch:
                 subprocess.check_call(['repo', 'start', change_name])
             artifacts_bzl = os.path.join('bazel', 'maven', 'artifacts.bzl')
+            for line in open(artifacts_bzl, 'r'):
+                result = re.search(r'"com\.android\.tools:r8:([^"]+)"', line)
+                if result:
+                    previous_version = result.group(1)
+                    break
+            if not previous_version:
+                print(
+                    f'ERROR: Could not find previous R8 version in {artifacts_bzl}'
+                )
+                sys.exit(1)
             sed(r'"com\.android\.tools:r8:[^"]+"',
                 f'"com.android.tools:r8:{version}"', artifacts_bzl)
             maven_fetch = os.path.join('bazel', 'maven', 'maven_fetch.sh')
@@ -331,10 +342,18 @@ Test: Existing"""
             if not options.use_existing_work_branch:
                 subprocess.check_call(['repo', 'start', change_name])
             m2_r8_dir = os.path.join('common', 'm2', 'repository', 'com',
-                                     'android', 'tools', 'r8', version)
-            subprocess.check_call(['git', 'add', m2_r8_dir])
+                                     'android', 'tools', 'r8')
+            if previous_version != version:
+                subprocess.check_call([
+                    'git', 'rm', '-r',
+                    os.path.join(m2_r8_dir, previous_version)
+                ])
+            subprocess.check_call(
+                ['git', 'add', os.path.join(m2_r8_dir, version)])
 
         git_message_prebuilts = f"""Add prebuilts for R8 {version}
+
+Also remove prebuilts for R8 {previous_version}
 
 {bugs}
 Test: n/a"""
@@ -355,7 +374,7 @@ Test: n/a"""
                                  options,
                                  git_message_update,
                                  topic,
-                                 presubmit=True)
+                                 presubmit=not options.no_presubmit)
 
     return release_studio
 
@@ -1150,6 +1169,11 @@ def parse_options():
         metavar=('<path>'),
         help='Release for studio by setting the path to a studio '
         'checkout')
+    result.add_argument('--topic',
+                        default=None,
+                        metavar=('<topic>'),
+                        help='Gerrit topic name when releasing for studio '
+                        '(default: r8-<version>)')
     result.add_argument('--maven',
                         default=False,
                         action='store_true',
@@ -1177,6 +1201,11 @@ def parse_options():
                         default=False,
                         action='store_true',
                         help="Don't upload for code review")
+    result.add_argument('--no-presubmit',
+                        '--no_presubmit',
+                        default=False,
+                        action='store_true',
+                        help="Don't start presubmit on uploaded changes")
     result.add_argument('--yes',
                         default=False,
                         action='store_true',
