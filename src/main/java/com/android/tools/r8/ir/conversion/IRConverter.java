@@ -49,7 +49,6 @@ import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
 import com.android.tools.r8.ir.conversion.passes.NaturalIntLoopOptimizer;
 import com.android.tools.r8.ir.conversion.passes.ParentConstructorHoistingCodeRewriter;
 import com.android.tools.r8.ir.conversion.passes.RedundantConstNumberRemover;
-import com.android.tools.r8.ir.conversion.passes.ReturnBlockCanonicalizerRewriter;
 import com.android.tools.r8.ir.conversion.passes.SplitBranch;
 import com.android.tools.r8.ir.conversion.passes.SplitIntSwitch;
 import com.android.tools.r8.ir.conversion.passes.SplitReturnRewriter;
@@ -345,7 +344,6 @@ public class IRConverter {
     passes.add(new ServiceLoaderRewriter(appView));
     if (appView.options().isRelease()) {
       passes.add(new SplitReturnRewriter(appView));
-      passes.add(new ReturnBlockCanonicalizerRewriter(appView));
     }
     passes.add(new ShareFieldGetInstructions(appView));
     if (appView.options().enableStringConcatInstruction) {

@@ -16,9 +16,12 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
+import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class Return extends JumpInstruction {
@@ -92,6 +95,27 @@ public class Return extends JumpInstruction {
   @Override
   public void buildDex(DexBuilder builder) {
     builder.addReturn(this, createDexInstruction(builder));
+  }
+
+  @Override
+  public boolean identicalAfterRegisterAllocation(
+      Instruction other, RegisterAllocator allocator, MethodConversionOptions conversionOptions) {
+    return super.identicalAfterRegisterAllocation(other, allocator, conversionOptions)
+        && (!shouldOnlyMergeIdenticalReturnValues(allocator.options(), allocator.getProgramMethod())
+            || identicalArrayValuesAfterRegisterAllocation(
+                returnValue(), other.asReturn().returnValue(), allocator));
+  }
+
+  /**
+   * Returns true if returns of distinct values must not be merged in the given method.
+   *
+   * <p>When ART may compute an incorrect join for arrays of interfaces, merging distinct array
+   * return values can lead to verification errors.
+   */
+  public static boolean shouldOnlyMergeIdenticalReturnValues(
+      InternalOptions options, ProgramMethod method) {
+    return options.canHaveIncorrectJoinForArrayOfInterfacesBug()
+        && method.getReturnType().isArrayType();
   }
 
   @Override

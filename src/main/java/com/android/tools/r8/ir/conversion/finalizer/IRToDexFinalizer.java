@@ -30,6 +30,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
 
   private final DeadCodeRemover deadCodeRemover;
   private final InternalOptions options;
+  private final ReturnBlockCanonicalizerRewriter returnBlockCanonicalizerRewriter;
   private final TrivialGotosCollapser trivialGotosCollapser;
   private final IdenticalBlockRemover identicalBlockRemover;
   private final RedundantInstructionsRemover redundantInstructionsRemover;
@@ -44,6 +45,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     super(appView);
     this.deadCodeRemover = deadCodeRemover;
     this.options = appView.options();
+    this.returnBlockCanonicalizerRewriter = new ReturnBlockCanonicalizerRewriter(appView);
     this.trivialGotosCollapser = new TrivialGotosCollapser(this.appView);
     identicalBlockRemover = new IdenticalBlockRemover(appView);
     redundantInstructionsRemover = new RedundantInstructionsRemover(appView);
@@ -65,6 +67,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
       D8NestBasedAccessDesugaring.checkAndFailOnIncompleteNests(appView);
     }
     DexEncodedMethod method = code.method();
+    returnBlockCanonicalizerRewriter.run(code, timing);
     workaroundBugs(code, timing);
     code.traceBlocks();
     // Perform register allocation.

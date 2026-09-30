@@ -19,6 +19,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
@@ -159,13 +160,20 @@ public class RedundantConstNumberRemovalTest extends TestBase {
     assertThat(methodSubject, isPresent());
     IRCode code = methodSubject.buildIR();
 
-    // Check that the code returns null.
+    // Check that the code returns null. On DEX, return blocks are canonicalized in
+    // IRToDexFinalizer, so the `null` flows into a phi. On CF, return blocks are not canonicalized,
+    // so there is a direct `return null`.
     assertTrue(
         Streams.stream(code.instructionIterator())
+            .filter(Instruction::isReturn)
+            .map(instruction -> instruction.asReturn().returnValue())
             .anyMatch(
-                instruction ->
-                    instruction.isReturn()
-                        && instruction.asReturn().returnValue().definition.isConstNumber()));
+                returnValue ->
+                    parameters.isDexRuntime()
+                        ? returnValue.isPhi()
+                            && returnValue.asPhi().getOperands().stream()
+                                .anyMatch(Value::isConstNumber)
+                        : returnValue.isConstNumber()));
 
     // Also check that none of the return instructions actually returns the argument.
     assertEquals(1, code.collectArguments().size());
