@@ -126,7 +126,7 @@ def ensure_build_artifacts(options):
         utils.R8_TESTS_JAR,
         utils.R8_TESTS_DEPS_JAR,
         utils.R8_TESTBASE_JAR,
-        utils.BUILD_JAVA_MAIN_CLASSPATH.split(os.pathsep)[0],
+        utils.BUILD_JAVA_MAIN_CLASSPATH,
         os.path.join(utils.REPO_ROOT, 'd8_r8', 'keepanno', 'build', 'classes',
                      'java', 'main'),
         os.path.join(utils.REPO_ROOT, 'd8_r8', 'test_modules', 'tests_java_8',

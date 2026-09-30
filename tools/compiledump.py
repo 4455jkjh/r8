@@ -569,7 +569,7 @@ def clean_config_line(line, minify, optimize, shrink):
 
 
 def compile_reflective_helper(temp, jdkhome, no_build=False):
-    main_classes_dir = utils.BUILD_JAVA_MAIN_CLASSPATH.split(os.pathsep)[0]
+    main_classes_dir = utils.BUILD_JAVA_MAIN_CLASSPATH
     if not no_build or not os.path.exists(main_classes_dir):
         gradle.run_gradle([utils.GRADLE_TASK_MAIN_COMPILE])
     base_path = os.path.join(

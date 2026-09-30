@@ -55,7 +55,6 @@ dependencies {
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
-  implementation(project(":main", "turboClassesOutput"))
   resourceShrinkerDepsJarScope(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))

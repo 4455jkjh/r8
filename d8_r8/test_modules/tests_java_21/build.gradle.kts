@@ -24,15 +24,11 @@ val mainClassesOutput =
   configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
 val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
 val mainResources = configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope) }
-val turboClassesScope by configurations.dependencyScope("turboClassesScope")
-val turboClassesOutput =
-  configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
 
 dependencies {
   assistantClassesScope(project(":assistant", "assistantJar"))
   mainClassesScope(project(":main", "mainClassesOutput"))
   mainResourcesScope(project(":main", "mainResources"))
-  turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(project(":assistant", "assistantJar"))
   runtimeOnlyData(project(":third_party", "jdk21Float16Test"))
 }
@@ -43,8 +39,6 @@ tasks {
     systemProperty(
       "BUILD_PROP_R8_RUNTIME_PATH",
       project.files(mainClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        project.files(turboClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
         project.files(mainResources).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +

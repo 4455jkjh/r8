@@ -16,7 +16,6 @@ public class R8NonJava8TestConventionPlugin : Plugin<Project> {
     target.dependencies.apply {
       add("implementation", project(":main", "mainClassesOutput"))
       add("implementation", project(":main", "mainResources"))
-      add("implementation", project(":main", "turboClassesOutput"))
       add("implementation", project(":testbase"))
       add("implementation", project(":testbase", "depsJar"))
       add("runtimeOnlyDataScope", project(":testbase", "runtimeOnlyDataElements"))
