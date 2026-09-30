@@ -39,7 +39,7 @@ public class DeadGetInstructionsInDebugModeTest extends DebugTestBase implements
   }
 
   @Test
-  public void testDeadGetDebug() throws Throwable {
+  public void testDeadInstanceGetDebug() throws Throwable {
     testForD8(parameters)
         .addProgramClassFileData(dumpB495480702Kt())
         .addProgramClassFileData(dumpA())
@@ -53,13 +53,13 @@ public class DeadGetInstructionsInDebugModeTest extends DebugTestBase implements
                       .clazz("B496656504Kt")
                       .uniqueMethodWithOriginalName("foo")
                       .streamInstructions()
-                      .noneMatch(InstructionSubject::isStaticGet));
+                      .anyMatch(InstructionSubject::isStaticGet));
               assertTrue(
                   inspector
                       .clazz("A")
                       .uniqueMethodWithOriginalName("foo")
                       .streamInstructions()
-                      .noneMatch(InstructionSubject::isInstanceGet));
+                      .anyMatch(InstructionSubject::isInstanceGet));
             });
   }
 

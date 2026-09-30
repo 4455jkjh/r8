@@ -462,6 +462,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.convertPcBasedDebugInfoToNative", false);
 
+  public boolean disableAdditionalDebuggerSupport =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.disableAdditionalDebuggerSupport", false);
+
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;
     private final List<T> exceptionPrefixes;
