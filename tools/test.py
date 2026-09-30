@@ -386,9 +386,10 @@ def test(options, args):
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
 
-    if options.dex_vm == '7.0.0' or (options.runtimes and
-                                     ('7.0.0' in options.runtimes or
-                                      options.runtimes == 'all')):
+    if options.dex_vm in [
+            '7.0.0', 'all'
+    ] or (options.runtimes and
+          ('7.0.0' in options.runtimes or options.runtimes in ['all', 'CQ'])):
         art_7_0_0_symlinks()
 
     desugar_jdk_json_dir = None
