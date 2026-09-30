@@ -25,6 +25,8 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -159,7 +161,13 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
                   syntheticNormalExits.contains(block) ? null : block,
                   allocator,
                   blocksToRemove);
-          newBlocks.put(predsWithSameLastInstruction.get(0), newBlock);
+          // Insert the new block after a predecessor that keeps some instructions, so that it falls
+          // through to the new block instead of being removed.
+          BasicBlock predBeforeNewBlock =
+              Collections.max(
+                  predsWithSameLastInstruction,
+                  Comparator.comparingInt(pred -> pred.getInstructions().size()));
+          newBlocks.put(predBeforeNewBlock, newBlock);
           hasChanged = true;
         }
       }
