@@ -2406,6 +2406,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enablePhiLiveIntervalsCoalescing =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enablePhiLiveIntervalsCoalescing", true);
+    public boolean enableMoveCoalescing =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableMoveCoalescing", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {

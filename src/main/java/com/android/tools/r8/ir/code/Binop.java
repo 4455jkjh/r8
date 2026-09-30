@@ -15,6 +15,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public abstract class Binop extends Instruction {
@@ -51,16 +52,22 @@ public abstract class Binop extends Instruction {
 
   public abstract boolean isCommutative();
 
+  public boolean canBeTwoAddr(InternalOptions options) {
+    if (rightValue().needsRegister() && leftValue().needsRegister()) {
+      return !(options.canHaveMul2AddrBug() && isMul());
+    }
+    return false;
+  }
+
   @Override
   public boolean isTwoAddr(RegisterAllocator allocator) {
-    if (rightValue().needsRegister() && leftValue().needsRegister()) {
+    if (canBeTwoAddr(allocator.options())) {
       int leftRegister = allocator.getRegisterForValue(leftValue(), getNumber());
       int rightRegister = allocator.getRegisterForValue(rightValue(), getNumber());
       int destRegister = allocator.getRegisterForValue(outValue, getNumber());
       return ((leftRegister == destRegister) || (isCommutative() && rightRegister == destRegister))
           && leftRegister <= U4BIT_MAX
-          && rightRegister <= U4BIT_MAX
-          && !(allocator.options().canHaveMul2AddrBug() && isMul());
+          && rightRegister <= U4BIT_MAX;
     }
     return false;
   }

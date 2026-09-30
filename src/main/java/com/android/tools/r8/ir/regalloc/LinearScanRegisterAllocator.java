@@ -227,7 +227,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   // The set of registers that are free for allocation.
   private IntSortedSet freeRegisters = new IntRBTreeSet();
   // The max register number used.
-  private int maxRegisterNumber = -1;
+  int maxRegisterNumber = -1;
 
   // List of all top-level live intervals for all SSA values.
   private List<LiveIntervals> liveIntervals = new ArrayList<>();
@@ -282,7 +282,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
             && isDedicatedMoveExceptionRegisterInLastLocalRegister());
   }
 
-  private boolean isDedicatedMoveExceptionRegister(int register) {
+  boolean isDedicatedMoveExceptionRegister(int register) {
     return hasDedicatedMoveExceptionRegister() && register == getMoveExceptionRegister();
   }
 
@@ -924,6 +924,12 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     boolean succeeded = performLinearScan(mode);
     timing.end();
     if (succeeded) {
+      if (options().getTestingOptions().enableMoveCoalescing
+          && !options().shouldCompileMethodInDebugMode(code.context())) {
+        timing.begin("Coalesce moves");
+        MoveCoalescer.run(this, code, liveIntervals, liveAtEntrySets, maxRegisterNumber);
+        timing.end();
+      }
       InsertMovesResult insertMovesResult = insertMoves();
 
       // We only compute unused information for local registers (temporary registers for parallel
@@ -2029,14 +2035,14 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
   // Returns true if the register of the intervals is constrained by a runtime bug workaround, see
   // isRegisterRejectedByRuntimeWorkaround.
-  private boolean needsRuntimeWorkaround(LiveIntervals intervals) {
+  boolean needsRuntimeWorkaround(LiveIntervals intervals) {
     return needsLongResultOverlappingLongOperandsWorkaround(intervals)
         || needsSingleResultOverlappingLongOperandsWorkaround(intervals)
         || needsArrayGetWideWorkaround(intervals);
   }
 
   // Returns true if the register cannot be assigned to the intervals due to a runtime bug.
-  private boolean isRegisterRejectedByRuntimeWorkaround(int register, LiveIntervals intervals) {
+  boolean isRegisterRejectedByRuntimeWorkaround(int register, LiveIntervals intervals) {
     return (needsLongResultOverlappingLongOperandsWorkaround(intervals)
             && isLongResultOverlappingLongOperands(register, intervals))
         || (needsSingleResultOverlappingLongOperandsWorkaround(intervals)
@@ -2098,6 +2104,20 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return false;
   }
 
+  // Returns the highest register that can be assigned to the live intervals.
+  int getRegisterConstraint(LiveIntervals intervals) {
+    int registerConstraint = intervals.getRegisterLimit();
+    if (!mode.is4Bit() && registerConstraint < Constants.U16BIT_MAX) {
+      // Since we swap the argument registers and the temporary registers after register allocation,
+      // we can allow the use of number of arguments more registers.
+      registerConstraint += numberOfArgumentRegisters;
+      // If we swap the locals and the dedicated move exception register we can allow the use of
+      // one additional register.
+      registerConstraint += getMoveExceptionOffsetForLocalRegisters();
+    }
+    return registerConstraint;
+  }
+
   @SuppressWarnings("ReferenceEquality")
   private boolean allocateSingleInterval(LiveIntervals unhandledInterval) {
     int registerConstraint = unhandledInterval.getRegisterLimit();
@@ -2118,15 +2138,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       }
     }
 
-    if (!mode.is4Bit() && registerConstraint < Constants.U16BIT_MAX) {
-      // Since we swap the argument registers and the temporary registers after register allocation,
-      // we can allow the use of number of arguments more registers.
-      registerConstraint += numberOfArgumentRegisters;
-      // If we swap the locals and the dedicated move exception register we can allow the use of
-      // one additional register.
-      registerConstraint += getMoveExceptionOffsetForLocalRegisters();
-    }
-
+    registerConstraint = getRegisterConstraint(unhandledInterval);
     RegisterPositions freePositions = computeFreePositions(unhandledInterval, registerConstraint);
     assert freePositionsAreConsistentWithFreeRegisters(freePositions, registerConstraint);
 
