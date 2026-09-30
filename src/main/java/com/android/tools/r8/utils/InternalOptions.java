@@ -2372,6 +2372,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableHorizontalClassMergingWithDifferentFields =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableHorizontalClassMergingWithDifferentFields", true);
+    public boolean enablePhiLiveIntervalsCoalescing =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enablePhiLiveIntervalsCoalescing", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {

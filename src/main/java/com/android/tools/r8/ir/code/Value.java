@@ -755,7 +755,6 @@ public class Value implements Comparable<Value>, InstructionOrValue {
   }
 
   public void setLiveIntervals(LiveIntervals intervals) {
-    assert liveIntervals == null;
     liveIntervals = intervals;
   }
 

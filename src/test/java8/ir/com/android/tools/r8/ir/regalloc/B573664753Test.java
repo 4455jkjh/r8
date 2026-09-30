@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.regalloc;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.InternalOptions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -37,6 +38,7 @@ public class B573664753Test extends TestBase {
     parameters.assumeDexRuntime();
     testForD8(parameters)
         .addInnerClasses(getClass())
+        .addOptionsModification(this::disablePhiLiveIntervalsCoalescing)
         .release()
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("1, 4, 10, 20, 2");
@@ -47,8 +49,14 @@ public class B573664753Test extends TestBase {
     testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepClassAndMembersRules(Main.class)
+        .addOptionsModification(this::disablePhiLiveIntervalsCoalescing)
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("1, 4, 10, 20, 2");
+  }
+
+  // Coalescing the phi live intervals hides the bug.
+  private void disablePhiLiveIntervalsCoalescing(InternalOptions options) {
+    options.getTestingOptions().enablePhiLiveIntervalsCoalescing = false;
   }
 
   static class Main {
