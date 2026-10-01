@@ -105,7 +105,7 @@ public class KotlinDeclarationContainerInfo implements EnqueuerMetadataTraceable
             fieldSignatureMap.get(propertyProcessor.fieldSignature().toString());
         if (field != null) {
           hasBacking = true;
-          field.setKotlinMemberInfo(kotlinPropertyInfo);
+          memberInfoConsumer.accept(field, kotlinPropertyInfo);
           originalAssignmentTracker.add(field.getReference());
         }
       }

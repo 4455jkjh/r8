@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.partial.kotlin;
 
-import static org.junit.Assert.assertThrows;
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -67,7 +65,9 @@ public class PartialCompilationKotlinMetadataFieldMemberInfoTest extends TestBas
         .addKeepMainRule(Main.class)
         .setR8PartialConfiguration(
             builder -> builder.includeAll().excludeClasses(PropertyHost.class))
-        .apply(b -> assertThrows(AssertionError.class, b::compile));
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello!");
   }
 
   @Test
@@ -80,7 +80,9 @@ public class PartialCompilationKotlinMetadataFieldMemberInfoTest extends TestBas
         .addKeepMainRule(Main.class)
         .setR8PartialConfiguration(
             builder -> builder.includeAll().excludeClasses(CompanionHost.class))
-        .apply(b -> assertThrows(AssertionError.class, b::compile));
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello!");
   }
 
   @Test
@@ -93,7 +95,9 @@ public class PartialCompilationKotlinMetadataFieldMemberInfoTest extends TestBas
         .addProgramClassFileData(getKotlinMetadataClassFileData(), classData)
         .addKeepMainRule(Main.class)
         .setR8PartialConfiguration(builder -> builder.includeAll().excludeClasses(EnumHost.class))
-        .apply(b -> assertThrows(AssertionError.class, b::compile));
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello!");
   }
 
   private static byte[] getKotlinMetadataClassFileData() throws IOException {
