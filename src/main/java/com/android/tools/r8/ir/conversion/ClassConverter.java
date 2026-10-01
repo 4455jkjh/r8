@@ -182,14 +182,16 @@ public abstract class ClassConverter {
           (i, clazz) -> clazz.getTypeName());
       methodProcessor.awaitMethodProcessing();
 
+      // Create a new processor context to ensure unique method processing contexts.
+      // To guarantee deterministic method processing ids it is important that a new wave is
+      // unconditionally created here, even if there is nothing to do. See also b/568088627.
+      methodProcessor.newWave();
+
       // Finalize the desugaring of the processed classes. This may require processing (and
       // reprocessing) of some methods.
       List<ProgramMethod> needsProcessing =
           instructionDesugaringEventConsumerForWave.finalizeDesugaring();
       if (!needsProcessing.isEmpty()) {
-        // Create a new processor context to ensure unique method processing contexts.
-        methodProcessor.newWave();
-
         CfInstructionDesugaringEventConsumer
             instructionDesugaringEventConsumerForSyntheticPrepareStep =
                 CfInstructionDesugaringEventConsumer.createForD8(
