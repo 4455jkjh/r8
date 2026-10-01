@@ -39,8 +39,9 @@ public class R8ConventionPlugin : Plugin<Project> {
             explicitApi()
             compilerOptions {
               jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
-              languageVersion.set(KotlinVersion.KOTLIN_1_8)
-              apiVersion.set(KotlinVersion.KOTLIN_1_8)
+              languageVersion.set(KotlinVersion.KOTLIN_2_2)
+              apiVersion.set(KotlinVersion.KOTLIN_2_2)
+              coreLibrariesVersion = "2.2.21"
             }
           }
         }

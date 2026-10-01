@@ -17,11 +17,11 @@ junitJupiter = "5.14.3"
 junitPlatform = "1.14.3"
 kotlin = "1.9.20"
 # Determined by Gradle, needs to be updated with Gradle upgrades.
-kotlinDsl = "6.4.2"
+kotlinDsl = "6.7.6"
 # This version is both our kotlin compiler and Gradle's (current) kotlin compiler.
 # If Gradle is upgraded, then this version might have to split into two and
 # the dependencies untangled.
-kotlinGradlePlugin = "2.2.21"
+kotlinGradlePlugin = "2.4.10"
 kotlinMetadata = "2.4.0"
 mockito = "2.10.0"
 playwright = "1.60.0"
@@ -58,6 +58,7 @@ junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "juni
 junitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junitJupiter" }
 junitPlatform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatform" }
 kotlinAssignmentCompilerPlugin = { module = "org.jetbrains.kotlin:kotlin-assignment-compiler-plugin-embeddable", version.ref = "kotlinGradlePlugin"}
+kotlinBuildToolsCompat = { module = "org.jetbrains.kotlin:kotlin-build-tools-compat", version.ref = "kotlinGradlePlugin" }
 kotlinBuildToolsImpl = { module = "org.jetbrains.kotlin:kotlin-build-tools-impl", version.ref = "kotlinGradlePlugin" }
 kotlinCompilerEmbeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlinGradlePlugin" }
 kotlinDslGradlePlugin = { module = "org.gradle.kotlin.kotlin-dsl:org.gradle.kotlin.kotlin-dsl.gradle.plugin", version.ref = "kotlinDsl" }
