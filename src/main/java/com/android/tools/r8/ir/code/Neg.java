@@ -109,6 +109,30 @@ public class Neg extends Unop {
       }
       return appView.abstractValueFactory().createSingleNumberValue(newConst, getOutType());
     }
+    if (type == NumericType.INT && sourceLattice.hasDefinitelySetAndUnsetBitsInformation()) {
+      // Although the exact value of the source is unknown, we may still be able to determine the
+      // sign of the result from the known bits of the source, since negation flips the sign of all
+      // int values except 0 and Integer.MIN_VALUE (which both negate to themselves).
+      //
+      // If the sign bit of the source is definitely unset, and at least one other bit is definitely
+      // set, then the source is strictly positive, and therefore the result is strictly negative,
+      // i.e., the sign bit of the result is set.
+      if ((sourceLattice.getDefinitelyUnsetIntBits() & Integer.MIN_VALUE) != 0
+          && sourceLattice.getDefinitelySetIntBits() != 0) {
+        return appView
+            .abstractValueFactory()
+            .createDefiniteBitsIntNumberValue(Integer.MIN_VALUE, 0);
+      }
+      // If the sign bit of the source is definitely set, and at least one other bit is definitely
+      // set, then the source is strictly negative and different from Integer.MIN_VALUE, and
+      // therefore the result is strictly positive, i.e., the sign bit of the result is unset.
+      if ((sourceLattice.getDefinitelySetIntBits() & Integer.MIN_VALUE) != 0
+          && (sourceLattice.getDefinitelySetIntBits() & ~Integer.MIN_VALUE) != 0) {
+        return appView
+            .abstractValueFactory()
+            .createDefiniteBitsIntNumberValue(0, Integer.MIN_VALUE);
+      }
+    }
     return AbstractValue.unknown();
   }
 
