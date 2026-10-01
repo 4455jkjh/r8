@@ -188,21 +188,6 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     public BookStoryAppPartial(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
     }
-
-    @Test
-    @Override
-    public void testBenchmarks() throws Exception {
-      assumeFalse(ToolHelper.isWindows());
-      RuntimeException e =
-          assertThrows(
-              RuntimeException.class,
-              () -> {
-                for (int i = 0; i < 15; i++) {
-                  super.testBenchmarks();
-                }
-              });
-      assertThat(e.getCause(), instanceOf(CompilationFailedException.class));
-    }
   }
 
   public static class ReadYouApp extends OpenSourceBenchmarks {

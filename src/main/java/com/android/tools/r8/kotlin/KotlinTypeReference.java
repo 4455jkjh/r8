@@ -174,8 +174,11 @@ class KotlinTypeReference implements EnqueuerMetadataTraceable {
 
   @Override
   public void trace(KotlinMetadataUseRegistry registry) {
-    if (known != null && known.isClassType()) {
-      registry.registerType(known);
+    if (known != null) {
+      DexType baseType = known.getBaseType();
+      if (baseType.isClassType()) {
+        registry.registerType(baseType);
+      }
     }
   }
 
