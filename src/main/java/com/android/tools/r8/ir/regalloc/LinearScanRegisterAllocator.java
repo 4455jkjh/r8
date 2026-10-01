@@ -2169,7 +2169,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private RegisterPositions computeFreePositions(
       LiveIntervals unhandledInterval, int registerConstraint) {
     // Set all free positions for possible registers to max integer.
-    RegisterPositions freePositions = new RegisterPositionsImpl(registerConstraint + 1);
+    RegisterPositions freePositions = new RegisterPositionsImpl(registerConstraint + 1, false);
 
     if (options().shouldCompileMethodInDebugMode(code.context())
         && !code.context().getAccessFlags().isStatic()) {
@@ -2735,7 +2735,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private boolean allocateBlockedRegister(LiveIntervals unhandledInterval, int registerConstraint) {
     // Initialize all candidate registers to Integer.MAX_VALUE.
     RegisterPositions usePositions = new RegisterPositionsImpl(registerConstraint + 1);
-    RegisterPositions blockedPositions = new RegisterPositionsImpl(registerConstraint + 1);
+    RegisterPositions blockedPositions = new RegisterPositionsImpl(registerConstraint + 1, false);
 
     // Compute next use location for all currently active registers.
     for (LiveIntervals intervals : active) {

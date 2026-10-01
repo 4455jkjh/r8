@@ -19,15 +19,31 @@ public class RegisterPositionsImpl extends RegisterPositions {
   private final BitSet blockedRegisters;
 
   public RegisterPositionsImpl(int limit) {
+    this(limit, true);
+  }
+
+  // When trackTypes is false, the register types are not recorded, and hasType() must only be
+  // called with RegisterType.ANY. This saves allocating three BitSets of size limit.
+  public RegisterPositionsImpl(int limit, boolean trackTypes) {
     this.limit = limit;
     backing = new int[INITIAL_SIZE];
     for (int i = 0; i < INITIAL_SIZE; i++) {
       backing[i] = Integer.MAX_VALUE;
     }
-    registerHoldsConstant = new BitSet(limit);
-    registerHoldsMonitor = new BitSet(limit);
-    registerHoldsNewStringInstanceDisallowingSpilling = new BitSet(limit);
+    if (trackTypes) {
+      registerHoldsConstant = new BitSet(limit);
+      registerHoldsMonitor = new BitSet(limit);
+      registerHoldsNewStringInstanceDisallowingSpilling = new BitSet(limit);
+    } else {
+      registerHoldsConstant = null;
+      registerHoldsMonitor = null;
+      registerHoldsNewStringInstanceDisallowingSpilling = null;
+    }
     blockedRegisters = new BitSet(limit);
+  }
+
+  private boolean isTrackingTypes() {
+    return registerHoldsConstant != null;
   }
 
   @Override
@@ -71,10 +87,12 @@ public class RegisterPositionsImpl extends RegisterPositions {
   @Override
   public void set(int index, int value, LiveIntervals intervals) {
     set(index, value);
-    registerHoldsConstant.set(index, intervals.isConstantNumberInterval());
-    registerHoldsMonitor.set(index, intervals.usedInMonitorOperation());
-    registerHoldsNewStringInstanceDisallowingSpilling.set(
-        index, intervals.isNewStringInstanceDisallowingSpilling());
+    if (isTrackingTypes()) {
+      registerHoldsConstant.set(index, intervals.isConstantNumberInterval());
+      registerHoldsMonitor.set(index, intervals.usedInMonitorOperation());
+      registerHoldsNewStringInstanceDisallowingSpilling.set(
+          index, intervals.isNewStringInstanceDisallowingSpilling());
+    }
   }
 
   @Override
