@@ -27,11 +27,7 @@ public class SwitchMapMissingEnumTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   private Collection<byte[]> getInnerClassesWithoutEnum() throws IOException {
@@ -67,8 +63,8 @@ public class SwitchMapMissingEnumTest extends TestBase {
         .setMinApi(parameters)
         .addProgramClassFileData(getInnerClassesWithoutEnum())
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntimeVersionOlderThanOrEqual(Version.V4_4_4),
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             b -> b.assertFailureWithErrorThatThrows(VerifyError.class),
             b -> b.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }
@@ -83,8 +79,8 @@ public class SwitchMapMissingEnumTest extends TestBase {
         .allowDiagnosticWarningMessages()
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntimeVersionOlderThanOrEqual(Version.V4_4_4),
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             b -> b.assertFailureWithErrorThatThrows(VerifyError.class),
             b -> b.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }

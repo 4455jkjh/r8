@@ -38,11 +38,7 @@ public class ApiModelMockAbstractMethodOnBaseToOutlineTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   private boolean isGreaterOrEqualToMockLevel() {
@@ -135,13 +131,13 @@ public class ApiModelMockAbstractMethodOnBaseToOutlineTest extends TestBase {
       runResult.assertSuccessWithOutputLines(
           "OtherLibraryClass::foo", "SubLibraryClassAtLaterApiLevel::foo");
     } else {
-      runResult.assertSuccessWithOutputLines("NoClassDefFoundError");
+      runResult
+          .assertSuccessWithOutputLines("NoClassDefFoundError")
+          .applyIfDexRuntime(
+              version -> version.isNewerThanOrEqual(Version.V7_0_0),
+              result ->
+                  result.assertStderrMatches(not(containsString("This dex file is invalid"))));
     }
-    runResult.applyIf(
-        !isGreaterOrEqualToMockLevel()
-            && parameters.isDexRuntime()
-            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-        result -> result.assertStderrMatches(not(containsString("This dex file is invalid"))));
   }
 
   private void inspect(CodeInspector inspector) {

@@ -11,6 +11,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,11 +29,7 @@ public class DuplicateClassTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withDexRuntimes()
-        .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
   }
 
   @Test
@@ -48,16 +45,16 @@ public class DuplicateClassTest extends TestBase {
         .compile()
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Hello World")
-        .applyIf(
-            parameters.getDexRuntimeVersion().isDalvik(),
+        .applyIfDexRuntime(
+            Version::isDalvik,
             result ->
                 assertThat(
-                    result.asSingleRuntimeResult().getStdErr(),
+                    result.getStdErr(),
                     containsString(
                         "DexOpt: not resolving ambiguous class 'Ljava/lang/Exception;'")),
             result ->
                 assertThat(
-                    result.asSingleRuntimeResult().getStdErr(),
+                    result.getStdErr(),
                     not(containsString("not resolving ambiguous class 'Ljava/lang/Exception;'"))));
   }
 

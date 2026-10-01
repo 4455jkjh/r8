@@ -42,11 +42,7 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection parameters() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   @Parameter(0)
@@ -69,11 +65,7 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
     testForJvm(parameters)
         .addProgramClasses(getInputClasses())
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(this::checkRunResult)
-        .inspectStackTrace(
-            stackTrace ->
-                checkExpectedStackTrace(
-                    stackTrace, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
   }
 
   @Test
@@ -85,11 +77,7 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
         .addProgramClasses(getInputClasses())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(this::checkRunResult)
-        .inspectStackTrace(
-            stackTrace ->
-                checkExpectedStackTrace(
-                    stackTrace, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
   }
 
   @Test
@@ -103,11 +91,7 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
         .addProgramClasses(getInputClasses())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(this::checkRunResult)
-        .inspectStackTrace(
-            stackTrace ->
-                checkExpectedStackTrace(
-                    stackTrace, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
   }
 
   @Test
@@ -121,11 +105,7 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
         .addProgramClasses(getInputClasses())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(this::checkRunResult)
-        .inspectStackTrace(
-            stackTrace ->
-                checkExpectedStackTrace(
-                    stackTrace, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
   }
 
   @Test
@@ -141,28 +121,50 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
         .addKeepAttributeLineNumberTable()
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(this::checkRunResult)
-        .inspectStackTrace(
-            stackTrace ->
-                checkExpectedStackTrace(
-                    stackTrace, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
   }
 
-  private void checkRunResult(TestRunResult<?> runResult) {
-    runResult.assertFailureWithErrorThatThrows(NullPointerException.class);
+  private void checkRunResult(
+      TestRunResult<?> runResult,
+      boolean includeObjectsFrame,
+      boolean includeJvmModule,
+      boolean doNotCheckLines)
+      throws Exception {
+    runResult
+        .assertFailureWithErrorThatThrows(NullPointerException.class)
+        .applyIfDexRuntime(
+            version -> version.isNewerThanOrEqual(V17_0_0),
+            r ->
+                r.inspectStackTrace(
+                    stackTrace ->
+                        checkExpectedStackTrace(
+                            stackTrace,
+                            includeObjectsFrame,
+                            includeJvmModule,
+                            doNotCheckLines,
+                            true)),
+            r ->
+                r.inspectStackTrace(
+                    stackTrace ->
+                        checkExpectedStackTrace(
+                            stackTrace,
+                            includeObjectsFrame,
+                            includeJvmModule,
+                            doNotCheckLines,
+                            false)));
   }
 
   private void checkExpectedStackTrace(
       StackTrace stackTrace,
       boolean includeObjectsFrame,
       boolean includeJvmModule,
-      boolean doNotCheckLines) {
+      boolean doNotCheckLines,
+      boolean isDexV17OrNewer) {
     StackTrace.Builder builder = StackTrace.builder();
     if (includeObjectsFrame) {
       ClassReference objects = Reference.classFromClass(Objects.class);
       String objectsFrameFormat = (includeJvmModule ? "java.base/" : "") + objects.getTypeName();
-      if (parameters.isDexRuntimeVersionNewerThanOrEqual(V17_0_0)
-          && parameters.getApiLevel().isGreaterThanOrEqualTo(CINNAMON_BUN)) {
+      if (isDexV17OrNewer && parameters.getApiLevel().isGreaterThanOrEqualTo(CINNAMON_BUN)) {
         // libcore in ART 17 added a frame in this case.
         builder.add(
             StackTraceLine.builder()

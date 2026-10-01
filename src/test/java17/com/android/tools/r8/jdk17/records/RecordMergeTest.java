@@ -21,6 +21,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.errors.DuplicateTypesDiagnostic;
 import com.android.tools.r8.errors.MissingGlobalSyntheticsConsumerDiagnostic;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -52,7 +54,6 @@ public class RecordMergeTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -144,18 +145,10 @@ public class RecordMergeTest extends TestBase {
 
     result
         .run(parameters.getRuntime(), RecordWithMembers.class)
-        .applyIf(
-            isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_1),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        .apply(r -> checkRunResult(r, EXPECTED_RESULT_1));
     result
         .run(parameters.getRuntime(), SimpleRecord.class)
-        .applyIf(
-            isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_2),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        .apply(r -> checkRunResult(r, EXPECTED_RESULT_2));
   }
 
   @Test
@@ -185,18 +178,10 @@ public class RecordMergeTest extends TestBase {
             .compile();
     result
         .run(parameters.getRuntime(), RecordWithMembers.class)
-        .applyIf(
-            isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_1),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        .apply(r -> checkRunResult(r, EXPECTED_RESULT_1));
     result
         .run(parameters.getRuntime(), SimpleRecord.class)
-        .applyIf(
-            isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_2),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        .apply(r -> checkRunResult(r, EXPECTED_RESULT_2));
   }
 
   @Test
@@ -227,18 +212,10 @@ public class RecordMergeTest extends TestBase {
               .compile();
       result
           .run(parameters.getRuntime(), RecordWithMembers.class)
-          .applyIf(
-              isRecordsFullyDesugaredForD8(parameters)
-                  || runtimeWithRecordsSupport(parameters.getRuntime()),
-              r -> r.assertSuccessWithOutput(EXPECTED_RESULT_1),
-              r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+          .apply(r -> checkRunResult(r, EXPECTED_RESULT_1));
       result
           .run(parameters.getRuntime(), SimpleRecord.class)
-          .applyIf(
-              isRecordsFullyDesugaredForD8(parameters)
-                  || runtimeWithRecordsSupport(parameters.getRuntime()),
-              r -> r.assertSuccessWithOutput(EXPECTED_RESULT_2),
-              r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+          .apply(r -> checkRunResult(r, EXPECTED_RESULT_2));
     } else {
       assertThrows(
           CompilationFailedException.class,
@@ -252,6 +229,16 @@ public class RecordMergeTest extends TestBase {
                               .assertOnlyErrors()
                               .assertErrorsMatch(diagnosticType(DuplicateTypesDiagnostic.class))));
     }
+  }
+
+  private void checkRunResult(TestRunResult<?> result, String expectedResult) {
+    result.applyIfDexRuntime(
+        isRecordsFullyDesugaredForD8(parameters)
+            || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+        r -> r.assertSuccessWithOutput(expectedResult),
+        Version::hasRecordsSupport,
+        r -> r.assertSuccessWithOutput(expectedResult),
+        r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }
 
   private void assertHasRecordTag(CodeInspector inspector) {

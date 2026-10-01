@@ -53,11 +53,7 @@ public class PathTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withDexRuntimes()
-            .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
-            .build(),
+        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
   }
@@ -71,13 +67,13 @@ public class PathTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private String getExpectedResult() {
+  private String getExpectedResult(boolean usesPlatformFileSystem) {
     if (!libraryDesugaringSpecification.hasNioFileDesugaring(parameters)) {
       return String.format(EXPECTED_RESULT_FORMAT, EXPECTED_RESULT_NO_DESUGARING);
     }
     return String.format(
         EXPECTED_RESULT_FORMAT,
-        libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
+        usesPlatformFileSystem
             ? EXPECTED_RESULT_DESUGARING_PLATFORM_FILE_SYSTEM
             : EXPECTED_RESULT_DESUGARING);
   }
@@ -95,7 +91,10 @@ public class PathTest extends DesugaredLibraryTestBase {
         .addKeepMainRule(TestClass.class)
         .compile()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(getExpectedResult(true)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(false)));
   }
 
   public static class TestClass {

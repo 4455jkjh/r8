@@ -14,6 +14,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -63,7 +64,6 @@ public class RecordComponentSignatureTest extends TestBase {
             .withCfRuntimesStartingFromIncluding(CfVm.JDK17)
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
-            .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());
   }
@@ -89,10 +89,14 @@ public class RecordComponentSignatureTest extends TestBase {
             parameters.isCfRuntime(),
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
             r ->
-                r.assertSuccessWithOutput(
-                        runtimeWithRecordsSupport(parameters.getRuntime())
-                            ? EXPECTED_RESULT_DESUGARED_NATIVE_RECORD_SUPPORT
-                            : EXPECTED_RESULT_DESUGARED_NO_NATIVE_RECORDS_SUPPORT)
+                r.applyIfDexRuntime(
+                        Version::hasRecordsSupport,
+                        rr ->
+                            rr.assertSuccessWithOutput(
+                                EXPECTED_RESULT_DESUGARED_NATIVE_RECORD_SUPPORT),
+                        rr ->
+                            rr.assertSuccessWithOutput(
+                                EXPECTED_RESULT_DESUGARED_NO_NATIVE_RECORDS_SUPPORT))
                     .inspect(
                         inspector -> {
                           ClassSubject person =
@@ -150,13 +154,15 @@ public class RecordComponentSignatureTest extends TestBase {
               assertEquals(0, person.getFinalRecordComponents().size());
             })
         .run(parameters.getRuntime(), RecordWithSignature.class)
-        .applyIf(
-            runtimeWithRecordsSupport(parameters.getRuntime()),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
             r ->
                 r.assertSuccessWithOutput(
-                    parameters.isDexRuntime()
-                        ? EXPECTED_RESULT_DESUGARED_NATIVE_RECORD_SUPPORT
-                        : EXPECTED_RESULT_R8),
+                    runtimeWithRecordsSupport(parameters.getRuntime())
+                        ? EXPECTED_RESULT_R8
+                        : EXPECTED_RESULT_DESUGARED_NO_NATIVE_RECORDS_SUPPORT),
+            Version::hasRecordsSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED_NATIVE_RECORD_SUPPORT),
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED_NO_NATIVE_RECORDS_SUPPORT));
   }
 

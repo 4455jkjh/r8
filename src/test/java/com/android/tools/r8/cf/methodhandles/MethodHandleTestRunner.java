@@ -15,6 +15,7 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.cf.methodhandles.MethodHandleTest.C;
 import com.android.tools.r8.cf.methodhandles.MethodHandleTest.E;
 import com.android.tools.r8.cf.methodhandles.MethodHandleTest.F;
@@ -52,8 +53,7 @@ public class MethodHandleTestRunner extends TestBase {
   @Parameters(name = "{0}, lookup:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
-        LookupType.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(), LookupType.values());
   }
 
   public MethodHandleTestRunner(TestParameters parameters, LookupType lookupType) {
@@ -120,12 +120,9 @@ public class MethodHandleTestRunner extends TestBase {
         || parameters.getApiLevel().isGreaterThanOrEqualTo(apiLevelWithInvokePolymorphicSupport());
   }
 
-  private boolean hasMethodHandlesRuntimeSupport() {
-    return parameters.isCfRuntime()
-        || parameters
-            .asDexRuntime()
-            .maxSupportedApiLevel()
-            .isGreaterThanOrEqualTo(apiLevelWithInvokePolymorphicSupport());
+  private boolean hasMethodHandlesRuntimeSupport(Version version) {
+    return version.isNewerThanOrEqual(
+        ToolHelper.getDexVersionForApiLevel(apiLevelWithInvokePolymorphicSupport()));
   }
 
   private void checkDiagnostics(TestDiagnosticMessages diagnostics) {
@@ -140,16 +137,15 @@ public class MethodHandleTestRunner extends TestBase {
   }
 
   private void checkResult(TestRunResult<?> result) {
-    if (lookupType == LookupType.DYNAMIC && !hasMethodHandlesRuntimeSupport()) {
-      result
-          .assertFailureWithErrorThatThrows(NoClassDefFoundError.class)
-          .assertStderrMatches(containsString("java.lang.invoke.MethodHandles"));
-      return;
-    }
     if (lookupType == LookupType.DYNAMIC && !hasInvokePolymorphicCompileSupport()) {
-      result
-          .assertFailureWithErrorThatThrows(RuntimeException.class)
-          .assertStderrMatches(containsString("invoke-polymorphic"));
+      result.applyIfDexRuntime(
+          version -> !hasMethodHandlesRuntimeSupport(version),
+          r ->
+              r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)
+                  .assertStderrMatches(containsString("java.lang.invoke.MethodHandles")),
+          r ->
+              r.assertFailureWithErrorThatThrows(RuntimeException.class)
+                  .assertStderrMatches(containsString("invoke-polymorphic")));
       return;
     }
     if (lookupType == LookupType.CONSTANT && !hasConstMethodCompileSupport()) {

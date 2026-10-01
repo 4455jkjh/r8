@@ -107,7 +107,7 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
     parameters.assumeR8TestParameters();
     assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
-    assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.asDexRuntime()));
+    assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.getRuntime()));
     testForR8(parameters)
         .addProgramClassFileData(
             dumpHost(ACC_PRIVATE), dumpMember1(ACC_PRIVATE), dumpMember2(ACC_PRIVATE))
@@ -119,12 +119,17 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
             inspector -> assertEquals(1, inspector.allClasses().size()))
         .run(parameters.getRuntime(), "Host")
         .applyIf(
-            parameters.isRandomPartialCompilation(),
+            parameters.isRandomPartialCompilation() && parameters.isDexRuntime(),
             rr ->
-                rr.applyIf(
-                    rr.asSingleRuntimeResult().getExitCode() == 0,
-                    ignore -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT),
-                    ignore -> rr.assertFailureWithErrorThatThrows(IllegalAccessError.class)),
+                rr.applyIfDexRuntime(
+                    this::isRuntimeWithNestSupport,
+                    r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+                    r ->
+                        r.applyIf(
+                            r.getExitCode() == 0,
+                            ignore -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+                            ignore ->
+                                r.assertFailureWithErrorThatThrows(IllegalAccessError.class))),
             rr -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 
@@ -133,7 +138,7 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
     parameters.assumeR8TestParameters();
     assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
-    assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.asDexRuntime()));
+    assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.getRuntime()));
     testForR8(parameters)
         .addProgramClassFileData(
             dumpHost(ACC_PRIVATE), dumpMember1(ACC_PRIVATE), dumpMember2(ACC_PRIVATE))
@@ -154,7 +159,7 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
     parameters.assumeR8TestParameters();
     assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
-    assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.asDexRuntime()));
+    assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.getRuntime()));
     testForR8(parameters)
         .addProgramClassFileData(
             dumpHost(ACC_PUBLIC), dumpMember1(ACC_PUBLIC), dumpMember2(ACC_PUBLIC))

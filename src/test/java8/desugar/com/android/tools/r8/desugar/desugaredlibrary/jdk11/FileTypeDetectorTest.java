@@ -50,7 +50,6 @@ public class FileTypeDetectorTest extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
@@ -65,14 +64,8 @@ public class FileTypeDetectorTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private boolean hasDefaultPNGTypeDetector() {
-    return parameters.getDexRuntimeVersion().compareTo(V12_0_0) < 0;
-  }
-
-  private String getExpectedResult() {
-    return hasDefaultPNGTypeDetector()
-        ? EXPECTED_RESULT_DEFAULT_PNG_TYPE_DETECTOR
-        : EXPECTED_RESULT_NO_DEFAULT_PNG_TYPE_DETECTOR;
+  private boolean hasDefaultPNGTypeDetector(Version version) {
+    return version.compareTo(V12_0_0) < 0;
   }
 
   @Test
@@ -84,7 +77,10 @@ public class FileTypeDetectorTest extends DesugaredLibraryTestBase {
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            this::hasDefaultPNGTypeDetector,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_DEFAULT_PNG_TYPE_DETECTOR),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_NO_DEFAULT_PNG_TYPE_DETECTOR));
   }
 
   public static class TestClass {

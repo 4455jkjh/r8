@@ -47,7 +47,6 @@ public class InterfaceFieldMethodHandleTest extends TestBase {
             .withDexRuntimesStartingFromExcluding(Version.V7_0_0)
             .withAllApiLevels()
             .withCfRuntimes()
-            .withoutCollapsedDexRuntimes()
             .build(),
         LookupType.values());
   }
@@ -116,19 +115,20 @@ public class InterfaceFieldMethodHandleTest extends TestBase {
   }
 
   private void checkResult(TestRunResult<?> result) {
-    if (parameters.isDexRuntimeVersion(Version.V13_0_0)
-        && lookupType == LookupType.CONSTANT
-        && hasConstMethodCompileSupport()) {
-      // TODO(b/235576668): VM 13 throws an escaping IAE outside the guarded range.
-      result
-          .assertFailureWithErrorThatThrows(IllegalAccessError.class)
-          .assertStderrMatches(containsString("Main.main"));
-      return;
-    }
     if (lookupType == LookupType.DYNAMIC && hasInvokePolymorphicCompileSupport()) {
       result.assertSuccessWithOutput(getExpected());
     } else if (hasConstMethodCompileSupport()) {
-      result.assertSuccessWithOutput(getExpected());
+      result.applyIfDexRuntime(
+          version -> lookupType == LookupType.CONSTANT && version.isEqualTo(Version.V13_0_0),
+          r ->
+              // TODO(b/235576668): VM 13 throws an escaping IAE outside the guarded range.
+              r.assertFailureWithErrorThatThrows(IllegalAccessError.class)
+                  .assertStderrMatches(containsString("Main.main")),
+          version -> lookupType == LookupType.CONSTANT && version.isEqualTo(Version.V9_0_0),
+          r ->
+              // VM 9 will assign the value in the setter in contrast to RI.
+              r.assertSuccessWithOutput(StringUtils.lines("42", "pass", "19")),
+          r -> r.assertSuccessWithOutput(getExpected()));
     } else {
       result.assertFailureWithErrorThatMatches(
           containsString(
@@ -137,10 +137,6 @@ public class InterfaceFieldMethodHandleTest extends TestBase {
   }
 
   private String getExpected() {
-    if (lookupType == LookupType.CONSTANT && parameters.isDexRuntimeVersion(Version.V9_0_0)) {
-      // VM 9 will assign the value in the setter in contrast to RI.
-      return StringUtils.lines("42", "pass", "19");
-    }
     return StringUtils.lines("42", lookupType == LookupType.DYNAMIC ? "exception" : "error", "42");
   }
 

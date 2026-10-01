@@ -94,7 +94,6 @@ public class ChannelSetTest extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
@@ -122,14 +121,17 @@ public class ChannelSetTest extends DesugaredLibraryTestBase {
             parameters.getRuntime(),
             TestClass.class,
             Integer.toString(parameters.getApiLevel().getMajor()))
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(getExpectedResult(true)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(false)));
   }
 
-  private String getExpectedResult() {
+  private String getExpectedResult(boolean usesPlatformFileSystem) {
     if (!libraryDesugaringSpecification.hasNioFileDesugaring(parameters)) {
       return EXPECTED_RESULT_NO_DESUGARING;
     }
-    return libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
+    return usesPlatformFileSystem
         ? EXPECTED_RESULT_DESUGARING_PLATFORM_FILE_SYSTEM
         : EXPECTED_RESULT_DESUGARING;
   }

@@ -35,11 +35,7 @@ public class ApiModelMockClassLoadingByClassForNameTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   private boolean isGreaterOrEqualToMockLevel() {
@@ -107,13 +103,13 @@ public class ApiModelMockClassLoadingByClassForNameTest extends TestBase {
     if (isGreaterOrEqualToMockLevel()) {
       runResult.assertSuccessWithOutputLines("Hello World!");
     } else {
-      runResult.assertSuccessWithOutputLines("ClassNotFoundException");
+      runResult
+          .assertSuccessWithOutputLines("ClassNotFoundException")
+          .applyIfDexRuntime(
+              version -> version.isNewerThanOrEqual(Version.V7_0_0),
+              result ->
+                  result.assertStderrMatches(not(containsString("This dex file is invalid"))));
     }
-    runResult.applyIf(
-        !isGreaterOrEqualToMockLevel()
-            && parameters.isDexRuntime()
-            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-        result -> result.assertStderrMatches(not(containsString("This dex file is invalid"))));
   }
 
   private void inspect(CodeInspector inspector) {

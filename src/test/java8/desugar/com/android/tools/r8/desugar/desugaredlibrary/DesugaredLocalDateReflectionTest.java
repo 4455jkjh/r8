@@ -9,8 +9,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -32,11 +31,7 @@ public class DesugaredLocalDateReflectionTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withDexRuntimes()
-            .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
-            .build(),
+        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
         getJdk8Jdk11(),
         DEFAULT_SPECIFICATIONS);
   }
@@ -52,18 +47,16 @@ public class DesugaredLocalDateReflectionTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testDate() throws Exception {
-    TestRunResult<?> runResult =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(getClass())
-            .addKeepMainRule(Main.class)
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.getRuntime().asDex().getVm().isNewerThan(DexVm.ART_7_0_0_HOST)) {
-      runResult.assertSuccessWithOutput(EXPECTED);
-    } else {
-      runResult.assertFailureWithErrorThatMatches(
-          containsString("java.lang.ClassNotFoundException: java.time.LocalDate"));
-    }
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Main.class)
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            version -> version.isNewerThan(Version.V7_0_0),
+            r -> r.assertSuccessWithOutput(EXPECTED),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    containsString("java.lang.ClassNotFoundException: java.time.LocalDate")));
   }
 
   public static class Main {

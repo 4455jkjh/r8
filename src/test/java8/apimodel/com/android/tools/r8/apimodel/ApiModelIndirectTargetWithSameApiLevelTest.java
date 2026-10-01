@@ -43,11 +43,7 @@ public class ApiModelIndirectTargetWithSameApiLevelTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   private boolean isGreaterOrEqualToMockLevel() {
@@ -133,13 +129,13 @@ public class ApiModelIndirectTargetWithSameApiLevelTest extends TestBase {
       // TODO(b/254510678): R8 should not rebind to the library method.
       runResult.assertFailureWithErrorThatThrows(NoClassDefFoundError.class);
     } else {
-      runResult.assertSuccessWithOutputLines("Hello World");
+      runResult
+          .assertSuccessWithOutputLines("Hello World")
+          .applyIfDexRuntime(
+              version -> version.isNewerThanOrEqual(Version.V7_0_0),
+              result ->
+                  result.assertStderrMatches(not(containsString("This dex file is invalid"))));
     }
-    runResult.applyIf(
-        !isGreaterOrEqualToMockLevel()
-            && parameters.isDexRuntime()
-            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-        result -> result.assertStderrMatches(not(containsString("This dex file is invalid"))));
   }
 
   private void inspect(CodeInspector inspector, boolean isR8) throws Exception {

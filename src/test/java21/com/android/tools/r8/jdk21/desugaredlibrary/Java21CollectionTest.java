@@ -11,6 +11,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -59,7 +60,7 @@ public class Java21CollectionTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build(),
+        getTestParameters().withDexRuntimesAndAllApiLevels().build(),
         // Note that JDK8 is completely broken here.
         ImmutableList.of(JDK11, JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
@@ -74,22 +75,25 @@ public class Java21CollectionTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  public String[] getExpectedResult() {
-    if (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V15_0_0)) {
-      return EXPECTED_RESULT;
-    }
-    if (parameters.getDexRuntimeVersion().isOlderThanOrEqual(Version.V4_4_4)) {
-      if (compilationSpecification.isProgramShrink()) {
-        // R8 repairs the program by rebinding SequencedCollection>>foo to LinkedList>>foo.
-        return OLD_EXPECTED_RESULT_R8_FIXED_4;
-      }
-      return OLD_EXPECTED_RESULT_4;
-    }
-    if (compilationSpecification.isProgramShrink()) {
-      // R8 repairs the program by rebinding SequencedCollection>>foo to LinkedList>>foo.
-      return OLD_EXPECTED_RESULT_R8_FIXED_5_PLUS;
-    }
-    return OLD_EXPECTED_RESULT_5_PLUS;
+  public void checkExpectedResult(TestRunResult<?> runResult) {
+    runResult.applyIfDexRuntime(
+        version -> version.isNewerThanOrEqual(Version.V15_0_0),
+        r -> r.assertSuccessWithOutputLines(EXPECTED_RESULT),
+        version -> version.isOlderThanOrEqual(Version.V4_4_4),
+        r ->
+            r.assertSuccessWithOutputLines(
+                // R8 repairs the program by rebinding SequencedCollection>>foo to
+                // LinkedList>>foo.
+                compilationSpecification.isProgramShrink()
+                    ? OLD_EXPECTED_RESULT_R8_FIXED_4
+                    : OLD_EXPECTED_RESULT_4),
+        r ->
+            r.assertSuccessWithOutputLines(
+                // R8 repairs the program by rebinding SequencedCollection>>foo to
+                // LinkedList>>foo.
+                compilationSpecification.isProgramShrink()
+                    ? OLD_EXPECTED_RESULT_R8_FIXED_5_PLUS
+                    : OLD_EXPECTED_RESULT_5_PLUS));
   }
 
   @Test
@@ -101,7 +105,7 @@ public class Java21CollectionTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Executor.class)
-        .assertSuccessWithOutputLines(getExpectedResult());
+        .apply(this::checkExpectedResult);
   }
 
   @Test
@@ -112,7 +116,7 @@ public class Java21CollectionTest extends DesugaredLibraryTestBase {
         .allowDiagnosticWarningMessages(parameters.getApiLevel().equals(AndroidApiLevel.MAIN))
         .addKeepMainRule(Executor.class)
         .run(parameters.getRuntime(), Executor.class)
-        .assertSuccessWithOutputLines(getExpectedResult());
+        .apply(this::checkExpectedResult);
   }
 
   static class Executor {

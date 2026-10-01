@@ -19,7 +19,6 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.Collections;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -34,7 +33,7 @@ public class DefaultTopAbstractLeftTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public DefaultTopAbstractLeftTest(TestParameters parameters) {
@@ -66,7 +65,10 @@ public class DefaultTopAbstractLeftTest extends TestBase {
         .addProgramClasses(CLASSES)
         .addProgramClassFileData(transformB())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatMatches(getExpectedErrorMatcher());
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   @Test
@@ -78,19 +80,6 @@ public class DefaultTopAbstractLeftTest extends TestBase {
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
         .assertFailureWithErrorThatMatches(containsString("AbstractMethodError"));
-  }
-
-  private Matcher<String> getExpectedErrorMatcher() {
-    if (parameters.isDexRuntime()
-        && parameters
-            .getRuntime()
-            .asDex()
-            .getVm()
-            .getVersion()
-            .isOlderThanOrEqual(Version.V4_4_4)) {
-      return containsString("VerifyError");
-    }
-    return containsString("AbstractMethodError");
   }
 
   public interface T {

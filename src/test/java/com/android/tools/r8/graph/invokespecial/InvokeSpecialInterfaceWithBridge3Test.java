@@ -34,7 +34,7 @@ public class InvokeSpecialInterfaceWithBridge3Test extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -52,26 +52,18 @@ public class InvokeSpecialInterfaceWithBridge3Test extends TestBase {
       //  method references the VM will just dispatch.
       runResult.assertSuccessWithOutput(EXPECTED);
     } else {
-      runResult.assertFailureWithErrorThatThrows(getExpectedException());
-    }
-  }
-
-  private Class<? extends Throwable> getExpectedException() {
-    if (parameters.isDexRuntime()) {
-      Version version = parameters.getRuntime().asDex().getVm().getVersion();
-      if (version.isOlderThanOrEqual(Version.V4_4_4)) {
-        return VerifyError.class;
-      } else if (version.isNewerThanOrEqual(Version.V7_0_0)) {
-        return AbstractMethodError.class;
-      } else {
-        return IncompatibleClassChangeError.class;
-      }
-    } else {
-      if (parameters.getRuntime().asCf().getVm().isGreaterThanOrEqualTo(CfVm.JDK25)) {
-        return VerifyError.class;
-      } else {
-        return IncompatibleClassChangeError.class;
-      }
+      runResult.applyIfDexRuntime(
+          parameters.isCfRuntime(),
+          rr ->
+              rr.assertFailureWithErrorThatThrows(
+                  parameters.getRuntime().asCf().getVm().isGreaterThanOrEqualTo(CfVm.JDK25)
+                      ? VerifyError.class
+                      : IncompatibleClassChangeError.class),
+          version -> version.isOlderThanOrEqual(Version.V4_4_4),
+          rr -> rr.assertFailureWithErrorThatThrows(VerifyError.class),
+          version -> version.isNewerThanOrEqual(Version.V7_0_0),
+          rr -> rr.assertFailureWithErrorThatThrows(AbstractMethodError.class),
+          rr -> rr.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
     }
   }
 

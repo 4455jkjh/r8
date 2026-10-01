@@ -1967,9 +1967,11 @@ public class TestBase {
   }
 
   public static boolean runtimeWithJavaTime(TestParameters parameters) {
-    return parameters.isCfRuntime()
-        || parameters.isDexRuntimeVersionNewerThanOrEqual(
-            ToolHelper.getDexVersionForApiLevel(apiLevelWithJavaTime()));
+    return parameters.isCfRuntime() || runtimeWithJavaTime(parameters.getDexRuntimeVersion());
+  }
+
+  public static boolean runtimeWithJavaTime(DexVm.Version version) {
+    return version.isNewerThanOrEqual(ToolHelper.getDexVersionForApiLevel(apiLevelWithJavaTime()));
   }
 
   public boolean canUseFilledNewArrayOfInteger(TestParameters parameters) {

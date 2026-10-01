@@ -14,6 +14,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableMap;
@@ -57,7 +58,6 @@ public class RecordBlogTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -117,9 +117,12 @@ public class RecordBlogTest extends TestBase {
     testForD8(parameters)
         .addProgramClassesAndInnerClasses(RecordBlog.class)
         .run(parameters.getRuntime(), RecordBlog.class)
-        .applyIf(
+        .applyIfDexRuntime(
             isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
+                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+            r ->
+                r.assertSuccessWithOutput(getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE)),
+            Version::hasRecordsSupport,
             r ->
                 r.assertSuccessWithOutput(getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE)),
             r -> r.assertFailureWithErrorThatThrows(ClassNotFoundException.class));
@@ -138,23 +141,21 @@ public class RecordBlogTest extends TestBase {
                     .addProgramClassesAndInnerClasses(RecordBlog.class)
                     .addKeepRules(kr)
                     .addKeepMainRule(RecordBlog.class);
-            String res;
             if (parameters.isCfRuntime()) {
-              res =
-                  builder
-                      .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
-                      .run(parameters.getRuntime(), RecordBlog.class)
-                      .assertSuccess()
-                      .asSingleRuntimeResult()
-                      .getStdOut();
+              builder
+                  .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
+                  .run(parameters.getRuntime(), RecordBlog.class)
+                  .assertSuccess()
+                  .inspectStdOut(res -> results.put(kr, res));
             } else {
-              res =
-                  builder
-                      .run(parameters.getRuntime(), RecordBlog.class)
-                      .asSingleRuntimeResult()
-                      .getStdOut();
+              builder
+                  .run(parameters.getRuntime(), RecordBlog.class)
+                  .inspectStdOut(
+                      res -> {
+                        String previous = results.put(kr, res);
+                        assertTrue(previous == null || previous.equals(res));
+                      });
             }
-            results.put(kr, res);
           } catch (Exception e) {
             // Preserve AssumptionViolatedException.
             if (e instanceof RuntimeException) {

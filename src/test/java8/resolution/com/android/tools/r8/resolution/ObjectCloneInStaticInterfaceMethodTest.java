@@ -29,7 +29,6 @@ public class ObjectCloneInStaticInterfaceMethodTest extends TestBase {
     return getTestParameters()
         .withAllRuntimes()
         .withApiLevel(apiLevelWithDefaultInterfaceMethodsSupport())
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -87,13 +86,12 @@ public class ObjectCloneInStaticInterfaceMethodTest extends TestBase {
   }
 
   private void checkOutput(TestRunResult<?> r) {
-    if (parameters.isDexRuntimeVersionNewerThanOrEqual(V16_0_0)) {
-      // TODO(b/454529390): ART 16 and above does not enforce protected access to Object.clone.
-      //  As per the references issue this is WAI.
-      r.assertSuccessWithOutputLines("0");
-    } else {
-      r.assertFailureWithErrorThatThrows(IllegalAccessError.class);
-    }
+    r.applyIfDexRuntime(
+        // TODO(b/454529390): ART 16 and above does not enforce protected access to
+        //  Object.clone. As per the references issue this is WAI.
+        version -> version.isNewerThanOrEqual(V16_0_0),
+        res -> res.assertSuccessWithOutputLines("0"),
+        res -> res.assertFailureWithErrorThatThrows(IllegalAccessError.class));
   }
 
   interface I {

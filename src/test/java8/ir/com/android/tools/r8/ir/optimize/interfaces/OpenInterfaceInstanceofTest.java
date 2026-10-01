@@ -11,6 +11,7 @@ import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class OpenInterfaceInstanceofTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -40,7 +41,7 @@ public class OpenInterfaceInstanceofTest extends TestBase {
         .addProgramClasses(getProgramClasses())
         .addProgramClassFileData(getTransformedMainClass())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(getExpectedOutputLines());
+        .apply(this::checkResult);
   }
 
   @Test
@@ -51,7 +52,7 @@ public class OpenInterfaceInstanceofTest extends TestBase {
         .addProgramClassFileData(getTransformedMainClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(getExpectedOutputLines());
+        .apply(this::checkResult);
   }
 
   @Test
@@ -67,7 +68,7 @@ public class OpenInterfaceInstanceofTest extends TestBase {
         .enableNoVerticalClassMergingAnnotations()
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(getExpectedOutputLines());
+        .apply(this::checkResult);
   }
 
   private List<Class<?>> getProgramClasses() {
@@ -94,11 +95,11 @@ public class OpenInterfaceInstanceofTest extends TestBase {
         .transform();
   }
 
-  private List<String> getExpectedOutputLines() {
-    if (parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isEqualTo(Version.V7_0_0)) {
-      return ImmutableList.of("true", "true");
-    }
-    return ImmutableList.of("true", "false");
+  private void checkResult(TestRunResult<?> result) {
+    result.applyIfDexRuntime(
+        version -> version.isEqualTo(Version.V7_0_0),
+        r -> r.assertSuccessWithOutputLines("true", "true"),
+        r -> r.assertSuccessWithOutputLines("true", "false"));
   }
 
   static class Main {

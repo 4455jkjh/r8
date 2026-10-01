@@ -46,7 +46,6 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
         // same time there are VFY errors on stderr.
         .withDexRuntimesStartingFromExcluding(Version.V4_4_4)
         .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -180,18 +179,16 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
         .addOptionsModification(options -> options.enableVarHandleDesugaring = true)
         .collectSyntheticItems()
         .run(parameters.getRuntime(), getMainClass())
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters.asDexRuntime().getVersion().isOlderThanOrEqual(Version.V4_4_4),
-            // TODO(b/247076137): Running on 4.0.4 and 4.4.4 needs to be checked. Output seems
-            // correct, but at the same time there are VFY errors on stderr.
+        // TODO(b/247076137): Running on 4.0.4 and 4.4.4 needs to be checked. Output seems
+        // correct, but at the same time there are VFY errors on stderr.
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             r -> r.assertFailureWithErrorThatThrows(NoSuchFieldException.class),
-            r ->
-                r.assertSuccessWithOutput(
-                    parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.T)
-                            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V13_0_0)
-                        ? getExpectedOutputForArtImplementation()
-                        : getExpectedOutputForDesugaringImplementation()))
+            version ->
+                parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.T)
+                    && version.isNewerThanOrEqual(Version.V13_0_0),
+            r -> r.assertSuccessWithOutput(getExpectedOutputForArtImplementation()),
+            r -> r.assertSuccessWithOutput(getExpectedOutputForDesugaringImplementation()))
         .apply(runResult -> inspect(runResult.inspector(), runResult.getSyntheticItems()));
   }
 
@@ -210,20 +207,17 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
         .addKeepMainRule(getMainClass())
         .addKeepRules(getKeepRules())
         .run(parameters.getRuntime(), getMainClass())
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters.asDexRuntime().getVersion().isOlderThanOrEqual(Version.V4_4_4),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(getExpectedOutputForReferenceImplementation()),
             // TODO(b/247076137): Running on 4.0.4 and 4.4.4 needs to be checked. Output seems
             // correct, but at the same time there are VFY errors on stderr.
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             r -> r.assertFailureWithErrorThatThrows(NoSuchFieldException.class),
-            r ->
-                r.assertSuccessWithOutput(
-                    parameters.isDexRuntime()
-                            && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.T)
-                            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V13_0_0)
-                        ? getExpectedOutputForArtImplementation()
-                        : (parameters.isDexRuntime()
-                            ? getExpectedOutputForDesugaringImplementation()
-                            : getExpectedOutputForReferenceImplementation())));
+            version ->
+                parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.T)
+                    && version.isNewerThanOrEqual(Version.V13_0_0),
+            r -> r.assertSuccessWithOutput(getExpectedOutputForArtImplementation()),
+            r -> r.assertSuccessWithOutput(getExpectedOutputForDesugaringImplementation()));
   }
 }

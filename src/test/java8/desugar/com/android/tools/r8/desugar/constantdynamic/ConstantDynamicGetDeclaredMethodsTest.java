@@ -34,7 +34,6 @@ public class ConstantDynamicGetDeclaredMethodsTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -120,8 +119,8 @@ public class ConstantDynamicGetDeclaredMethodsTest extends TestBase {
             parameters.getApiLevel().isLessThan(AndroidApiLevel.O),
             b -> b.addDontWarn(MethodHandles.Lookup.class))
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .applyIf(
-            parameters.getDexRuntimeVersion().isOlderThan(Version.V8_1_0),
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V8_1_0),
             b -> b.assertFailureWithErrorThatThrows(ClassNotFoundException.class),
             b -> b.assertSuccessWithOutput(EXPECTED_OUTPUT_WITH_METHOD_HANDLES));
   }

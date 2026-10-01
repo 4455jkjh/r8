@@ -164,11 +164,7 @@ public class VirtualOverrideOfStaticMethodWithVirtualParentTest extends AsmTestB
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevels().build();
   }
 
   private final TestParameters parameters;
@@ -241,18 +237,14 @@ public class VirtualOverrideOfStaticMethodWithVirtualParentTest extends AsmTestB
   }
 
   private void checkResult(TestRunResult<?> runResult, boolean isCorrectedByR8) {
-    if (expectedToIncorrectlyRun(isCorrectedByR8)) {
-      // Do to incorrect resolution, some Art 7 will resolve to Base.f (ignoring A.f) and thus
-      // virtual dispatch to C.f. See b/140013075.
-      runResult.assertSuccessWithOutputLines("Called C.f");
-    } else {
-      runResult.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
-    }
-  }
-
-  private boolean expectedToIncorrectlyRun(boolean isCorrectedByR8) {
-    return !isCorrectedByR8
-        && parameters.canUseDefaultAndStaticInterfaceMethods()
-        && parameters.isDexRuntimeVersion(Version.V7_0_0);
+    runResult.applyIfDexRuntime(
+        // Do to incorrect resolution, some Art 7 will resolve to Base.f (ignoring A.f) and thus
+        // virtual dispatch to C.f. See b/140013075.
+        version ->
+            !isCorrectedByR8
+                && parameters.canUseDefaultAndStaticInterfaceMethods()
+                && version.isEqualTo(Version.V7_0_0),
+        r -> r.assertSuccessWithOutputLines("Called C.f"),
+        r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
 }

@@ -106,7 +106,6 @@ public class FilesAttributes2Test extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
@@ -121,18 +120,17 @@ public class FilesAttributes2Test extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private String getExpectedResult() {
+  private String getExpectedResult(Version version) {
     // On Android 24, everything seems to be considered a symlink due to canonicalFile being
     // invalid. It seems it does not reproduce on real device, so this may be an issue from our
     // test set-up.
-    boolean invalidSymlink =
-        parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isEqualTo(Version.V7_0_0);
+    boolean invalidSymlink = parameters.isDexRuntime() && version.isEqualTo(Version.V7_0_0);
     // On Dex, the security manager is not working in our test set-up.
     boolean invalidFileStore = parameters.isDexRuntime();
     // Posix attributes are not available on desugared nio.
     boolean invalidPosix =
         parameters.isDexRuntime()
-            && !libraryDesugaringSpecification.usesPlatformFileSystem(parameters);
+            && !libraryDesugaringSpecification.usesPlatformFileSystem(version);
 
     String invalidFileStoreString = "class java.lang.SecurityException :: getFileStore";
     String invalidPosixString = "class java.lang.UnsupportedOperationException :: no-message";
@@ -170,7 +168,7 @@ public class FilesAttributes2Test extends DesugaredLibraryTestBase {
       testForJvm(parameters)
           .addInnerClasses(getClass())
           .run(parameters.getRuntime(), TestClass.class)
-          .assertSuccessWithOutput(getExpectedResult());
+          .assertSuccessWithOutput(getExpectedResult(null));
       return;
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
@@ -179,7 +177,14 @@ public class FilesAttributes2Test extends DesugaredLibraryTestBase {
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            version -> version.isEqualTo(Version.V7_0_0),
+            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V7_0_0)),
+            version ->
+                !version.isEqualTo(Version.V7_0_0)
+                    && !libraryDesugaringSpecification.usesPlatformFileSystem(version),
+            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V4_0_4)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V8_1_0)));
   }
 
   public static class TestClass {

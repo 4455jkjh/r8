@@ -16,6 +16,7 @@ import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.errors.UnsupportedFeatureDiagnostic;
 import com.android.tools.r8.transformers.ClassTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -45,8 +46,7 @@ public class ClassFieldMethodHandleTest extends TestBase {
   @Parameters(name = "{0}, lookup:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
-        LookupType.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(), LookupType.values());
   }
 
   public ClassFieldMethodHandleTest(TestParameters parameters, LookupType lookupType) {
@@ -101,12 +101,8 @@ public class ClassFieldMethodHandleTest extends TestBase {
         || parameters.getApiLevel().isGreaterThanOrEqualTo(apiLevelWithInvokePolymorphicSupport());
   }
 
-  private boolean hasMethodHandlesRuntimeSupport() {
-    return parameters.isCfRuntime()
-        || parameters
-            .asDexRuntime()
-            .maxSupportedApiLevel()
-            .isGreaterThanOrEqualTo(AndroidApiLevel.O);
+  private boolean hasMethodHandlesRuntimeSupport(Version version) {
+    return version.isNewerThanOrEqual(ToolHelper.getDexVersionForApiLevel(AndroidApiLevel.O));
   }
 
   private void checkDiagnostics(TestDiagnosticMessages diagnostics) {
@@ -126,12 +122,13 @@ public class ClassFieldMethodHandleTest extends TestBase {
       result.assertSuccessWithOutput(getExpected());
     } else if (hasConstMethodCompileSupport()) {
       result.assertSuccessWithOutput(getExpected());
-    } else if (lookupType == LookupType.DYNAMIC && !hasMethodHandlesRuntimeSupport()) {
-      result.assertFailureWithErrorThatThrows(NoClassDefFoundError.class);
+    } else if (lookupType == LookupType.DYNAMIC) {
+      result.applyIfDexRuntime(
+          version -> !hasMethodHandlesRuntimeSupport(version),
+          r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
+          r -> r.assertFailureWithErrorThatMatches(containsString("invoke-polymorphic")));
     } else {
-      result.assertFailureWithErrorThatMatches(
-          containsString(
-              lookupType == LookupType.DYNAMIC ? "invoke-polymorphic" : "const-method-handle"));
+      result.assertFailureWithErrorThatMatches(containsString("const-method-handle"));
     }
   }
 

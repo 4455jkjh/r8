@@ -16,6 +16,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -46,7 +47,6 @@ public class RecordInterfaceTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -70,9 +70,11 @@ public class RecordInterfaceTest extends TestBase {
     testForD8(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), RecordInterface.class)
-        .applyIf(
+        .applyIfDexRuntime(
             isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
+                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            Version::hasRecordsSupport,
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }

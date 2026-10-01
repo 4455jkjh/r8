@@ -66,7 +66,7 @@ public class SealedClassesEnumJdk17CompiledTest extends TestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), Main.class)
         .applyIf(
-            c ->
+            (DesugarTestConfiguration c) ->
                 DesugarTestConfiguration.isNotJavac(c)
                     || parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
             r -> r.assertSuccessWithOutput(EXPECTED),

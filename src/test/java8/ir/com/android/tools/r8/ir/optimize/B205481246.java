@@ -27,7 +27,7 @@ public class B205481246 extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection parameters() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -35,9 +35,10 @@ public class B205481246 extends TestBase {
     testForRuntime(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntimeVersion(Version.V6_0_1)
-                && parameters.getApiLevel().isEqualTo(AndroidApiLevel.B),
+        .applyIfDexRuntime(
+            version ->
+                version.isEqualTo(Version.V6_0_1)
+                    && parameters.getApiLevel().isEqualTo(AndroidApiLevel.B),
             runResult ->
                 runResult.assertFailureWithErrorThatMatches(
                     containsString("Check failed: receiver != nullptr virtual")),

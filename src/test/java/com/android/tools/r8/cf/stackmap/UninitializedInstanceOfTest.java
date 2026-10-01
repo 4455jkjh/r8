@@ -31,11 +31,7 @@ public class UninitializedInstanceOfTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   @Test
@@ -59,15 +55,14 @@ public class UninitializedInstanceOfTest extends TestBase {
   @Test
   public void testD8Dex() throws Exception {
     parameters.assumeDexRuntime();
-    boolean expectFailure = parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0);
     testForD8(parameters.getBackend())
         .addProgramClassFileData(dump())
         .addOptionsModification(options -> options.getTestingOptions().allowTypeErrors = true)
         .setMinApi(parameters)
         .compileWithExpectedDiagnostics(this::inspect)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            expectFailure,
+        .applyIfDexRuntime(
+            v -> v.isNewerThanOrEqual(Version.V7_0_0),
             result -> result.assertFailureWithErrorThatThrows(VerifyError.class),
             TestRunResult::assertSuccessWithOutputLines);
   }

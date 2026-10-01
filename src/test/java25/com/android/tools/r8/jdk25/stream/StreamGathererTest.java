@@ -36,7 +36,7 @@ public class StreamGathererTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build(),
+        getTestParameters().withDexRuntimesAndAllApiLevels().build(),
         ImmutableList.of(JDK11, JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
   }
@@ -59,8 +59,8 @@ public class StreamGathererTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Executor.class)
-        .applyIf(
-            parameters.getDexRuntimeVersion().isNewerThan(V16_0_0),
+        .applyIfDexRuntime(
+            version -> version.isNewerThan(V16_0_0),
             b -> b.assertSuccessWithOutput(EXPECTED_RESULT),
             b -> b.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }

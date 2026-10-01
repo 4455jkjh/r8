@@ -27,7 +27,7 @@ public class DefaultMethodShadowedByStaticTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   private final TestParameters parameters;
@@ -41,10 +41,11 @@ public class DefaultMethodShadowedByStaticTest extends TestBase {
     testForRuntime(parameters)
         .addProgramClassFileData(CLASSES)
         .run(parameters.getRuntime(), "Main")
-        .applyIf(
+        .applyIfDexRuntime(
             // When not desugaring interfaces, the v7 runtime fails to throw the correct error.
-            parameters.canUseDefaultAndStaticInterfaceMethods()
-                && parameters.isDexRuntimeVersion(Version.V7_0_0),
+            version ->
+                parameters.canUseDefaultAndStaticInterfaceMethods()
+                    && version.isEqualTo(Version.V7_0_0),
             r -> r.assertSuccessWithOutputLines("42"),
             r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }

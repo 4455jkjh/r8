@@ -13,8 +13,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
@@ -30,7 +29,7 @@ public class InvokeSpecialInterfaceTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public InvokeSpecialInterfaceTest(TestParameters parameters) {
@@ -39,22 +38,19 @@ public class InvokeSpecialInterfaceTest extends TestBase {
 
   @Test
   public void testRuntime() throws IOException, CompilationFailedException, ExecutionException {
-    boolean hasSegmentationFaultOnInvokeSuper =
-        parameters.isDexRuntime()
-            && parameters.getRuntime().asDex().getVm().isNewerThan(DexVm.ART_4_4_4_HOST)
-            && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_6_0_1_HOST);
-    TestRunResult<?> runResult =
-        testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
-            .addProgramClasses(I.class, Main.class)
-            .addProgramClassFileData(getClassWithTransformedInvoked())
-            .run(parameters.getRuntime(), Main.class);
-    // TODO(b/110175213): Remove when fixed.
-    if (parameters.isCfRuntime()) {
-      runResult.assertSuccessWithOutputLines("Hello World!");
-    } else {
-      runResult.assertFailureWithErrorThatMatches(
-          containsString(hasSegmentationFaultOnInvokeSuper ? "SIGSEGV" : "NoSuchMethodError"));
-    }
+    testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
+        .addProgramClasses(I.class, Main.class)
+        .addProgramClassFileData(getClassWithTransformedInvoked())
+        .run(parameters.getRuntime(), Main.class)
+        // TODO(b/110175213): Remove when fixed.
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            runResult -> runResult.assertSuccessWithOutputLines("Hello World!"),
+            version ->
+                version.isNewerThan(Version.V4_4_4) && version.isOlderThanOrEqual(Version.V6_0_1),
+            runResult -> runResult.assertFailureWithErrorThatMatches(containsString("SIGSEGV")),
+            runResult ->
+                runResult.assertFailureWithErrorThatMatches(containsString("NoSuchMethodError")));
   }
 
   // TODO(b/166210854): Test behavior on R8 too.

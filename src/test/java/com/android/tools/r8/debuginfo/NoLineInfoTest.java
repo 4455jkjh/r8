@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debuginfo;
 
-import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -11,6 +10,8 @@ import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.DexRuntime;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
@@ -39,8 +40,7 @@ public class NoLineInfoTest extends TestBase {
   @Parameters(name = "{0}, custom-sf:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
-        BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   public NoLineInfoTest(TestParameters parameters, boolean customSourceFile) {
@@ -55,12 +55,10 @@ public class NoLineInfoTest extends TestBase {
         .transform();
   }
 
-  public boolean isRuntimeWithPcAsLineNumberSupport() {
-    return parameters.isDexRuntime()
-        && parameters
-            .getRuntime()
-            .maxSupportedApiLevel()
-            .isGreaterThanOrEqualTo(apiLevelWithPcAsLineNumberSupport());
+  public boolean isRuntimeWithPcAsLineNumberSupport(Version version) {
+    return new DexRuntime(version)
+        .maxSupportedApiLevel()
+        .isGreaterThanOrEqualTo(apiLevelWithPcAsLineNumberSupport());
   }
 
   public boolean isCompileWithPcAsLineNumberSupport() {
@@ -75,15 +73,27 @@ public class NoLineInfoTest extends TestBase {
         .addProgramClassFileData(getTestClassTransformed())
         .run(parameters.getRuntime(), TestClass.class)
         .assertFailureWithErrorThatThrows(NullPointerException.class)
-        .inspectStackTrace(
-            stacktrace -> {
-              if (isRuntimeWithPcAsLineNumberSupport()) {
-                // On VMs with PC support the lack of a line will emit the PC instead.
-                assertThat(stacktrace, StackTrace.isSame(getExpectedInputStacktraceOnPcVms()));
-              } else {
-                assertThat(stacktrace, StackTrace.isSame(getExpectedInputStacktrace()));
-              }
-            });
+        .applyIfDexRuntime(
+            Version.V17_0_0::isOlderThanOrEqual,
+            r ->
+                r.inspectStackTrace(
+                    stacktrace ->
+                        // On VMs with PC support the lack of a line will emit the PC instead.
+                        assertThat(
+                            stacktrace,
+                            StackTrace.isSame(getExpectedInputStacktraceOnPcVms(true)))),
+            this::isRuntimeWithPcAsLineNumberSupport,
+            r ->
+                r.inspectStackTrace(
+                    stacktrace ->
+                        // On VMs with PC support the lack of a line will emit the PC instead.
+                        assertThat(
+                            stacktrace,
+                            StackTrace.isSame(getExpectedInputStacktraceOnPcVms(false)))),
+            r ->
+                r.inspectStackTrace(
+                    stacktrace ->
+                        assertThat(stacktrace, StackTrace.isSame(getExpectedInputStacktrace()))));
   }
 
   @Test
@@ -121,15 +131,30 @@ public class NoLineInfoTest extends TestBase {
                     "Unexpected residual stacktrace",
                     stackTrace,
                     StackTrace.isSame(getResidualStacktrace())))
-        .inspectStackTrace(
-            stacktrace ->
-                assertThat(
-                    "Unexpected input-source stacktrace",
-                    stacktrace,
-                    StackTrace.isSame(
-                        parameters.isCfRuntime()
-                            ? getExpectedInputStacktrace()
-                            : getUnexpectedRetracedStacktrace())));
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r ->
+                r.inspectStackTrace(
+                    stacktrace ->
+                        assertThat(
+                            "Unexpected input-source stacktrace",
+                            stacktrace,
+                            StackTrace.isSame(getExpectedInputStacktrace()))),
+            Version.V17_0_0::isOlderThanOrEqual,
+            r ->
+                r.inspectStackTrace(
+                    stacktrace ->
+                        assertThat(
+                            "Unexpected input-source stacktrace",
+                            stacktrace,
+                            StackTrace.isSame(getUnexpectedRetracedStacktrace(true)))),
+            r ->
+                r.inspectStackTrace(
+                    stacktrace ->
+                        assertThat(
+                            "Unexpected input-source stacktrace",
+                            stacktrace,
+                            StackTrace.isSame(getUnexpectedRetracedStacktrace(false)))));
   }
 
   private StackTraceLine line(String file, String method, int line) {
@@ -171,7 +196,8 @@ public class NoLineInfoTest extends TestBase {
       return line(CUSTOM_SOURCE_FILE, method, getPcEncoding(pc));
     }
     // If debug info is null, then on native pc support VMs it will print "unknown" and pc.
-    if (isRuntimeWithPcAsLineNumberSupport()) {
+    if (parameters.isDexRuntime()
+        && isRuntimeWithPcAsLineNumberSupport(parameters.getDexRuntimeVersion())) {
       return line(UNKNOWN_SOURCE_FILE, method, pc);
     }
     // On old runtimes it will print "default" and no line info.
@@ -190,37 +216,22 @@ public class NoLineInfoTest extends TestBase {
 
   // When D8 compiling reference inputs directly there is (currently) no way to recover from the PC
   // printing. Thus, this is the expected stack trace on those VMs.
-  private StackTrace getExpectedInputStacktraceOnPcVms() {
+  private StackTrace getExpectedInputStacktraceOnPcVms(boolean isAtLeastV17) {
     return StackTrace.builder()
-        .add(
-            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
-                ? inputLine("foo", 1)
-                : inputPcLine("foo", 1))
-        .add(
-            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
-                ? inputLine("bar", 0)
-                : inputPcLine("bar", 0))
-        .add(
-            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
-                ? inputLine("baz", 0)
-                : inputPcLine("baz", 0))
+        .add(isAtLeastV17 ? inputLine("foo", 1) : inputPcLine("foo", 1))
+        .add(isAtLeastV17 ? inputLine("bar", 0) : inputPcLine("bar", 0))
+        .add(isAtLeastV17 ? inputLine("baz", 0) : inputPcLine("baz", 0))
         .add(inputLine("main", 200))
         .build();
   }
 
   // TODO(b/232212653): The retraced stack trace should be the same as `getExpectedInputStacktrace`.
-  private StackTrace getUnexpectedRetracedStacktrace() {
+  private StackTrace getUnexpectedRetracedStacktrace(boolean isAtLeastV17) {
     assertFalse(parameters.isCfRuntime());
     StackTraceLine fooLine =
-        inputLine(
-            "foo",
-            canDiscardResidualDebugInfo(parameters)
-                    && parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
-                ? 1
-                : -1);
+        inputLine("foo", canDiscardResidualDebugInfo(parameters) && isAtLeastV17 ? 1 : -1);
     int position =
-        canDiscardResidualDebugInfo(parameters)
-                && parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
+        canDiscardResidualDebugInfo(parameters) && isAtLeastV17
             ? getPcEncoding(-1)
             : getPcEncoding(0);
     StackTraceLine barLine = inputLine("bar", position);

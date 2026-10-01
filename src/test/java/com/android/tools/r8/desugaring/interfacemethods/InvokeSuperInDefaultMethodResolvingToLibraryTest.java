@@ -10,6 +10,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -28,11 +29,7 @@ public class InvokeSuperInDefaultMethodResolvingToLibraryTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   private static final String EXPECTED_OUTPUT = "8";
@@ -61,13 +58,8 @@ public class InvokeSuperInDefaultMethodResolvingToLibraryTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters
-                    .getRuntime()
-                    .asDex()
-                    .maxSupportedApiLevel()
-                    .isLessThan(AndroidApiLevel.N),
+        .applyIfDexRuntime(
+            v -> v.isOlderThan(Version.V7_0_0),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
             r -> r.assertSuccessWithOutputLines(EXPECTED_OUTPUT));
   }
@@ -95,13 +87,8 @@ public class InvokeSuperInDefaultMethodResolvingToLibraryTest extends TestBase {
         .setMinApi(parameters)
         .addKeepMainRule(TestClass.class)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters
-                    .getRuntime()
-                    .asDex()
-                    .maxSupportedApiLevel()
-                    .isLessThan(AndroidApiLevel.N),
+        .applyIfDexRuntime(
+            v -> v.isOlderThan(Version.V7_0_0),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
             r -> r.assertSuccessWithOutputLines(EXPECTED_OUTPUT));
   }

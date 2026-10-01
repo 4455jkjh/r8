@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.naming.retrace.StackTrace;
@@ -16,6 +17,7 @@ import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.function.Predicate;
 import org.hamcrest.Matcher;
 
 public class SingleTestRunResult extends TestRunResult<SingleTestRunResult> {
@@ -143,6 +145,42 @@ public class SingleTestRunResult extends TestRunResult<SingleTestRunResult> {
     StringBuilder sb = new StringBuilder();
     appendProcessResult(sb);
     ps.println(sb.toString());
+    return self();
+  }
+
+  private boolean matchesDexVersion(Predicate<DexVm.Version> predicate) {
+    return runtime.isDex() && predicate.test(runtime.asDex().getVm().getVersion());
+  }
+
+  @Override
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      SingleTestRunResult applyIfDexRuntime(
+          Predicate<DexVm.Version> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<DexVm.Version> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<DexVm.Version> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<DexVm.Version> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    if (matchesDexVersion(condition1)) {
+      thenConsumer1.accept(this);
+    } else if (matchesDexVersion(condition2)) {
+      thenConsumer2.accept(this);
+    } else if (matchesDexVersion(condition3)) {
+      thenConsumer3.accept(this);
+    } else if (matchesDexVersion(condition4)) {
+      thenConsumer4.accept(this);
+    } else {
+      elseConsumer.accept(this);
+    }
     return self();
   }
 

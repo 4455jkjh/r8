@@ -41,7 +41,6 @@ public class VarHandleNoDesugaredTypesInSignaturesNoAttributesTest extends TestB
         // same time there are VFY errors on stderr.
         .withDexRuntimesStartingFromExcluding(Version.V4_4_4)
         .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -76,11 +75,10 @@ public class VarHandleNoDesugaredTypesInSignaturesNoAttributesTest extends TestB
         .addKeepMainRule(MAIN_CLASS)
         .addKeepRules("-keep class " + MAIN_CLASS + "{ <fields>; }")
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters.asDexRuntime().getVersion().isOlderThanOrEqual(Version.V4_4_4),
-            // TODO(b/247076137): Running on 4.0.4 and 4.4.4 needs to be checked. Output seems
-            // correct, but at the same time there are VFY errors on stderr.
+        // TODO(b/247076137): Running on 4.0.4 and 4.4.4 needs to be checked. Output seems
+        // correct, but at the same time there are VFY errors on stderr.
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             r -> r.assertFailureWithErrorThatThrows(NoSuchFieldException.class),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }

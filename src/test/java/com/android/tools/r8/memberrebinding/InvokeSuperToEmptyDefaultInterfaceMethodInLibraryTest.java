@@ -13,6 +13,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.errors.IllegalInvokeSuperToInterfaceOnDalvikDiagnostic;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
@@ -34,7 +35,7 @@ public class InvokeSuperToEmptyDefaultInterfaceMethodInLibraryTest extends TestB
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -67,8 +68,8 @@ public class InvokeSuperToEmptyDefaultInterfaceMethodInLibraryTest extends TestB
                             isInterface))
                 .transform())
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik(),
+        .applyIfDexRuntime(
+            Version::isDalvik,
             runResult -> runResult.assertFailureWithErrorThatThrows(VerifyError.class),
             runResult ->
                 runResult.assertSuccessWithOutputLines(

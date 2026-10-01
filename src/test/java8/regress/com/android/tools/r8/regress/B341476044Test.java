@@ -26,7 +26,7 @@ public class B341476044Test extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   private static final List<String> EXPECTED_OUTPUT =
@@ -74,9 +74,8 @@ public class B341476044Test extends TestBase {
         .addKeepMainRule(TestClass.class)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters.getDexRuntimeVersion().isInRangeInclusive(V13_0_0, V15_0_0),
+        .applyIfDexRuntime(
+            version -> version.isInRangeInclusive(V13_0_0, V15_0_0),
             // TODO(b/341476044): Should be EXPECTED_OUTPUT.
             r -> r.assertSuccessWithOutputLines(NOT_EXPECTED_OUTPUT),
             r -> r.assertSuccessWithOutputLines(EXPECTED_OUTPUT));

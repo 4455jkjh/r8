@@ -19,7 +19,7 @@ public class UnusedStringBuilderFromCharSequenceWithAppendObjectTest extends Tes
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public UnusedStringBuilderFromCharSequenceWithAppendObjectTest(TestParameters parameters) {
@@ -34,17 +34,15 @@ public class UnusedStringBuilderFromCharSequenceWithAppendObjectTest extends Tes
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLinesIf(
-            parameters.isCfRuntime()
-                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-            "CustomCharSequence.length()",
-            "CustomCharSequence.length()",
-            "CustomCharSequence.length()",
-            "CustomCharSequence.charAt(0)")
-        .assertSuccessWithOutputLinesIf(
-            parameters.isDexRuntime()
-                && parameters.getDexRuntimeVersion().isOlderThan(Version.V7_0_0),
-            "CustomCharSequence.toString()");
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V7_0_0),
+            r -> r.assertSuccessWithOutputLines("CustomCharSequence.toString()"),
+            r ->
+                r.assertSuccessWithOutputLines(
+                    "CustomCharSequence.length()",
+                    "CustomCharSequence.length()",
+                    "CustomCharSequence.length()",
+                    "CustomCharSequence.charAt(0)"));
   }
 
   static class Main {

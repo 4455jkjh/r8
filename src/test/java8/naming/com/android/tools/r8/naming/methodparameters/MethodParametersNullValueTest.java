@@ -30,11 +30,7 @@ public class MethodParametersNullValueTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   public MethodParametersNullValueTest(TestParameters parameters) {
@@ -78,15 +74,14 @@ public class MethodParametersNullValueTest extends TestBase {
   }
 
   private void checkExpected(TestRunResult<?> result) {
-    if (parameters.isCfRuntime(CfVm.JDK8)) {
-      // JDK8 will throw when accessing a null valued method parameter name.
-      result.assertFailureWithErrorThatThrows(MalformedParametersException.class);
-    } else if (parameters.isDexRuntimeVersionOlderThanOrEqual(Version.V7_0_0)) {
-      // API 26 introduced the java.lang.reflect.Parameter and methods.
-      result.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
-    } else {
-      result.assertSuccessWithOutput(EXPECTED);
-    }
+    result.applyIfDexRuntime(
+        parameters.isCfRuntime(CfVm.JDK8),
+        // JDK8 will throw when accessing a null valued method parameter name.
+        r -> r.assertFailureWithErrorThatThrows(MalformedParametersException.class),
+        version -> version.isOlderThanOrEqual(Version.V7_0_0),
+        // API 26 introduced the java.lang.reflect.Parameter and methods.
+        r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+        r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   private byte[] getTransformedTestClass() throws Exception {

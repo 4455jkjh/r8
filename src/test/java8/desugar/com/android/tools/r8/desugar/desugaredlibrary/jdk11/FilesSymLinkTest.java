@@ -52,7 +52,6 @@ public class FilesSymLinkTest extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
@@ -88,10 +87,10 @@ public class FilesSymLinkTest extends DesugaredLibraryTestBase {
             parameters.getRuntime(),
             TestClass.class,
             String.valueOf(parameters.getApiLevel().getMajor()))
-        .assertSuccessWithOutput(
-            libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
-                ? EXPECTED_RESULT
-                : EXPECTED_RESULT_DESUGARING);
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARING));
   }
 
   public static class TestClass {

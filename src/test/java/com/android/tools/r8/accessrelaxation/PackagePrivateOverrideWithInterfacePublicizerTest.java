@@ -11,6 +11,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.resolution.virtualtargets.package_a.ViewModel;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -29,7 +30,7 @@ public class PackagePrivateOverrideWithInterfacePublicizerTest extends TestBase 
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -64,11 +65,10 @@ public class PackagePrivateOverrideWithInterfacePublicizerTest extends TestBase 
   }
 
   private void assertSuccessOutput(TestRunResult<?> result) {
-    if (parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik()) {
-      result.assertFailureWithErrorThatMatches(containsString("overrides final"));
-    } else {
-      result.assertSuccessWithOutputLines("SubViewModel.clear()", "ViewModel.clear()");
-    }
+    result.applyIfDexRuntime(
+        Version::isDalvik,
+        r -> r.assertFailureWithErrorThatMatches(containsString("overrides final")),
+        r -> r.assertSuccessWithOutputLines("SubViewModel.clear()", "ViewModel.clear()"));
   }
 
   public static class Main {

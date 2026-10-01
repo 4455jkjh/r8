@@ -78,7 +78,7 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
         .run(parameters.getRuntime(), TestRunner.class)
         .applyIf(
             // Running un-desugared on a JVM with too high a CF version fails.
-            c ->
+            (DesugarTestConfiguration c) ->
                 parameters.getRuntime().isCf()
                     && !isInputCfVersionSupported()
                     && DesugarTestConfiguration.isNotDesugared(c),
@@ -90,7 +90,7 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
             // Running without interface method desugaring on a JVM with a supported CF version
             // fails on pre JVM 11. On JVM 11 and above this succeeds even of the input CF version
             // is below 55.
-            c ->
+            (DesugarTestConfiguration c) ->
                 parameters.getRuntime().isCf()
                     && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK11)
                     && (DesugarTestConfiguration.isNotDesugared(c)

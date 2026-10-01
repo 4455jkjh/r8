@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.resolution;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
@@ -12,9 +11,9 @@ import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.DescriptorUtils;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -26,11 +25,7 @@ public class InvokeVirtualOnInterfaceTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevels().build();
   }
 
   public InvokeVirtualOnInterfaceTest(TestParameters parameters) {
@@ -43,7 +38,7 @@ public class InvokeVirtualOnInterfaceTest extends TestBase {
         .addProgramClasses(I.class, C1.class, C2.class)
         .addProgramClassFileData(transformMain())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatMatches(getExpectedFailureMatcher(false));
+        .apply(r -> checkResult(r, false));
   }
 
   @Test
@@ -55,31 +50,24 @@ public class InvokeVirtualOnInterfaceTest extends TestBase {
         .setMinApi(parameters)
         .addOptionsModification(options -> options.testing.allowInvokeErrors = true)
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatMatches(getExpectedFailureMatcher(true));
+        .apply(r -> checkResult(r, true));
   }
 
-  private Matcher<String> getExpectedFailureMatcher(boolean isR8) {
-    // Old runtimes fail verification outright.
-    if (isDexVmOlderThanOrEqualTo(Version.V4_4_4)) {
-      return containsString("VerifyError");
-    }
-    // For 5, 6 and 7, the error is correct, but only if the class has a non-abstract method.
-    // R8 will not trace the C1.f and C2.f as the resolution of I.f fails. The implementation
-    // methods are removed and this again causes the runtime to throw the wrong error.
-    if (isR8 && isDexVmOlderThanOrEqualTo(Version.V7_0_0)) {
-      return containsString("NoSuchMethodError");
-    }
-    return containsString("IncompatibleClassChangeError");
-  }
-
-  private boolean isDexVmOlderThanOrEqualTo(Version version) {
-    return parameters.getRuntime().isDex()
-        && parameters
-        .getRuntime()
-        .asDex()
-        .getVm()
-        .getVersion()
-        .isOlderThanOrEqual(version);
+  private void checkResult(TestRunResult<?> result, boolean isR8) {
+    result.applyIfDexRuntime(
+        // Old runtimes fail verification outright.
+        version -> version.isOlderThanOrEqual(Version.V4_4_4),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+        // For 5, 6 and 7, the error is correct, but only if the class has a non-abstract
+        // method. R8 will not trace the C1.f and C2.f as the resolution of I.f fails. The
+        // implementation methods are removed and this again causes the runtime to throw the
+        // wrong error.
+        version ->
+            isR8
+                && version.isNewerThan(Version.V4_4_4)
+                && version.isOlderThanOrEqual(Version.V7_0_0),
+        r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+        r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
 
   public interface I {

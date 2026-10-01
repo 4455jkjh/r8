@@ -39,7 +39,7 @@ public class MemberResolutionAsmTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public MemberResolutionAsmTest(TestParameters parameters) {
@@ -164,15 +164,14 @@ public class MemberResolutionAsmTest extends TestBase {
     return ImmutableList.of(ADump.dump(), BDump.dump(), MainDump.dump());
   }
 
-  private String getMethodSignature(String type, String method) {
+  private String getMethodSignature(String type, String method, boolean isOlderThanOrEqualKitKat) {
     if (parameters.isCfRuntime()) {
       return parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
           ? ("void " + type + "." + method + "()")
           : (type + "." + method + "()V");
     }
     assert parameters.isDexRuntime();
-    Version version = parameters.getRuntime().asDex().getVm().getVersion();
-    if (version.isOlderThanOrEqual(Version.V4_4_4)) {
+    if (isOlderThanOrEqualKitKat) {
       return "L" + type + ";." + method + " ()V";
     }
     return "void " + type + "." + method + "()";
@@ -183,8 +182,16 @@ public class MemberResolutionAsmTest extends TestBase {
     testForRuntime(parameters)
         .addProgramClassFileData(swappingInputs())
         .run(parameters.getRuntime(), swappingMain)
-        .assertFailureWithErrorThatThrows(IllegalAccessError.class)
-        .assertFailureWithErrorThatMatches(containsString(getMethodSignature("A", "x")));
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            r ->
+                r.assertFailureWithErrorThatThrows(IllegalAccessError.class)
+                    .assertFailureWithErrorThatMatches(
+                        containsString(getMethodSignature("A", "x", true))),
+            r ->
+                r.assertFailureWithErrorThatThrows(IllegalAccessError.class)
+                    .assertFailureWithErrorThatMatches(
+                        containsString(getMethodSignature("A", "x", false))));
   }
 
   @Test

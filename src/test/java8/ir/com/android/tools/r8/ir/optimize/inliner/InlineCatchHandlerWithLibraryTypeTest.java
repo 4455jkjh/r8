@@ -60,7 +60,7 @@ public class InlineCatchHandlerWithLibraryTypeTest extends TestBase {
   @Parameters(name = "{0}, {1}")
   public static List<Object[]> params() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build(),
+        getTestParameters().withAllRuntimesAndApiLevels().build(),
         new TreeSet<>(EXCEPTIONS.keySet()));
   }
 
@@ -117,14 +117,14 @@ public class InlineCatchHandlerWithLibraryTypeTest extends TestBase {
 
   private void checkResult(R8TestRunResult runResult) {
     // The bootclasspath for our build of 4.4.4 does not contain various bits. Allow verify error.
-    if (isPresentInRuntime()
-        && parameters.getRuntime().asDex().getVm().getVersion().equals(Version.V4_4_4)
-        && (exception.startsWith("android.media") || exception.startsWith("android.view"))) {
-      runResult.assertFailureWithErrorThatThrows(VerifyError.class);
-      return;
-    }
     // Correct compilation should ensure that all programs run without error.
-    runResult.assertSuccessWithOutput(EXPECTED);
+    runResult.applyIfDexRuntime(
+        version ->
+            isPresentInRuntime()
+                && version.equals(Version.V4_4_4)
+                && (exception.startsWith("android.media") || exception.startsWith("android.view")),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+        r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   private void checkInlined(CodeInspector inspector) {

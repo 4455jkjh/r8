@@ -34,17 +34,15 @@ public class SuppressedExceptionsTest extends TestBase {
         .withAllRuntimes()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
-  public boolean runtimeHasSuppressedExceptionsSupport() {
+  public boolean runtimeHasSuppressedExceptionsSupport(Version version) {
     // TODO(b/214239152): Update this if desugaring is changed.
     // Despite 4.0.4 being API level 15 and add suppressed being officially added in 19 it is
     // actually implemented. Thus, the backport implementation will use the functionality and run
     // as expected by RI.
-    return parameters.isCfRuntime()
-        || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V4_0_4);
+    return version.isNewerThanOrEqual(Version.V4_0_4);
   }
 
   public boolean apiLevelHasSuppressedExceptionsSupport(boolean isDesugaring) {
@@ -59,8 +57,12 @@ public class SuppressedExceptionsTest extends TestBase {
     testForDesugaring(parameters)
         .addProgramClasses(TestClass.class)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(
-            runtimeHasSuppressedExceptionsSupport() ? StringUtils.lines("FOO") : "NONE")
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(StringUtils.lines("FOO")),
+            this::runtimeHasSuppressedExceptionsSupport,
+            r -> r.assertSuccessWithOutput(StringUtils.lines("FOO")),
+            r -> r.assertSuccessWithOutput("NONE"))
         .inspectIf(
             DesugarTestConfiguration::isDesugared,
             inspector ->
@@ -86,8 +88,12 @@ public class SuppressedExceptionsTest extends TestBase {
         .setMinApi(parameters)
         .addKeepMainRule(TestClass.class)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(
-            runtimeHasSuppressedExceptionsSupport() ? StringUtils.lines("FOO") : "NONE")
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(StringUtils.lines("FOO")),
+            this::runtimeHasSuppressedExceptionsSupport,
+            r -> r.assertSuccessWithOutput(StringUtils.lines("FOO")),
+            r -> r.assertSuccessWithOutput("NONE"))
         .inspect(
             inspector -> {
               hasInvokesTo(

@@ -66,7 +66,7 @@ public class SealedClassesJdk17CompiledTest extends TestBase {
         .addProgramClassesAndInnerClasses(Helper.getSealedClasses())
         .run(parameters.getRuntime(), Main.class)
         .applyIf(
-            c ->
+            (DesugarTestConfiguration c) ->
                 DesugarTestConfiguration.isNotJavac(c)
                     || parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
             r -> r.assertSuccessWithOutput(EXPECTED),

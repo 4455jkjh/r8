@@ -46,7 +46,7 @@ public class MaximallySpecificAbstractOnIncompletePathTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   private Path libraryClasses;
@@ -95,14 +95,15 @@ public class MaximallySpecificAbstractOnIncompletePathTest extends TestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    Version dexRuntime = parameters.getDexRuntimeVersion();
     testForD8(parameters.getBackend())
         .apply(this::setupTestBuilder)
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrowsIf(dexRuntime.isDalvik(), VerifyError.class)
-        .assertFailureWithErrorThatThrowsIf(!dexRuntime.isDalvik(), AbstractMethodError.class);
+        .applyIfDexRuntime(
+            Version::isDalvik,
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   @Test

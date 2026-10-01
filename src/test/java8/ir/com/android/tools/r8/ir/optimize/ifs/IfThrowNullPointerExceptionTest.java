@@ -13,7 +13,9 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -34,7 +36,7 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection params() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public IfThrowNullPointerExceptionTest(TestParameters parameters) {
@@ -47,7 +49,7 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
     testForJvm(parameters)
         .addTestClasspath()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedStdout(false));
+        .apply(result -> checkResult(result, false));
   }
 
   @Test
@@ -60,7 +62,7 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedStdout(false));
+        .apply(result -> checkResult(result, false));
   }
 
   @Test
@@ -72,7 +74,14 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedStdout(true));
+        .apply(result -> checkResult(result, true));
+  }
+
+  private void checkResult(TestRunResult<?> result, boolean isR8) {
+    result.applyIfDexRuntime(
+        Version::isDalvik,
+        r -> r.assertSuccessWithOutput(getExpectedStdout(isR8, true)),
+        r -> r.assertSuccessWithOutput(getExpectedStdout(isR8, false)));
   }
 
   private void inspect(CodeInspector inspector) {
@@ -116,7 +125,7 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
     }
   }
 
-  private String getExpectedStdout(boolean isR8) {
+  private String getExpectedStdout(boolean isR8, boolean isDalvik) {
     if (parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)) {
       // Newer JVMs have added support for printing the expression and local causing the NPE.
       if (isR8) {
@@ -131,7 +140,7 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
             "Caught NPE: Cannot throw exception because \"null\" is null");
       }
     }
-    if (parameters.isCfRuntime() || isDalvik()) {
+    if (parameters.isCfRuntime() || isDalvik) {
       return StringUtils.lines("Caught NPE: null", "Caught NPE: x was null", "Caught NPE: null");
     }
     return StringUtils.lines(
@@ -140,11 +149,6 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
         "Caught NPE: x was null",
         "Caught NPE: Attempt to invoke virtual method 'java.lang.Class java.lang.Object.getClass()'"
             + " on a null object reference");
-  }
-
-  private boolean isDalvik() {
-    return parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().getVersion().isDalvik();
   }
 
   static class TestClass {

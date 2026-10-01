@@ -35,7 +35,7 @@ public class ConvertCheckNotNullTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -82,10 +82,15 @@ public class ConvertCheckNotNullTest extends TestBase {
                   isAbsent());
             })
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(getExpectedOutput());
+        .applyIfDexRuntime(
+            version -> version.isEqualToOneOf(Version.V8_1_0, Version.DEFAULT),
+            r -> r.assertSuccessWithOutput(getExpectedOutput(Version.V8_1_0)),
+            version -> version.isNewerThanOrEqual(Version.V5_1_1),
+            r -> r.assertSuccessWithOutput(getExpectedOutput(Version.V5_1_1)),
+            r -> r.assertSuccessWithOutput(getExpectedOutput(Version.V4_0_4)));
   }
 
-  private String getExpectedOutput() {
+  private String getExpectedOutput(Version dexRuntimeVersion) {
     String message4 = "null";
     String message5 = "null";
     String message6 = "null";
@@ -96,7 +101,7 @@ public class ConvertCheckNotNullTest extends TestBase {
         message6 = "Cannot invoke \"Object.getClass()\" because \"<local5>\" is null";
       }
     } else {
-      if (parameters.getDexRuntimeVersion().isEqualToOneOf(Version.V8_1_0, Version.DEFAULT)) {
+      if (dexRuntimeVersion.isEqualToOneOf(Version.V8_1_0, Version.DEFAULT)) {
         if (parameters.getApiLevel().isLessThan(AndroidApiLevel.K)) {
           message4 = message5 = "Attempt to invoke a virtual method on a null object reference";
           message6 =
@@ -107,7 +112,7 @@ public class ConvertCheckNotNullTest extends TestBase {
           message4 =
               message5 = message6 = "Attempt to invoke a virtual method on a null object reference";
         }
-      } else if (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V5_1_1)) {
+      } else if (dexRuntimeVersion.isNewerThanOrEqual(Version.V5_1_1)) {
         message4 =
             message5 =
                 message6 =

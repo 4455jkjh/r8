@@ -66,11 +66,7 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withAllRuntimes()
-            .withAllApiLevelsAlsoForCf()
-            .withoutCollapsedDexRuntimes()
-            .build(),
+        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
         ImmutableList.of(JDK11),
         ImmutableList.of(D8_L8SHRINK, R8_L8SHRINK));
   }
@@ -127,8 +123,10 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
         .apply(b -> configureD8(b, false))
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            runtimeWithJavaTime(parameters),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            DesugaredLibraryTestBase::runtimeWithJavaTime,
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
             TestRunResult::assertFailure);
   }
@@ -144,8 +142,10 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
         .setMinApi(parameters)
         .addKeepMainRule(TestClass.class)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            runtimeWithJavaTime(parameters),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            DesugaredLibraryTestBase::runtimeWithJavaTime,
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
             TestRunResult::assertFailure);
   }

@@ -14,6 +14,7 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
@@ -44,11 +45,7 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withAllRuntimes()
-            .withAllApiLevelsAlsoForCf()
-            .withoutCollapsedDexRuntimes()
-            .build(),
+        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
         getJdk8Jdk11(),
         SPECIFICATIONS_WITH_CF2CF);
   }
@@ -76,12 +73,24 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
         .compile()
         .inspect(this::checkRewrittenSignature)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(
-            expected(
-                parameters,
-                compilationSpecification.isCfToCf(),
-                libraryDesugaringSpecification,
-                compilationSpecification));
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V7_0_0),
+            r ->
+                r.assertSuccessWithOutput(
+                    expected(
+                        parameters,
+                        true,
+                        compilationSpecification.isCfToCf(),
+                        libraryDesugaringSpecification,
+                        compilationSpecification)),
+            r ->
+                r.assertSuccessWithOutput(
+                    expected(
+                        parameters,
+                        false,
+                        compilationSpecification.isCfToCf(),
+                        libraryDesugaringSpecification,
+                        compilationSpecification)));
   }
 
   private void checkRewrittenSignature(CodeInspector inspector) {
@@ -116,6 +125,7 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
 
   private static String expected(
       TestParameters parameters,
+      boolean isArtBeforeN,
       boolean genericSignaturesOnEmulatedInterfaces,
       LibraryDesugaringSpecification libraryDesugaringSpecification,
       CompilationSpecification compilationSpecification) {
@@ -178,11 +188,7 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
                     .isGreaterThanOrEqualTo(TestBase.apiLevelWithDefaultInterfaceMethodsSupport())
             ? EXPECTED_WITH_EMULATED_INTERFACE
             : (parameters.isDexRuntime()
-                    && (parameters
-                            .getRuntime()
-                            .asDex()
-                            .getMinApiLevel()
-                            .isLessThan(AndroidApiLevel.N)
+                    && (isArtBeforeN
                         || parameters
                             .getApiLevel()
                             .isLessThan(TestBase.apiLevelWithDefaultInterfaceMethodsSupport())))

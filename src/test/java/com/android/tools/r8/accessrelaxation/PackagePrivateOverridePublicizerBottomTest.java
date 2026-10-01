@@ -15,6 +15,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -34,7 +35,7 @@ public class PackagePrivateOverridePublicizerBottomTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public PackagePrivateOverridePublicizerBottomTest(TestParameters parameters) {
@@ -89,11 +90,10 @@ public class PackagePrivateOverridePublicizerBottomTest extends TestBase {
   }
 
   private void assertSuccessOutput(TestRunResult<?> result) {
-    if (parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik()) {
-      result.assertSuccessWithOutputLines(EXPECTED_ART_4);
-    } else {
-      result.assertSuccessWithOutputLines(EXPECTED);
-    }
+    result.applyIfDexRuntime(
+        Version::isDalvik,
+        r -> r.assertSuccessWithOutputLines(EXPECTED_ART_4),
+        r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   @SuppressWarnings("override") /* after changing the package the clear method is not overridden */

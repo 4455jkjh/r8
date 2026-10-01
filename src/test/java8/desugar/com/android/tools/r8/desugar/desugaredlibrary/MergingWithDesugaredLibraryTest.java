@@ -48,12 +48,7 @@ public class MergingWithDesugaredLibraryTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withDexRuntimes()
-            .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
-            .build(),
-        getJdk8Jdk11());
+        getTestParameters().withDexRuntimes().withAllApiLevels().build(), getJdk8Jdk11());
   }
 
   public MergingWithDesugaredLibraryTest(
@@ -81,12 +76,12 @@ public class MergingWithDesugaredLibraryTest extends DesugaredLibraryTestBase {
     compileResult
         .run(parameters.getRuntime(), Part1.class)
         .assertSuccessWithOutputLines(getExpected());
-    boolean expectNoSuchMethodError =
-        parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isOlderThan(Version.V7_0_0);
     compileResult
         .run(parameters.getRuntime(), Part2.class)
-        .assertFailureWithErrorThatThrowsIf(expectNoSuchMethodError, NoSuchMethodError.class)
-        .assertSuccessWithOutputLinesIf(!expectNoSuchMethodError, JAVA_RESULT);
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V7_0_0),
+            r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+            r -> r.assertSuccessWithOutputLines(JAVA_RESULT));
   }
 
   private String getExpected() {

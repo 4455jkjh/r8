@@ -22,7 +22,7 @@ public class CallToOtherEnumCompareToMethodNegativeUnboxingTest extends EnumUnbo
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -30,11 +30,10 @@ public class CallToOtherEnumCompareToMethodNegativeUnboxingTest extends EnumUnbo
     testForRuntime(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isCfRuntime()
-                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-            runResult -> runResult.assertFailureWithErrorThatThrows(ClassCastException.class),
-            runResult -> runResult.assertSuccessWithOutputLines("0"));
+        .applyIfDexRuntime(
+            v -> v.isOlderThan(Version.V7_0_0),
+            runResult -> runResult.assertSuccessWithOutputLines("0"),
+            runResult -> runResult.assertFailureWithErrorThatThrows(ClassCastException.class));
   }
 
   @Test
@@ -47,11 +46,10 @@ public class CallToOtherEnumCompareToMethodNegativeUnboxingTest extends EnumUnbo
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isCfRuntime()
-                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-            runResult -> runResult.assertFailureWithErrorThatThrows(ClassCastException.class),
-            runResult -> runResult.assertSuccessWithOutputLines("0"));
+        .applyIfDexRuntime(
+            v -> v.isOlderThan(Version.V7_0_0),
+            runResult -> runResult.assertSuccessWithOutputLines("0"),
+            runResult -> runResult.assertFailureWithErrorThatThrows(ClassCastException.class));
   }
 
   static class Main {

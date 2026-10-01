@@ -29,7 +29,6 @@ public class AnnotationWithInjectedMethodsTest extends EnumUnboxingTestBase {
     return getTestParameters()
         .withAllRuntimes()
         .withApiLevelsStartingAtIncluding(apiLevelWithDefaultInterfaceMethodsSupport())
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -43,7 +42,12 @@ public class AnnotationWithInjectedMethodsTest extends EnumUnboxingTestBase {
         .addProgramClasses(getProgramClasses())
         .addProgramClassFileData(getProgramClassFileData())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(getExpectedOutput());
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(getExpectedOutput(true, false)),
+            v -> v == Version.V7_0_0,
+            r -> r.assertSuccessWithOutput(getExpectedOutput(false, true)),
+            r -> r.assertSuccessWithOutput(getExpectedOutput(false, false)));
   }
 
   @Test
@@ -59,10 +63,15 @@ public class AnnotationWithInjectedMethodsTest extends EnumUnboxingTestBase {
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(getExpectedOutput());
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(getExpectedOutput(true, false)),
+            v -> v == Version.V7_0_0,
+            r -> r.assertSuccessWithOutput(getExpectedOutput(false, true)),
+            r -> r.assertSuccessWithOutput(getExpectedOutput(false, false)));
   }
 
-  private String getExpectedOutput() {
+  private String getExpectedOutput(boolean isCf, boolean isArt7) {
     ImmutableList.Builder<String> builder = ImmutableList.builder();
     builder.add(
         "Foo",
@@ -70,15 +79,13 @@ public class AnnotationWithInjectedMethodsTest extends EnumUnboxingTestBase {
         "Caught IncompleteAnnotationException: "
             + typeName(AnnotationWithInjectedMethod.class)
             + " missing element getInstanceData");
-    if (parameters.isCfRuntime()) {
+    if (isCf) {
       builder.add("Caught AssertionError: Too many parameters for an annotation method");
     } else {
       builder.add(
           "Caught IllegalArgumentException: Invalid method for annotation type: "
               + "public "
-              + (parameters.getRuntime().asDex().getVm().getVersion() == Version.V7_0_0
-                  ? ""
-                  : "default ")
+              + (isArt7 ? "" : "default ")
               + typeName(Data.class)
               + " "
               + typeName(AnnotationWithInjectedMethod.class)

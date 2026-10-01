@@ -25,7 +25,7 @@ public class NewInstanceToAbstractClassReferenceTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -35,24 +35,21 @@ public class NewInstanceToAbstractClassReferenceTest extends TestBase {
         .addProgramClassFileData(
             transformer(A.class).setAccessFlags(ClassAccessFlags::setAbstract).transform())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrowsIf(parameters.isCfRuntime(), InstantiationError.class)
-        .applyIf(
-            parameters.isDexRuntime(),
-            result -> {
-              if (parameters.getDexRuntimeVersion().isDalvik()) {
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertFailureWithErrorThatThrows(InstantiationError.class),
+            Version::isDalvik,
+            result ->
                 result.assertStderrMatches(
                     containsString(
-                        "VFY: new-instance on interface or abstract class " + descriptor(A.class)));
-
-              } else if (parameters.getDexRuntimeVersion().isOlderThan(Version.V7_0_0)) {
+                        "VFY: new-instance on interface or abstract class " + descriptor(A.class))),
+            version -> !version.isDalvik() && version.isOlderThan(Version.V7_0_0),
+            result ->
                 result.assertStderrMatches(
                     containsString(
                         "Verification failed on class "
-                            + typeName(NewInstanceToAbstractClassReferenceTest.class)));
-              } else {
-                result.assertStderrMatches(not(containsString("Verification failed")));
-              }
-            });
+                            + typeName(NewInstanceToAbstractClassReferenceTest.class))),
+            result -> result.assertStderrMatches(not(containsString("Verification failed"))));
   }
 
   public static class A {

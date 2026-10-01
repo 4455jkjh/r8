@@ -8,7 +8,6 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
@@ -44,11 +43,7 @@ public class DateTimeFormatterTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withDexRuntimes()
-            .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
-            .build(),
+        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
         getJdk8Jdk11(),
         DEFAULT_SPECIFICATIONS);
   }
@@ -64,26 +59,24 @@ public class DateTimeFormatterTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testFormatter() throws Throwable {
-    TestRunResult<?> run =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(getClass())
-            .addKeepMainRule(TestClass.class)
-            .run(parameters.getRuntime(), TestClass.class)
-            .assertSuccess();
-    if (libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)) {
-      run.assertSuccessWithOutput(
-          parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V14_0_0)
-                  && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.U)
-              ? expectedOutputDesugaredLibNNBSP
-              : expectedOutputDesugaredLib);
-    } else {
-      run.assertSuccessWithOutput(
-          parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V14_0_0)
-                  && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.U)
-              ? expectedOutputNNBSP
-              : expectedOutput);
-    }
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(TestClass.class)
+        .run(parameters.getRuntime(), TestClass.class)
+        .applyIfDexRuntime(
+            version ->
+                version.isNewerThanOrEqual(Version.V14_0_0)
+                    && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.U),
+            r ->
+                r.assertSuccessWithOutput(
+                    libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)
+                        ? expectedOutputDesugaredLibNNBSP
+                        : expectedOutputNNBSP),
+            r ->
+                r.assertSuccessWithOutput(
+                    libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)
+                        ? expectedOutputDesugaredLib
+                        : expectedOutput));
   }
 
   static class TestClass {

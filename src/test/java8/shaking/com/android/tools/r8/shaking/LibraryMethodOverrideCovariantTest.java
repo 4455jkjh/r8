@@ -24,16 +24,11 @@ public class LibraryMethodOverrideCovariantTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public LibraryMethodOverrideCovariantTest(TestParameters parameters) {
     this.parameters = parameters;
-  }
-
-  private boolean supportsKeySetView() {
-    return parameters.isCfRuntime()
-        || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V10_0_0);
   }
 
   @Test
@@ -42,8 +37,10 @@ public class LibraryMethodOverrideCovariantTest extends TestBase {
         .addProgramClasses(Main.class)
         .addRunClasspathFiles(buildOnDexRuntime(parameters, LibraryUser.class))
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            supportsKeySetView(),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            result -> result.assertFailureWithErrorThatMatches(containsString("Hello World")),
+            version -> version.isNewerThanOrEqual(Version.V10_0_0),
             result -> result.assertFailureWithErrorThatMatches(containsString("Hello World")),
             result -> result.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
   }
@@ -60,8 +57,10 @@ public class LibraryMethodOverrideCovariantTest extends TestBase {
         .compile()
         .addRunClasspathFiles(buildOnDexRuntime(parameters, LibraryUser.class))
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            supportsKeySetView(),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            result -> result.assertFailureWithErrorThatMatches(containsString("Hello World")),
+            version -> version.isNewerThanOrEqual(Version.V10_0_0),
             result -> result.assertFailureWithErrorThatMatches(containsString("Hello World")),
             result -> result.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
   }

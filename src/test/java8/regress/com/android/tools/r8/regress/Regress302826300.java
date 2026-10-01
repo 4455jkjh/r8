@@ -9,6 +9,7 @@ import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -22,11 +23,7 @@ public class Regress302826300 extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withDexRuntimes()
-        .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
   }
 
   public Regress302826300(TestParameters parameters) {
@@ -48,11 +45,10 @@ public class Regress302826300 extends TestBase {
             .addLibraryClasses(LibraryClass.class)
             .setMinApi(parameters)
             .run(parameters.getRuntime(), Foo.class);
-    if (parameters.getRuntime().asDex().getVersion().isDalvik()) {
-      run.assertFailureWithErrorThatMatches(containsString("rejecting opcode 0x"));
-    } else {
-      run.assertSuccessWithOutputLines(EXPECTED);
-    }
+    run.applyIfDexRuntime(
+        Version::isDalvik,
+        r -> r.assertFailureWithErrorThatMatches(containsString("rejecting opcode 0x")),
+        r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   public static class Foo {

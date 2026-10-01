@@ -120,7 +120,6 @@ public class FilesAttributesTest extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
@@ -135,16 +134,6 @@ public class FilesAttributesTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private String getExpectedResult() {
-    if (parameters.isCfRuntime()) {
-      return EXPECTED_RESULT_JVM_LINUX;
-    }
-    if (libraryDesugaringSpecification.usesPlatformFileSystem(parameters)) {
-      return EXPECTED_RESULT_ANDROID;
-    }
-    return EXPECTED_RESULT_ANDROID_DESUGARING;
-  }
-
   @Test
   public void test() throws Throwable {
     if (parameters.isCfRuntime()) {
@@ -154,7 +143,7 @@ public class FilesAttributesTest extends DesugaredLibraryTestBase {
       testForJvm(parameters)
           .addInnerClasses(getClass())
           .run(parameters.getRuntime(), TestClass.class)
-          .assertSuccessWithOutput(getExpectedResult());
+          .assertSuccessWithOutput(EXPECTED_RESULT_JVM_LINUX);
       return;
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
@@ -163,7 +152,10 @@ public class FilesAttributesTest extends DesugaredLibraryTestBase {
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_ANDROID),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_ANDROID_DESUGARING));
   }
 
   public static class TestClass {

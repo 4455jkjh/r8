@@ -33,11 +33,7 @@ public class DefaultInterfaceMethodDesugaringWithPublicStaticResolutionInvokeVir
   @Parameterized.Parameters(name = "{0}, invalid:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withAllRuntimes()
-            .withAllApiLevelsAlsoForCf()
-            .withoutCollapsedDexRuntimes()
-            .build(),
+        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
         BooleanUtils.values());
   }
 
@@ -107,11 +103,12 @@ public class DefaultInterfaceMethodDesugaringWithPublicStaticResolutionInvokeVir
   private void checkResult(TestRunResult<?> result, boolean isR8) {
     // Invalid invoke case is where the invoke-virtual targets C.m.
     if (invalidInvoke) {
-      if (parameters.isDexRuntimeVersion(Version.V7_0_0)
-          && parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring()
-          && !isR8) {
+      if (!isR8 && parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring()) {
         // The v7 VM incorrectly fails to throw.
-        result.assertSuccessWithOutput(EXPECTED);
+        result.applyIfDexRuntime(
+            v -> v.isEqualTo(Version.V7_0_0),
+            r -> r.assertSuccessWithOutput(EXPECTED),
+            r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
       } else {
         result.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
       }
@@ -120,11 +117,12 @@ public class DefaultInterfaceMethodDesugaringWithPublicStaticResolutionInvokeVir
 
     if (isR8
         && parameters.isDexRuntime()
-        && parameters.getDexRuntimeVersion().isNewerThan(Version.V6_0_1)
-        && parameters.getDexRuntimeVersion().isOlderThan(Version.V12_0_0)
         && parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring()) {
       // TODO(b/182255398): This should be EXPECTED.
-      result.assertSuccessWithOutput(EXPECTED_R8);
+      result.applyIfDexRuntime(
+          v -> v.isNewerThan(Version.V6_0_1) && v.isOlderThan(Version.V12_0_0),
+          r -> r.assertSuccessWithOutput(EXPECTED_R8),
+          r -> r.assertSuccessWithOutput(EXPECTED));
       return;
     }
 

@@ -34,7 +34,7 @@ public class ProgramInterfaceWithLibraryMethod extends DesugaredLibraryTestBase 
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build(),
+        getTestParameters().withDexRuntimesAndAllApiLevels().build(),
         getJdk8Jdk11(),
         SPECIFICATIONS_WITH_CF2CF);
   }
@@ -56,12 +56,13 @@ public class ProgramInterfaceWithLibraryMethod extends DesugaredLibraryTestBase 
             new CustomLibrarySpecification(LibraryClass.class, AndroidApiLevel.B))
         .addKeepMainRule(Executor.class)
         .run(parameters.getRuntime(), Executor.class)
-        .applyIf(
-            !libraryDesugaringSpecification.hasJDollarFunction(parameters)
-                || parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
-                || (compilationSpecification.isProgramShrink()
-                    && (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0)
-                        || libraryDesugaringSpecification == JDK11)),
+        .applyIfDexRuntime(
+            version ->
+                !libraryDesugaringSpecification.hasJDollarFunction(parameters)
+                    || parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
+                    || (compilationSpecification.isProgramShrink()
+                        && (version.isNewerThanOrEqual(Version.V7_0_0)
+                            || libraryDesugaringSpecification == JDK11)),
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
             r -> {
               if (compilationSpecification.isProgramShrink()) {

@@ -11,7 +11,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.transformers.ClassTransformer;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -28,7 +28,7 @@ public class InvokeVirtualFinalTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public InvokeVirtualFinalTest(TestParameters parameters) {
@@ -38,17 +38,14 @@ public class InvokeVirtualFinalTest extends TestBase {
   @Test
   public void testInvokeSpecialOnClassWithFinal()
       throws ExecutionException, CompilationFailedException, IOException {
-    String expectedError = "overrides final";
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isNewerThan(DexVm.ART_4_4_4_HOST)
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_6_0_1_HOST)) {
-      expectedError = "LinkageError";
-    }
     testForRuntime(parameters)
         .addProgramClasses(B.class, Main.class)
         .addProgramClassFileData(getClassWithTransformedInvoked())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatMatches(containsString(expectedError));
+        .applyIfDexRuntime(
+            v -> v.isNewerThan(Version.V4_4_4) && v.isOlderThanOrEqual(Version.V6_0_1),
+            r -> r.assertFailureWithErrorThatMatches(containsString("LinkageError")),
+            r -> r.assertFailureWithErrorThatMatches(containsString("overrides final")));
   }
 
   private byte[] getClassWithTransformedInvoked() throws IOException {

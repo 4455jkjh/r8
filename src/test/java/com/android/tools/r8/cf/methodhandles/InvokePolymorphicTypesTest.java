@@ -44,11 +44,7 @@ public class InvokePolymorphicTypesTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withAllRuntimes()
-        .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   public InvokePolymorphicTypesTest(TestParameters parameters) {
@@ -59,9 +55,6 @@ public class InvokePolymorphicTypesTest extends TestBase {
   public void testD8() throws Exception {
     boolean hasCompileSupport =
         parameters.getApiLevel().isGreaterThanOrEqualTo(apiLevelWithInvokePolymorphicSupport());
-    boolean hasRuntimeSupport =
-        parameters.isCfRuntime()
-            || parameters.asDexRuntime().getVersion().isNewerThanOrEqual(Version.V8_1_0);
     testForD8(parameters.getBackend())
         .addProgramClasses(Data.class, TestClass.class)
         .setMinApi(parameters)
@@ -69,13 +62,23 @@ public class InvokePolymorphicTypesTest extends TestBase {
         .applyIf(
             hasCompileSupport,
             r -> r.assertSuccessWithOutput(EXPECTED),
-            hasRuntimeSupport,
             r ->
-                r.assertSuccess()
-                    .assertStderrMatches(
-                        containsString(
-                            "Instruction is unrepresentable in DEX V35: invoke-polymorphic")),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+                r.applyIfDexRuntime(
+                    parameters.isCfRuntime(),
+                    rr ->
+                        rr.assertSuccess()
+                            .assertStderrMatches(
+                                containsString(
+                                    "Instruction is unrepresentable in DEX V35:"
+                                        + " invoke-polymorphic")),
+                    version -> version.isNewerThanOrEqual(Version.V8_1_0),
+                    rr ->
+                        rr.assertSuccess()
+                            .assertStderrMatches(
+                                containsString(
+                                    "Instruction is unrepresentable in DEX V35:"
+                                        + " invoke-polymorphic")),
+                    rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));
   }
 
   @Test
@@ -86,9 +89,6 @@ public class InvokePolymorphicTypesTest extends TestBase {
             || parameters
                 .getApiLevel()
                 .isGreaterThanOrEqualTo(apiLevelWithInvokePolymorphicSupport());
-    boolean hasRuntimeSupport =
-        parameters.isCfRuntime()
-            || parameters.asDexRuntime().getVersion().isNewerThanOrEqual(Version.V8_1_0);
     testForR8(parameters.getBackend())
         .addProgramClasses(Data.class, TestClass.class)
         .setMinApi(parameters)
@@ -135,13 +135,23 @@ public class InvokePolymorphicTypesTest extends TestBase {
         .applyIf(
             hasCompileSupport,
             r -> r.assertSuccessWithOutput(EXPECTED),
-            hasRuntimeSupport,
             r ->
-                r.assertSuccess()
-                    .assertStderrMatches(
-                        containsString(
-                            "Instruction is unrepresentable in DEX V35: invoke-polymorphic")),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+                r.applyIfDexRuntime(
+                    parameters.isCfRuntime(),
+                    rr ->
+                        rr.assertSuccess()
+                            .assertStderrMatches(
+                                containsString(
+                                    "Instruction is unrepresentable in DEX V35:"
+                                        + " invoke-polymorphic")),
+                    version -> version.isNewerThanOrEqual(Version.V8_1_0),
+                    rr ->
+                        rr.assertSuccess()
+                            .assertStderrMatches(
+                                containsString(
+                                    "Instruction is unrepresentable in DEX V35:"
+                                        + " invoke-polymorphic")),
+                    rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));
   }
 
   static class Data {}

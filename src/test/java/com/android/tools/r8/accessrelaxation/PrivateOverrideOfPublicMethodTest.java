@@ -37,7 +37,7 @@ public class PrivateOverrideOfPublicMethodTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @BeforeClass
@@ -59,11 +59,10 @@ public class PrivateOverrideOfPublicMethodTest extends TestBase {
         .addProgramClasses(Main.class, A.class)
         .addProgramClassFileData(programClassFileData)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V5_1_1)
-                && parameters.isDexRuntimeVersionOlderThanOrEqual(Version.V6_0_1),
+        .applyIfDexRuntime(
+            v -> v.isNewerThanOrEqual(Version.V5_1_1) && v.isOlderThanOrEqual(Version.V6_0_1),
             runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT_5_TO_6),
-            parameters.isDexRuntimeVersion(Version.V7_0_0),
+            v -> v.isEqualTo(Version.V7_0_0),
             runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT_7),
             runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }

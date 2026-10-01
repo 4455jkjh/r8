@@ -61,11 +61,7 @@ public class J$ExtensionTest extends DesugaredLibraryTestBase {
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withAllRuntimes()
-            .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
-            .build(),
+        getTestParameters().withAllRuntimes().withAllApiLevels().build(),
         getJdk8Jdk11(),
         ImmutableList.of(D8_L8DEBUG));
   }
@@ -105,51 +101,31 @@ public class J$ExtensionTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testJ$ExtensionNoDesugaring() throws Exception {
-    String stderr;
     if (parameters.isCfRuntime()) {
-      stderr =
+      String stderr =
           testForJvm(parameters)
               .addProgramFiles(compiledClasses)
               .run(parameters.getRuntime(), MAIN_CLASS_NAME)
               .assertFailure()
               .getStdErr();
-    } else {
-      stderr =
-          testForD8()
-              .addProgramFiles(compiledClasses)
-              .setMinApi(parameters)
-              .run(parameters.getRuntime(), MAIN_CLASS_NAME)
-              .assertFailure()
-              .asSingleRuntimeResult()
-              .getStdErr();
-    }
-    assertError(stderr, false);
-  }
-
-  private void assertError(String stderr, boolean desugaring) {
-    if (parameters.isCfRuntime()) {
       if (parameters.getRuntime().asCf().getVm() == CfVm.JDK8) {
         assertTrue(
             stderr.contains("java.lang.SecurityException: Prohibited package name: java.time"));
       } else {
         assertTrue(stderr.contains("java.lang.ClassNotFoundException: java.time.LocalTimeAccess"));
       }
-      return;
-    }
-    assert !parameters.isCfRuntime();
-    if (!desugaring) {
-      if (parameters.getDexRuntimeVersion().isOlderThanOrEqual(Version.V6_0_1)) {
-        assertTrue(stderr.contains("java.lang.NoClassDefFoundError"));
-      } else if (parameters.getDexRuntimeVersion() == Version.V7_0_0) {
-        assertTrue(stderr.contains("java.lang.ClassNotFoundException"));
-      }
-      return;
-    }
-    if (parameters.getDexRuntimeVersion() == Version.V8_1_0) {
-      // On Android 8 the library package private method is accessible.
-      assertTrue(stderr.contains("java.lang.NullPointerException"));
     } else {
-      assertTrue(stderr.contains("java.lang.IllegalAccessError"));
+      testForD8()
+          .addProgramFiles(compiledClasses)
+          .setMinApi(parameters)
+          .run(parameters.getRuntime(), MAIN_CLASS_NAME)
+          .assertFailure()
+          .applyIfDexRuntime(
+              version -> version.isOlderThanOrEqual(Version.V6_0_1),
+              r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class))
+          .applyIfDexRuntime(
+              version -> version == Version.V7_0_0,
+              r -> r.assertFailureWithErrorThatThrows(ClassNotFoundException.class));
     }
   }
 
@@ -157,14 +133,14 @@ public class J$ExtensionTest extends DesugaredLibraryTestBase {
   public void testJ$ExtensionDesugaring() throws Throwable {
     Assume.assumeFalse(parameters.isCfRuntime());
     Assume.assumeTrue(libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters));
-    String stdErr =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addProgramFiles(compiledClasses)
-            .run(parameters.getRuntime(), MAIN_CLASS_NAME)
-            .assertFailure()
-            .asSingleRuntimeResult()
-            .getStdErr();
-    assertError(stdErr, true);
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addProgramFiles(compiledClasses)
+        .run(parameters.getRuntime(), MAIN_CLASS_NAME)
+        .assertFailure()
+        .applyIfDexRuntime(
+            version -> version == Version.V8_1_0,
+            // On Android 8 the library package private method is accessible.
+            r -> r.assertFailureWithErrorThatThrows(NullPointerException.class),
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class));
   }
 }

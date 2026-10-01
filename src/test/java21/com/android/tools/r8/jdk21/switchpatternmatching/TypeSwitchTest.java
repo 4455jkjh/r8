@@ -34,7 +34,6 @@ public class TypeSwitchTest extends TestBase {
         .withCfRuntimesStartingFromIncluding(CfVm.JDK21)
         .withDexRuntimes()
         .withAllApiLevelsAlsoForCf()
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -62,9 +61,10 @@ public class TypeSwitchTest extends TestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            version -> isRecordsFullyDesugaredForD8(parameters) || version.hasRecordsSupport(),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }

@@ -30,7 +30,7 @@ public class InvokeSpecialToImmediateInterfaceTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -53,8 +53,8 @@ public class InvokeSpecialToImmediateInterfaceTest extends TestBase {
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/313065227): Should succeed.
-        .applyIf(
-            parameters.getDexRuntimeVersion().isEqualToOneOf(Version.V5_1_1, Version.V6_0_1),
+        .applyIfDexRuntime(
+            version -> version.isEqualToOneOf(Version.V5_1_1, Version.V6_0_1),
             runResult -> runResult.assertFailureWithErrorThatMatches(containsString("SIGSEGV")),
             runResult -> runResult.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
   }
@@ -73,15 +73,16 @@ public class InvokeSpecialToImmediateInterfaceTest extends TestBase {
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/313065227): Should succeed.
-        .applyIf(
+        .applyIfDexRuntime(
             parameters.isCfRuntime(),
             runResult -> runResult.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
-            parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik(),
+            Version::isDalvik,
             runResult -> runResult.assertFailureWithErrorThatThrows(VerifyError.class),
-            parameters.canUseDefaultAndStaticInterfaceMethods(),
+            version -> !version.isDalvik() && parameters.canUseDefaultAndStaticInterfaceMethods(),
             runResult -> runResult.assertFailureWithErrorThatThrows(NullPointerException.class),
-            parameters.isDexRuntime()
-                && parameters.getDexRuntimeVersion().isEqualToOneOf(Version.V5_1_1, Version.V6_0_1),
+            version ->
+                !parameters.canUseDefaultAndStaticInterfaceMethods()
+                    && version.isEqualToOneOf(Version.V5_1_1, Version.V6_0_1),
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
             runResult -> runResult.assertFailureWithErrorThatThrows(AbstractMethodError.class));

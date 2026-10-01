@@ -21,7 +21,7 @@ public class StaticFieldLoadsSeparatedByNewInstanceTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -32,15 +32,10 @@ public class StaticFieldLoadsSeparatedByNewInstanceTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutputLines(getExpectedOutput());
-  }
-
-  private String getExpectedOutput() {
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().getVersion() == Version.V6_0_1) {
-      return " world! world!";
-    }
-    return "Hello world!";
+        .applyIfDexRuntime(
+            version -> version == Version.V6_0_1,
+            r -> r.assertSuccessWithOutputLines(" world! world!"),
+            r -> r.assertSuccessWithOutputLines("Hello world!"));
   }
 
   static class TestClass {

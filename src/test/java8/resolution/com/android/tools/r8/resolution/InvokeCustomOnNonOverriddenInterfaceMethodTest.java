@@ -6,7 +6,7 @@ package com.android.tools.r8.resolution;
 
 import static com.android.tools.r8.references.Reference.classFromClass;
 import static com.android.tools.r8.references.Reference.methodFromMethod;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -39,7 +39,6 @@ public class InvokeCustomOnNonOverriddenInterfaceMethodTest extends TestBase {
         .withAllRuntimes()
         .withApiLevelsStartingAtIncluding(
             Ordered.max(apiLevelWithInvokeCustomSupport(), apiLevelWithConstMethodHandleSupport()))
-        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -57,14 +56,15 @@ public class InvokeCustomOnNonOverriddenInterfaceMethodTest extends TestBase {
   }
 
   private void checkRunResult(TestRunResult<?> result) {
-    if (parameters.isCfRuntime()
-        || parameters.asDexRuntime().getVersion().isNewerThanOrEqual(Version.V10_0_0)) {
-      result.assertSuccessWithOutputLines(EXPECTED);
-    } else {
-      // Fails due to b/115964401.
-      assertEquals(Version.V9_0_0, parameters.getDexRuntimeVersion());
-      result.assertFailureWithErrorThatThrows(WrongMethodTypeException.class);
-    }
+    result.applyIfDexRuntime(
+        parameters.isCfRuntime(),
+        r -> r.assertSuccessWithOutputLines(EXPECTED),
+        version -> version.isNewerThanOrEqual(Version.V10_0_0),
+        r -> r.assertSuccessWithOutputLines(EXPECTED),
+        // Fails due to b/115964401.
+        version -> version.isEqualTo(Version.V9_0_0),
+        r -> r.assertFailureWithErrorThatThrows(WrongMethodTypeException.class),
+        r -> fail("Unexpected runtime"));
   }
 
   private static byte[] getInvokeCustomTransform() throws Throwable {

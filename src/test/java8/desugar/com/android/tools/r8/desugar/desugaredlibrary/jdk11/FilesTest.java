@@ -95,7 +95,6 @@ public class FilesTest extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
-            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         DEFAULT_SPECIFICATIONS);
@@ -110,17 +109,14 @@ public class FilesTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private String getExpectedResult() {
+  private String getExpectedResult(boolean usesPlatformFileSystem) {
     List<String> strings = new ArrayList<>();
     strings.add(
-        libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
-                && libraryDesugaringSpecification.hasNioFileDesugaring(parameters)
+        usesPlatformFileSystem && libraryDesugaringSpecification.hasNioFileDesugaring(parameters)
             ? "fail"
             : "npe caught");
     strings.addAll(
-        libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
-            ? EXPECTED_RESULT_POSIX
-            : EXPECTED_RESULT_DESUGARING_NON_POSIX);
+        usesPlatformFileSystem ? EXPECTED_RESULT_POSIX : EXPECTED_RESULT_DESUGARING_NON_POSIX);
     strings.add(
         libraryDesugaringSpecification.hasNioFileDesugaring(parameters)
             ? "j$.nio.file.attribute"
@@ -136,7 +132,10 @@ public class FilesTest extends DesugaredLibraryTestBase {
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(getExpectedResult(true)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(false)));
   }
 
   public static class TestClass {

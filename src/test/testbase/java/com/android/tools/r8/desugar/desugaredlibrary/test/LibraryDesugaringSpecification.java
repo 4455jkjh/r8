@@ -410,7 +410,11 @@ public class LibraryDesugaringSpecification {
   }
 
   public boolean usesPlatformFileSystem(TestParameters parameters) {
-    return parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V8_1_0);
+    return usesPlatformFileSystem(parameters.getDexRuntimeVersion());
+  }
+
+  public boolean usesPlatformFileSystem(Version version) {
+    return version.isNewerThanOrEqual(Version.V8_1_0);
   }
 
   public boolean hasAnyDesugaring(TestParameters parameters) {

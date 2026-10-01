@@ -6,11 +6,10 @@ package com.android.tools.r8.desugar.softverificationerrorremoval;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.LibraryFilesHelper;
 import java.util.Arrays;
 import java.util.function.Supplier;
@@ -37,11 +36,7 @@ public class GetDeclaredMethodsErrorRemovalTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withDexRuntimes()
-        .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
   }
 
   public GetDeclaredMethodsErrorRemovalTest(TestParameters parameters) {
@@ -50,17 +45,17 @@ public class GetDeclaredMethodsErrorRemovalTest extends TestBase {
 
   @Test
   public void testWithoutJavaStub() throws Exception {
-    D8TestRunResult run =
-        testForD8()
-            .addInnerClasses(GetDeclaredMethodsErrorRemovalTest.class)
-            .setMinApi(parameters)
-            .compile()
-            .run(parameters.getRuntime(), TestClass.class);
-    if (parameters.getDexRuntimeVersion().isOlderThanOrEqual(ToolHelper.DexVm.Version.V6_0_1)) {
-      run.assertFailureWithErrorThatMatches(containsString("java.lang.NoClassDefFoundError"));
-    } else {
-      run.assertSuccessWithOutputLines(EXPECTED_RESULT);
-    }
+    testForD8()
+        .addInnerClasses(GetDeclaredMethodsErrorRemovalTest.class)
+        .setMinApi(parameters)
+        .compile()
+        .run(parameters.getRuntime(), TestClass.class)
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V6_0_1),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    containsString("java.lang.NoClassDefFoundError")),
+            r -> r.assertSuccessWithOutputLines(EXPECTED_RESULT));
   }
 
   @Test

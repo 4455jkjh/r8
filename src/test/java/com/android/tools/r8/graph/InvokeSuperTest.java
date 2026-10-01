@@ -32,7 +32,7 @@ public class InvokeSuperTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   final TestParameters parameters;
@@ -63,17 +63,6 @@ public class InvokeSuperTest extends TestBase {
           "subLevel2Method in SubLevel2",
           "From SubLevel1: otherSuperMethod in Super");
 
-  String getExpectedOutput() {
-    if (parameters.isDexRuntime()) {
-      Version version = parameters.getRuntime().asDex().getVm().getVersion();
-      if (version.isNewerThanOrEqual(Version.V5_1_1)
-          && version.isOlderThanOrEqual(Version.V6_0_1)) {
-        return UNEXPECTED_DEX_5_AND_6_OUTPUT;
-      }
-    }
-    return EXPECTED;
-  }
-
   @Test
   public void testReference() throws Exception {
     testForRuntime(parameters)
@@ -86,7 +75,10 @@ public class InvokeSuperTest extends TestBase {
             SubClassOfInvokerClass.class)
         .addProgramClassFileData(InvokerClassDump.dumpVerifying())
         .run(parameters.getRuntime(), MainClass.class)
-        .assertSuccessWithOutput(getExpectedOutput());
+        .applyIfDexRuntime(
+            v -> v.isNewerThanOrEqual(Version.V5_1_1) && v.isOlderThanOrEqual(Version.V6_0_1),
+            r -> r.assertSuccessWithOutput(UNEXPECTED_DEX_5_AND_6_OUTPUT),
+            r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   @Test
@@ -123,21 +115,17 @@ public class InvokeSuperTest extends TestBase {
 
   private void checkNonVerifyingResult(TestRunResult<?> result, boolean isR8) {
     // The input is invalid and any JVM will fail at verification time.
-    if (parameters.isCfRuntime()) {
-      result.assertFailureWithErrorThatThrows(VerifyError.class);
-      return;
-    }
     // Dex results vary wildly...
-    Version version = parameters.getRuntime().asDex().getVm().getVersion();
-    if (!isR8 && version.isOlderThanOrEqual(Version.V4_4_4)) {
-      result.assertFailureWithErrorThatThrows(VerifyError.class);
-    } else if (version == Version.V5_1_1 || version == Version.V6_0_1) {
-      result.assertFailure();
-    } else if (version.isNewerThanOrEqual(V15_0_0)) {
-      result.assertFailureWithErrorThatThrows(VerifyError.class);
-    } else {
-      result.assertSuccessWithOutputThatMatches(containsString(NoSuchMethodError.class.getName()));
-    }
+    result.applyIfDexRuntime(
+        parameters.isCfRuntime(),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+        v -> (!isR8 && v.isOlderThanOrEqual(Version.V4_4_4)) || v.isNewerThanOrEqual(V15_0_0),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+        v -> v == Version.V5_1_1 || v == Version.V6_0_1,
+        TestRunResult::assertFailure,
+        r ->
+            r.assertSuccessWithOutputThatMatches(
+                containsString(NoSuchMethodError.class.getName())));
   }
 
   @Test

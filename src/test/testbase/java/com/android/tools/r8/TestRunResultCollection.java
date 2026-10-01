@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
@@ -75,6 +76,40 @@ public abstract class TestRunResultCollection<
   public <E extends Throwable> RR inspectOriginalStackTrace(
       ThrowingConsumer<StackTrace, E> consumer) throws E {
     return forEach(r -> r.inspectOriginalStackTrace(consumer));
+  }
+
+  @Override
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      RR applyIfDexRuntime(
+          Predicate<DexVm.Version> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<DexVm.Version> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<DexVm.Version> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<DexVm.Version> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    for (Pair<C, TestRunResult<?>> run : runs) {
+      run.getSecond()
+          .applyIfDexRuntime(
+              condition1,
+              thenConsumer1,
+              condition2,
+              thenConsumer2,
+              condition3,
+              thenConsumer3,
+              condition4,
+              thenConsumer4,
+              elseConsumer);
+    }
+    return self();
   }
 
   @Override

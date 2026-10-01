@@ -11,6 +11,7 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -39,7 +40,7 @@ public class PackagePrivateInitialResolutionHolderTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -81,14 +82,16 @@ public class PackagePrivateInitialResolutionHolderTest extends TestBase {
 
   @Test
   public void testRuntime() throws Exception {
-    boolean hasIllegalAccessError =
-        parameters.isCfRuntime() || parameters.getDexRuntimeVersion().isDalvik();
     testForRuntime(parameters)
         .addProgramClassFileData(getRewrittenResources())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrowsIf(hasIllegalAccessError, IllegalAccessError.class)
-        // TODO(b/264523290): Should be IllegalAccessError.
-        .assertSuccessWithOutputLinesIf(!hasIllegalAccessError, "B::foo");
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class),
+            Version::isDalvik,
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class),
+            // TODO(b/264523290): Should be IllegalAccessError.
+            r -> r.assertSuccessWithOutputLines("B::foo"));
   }
 
   @Test

@@ -13,8 +13,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -43,7 +42,7 @@ public class WidenAccessOutsidePackageTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public WidenAccessOutsidePackageTest(TestParameters parameters) {
@@ -81,16 +80,13 @@ public class WidenAccessOutsidePackageTest extends TestBase {
 
   @Test
   public void testRuntime() throws ExecutionException, CompilationFailedException, IOException {
-    TestRunResult<?> runResult =
-        testForRuntime(parameters)
-            .addProgramClasses(A.class, B.class, C.class, Main.class)
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_TARGET)) {
-      runResult.assertSuccessWithOutputLines(EXPECTED_DALVIK);
-    } else {
-      runResult.assertSuccessWithOutputLines(EXPECTED);
-    }
+    testForRuntime(parameters)
+        .addProgramClasses(A.class, B.class, C.class, Main.class)
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            r -> r.assertSuccessWithOutputLines(EXPECTED_DALVIK),
+            r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   @Test

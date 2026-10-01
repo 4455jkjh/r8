@@ -4,15 +4,17 @@
 
 package com.android.tools.r8.desugar.softverificationerrorremoval;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 
-import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.LibraryFilesHelper;
 import java.util.function.Supplier;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -24,11 +26,7 @@ public class SoftVerificationErrorRemovalTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withDexRuntimes()
-        .withAllApiLevels()
-        .withoutCollapsedDexRuntimes()
-        .build();
+    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
   }
 
   public SoftVerificationErrorRemovalTest(TestParameters parameters) {
@@ -37,39 +35,39 @@ public class SoftVerificationErrorRemovalTest extends TestBase {
 
   @Test
   public void testWithoutJavaStub() throws Exception {
-    D8TestRunResult run =
-        testForD8()
-            .addInnerClasses(SoftVerificationErrorRemovalTest.class)
-            .setMinApi(parameters)
-            .compile()
-            .run(parameters.getRuntime(), TestClass.class);
-    assertVerificationErrorsPresent(
-        run.asSingleRuntimeResult().getStdErr(),
-        parameters.getDexRuntimeVersion().isOlderThanOrEqual(ToolHelper.DexVm.Version.V4_4_4));
+    testForD8()
+        .addInnerClasses(SoftVerificationErrorRemovalTest.class)
+        .setMinApi(parameters)
+        .compile()
+        .run(parameters.getRuntime(), TestClass.class)
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            r -> assertVerificationErrorsPresent(r, true),
+            r -> assertVerificationErrorsPresent(r, false));
   }
 
-  private void assertVerificationErrorsPresent(String stdErr, boolean present) {
-    assertEquals(
-        present,
-        stdErr.contains(
-            "VFY: unable to find class referenced in signature (Ljava/util/function/Supplier;)"));
-    assertEquals(
-        present,
-        stdErr.contains(
+  private void assertVerificationErrorsPresent(TestRunResult<?> run, boolean present) {
+    Matcher<String> matcher1 =
+        containsString(
+            "VFY: unable to find class referenced in signature (Ljava/util/function/Supplier;)");
+    Matcher<String> matcher2 =
+        containsString(
             "VFY: unable to resolve interface method 7: Ljava/util/function/Supplier;.get"
-                + " ()Ljava/lang/Object;"));
+                + " ()Ljava/lang/Object;");
+    run.assertStderrMatches(present ? matcher1 : not(matcher1));
+    run.assertStderrMatches(present ? matcher2 : not(matcher2));
   }
 
   @Test
   public void testWithJavaStub() throws Exception {
-    D8TestRunResult run =
+    TestRunResult<?> run =
         testForD8()
             .addInnerClasses(SoftVerificationErrorRemovalTest.class)
             .addProgramClassFileData(LibraryFilesHelper.getSupplier())
             .setMinApi(parameters)
             .compile()
             .run(parameters.getRuntime(), TestClass.class);
-    assertVerificationErrorsPresent(run.asSingleRuntimeResult().getStdErr(), false);
+    assertVerificationErrorsPresent(run, false);
   }
 
   static class TestClass {

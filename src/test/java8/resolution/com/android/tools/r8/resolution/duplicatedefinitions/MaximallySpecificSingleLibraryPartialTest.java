@@ -15,6 +15,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -54,7 +55,7 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   private Path libraryClasses;
@@ -127,28 +128,13 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
     // TODO(b/230289235): Extend resolution to support multiple definition results.
-    runTest(testForD8(parameters.getBackend()))
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.canUseDefaultAndStaticInterfaceMethods(),
-            parameters.getDexRuntimeVersion().isDalvik()
-                ? VerifyError.class
-                : AbstractMethodError.class)
-        .assertSuccessWithOutputLinesIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED);
+    runTest(testForD8(parameters.getBackend()));
   }
 
   @Test
   public void testR8() throws Exception {
     // TODO(b/230289235): Extend resolution to support multiple definition results.
-    runTest(testForR8(parameters.getBackend()).addKeepMainRule(Main.class))
-        .applyIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(),
-            rr -> rr.assertSuccessWithOutputLines(EXPECTED),
-            rr ->
-                rr.assertFailureWithErrorThatThrows(
-                    parameters.getDexRuntimeVersion().isDalvik()
-                        ? VerifyError.class
-                        : AbstractMethodError.class));
+    runTest(testForR8(parameters.getBackend()).addKeepMainRule(Main.class));
   }
 
   private TestRunResult<?> runTest(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder)
@@ -162,7 +148,13 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
         .addOptionsModification(options -> options.loadAllClassDefinitions = true)
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
-        .run(parameters.getRuntime(), Main.class);
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            parameters.canUseDefaultAndStaticInterfaceMethods(),
+            r -> r.assertSuccessWithOutputLines(EXPECTED),
+            Version::isDalvik,
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   private byte[] getIProgram() throws Exception {

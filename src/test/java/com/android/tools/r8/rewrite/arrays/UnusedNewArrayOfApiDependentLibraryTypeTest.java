@@ -30,7 +30,7 @@ public class UnusedNewArrayOfApiDependentLibraryTypeTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -52,10 +52,10 @@ public class UnusedNewArrayOfApiDependentLibraryTypeTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            hasFunctionAsRunTime(),
-            TestRunResult::assertSuccessWithEmptyOutput,
-            runResult -> runResult.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V7_0_0),
+            runResult -> runResult.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
+            TestRunResult::assertSuccessWithEmptyOutput);
   }
 
   @Test
@@ -69,10 +69,10 @@ public class UnusedNewArrayOfApiDependentLibraryTypeTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            hasFunctionAsRunTime(),
-            TestRunResult::assertSuccessWithEmptyOutput,
-            runResult -> runResult.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V7_0_0),
+            runResult -> runResult.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
+            TestRunResult::assertSuccessWithEmptyOutput);
   }
 
   private void inspect(CodeInspector inspector) {
@@ -88,11 +88,6 @@ public class UnusedNewArrayOfApiDependentLibraryTypeTest extends TestBase {
   private boolean hasFunctionAtCompileTime() {
     return parameters.isCfRuntime()
         || parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
-  }
-
-  private boolean hasFunctionAsRunTime() {
-    return parameters.isCfRuntime()
-        || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0);
   }
 
   public static class Main {

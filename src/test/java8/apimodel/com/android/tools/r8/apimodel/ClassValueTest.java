@@ -16,6 +16,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -33,7 +34,7 @@ public class ClassValueTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   private static final String EXPECTED_OUTPUT = StringUtils.lines(TestClass.class.getTypeName());
@@ -68,8 +69,8 @@ public class ClassValueTest extends TestBase {
         .compile()
         .inspect(this::computeValuePresent)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.runtimeWithClassValue(),
+        .applyIfDexRuntime(
+            version -> version.isNewerThanOrEqual(Version.V14_0_0),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }
@@ -85,8 +86,10 @@ public class ClassValueTest extends TestBase {
         .compile()
         .inspect(this::computeValueAbsent)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.runtimeWithClassValue(),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class),
+            version -> version.isNewerThanOrEqual(Version.V14_0_0),
             r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }
@@ -134,8 +137,10 @@ public class ClassValueTest extends TestBase {
                                 + " {"))))
         .inspect(this::computeValueAbsent)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.runtimeWithClassValue(),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class),
+            version -> version.isNewerThanOrEqual(Version.V14_0_0),
             r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }
@@ -179,8 +184,10 @@ public class ClassValueTest extends TestBase {
           .compile()
           .inspect(this::computeValuePresent)
           .run(parameters.getRuntime(), TestClass.class)
-          .applyIf(
-              parameters.runtimeWithClassValue(),
+          .applyIfDexRuntime(
+              parameters.isCfRuntime(),
+              r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+              version -> version.isNewerThanOrEqual(Version.V14_0_0),
               r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
               r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
     }

@@ -9,6 +9,7 @@ import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -26,7 +27,7 @@ public class VerticalClassMergerPackagePrivateMethodDispatchTest extends TestBas
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -41,9 +42,6 @@ public class VerticalClassMergerPackagePrivateMethodDispatchTest extends TestBas
 
   @Test
   public void testR8() throws Exception {
-    // The old DEX runtimes do not respect package boundaries for virtual dispatch.
-    boolean respectsPackageBoundary =
-        !parameters.isDexRuntime() || !parameters.getDexRuntimeVersion().isDalvik();
     testForR8(parameters)
         .addProgramClasses(A.class)
         .addProgramClassFileData(getProgramClassFileData())
@@ -55,10 +53,11 @@ public class VerticalClassMergerPackagePrivateMethodDispatchTest extends TestBas
         .enableNoVerticalClassMergingAnnotations()
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(
-            respectsPackageBoundary
-                ? ImmutableList.of("B.m()", "A.m()")
-                : ImmutableList.of("B.m()", "B.m()"));
+        // The old DEX runtimes do not respect package boundaries for virtual dispatch.
+        .applyIfDexRuntime(
+            Version::isDalvik,
+            r -> r.assertSuccessWithOutputLines("B.m()", "B.m()"),
+            r -> r.assertSuccessWithOutputLines("B.m()", "A.m()"));
   }
 
   private List<byte[]> getProgramClassFileData() {
