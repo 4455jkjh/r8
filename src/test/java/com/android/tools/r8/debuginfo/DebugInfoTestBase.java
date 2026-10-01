@@ -12,6 +12,7 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApp;
@@ -45,10 +46,11 @@ public class DebugInfoTestBase extends TestBase {
         app, type.getCanonicalName(), new MethodSignature(methodName, returnType, parameterTypes));
   }
 
-  protected String runOnArt(AndroidApp app, String main) throws IOException {
+  @Override
+  protected String runOnArt(AndroidApp app, String main, DexVm vm) throws IOException {
     Path out = temp.getRoot().toPath().resolve("out.zip");
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
-    return ToolHelper.runArtNoVerificationErrors(ImmutableList.of(out.toString()), main, null);
+    return ToolHelper.runArtNoVerificationErrors(ImmutableList.of(out.toString()), main, null, vm);
   }
 
   protected String runOnJava(Class clazz) throws Exception {

@@ -3,8 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class UnusedCheckCastTargetOptimizationTestRunner extends DebugTestBase {
 
   private static final Class MAIN_CLASS = UnusedCheckCastTargetOptimizationTest.class;
@@ -13,10 +20,19 @@ public class UnusedCheckCastTargetOptimizationTestRunner extends DebugTestBase {
   private static final String FILE = MAIN_CLASS.getSimpleName() + ".java";
   private static final String NAME = MAIN_CLASS.getCanonicalName();
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Test
   public void test() throws Throwable {
     runDebugTest(
-        new D8DebugTestConfig().compileAndAddClasses(temp, MAIN_CLASS, SUPER_CLASS, SUBCLASS_CLASS),
+        new D8DebugTestConfig(parameters.asDexRuntime())
+            .compileAndAddClasses(temp, MAIN_CLASS, SUPER_CLASS, SUBCLASS_CLASS),
         NAME,
         breakpoint(NAME, "main", 14),
         run(),

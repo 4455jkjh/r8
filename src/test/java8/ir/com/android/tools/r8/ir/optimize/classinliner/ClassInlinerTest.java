@@ -16,6 +16,7 @@ import static org.junit.Assert.assertFalse;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.ir.optimize.classinliner.code.C;
 import com.android.tools.r8.ir.optimize.classinliner.code.CodeTestClass;
@@ -184,11 +185,15 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
     assertThat(javaResult.stderr, containsString("IncompatibleClassChangeError"));
 
     // Check that the code fails with an IncompatibleClassChangeError with ART.
-    ProcessResult result =
-        parameters.isDexRuntime()
-            ? runOnArtRaw(compiled, mainClass.name)
-            : runOnJavaRaw(compiled, mainClass.name, Collections.emptyList());
-    assertThat(result.stderr, containsString("IncompatibleClassChangeError"));
+    if (parameters.isDexRuntime()) {
+      for (DexRuntime runtime : parameters.getRuntime().asDexRuntimes()) {
+        ProcessResult result = runOnArtRaw(compiled, mainClass.name, runtime.getVm());
+        assertThat(result.stderr, containsString("IncompatibleClassChangeError"));
+      }
+    } else {
+      ProcessResult result = runOnJavaRaw(compiled, mainClass.name, Collections.emptyList());
+      assertThat(result.stderr, containsString("IncompatibleClassChangeError"));
+    }
   }
 
   @Test
@@ -202,7 +207,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
     };
     String javaOutput = runOnJava(main);
     TestRunResult<?> result =
-        testForR8(parameters.getBackend())
+        testForR8(parameters)
             .addProgramClasses(classes)
             .enableInliningAnnotations()
             .enableSideEffectAnnotations()
@@ -210,7 +215,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
             .addKeepAttributes("LineNumberTable")
             .allowAccessModification()
             .addDontObfuscate()
-            .run(main)
+            .run(parameters.getRuntime(), main)
             .assertSuccessWithOutput(javaOutput);
 
     CodeInspector inspector = result.inspector();
@@ -241,7 +246,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
     };
     String javaOutput = runOnJava(main);
     TestRunResult<?> result =
-        testForR8(parameters.getBackend())
+        testForR8(parameters)
             .addProgramClasses(classes)
             .enableConstantArgumentAnnotations()
             .enableInliningAnnotations()
@@ -255,7 +260,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
                 })
             .allowAccessModification()
             .addDontObfuscate()
-            .run(main)
+            .run(parameters.getRuntime(), main)
             .assertSuccessWithOutput(javaOutput);
 
     CodeInspector inspector = result.inspector();

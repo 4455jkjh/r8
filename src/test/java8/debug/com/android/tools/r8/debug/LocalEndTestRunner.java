@@ -6,11 +6,13 @@ package com.android.tools.r8.debug;
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.function.Function;
 import org.apache.harmony.jpda.tests.framework.jdwp.Value;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -30,12 +32,13 @@ public class LocalEndTestRunner extends DebugTestBase {
 
   private final DebugTestConfig config;
 
-  @Parameters(name = "{0}")
+  @Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
     DelayedDebugTestConfig cf = temp -> new CfDebugTestConfig().addPaths(getInputJar(temp));
-    DelayedDebugTestConfig d8 =
-        temp -> new D8DebugTestConfig().compileAndAdd(temp, getInputJar(temp));
-    return ImmutableList.of(new Object[] {"CF", cf}, new Object[] {"D8", d8});
+    Function<DexRuntime, DelayedDebugTestConfig> d8 =
+        dexRuntime ->
+            temp -> new D8DebugTestConfig(dexRuntime).compileAndAdd(temp, getInputJar(temp));
+    return buildCfAndD8Parameters(cf, d8);
   }
 
   private static Path getInputJar(TemporaryFolder temp) {
@@ -48,7 +51,7 @@ public class LocalEndTestRunner extends DebugTestBase {
     return inputJarCache;
   }
 
-  public LocalEndTestRunner(String name, DelayedDebugTestConfig config) {
+  public LocalEndTestRunner(TestParameters parameters, String name, DelayedDebugTestConfig config) {
     this.config = config.getConfig(getStaticTemp());
   }
 

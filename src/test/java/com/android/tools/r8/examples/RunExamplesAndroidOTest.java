@@ -18,6 +18,8 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -70,11 +72,33 @@ import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public abstract class RunExamplesAndroidOTest<
         B extends BaseCommand.Builder<? extends BaseCommand, B>>
     extends TestBase {
   static final String EXAMPLE_DIR = ToolHelper.EXAMPLES_ANDROID_O_BUILD_DIR;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
+  AndroidApiLevel getMinApiLevelForDexVm() {
+    return parameters.asDexRuntime().getMinApiLevel();
+  }
+
+  AndroidApiLevel getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel maxValue) {
+    AndroidApiLevel minApiLevel = getMinApiLevelForDexVm();
+    return minApiLevel.getMajor() > maxValue.getMajor() ? maxValue : minApiLevel;
+  }
 
   abstract class TestRunner<C extends TestRunner<C>> {
     final String testName;
@@ -365,7 +389,7 @@ public abstract class RunExamplesAndroidOTest<
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   boolean failsOn(Map<ToolHelper.DexVm.Version, List<String>> failsOn, String name) {
-    Version vmVersion = ToolHelper.getDexVm().getVersion();
+    Version vmVersion = parameters.getDexRuntimeVersion();
     return failsOn.containsKey(vmVersion)
         && failsOn.get(vmVersion).contains(name);
   }
@@ -409,7 +433,7 @@ public abstract class RunExamplesAndroidOTest<
   @Test
   public void lambdaDesugaring() throws Throwable {
     test("lambdadesugaring", "lambdadesugaring", "LambdaDesugaring")
-        .withMinApiLevel(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K))
+        .withMinApiLevel(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K))
         .withKeepAll()
         .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
   }
@@ -417,7 +441,7 @@ public abstract class RunExamplesAndroidOTest<
   @Test
   public void lambdaDesugaringNPlus() throws Throwable {
     test("lambdadesugaringnplus", "lambdadesugaringnplus", "LambdasWithStaticAndDefaultMethods")
-        .withMinApiLevel(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K))
+        .withMinApiLevel(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K))
         .withInterfaceMethodDesugaring(OffOrAuto.Auto)
         .withKeepAll()
         .run();
@@ -446,7 +470,7 @@ public abstract class RunExamplesAndroidOTest<
   @Test
   public void lambdaDesugaringValueAdjustments() throws Throwable {
     test("lambdadesugaring-value-adjustments", "lambdadesugaring", "ValueAdjustments")
-        .withMinApiLevel(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K))
+        .withMinApiLevel(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K))
         .withKeepAll()
         .run();
   }
@@ -544,7 +568,7 @@ public abstract class RunExamplesAndroidOTest<
     test("interfacedispatchclasses", "interfacedispatchclasses", "TestInterfaceDispatchClasses")
         .withMinApiLevel(AndroidApiLevel.K) // K to create dispatch classes
         .withAndroidJar(AndroidApiLevel.O)
-        .withArg(String.valueOf(ToolHelper.getMinApiLevelForDexVm().getMajor() >= 24))
+        .withArg(String.valueOf(getMinApiLevelForDexVm().getMajor() >= 24))
         .withKeepAll()
         .run();
   }
@@ -701,7 +725,8 @@ public abstract class RunExamplesAndroidOTest<
                 for (String arg : args) {
                   builder.appendProgramArgument(arg);
                 }
-              });
+              },
+              parameters.getDexVm());
       if (!expectedToFail
           && !skipRunningOnJvm(testName)
           && !ToolHelper.compareAgaintsGoldenFiles()) {

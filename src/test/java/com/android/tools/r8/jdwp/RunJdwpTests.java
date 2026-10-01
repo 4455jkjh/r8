@@ -13,6 +13,9 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -30,12 +33,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /** Wrapper for the art JDWP tests. */
+@RunWith(Parameterized.class)
 public class RunJdwpTests extends TestBase {
 
   enum Tool {
@@ -315,15 +323,23 @@ public class RunJdwpTests extends TestBase {
       "LineTableDuplicatesTest"
   );
 
-  private static File d8Out = null;
+  private static final Function<DexRuntime, File> d8Out =
+      memoizeFunction(RunJdwpTests::compileLibraries);
 
   @Rule
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
-  @BeforeClass
-  public static void compileLibraries() throws Exception {
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
+  private static File compileLibraries(DexRuntime dexRuntime) throws Exception {
     // Selects appropriate jar according to min api level for the selected runtime.
-    AndroidApiLevel minApi = ToolHelper.getMinApiLevelForDexVm();
+    AndroidApiLevel minApi = dexRuntime.getMinApiLevel();
     Path classPath = ToolHelper.getClassPathForTests();
     Path testPath = classPath.resolve(Paths.get("com","android", "tools", "r8", "jdwp"));
     List<Path> extraTestResources = new ArrayList<>(2 * EXTRA_TESTS.size());
@@ -331,7 +347,7 @@ public class RunJdwpTests extends TestBase {
       extraTestResources.add(testPath.resolve(test + ".class"));
       extraTestResources.add(testPath.resolve(test.replace("Test", "Debuggee") + ".class"));
     }
-    d8Out = getStaticTemp().newFolder("d8-out");
+    File d8Out = getStaticTemp().newFolder();
     D8.run(
         D8Command.builder()
             .addProgramFiles(TestDeps.getJdwpTestsJar(minApi))
@@ -340,6 +356,7 @@ public class RunJdwpTests extends TestBase {
             .setMinApiLevel(minApi.getMajor())
             .setMode(CompilationMode.DEBUG)
             .build());
+    return d8Out;
   }
 
   String getTestLib(Tool tool) {
@@ -350,11 +367,11 @@ public class RunJdwpTests extends TestBase {
       return TestDeps.getJdwpTestsDexJar().toString();
     }
     assert tool == Tool.D8;
-    return d8Out.toPath().resolve("classes.dex").toString();
+    return d8Out.apply(parameters.asDexRuntime()).toPath().resolve("classes.dex").toString();
   }
 
   DexVm getDexVm() {
-    return ToolHelper.getDexVm();
+    return parameters.getDexVm();
   }
 
   private void skipIfNeeded(String test, Tool tool) {
@@ -393,9 +410,9 @@ public class RunJdwpTests extends TestBase {
       Assume
           .assumeTrue("Python script fails because of library names conflicts. Skipping",
               !ToolHelper.isWindows());
-      command = Arrays.asList(
-          RUN_SCRIPT, "--classpath=" + lib, "--version=" + ToolHelper.getDexVm().getVersion(),
-          testClass);
+      command =
+          Arrays.asList(
+              RUN_SCRIPT, "--classpath=" + lib, "--version=" + getDexVm().getVersion(), testClass);
     }
     ProcessBuilder builder = new ProcessBuilder(command);
     ProcessResult result = ToolHelper.runProcess(builder);

@@ -12,6 +12,9 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.shaking.methods.MethodsTestBase.Shrinker;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -25,6 +28,10 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 @NoVerticalClassMerging
 interface SuperIface {
@@ -89,7 +96,16 @@ class Main {
   }
 }
 
+@RunWith(Parameterized.class)
 public class DefaultMethodsTest extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimesStartingFromIncluding(Version.V5_1_1).build();
+  }
 
   public Collection<Class<?>> getClasses() {
     return ImmutableSet.of(
@@ -116,7 +132,7 @@ public class DefaultMethodsTest extends TestBase {
         .addKeepRules(keepRules)
         .compile()
         .inspect(i -> inspector.accept(i, Shrinker.R8Full))
-        .run(getMainClass())
+        .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(expected);
   }
 
@@ -130,7 +146,7 @@ public class DefaultMethodsTest extends TestBase {
         .addKeepRules(keepRules)
         .compile()
         .inspect(i -> inspector.accept(i, Shrinker.R8Compat))
-        .run(getMainClass())
+        .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(expected);
   }
 

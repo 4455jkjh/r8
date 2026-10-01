@@ -14,10 +14,10 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CfInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -27,6 +27,7 @@ import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject.JumboStringMode;
 import com.android.tools.r8.utils.codeinspector.InvokeInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import java.util.List;
@@ -91,7 +92,9 @@ public class NeverReturnsNormallyTest extends TestBase {
 
     if (parameters.isDexRuntime()) {
       // Run on Art to check generated code against verifier.
-      runOnArt(app, TestClass.class);
+      for (DexRuntime runtime : parameters.getRuntime().asDexRuntimes()) {
+        runOnArt(app, TestClass.class, runtime.getVm());
+      }
     } else {
       assert parameters.isCfRuntime();
       runOnJava(app, TestClass.class);

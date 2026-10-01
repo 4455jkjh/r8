@@ -9,6 +9,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -16,8 +18,21 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class B80083341 extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void test() throws Exception {
@@ -48,7 +63,10 @@ public class B80083341 extends TestBase {
     assertThat(mainSubject, isPresent());
 
     ProcessResult artResult =
-        runOnArtRaw(processedApp, getClassNameFromDescriptor(mainSubject.getFinalDescriptor()));
+        runOnArtRaw(
+            processedApp,
+            getClassNameFromDescriptor(mainSubject.getFinalDescriptor()),
+            parameters.getDexVm());
     assertEquals(0, artResult.exitCode);
     assertEquals(-1, artResult.stderr.indexOf("IllegalAccessError"));
   }

@@ -34,6 +34,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class OverloadAggressivelyTest extends TestBase {
 
+  private static final String EXPECTED_METHOD_RESOLUTION_OUTPUT =
+      StringUtils.lines("diff: 0", "d8 v.s. d8", "r8 v.s. r8");
+
   @Parameter(0)
   public TestParameters parameters;
 
@@ -64,7 +67,7 @@ public class OverloadAggressivelyTest extends TestBase {
 
   private ProcessResult runRaw(AndroidApp app, String main) throws IOException {
     if (parameters.isDexRuntime()) {
-      return runOnArtRaw(app, main);
+      return runOnArtRaw(app, main, parameters.getDexVm());
     } else {
       assert parameters.isCfRuntime();
       return runOnJavaRaw(app, main, Collections.emptyList());
@@ -159,33 +162,6 @@ public class OverloadAggressivelyTest extends TestBase {
     fieldResolution(false);
   }
 
-  private void methodResolution(boolean overloadaggressively) throws Exception {
-    String expected = StringUtils.lines("diff: 0", "d8 v.s. d8", "r8 v.s. r8");
-    String expectedOverloadAggressively = StringUtils.lines("diff: 0", "d8 v.s. 8", "r8 v.s. 8");
-
-    if (parameters.isCfRuntime()) {
-      testForJvm(parameters)
-          .addTestClasspath()
-          .run(MethodResolution.class)
-          .assertSuccessWithOutput(expected);
-    }
-
-    testForR8Compat(parameters.getBackend())
-        .addProgramClasses(MethodResolution.class, B.class)
-        .addKeepMainRule(MethodResolution.class)
-        .addOptionsModification(options -> options.inlinerOptions().enableInlining = false)
-        .applyIf(overloadaggressively, builder -> builder.addKeepRules("-overloadaggressively"))
-        .enableMemberValuePropagationAnnotations()
-        .enableNoReturnTypeStrengtheningAnnotations()
-        .compile()
-        .inspect(inspector -> inspect(inspector, overloadaggressively))
-        .run(parameters.getRuntime(), MethodResolution.class)
-        .applyIf(
-            overloadaggressively,
-            runResult -> runResult.assertSuccessWithOutput(expectedOverloadAggressively),
-            runResult -> runResult.assertSuccessWithOutput(expected));
-  }
-
   private void inspect(CodeInspector codeInspector, boolean overloadaggressively) {
     ClassSubject b = codeInspector.clazz(B.class.getCanonicalName());
     DexEncodedMethod m1 =
@@ -206,7 +182,25 @@ public class OverloadAggressivelyTest extends TestBase {
   }
 
   @Test
+  public void testMethodResolution_not_aggressively_Jvm() throws Exception {
+    parameters.assumeJvmTestParameters();
+    testForJvm(parameters)
+        .addTestClasspath()
+        .run(parameters.getRuntime(), MethodResolution.class)
+        .assertSuccessWithOutput(EXPECTED_METHOD_RESOLUTION_OUTPUT);
+  }
+
+  @Test
   public void testMethodResolution_not_aggressively() throws Exception {
-    methodResolution(false);
+    testForR8Compat(parameters.getBackend())
+        .addProgramClasses(MethodResolution.class, B.class)
+        .addKeepMainRule(MethodResolution.class)
+        .addOptionsModification(options -> options.inlinerOptions().enableInlining = false)
+        .enableMemberValuePropagationAnnotations()
+        .enableNoReturnTypeStrengtheningAnnotations()
+        .compile()
+        .inspect(inspector -> inspect(inspector, false))
+        .run(parameters.getRuntime(), MethodResolution.class)
+        .assertSuccessWithOutput(EXPECTED_METHOD_RESOLUTION_OUTPUT);
   }
 }

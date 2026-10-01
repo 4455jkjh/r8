@@ -68,7 +68,7 @@ public class R8DebugNonMinifiedProgramTestRunner extends DebugTestBase {
         .run(parameters.getRuntime(), CLASS)
         .assertSuccessWithOutputLines("Hello, world: Class A");
 
-    DebugTestConfig debugTestConfig = compileResult.debugConfig();
+    DebugTestConfig debugTestConfig = compileResult.debugConfig(parameters.getRuntime());
     assertNull("For this test the map file must not be present!", debugTestConfig.getProguardMap());
     runDebugTest(debugTestConfig, CLASS,
         breakpoint(CLASS.getTypeName(), "main"),

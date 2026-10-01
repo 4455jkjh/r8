@@ -371,7 +371,9 @@ public abstract class TestCompilerBuilder<
 
   private Collection<Path> getDefaultLibraryFiles() {
     if (backend == Backend.DEX) {
-      assert builder.isMinApiLevelSet();
+      if (!builder.isMinApiLevelSet()) {
+        return Collections.singletonList(ToolHelper.getMostRecentAndroidJar());
+      }
       return Collections.singletonList(
           ToolHelper.getFirstSupportedAndroidJar(
               AndroidApiLevel.getAndroidApiLevel(builder.getUncheckedMinApiLevel())));
@@ -396,11 +398,9 @@ public abstract class TestCompilerBuilder<
       assert !builder.isMinApiLevelSet()
           : "Don't set the API level directly through BaseCompilerCommand.Builder in tests";
       // TODO(b/186010707): This will always be set when fixed.
-      UncheckedApiLevel minApi =
-          getMinApiLevel() == null
-              ? ToolHelper.getMinApiLevelForDexVm().asUnchecked()
-              : getMinApiLevel();
-      builder.setMinApiLevel(minApi);
+      if (getMinApiLevel() != null) {
+        builder.setMinApiLevel(getMinApiLevel());
+      }
     }
     if (!noMinApiLevel
         && backend.isDex()
@@ -524,13 +524,6 @@ public abstract class TestCompilerBuilder<
   }
 
   @Override
-  @Deprecated
-  public RR run(String mainClass)
-      throws CompilationFailedException, ExecutionException, IOException {
-    return compile().run(mainClass);
-  }
-
-  @Override
   public RR run(TestRuntime runtime, String mainClass, String... args)
       throws CompilationFailedException, ExecutionException, IOException {
     return compile().run(runtime, mainClass, args);
@@ -549,10 +542,9 @@ public abstract class TestCompilerBuilder<
     return setMode(CompilationMode.RELEASE);
   }
 
-  public final T setMinApiThreshold(AndroidApiLevel minApiThreshold) {
+  public final T setMinApiThreshold(TestParameters parameters, AndroidApiLevel minApiThreshold) {
     assert backend == Backend.DEX;
-    AndroidApiLevel minApi = ToolHelper.getMinApiLevelForDexVmNoHigherThan(minApiThreshold);
-    return setMinApi(minApi);
+    return setMinApi(parameters.getApiLevel().min(minApiThreshold));
   }
 
   @Deprecated

@@ -207,7 +207,7 @@ public class MemberRebindingTest extends TestBase {
   @Parameters(name = "{0}")
   public static Collection<TestConfiguration> data() {
     ImmutableList.Builder<TestConfiguration> builder = ImmutableList.builder();
-    for (Backend backend : ToolHelper.getBackends()) {
+    for (Backend backend : Backend.values()) {
       TestConfiguration.add(
           builder,
           "memberrebinding",

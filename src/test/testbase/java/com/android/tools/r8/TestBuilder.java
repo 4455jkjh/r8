@@ -144,20 +144,8 @@ public abstract class TestBuilder<RR extends TestRunResult<RR>, T extends TestBu
     return null;
   }
 
-  @Deprecated
-  public RR run(String mainClass)
-      throws CompilationFailedException, ExecutionException, IOException {
-    throw new Unimplemented("Deprecated");
-  }
-
   public abstract RR run(TestRuntime runtime, String mainClass, String... args)
       throws CompilationFailedException, ExecutionException, IOException;
-
-  @Deprecated
-  public RR run(Class<?> mainClass)
-      throws CompilationFailedException, ExecutionException, IOException {
-    return run(mainClass.getTypeName());
-  }
 
   public RR run(TestRuntime runtime, Class<?> mainClass, String... args)
       throws CompilationFailedException, ExecutionException, IOException {

@@ -13,11 +13,13 @@ import static org.junit.Assume.assumeFalse;
 import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,14 +31,16 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ReservedFieldNameInSuperInterfaceTest extends TestBase {
 
+  private final TestParameters parameters;
   private final boolean reserveName;
 
-  @Parameterized.Parameters(name = "Reserve name: {0}")
-  public static Boolean[] data() {
-    return BooleanUtils.values();
+  @Parameterized.Parameters(name = "{0}, reserve name: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(getTestParameters().withDexRuntimes().build(), BooleanUtils.values());
   }
 
-  public ReservedFieldNameInSuperInterfaceTest(boolean reserveName) {
+  public ReservedFieldNameInSuperInterfaceTest(TestParameters parameters, boolean reserveName) {
+    this.parameters = parameters;
     this.reserveName = reserveName;
   }
 
@@ -52,7 +56,7 @@ public class ReservedFieldNameInSuperInterfaceTest extends TestBase {
                     ? "-keepclassmembernames class " + I.class.getTypeName() + "{ <fields>; }"
                     : "")
             .enableMemberValuePropagationAnnotations()
-            .run(TestClass.class)
+            .run(parameters.getRuntime(), TestClass.class)
             .assertSuccessWithOutput(expectedOutput);
 
     CodeInspector inspector = result.inspector();
@@ -84,7 +88,7 @@ public class ReservedFieldNameInSuperInterfaceTest extends TestBase {
         .enableMemberValuePropagationAnnotations()
         .compile()
         .addRunClasspathFiles(testForD8().addProgramClasses(I.class).compile().writeToZip())
-        .run(TestClass.class)
+        .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(expectedOutput)
         .inspect(this::inspect);
   }

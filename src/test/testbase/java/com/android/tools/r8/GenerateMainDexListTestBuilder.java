@@ -41,11 +41,6 @@ public class GenerateMainDexListTestBuilder
   }
 
   @Override
-  public GenerateMainDexListRunResult run(String mainClass) {
-    throw new Unimplemented("No support for running with a main class");
-  }
-
-  @Override
   public GenerateMainDexListRunResult run(TestRuntime runtime, String mainClass, String... args) {
     throw new Unimplemented("No support for running with a main class");
   }

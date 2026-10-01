@@ -283,6 +283,16 @@ public class TestCondition {
     return test(dexTool, compilerUnderTest, Runtime.fromDexVmVersion(version), compilationMode);
   }
 
+  public boolean test(
+      DexTool dexTool,
+      CompilerUnderTest compilerUnderTest,
+      TestRuntime runtime,
+      CompilationMode compilationMode) {
+    return runtime.isDex()
+        ? test(dexTool, compilerUnderTest, runtime.asDex().getVm().getVersion(), compilationMode)
+        : test(dexTool, compilerUnderTest, Runtime.JAVA, compilationMode);
+  }
+
   public static class OrTestCondition extends TestCondition {
 
     private final TestCondition[] conditions;

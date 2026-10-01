@@ -621,10 +621,6 @@ public class ToolHelper {
     private CacheLookupKey artResultCacheLookupKey;
     private boolean noCaching = false;
 
-    public ArtCommandBuilder() {
-      this.version = getDexVm();
-    }
-
     public ArtCommandBuilder(DexVm version) {
       if (version.getKind() == Kind.HOST) {
         assert ART_BINARY_VERSIONS.containsKey(version);
@@ -649,7 +645,7 @@ public class ToolHelper {
         executionDirectory = getArtDir(version);
         return getRawArtBinary(version);
       }
-      return version != null ? getArtBinary(version) : getArtBinary();
+      return getArtBinary(version);
     }
 
     public boolean isForDevice() {
@@ -1228,13 +1224,6 @@ public class ToolHelper {
     return ""; //never here
   }
 
-  public static Backend[] getBackends() {
-    if (getDexVm() == DexVm.ART_DEFAULT) {
-      return Backend.values();
-    }
-    return new Backend[]{Backend.DEX};
-  }
-
   public static String getArtBinary(DexVm version) {
     return getArtDir(version) + "/" + getRawArtBinary(version);
   }
@@ -1392,14 +1381,10 @@ public class ToolHelper {
     }
   }
 
-  public static String getArtBinary() {
-    return getArtBinary(getDexVm());
-  }
-
   public static Set<DexVm> getArtVersions() {
     String artVersion = System.getProperty("dex_vm");
     if (artVersion != null) {
-      DexVm artVersionEnum = getDexVm();
+      DexVm artVersionEnum = getDexVmFromProperty();
       if (artVersionEnum.getKind() == Kind.HOST
           && !ART_BINARY_VERSIONS.containsKey(artVersionEnum)) {
         throw new RuntimeException("Unsupported Art version " + artVersion);
@@ -1428,8 +1413,7 @@ public class ToolHelper {
     return dexVm == DexVm.ART_DEFAULT;
   }
 
-  @Deprecated
-  public static DexVm getDexVm() {
+  private static DexVm getDexVmFromProperty() {
     String artVersion = System.getProperty("dex_vm");
     if (artVersion == null) {
       return DexVm.ART_DEFAULT;
@@ -1447,14 +1431,6 @@ public class ToolHelper {
         return artVersionEnum;
       }
     }
-  }
-
-  public static AndroidApiLevel getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel threshold) {
-    return getMinApiLevelForDexVm().min(threshold);
-  }
-
-  public static AndroidApiLevel getMinApiLevelForDexVm() {
-    return getMinApiLevelForDexVm(ToolHelper.getDexVm());
   }
 
   public static AndroidApiLevel getMinApiLevelForDexVm(DexVm dexVm) {
@@ -1563,7 +1539,7 @@ public class ToolHelper {
           "Art does not work on on your platform.");
       return false;
     }
-    if (isWindows() && getDexVm().getKind() == Kind.HOST) {
+    if (isWindows() && getDexVmFromProperty().getKind() == Kind.HOST) {
       System.err.println("Testing on host is not supported on Windows.");
       return false;
     }
@@ -2221,20 +2197,9 @@ public class ToolHelper {
     return runArtProcessRaw(builder);
   }
 
-  public static ProcessResult runArtRaw(String file, String mainClass)
+  public static ProcessResult runArtRaw(String file, String mainClass, DexVm version)
       throws IOException {
-    return runArtRaw(Collections.singletonList(file), mainClass, null);
-  }
-
-  public static ProcessResult runArtRaw(
-      String file, String mainClass, Consumer<ArtCommandBuilder> extras) throws IOException {
-    return runArtRaw(Collections.singletonList(file), mainClass, extras);
-  }
-
-  public static ProcessResult runArtRaw(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras)
-      throws IOException {
-    return runArtRaw(files, mainClass, extras, null, false);
+    return runArtRaw(Collections.singletonList(file), mainClass, null, version, false);
   }
 
   // Index used to name directory aimed at storing dex files and process result
@@ -2250,8 +2215,7 @@ public class ToolHelper {
       boolean withArtFrameworks,
       String... args)
       throws IOException {
-    ArtCommandBuilder builder =
-        version != null ? new ArtCommandBuilder(version) : new ArtCommandBuilder();
+    ArtCommandBuilder builder = new ArtCommandBuilder(version);
     builder.withArtFrameworks = withArtFrameworks;
     files.forEach(builder::appendClasspath);
     builder.setMainClass(mainClass);
@@ -2472,15 +2436,9 @@ public class ToolHelper {
     return System.getProperty("generate_golden_files_to") != null;
   }
 
-  public static ProcessResult runArtNoVerificationErrorsRaw(String file, String mainClass)
-      throws IOException {
-    return runArtNoVerificationErrorsRaw(Collections.singletonList(file), mainClass, null);
-  }
-
-  public static ProcessResult runArtNoVerificationErrorsRaw(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras)
-      throws IOException {
-    return runArtNoVerificationErrorsRaw(files, mainClass, extras, null);
+  public static ProcessResult runArtNoVerificationErrorsRaw(
+      String file, String mainClass, DexVm version) throws IOException {
+    return runArtNoVerificationErrorsRaw(Collections.singletonList(file), mainClass, null, version);
   }
 
   public static ProcessResult runArtNoVerificationErrorsRaw(List<String> files, String mainClass,
@@ -2493,15 +2451,9 @@ public class ToolHelper {
     return result;
   }
 
-  public static String runArtNoVerificationErrors(String file, String mainClass)
+  public static String runArtNoVerificationErrors(String file, String mainClass, DexVm version)
       throws IOException {
-    return runArtNoVerificationErrorsRaw(file, mainClass).stdout;
-  }
-
-  public static String runArtNoVerificationErrors(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras)
-      throws IOException {
-    return runArtNoVerificationErrors(files, mainClass, extras, null);
+    return runArtNoVerificationErrorsRaw(file, mainClass, version).stdout;
   }
 
   public static String runArtNoVerificationErrors(List<String> files, String mainClass,
@@ -2591,10 +2543,6 @@ public class ToolHelper {
       }
     }
     return output;
-  }
-
-  public static void runDex2Oat(Path dexFile, Path oatFile, Path temp) throws IOException {
-    runDex2Oat(dexFile, oatFile, temp, getDexVm());
   }
 
   public static void runDex2Oat(Path dexFile, Path oatFile, Path temp, DexVm vm)

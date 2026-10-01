@@ -9,6 +9,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.forceproguardcompatibility.ProguardCompatibilityTestBase;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -258,16 +259,20 @@ public class ExternalizableTest extends ProguardCompatibilityTestBase {
       ImmutableList.of(
           NonSerializableSuperClass.class, SerializableDataClass.class, SerializableTestMain.class);
 
+  private final TestParameters parameters;
   private final Shrinker shrinker;
 
-  @Parameterized.Parameters(name = "Shrinker: {0}")
-  public static Collection<Object> data() {
-    return ImmutableList.of(
-        Shrinker.R8_COMPAT, Shrinker.R8_COMPAT_CF,
-        Shrinker.R8, Shrinker.R8_CF);
+  @Parameterized.Parameters(name = "{0}, Shrinker: {1}")
+  public static Collection<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withDefaultCfRuntime().build(),
+        ImmutableList.of(
+            Shrinker.R8_COMPAT, Shrinker.R8_COMPAT_CF,
+            Shrinker.R8, Shrinker.R8_CF));
   }
 
-  public ExternalizableTest(Shrinker shrinker) {
+  public ExternalizableTest(TestParameters parameters, Shrinker shrinker) {
+    this.parameters = parameters;
     this.shrinker = shrinker;
   }
 
@@ -302,8 +307,11 @@ public class ExternalizableTest extends ProguardCompatibilityTestBase {
 
     // TODO(b/117302947): Need to update ART binary.
     if (shrinker.generatesCf()) {
-      String output = runOnVM(
-          processedApp, ExternalizableTestMain.class.getCanonicalName(), shrinker.toBackend());
+      String output =
+          runOnVM(
+              processedApp,
+              ExternalizableTestMain.class.getCanonicalName(),
+              parameters.getRuntime());
       assertEquals(javaOutput.trim(), output.trim());
     }
 
@@ -343,8 +351,9 @@ public class ExternalizableTest extends ProguardCompatibilityTestBase {
                 options.getVerticalClassMergerOptions().setEnabled(enableVerticalClassMerging));
     // TODO(b/117302947): Need to update ART binary.
     if (shrinker.generatesCf()) {
-      String output = runOnVM(
-          processedApp, SerializableTestMain.class.getCanonicalName(), shrinker.toBackend());
+      String output =
+          runOnVM(
+              processedApp, SerializableTestMain.class.getCanonicalName(), parameters.getRuntime());
       assertEquals(javaOutput.trim(), output.trim());
     }
 

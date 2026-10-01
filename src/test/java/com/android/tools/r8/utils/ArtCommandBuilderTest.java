@@ -7,6 +7,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -16,8 +19,21 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class ArtCommandBuilderTest {
+@RunWith(Parameterized.class)
+public class ArtCommandBuilderTest extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   private static final String SCRIPT =
       System.getProperty("os.name").startsWith("Linux") ? "/bin/bash " : "tools/docker/run.sh ";
@@ -28,63 +44,68 @@ public class ArtCommandBuilderTest {
   @Before
   public void setUp() {
     Assume.assumeTrue(ToolHelper.artSupported());
-    Assume.assumeTrue(ToolHelper.getDexVm().getKind() == Kind.HOST);
+    Assume.assumeTrue(getVm().getKind() == Kind.HOST);
+  }
+
+  private DexVm getVm() {
+    return parameters.getDexVm();
   }
 
   @Test
   public void noArguments() {
-    ArtCommandBuilder builder = new ArtCommandBuilder();
+    ArtCommandBuilder builder = new ArtCommandBuilder(getVm());
     Assert.assertEquals(
-        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM, builder.build());
+        SCRIPT + ToolHelper.getArtBinary(getVm()) + FORK_JOIN_PARALLELISM, builder.build());
   }
 
   @Test
   public void simple() {
-    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
+    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(getVm());
     builder.appendClasspath("xxx.dex").setMainClass("Test");
     assertEquals(
-        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM + " -cp xxx.dex Test",
+        SCRIPT + ToolHelper.getArtBinary(getVm()) + FORK_JOIN_PARALLELISM + " -cp xxx.dex Test",
         builder.build());
   }
 
   @Test
   public void classpath() {
-    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
+    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(getVm());
     builder.appendClasspath("xxx.dex").appendClasspath("yyy.jar");
     assertEquals(
-        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM + " -cp xxx.dex:yyy.jar",
+        SCRIPT + ToolHelper.getArtBinary(getVm()) + FORK_JOIN_PARALLELISM + " -cp xxx.dex:yyy.jar",
         builder.build());
   }
 
   @Test
   public void artOptions() {
-    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
+    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(getVm());
     builder.appendArtOption("-d").appendArtOption("--test");
     assertEquals(
-        SCRIPT + ToolHelper.getArtBinary() + " -d --test" + FORK_JOIN_PARALLELISM, builder.build());
+        SCRIPT + ToolHelper.getArtBinary(getVm()) + " -d --test" + FORK_JOIN_PARALLELISM,
+        builder.build());
   }
 
   @Test
   public void artSystemProperties() {
-    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
+    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(getVm());
     builder.appendArtSystemProperty("a.b.c", "1").appendArtSystemProperty("x.y.z", "2");
     assertEquals(
-        SCRIPT + ToolHelper.getArtBinary() + " -Da.b.c=1 -Dx.y.z=2" + FORK_JOIN_PARALLELISM,
+        SCRIPT + ToolHelper.getArtBinary(getVm()) + " -Da.b.c=1 -Dx.y.z=2" + FORK_JOIN_PARALLELISM,
         builder.build());
   }
 
   @Test
   public void programOptions() {
-    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
+    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(getVm());
     builder.setMainClass("Test").appendProgramArgument("hello").appendProgramArgument("world");
     assertEquals(
-        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM + " Test hello world",
+        SCRIPT + ToolHelper.getArtBinary(getVm()) + FORK_JOIN_PARALLELISM + " Test hello world",
         builder.build());
   }
 
   @Test
   public void allOfTheAbove() {
-    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
+    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(getVm());
     builder
         .appendArtOption("-d")
         .appendArtOption("--test")
@@ -97,7 +118,7 @@ public class ArtCommandBuilderTest {
         .appendProgramArgument("world");
     assertEquals(
         SCRIPT
-            + ToolHelper.getArtBinary()
+            + ToolHelper.getArtBinary(getVm())
             + " -d --test -Da.b.c=1 -Dx.y.z=2"
             + FORK_JOIN_PARALLELISM
             + " -cp xxx.dex:yyy.jar Test hello world",
@@ -106,7 +127,7 @@ public class ArtCommandBuilderTest {
 
   @Test
   public void allOfTheAboveWithClasspathAndSystemPropertiesBeforeOptions() {
-    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
+    ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(getVm());
     builder
         .appendClasspath("xxx.dex")
         .appendClasspath("yyy.jar")
@@ -119,7 +140,7 @@ public class ArtCommandBuilderTest {
         .appendProgramArgument("world");
     assertEquals(
         SCRIPT
-            + ToolHelper.getArtBinary()
+            + ToolHelper.getArtBinary(getVm())
             + " -d --test -Da.b.c=1 -Dx.y.z=2"
             + FORK_JOIN_PARALLELISM
             + " -cp xxx.dex:yyy.jar Test hello world",

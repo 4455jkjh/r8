@@ -6,6 +6,8 @@ package com.android.tools.r8.regress;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
@@ -17,8 +19,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class UnicodeSetRegressionTest extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
 
   private static Path getJarPath() {
     return ToolHelper.getResourceAsReadOnlyFile(UnicodeSetRegressionTest.class, "UnicodeSet.jar");
@@ -26,6 +41,7 @@ public class UnicodeSetRegressionTest extends TestBase {
 
   @Test
   public void testUnicodeSetFromJar() throws Throwable {
+    parameters.assumeDexRuntime();
     Path combinedInput = temp.getRoot().toPath().resolve("all.zip");
     Path oatFile = temp.getRoot().toPath().resolve("all.oat");
     R8Command.Builder builder =
@@ -39,7 +55,8 @@ public class UnicodeSetRegressionTest extends TestBase {
     ToolHelper.runR8(builder.build(), options -> options.ignoreMissingClasses = true);
     AndroidApp result = compatSink.build();
     try {
-      ToolHelper.runDex2Oat(combinedInput, oatFile, temp.newFolder().toPath());
+      ToolHelper.runDex2Oat(
+          combinedInput, oatFile, temp.newFolder().toPath(), parameters.getDexVm());
     } catch (AssertionError e) {
       CodeInspector fromJar = new CodeInspector(result);
       List<ArtErrorInfo> errors;
@@ -64,6 +81,7 @@ public class UnicodeSetRegressionTest extends TestBase {
 
   @Test
   public void testUnicodeSetFromJarToCF() throws Throwable {
+    parameters.assumeCfRuntime();
     Path combinedInput = temp.getRoot().toPath().resolve("all.zip");
     R8Command.Builder builder =
         R8Command.builder()

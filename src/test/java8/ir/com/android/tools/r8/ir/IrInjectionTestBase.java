@@ -4,6 +4,7 @@
 package com.android.tools.r8.ir;
 
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -142,12 +143,12 @@ public class IrInjectionTestBase extends SmaliTestBase {
       }
     }
 
-    public String run() throws IOException {
+    public String run(DexVm vm) throws IOException {
       IRConverter converter = new IRConverter(appView);
       code.removeRedundantBlocks();
       converter.replaceCodeForTesting(code);
       AndroidApp app = writeDex(Timing.empty());
-      return runOnArtRaw(app, DEFAULT_MAIN_CLASS_NAME).stdout;
+      return runOnArtRaw(app, DEFAULT_MAIN_CLASS_NAME, vm).stdout;
     }
   }
 }

@@ -30,7 +30,8 @@ public class KotlinLoopTest extends KotlinDebugTestBase {
   }
 
   DebugTestConfig config() {
-    return KotlinLoopD8Config.build(kotlinParameters, parameters.getApiLevel());
+    return KotlinLoopD8Config.build(
+        kotlinParameters, parameters.getApiLevel(), parameters.asDexRuntime());
   }
 
   @Test

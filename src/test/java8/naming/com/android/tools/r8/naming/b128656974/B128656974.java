@@ -12,14 +12,29 @@ import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.naming.testclasses.Greeting;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class B128656974 extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void testField() throws Exception {
@@ -33,7 +48,7 @@ public class B128656974 extends TestBase {
             "-keepclassmembernames class "
                 + TestClassSub.class.getTypeName()
                 + "{ static java.lang.String a; }")
-        .run(main)
+        .run(parameters.getRuntime(), main)
         .assertSuccessWithOutput(StringUtils.lines("TestClassSub.greeting", "TestClassSub.a"))
         .inspect(
             inspector -> {
@@ -80,7 +95,7 @@ public class B128656974 extends TestBase {
         .addKeepMainRule(main)
         .addKeepRules(
             "-keepclassmembernames class " + TestClassSub2.class.getTypeName() + "{ void a(...); }")
-        .run(main)
+        .run(parameters.getRuntime(), main)
         .assertSuccessWithOutput(StringUtils.lines("TestClassSub2::a", "TestClassBase::foo"))
         .inspect(
             inspector -> {

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -22,13 +23,14 @@ import org.junit.Assert;
 
 public class AsmTestBase extends TestBase {
 
-  protected void ensureSameOutput(String main, AndroidApiLevel apiLevel, byte[]... classes)
-      throws Exception {
-    ensureSameOutput(main, apiLevel, Collections.emptyList(), classes);
+  protected void ensureSameOutput(
+      String main, AndroidApiLevel apiLevel, DexVm vm, byte[]... classes) throws Exception {
+    ensureSameOutput(main, apiLevel, Collections.emptyList(), vm, classes);
   }
 
-  protected void ensureSameOutput(String main, AndroidApiLevel apiLevel,
-      List<String> args, byte[]... classes) throws Exception {
+  protected void ensureSameOutput(
+      String main, AndroidApiLevel apiLevel, List<String> args, DexVm vm, byte[]... classes)
+      throws Exception {
     AndroidApp app = buildAndroidApp(classes);
     Consumer<InternalOptions> setMinApiLevel = o -> o.setMinApiLevel(apiLevel);
     ProcessResult javaResult = runOnJavaRaw(main, Arrays.asList(classes), args);
@@ -37,13 +39,15 @@ public class AsmTestBase extends TestBase {
         builder.appendProgramArgument(arg);
       }
     };
-    ProcessResult d8Result = runOnArtRaw(
-        compileWithD8(app, setMinApiLevel), main, cmdBuilder, null);
-    ProcessResult r8Result = runOnArtRaw(
-        compileWithR8(app, setMinApiLevel), main, cmdBuilder, null);
-    ProcessResult r8ShakenResult = runOnArtRaw(
-        compileWithR8(app, keepMainProguardConfiguration(main) + "-dontobfuscate\n",
-            setMinApiLevel), main, cmdBuilder, null);
+    ProcessResult d8Result = runOnArtRaw(compileWithD8(app, setMinApiLevel), main, cmdBuilder, vm);
+    ProcessResult r8Result = runOnArtRaw(compileWithR8(app, setMinApiLevel), main, cmdBuilder, vm);
+    ProcessResult r8ShakenResult =
+        runOnArtRaw(
+            compileWithR8(
+                app, keepMainProguardConfiguration(main) + "-dontobfuscate\n", setMinApiLevel),
+            main,
+            cmdBuilder,
+            vm);
     Assert.assertEquals(javaResult.stdout, d8Result.stdout);
     Assert.assertEquals(javaResult.stdout, r8Result.stdout);
     Assert.assertEquals(javaResult.stdout, r8ShakenResult.stdout);
@@ -54,6 +58,7 @@ public class AsmTestBase extends TestBase {
       String main,
       AndroidApiLevel apiLevel,
       List<String> args,
+      DexVm vm,
       byte[]... classes)
       throws Exception {
     AndroidApp app = buildAndroidApp(classes);
@@ -65,41 +70,40 @@ public class AsmTestBase extends TestBase {
             builder.appendProgramArgument(arg);
           }
         };
-    ProcessResult d8Result =
-        runOnArtRaw(compileWithD8(app, setMinApiLevel), main, cmdBuilder, null);
-    ProcessResult r8Result =
-        runOnArtRaw(compileWithR8(app, setMinApiLevel), main, cmdBuilder, null);
+    ProcessResult d8Result = runOnArtRaw(compileWithD8(app, setMinApiLevel), main, cmdBuilder, vm);
+    ProcessResult r8Result = runOnArtRaw(compileWithR8(app, setMinApiLevel), main, cmdBuilder, vm);
     ProcessResult r8ShakenResult =
         runOnArtRaw(
             compileWithR8(
                 app, keepMainProguardConfiguration(main) + "-dontobfuscate\n", setMinApiLevel),
             main,
             cmdBuilder,
-            null);
+            vm);
     checker.accept(javaResult, d8Result, r8Result, r8ShakenResult);
   }
 
-  protected void ensureSameOutput(String main, byte[]... classes) throws Exception {
+  protected void ensureSameOutput(String main, DexVm vm, byte[]... classes) throws Exception {
     AndroidApp app = buildAndroidApp(classes);
-    ensureSameOutput(main, app, false, classes);
+    ensureSameOutput(main, app, false, vm, classes);
   }
 
-  protected void ensureSameOutputJavaNoVerify(String main, byte[]... classes) throws Exception {
+  protected void ensureSameOutputJavaNoVerify(String main, DexVm vm, byte[]... classes)
+      throws Exception {
     AndroidApp app = buildAndroidApp(classes);
-    ensureSameOutput(main, app, true, classes);
+    ensureSameOutput(main, app, true, vm, classes);
   }
 
   private void ensureSameOutput(
-      String main, AndroidApp app, boolean useJavaNoVerify, byte[]... classes)
+      String main, AndroidApp app, boolean useJavaNoVerify, DexVm vm, byte[]... classes)
       throws IOException, CompilationFailedException {
     ProcessResult javaResult =
         useJavaNoVerify ? runOnJavaRawNoVerify(main, classes) : runOnJavaRaw(main, classes);
-    ProcessResult d8Result = runOnArtRaw(compileWithD8(app), main);
+    ProcessResult d8Result = runOnArtRaw(compileWithD8(app), main, vm);
     ProcessResult r8NonShakenResult =
-        runOnArtRaw(compileWithR8(app, "-dontshrink\n-dontobfuscate\n"), main);
+        runOnArtRaw(compileWithR8(app, "-dontshrink\n-dontobfuscate\n"), main, vm);
     ProcessResult r8ShakenResult =
         runOnArtRaw(
-            compileWithR8(app, keepMainProguardConfiguration(main) + "-dontobfuscate\n"), main);
+            compileWithR8(app, keepMainProguardConfiguration(main) + "-dontobfuscate\n"), main, vm);
     Assert.assertEquals(javaResult.stdout, d8Result.stdout);
     Assert.assertEquals(javaResult.stdout, r8NonShakenResult.stdout);
     Assert.assertEquals(javaResult.stdout, r8ShakenResult.stdout);
@@ -116,13 +120,12 @@ public class AsmTestBase extends TestBase {
     CompilationFailedException r8Error = null;
     CompilationFailedException r8ShakenError = null;
     try {
-      runOnArtRaw(compileWithR8(app, "-dontshrink\n-dontobfuscate\n"), main);
+      compileWithR8(app, "-dontshrink\n-dontobfuscate\n");
     } catch (CompilationFailedException e) {
       r8Error = e;
     }
     try {
-      runOnArtRaw(compileWithR8(app, keepMainProguardConfiguration(main) + "-dontobfuscate\n"),
-          main);
+      compileWithR8(app, keepMainProguardConfiguration(main) + "-dontobfuscate\n");
     } catch (CompilationFailedException e) {
       r8ShakenError = e;
     }
@@ -130,14 +133,14 @@ public class AsmTestBase extends TestBase {
     Assert.assertNotNull(r8ShakenError);
   }
 
-  protected void ensureSameOutputAfterMerging(String main, byte[]... classes)
+  protected void ensureSameOutputAfterMerging(String main, DexVm vm, byte[]... classes)
       throws IOException, CompilationFailedException {
     AndroidApp app = buildAndroidApp(classes);
     // Compile to dex files with D8.
     AndroidApp dexApp = compileWithD8(app);
     // Perform dex merging with D8 to read the dex files.
     AndroidApp mergedApp = compileWithD8(dexApp);
-    ensureSameOutput(main, mergedApp, false, classes);
+    ensureSameOutput(main, mergedApp, false, vm, classes);
   }
 
   protected static AndroidApp readClassesAndAsmDump(

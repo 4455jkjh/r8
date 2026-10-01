@@ -9,6 +9,8 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
@@ -17,10 +19,23 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class SynchronizedMethodTestRunner extends DebugInfoTestBase {
 
   static Class clazz = SynchronizedMethodTest.class;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void testSynchronizedMethod() throws Exception {
@@ -28,7 +43,7 @@ public class SynchronizedMethodTestRunner extends DebugInfoTestBase {
 
     String expected = StringUtils.lines("42", "42", "2", "2");
     assertEquals(expected, runOnJava(clazz));
-    assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName()));
+    assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName(), parameters.getDexVm()));
 
     checkSyncStatic(inspectMethod(d8App, clazz, "int", "syncStatic", "int"));
 

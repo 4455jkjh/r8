@@ -6,7 +6,13 @@ package com.android.tools.r8.cf;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * This tests that we produce valid code when having normal-flow with exceptional edges in blocks.
@@ -36,11 +42,20 @@ import org.junit.Test;
  * have not stored CloserTest in locals[1] (that happens in @bci 5), as described in the
  * StackMapTable. This is because the exception handler starts at @bci 3 and not later.
  */
+@RunWith(Parameterized.class)
 public class CloserTestRunner extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().build();
+  }
 
   @Test
   public void test() throws Exception {
-    testForR8(Backend.CF)
+    testForR8(parameters)
         .addProgramClasses(CloserTest.class)
         .addKeepMainRule(CloserTest.class)
         .setMode(CompilationMode.RELEASE)
@@ -48,7 +63,7 @@ public class CloserTestRunner extends TestBase {
         .addDontShrink()
         .enableInliningAnnotations()
         .compile()
-        .run(CloserTest.class)
+        .run(parameters.getRuntime(), CloserTest.class)
         .assertSuccess();
   }
 }

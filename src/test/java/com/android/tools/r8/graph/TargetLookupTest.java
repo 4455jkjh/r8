@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
@@ -41,12 +43,11 @@ public class TargetLookupTest extends SmaliTestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withNoneRuntime().build();
+    return getTestParameters().withDexRuntimes().build();
   }
 
-  public TargetLookupTest(TestParameters parameters) {
-    parameters.assertNoneRuntime();
-  }
+  @Parameter(0)
+  public TestParameters parameters;
 
   @Test
   public void lookupDirect() throws Exception {
@@ -106,16 +107,16 @@ public class TargetLookupTest extends SmaliTestBase {
     assertNull(appInfo.lookupDirectTarget(method.getReference(), method, appView));
     assertNotNull(appInfo.lookupStaticTarget(method.getReference(), method, appView));
 
-    if (ToolHelper.getDexVm().getVersion().isOlderThanOrEqual(DexVm.Version.V4_4_4)) {
+    if (parameters.isDexRuntimeVersionOlderThanOrEqual(DexVm.Version.V4_4_4)) {
       // Dalvik rejects at verification time instead of producing the
       // expected IncompatibleClassChangeError.
       try {
-        runArt(application);
+        runArt(application, parameters.getDexVm());
       } catch (AssertionError e) {
-        assert e.toString().contains("VerifyError");
+        assertTrue(e.toString().contains("VerifyError"));
       }
     } else {
-      assertEquals("OK", runArt(application));
+      assertEquals("OK", runArt(application, parameters.getDexVm()));
     }
   }
 
@@ -205,7 +206,7 @@ public class TargetLookupTest extends SmaliTestBase {
     // Accessing a private target on a different type will fail resolution outright.
     assertNull(appInfo.lookupStaticTarget(methodXOnTestReference, methodYOnTest, appView));
 
-    assertEquals("OK", runArt(application));
+    assertEquals("OK", runArt(application, parameters.getDexVm()));
   }
 
   @Test
@@ -239,10 +240,10 @@ public class TargetLookupTest extends SmaliTestBase {
 
     assertEquals(aFieldOnInterface, appInfo.lookupStaticTarget(aFieldOnSubClass).getReference());
 
-    assertEquals("42", runArt(application));
+    assertEquals("42", runArt(application, parameters.getDexVm()));
 
     AndroidApp processedApp = processApplication(application);
-    assertEquals("42", runArt(processedApp));
+    assertEquals("42", runArt(processedApp, parameters.getDexVm()));
   }
 
   @Test
@@ -301,7 +302,8 @@ public class TargetLookupTest extends SmaliTestBase {
 
     // Process the application and expect the same result on Art.
     AndroidApp processedApp = ToolHelper.runR8(application, null);
-    assertEquals(result.stdout, runArt(processedApp, Main.class.getCanonicalName()));
+    assertEquals(
+        result.stdout, runArt(processedApp, Main.class.getCanonicalName(), parameters.getDexVm()));
   }
 }
 

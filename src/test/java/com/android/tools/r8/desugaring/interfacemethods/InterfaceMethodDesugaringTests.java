@@ -5,12 +5,13 @@
 package com.android.tools.r8.desugaring.interfacemethods;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.AsmTestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreForRangeOfVmVersions;
 import com.android.tools.r8.desugaring.interfacemethods.default0.TestMainDefault0;
 import com.android.tools.r8.desugaring.interfacemethods.default1.Derived1;
 import com.android.tools.r8.desugaring.interfacemethods.default1.DerivedComparator1;
@@ -20,6 +21,7 @@ import com.android.tools.r8.desugaring.interfacemethods.default2.DerivedComparat
 import com.android.tools.r8.desugaring.interfacemethods.default2.TestMainDefault2;
 import com.android.tools.r8.desugaring.interfacemethods.static0.TestMainStatic0;
 import com.android.tools.r8.desugaring.interfacemethods.static1.TestMainStatic1;
+import com.android.tools.r8.desugaring.interfacemethods.test0.InterfaceWithDefaults;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import java.io.ByteArrayInputStream;
@@ -30,47 +32,62 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class InterfaceMethodDesugaringTests extends AsmTestBase {
 
-  private static List<String> getArgs(int startWith) {
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
+  private List<String> getArgs(int startWith) {
     return Collections.singletonList(
-        String.valueOf(ToolHelper.getMinApiLevelForDexVm().getMajor() >= startWith));
+        String.valueOf(parameters.asDexRuntime().getMinApiLevel().getMajor() >= startWith));
   }
 
   @Test
   public void testInvokeSpecialToDefaultMethod() throws Exception {
     ensureSameOutput(
         com.android.tools.r8.desugaring.interfacemethods.test0.TestMain.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(
             com.android.tools.r8.desugaring.interfacemethods.test0.TestMain.class),
-        patchInterfaceWithDefaults(ToolHelper.getClassAsBytes(
-            com.android.tools.r8.desugaring.interfacemethods.test0.InterfaceWithDefaults.class)));
+        patchInterfaceWithDefaults(ToolHelper.getClassAsBytes(InterfaceWithDefaults.class)));
   }
 
   @Test
   public void testInvokeSpecialToDefaultMethodFromStatic() throws Exception {
     ensureSameOutput(
         com.android.tools.r8.desugaring.interfacemethods.test1.TestMain.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(
             com.android.tools.r8.desugaring.interfacemethods.test1.TestMain.class),
-        patchInterfaceWithDefaults(ToolHelper.getClassAsBytes(
-            com.android.tools.r8.desugaring.interfacemethods.test1.InterfaceWithDefaults.class)));
+        patchInterfaceWithDefaults(
+            ToolHelper.getClassAsBytes(
+                com.android.tools.r8.desugaring.interfacemethods.test1.InterfaceWithDefaults
+                    .class)));
   }
 
   @Test
   public void testInvokeSpecialToInheritedDefaultMethod() throws Exception {
     ensureSameOutput(
         com.android.tools.r8.desugaring.interfacemethods.test2.TestMain.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(
             com.android.tools.r8.desugaring.interfacemethods.test2.TestMain.class),
         ToolHelper.getClassAsBytes(
@@ -89,6 +106,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
         TestMainStatic0.class.getCanonicalName(),
         AndroidApiLevel.K,
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainStatic0.class));
   }
 
@@ -96,8 +114,9 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
   public void testInvokeStatic0b() throws Exception {
     ensureSameOutput(
         TestMainStatic0.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainStatic0.class));
   }
 
@@ -107,6 +126,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
         TestMainStatic1.class.getCanonicalName(),
         AndroidApiLevel.K,
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainStatic1.class));
   }
 
@@ -114,8 +134,9 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
   public void testInvokeStatic1b() throws Exception {
     ensureSameOutput(
         TestMainStatic1.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainStatic1.class));
   }
 
@@ -125,6 +146,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
         TestMainDefault0.class.getCanonicalName(),
         AndroidApiLevel.K,
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainDefault0.class));
   }
 
@@ -132,14 +154,16 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
   public void testInvokeDefault0b() throws Exception {
     ensureSameOutput(
         TestMainDefault0.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainDefault0.class));
   }
 
   @Test
-  @IgnoreForRangeOfVmVersions(from = Version.V7_0_0, to = Version.V17_0_0) // No desugaring
   public void testInvokeDefault1() throws Exception {
+    // No desugaring
+    assumeFalse(parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V7_0_0));
     ensureCustomCheck(
         (javaResult, d8Result, r8Result, r8ShakenResult) -> {
           Assert.assertEquals(1, d8Result.exitCode);
@@ -150,8 +174,9 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
           Assert.assertEquals(javaResult.stdout, r8ShakenResult.stdout);
         },
         TestMainDefault1.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainDefault1.class),
         ToolHelper.getClassAsBytes(Derived1.class),
         ToolHelper.getClassAsBytes(DerivedComparator1.class));
@@ -163,6 +188,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
         TestMainDefault2.class.getCanonicalName(),
         AndroidApiLevel.K,
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainDefault2.class),
         ToolHelper.getClassAsBytes(Derived2.class),
         ToolHelper.getClassAsBytes(DerivedComparator2.class));
@@ -172,8 +198,9 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
   public void testInvokeDefault2b() throws Exception {
     ensureSameOutput(
         TestMainDefault2.class.getCanonicalName(),
-        ToolHelper.getMinApiLevelForDexVm(),
+        parameters.asDexRuntime().getMinApiLevel(),
         getArgs(AndroidApiLevel.N.getMajor()),
+        parameters.getDexVm(),
         ToolHelper.getClassAsBytes(TestMainDefault2.class),
         ToolHelper.getClassAsBytes(Derived2.class),
         ToolHelper.getClassAsBytes(DerivedComparator2.class));

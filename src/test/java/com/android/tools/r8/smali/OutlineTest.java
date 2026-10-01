@@ -1075,7 +1075,7 @@ public class OutlineTest extends SmaliTestBase {
     }
 
     // Run the application with several levels of outlining.
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
     assertEquals("TestTestTestTest", result);
   }
 
@@ -1195,8 +1195,8 @@ public class OutlineTest extends SmaliTestBase {
     AndroidApp processedApplication = processApplication(originalApplication, options);
     assertEquals(2, getNumberOfProgramClasses(processedApplication));
 
-    String originalResult = runArt(originalApplication);
-    String processedResult = runArt(processedApplication);
+    String originalResult = runArt(originalApplication, parameters.getDexVm());
+    String processedResult = runArt(processedApplication, parameters.getDexVm());
     Assert.assertEquals(originalResult, processedResult);
   }
 
@@ -1799,7 +1799,7 @@ public class OutlineTest extends SmaliTestBase {
     AndroidApp processedApplication = processApplication(originalApplication, options);
 
     // Verify the code.
-    runDex2Oat(processedApplication);
+    runDex2Oat(processedApplication, parameters.getDexVm());
   }
 
   private void assertHasOutlineInvoke(

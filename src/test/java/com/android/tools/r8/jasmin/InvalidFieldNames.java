@@ -18,21 +18,21 @@ public class InvalidFieldNames extends NameTestBase {
   private static final String CLASS_NAME = "Test";
   private static String FIELD_VALUE = "42";
 
-  @Parameters(name = "\"{0}\", jvm: {1}, art: {2}")
+  @Parameters(name = "{0}, \"{1}\", jvm: {2}, art: {3}")
   public static Collection<Object[]> data() {
     Collection<Object[]> data = new ArrayList<>();
-    for (TestParameters parameter : TestParameters.justNoneRuntime()) {
-      parameter.assertNoneRuntime();
-      data.addAll(NameTestBase.getCommonNameTestData());
+    for (TestParameters parameters :
+        getTestParameters().withDefaultCfRuntime().withDexRuntimes().build()) {
+      data.addAll(NameTestBase.getCommonNameTestData(parameters));
       data.addAll(
           Arrays.asList(
               new Object[][] {
-                {new TestString("a/b"), false, false},
-                {new TestString("<a"), false, false},
-                {new TestString("a>"), false, false},
-                {new TestString("a<b>"), false, false},
-                {new TestString("<a>b"), false, false},
-                {new TestString("<a>"), false, true}
+                {parameters, new TestString("a/b"), false, false},
+                {parameters, new TestString("<a"), false, false},
+                {parameters, new TestString("a>"), false, false},
+                {parameters, new TestString("a<b>"), false, false},
+                {parameters, new TestString("<a>b"), false, false},
+                {parameters, new TestString("<a>"), false, true}
               }));
     }
     return data;
@@ -42,7 +42,9 @@ public class InvalidFieldNames extends NameTestBase {
   private boolean validForJVM;
   private boolean validForArt;
 
-  public InvalidFieldNames(TestString name, boolean validForJVM, boolean validForArt) {
+  public InvalidFieldNames(
+      TestParameters parameters, TestString name, boolean validForJVM, boolean validForArt) {
+    super(parameters);
     this.name = name.getValue();
     this.validForJVM = validForJVM;
     this.validForArt = validForArt;

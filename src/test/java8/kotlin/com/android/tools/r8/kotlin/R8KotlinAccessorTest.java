@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.jasmin.JasminBuilder;
@@ -218,6 +219,7 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
 
   @Test
   public void testStaticFieldAccessorWithJasmin() throws Exception {
+    testParameters.assumeDexRuntime();
     JasminBuilder jasminBuilder = new JasminBuilder();
     ClassBuilder classBuilder = jasminBuilder.addClass("Foo");
     classBuilder.addDefaultConstructor();
@@ -251,7 +253,9 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
 
     AndroidApp app = compileWithR8(jasminBuilder.build(),
         keepMainProguardConfiguration("Foo") + "\n-dontobfuscate");
-    String artOutput = runOnArt(app, "Foo");
-    assertEquals(javaResult.stdout, artOutput);
+    for (DexRuntime runtime : testParameters.getRuntime().asDexRuntimes()) {
+      String artOutput = runOnArt(app, "Foo", runtime.getVm());
+      assertEquals(javaResult.stdout, artOutput);
+    }
   }
 }

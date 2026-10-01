@@ -4,14 +4,29 @@
 package com.android.tools.r8.regress.b69906048;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class Regress69906048Test extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void buildWithD8AndRunWithDalvikOrArt() throws Exception {
@@ -24,8 +39,8 @@ public class Regress69906048Test extends TestBase {
                 .addProguardConfiguration(
                     ImmutableList.of("-keepattributes *Annotation*"), Origin.unknown())
                 .build(),
-            options -> options.setMinApiLevel(ToolHelper.getMinApiLevelForDexVm()));
-    String result = runOnArt(androidApp, ClassWithAnnotations.class);
+            options -> options.setMinApiLevel(parameters.asDexRuntime().getMinApiLevel()));
+    String result = runOnArt(androidApp, ClassWithAnnotations.class, parameters.getDexVm());
     Assert.assertEquals("@" + AnAnnotation.class.getCanonicalName() + "()", result);
   }
 

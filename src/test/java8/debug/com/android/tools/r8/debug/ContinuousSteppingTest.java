@@ -9,7 +9,9 @@ import com.android.tools.r8.KotlinCompilerTool;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -31,7 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -113,32 +115,38 @@ public class ContinuousSteppingTest extends DebugTestBase {
     }
   }
 
-  @Parameters(name = "{0} from {1}")
+  @Parameters(name = "{0}, {1} from {2}")
   public static Collection<Object[]> getData() throws IOException {
     List<Object[]> testCases = new ArrayList<>();
-    for (Pair<Path, Predicate<Version>> pair : listOfJars()) {
-      if (pair.getSecond().test(ToolHelper.getDexVm().getVersion())) {
-        Path jarPath = pair.getFirst();
-        List<String> mainClasses = getAllMainClassesFromJar(jarPath);
-        for (String className : mainClasses) {
-          testCases.add(new Object[]{className, jarPath});
+    for (TestParameters parameters : getTestParameters().withDexRuntimes().build()) {
+      for (Pair<Path, Predicate<Version>> pair : listOfJars()) {
+        if (pair.getSecond().test(parameters.getDexRuntimeVersion())) {
+          Path jarPath = pair.getFirst();
+          List<String> mainClasses = getAllMainClassesFromJar(jarPath);
+          for (String className : mainClasses) {
+            testCases.add(new Object[] {parameters, className, jarPath});
+          }
         }
       }
     }
     return testCases;
   }
 
-  private static final Function<Path, DebugTestConfig> compiledJars =
-      memoizeFunction(path -> new D8DebugTestConfig().compileAndAdd(getStaticTemp(), path));
+  private static final BiFunction<DexRuntime, Path, DebugTestConfig> compiledJars =
+      memoizeBiFunction(
+          (runtime, path) -> new D8DebugTestConfig(runtime).compileAndAdd(getStaticTemp(), path));
 
-  public ContinuousSteppingTest(String mainClass, Path jarPath) {
+  private final TestParameters parameters;
+
+  public ContinuousSteppingTest(TestParameters parameters, String mainClass, Path jarPath) {
+    this.parameters = parameters;
     this.mainClass = mainClass;
     this.jarPath = jarPath;
   }
 
   @Test
   public void testContinuousSingleStep() throws Throwable {
-    DebugTestConfig config = compiledJars.apply(jarPath);
+    DebugTestConfig config = compiledJars.apply(parameters.asDexRuntime(), jarPath);
     assert config != null;
     runContinuousTest(mainClass, config, MAIN_METHOD_NAME);
   }

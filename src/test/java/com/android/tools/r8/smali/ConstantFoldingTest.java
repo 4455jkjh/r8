@@ -6,6 +6,8 @@ package com.android.tools.r8.smali;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexConst4;
 import com.android.tools.r8.dex.code.DexDivIntLit8;
 import com.android.tools.r8.dex.code.DexInstruction;
@@ -19,10 +21,10 @@ import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.SingleConstant;
 import com.android.tools.r8.ir.code.WideConstant;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.IntUtils;
-import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.IntUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -30,7 +32,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class ConstantFoldingTest extends SmaliTestBase {
 
   public interface TriConsumer<T, U, V> {
@@ -1035,6 +1042,14 @@ public class ConstantFoldingTest extends SmaliTestBase {
             v -> testBuilder.addTest(this::cmpLongMethodBuilder, this::cmpLongMethodChecker, v));
   }
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Test
   public void foldingTest() throws Exception {
     SmaliBuilderWithCheckers testBuilder = new SmaliBuilderWithCheckers();
@@ -1052,7 +1067,7 @@ public class ConstantFoldingTest extends SmaliTestBase {
     addCmpFloatFoldTests(testBuilder);
     addCmpDoubleFoldTests(testBuilder);
     addCmpLongFold(testBuilder);
-    runDex2Oat(testBuilder.builder.build());
+    runDex2Oat(testBuilder.builder.build(), parameters.getDexVm());
     testBuilder.run();
   }
 }

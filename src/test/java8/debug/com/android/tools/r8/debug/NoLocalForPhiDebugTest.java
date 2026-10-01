@@ -3,25 +3,41 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Regression test to ensure that an incomplete phi creation cannot introduce a local before the
  * locals actual start. The recursive read-register in IRBuilder did not previously account for the
  * change in blocks when determining the local information of the incomplete phi.
  */
+@RunWith(Parameterized.class)
 public class NoLocalForPhiDebugTest extends DebugTestBase {
 
   private static final String className = "NoLocalForPhi";
   private static final String sourcefile = className + ".j";
   private static final String methodName = "test";
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
+
   @Test
   public void testCf() throws Throwable {
+    parameters.assumeCfRuntime();
     JasminBuilder builder = getBuilderForUselessCheckcast(className, methodName);
     Path outdir = temp.newFolder().toPath();
     builder.writeClassFiles(outdir);
@@ -32,9 +48,10 @@ public class NoLocalForPhiDebugTest extends DebugTestBase {
 
   @Test
   public void testD8() throws Throwable {
+    parameters.assumeDexRuntime();
     JasminBuilder builder = getBuilderForUselessCheckcast(className, methodName);
     List<Path> outputs = builder.writeClassFiles(temp.newFolder().toPath());
-    run(new D8DebugTestConfig().compileAndAdd(temp, outputs));
+    run(new D8DebugTestConfig(parameters.asDexRuntime()).compileAndAdd(temp, outputs));
   }
 
   private void run(DebugTestConfig config) throws Throwable {

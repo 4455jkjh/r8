@@ -12,10 +12,10 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.List;
@@ -116,6 +116,7 @@ public class R8PartialLoadTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(input1Jar)
         .addProgramClasses(UseClass1Method.class)
@@ -156,6 +157,7 @@ public class R8PartialLoadTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(input2Jar)
         .addProgramClasses(UseClass2Methods.class)
@@ -208,6 +210,7 @@ public class R8PartialLoadTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(input1Jar)
         .addProgramFiles(input2Jar)
@@ -279,6 +282,7 @@ public class R8PartialLoadTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(loadUnknown1Jar)
         .addProgramClasses(UseClassLoadUnknownLibrary1.class)
@@ -319,6 +323,7 @@ public class R8PartialLoadTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(loadUnknown2Jar)
         .addProgramClasses(UseClassLoadUnknownLibrary2.class)
@@ -372,6 +377,7 @@ public class R8PartialLoadTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(input1Jar)
         .addProgramFiles(input2Jar)

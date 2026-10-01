@@ -22,17 +22,8 @@ import org.junit.rules.TemporaryFolder;
 /** Test configuration with utilities for compiling with D8 and adding results to the classpath. */
 public class D8DebugTestConfig extends DexDebugTestConfig {
 
-  @Deprecated
-  public D8DebugTestConfig() {}
-
   public D8DebugTestConfig(DexRuntime runtime) {
     super(runtime, Collections.emptyList());
-  }
-
-  // Use the option with api-level below.
-  @Deprecated()
-  public static AndroidApp d8Compile(List<Path> paths, Consumer<InternalOptions> optionsConsumer) {
-    return d8Compile(paths, ToolHelper.getMinApiLevelForDexVm(), optionsConsumer);
   }
 
   public static AndroidApp d8Compile(
@@ -71,7 +62,8 @@ public class D8DebugTestConfig extends DexDebugTestConfig {
       TemporaryFolder temp, List<Path> paths, Consumer<InternalOptions> optionsConsumer) {
     try {
       Path out = temp.newFolder().toPath().resolve("d8_compiled.jar");
-      d8Compile(paths, optionsConsumer).writeForTesting(out, OutputMode.DexIndexed);
+      d8Compile(paths, getRuntime().asDex().getMinApiLevel(), optionsConsumer)
+          .writeForTesting(out, OutputMode.DexIndexed);
       addPaths(out);
       return this;
     } catch (Exception e) {

@@ -12,7 +12,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverPropagateValue;
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.naming.b72391662.subpackage.OtherPackageSuper;
 import com.android.tools.r8.naming.b72391662.subpackage.OtherPackageTestClass;
@@ -28,7 +28,6 @@ import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,21 +45,26 @@ public class B72391662 extends ProguardCompatibilityTestBase {
           OtherPackageTestClass.class,
           NeverPropagateValue.class);
 
+  private final TestParameters parameters;
   private final Shrinker shrinker;
   private final String repackagePrefix;
   private final boolean allowAccessModification;
   private final boolean minify;
 
-  @Parameterized.Parameters(name = "Shrinker: {0}, Prefix: {1}, AllowAccessMod: {2}, Minify: {3}")
+  @Parameterized.Parameters(
+      name = "{0}, Shrinker: {1}, Prefix: {2}, AllowAccessMod: {3}, Minify: {4}")
   public static Collection<Object[]> data() {
     List<Object[]> result = new ArrayList<>();
-    for (Shrinker shrinker :
-        new Shrinker[] {
-          Shrinker.R8,
-          Shrinker.R8_COMPAT,
-          Shrinker.R8_CF,
-          Shrinker.R8_COMPAT_CF
-        }) {
+    for (TestParameters parameters :
+        getTestParameters()
+            .withDefaultCfRuntime()
+            .withDexRuntimesStartingFromIncluding(Version.V7_0_0)
+            .build()) {
+      Shrinker[] shrinkers =
+          parameters.isCfRuntime()
+              ? new Shrinker[] {Shrinker.R8_CF, Shrinker.R8_COMPAT_CF}
+              : new Shrinker[] {Shrinker.R8, Shrinker.R8_COMPAT};
+      for (Shrinker shrinker : shrinkers) {
       for (boolean useRepackagePrefix : new boolean[] {false, true}) {
         String repackagePrefix;
         if (useRepackagePrefix) {
@@ -86,29 +90,33 @@ public class B72391662 extends ProguardCompatibilityTestBase {
         }
         for (boolean allowAccessModification : new boolean[] {false, true}) {
           for (boolean minify : new boolean[] {false, true}) {
-            result.add(new Object[] {shrinker, repackagePrefix, allowAccessModification, minify});
+              result.add(
+                  new Object[] {
+                    parameters, shrinker, repackagePrefix, allowAccessModification, minify
+                  });
           }
         }
       }
+    }
     }
     return result;
   }
 
   public B72391662(
-      Shrinker shrinker, String repackagePrefix, boolean allowAccessModification, boolean minify) {
+      TestParameters parameters,
+      Shrinker shrinker,
+      String repackagePrefix,
+      boolean allowAccessModification,
+      boolean minify) {
+    this.parameters = parameters;
     this.shrinker = shrinker;
     this.repackagePrefix = repackagePrefix;
     this.allowAccessModification = allowAccessModification;
     this.minify = minify;
   }
 
-  private static boolean vmVersionIgnored() {
-    return !ToolHelper.getDexVm().getVersion().isNewerThanOrEqual(Version.V7_0_0);
-  }
-
   @Test
   public void test_keepAll() throws Exception {
-    Assume.assumeFalse(shrinker.generatesDex() && vmVersionIgnored());
     Class<?> mainClass = TestMain.class;
     String keep = !minify ? "-keep" : "-keep,allowobfuscation";
     List<String> config = ImmutableList.of(
@@ -131,7 +139,7 @@ public class B72391662 extends ProguardCompatibilityTestBase {
     AndroidApp app = runShrinker(shrinker, CLASSES, config);
     assertEquals(
         StringUtils.withNativeLineSeparator("123451234567\nABC\n"),
-        runOnVM(app, mainClass.getCanonicalName(), shrinker.toBackend()));
+        runOnVM(app, mainClass.getCanonicalName(), parameters.getRuntime()));
 
     CodeInspector codeInspector =
         shrinker.isR8() ? new CodeInspector(app) : new CodeInspector(app, proguardMap);
@@ -167,7 +175,6 @@ public class B72391662 extends ProguardCompatibilityTestBase {
 
   @Test
   public void test_keepNonPublic() throws Exception {
-    Assume.assumeFalse(shrinker.generatesDex() && vmVersionIgnored());
     Class<?> mainClass = TestMain.class;
     String keep = !minify ? "-keep" : "-keep,allowobfuscation";
     List<String> config = ImmutableList.of(
@@ -190,7 +197,7 @@ public class B72391662 extends ProguardCompatibilityTestBase {
     AndroidApp app = runShrinker(shrinker, CLASSES, config);
     assertEquals(
         StringUtils.withNativeLineSeparator("123451234567\nABC\n"),
-        runOnVM(app, mainClass.getCanonicalName(), shrinker.toBackend()));
+        runOnVM(app, mainClass.getCanonicalName(), parameters.getRuntime()));
 
     CodeInspector codeInspector =
         shrinker.isR8() ? new CodeInspector(app) : new CodeInspector(app, proguardMap);
@@ -217,7 +224,6 @@ public class B72391662 extends ProguardCompatibilityTestBase {
 
   @Test
   public void test_keepPublic() throws Exception {
-    Assume.assumeFalse(shrinker.generatesDex() && vmVersionIgnored());
     Class<?> mainClass = TestMain.class;
     String keep = !minify ? "-keep" : "-keep,allowobfuscation";
     Iterable<String> config = ImmutableList.of(
@@ -255,7 +261,7 @@ public class B72391662 extends ProguardCompatibilityTestBase {
     AndroidApp app = runShrinker(shrinker, CLASSES, config);
     assertEquals(
         StringUtils.withNativeLineSeparator("123451234567\nABC\n"),
-        runOnVM(app, mainClass.getCanonicalName(), shrinker.toBackend()));
+        runOnVM(app, mainClass.getCanonicalName(), parameters.getRuntime()));
 
     CodeInspector codeInspector =
         shrinker.isR8() ? new CodeInspector(app) : new CodeInspector(app, proguardMap);

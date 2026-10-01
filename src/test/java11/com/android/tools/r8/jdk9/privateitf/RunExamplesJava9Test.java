@@ -16,6 +16,8 @@ import static org.junit.Assume.assumeFalse;
 import com.android.tools.r8.BaseCommand;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.jdk9.privateitf.privateinterfacemethods.PrivateInterfaceMethods;
@@ -39,7 +41,12 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? extends BaseCommand, B>>
     extends TestBase {
 
@@ -135,6 +142,14 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
           "desugared-private-interface-methods",
           "0: s>i>a\n" + "1: d>i>s>i>a\n" + "2: l>i>s>i>a\n" + "3: x>s\n" + "4: c>d>i>s>i>a\n");
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
@@ -142,7 +157,7 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   private boolean failsOn(Map<DexVm.Version, List<String>> failsOn, String name) {
-    DexVm.Version vmVersion = ToolHelper.getDexVm().getVersion();
+    DexVm.Version vmVersion = parameters.getDexRuntimeVersion();
     return failsOn.containsKey(vmVersion)
         && failsOn.get(vmVersion).contains(name);
   }
@@ -214,14 +229,16 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
     if (expectedToFail) {
       thrown.expect(Throwable.class);
     }
-    String output = ToolHelper.runArtNoVerificationErrors(
-        Arrays.stream(dexes).map(Path::toString).collect(Collectors.toList()),
-        qualifiedMainClass,
-        builder -> {
-          for (String arg : args) {
-            builder.appendProgramArgument(arg);
-          }
-        });
+    String output =
+        ToolHelper.runArtNoVerificationErrors(
+            Arrays.stream(dexes).map(Path::toString).collect(Collectors.toList()),
+            qualifiedMainClass,
+            builder -> {
+              for (String arg : args) {
+                builder.appendProgramArgument(arg);
+              }
+            },
+            parameters.getDexVm());
     String jvmResult = null;
     if (expectedJvmResult.containsKey(testName)) {
       jvmResult = expectedJvmResult.get(testName);

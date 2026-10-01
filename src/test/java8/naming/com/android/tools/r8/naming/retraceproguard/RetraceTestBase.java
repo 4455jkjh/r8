@@ -80,13 +80,16 @@ public abstract class RetraceTestBase extends TestBase {
             .run(parameters.getRuntime(), getMainClass())
             .assertFailure();
 
-    // Extract actual stack trace and retraced stack trace from failed run result.
-    StackTrace actualStackTrace =
-        StackTrace.extractFromArt(result.asSingleRuntimeResult().getStdErr());
-    StackTrace retracedStackTrace =
-        actualStackTrace.retrace(result.proguardMap(), temp.newFolder().toPath());
+    if (parameters.isDexRuntime()) {
+      // Extract actual stack trace and retraced stack trace from failed run result.
+      StackTrace actualStackTrace =
+          StackTrace.extractFromArt(
+              result.asSingleRuntimeResult().getStdErr(), parameters.getDexVm());
+      StackTrace retracedStackTrace =
+          actualStackTrace.retrace(result.proguardMap(), temp.newFolder().toPath());
 
-    checker.accept(actualStackTrace, retracedStackTrace);
+      checker.accept(actualStackTrace, retracedStackTrace);
+    }
   }
 
   protected boolean isNotDalvikNativeStartMethod(StackTraceLine retracedStackTraceLine) {

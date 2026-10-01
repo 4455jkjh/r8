@@ -871,8 +871,7 @@ public class TestBase {
       builder.addProgramFiles(ToolHelper.getClassFileForTestClass(clazz));
     }
     if (backend == Backend.DEX) {
-      AndroidApiLevel androidLibrary = ToolHelper.getMinApiLevelForDexVm();
-      builder.addLibraryFiles(ToolHelper.getAndroidJar(androidLibrary));
+      builder.addLibraryFiles(ToolHelper.getMostRecentAndroidJar());
     } else {
       assert backend == Backend.CF;
       builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
@@ -1428,22 +1427,18 @@ public class TestBase {
         ImmutableList.of(out.toString()), mainClass, cmdBuilder, version, false);
   }
 
-  /** Run application on Art with the specified main class. */
+  /** Run application on the specified version of Art with the specified main class. */
   @Deprecated
-  protected ProcessResult runOnArtRaw(AndroidApp app, String mainClass) throws IOException {
-    return runOnArtRaw(app, mainClass, null, null);
+  protected ProcessResult runOnArtRaw(AndroidApp app, String mainClass, DexVm version)
+      throws IOException {
+    return runOnArtRaw(app, mainClass, null, version);
   }
 
-  /** Run application on Art with the specified main class. */
+  /** Run application on the specified version of Art with the specified main class. */
   @Deprecated
-  protected ProcessResult runOnArtRaw(AndroidApp app, Class mainClass) throws IOException {
-    return runOnArtRaw(app, mainClass.getTypeName());
-  }
-
-  /** Run application on Art with the specified main class and provided arguments. */
-  @Deprecated
-  protected String runOnArt(AndroidApp app, Class mainClass, String... args) throws IOException {
-    return runOnArt(app, mainClass, Arrays.asList(args));
+  protected ProcessResult runOnArtRaw(AndroidApp app, Class mainClass, DexVm version)
+      throws IOException {
+    return runOnArtRaw(app, mainClass.getTypeName(), version);
   }
 
   /**
@@ -1466,16 +1461,16 @@ public class TestBase {
         dexVm);
   }
 
-  /** Run application on Art with the specified main class and provided arguments. */
+  /** Run application on the specified version of Art with the specified main class. */
   @Deprecated
-  protected String runOnArt(AndroidApp app, Class mainClass, List<String> args) throws IOException {
-    return runOnArt(app, mainClass.getCanonicalName(), args, null);
+  protected String runOnArt(AndroidApp app, Class mainClass, DexVm dexVm) throws IOException {
+    return runOnArt(app, mainClass.getCanonicalName(), dexVm);
   }
 
-  /** Run application on Art with the specified main class and provided arguments. */
+  /** Run application on the specified version of Art with the specified main class. */
   @Deprecated
-  protected String runOnArt(AndroidApp app, String mainClass, String... args) throws IOException {
-    return runOnArt(app, mainClass, Arrays.asList(args), null);
+  protected String runOnArt(AndroidApp app, String mainClass, DexVm dexVm) throws IOException {
+    return runOnArt(app, mainClass, Collections.emptyList(), dexVm);
   }
 
   /** Run a single class application on Java. */
@@ -1556,14 +1551,15 @@ public class TestBase {
 
   /** Run application on Art or Java with the specified main class. */
   @Deprecated
-  protected String runOnVM(AndroidApp app, String mainClass, Backend backend) throws IOException {
-    switch (backend) {
+  protected String runOnVM(AndroidApp app, String mainClass, TestRuntime runtime)
+      throws IOException {
+    switch (runtime.getBackend()) {
       case CF:
         return runOnJava(app, mainClass);
       case DEX:
-        return runOnArt(app, mainClass);
+        return runOnArt(app, mainClass, runtime.asDex().getVm());
       default:
-        throw new Unreachable("Unexpected backend: " + backend);
+        throw new Unreachable("Unexpected backend: " + runtime.getBackend());
     }
   }
 

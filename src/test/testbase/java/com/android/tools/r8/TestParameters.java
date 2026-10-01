@@ -383,6 +383,11 @@ public class TestParameters {
     return this;
   }
 
+  public DexVm getDexVm() {
+    assertTrue(isDexRuntime());
+    return getRuntime().asDex().getVm();
+  }
+
   public DexVm.Version getDexRuntimeVersion() {
     assertTrue(isDexRuntime());
     return getRuntime().asDex().getVm().getVersion();

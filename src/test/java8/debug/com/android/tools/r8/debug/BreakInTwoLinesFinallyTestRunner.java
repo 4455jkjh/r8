@@ -3,10 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
-import com.google.common.collect.ImmutableList;
 import java.util.Collection;
+import java.util.function.Function;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,22 +23,25 @@ public class BreakInTwoLinesFinallyTestRunner extends DebugTestBase {
 
   private final DebugTestConfig config;
 
-  @Parameterized.Parameters(name = "{0}")
+  @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
     DelayedDebugTestConfig cf =
             temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
-    DelayedDebugTestConfig d8 =
-            temp -> new D8DebugTestConfig().compileAndAddClasses(temp, CLASS);
-    return ImmutableList.of(new Object[]{"CF", cf}, new Object[]{"D8", d8});
+    Function<DexRuntime, DelayedDebugTestConfig> d8 =
+        dexRuntime -> temp -> new D8DebugTestConfig(dexRuntime).compileAndAddClasses(temp, CLASS);
+    return buildCfAndD8Parameters(cf, d8);
   }
 
-  public BreakInTwoLinesFinallyTestRunner(String name, DelayedDebugTestConfig config) {
+  public BreakInTwoLinesFinallyTestRunner(
+      TestParameters parameters, String name, DelayedDebugTestConfig config) {
     this.config = config.getConfig(getStaticTemp());
   }
 
   @Test
   public void testHitBreakpointOnNormalAndExceptionalFlow() throws Throwable {
-    Assume.assumeTrue(ToolHelper.getDexVm().isNewerThan(DexVm.ART_6_0_1_HOST));
+    Assume.assumeTrue(
+        config.getRuntime().isCf()
+            || config.getRuntime().asDex().getVm().isNewerThan(DexVm.ART_6_0_1_HOST));
     runDebugTest(
         config,
         NAME,

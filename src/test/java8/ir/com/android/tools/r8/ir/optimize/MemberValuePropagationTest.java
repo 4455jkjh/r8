@@ -36,7 +36,7 @@ public class MemberValuePropagationTest extends TestBase {
 
   @Parameterized.Parameters(name = "Backend: {1}")
   public static List<Object[]> data() {
-    return buildParameters(getTestParameters().withNoneRuntime().build(), ToolHelper.getBackends());
+    return buildParameters(getTestParameters().withNoneRuntime().build(), Backend.values());
   }
 
   public MemberValuePropagationTest(TestParameters parameters, TestBase.Backend backend) {

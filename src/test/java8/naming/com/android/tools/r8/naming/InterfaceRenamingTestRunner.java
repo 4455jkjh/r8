@@ -12,6 +12,8 @@ import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
@@ -19,11 +21,24 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class InterfaceRenamingTestRunner extends TestBase {
 
   private static final Class<?> CLASS = InterfaceRenamingTest.class;
   private static final Class<?>[] CLASSES = InterfaceRenamingTest.CLASSES;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
 
   @Test
   public void testCfNoMinify() throws Exception {
@@ -46,6 +61,7 @@ public class InterfaceRenamingTestRunner extends TestBase {
   }
 
   private void testCf(MinifyMode minify) throws Exception {
+    parameters.assumeCfRuntime();
     ProcessResult runInput =
         ToolHelper.runJava(ToolHelper.getClassPathForTests(), CLASS.getCanonicalName());
     assertEquals(0, runInput.exitCode);
@@ -56,13 +72,15 @@ public class InterfaceRenamingTestRunner extends TestBase {
   }
 
   private void testDex(MinifyMode minify) throws Exception {
+    parameters.assumeDexRuntime();
     ProcessResult runInput =
         ToolHelper.runJava(ToolHelper.getClassPathForTests(), CLASS.getCanonicalName());
     assertEquals(0, runInput.exitCode);
     Path outDex = temp.getRoot().toPath().resolve("dex.zip");
     build(new DexIndexedConsumer.ArchiveConsumer(outDex), minify);
     ProcessResult runDex =
-        ToolHelper.runArtNoVerificationErrorsRaw(outDex.toString(), CLASS.getCanonicalName());
+        ToolHelper.runArtNoVerificationErrorsRaw(
+            outDex.toString(), CLASS.getCanonicalName(), parameters.getDexVm());
     assertEquals(runInput.stdout, runDex.stdout);
     assertEquals(runInput.exitCode, runDex.exitCode);
   }
@@ -84,7 +102,10 @@ public class InterfaceRenamingTestRunner extends TestBase {
                   }
                 })
             .setMode(CompilationMode.DEBUG)
-            .addLibraryFiles(ToolHelper.getAndroidJar(ToolHelper.getMinApiLevelForDexVm()))
+            .addLibraryFiles(
+                parameters.isCfRuntime()
+                    ? ToolHelper.getJava8RuntimeJar()
+                    : ToolHelper.getMostRecentAndroidJar())
             .setProgramConsumer(consumer)
             .addProguardConfiguration(config, Origin.unknown());
     for (Class<?> c : CLASSES) {

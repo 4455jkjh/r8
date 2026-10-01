@@ -36,7 +36,6 @@ import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.TriFunction;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
-import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ObjectArrays;
@@ -58,7 +57,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 
 public abstract class TestCompileResult<
         CR extends TestCompileResult<CR, RR>, RR extends TestRunResult<RR>>
@@ -223,26 +221,6 @@ public abstract class TestCompileResult<
 
   protected RR createRunResult(TestRuntime runtime, ProcessResult result) {
     return createRunResult(Collections.singletonList(createSingleRunResult(runtime, result)));
-  }
-
-  @Deprecated
-  public RR run(Class<?> mainClass) throws ExecutionException, IOException {
-    return run(mainClass.getTypeName());
-  }
-
-  @Deprecated
-  public RR run(String mainClass) throws IOException {
-    assert !libraryDesugaringTestConfiguration.isEnabled();
-    ClassSubject mainClassSubject = inspector().clazz(mainClass);
-    MatcherAssert.assertThat(mainClassSubject, Matchers.isPresent());
-    switch (getBackend()) {
-      case DEX:
-        return runArt(new DexRuntime(ToolHelper.getDexVm()), mainClassSubject.getFinalName());
-      case CF:
-        return runJava(TestRuntime.getDefaultJavaRuntime(), mainClassSubject.getFinalName());
-      default:
-        throw new Unreachable();
-    }
   }
 
   public RR run(TestRuntime runtime, Class<?> mainClass) throws ExecutionException, IOException {
@@ -689,14 +667,6 @@ public abstract class TestCompileResult<
 
   public CR disassemble() throws IOException, ExecutionException {
     return disassemble(System.out);
-  }
-
-  @Deprecated
-  public DebugTestConfig debugConfig() {
-    return debugConfig(
-        getBackend().isCf()
-            ? TestRuntime.getDefaultCfRuntime()
-            : new DexRuntime(ToolHelper.getDexVm()));
   }
 
   public DebugTestConfig debugConfig(TestRuntime runtime) {

@@ -5,10 +5,25 @@ package com.android.tools.r8.debuginfo;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApp;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class ConditionalLocalTestRunner extends DebugInfoTestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void testConditionalLocal() throws Exception {
@@ -18,7 +33,7 @@ public class ConditionalLocalTestRunner extends DebugInfoTestBase {
 
     String expected = "42";
     assertEquals(expected, runOnJava(clazz));
-    assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName()));
+    assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName(), parameters.getDexVm()));
 
     checkConditonalLocal(inspectMethod(d8App, clazz, "void", "foo", "int"));
   }

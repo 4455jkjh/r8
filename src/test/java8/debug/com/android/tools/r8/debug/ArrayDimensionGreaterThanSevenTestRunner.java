@@ -10,8 +10,10 @@ import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.DebuggeeState;
 import com.android.tools.r8.origin.Origin;
@@ -22,11 +24,24 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class ArrayDimensionGreaterThanSevenTestRunner extends DebugTestBase {
 
   private static final Class<?> CLASS = ArrayDimensionGreaterThanSevenTest.class;
   private static final String NAME = CLASS.getCanonicalName();
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   private DebugTestConfig getR8CfConfig(String s)
       throws IOException, com.android.tools.r8.CompilationFailedException {
@@ -55,11 +70,12 @@ public class ArrayDimensionGreaterThanSevenTestRunner extends DebugTestBase {
     // fixed.
     Assume.assumeTrue(
         "Skipping test " + testName.getMethodName() + " because debugging not enabled in 12.0.0",
-        !ToolHelper.getDexVm().isNewerThanOrEqual(DexVm.ART_12_0_0_HOST));
-    Assume.assumeTrue(ToolHelper.getDexVm().isNewerThan(DexVm.ART_5_1_1_HOST)
-        && !ToolHelper.isWindows());
+        !parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V12_0_0));
+    Assume.assumeTrue(
+        parameters.getDexRuntimeVersion().isNewerThan(Version.V5_1_1) && !ToolHelper.isWindows());
     DebugTestConfig cfConfig = new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
-    DebugTestConfig d8Config = new D8DebugTestConfig().compileAndAddClasses(temp, CLASS);
+    DebugTestConfig d8Config =
+        new D8DebugTestConfig(parameters.asDexRuntime()).compileAndAddClasses(temp, CLASS);
     DebugTestConfig r8CfConfig = getR8CfConfig("r8cf.jar");
     new DebugStreamComparator()
         .add("CF", createStream(cfConfig))

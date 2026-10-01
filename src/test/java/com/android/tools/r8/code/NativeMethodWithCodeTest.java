@@ -11,6 +11,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.jasmin.JasminBuilder;
@@ -23,12 +25,25 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class NativeMethodWithCodeTest extends TestBase {
 
   // Test that D8 removes code from native methods (to match the behavior of dx).
   // Note that the JVM rejects a class if it has a native method with a code attribute,
   // but D8 has to handle that and cannot simply throw an error even though the JVM does.
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void test() throws Exception {
@@ -82,7 +97,7 @@ public class NativeMethodWithCodeTest extends TestBase {
     assertThat(getNativeMethod(mainClassName, processedApp), isPresent());
     assertNull(getNativeMethod(mainClassName, processedApp).getMethod().getCode());
 
-    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName);
+    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName, parameters.getDexVm());
     assertEquals(0, artResult.exitCode);
     assertThat(artResult.stdout, containsString("foo"));
   }

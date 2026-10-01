@@ -7,10 +7,26 @@ package com.android.tools.r8.shaking;
 import static junit.framework.TestCase.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApp;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class B112290098 extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void test() throws Exception {
@@ -24,7 +40,8 @@ public class B112290098 extends TestBase {
                 "-keep public class " + mainClass + " {",
                 "  public static void main(...);",
                 "}"));
-    assertEquals(runOnArt(compileWithD8(input), mainClass), runOnArt(output, mainClass));
+    DexVm vm = parameters.getDexVm();
+    assertEquals(runOnArt(compileWithD8(input), mainClass, vm), runOnArt(output, mainClass, vm));
   }
 
   public static class TestClass {

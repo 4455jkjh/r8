@@ -3,18 +3,20 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.FrameInspector;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.apache.harmony.jpda.tests.framework.jdwp.Value;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,8 +38,8 @@ public class BreakPointEventsTestRunner extends DebugTestBase {
     return new CfDebugTestConfig(ToolHelper.getClassPathForTests());
   }
 
-  public static DebugTestConfig d8Config() {
-    return new D8DebugTestConfig().compileAndAdd(getStaticTemp(), getClassFilePath());
+  public static DebugTestConfig d8Config(DexRuntime dexRuntime) {
+    return new D8DebugTestConfig(dexRuntime).compileAndAdd(getStaticTemp(), getClassFilePath());
   }
 
   public static DebugTestConfig r8CfConfig() throws Exception {
@@ -67,28 +69,38 @@ public class BreakPointEventsTestRunner extends DebugTestBase {
   public static void main(String[] args) throws Exception {
     getStaticTemp().create();
     try {
-      BreakPointEventsTestRunner runner = new BreakPointEventsTestRunner("unused name");
+      BreakPointEventsTestRunner runner = new BreakPointEventsTestRunner(null, "unused name");
       System.out.println("\n============== CF single stepping: ");
       runner.printConfig("CF", cfConfig());
       System.out.println("\n============== D8 single stepping: ");
-      runner.printConfig("D8", d8Config());
+      runner.printConfig("D8", d8Config(TestRuntime.getDefaultDexRuntime()));
     } finally {
       getStaticTemp().delete();
     }
   }
 
-  @Parameters(name = "{0}")
-  public static Collection<String> configs() {
-    return Arrays.asList("CF", "D8", "R8/CF");
+  @Parameters(name = "{0}, {1}")
+  public static Collection<Object[]> configs() {
+    List<Object[]> result = new ArrayList<>();
+    for (TestParameters parameters :
+        getTestParameters().withDefaultCfRuntime().withDexRuntimes().build()) {
+      if (parameters.isCfRuntime()) {
+        result.add(new Object[] {parameters, "CF"});
+        result.add(new Object[] {parameters, "R8/CF"});
+      } else {
+        result.add(new Object[] {parameters, "D8"});
+      }
+    }
+    return result;
   }
 
   private final DebugTestConfig config;
 
-  public BreakPointEventsTestRunner(String name) throws Exception {
+  public BreakPointEventsTestRunner(TestParameters parameters, String name) throws Exception {
     if (name.equals("CF")) {
       config = cfConfig();
     } else if (name.equals("D8")) {
-      config = d8Config();
+      config = d8Config(parameters.asDexRuntime());
     } else {
       assert name.equals("R8/CF");
       config = r8CfConfig();

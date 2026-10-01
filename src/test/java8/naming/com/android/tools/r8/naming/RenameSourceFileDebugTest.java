@@ -8,6 +8,9 @@ import static com.android.tools.r8.naming.ClassNameMapper.MissingFileAction.MISS
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.debug.CfDebugTestConfig;
 import com.android.tools.r8.debug.DebugTestBase;
@@ -35,11 +38,11 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
 
   private static final String TEST_FILE = "TestFile.java";
 
-  private static final Map<Backend, DebugTestConfig> configs = new HashMap<>();
+  private static final Map<TestRuntime, DebugTestConfig> configs = new HashMap<>();
 
   @BeforeClass
   public static void initDebuggeePath() throws Exception {
-    for (Backend backend : ToolHelper.getBackends()) {
+    for (TestParameters testParameters : data()) {
       Path outdir = getStaticTemp().newFolder().toPath();
       Path outjar = outdir.resolve("r8_compiled.jar");
       Path proguardMapPath = outdir.resolve("proguard.map");
@@ -59,15 +62,15 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
               .setMode(CompilationMode.DEBUG)
               .setProguardMapOutputPath(proguardMapPath);
       DebugTestConfig config;
-      if (backend == Backend.DEX) {
-        AndroidApiLevel minSdk = ToolHelper.getMinApiLevelForDexVm();
+      if (testParameters.isDexRuntime()) {
+        AndroidApiLevel minSdk = testParameters.asDexRuntime().getMinApiLevel();
         builder
             .setMinApiLevel(minSdk.getMajor())
             .addLibraryFiles(ToolHelper.getAndroidJar(minSdk))
             .setOutput(outjar, OutputMode.DexIndexed);
-        config = new DexDebugTestConfig(outjar);
+        config = new DexDebugTestConfig(testParameters.asDexRuntime(), outjar);
       } else {
-        assert backend == Backend.CF;
+        assert testParameters.isCfRuntime();
         builder
             .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
             .setOutput(outjar, OutputMode.ClassFile);
@@ -75,16 +78,16 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
       }
       ToolHelper.runR8(builder.build());
       config.setProguardMap(proguardMapPath, MISSING_FILE_IS_EMPTY_MAP);
-      configs.put(backend, config);
+      configs.put(testParameters.getRuntime(), config);
     }
   }
 
   @Parameter(0)
-  public Backend backend;
+  public TestParameters parameters;
 
   @Parameters(name = "{0}")
-  public static Backend[] data() {
-    return ToolHelper.getBackends();
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
   }
 
   /** replica of {@link ClassInitializationTest#testBreakpointInEmptyClassInitializer} */
@@ -92,7 +95,7 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
   public void testBreakpointInEmptyClassInitializer() throws Throwable {
     final String CLASS = typeName(ClassInitializerEmpty.class);
     runDebugTest(
-        configs.get(backend),
+        configs.get(parameters.getRuntime()),
         CLASS,
         breakpoint(CLASS, "<clinit>"),
         run(),
@@ -109,7 +112,7 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
     final String className = typeName(Locals.class);
     final String methodName = "noLocals";
     runDebugTest(
-        configs.get(backend),
+        configs.get(parameters.getRuntime()),
         className,
         breakpoint(className, methodName),
         run(),
@@ -128,7 +131,7 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
   public void testMultipleReturns() throws Throwable {
     final String className = typeName(MultipleReturns.class);
     runDebugTest(
-        configs.get(backend),
+        configs.get(parameters.getRuntime()),
         className,
         breakpoint(className, "multipleReturns"),
         run(),

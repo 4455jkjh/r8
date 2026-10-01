@@ -49,20 +49,22 @@ public class RedundantConstNumberRemovalTest extends TestBase {
     this.parameters = parameters;
   }
 
+  private static final String EXPECTED_OUTPUT =
+      StringUtils.lines(
+          "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true",
+          "true", "true", "true", "true", "true");
+
+  @Test
+  public void testJvm() throws Exception {
+    parameters.assumeJvmTestParameters();
+    testForJvm(parameters)
+        .addTestClasspath()
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+  }
+
   @Test
   public void test() throws Exception {
-    String expectedOutput =
-        StringUtils.lines(
-            "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true",
-            "true", "true", "true", "true", "true");
-
-    if (parameters.getBackend() == Backend.CF) {
-      testForJvm(parameters)
-          .addTestClasspath()
-          .run(TestClass.class)
-          .assertSuccessWithOutput(expectedOutput);
-    }
-
     R8TestRunResult result =
         testForR8(parameters.getBackend())
             .addInnerClasses(RedundantConstNumberRemovalTest.class)
@@ -71,8 +73,8 @@ public class RedundantConstNumberRemovalTest extends TestBase {
             .addOptionsModification(
                 internalOptions -> internalOptions.enableRedundantConstNumberOptimization = true)
             .setMinApi(parameters)
-            .run(TestClass.class)
-            .assertSuccessWithOutput(expectedOutput);
+            .run(parameters.getRuntime(), TestClass.class)
+            .assertSuccessWithOutput(EXPECTED_OUTPUT);
 
     ClassSubject classSubject = result.inspector().clazz(TestClass.class);
     verifyBooleanCheckTest(classSubject.uniqueMethodWithOriginalName("booleanCheckTest"));

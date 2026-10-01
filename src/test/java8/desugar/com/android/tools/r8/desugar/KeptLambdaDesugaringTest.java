@@ -5,17 +5,32 @@
 package com.android.tools.r8.desugar;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /** Regression test for b/120971047. */
+@RunWith(Parameterized.class)
 public class KeptLambdaDesugaringTest extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void test() throws Exception {
     testForR8(Backend.DEX)
         .addInnerClasses(KeptLambdaDesugaringTest.class)
         .addKeepRules("-keep class ** { *; }")
-        .run(TestClass.class)
+        .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput("Hello world");
   }
 

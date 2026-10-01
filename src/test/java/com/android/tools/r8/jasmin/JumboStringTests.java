@@ -5,7 +5,10 @@ package com.android.tools.r8.jasmin;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.debuginfo.DebugInfoInspector;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
@@ -17,7 +20,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class JumboStringTests extends JasminTestBase {
 
   // String constants are split into several class files to ensure both the constant-pool and
@@ -27,6 +35,19 @@ public class JumboStringTests extends JasminTestBase {
   private static int EXTRA_STRINGS_PER_CLASSES_COUNT = MIN_STRING_COUNT % CLASSES_COUNT;
   private static int STRINGS_PER_CLASSES_COUNT =
       EXTRA_STRINGS_PER_CLASSES_COUNT + MIN_STRING_COUNT / CLASSES_COUNT;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
+  @Override
+  protected DexVm getVm() {
+    return parameters.getDexVm();
+  }
 
   @Test
   public void test() throws Exception {

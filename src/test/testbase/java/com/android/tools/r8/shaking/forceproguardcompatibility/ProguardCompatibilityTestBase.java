@@ -188,7 +188,7 @@ public class ProguardCompatibilityTestBase extends TestBase {
     programClasses.forEach(
         clazz -> builder.addProgramFiles(ToolHelper.getClassFileForTestClass(clazz)));
     if (backend == Backend.DEX) {
-      builder.addLibraryFiles(ToolHelper.getAndroidJar(ToolHelper.getMinApiLevelForDexVm()));
+      builder.addLibraryFiles(ToolHelper.getMostRecentAndroidJar());
       builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
     } else {
       assert backend == Backend.CF;

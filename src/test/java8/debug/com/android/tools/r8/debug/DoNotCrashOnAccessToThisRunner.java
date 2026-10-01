@@ -3,11 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
+import java.util.function.Function;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,35 +25,39 @@ public class DoNotCrashOnAccessToThisRunner extends DebugTestBase {
 
   private final DebugTestConfig config;
 
-  @Parameterized.Parameters(name = "{0}")
+  @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
     DelayedDebugTestConfig cf =
         temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
-    DelayedDebugTestConfig d8 =
-        temp ->
-            new D8DebugTestConfig()
-                .compileAndAdd(
-                    temp,
-                    ImmutableList.of(ToolHelper.getClassFileForTestClass(CLASS)),
-                    options -> {
-                      // From R8 9.1 we no longer support connecting a debugger to a release build
-                      // on ART 7.
-                      options.debug = true;
-                      // Api level M so that the workarounds for Lollipop verifier doesn't
-                      // block the receiver register. We want to check b/116683601 which
-                      // happens on at least 7.0.0.
-                      options.setMinApiLevel(AndroidApiLevel.M);
-                    });
-    return ImmutableList.of(new Object[]{"CF", cf}, new Object[]{"D8", d8});
+    Function<DexRuntime, DelayedDebugTestConfig> d8 =
+        dexRuntime ->
+            temp ->
+                new D8DebugTestConfig(dexRuntime)
+                    .compileAndAdd(
+                        temp,
+                        ImmutableList.of(ToolHelper.getClassFileForTestClass(CLASS)),
+                        options -> {
+                          // From R8 9.1 we no longer support connecting a debugger to a release
+                          // build on ART 7.
+                          options.debug = true;
+                          // Api level M so that the workarounds for Lollipop verifier doesn't
+                          // block the receiver register. We want to check b/116683601 which
+                          // happens on at least 7.0.0.
+                          options.setMinApiLevel(AndroidApiLevel.M);
+                        });
+    return buildCfAndD8Parameters(cf, d8);
   }
 
-  public DoNotCrashOnAccessToThisRunner(String name, DelayedDebugTestConfig config) {
+  public DoNotCrashOnAccessToThisRunner(
+      TestParameters parameters, String name, DelayedDebugTestConfig config) {
     this.config = config.getConfig(getStaticTemp());
   }
 
   @Test
   public void doNotCrash() throws Throwable {
-    Assume.assumeFalse(ToolHelper.getDexVm().isOlderThanOrEqual(DexVm.ART_6_0_1_HOST));
+    Assume.assumeFalse(
+        config.getRuntime().isDex()
+            && config.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_6_0_1_HOST));
     runDebugTest(
         config,
         NAME,

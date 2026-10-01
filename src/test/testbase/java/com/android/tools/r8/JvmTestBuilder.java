@@ -58,12 +58,6 @@ public class JvmTestBuilder extends TestBuilder<SingleTestRunResult, JvmTestBuil
   }
 
   @Override
-  @Deprecated
-  public SingleTestRunResult run(String mainClass) throws IOException {
-    return run(TestRuntime.getDefaultJavaRuntime(), mainClass);
-  }
-
-  @Override
   public SingleTestRunResult run(TestRuntime runtime, String mainClass, String... args)
       throws IOException {
     assert runtime.isCf();

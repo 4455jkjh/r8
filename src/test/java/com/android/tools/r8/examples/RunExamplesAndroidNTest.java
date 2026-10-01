@@ -11,6 +11,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -30,7 +32,12 @@ import java.util.function.UnaryOperator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public abstract class RunExamplesAndroidNTest<B> extends TestBase {
 
   private static final String EXAMPLE_DIR = ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR;
@@ -81,12 +88,14 @@ public abstract class RunExamplesAndroidNTest<B> extends TestBase {
       }
 
       boolean expectedToFail = false;
-      if (failsOn.containsKey(ToolHelper.getDexVm())
-          && failsOn.get(ToolHelper.getDexVm()).contains(testName)) {
+      if (failsOn.containsKey(parameters.getDexRuntimeVersion())
+          && failsOn.get(parameters.getDexRuntimeVersion()).contains(testName)) {
         expectedToFail = true;
         thrown.expect(Throwable.class);
       }
-      String output = ToolHelper.runArtNoVerificationErrors(out.toString(), qualifiedMainClass);
+      String output =
+          ToolHelper.runArtNoVerificationErrors(
+              out.toString(), qualifiedMainClass, parameters.getDexVm());
       if (!expectedToFail) {
         ProcessResult javaResult = ToolHelper.runJava(inputFile, qualifiedMainClass);
         assertEquals("JVM run failed", javaResult.exitCode, 0);
@@ -120,6 +129,14 @@ public abstract class RunExamplesAndroidNTest<B> extends TestBase {
           ImmutableList.of(),
           DexVm.Version.DEFAULT,
           ImmutableList.of());
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 

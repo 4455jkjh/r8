@@ -7,6 +7,8 @@ package com.android.tools.r8.jasmin;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassFileVersion;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -21,23 +23,32 @@ import org.objectweb.asm.Type;
 @RunWith(Parameterized.class)
 public class Regress72413928 extends JasminTestBase {
 
-  public Regress72413928(Type type, boolean supportedOnD8AndDx) {
+  public Regress72413928(TestParameters parameters, Type type, boolean supportedOnD8AndDx) {
+    this.parameters = parameters;
     this.type = type;
     this.supportedOnD8AndDx = supportedOnD8AndDx;
   }
 
-  @Parameters(name = "{0}")
+  @Parameters(name = "{0}, {1}")
   public static List<Object[]> getData() {
-    return ImmutableList.copyOf(new Object[][]{
-        new Object[]{Type.INT_TYPE, true},
-        new Object[]{Type.SHORT_TYPE, false},
-        new Object[]{Type.CHAR_TYPE, false},
-        new Object[]{Type.BYTE_TYPE, true},
-    });
+    ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
+    for (TestParameters parameters : getTestParameters().withDexRuntimes().build()) {
+      builder.add(new Object[] {parameters, Type.INT_TYPE, true});
+      builder.add(new Object[] {parameters, Type.SHORT_TYPE, false});
+      builder.add(new Object[] {parameters, Type.CHAR_TYPE, false});
+      builder.add(new Object[] {parameters, Type.BYTE_TYPE, true});
+    }
+    return builder.build();
   }
 
+  private final TestParameters parameters;
   private final Type type;
   private final boolean supportedOnD8AndDx;
+
+  @Override
+  protected DexVm getVm() {
+    return parameters.getDexVm();
+  }
 
   private JasminBuilder buildClass(Type type) {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);

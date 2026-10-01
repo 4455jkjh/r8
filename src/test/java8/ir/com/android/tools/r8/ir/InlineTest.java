@@ -54,18 +54,18 @@ import org.antlr.runtime.RecognitionException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class InlineTest extends IrInjectionTestBase {
 
+  @Parameter(0)
+  public TestParameters parameters;
+
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withNoneRuntime().build();
-  }
-
-  public InlineTest(TestParameters parameters) {
-    parameters.assertNoneRuntime();
+    return getTestParameters().withDexRuntimes().build();
   }
 
   private TestApplication buildTestApplication(
@@ -174,7 +174,7 @@ public class InlineTest extends IrInjectionTestBase {
   private void runInlineTest(int a, int b, int expectedA, int expectedB) throws Exception {
     // Run code without inlining.
     TestApplication test = codeForMethodReplaceTest(a, b);
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     InstructionListIterator iterator;
@@ -185,7 +185,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(0));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     // Run code inlining b (where a is actually called).
@@ -194,7 +194,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(1));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedB), result);
   }
 
@@ -253,7 +253,7 @@ public class InlineTest extends IrInjectionTestBase {
   public void inlineReturnVoid() throws Exception {
     // Run code without inlining.
     TestApplication test = codeForMethodReplaceReturnVoidTest(1, 2);
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(1), result);
 
     InstructionListIterator iterator;
@@ -264,7 +264,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(0));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(1), result);
   }
 
@@ -340,7 +340,7 @@ public class InlineTest extends IrInjectionTestBase {
   private void runInlineMultipleTest(int a, int b, int expectedA, int expectedB) throws Exception {
     // Run code without inlining.
     TestApplication test = codeForMultipleMethodReplaceTest(a, b);
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     InstructionListIterator iterator;
@@ -361,7 +361,7 @@ public class InlineTest extends IrInjectionTestBase {
         assert blocksToRemove.isEmpty();
       }
     }
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     // Run code inlining all invokes with b.
@@ -379,7 +379,7 @@ public class InlineTest extends IrInjectionTestBase {
         assert blocksToRemove.isEmpty();
       }
     }
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedB), result);
   }
 
@@ -481,7 +481,7 @@ public class InlineTest extends IrInjectionTestBase {
       int a, int b, boolean twoGuards, int expectedA, int expectedB) throws Exception {
     // Run code without inlining.
     TestApplication test = codeForMethodReplaceTestWithCatchHandler(a, b, twoGuards);
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     InstructionListIterator iterator;
@@ -492,7 +492,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(0));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     // Run code inlining b (where a is actually called).
@@ -501,7 +501,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(1));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedB), result);
   }
 
@@ -594,7 +594,7 @@ public class InlineTest extends IrInjectionTestBase {
       throws Exception {
     // Run code without inlining.
     TestApplication test = codeForInlineCanThrow(a, b, twoGuards);
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     InstructionListIterator iterator;
@@ -605,7 +605,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(0));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     // Run code inlining b (where a is actually called).
@@ -614,7 +614,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(1));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedB), result);
   }
 
@@ -705,7 +705,7 @@ public class InlineTest extends IrInjectionTestBase {
       throws Exception {
     // Run code without inlining.
     TestApplication test = codeForInlineAlwaysThrows(twoGuards);
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     InstructionListIterator iterator;
@@ -717,7 +717,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(0));
 
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     // Run code inlining b (where a is actually called).
@@ -726,7 +726,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(1));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedB), result);
   }
 
@@ -826,7 +826,7 @@ public class InlineTest extends IrInjectionTestBase {
     {
       // Run code without inlining.
       TestApplication test = codeForInlineAlwaysThrows(twoGuards);
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(Integer.toString(expectedA), result);
     }
     {
@@ -850,7 +850,7 @@ public class InlineTest extends IrInjectionTestBase {
         }
       }
       test.code.removeBlocks(blocksToRemove);
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(Integer.toString(expectedA), result);
     }
     {
@@ -874,7 +874,7 @@ public class InlineTest extends IrInjectionTestBase {
         }
       }
       test.code.removeBlocks(blocksToRemove);
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(Integer.toString(expectedB), result);
     }
   }
@@ -982,7 +982,7 @@ public class InlineTest extends IrInjectionTestBase {
     {
       // Run code without inlining.
       TestApplication test = codeForInlineAlwaysThrows(twoGuards);
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(Integer.toString(expectedA), result);
     }
     {
@@ -1006,7 +1006,7 @@ public class InlineTest extends IrInjectionTestBase {
         }
       }
       test.code.removeBlocks(blocksToRemove);
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(Integer.toString(expectedA), result);
     }
     {
@@ -1030,7 +1030,7 @@ public class InlineTest extends IrInjectionTestBase {
         }
       }
       test.code.removeBlocks(blocksToRemove);
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(Integer.toString(expectedB), result);
     }
   }
@@ -1222,7 +1222,7 @@ public class InlineTest extends IrInjectionTestBase {
     // Run code without inlining.
     TestApplication test = codeForInlineWithHandlersCanThrow(
         a, b, c, twoGuards, callerHasCatchAll, inlineeHasCatchAll);
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     InstructionListIterator iterator;
@@ -1234,7 +1234,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(0));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     // Run code inlining b (where a is actually called).
@@ -1244,7 +1244,7 @@ public class InlineTest extends IrInjectionTestBase {
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
     iterator.inlineInvoke(test.appView, test.code, test.additionalCode.get(1));
-    result = test.run();
+    result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedB), result);
   }
 

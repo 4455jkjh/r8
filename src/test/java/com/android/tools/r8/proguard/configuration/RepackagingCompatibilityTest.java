@@ -13,6 +13,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -37,19 +38,23 @@ public class RepackagingCompatibilityTest extends TestBase {
   private static final String expectedOutput = StringUtils.lines("Hello world!");
   private static final Class<?> mainClass = RepackagingCompatabilityTestClass.class;
 
+  private final TestParameters parameters;
   private final String directive;
   private final Quote quote;
   private final boolean repackageToRoot;
 
-  @Parameters(name = "Directive: {0}, quote: {1}, repackage to root: {2}")
+  @Parameters(name = "{0}, Directive: {1}, quote: {2}, repackage to root: {3}")
   public static List<Object[]> data() {
     return buildParameters(
+        getTestParameters().withDexRuntimes().build(),
         ImmutableList.of("-flattenpackagehierarchy", "-repackageclasses"),
         Quote.values(),
         BooleanUtils.values());
   }
 
-  public RepackagingCompatibilityTest(String directive, Quote quote, boolean repackageToRoot) {
+  public RepackagingCompatibilityTest(
+      TestParameters parameters, String directive, Quote quote, boolean repackageToRoot) {
+    this.parameters = parameters;
     this.directive = directive;
     this.quote = quote;
     this.repackageToRoot = repackageToRoot;
@@ -58,11 +63,6 @@ public class RepackagingCompatibilityTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     runTest(testForR8(Backend.DEX), "R8");
-  }
-
-  @Test
-  public void testProguard() throws Exception {
-    runTest(testForProguard().addDontWarn(getClass()), "Proguard");
   }
 
   private void runTest(TestShrinkerBuilder<?, ?, ?, ?, ?> builder, String shrinker)
@@ -77,7 +77,7 @@ public class RepackagingCompatibilityTest extends TestBase {
     builder
         .addProgramClasses(mainClass)
         .addKeepRules(getKeepRules())
-        .run(mainClass)
+        .run(parameters.getRuntime(), mainClass)
         .assertSuccessWithOutput(expectedOutput)
         .inspect(
             inspector -> {

@@ -6,14 +6,29 @@ package com.android.tools.r8.shaking.fields;
 
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public abstract class FieldsTestBase extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
 
   public abstract Collection<Class<?>> getClasses();
 
@@ -30,7 +45,7 @@ public abstract class FieldsTestBase extends TestBase {
         .addKeepRules(keepRules)
         .compile()
         .inspect(inspector)
-        .run(getMainClass())
+        .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(expected);
   }
 
@@ -45,7 +60,7 @@ public abstract class FieldsTestBase extends TestBase {
         .addKeepRules(keepRules)
         .compile()
         .inspect(inspector)
-        .run(getMainClass())
+        .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(expected);
   }
 
@@ -54,8 +69,11 @@ public abstract class FieldsTestBase extends TestBase {
       ThrowingConsumer<CodeInspector, RuntimeException> inspector,
       String expected)
       throws Throwable {
-    testOnProguard(keepRules, inspector, expected);
-    testOnR8(keepRules, inspector, expected);
+    if (parameters.isCfRuntime()) {
+      testOnProguard(keepRules, inspector, expected);
+    } else {
+      testOnR8(keepRules, inspector, expected);
+    }
   }
 
   public void runTest(

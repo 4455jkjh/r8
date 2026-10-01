@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.desugar.LibraryFilesHelper;
@@ -23,8 +24,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import org.junit.runners.Parameterized.Parameters;
 
 public class R8CFRunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Builder> {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().build();
+  }
 
   class R8CFTestRunner extends TestRunner<R8CFTestRunner> {
 
