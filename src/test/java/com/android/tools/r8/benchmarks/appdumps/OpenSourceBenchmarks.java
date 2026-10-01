@@ -3,12 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks.appdumps;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeFalse;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
 import com.android.tools.r8.TestParameters;
@@ -19,7 +13,6 @@ import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -205,26 +198,6 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
 
     public ReadYouApp(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
-    }
-
-    @Test
-    @Override
-    public void testBenchmarks() throws Exception {
-      assumeFalse(ToolHelper.isWindows());
-      RuntimeException e =
-          assertThrows(
-              RuntimeException.class,
-              () -> {
-                // InvokeExtractor only triggers the assertion when a caller of XmlResourceParser
-                // is processed by CallGraphBuilder before callers of XmlPullParser populate
-                // possibleProgramTargetsCache. Since DexApplication.classes() randomly shuffles
-                // the class order when assertions are enabled, retry to avoid flakiness.
-                for (int i = 0; i < 10; i++) {
-                  super.testBenchmarks();
-                }
-              });
-      assertThat(e.getCause(), instanceOf(CompilationFailedException.class));
-      assertThat(e.getCause().getCause(), instanceOf(AssertionError.class));
     }
   }
 

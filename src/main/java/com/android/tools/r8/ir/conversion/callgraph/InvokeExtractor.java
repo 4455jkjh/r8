@@ -79,28 +79,28 @@ public class InvokeExtractor<N extends NodeBase<N>> extends DefaultUseRegistry<P
     InvokeType type = result.getType();
     MethodResolutionResult resolutionResult =
         type.isInterface() || type.isVirtual()
-            ? appViewWithLiveness.appInfo().resolveMethodLegacy(method, type.isInterface())
-            : appViewWithLiveness.appInfo().unsafeResolveMethodDueToDexFormatLegacy(method);
-    if (!resolutionResult.isSingleResolution()) {
-      return;
-    }
-    if (type.isInterface() || type.isVirtual()) {
-      // For virtual and interface calls add all potential targets that could be called.
-      processInvokeWithDynamicDispatch(type, resolutionResult.asSingleResolution(), context);
-    } else {
-      ProgramMethod singleTarget =
-          asProgramMethodOrNull(
-              appViewWithLiveness
-                  .appInfo()
-                  .lookupSingleTarget(
-                      appViewWithLiveness,
-                      type,
-                      method,
-                      resolutionResult.asSingleResolution(),
-                      context,
-                      appViewWithLiveness));
-      if (singleTarget != null) {
-        processSingleTarget(singleTarget, context);
+            ? appViewWithLiveness.appInfo().resolveMethod(method, type.isInterface())
+            : appViewWithLiveness.appInfo().unsafeResolveMethodDueToDexFormat(method);
+    if (resolutionResult.isSingleResolution()) {
+      SingleResolutionResult<?> singleResolution = resolutionResult.asSingleResolution();
+      if (type.isInterface() || type.isVirtual()) {
+        // For virtual and interface calls add all potential targets that could be called.
+        processInvokeWithDynamicDispatch(type, singleResolution, context);
+      } else {
+        ProgramMethod singleTarget =
+            asProgramMethodOrNull(
+                appViewWithLiveness
+                    .appInfo()
+                    .lookupSingleTarget(
+                        appViewWithLiveness,
+                        type,
+                        method,
+                        singleResolution,
+                        context,
+                        appViewWithLiveness));
+        if (singleTarget != null) {
+          processSingleTarget(singleTarget, context);
+        }
       }
     }
   }

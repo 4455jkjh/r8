@@ -3,9 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.conversion;
 
-import static org.junit.Assert.assertThrows;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -35,7 +32,10 @@ public class LibrarySubInterfaceOfProgramInterfaceCallGraphTest extends TestBase
         .addKeepMainRule(Main.class)
         .addKeepClassAndMembersRules(ProgramSuperInterface.class)
         .addDontWarn(LibrarySubInterface.class)
-        .apply(b -> assertThrows(CompilationFailedException.class, b::compile));
+        .compile()
+        .addRunClasspathClasses(LibrarySubInterface.class)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello!");
   }
 
   public interface ProgramSuperInterface {
