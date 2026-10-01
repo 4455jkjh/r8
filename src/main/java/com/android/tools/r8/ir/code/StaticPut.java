@@ -126,6 +126,10 @@ public class StaticPut extends FieldInstruction implements FieldPut, StaticField
       DexClassAndField field = resolutionResult.getResolutionPair();
       assert field != null : "NoSuchFieldError (resolution failure) should be caught.";
 
+      if (field.getAccessFlags().isVolatile()) {
+        return true;
+      }
+
       boolean isDeadProtoExtensionField =
           appView.withGeneratedExtensionRegistryShrinker(
               shrinker -> shrinker.isDeadProtoExtensionField(field.getReference()), false);

@@ -20,6 +20,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.ir.analysis.ClassInitializationAnalysis;
@@ -146,6 +147,17 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
   @Override
   public boolean instructionTypeCanThrow() {
     return true;
+  }
+
+  @Override
+  public boolean instructionMayHaveSideEffects(
+      AppView<?> appView,
+      ProgramMethod context,
+      AbstractValueSupplier abstractValueSupplier,
+      SideEffectAssumption assumption) {
+    FieldResolutionResult resolutionResult = appView.appInfo().resolveField(getField(), context);
+    return internalInstructionInstanceCanThrow(appView, context, assumption, resolutionResult)
+        || resolutionResult.getResolvedField().isVolatile();
   }
 
   @Override

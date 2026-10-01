@@ -128,9 +128,14 @@ public class InstancePut extends FieldInstruction implements FieldPut, InstanceF
 
   @Override
   public DeadInstructionResult canBeDeadCode(AppView<?> appView, IRCode code) {
-    if (object().isDefinedByInstructionSatisfying(Instruction::isNewInstance)
-        && !instructionInstanceCanThrow(appView, code.context())) {
-      return DeadInstructionResult.deadIfInValueIsDead(object());
+    if (object().isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
+      FieldResolutionResult resolutionResult =
+          appView.appInfo().resolveField(getField(), code.context());
+      if (!internalInstructionInstanceCanThrow(
+              appView, code.context(), SideEffectAssumption.NONE, resolutionResult)
+          && !resolutionResult.getResolvedField().isVolatile()) {
+        return DeadInstructionResult.deadIfInValueIsDead(object());
+      }
     }
     return DeadInstructionResult.notDead();
   }
@@ -157,6 +162,10 @@ public class InstancePut extends FieldInstruction implements FieldPut, InstanceF
 
       DexClassAndField field = resolutionResult.getResolutionPair();
       assert field != null : "NoSuchFieldError (resolution failure) should be caught.";
+
+      if (field.getAccessFlags().isVolatile()) {
+        return true;
+      }
 
       if (field.getType().isAlwaysNull(appViewWithLiveness)) {
         return false;
