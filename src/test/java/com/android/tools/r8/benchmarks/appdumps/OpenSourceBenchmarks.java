@@ -339,15 +339,6 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     public NewPipeKotlinAppPartial(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
     }
-
-    @Test
-    @Override
-    public void testBenchmarks() throws Exception {
-      assumeFalse(ToolHelper.isWindows());
-      RuntimeException e = assertThrows(RuntimeException.class, super::testBenchmarks);
-      assertThat(e.getCause(), instanceOf(CompilationFailedException.class));
-      assertThat(e.getCause().getCause(), instanceOf(AssertionError.class));
-    }
   }
 
   public static class TuskyApp extends OpenSourceBenchmarks {

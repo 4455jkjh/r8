@@ -21,11 +21,13 @@ import com.android.tools.r8.kotlin.KotlinPropertyInfoDelegate.PropertyType;
 import com.android.tools.r8.shaking.EnqueuerMetadataTraceable;
 import com.android.tools.r8.utils.Reporter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import com.google.common.math.IntMath;
 import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import kotlin.metadata.Attributes;
@@ -66,6 +68,7 @@ public class KotlinDeclarationContainerInfo implements EnqueuerMetadataTraceable
       BiConsumer<DexEncodedMember<?, ?>, KotlinMemberLevelInfo> memberInfoConsumer,
       KotlinMetadataMembersTracker originalAssignmentTracker) {
     ImmutableList.Builder<KotlinFunctionInfo> notBackedFunctions = ImmutableList.builder();
+    Set<DexEncodedMethod> backedFunctionMethods = Sets.newIdentityHashSet();
     for (KmFunction kmFunction : container.getFunctions()) {
       KotlinFunctionInfo kotlinFunctionInfo =
           KotlinFunctionInfo.create(kmFunction, factory, reporter);
@@ -87,6 +90,10 @@ public class KotlinDeclarationContainerInfo implements EnqueuerMetadataTraceable
           // TODO(b/154348568): Enable the assertion below.
           // assert false : "Could not find method with signature " + signature.asString();
         }
+        continue;
+      }
+      if (!backedFunctionMethods.add(method)) {
+        notBackedFunctions.add(kotlinFunctionInfo);
         continue;
       }
       keepIfInline(kmFunction, method, signature, methodSignatureMap, keepByteCode);

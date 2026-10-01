@@ -7,9 +7,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -58,7 +56,10 @@ public class MetadataDuplicateFunctionSignatureTest extends TestBase {
         .addKeepClassAndMembersRules(Host.class)
         .addKeepKotlinMetadata()
         .addKeepRuntimeVisibleAnnotations()
-        .apply(b -> assertThrows(CompilationFailedException.class, b::compile));
+        .compile()
+        .inspect(this::inspect)
+        .run(parameters.getRuntime(), Host.class)
+        .assertSuccessWithOutputLines("Hello!");
   }
 
   private void inspect(CodeInspector inspector) {
