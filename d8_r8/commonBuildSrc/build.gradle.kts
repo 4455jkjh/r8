@@ -25,6 +25,7 @@ dependencies {
     exclude(group = "com.fasterxml.jackson.core")
     exclude(group = "com.fasterxml.jackson.dataformat")
   }
+  implementation(libs.androidxTracingDriverWire)
 }
 
 gradlePlugin {

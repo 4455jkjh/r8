@@ -4,11 +4,15 @@
 
 import androidx.build.gradle.gcpbuildcache.GcpBuildCache
 import java.io.File
+import javax.inject.Inject
 import org.gradle.api.Plugin
+import org.gradle.api.flow.FlowScope
 import org.gradle.api.initialization.Settings
 import org.gradle.kotlin.dsl.apply
 
-public class R8SettingsPlugin : Plugin<Settings> {
+public abstract class R8SettingsPlugin : Plugin<Settings> {
+  @Inject public abstract fun getFlowScope(): FlowScope
+
   override fun apply(settings: Settings) {
     settings.apply(plugin = "androidx.build.gradle.gcpbuildcache")
     fun enableBuildCache() {
@@ -30,6 +34,22 @@ public class R8SettingsPlugin : Plugin<Settings> {
       if (uplinkLinux.exists() || uplinkMac.exists()) {
         // We are on a Google machine, enable remote cache automatically
         enableBuildCache()
+      }
+    }
+
+    // Set up task tracing to write perfetto traces to root/build/tracing
+    getFlowScope().always(TracingServiceCloseAction::class.java) {}
+    settings.gradle.beforeProject {
+      tasks.configureEach {
+        val tracingService =
+          settings.gradle.sharedServices.registerIfAbsent(
+            "tracingBuildService",
+            TracingBuildService::class.java,
+          ) {
+            parameters.traceDir.set(File(settings.rootDir, "build/tracing"))
+          }
+        doFirst { tracingService.get().beginSection(path) }
+        doLast { tracingService.get().endSection() }
       }
     }
   }
