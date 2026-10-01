@@ -234,14 +234,10 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private List<LiveIntervals> liveIntervals = new ArrayList<>();
 
   // List of active intervals.
-  // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
-  private List<LiveIntervals> active = new LinkedList<>();
+  private List<LiveIntervals> active = new ArrayList<>();
 
   // List of intervals where the current instruction falls into one of their live range holes.
-  // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
-  protected List<LiveIntervals> inactive = new LinkedList<>();
+  protected List<LiveIntervals> inactive = new ArrayList<>();
 
   // List of intervals that no register has been allocated to sorted by first live range.
   protected PriorityQueue<LiveIntervals> unhandled = new PriorityQueue<>();
@@ -1321,45 +1317,47 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private void advanceStateToLiveIntervals(LiveIntervals unhandledInterval) {
     int start = unhandledInterval.getStart();
     // Check for active intervals that expired or became inactive.
-    Iterator<LiveIntervals> activeIterator = active.iterator();
-    while (activeIterator.hasNext()) {
-      LiveIntervals activeIntervals = activeIterator.next();
-      if (start >= activeIntervals.getEnd()) {
-        activeIterator.remove();
-        freeOccupiedRegistersForIntervals(activeIntervals);
-        if (start == activeIntervals.getEnd()) {
-          expiredHere.add(activeIntervals.getRegister());
-          if (activeIntervals.getType().isWide()) {
-            expiredHere.add(activeIntervals.getRegister() + 1);
+    active.removeIf(
+        activeIntervals -> {
+          if (start >= activeIntervals.getEnd()) {
+            freeOccupiedRegistersForIntervals(activeIntervals);
+            if (start == activeIntervals.getEnd()) {
+              expiredHere.add(activeIntervals.getRegister());
+              if (activeIntervals.getType().isWide()) {
+                expiredHere.add(activeIntervals.getRegister() + 1);
+              }
+            }
+            return true;
           }
-        }
-      } else if (!activeIntervals.overlapsPosition(start)) {
-        activeIterator.remove();
-        assert activeIntervals.hasRegister();
-        inactive.add(activeIntervals);
-        freeOccupiedRegistersForIntervals(activeIntervals);
-      }
-    }
+          if (!activeIntervals.overlapsPosition(start)) {
+            assert activeIntervals.hasRegister();
+            inactive.add(activeIntervals);
+            freeOccupiedRegistersForIntervals(activeIntervals);
+            return true;
+          }
+          return false;
+        });
 
     // Check for inactive intervals that expired or became reactivated.
-    Iterator<LiveIntervals> inactiveIterator = inactive.iterator();
-    while (inactiveIterator.hasNext()) {
-      LiveIntervals inactiveIntervals = inactiveIterator.next();
-      if (start >= inactiveIntervals.getEnd()) {
-        inactiveIterator.remove();
-        if (start == inactiveIntervals.getEnd()) {
-          expiredHere.add(inactiveIntervals.getRegister());
-          if (inactiveIntervals.getType().isWide()) {
-            expiredHere.add(inactiveIntervals.getRegister() + 1);
+    inactive.removeIf(
+        inactiveIntervals -> {
+          if (start >= inactiveIntervals.getEnd()) {
+            if (start == inactiveIntervals.getEnd()) {
+              expiredHere.add(inactiveIntervals.getRegister());
+              if (inactiveIntervals.getType().isWide()) {
+                expiredHere.add(inactiveIntervals.getRegister() + 1);
+              }
+            }
+            return true;
           }
-        }
-      } else if (inactiveIntervals.overlapsPosition(start)) {
-        inactiveIterator.remove();
-        assert inactiveIntervals.hasRegister();
-        active.add(inactiveIntervals);
-        takeFreeRegistersForIntervals(inactiveIntervals);
-      }
-    }
+          if (inactiveIntervals.overlapsPosition(start)) {
+            assert inactiveIntervals.hasRegister();
+            active.add(inactiveIntervals);
+            takeFreeRegistersForIntervals(inactiveIntervals);
+            return true;
+          }
+          return false;
+        });
   }
 
   private boolean invariantsHold(ArgumentReuseMode mode) {
