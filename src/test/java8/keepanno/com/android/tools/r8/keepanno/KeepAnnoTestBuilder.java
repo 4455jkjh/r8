@@ -86,6 +86,8 @@ public abstract class KeepAnnoTestBuilder {
     return keepAnnoParams.parameters();
   }
 
+  public abstract KeepAnnoTestBuilder addClasspathFiles(List<Path> programFiles) throws IOException;
+
   public KeepAnnoTestBuilder addInnerClasses(Class<?> clazz) throws IOException {
     return addProgramFiles(new ArrayList<>(ToolHelper.getClassFilesForInnerClasses(clazz)));
   }
@@ -230,6 +232,12 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
+    public KeepAnnoTestBuilder addClasspathFiles(List<Path> classpathFiles) throws IOException {
+      builder.addClasspathFiles(classpathFiles);
+      return this;
+    }
+
+    @Override
     public KeepAnnoTestBuilder addProgramFiles(List<Path> programFiles) {
       builder.addProgramFiles(programFiles);
       return this;
@@ -339,6 +347,12 @@ public abstract class KeepAnnoTestBuilder {
         ThrowableConsumer<TestShrinkerBuilder<?, ?, ?, ?, ?>> r8BuilderConsumer,
         ThrowableConsumer<R8PartialTestBuilder> r8PartialBuilderConsumer) {
       r8BuilderConsumer.acceptWithRuntimeException(builder);
+      return this;
+    }
+
+    @Override
+    public KeepAnnoTestBuilder addClasspathFiles(List<Path> classpathFiles) throws IOException {
+      builder.addClasspathFiles(classpathFiles);
       return this;
     }
 
@@ -583,6 +597,12 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
+    public KeepAnnoTestBuilder addClasspathFiles(List<Path> classpathFiles) throws IOException {
+      builder.addClasspathFiles(classpathFiles);
+      return this;
+    }
+
+    @Override
     public KeepAnnoTestBuilder addProgramFiles(List<Path> programFiles) throws IOException {
       List<String> rules = KeepAnnoTestUtils.extractRulesFromFiles(programFiles, extractorOptions);
       builder.addProgramFiles(programFiles);
@@ -683,6 +703,12 @@ public abstract class KeepAnnoTestBuilder {
     @Override
     public KeepAnnoTestBuilder applyIfPG(ThrowableConsumer<ProguardTestBuilder> builderConsumer) {
       builderConsumer.acceptWithRuntimeException(builder);
+      return this;
+    }
+
+    @Override
+    public KeepAnnoTestBuilder addClasspathFiles(List<Path> classpathFiles) throws IOException {
+      builder.addClasspathFiles(classpathFiles);
       return this;
     }
 
