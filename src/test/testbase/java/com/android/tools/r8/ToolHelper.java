@@ -73,6 +73,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -759,7 +760,7 @@ public class ToolHelper {
       if (commandCacheStatsDir != null) {
         String processSpecificUUID = UUID.randomUUID().toString();
         cachePutCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEPUT");
-        cacheMissCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEFAIL");
+        cacheMissCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEMISS");
         cacheHitCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEHIT");
         try {
           Files.createFile(cachePutCounter);
@@ -842,36 +843,75 @@ public class ToolHelper {
       return Paths.get(path.toString() + ".temp" + UUID.randomUUID());
     }
 
-    private String getStringContent(Path path) {
-      assert path.toFile().exists() : path + " does not exist";
-      if (path.toFile().length() > 0) {
-        try {
-          return FileUtils.readTextFile(path, Charsets.UTF_8);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+    private String getStringContent(Path path) throws IOException {
+      return FileUtils.readTextFile(path, Charsets.UTF_8);
+    }
+
+    // Hashes of entries read or written by the currently running test. Tests run sequentially
+    // within a test worker JVM, so a single set (rather than a thread local) also covers commands
+    // started on helper threads.
+    private final Set<String> touchedHashes = new HashSet<>();
+
+    private void recordTouched(CacheLookupKey cacheLookupKey) {
+      synchronized (touchedHashes) {
+        touchedHashes.add(cacheLookupKey.getHash());
+      }
+    }
+
+    public static void onTestStarted() {
+      if (isEnabled()) {
+        synchronized (INSTANCE.touchedHashes) {
+          INSTANCE.touchedHashes.clear();
         }
       }
-      return "";
+    }
+
+    // A command can exit successfully with incorrect output (e.g., flaky stdout from art). Remove
+    // all entries touched by a failing test so that retries rerun the commands instead of
+    // replaying the cached result.
+    public static void onTestFailed() {
+      if (!isEnabled()) {
+        return;
+      }
+      List<String> hashes;
+      synchronized (INSTANCE.touchedHashes) {
+        hashes = new ArrayList<>(INSTANCE.touchedHashes);
+        INSTANCE.touchedHashes.clear();
+      }
+      for (String hash : hashes) {
+        // Delete the exit code file first, as its presence marks the entry as valid.
+        for (String suffix : new String[] {"", ".stdout", ".stderr", ".output"}) {
+          try {
+            Files.deleteIfExists(INSTANCE.path.resolve(hash + suffix));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
     }
 
     public Pair<ProcessResult, Path> lookup(CacheLookupKey cacheLookupKey) {
-      // TODO Add concurrency handling!
       Path exitCodeFile = getExitCodeFile(cacheLookupKey);
       if (exitCodeFile.toFile().exists()) {
-        int exitCode = Integer.parseInt(getStringContent(exitCodeFile));
         // Because of the temp files and order of writing we should never get here with an
         // inconsistent state. It is possible, although unlikely, that the stdout/stderr
         // (and even exitcode if art is non deterministic) are from different, process ids etc,
         // but this should have no impact.
-
-        Path outputFile = getOutputFile(cacheLookupKey);
-        CommandCacheStatistics.INSTANCE.addCacheHit();
-        return new Pair(
-            new ProcessResult(
-                exitCode,
-                getStringContent(getStdoutFile(cacheLookupKey)),
-                getStringContent(getStderrFile(cacheLookupKey))),
-            outputFile.toFile().exists() ? outputFile : null);
+        try {
+          int exitCode = Integer.parseInt(getStringContent(exitCodeFile));
+          String stdout = getStringContent(getStdoutFile(cacheLookupKey));
+          String stderr = getStringContent(getStderrFile(cacheLookupKey));
+          Path outputFile = getOutputFile(cacheLookupKey);
+          recordTouched(cacheLookupKey);
+          CommandCacheStatistics.INSTANCE.addCacheHit();
+          return new Pair<>(
+              new ProcessResult(exitCode, stdout, stderr),
+              outputFile.toFile().exists() ? outputFile : null);
+        } catch (NoSuchFileException e) {
+          // The entry was invalidated concurrently, treat it as a miss.
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
       }
       CommandCacheStatistics.INSTANCE.addCacheMiss();
       return null;
@@ -921,6 +961,7 @@ public class ToolHelper {
             exitCodeFile,
             StandardCopyOption.ATOMIC_MOVE,
             StandardCopyOption.REPLACE_EXISTING);
+        recordTouched(cacheLookupKey);
         CommandCacheStatistics.INSTANCE.addCachePut();
       } catch (IOException e) {
         StringBuilder exceptionMessage = new StringBuilder();
