@@ -72,6 +72,10 @@ public class AbstractValueFactory {
     return type.isPrimitiveType() ? createZeroValue() : createNullValue(type);
   }
 
+  public AbstractValue createDefiniteBitsBooleanNumberValue() {
+    return createDefiniteBitsIntNumberValue(0, ~1);
+  }
+
   public AbstractValue createDefiniteBitsIntNumberValue(
       int definitelySetBits, int definitelyUnsetBits) {
     if (definitelySetBits != 0 || definitelyUnsetBits != 0) {
