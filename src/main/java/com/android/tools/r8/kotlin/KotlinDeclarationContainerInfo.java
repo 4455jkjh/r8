@@ -67,13 +67,13 @@ public class KotlinDeclarationContainerInfo implements EnqueuerMetadataTraceable
       KotlinMetadataMembersTracker originalAssignmentTracker) {
     ImmutableList.Builder<KotlinFunctionInfo> notBackedFunctions = ImmutableList.builder();
     for (KmFunction kmFunction : container.getFunctions()) {
-      JvmMethodSignature signature = JvmExtensionsKt.getSignature(kmFunction);
-      if (signature == null) {
-        assert false;
-        continue;
-      }
       KotlinFunctionInfo kotlinFunctionInfo =
           KotlinFunctionInfo.create(kmFunction, factory, reporter);
+      JvmMethodSignature signature = JvmExtensionsKt.getSignature(kmFunction);
+      if (signature == null) {
+        notBackedFunctions.add(kotlinFunctionInfo);
+        continue;
+      }
       DexEncodedMethod method = methodSignatureMap.get(signature.toString());
       if (method == null) {
         notBackedFunctions.add(kotlinFunctionInfo);
