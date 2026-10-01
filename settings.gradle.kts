@@ -37,13 +37,26 @@ buildscript {
 
 apply(plugin = "androidx.build.gradle.gcpbuildcache")
 
-buildCache {
-  remote(androidx.build.gradle.gcpbuildcache.GcpBuildCache::class.java) {
-    projectId = "r8bot-265908"
-    bucketName = "r8-build-cache"
-    isPush =
-      System.getenv().containsKey("R8_BOT_COMPILE_ONLY") ||
-        System.getenv().containsKey("R8_BOT_SIZE")
+fun enableBuildCache() {
+  buildCache {
+    remote(androidx.build.gradle.gcpbuildcache.GcpBuildCache::class.java) {
+      projectId = "r8bot-265908"
+      bucketName = "r8-build-cache"
+      isPush =
+        System.getenv().containsKey("R8_BOT_COMPILE_ONLY") ||
+          System.getenv().containsKey("R8_BOT_SIZE")
+    }
+  }
+}
+
+if (System.getenv("SWARMING_BOT_ID") != null) {
+  enableBuildCache()
+} else {
+  val uplinkLinux = File("/usr/bin/uplink-helper")
+  val uplinkMac = File("/usr/local/bin/uplink-helper")
+  if (uplinkLinux.exists() || uplinkMac.exists()) {
+    // We are on a Google machine, enable remote cache automatically
+    enableBuildCache()
   }
 }
 
