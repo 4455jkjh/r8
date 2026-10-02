@@ -14,8 +14,10 @@ import urllib.request
 
 import utils
 
-# Grep match string for 'Version X.Y.Z[-dev]'
-VERSION_EXP = r'^Version [[:digit:]]\+.[[:digit:]]\+.[[:digit:]]\+\(\|-dev\)$'
+# Grep match string for 'Version X.Y.Z[-dev|-alphaN]'
+VERSION_EXP = (
+    r'^Version [[:digit:]]\+.[[:digit:]]\+.[[:digit:]]\+\(\|-dev\|-alpha[[:digit:]]\+\)$'
+)
 
 # R8 is located in the 'builder' library.
 AGP_MAVEN = "https://dl.google.com/android/maven2/com/android/tools/build/builder"

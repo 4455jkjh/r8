@@ -73,23 +73,42 @@ def prepare_release(args):
                                                            R8_DEV_BRANCH)):
                 # Compute the current and new version on the branch.
                 result = None
+                use_alpha = utils.check_basic_semver_version(
+                    R8_DEV_BRANCH,
+                    ", current release branch version should be x.y",
+                    components=2).larger_than(
+                        utils.SemanticVersion(9, 5, None, None))
                 for line in open(R8_VERSION_FILE, 'r'):
-                    result = re.match(
-                        r'.*LABEL = "%s\.(\d+)\-dev";' % R8_DEV_BRANCH, line)
+                    if use_alpha:
+                        result = re.match(
+                            r'.*LABEL = "%s\.0-alpha(\d+)";' % R8_DEV_BRANCH,
+                            line)
+                    else:
+                        result = re.match(
+                            r'.*LABEL = "%s\.(\d+)\-dev";' % R8_DEV_BRANCH,
+                            line)
                     if result:
                         break
                 if not result or not result.group(1):
-                    print(r'Failed to find version label matching %s(\d+)-dev'\
-                          % R8_DEV_BRANCH)
+                    expected_label = ('%s.0-alpha(\\d+)'
+                                      if use_alpha else '%s(\\d+)-dev')
+                    print('Failed to find version label matching %s' %
+                          (expected_label % R8_DEV_BRANCH))
                     sys.exit(1)
                 try:
-                    patch_version = int(result.group(1))
+                    pre_version = int(result.group(1))
                 except ValueError:
                     print('Failed to convert version to integer: %s' %
                           result.group(1))
 
-                old_version = '%s.%s-dev' % (R8_DEV_BRANCH, patch_version)
-                version = '%s.%s-dev' % (R8_DEV_BRANCH, patch_version + 1)
+                if use_alpha:
+                    old_version = '%s.0-alpha%02d' % (R8_DEV_BRANCH,
+                                                      pre_version)
+                    version = '%s.0-alpha%02d' % (R8_DEV_BRANCH,
+                                                  pre_version + 1)
+                else:
+                    old_version = '%s.%s-dev' % (R8_DEV_BRANCH, pre_version)
+                    version = '%s.%s-dev' % (R8_DEV_BRANCH, pre_version + 1)
 
                 # Verify that the merge point from main is not empty.
                 merge_diff_output = subprocess.check_output(
@@ -412,7 +431,8 @@ def find_r8_version_hash(branch, version):
         return 1
     output = subprocess.check_output([
         'git', 'log', '--pretty=format:%H\t%s', '--grep',
-        r'^Version [[:digit:]]\+.[[:digit:]]\+.[[:digit:]]\+\(\|-dev\)$', branch
+        r'^Version [[:digit:]]\+.[[:digit:]]\+.[[:digit:]]\+\(\|-dev\|-alpha[[:digit:]]\+\)$',
+        branch
     ]).decode('utf-8')
     for l in output.split('\n'):
         (hash, subject) = l.split('\t')
@@ -485,7 +505,9 @@ def prepare_google3(args):
                 match_count = 0
                 match_count_expected = 10
                 match_value = None
-                version_match_regexp = r'([1-9]\.[0-9]{1,2}\.[0-9]{1,3}-dev)'
+                version_match_regexp = (
+                    r'([1-9][0-9]?\.[0-9]{1,2}\.[0-9]{1,3}(?:-dev|-alpha[0-9]+))'
+                )
                 for line in open(metadata_path, 'r'):
                     result = re.search(version_match_regexp, line)
                     if result:
@@ -495,7 +517,7 @@ def prepare_google3(args):
                         else:
                             if match_value != result.group(1):
                                 print(f"""ERROR:
-                                Multiple -dev release strings ({match_value} and
+                                Multiple pre-release strings ({match_value} and
                                 {result.group(0)}) found in METADATA. Please update
                                 {metadata_path} manually and run again with options
                                 --google3 --use-existing-work-branch.
@@ -503,7 +525,7 @@ def prepare_google3(args):
                                 sys.exit(1)
                 if match_count != match_count_expected:
                     print(f"""ERROR:
-                    Could not find the previous -dev release string to replace in METADATA.
+                    Could not find the previous pre-release string to replace in METADATA.
                     Expected to find it mentioned {match_count_expected} times, but found
                     {match_count} occurrences. Please update {metadata_path} manually and
                     run again with options --google3 --use-existing-work-branch.
@@ -516,11 +538,12 @@ def prepare_google3(args):
                     metadata_path)
             subprocess.check_output('chmod u+w *', shell=True)
             previous_version = match_value
-            if not version.endswith('-dev') or not previous_version.endswith(
-                    '-dev'):
+            if (not (version.endswith('-dev') or '-alpha' in version) or
+                    not (previous_version.endswith('-dev') or
+                         '-alpha' in previous_version)):
                 print(
                     f'ERROR: At least one of {version} (new version) ' +
-                    f'and {previous_version} (previous version) is not a -dev version. '
+                    f'and {previous_version} (previous version) is not a -dev or -alpha version. '
                     + 'Expected both to be.')
                 sys.exit(1)
             print(f'Previous version was: {previous_version}')
@@ -975,7 +998,10 @@ def prepare_branch(args):
 
                 # Rewrite the version on the branch, commit and validate.
                 old_version = 'main'
-                full_version = branch_version + '.0-dev'
+                if semver.larger_than(utils.SemanticVersion(9, 5, None, None)):
+                    full_version = branch_version + '.0-alpha01'
+                else:
+                    full_version = branch_version + '.0-dev'
                 version_prefix = 'public static final String LABEL = "'
                 sed(version_prefix + old_version, version_prefix + full_version,
                     R8_VERSION_FILE)
@@ -1182,7 +1208,7 @@ def parse_options():
         if len(args.version) != 1:
             print("ERROR: only one version supported for google 3")
             sys.exit(1)
-        if not 'dev' in args.version[0]:
+        if not ('-dev' in args.version[0] or '-alpha' in args.version[0]):
             print(
                 "WARNING: You should not roll a release version into google 3")
 

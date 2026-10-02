@@ -221,10 +221,13 @@ def promote_dev(args):
 
             dev_version = version_from_version_file()
             print(dev_version)
-            if not dev_version.endswith('-dev'):
-                print("Not a -dev version branch")
+            if dev_version.endswith('-dev'):
+                version = dev_version[0:len(dev_version) - 4]
+            elif '-alpha' in dev_version:
+                version = dev_version[0:dev_version.index('-alpha')]
+            else:
+                print("Not a -dev or -alpha version branch")
                 sys.exit(1)
-            version = dev_version[0:len(dev_version) - 4]
 
             print("Promoting %s to %s" % (dev_version, version))
             sed(dev_version, version, VERSION_FILE)

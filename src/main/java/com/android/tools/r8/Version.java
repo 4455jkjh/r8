@@ -110,7 +110,10 @@ public final class Version {
   }
 
   static boolean isDevelopmentVersion(String label, boolean isEngineering) {
-    return label.equals(MAIN_LABEL) || label.endsWith("-dev") || isEngineering;
+    return label.equals(MAIN_LABEL)
+        || label.endsWith("-dev")
+        || label.contains("-alpha")
+        || isEngineering;
   }
 
   public static boolean isMainVersion() {

@@ -1147,21 +1147,25 @@ class SemanticVersion:
         # Build metadata currently not suppported
 
     def larger_than(self, other):
-        if self.major > other.major:
-            return True
-        if self.major == other.major and self.minor > other.minor:
-            return True
-        if self.patch:
-            return (self.major == other.major and self.minor == other.minor and
-                    self.patch > other.patch)
-        if self.prerelease:
-            if other.prerelease:
-                return self.prerelease > other.prerelease
-            else:
+        if self.major != other.major:
+            return self.major > other.major
+        if self.minor != other.minor:
+            return self.minor > other.minor
+        if self.patch is not None or other.patch is not None:
+            if self.patch != other.patch:
+                return self.patch > other.patch
+        if self.prerelease or other.prerelease:
+            if not self.prerelease:
+                return True
+            if not other.prerelease:
                 return False
-
-        else:
-            return False
+            if (self.prerelease.startswith('alpha') and
+                    other.prerelease.startswith('alpha') and
+                    self.prerelease[5:].isdigit() and
+                    other.prerelease[5:].isdigit()):
+                return int(self.prerelease[5:]) > int(other.prerelease[5:])
+            return self.prerelease > other.prerelease
+        return False
 
     def equals_to(self, other):
         return (self.major == other.major and self.minor == other.minor and
