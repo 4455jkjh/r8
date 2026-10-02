@@ -4,16 +4,26 @@
 
 package com.android.tools.r8.regress.b120164595;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
-import com.android.tools.r8.ToolHelper.DexVm;
-import com.android.tools.r8.ToolHelper.ProcessResult;
-import java.io.IOException;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
+import com.android.tools.r8.graph.DexCode;
+import com.android.tools.r8.graph.DexCode.TryHandler;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Regression test for art issue with multi catch-handlers.
@@ -43,34 +53,60 @@ class TestClass {
   }
 }
 
+@RunWith(Parameterized.class)
 public class B120164595 extends TestBase {
-  @Test
-  public void testD8()
-      throws IOException, CompilationFailedException {
-    TestCompileResult d8Result = testForD8().addProgramClasses(TestClass.class).compile();
-    checkArt(d8Result);
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
   }
 
   @Test
-  public void testR8()
-      throws IOException, CompilationFailedException {
-    TestCompileResult r8Result = testForR8(Backend.DEX)
-        .addProgramClasses(TestClass.class)
-        .addKeepClassAndMembersRules(TestClass.class)
-        .compile();
-    checkArt(r8Result);
+  public void testD8() throws Exception {
+    TestCompileResult<?, ?> d8Result =
+        testForD8(parameters.getBackend())
+            .addProgramClasses(TestClass.class)
+            .setMinApi(parameters)
+            .compile();
+    checkResult(d8Result);
   }
 
-  private void checkArt(TestCompileResult result) throws IOException {
-    ProcessResult artResult =
-        runOnArtRaw(
-            result.app,
-            TestClass.class.getCanonicalName(),
-            builder -> {
-              builder.appendArtOption("-Xusejit:true");
-            },
-            DexVm.fromVersion(DexVm.Version.last()));
-    assertEquals(0, artResult.exitCode);
-    assertFalse(artResult.stderr.contains("Expected NullPointerException"));
+  @Test
+  public void testR8() throws Exception {
+    TestCompileResult<?, ?> r8Result =
+        testForR8(parameters.getBackend())
+            .addProgramClasses(TestClass.class)
+            .addKeepClassAndMembersRules(TestClass.class)
+            .setMinApi(parameters)
+            .compile();
+    checkResult(r8Result);
+  }
+
+  private void checkResult(TestCompileResult<?, ?> result) throws Exception {
+    result.inspect(
+        inspector -> {
+          ClassSubject classSubject = inspector.clazz(TestClass.class);
+          assertThat(classSubject, isPresent());
+          MethodSubject methodSubject = classSubject.uniqueMethodWithOriginalName("toBeOptimized");
+          assertThat(methodSubject, isPresent());
+          DexCode code = methodSubject.getMethod().getCode().asDexCode();
+          assertEquals(1, code.getHandlers().length);
+          TryHandler handler = code.getHandlers()[0];
+          assertEquals(2, handler.pairs.length);
+          if (parameters.getApiLevel().isLessThan(AndroidApiLevel.Q)) {
+            assertNotEquals(handler.pairs[0].addr, handler.pairs[1].addr);
+          } else {
+            assertEquals(handler.pairs[0].addr, handler.pairs[1].addr);
+          }
+        });
+    result
+        .applyIf(
+            parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
+            r -> r.addVmArguments("-Xusejit:true"))
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithEmptyOutput();
   }
 }

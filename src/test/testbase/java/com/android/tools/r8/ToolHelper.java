@@ -15,11 +15,11 @@ import com.android.tools.r8.DeviceRunner.DeviceRunnerConfigurationException;
 import com.android.tools.r8.ResourceShrinker.ReferenceChecker;
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.TestRuntime.CfRuntime;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Kind;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.benchmarks.gc.CaptureGcResult;
 import com.android.tools.r8.cf.CfVersion;
-import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.AppView;
@@ -59,7 +59,6 @@ import com.google.common.collect.Lists;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileReader;
@@ -68,11 +67,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -93,6 +94,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -207,12 +209,9 @@ public class ToolHelper {
   public static final String EXAMPLES_ANDROID_O_DIR = TESTS_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_DIR = TESTS_DIR + "examplesAndroidP/";
   public static final String EXAMPLES_BUILD_DIR = THIRD_PARTY_DIR + "examples/";
-  public static final String EXAMPLES_CF_DIR = EXAMPLES_BUILD_DIR + "classes/";
   public static final String EXAMPLES_ANDROID_N_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidN/";
   public static final String EXAMPLES_ANDROID_O_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidP/";
-  public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
-  public static final String KEEP_RADIUS_PROTO_DIR = getProjectRoot() + "src/keepradius/proto/";
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";
   public static final String KEEP_RADIUS_WEB_DIR = getProjectRoot() + "src/keepradius/web/";
 
@@ -221,21 +220,12 @@ public class ToolHelper {
 
   public static final String R8_TEST_BUCKET = "r8-test-results";
 
-  public static final String ASM_JAR = BUILD_DIR + "deps/asm-9.10.1.jar";
-  public static final String ASM_UTIL_JAR = BUILD_DIR + "deps/asm-util-9.10.1.jar";
-
   public static final String LINE_SEPARATOR = StringUtils.LINE_SEPARATOR;
   public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
 
   public static final String DEFAULT_DEX_FILENAME = "classes.dex";
   public static final String DEFAULT_PROGUARD_MAP_FILE = "proguard.map";
 
-  public static final String CORE_LAMBDA_STUBS =
-      THIRD_PARTY_DIR + "core-lambda-stubs/core-lambda-stubs.jar";
-  public static final String JSR223_RI_JAR = THIRD_PARTY_DIR + "jsr223-api-1.0/jsr223-api-1.0.jar";
-  public static final String RHINO_ANDROID_JAR =
-      THIRD_PARTY_DIR + "rhino-android-1.1.1/rhino-android-1.1.1.jar";
-  public static final String RHINO_JAR = THIRD_PARTY_DIR + "rhino-1.7.10/rhino-1.7.10.jar";
   public static final String K2JVMCompiler = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler";
   private static final String ANDROID_JAR_PATTERN =
       THIRD_PARTY_DIR + "android_jar/lib-v%s/android.jar";
@@ -244,25 +234,12 @@ public class ToolHelper {
   private static final AndroidApiLevel DEFAULT_MIN_SDK = AndroidApiLevel.I;
 
   public static final String OPEN_JDK_DIR = THIRD_PARTY_DIR + "openjdk/";
-  public static final String CUSTOM_CONVERSION_DIR = OPEN_JDK_DIR + "custom_conversion/";
   public static final String JAVA_8_RUNTIME = OPEN_JDK_DIR + "openjdk-rt-1.8/rt.jar";
   public static final String JDK_11_TESTS_DIR = OPEN_JDK_DIR + "jdk-11-test/";
   public static final String JDK_11_TIME_TESTS_DIR = JDK_11_TESTS_DIR + "java/time/";
 
-  public static final Path JACOCO_ROOT = Paths.get(THIRD_PARTY_DIR, "jacoco", "0.8.6");
-  public static final Path JACOCO_AGENT = JACOCO_ROOT.resolve(Paths.get("lib", "jacocoagent.jar"));
-  public static final Path JACOCO_CLI = JACOCO_ROOT.resolve(Paths.get("lib", "jacococli.jar"));
-  public static final Path GSON =
-      Paths.get(THIRD_PARTY_DIR, "gson", "gson-2.10.1", "gson-2.10.1.jar");
-  // Currently Gson is still shipping without consumer keep rules.
-  public static final Path GSON_KEEP_RULES =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "gson", "gson-2.10.1", "gson.pro");
-  public static final Path GUAVA_JRE =
-      Paths.get(THIRD_PARTY_DIR, "guava", "guava-32.1.2-jre", "guava-32.1.2-jre.jar");
   public static final String PROGUARD_SETTINGS_FOR_INTERNAL_APPS =
       THIRD_PARTY_DIR + "proguardsettings/";
-
-  public static final Path RETRACE_MAPS_DIR = Paths.get(THIRD_PARTY_DIR, "r8mappings");
 
   // TODO(b/270105162): These should be removed when finished transitioning.
   public static final Path R8_WITH_RELOCATED_DEPS_17_JAR =
@@ -300,12 +277,6 @@ public class ToolHelper {
       Paths.get(OPEN_JDK_DIR + "desugar_jdk_libs/desugar_jdk_libs.jar");
   public static final Path DESUGARED_JDK_11_LIB_JAR =
       Paths.get(OPEN_JDK_DIR + "desugar_jdk_libs_11/desugar_jdk_libs.jar");
-
-  public static final Path AAPT2 = Paths.get(THIRD_PARTY_DIR, "aapt2", "aapt2");
-
-  public static Path getDesugarLibConversions(CustomConversionVersion legacy) {
-    return Paths.get(CUSTOM_CONVERSION_DIR, legacy.getFileName());
-  }
 
   public static boolean isLocalDevelopment() {
     return System.getProperty("local_development", "0").equals("1");
@@ -605,6 +576,9 @@ public class ToolHelper {
       }
       result.add(getExecutable());
       result.addAll(options);
+      systemProperties.putIfAbsent(
+          "java.util.concurrent.ForkJoinPool.common.parallelism",
+          Integer.toString(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
       for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
         StringBuilder builder = new StringBuilder("-D");
         builder.append(entry.getKey());
@@ -786,7 +760,7 @@ public class ToolHelper {
       if (commandCacheStatsDir != null) {
         String processSpecificUUID = UUID.randomUUID().toString();
         cachePutCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEPUT");
-        cacheMissCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEFAIL");
+        cacheMissCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEMISS");
         cacheHitCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEHIT");
         try {
           Files.createFile(cachePutCounter);
@@ -869,36 +843,75 @@ public class ToolHelper {
       return Paths.get(path.toString() + ".temp" + UUID.randomUUID());
     }
 
-    private String getStringContent(Path path) {
-      assert path.toFile().exists() : path + " does not exist";
-      if (path.toFile().length() > 0) {
-        try {
-          return FileUtils.readTextFile(path, Charsets.UTF_8);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+    private String getStringContent(Path path) throws IOException {
+      return FileUtils.readTextFile(path, Charsets.UTF_8);
+    }
+
+    // Hashes of entries read or written by the currently running test. Tests run sequentially
+    // within a test worker JVM, so a single set (rather than a thread local) also covers commands
+    // started on helper threads.
+    private final Set<String> touchedHashes = new HashSet<>();
+
+    private void recordTouched(CacheLookupKey cacheLookupKey) {
+      synchronized (touchedHashes) {
+        touchedHashes.add(cacheLookupKey.getHash());
+      }
+    }
+
+    public static void onTestStarted() {
+      if (isEnabled()) {
+        synchronized (INSTANCE.touchedHashes) {
+          INSTANCE.touchedHashes.clear();
         }
       }
-      return "";
+    }
+
+    // A command can exit successfully with incorrect output (e.g., flaky stdout from art). Remove
+    // all entries touched by a failing test so that retries rerun the commands instead of
+    // replaying the cached result.
+    public static void onTestFailed() {
+      if (!isEnabled()) {
+        return;
+      }
+      List<String> hashes;
+      synchronized (INSTANCE.touchedHashes) {
+        hashes = new ArrayList<>(INSTANCE.touchedHashes);
+        INSTANCE.touchedHashes.clear();
+      }
+      for (String hash : hashes) {
+        // Delete the exit code file first, as its presence marks the entry as valid.
+        for (String suffix : new String[] {"", ".stdout", ".stderr", ".output"}) {
+          try {
+            Files.deleteIfExists(INSTANCE.path.resolve(hash + suffix));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
     }
 
     public Pair<ProcessResult, Path> lookup(CacheLookupKey cacheLookupKey) {
-      // TODO Add concurrency handling!
       Path exitCodeFile = getExitCodeFile(cacheLookupKey);
       if (exitCodeFile.toFile().exists()) {
-        int exitCode = Integer.parseInt(getStringContent(exitCodeFile));
         // Because of the temp files and order of writing we should never get here with an
         // inconsistent state. It is possible, although unlikely, that the stdout/stderr
         // (and even exitcode if art is non deterministic) are from different, process ids etc,
         // but this should have no impact.
-
-        Path outputFile = getOutputFile(cacheLookupKey);
-        CommandCacheStatistics.INSTANCE.addCacheHit();
-        return new Pair(
-            new ProcessResult(
-                exitCode,
-                getStringContent(getStdoutFile(cacheLookupKey)),
-                getStringContent(getStderrFile(cacheLookupKey))),
-            outputFile.toFile().exists() ? outputFile : null);
+        try {
+          int exitCode = Integer.parseInt(getStringContent(exitCodeFile));
+          String stdout = getStringContent(getStdoutFile(cacheLookupKey));
+          String stderr = getStringContent(getStderrFile(cacheLookupKey));
+          Path outputFile = getOutputFile(cacheLookupKey);
+          recordTouched(cacheLookupKey);
+          CommandCacheStatistics.INSTANCE.addCacheHit();
+          return new Pair<>(
+              new ProcessResult(exitCode, stdout, stderr),
+              outputFile.toFile().exists() ? outputFile : null);
+        } catch (NoSuchFileException e) {
+          // The entry was invalidated concurrently, treat it as a miss.
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
       }
       CommandCacheStatistics.INSTANCE.addCacheMiss();
       return null;
@@ -948,6 +961,7 @@ public class ToolHelper {
             exitCodeFile,
             StandardCopyOption.ATOMIC_MOVE,
             StandardCopyOption.REPLACE_EXISTING);
+        recordTouched(cacheLookupKey);
         CommandCacheStatistics.INSTANCE.addCachePut();
       } catch (IOException e) {
         StringBuilder exceptionMessage = new StringBuilder();
@@ -967,24 +981,34 @@ public class ToolHelper {
 
   private static class StreamReader implements Runnable {
 
-    private InputStream stream;
-    private String result;
+    private final InputStream stream;
+    private final StringBuilder result = new StringBuilder();
 
     public StreamReader(InputStream stream) {
       this.stream = stream;
     }
 
-    public String getResult() {
-      return result;
+    public synchronized String getResult() {
+      return result.toString();
     }
 
     @Override
     public void run() {
-      try {
-        result = CharStreams.toString(new InputStreamReader(stream, StandardCharsets.UTF_8));
-        stream.close();
+      try (Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+        char[] buffer = new char[8192];
+        int read;
+        while ((read = reader.read(buffer)) != -1) {
+          synchronized (this) {
+            result.append(buffer, 0, read);
+          }
+        }
       } catch (IOException e) {
-        result = "Failed reading result for stream " + stream;
+        synchronized (this) {
+          if (result.length() > 0) {
+            result.append('\n');
+          }
+          result.append("Failed reading result for stream ").append(stream);
+        }
       }
     }
   }
@@ -1357,7 +1381,7 @@ public class ToolHelper {
     if (tmpDir != null) {
       return Paths.get(tmpDir);
     }
-    return Paths.get("/tmp", "r8-temp");
+    return Paths.get(System.getProperty("java.io.tmpdir"), "r8-temp");
   }
 
   // For non-Linux platforms create the temporary directory in the repository root to simplify
@@ -2069,6 +2093,18 @@ public class ToolHelper {
       String... args)
       throws IOException {
     List<String> cmdline = new ArrayList<>(Arrays.asList(runtime.getJavaExecutable().toString()));
+    int activeProcessors = Runtime.getRuntime().availableProcessors();
+    if (runtime.isNewerThanOrEqual(CfVm.JDK11)
+        && vmArgs.stream().noneMatch(arg -> arg.startsWith("-XX:ActiveProcessorCount="))) {
+      cmdline.add("-XX:ActiveProcessorCount=" + activeProcessors);
+    }
+    if (vmArgs.stream()
+        .noneMatch(
+            arg -> arg.startsWith("-Djava.util.concurrent.ForkJoinPool.common.parallelism="))) {
+      cmdline.add(
+          "-Djava.util.concurrent.ForkJoinPool.common.parallelism="
+              + Math.max(1, activeProcessors - 1));
+    }
     cmdline.addAll(vmArgs);
     if (!bootClasspaths.isEmpty()) {
       cmdline.add(
@@ -2108,7 +2144,7 @@ public class ToolHelper {
   }
 
   public static ProcessResult runAapt2(String... args) throws IOException {
-    ArrayList<String> cmd = Lists.newArrayList(AAPT2.toString());
+    ArrayList<String> cmd = Lists.newArrayList(TestDeps.getAapt2().toString());
     cmd.addAll(Lists.newArrayList(args));
     ProcessBuilder builder = new ProcessBuilder(cmd);
     return runProcess(builder);
@@ -2273,7 +2309,7 @@ public class ToolHelper {
     List<String> cmdline = new ArrayList<>();
     cmdline.add(TestRuntime.getSystemRuntime().asCf().getJavaExecutable().toString());
     cmdline.add("-jar");
-    cmdline.add(ToolHelper.JACOCO_CLI.toString());
+    cmdline.add(TestDeps.getJacocoCliJar().toString());
     cmdline.add("instrument");
     cmdline.add(sourceClassFiles.toString());
     cmdline.add("--dest");
@@ -2287,7 +2323,7 @@ public class ToolHelper {
     List<String> cmdline = new ArrayList<>();
     cmdline.add(TestRuntime.getSystemRuntime().asCf().getJavaExecutable().toString());
     cmdline.add("-jar");
-    cmdline.add(ToolHelper.JACOCO_CLI.toString());
+    cmdline.add(TestDeps.getJacocoCliJar().toString());
     cmdline.add("report");
     cmdline.add(jacocoExec.toString());
     cmdline.add("--classfiles");
@@ -2493,6 +2529,8 @@ public class ToolHelper {
     }
   }
 
+  private static final long ART_PROCESS_TIMEOUT_MINUTES = 10;
+
   private static ProcessResult runArtProcessRaw(ArtCommandBuilder builder) throws IOException {
     Assume.assumeTrue(artSupported() || dealsWithGoldenFiles());
     ProcessResult cachedResult = builder.getCachedResults();
@@ -2507,7 +2545,12 @@ public class ToolHelper {
         throw new RuntimeException(e);
       }
     } else {
-      result = runProcess(builder.asProcessBuilder());
+      result =
+          runProcess(
+              builder.asProcessBuilder(),
+              System.out,
+              ART_PROCESS_TIMEOUT_MINUTES,
+              TimeUnit.MINUTES);
     }
     builder.cacheResult(result);
     return result;
@@ -2834,6 +2877,11 @@ public class ToolHelper {
 
   public static ProcessResult runProcess(ProcessBuilder builder, PrintStream out)
       throws IOException {
+    return runProcess(builder, out, -1, null);
+  }
+
+  public static ProcessResult runProcess(
+      ProcessBuilder builder, PrintStream out, long timeout, TimeUnit unit) throws IOException {
     boolean printCwd = builder.directory() != null;
     if (printCwd) {
       out.println("(cd " + builder.directory() + "; ");
@@ -2843,10 +2891,15 @@ public class ToolHelper {
     if (printCwd) {
       out.println(")");
     }
-    return drainProcessOutputStreams(builder.start(), command);
+    return drainProcessOutputStreams(builder.start(), command, timeout, unit);
   }
 
   public static ProcessResult drainProcessOutputStreams(Process process, String command) {
+    return drainProcessOutputStreams(process, command, -1, null);
+  }
+
+  public static ProcessResult drainProcessOutputStreams(
+      Process process, String command, long timeout, TimeUnit unit) {
     // Drain stdout and stderr so that the process does not block. Read stdout and stderr
     // in parallel to make sure that neither buffer can get filled up which will cause the
     // C program to block in a call to write.
@@ -2857,7 +2910,26 @@ public class ToolHelper {
     stdoutThread.start();
     stderrThread.start();
     try {
-      process.waitFor();
+      if (timeout > 0 && unit != null) {
+        if (!process.waitFor(timeout, unit)) {
+          destroyProcess(process);
+          stdoutThread.join(TimeUnit.SECONDS.toMillis(5));
+          stderrThread.join(TimeUnit.SECONDS.toMillis(5));
+          throw new RuntimeException(
+              "Process timed out after "
+                  + timeout
+                  + " "
+                  + StringUtils.toLowerCase(unit.name())
+                  + ": "
+                  + command
+                  + "\nSTDOUT:\n"
+                  + stdoutReader.getResult()
+                  + "\nSTDERR:\n"
+                  + stderrReader.getResult());
+        }
+      } else {
+        process.waitFor();
+      }
       stdoutThread.join();
       stderrThread.join();
     } catch (InterruptedException e) {
@@ -2865,6 +2937,19 @@ public class ToolHelper {
     }
     return new ProcessResult(
         process.exitValue(), stdoutReader.getResult(), stderrReader.getResult(), command);
+  }
+
+  private static void destroyProcess(Process process) throws InterruptedException {
+    List<ProcessHandle> descendants = process.descendants().collect(Collectors.toList());
+    if (!descendants.isEmpty()) {
+      descendants.forEach(ProcessHandle::destroyForcibly);
+      if (process.waitFor(5, TimeUnit.SECONDS)) {
+        return;
+      }
+    }
+    process.destroyForcibly();
+    process.waitFor(5, TimeUnit.SECONDS);
+    process.descendants().forEach(ProcessHandle::destroyForcibly);
   }
 
   public static R8Command.Builder addProguardConfigurationConsumer(
@@ -2910,7 +2995,7 @@ public class ToolHelper {
 
   public static void writeApplication(AppView<?> appView, Timing timing) throws ExecutionException {
     appView.options().tool = Tool.R8;
-    R8.writeApplication(appView, null, Executors.newSingleThreadExecutor(), timing);
+    R8.writeApplication(appView, Executors.newSingleThreadExecutor(), timing);
   }
 
   public static void disassemble(AndroidApp app, PrintStream ps)

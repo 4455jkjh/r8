@@ -381,7 +381,7 @@ public object ThirdPartyDeps {
     )
   public val coreLambdaStubs: ThirdPartyDependency =
     ThirdPartyDependency("coreLambdaStubs", Paths.get("third_party", "core-lambda-stubs").toFile())
-  public val customConversion: ThirdPartyDependency =
+  public val desugarLibraryConversions: ThirdPartyDependency =
     ThirdPartyDependency(
       "customConversion",
       Paths.get("third_party", "openjdk", "custom_conversion").toFile(),
@@ -433,12 +433,12 @@ public object ThirdPartyDeps {
       testOnly = true,
       type = DependencyType.X20,
     )
-  public val googleJavaFormat_1_24: ThirdPartyDependency =
+  public val googleJavaFormat: ThirdPartyDependency =
     ThirdPartyDependency(
       "google-java-format-1.24",
       Paths.get("third_party", "google", "google-java-format", "1.24.0").toFile(),
     )
-  public val googleKotlinFormat_0_54: ThirdPartyDependency =
+  public val googleKotlinFormat: ThirdPartyDependency =
     ThirdPartyDependency(
       "google-kotlin-format-0.54",
       Paths.get("third_party", "google", "google-kotlin-format", "0.54").toFile(),
@@ -737,6 +737,7 @@ private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
       "kotlin-compiler-2.1.10",
       "kotlin-compiler-2.2.0",
       "kotlin-compiler-2.3.10",
+      "kotlin-compiler-2.4.20",
       "kotlin-compiler-dev",
     )
     .map { ThirdPartyDependency(it, Paths.get("third_party", "kotlin", it).toFile()) }

@@ -10,6 +10,9 @@ import static com.android.tools.r8.ir.code.Opcodes.IF;
 import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_GET;
 import static com.android.tools.r8.ir.code.Opcodes.INVOKE_STATIC;
 import static com.android.tools.r8.ir.code.Opcodes.OR;
+import static com.android.tools.r8.ir.code.Opcodes.SHL;
+import static com.android.tools.r8.ir.code.Opcodes.SHR;
+import static com.android.tools.r8.ir.code.Opcodes.USHR;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -30,6 +33,9 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.Or;
 import com.android.tools.r8.ir.code.Phi;
+import com.android.tools.r8.ir.code.Shl;
+import com.android.tools.r8.ir.code.Shr;
+import com.android.tools.r8.ir.code.Ushr;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldValueFactory;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameterFactory;
 import com.android.tools.r8.optimize.compose.ComputationTreeUnopUpdateChangedFlagsNode;
@@ -39,7 +45,7 @@ import java.util.Set;
 
 /**
  * Similar to {@link DefaultComputationTreeBuilder} except that this also has support for
- * int-valued, non-cyclic phis and logical OR instructions.
+ * int-valued, non-cyclic phis and logical OR/shift instructions.
  */
 public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
 
@@ -64,9 +70,16 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
       case AND:
         {
           And and = instruction.asAnd();
-          ComputationTreeNode left = getOrBuildComputationTree(and.leftValue());
-          ComputationTreeNode right = getOrBuildComputationTree(and.rightValue());
-          return ComputationTreeLogicalBinopAndNode.create(appView, left, right);
+          if (and.getOutType().isInt()) {
+            ComputationTreeNode left = getOrBuildComputationTree(and.leftValue());
+            ComputationTreeNode right = getOrBuildComputationTree(and.rightValue());
+            ComputationTreeNode result =
+                ComputationTreeLogicalBinopAndNode.create(appView, left, right);
+            if (!result.isUnknown()) {
+              return result;
+            }
+          }
+          break;
         }
       case ARGUMENT:
         {
@@ -135,12 +148,64 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
       case OR:
         {
           Or or = instruction.asOr();
-          ComputationTreeNode left = getOrBuildComputationTree(or.leftValue());
-          ComputationTreeNode right = getOrBuildComputationTree(or.rightValue());
-          return ComputationTreeLogicalBinopOrNode.create(appView, left, right);
+          if (or.getOutType().isInt()) {
+            ComputationTreeNode left = getOrBuildComputationTree(or.leftValue());
+            ComputationTreeNode right = getOrBuildComputationTree(or.rightValue());
+            ComputationTreeNode result =
+                ComputationTreeLogicalBinopOrNode.create(appView, left, right);
+            if (!result.isUnknown()) {
+              return result;
+            }
+          }
+          break;
+        }
+      case SHL:
+        {
+          Shl shl = instruction.asShl();
+          if (shl.getOutType().isInt()) {
+            ComputationTreeNode left = getOrBuildComputationTree(shl.leftValue());
+            ComputationTreeNode right = getOrBuildComputationTree(shl.rightValue());
+            ComputationTreeNode result =
+                ComputationTreeLogicalBinopShlNode.create(appView, left, right);
+            if (!result.isUnknown()) {
+              return result;
+            }
+          }
+          break;
+        }
+      case SHR:
+        {
+          Shr shr = instruction.asShr();
+          if (shr.getOutType().isInt()) {
+            ComputationTreeNode left = getOrBuildComputationTree(shr.leftValue());
+            ComputationTreeNode right = getOrBuildComputationTree(shr.rightValue());
+            ComputationTreeNode result =
+                ComputationTreeLogicalBinopShrNode.create(appView, left, right);
+            if (!result.isUnknown()) {
+              return result;
+            }
+          }
+          break;
+        }
+      case USHR:
+        {
+          Ushr ushr = instruction.asUshr();
+          if (ushr.getOutType().isInt()) {
+            ComputationTreeNode left = getOrBuildComputationTree(ushr.leftValue());
+            ComputationTreeNode right = getOrBuildComputationTree(ushr.rightValue());
+            ComputationTreeNode result =
+                ComputationTreeLogicalBinopUshrNode.create(appView, left, right);
+            if (!result.isUnknown()) {
+              return result;
+            }
+          }
+          break;
         }
       default:
         break;
+    }
+    if (instruction.hasOutValue() && instruction.outValue().knownToBeBoolean()) {
+      return factory().createDefiniteBitsBooleanNumberValue();
     }
     return unknown();
   }
@@ -148,6 +213,9 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
   @Override
   ComputationTreeNode buildComputationTree(Phi phi) {
     if (!seenPhis.add(phi) || phi.getOperands().size() != 2 || !phi.getType().isInt()) {
+      if (phi.knownToBeBoolean()) {
+        return factory().createDefiniteBitsBooleanNumberValue();
+      }
       return unknown();
     }
     ComputationTreeNode left = getOrBuildComputationTree(phi.getOperand(0));

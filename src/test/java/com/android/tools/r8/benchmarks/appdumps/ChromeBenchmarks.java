@@ -17,45 +17,22 @@ import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ChromeBenchmarks extends BenchmarkBase {
+public abstract class ChromeBenchmarks extends BenchmarkBase {
 
   private static final Path dir = Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps/chrome");
 
-  public ChromeBenchmarks(BenchmarkConfig config, TestParameters parameters) {
+  protected ChromeBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
-  }
-
-  @Parameters(name = "{0}")
-  public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
   }
 
   public static List<BenchmarkConfig> configs() {
     return ImmutableList.of(
-        AppDumpBenchmarkBuilder.builder()
-            .setName("ChromeApp")
-            .setDumpDependencyPath(dir)
-            .setFromRevision(16457)
-            .buildR8(ChromeBenchmarks::configure),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("ChromeAppPartial")
-            .setDumpDependencyPath(dir)
-            .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ChromeBenchmarks::configurePartial, ChromeBenchmarks::inspectPartial),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("ChromeAppTreeShaking")
-            .setDumpDependencyPath(dir)
-            .setFromRevision(16457)
-            .setRuntimeOnly()
-            .buildR8(ChromeBenchmarks::configureTreeShaking));
+        ChromeApp.config(), ChromeAppPartial.config(), ChromeAppTreeShaking.config());
   }
 
   private static void configure(R8FullTestBuilder testBuilder) {
@@ -108,25 +85,62 @@ public class ChromeBenchmarks extends BenchmarkBase {
                 .assertNoErrors());
   }
 
-  @Ignore
-  @Test
-  @Override
-  public void testBenchmarks() throws Exception {
-    super.testBenchmarks();
+  protected static AppDumpBenchmarkBuilder builder(String name) {
+    return AppDumpBenchmarkBuilder.builder()
+        .setName(name)
+        .setDumpDependencyPath(dir)
+        .setFromRevision(16457);
   }
 
-  @Test
-  public void testChromeApp() throws Exception {
-    testBenchmarkWithName("ChromeApp");
+  public static class ChromeApp extends ChromeBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("ChromeApp").buildR8(ChromeBenchmarks::configure);
+    }
+
+    public ChromeApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testChromeAppPartial() throws Exception {
-    testBenchmarkWithName("ChromeAppPartial");
+  public static class ChromeAppPartial extends ChromeBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("ChromeAppPartial")
+          .buildR8WithPartialShrinking(
+              ChromeBenchmarks::configurePartial, ChromeBenchmarks::inspectPartial);
+    }
+
+    public ChromeAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 
-  @Test
-  public void testChromeTreeShaking() throws Exception {
-    testBenchmarkWithName("ChromeTreeShaking");
+  public static class ChromeAppTreeShaking extends ChromeBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("ChromeAppTreeShaking")
+          .setRuntimeOnly()
+          .buildR8(ChromeBenchmarks::configureTreeShaking);
+    }
+
+    public ChromeAppTreeShaking(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 }

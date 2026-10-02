@@ -13,7 +13,6 @@ import shutil
 import subprocess
 import sys
 import time
-import uuid
 import glob
 
 import archive_desugar_jdk_libs
@@ -42,19 +41,13 @@ ALL_ART_VMS = [
 # is not a problem, no harm done except some logging in stdout.
 TIMEOUT_HANDLER_PERIOD = 60 * 18
 
-BUCKET = 'r8-test-results'
-
 NUMBER_OF_TEST_REPORTS = 5
 REPORTS_PATH = os.path.join(utils.BUILD, 'reports')
 REPORT_INDEX = ['tests', 'test', 'index.html']
 VALID_RUNTIMES = ['none', 'jdk8', 'jdk9', 'jdk11', 'jdk17', 'jdk21', 'jdk25'
                  ] + ['dex-%s' % dexvm for dexvm in ALL_ART_VMS]
-CQ_RUNTIMES = [
-    rt for rt in VALID_RUNTIMES if rt not in [
-        'jdk8', 'jdk9', 'dex-7.0.0', 'dex-6.0.1', 'dex-5.1.1', 'dex-4.4.4',
-        'dex-4.0.4'
-    ]
-]
+DRY_RUN_RUNTIMES = ['dex-default', 'jdk11', 'none']
+CQ_RUNTIMES = [rt for rt in VALID_RUNTIMES if rt not in DRY_RUN_RUNTIMES]
 
 
 def ParseOptions():
@@ -64,16 +57,6 @@ def ParseOptions():
                         help='Do not run Google internal tests.',
                         default=False,
                         action='store_true')
-    result.add_argument('--archive-failures',
-                        '--archive_failures',
-                        help='Upload test results to cloud storage on failure.',
-                        default=False,
-                        action='store_true')
-    result.add_argument(
-        '--archive-failures-file-name',
-        '--archive_failures_file_name',
-        help='Set file name for the archived failures file name',
-        default=uuid.uuid4())
     result.add_argument('--only-internal',
                         '--only_internal',
                         help='Only run Google internal tests.',
@@ -220,7 +203,7 @@ def ParseOptions():
         default=None,
         help='Test parameter runtimes to use, separated by : (eg, none:jdk9).'
         ' Special values include: all (for all runtimes), CQ (for CQ runtimes),'
-        ' and empty (for no runtimes).')
+        ' dry-run (for dry-run runtimes), and empty (for no runtimes).')
     result.add_argument('--print-hanging-stacks',
                         '--print_hanging_stacks',
                         default=-1,
@@ -324,41 +307,6 @@ def ParseOptions():
     return options, args
 
 
-def has_failures(classes_file):
-    with open(classes_file) as f:
-        contents = f.read()
-        # The report has a div tag with the percentage of tests that succeeded.
-        assert '<div class="percent">' in contents
-        return '<div class="percent">100%</div>' not in contents
-
-
-def should_upload(filename, absolute_filename):
-    # filename is relative to REPO_ROOT/build/reports/tests
-    if filename.startswith('test/packages'):
-        # We don't upload the package overview
-        return False
-    if filename.startswith('test/classes'):
-        return has_failures(absolute_filename)
-    # Always upload index, css and js
-    return True
-
-
-def archive_failures(options):
-    upload_dir = os.path.join(utils.REPO_ROOT, 'build', 'reports', 'tests')
-    file_name = options.archive_failures_file_name
-    destination_dir = 'gs://%s/%s/' % (BUCKET, file_name)
-    for (dir_path, dir_names, file_names) in os.walk(upload_dir):
-        for f in file_names:
-            absolute_file = os.path.join(dir_path, f)
-            relative_file = absolute_file[len(upload_dir) + 1:]
-            if (should_upload(relative_file, absolute_file)):
-                utils.upload_file_to_cloud_storage(
-                    absolute_file, destination_dir + relative_file)
-    url = 'https://storage.googleapis.com/%s/%s/test/index.html' % (BUCKET,
-                                                                    file_name)
-    print('Test results available at: %s' % url)
-
-
 def art_7_0_0_symlinks():
     art7 = os.path.join(utils.TOOLS_DIR, "linux", "art-7.0.0")
     utils.ensure_google_download(art7)
@@ -438,9 +386,10 @@ def test(options, args):
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
 
-    if options.dex_vm == '7.0.0' or (options.runtimes and
-                                     ('7.0.0' in options.runtimes or
-                                      options.runtimes == 'all')):
+    if options.dex_vm in [
+            '7.0.0', 'all'
+    ] or (options.runtimes and
+          ('7.0.0' in options.runtimes or options.runtimes in ['all', 'CQ'])):
         art_7_0_0_symlinks()
 
     desugar_jdk_json_dir = None
@@ -659,7 +608,8 @@ def test(options, args):
                 timestamp_file,
                 print_stacks_timeout,
             ))
-    rotate_test_reports()
+    if not utils.is_bot():
+        rotate_test_reports()
 
     if options.print_times:
         gradle_args.append('-Pprint_times=true')
@@ -677,6 +627,8 @@ def test(options, args):
             pass
         elif options.runtimes == 'CQ':
             gradle_args.append('-Pruntimes=%s' % ':'.join(CQ_RUNTIMES))
+        elif options.runtimes == 'dry-run':
+            gradle_args.append('-Pruntimes=%s' % ':'.join(DRY_RUN_RUNTIMES))
         else:
             prefixes = [
                 prefix.strip() for prefix in options.runtimes.split(':')
@@ -686,7 +638,7 @@ def test(options, args):
                 matches = [rt for rt in VALID_RUNTIMES if rt.startswith(prefix)]
                 if len(matches) == 0:
                     print("Invalid runtime prefix '%s'." % prefix)
-                    print("Must be just 'all', 'CQ', 'empty'," \
+                    print("Must be just 'all', 'CQ', 'dry-run', 'empty'," \
                           " or a prefix of %s" % ', '.join(VALID_RUNTIMES))
                     sys.exit(1)
                 runtimes.extend(matches)
@@ -726,9 +678,6 @@ def test(options, args):
 
 
 def archive_and_return(return_code, options):
-    if return_code != 0:
-        if options.archive_failures:
-            archive_failures(options)
     if options.command_cache_stats:
         stats_dir = os.path.join(options.command_cache_dir, 'stats')
         cache_hit = 0
@@ -796,9 +745,10 @@ def timeout_handler(timestamp_file, timeout_handler_period):
 
 
 def report_dir_path(index):
-    if index == 0:
-        return REPORTS_PATH
-    return '%s%d' % (REPORTS_PATH, index)
+    p = REPORTS_PATH if index == 0 else '%s%d' % (REPORTS_PATH, index)
+    if utils.IsWindows():
+        p = '\\\\?\\' + os.path.abspath(p)
+    return p
 
 
 def report_index_path(index):

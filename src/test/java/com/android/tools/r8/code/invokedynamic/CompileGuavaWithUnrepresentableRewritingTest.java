@@ -8,9 +8,9 @@ import static org.hamcrest.CoreMatchers.anyOf;
 
 import com.android.tools.r8.DiagnosticsMatcher;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.errors.UnsupportedInvokeCustomDiagnostic;
 import com.android.tools.r8.errors.UnsupportedInvokePolymorphicMethodHandleDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -34,7 +34,7 @@ public class CompileGuavaWithUnrepresentableRewritingTest extends TestBase {
   @Test
   public void testD8DexNoDesugaring() throws Exception {
     testForD8(Backend.DEX)
-        .addProgramFiles(ToolHelper.GUAVA_JRE)
+        .addProgramFiles(TestDeps.getGuavaJreJar())
         .setMinApi(AndroidApiLevel.N)
         .disableDesugaring()
         .compileWithExpectedDiagnostics(

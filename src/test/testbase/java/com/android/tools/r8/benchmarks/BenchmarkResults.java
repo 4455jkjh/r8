@@ -41,6 +41,10 @@ public interface BenchmarkResults {
   // This will throw if called on a benchmark without sub-benchmarks.
   BenchmarkResults getSubResults(String name);
 
+  default boolean hasDex2OatSizeResult() {
+    return false;
+  }
+
   default boolean isBenchmarkingCodeSize() {
     return true;
   }

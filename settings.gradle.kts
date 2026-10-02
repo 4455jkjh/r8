@@ -11,8 +11,10 @@ pluginManagement {
     maven { url = uri("third_party/dependencies") }
     maven { url = uri("third_party/dependencies_plugin") }
   }
-  includeBuild(rootProject.projectDir.resolve("d8_r8/commonBuildSrc"))
+  includeBuild("d8_r8/commonBuildSrc")
 }
+
+plugins { id("r8-settings") }
 
 dependencyResolutionManagement { repositories { maven { url = uri("third_party/dependencies") } } }
 

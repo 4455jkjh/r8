@@ -190,18 +190,11 @@ public class LibraryAnalyzerCommandParser {
                 throw new UncheckedIOException("Failed to walk repository path: " + arg, e);
               }
             })
-        .option1(
-            "--thread-count",
-            "<int>",
-            "Number of threads to use.",
-            (state, arg) ->
-                CliParserUtils.parsePositiveInt(
-                    arg,
-                    state.builder::setThreadCount,
-                    error ->
-                        state.reporter.error(
-                            new StringDiagnostic(
-                                "Invalid argument to --threads: " + error, state.origin))))
+        .apply(
+            CliParserUtils.addThreadCountOption(
+                (state, threadCount) -> state.builder.setThreadCount(threadCount),
+                state -> state.reporter,
+                state -> state.origin))
         .apply(CliParserUtils.addVersionOption(state -> state.builder.setPrintVersion(true)))
         .apply(CliParserUtils.addHelpOption(state -> state.builder.setPrintHelp(true)));
   }

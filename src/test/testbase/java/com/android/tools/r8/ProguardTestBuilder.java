@@ -9,6 +9,7 @@ import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.base.Charsets;
@@ -251,7 +252,7 @@ public class ProguardTestBuilder
   }
 
   @Override
-  public ProguardTestBuilder setMinApi(int minApiLevel) {
+  public ProguardTestBuilder setMinApi(UncheckedApiLevel minApiLevel) {
     if (backend == Backend.DEX) {
       throw new Unimplemented("No support for setting min api");
     }

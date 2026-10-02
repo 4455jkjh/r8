@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.dump;
 
+import static com.android.tools.r8.utils.AndroidApp.dumpApiDatabaseFileName;
 import static com.android.tools.r8.utils.AndroidApp.dumpR8ExcludeFileName;
 import static com.android.tools.r8.utils.AndroidApp.dumpR8IncludeFileName;
 
@@ -76,6 +77,14 @@ public class CompilerDump {
 
   public boolean hasDesugaredLibrary() {
     return Files.exists(directory.resolve("desugared-library.json"));
+  }
+
+  public boolean hasApiDatabase() {
+    return Files.exists(getApiDatabaseFile());
+  }
+
+  public Path getApiDatabaseFile() {
+    return directory.resolve(dumpApiDatabaseFileName);
   }
 
   public Path getAndroidResources() {

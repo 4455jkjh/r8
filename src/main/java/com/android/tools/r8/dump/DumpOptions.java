@@ -19,6 +19,7 @@ import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -62,7 +63,7 @@ public class DumpOptions {
   private final Backend backend;
   private final Tool tool;
   private final CompilationMode compilationMode;
-  private final int minApi;
+  private final UncheckedApiLevel minApi;
   private final boolean optimizeMultidexForLinearAlloc;
   private final int threadCount;
   private final DesugarState desugarState;
@@ -87,6 +88,7 @@ public class DumpOptions {
   private final R8PartialCompilationConfiguration partialCompilationConfiguration;
   private final Map<String, String> systemProperties;
   private final Optional<Boolean> hasProguardMapConsumer;
+  private final Path apiDatabasePath;
 
   // TraceReferences only.
   private final String traceReferencesConsumer;
@@ -98,7 +100,7 @@ public class DumpOptions {
       Backend backend,
       Tool tool,
       CompilationMode compilationMode,
-      int minApi,
+      UncheckedApiLevel minApi,
       DesugaredLibrarySpecification desugaredLibrarySpecification,
       boolean optimizeMultidexForLinearAlloc,
       int threadCount,
@@ -122,7 +124,8 @@ public class DumpOptions {
       AndroidResourceProvider androidResourceProvider,
       R8PartialCompilationConfiguration partialCompilationConfiguration,
       Optional<Boolean> optimizedResourceShrinking,
-      Optional<Boolean> hasProguardMapConsumer) {
+      Optional<Boolean> hasProguardMapConsumer,
+      Path apiDatabasePath) {
     this.backend = backend;
     this.tool = tool;
     this.compilationMode = compilationMode;
@@ -151,6 +154,7 @@ public class DumpOptions {
     this.androidResourceProvider = androidResourceProvider;
     this.partialCompilationConfiguration = partialCompilationConfiguration;
     this.hasProguardMapConsumer = hasProguardMapConsumer;
+    this.apiDatabasePath = apiDatabasePath;
   }
 
   public String getBuildPropertiesFileContent() {
@@ -248,7 +252,7 @@ public class DumpOptions {
         }
         return;
       case MIN_API_KEY:
-        builder.setMinApi(Integer.parseInt(value), 0);
+        builder.setMinApi(UncheckedApiLevel.parse(value));
         return;
       case OPTIMIZE_MULTIDEX_FOR_LINEAR_ALLOC_KEY:
         builder.setOptimizeMultidexForLinearAlloc(Boolean.parseBoolean(value));
@@ -312,7 +316,7 @@ public class DumpOptions {
     return isolatedSplits.orElse(false);
   }
 
-  public int getMinApi() {
+  public UncheckedApiLevel getMinApi() {
     return minApi;
   }
 
@@ -396,12 +400,20 @@ public class DumpOptions {
     return partialCompilationConfiguration;
   }
 
+  public boolean hasApiDatabase() {
+    return apiDatabasePath != null;
+  }
+
+  public Path getApiDatabasePath() {
+    return apiDatabasePath;
+  }
+
   public static class Builder {
     // Initialize backend to DEX for backwards compatibility.
     private Backend backend = Backend.DEX;
     private Tool tool;
     private CompilationMode compilationMode;
-    private int minApi;
+    private UncheckedApiLevel minApi;
     private boolean optimizeMultidexForLinearAlloc;
     private int threadCount;
     private DesugarState desugarState;
@@ -422,6 +434,7 @@ public class DumpOptions {
     private R8PartialCompilationConfiguration partialCompilationConfiguration;
     private Optional<Boolean> optimizedResourceShrinking = Optional.empty();
     private Optional<Boolean> hasProgramMapConsumer = Optional.empty();
+    private Path apiDatabasePath;
 
     private boolean enableMissingLibraryApiModeling = false;
     private boolean isAndroidPlatformBuild = false;
@@ -467,8 +480,7 @@ public class DumpOptions {
     }
 
     public Builder setMinApi(UncheckedApiLevel apiLevel) {
-      assert apiLevel.getMinor() == 0 : "minor versions not yet supported: " + apiLevel;
-      this.minApi = apiLevel.getMajor();
+      this.minApi = apiLevel;
       return this;
     }
 
@@ -631,7 +643,13 @@ public class DumpOptions {
           androidResourceProvider,
           partialCompilationConfiguration,
           optimizedResourceShrinking,
-          hasProgramMapConsumer);
+          hasProgramMapConsumer,
+          apiDatabasePath);
+    }
+
+    public Builder setApiDatabasePath(Path apiDatabasePath) {
+      this.apiDatabasePath = apiDatabasePath;
+      return this;
     }
 
     public Builder setAndroidResourceProvider(AndroidResourceProvider androidResourceProvider) {

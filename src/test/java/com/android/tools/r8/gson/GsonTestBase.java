@@ -10,9 +10,9 @@ import com.android.tools.r8.ArchiveProgramResourceProvider;
 import com.android.tools.r8.ProguardTestBuilder;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 
 public class GsonTestBase extends TestBase {
@@ -30,12 +30,13 @@ public class GsonTestBase extends TestBase {
 
   static void addGsonLibraryAndKeepRules(R8FullTestBuilder builder) {
     builder
-        .addProgramResourceProviders(ArchiveProgramResourceProvider.fromArchive(ToolHelper.GSON))
-        .addKeepRuleFiles(ToolHelper.GSON_KEEP_RULES)
+        .addProgramResourceProviders(
+            ArchiveProgramResourceProvider.fromArchive(TestDeps.getGsonJar()))
+        .addKeepRuleFiles(TestDeps.getGsonKeepRules())
         .allowUnusedProguardConfigurationRules();
   }
 
   static void addGsonLibraryAndKeepRules(ProguardTestBuilder builder) {
-    builder.addProgramFiles(ToolHelper.GSON).addKeepRuleFiles(ToolHelper.GSON_KEEP_RULES);
+    builder.addProgramFiles(TestDeps.getGsonJar()).addKeepRuleFiles(TestDeps.getGsonKeepRules());
   }
 }

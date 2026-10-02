@@ -23,6 +23,7 @@ import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
+import com.android.tools.r8.ToolHelper.CommandResultCache;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.cf.CfVersion;
@@ -149,6 +150,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
@@ -594,6 +597,20 @@ public class TestBase {
 
   @Rule
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
+
+  @Rule
+  public TestWatcher commandCacheInvalidator =
+      new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+          CommandResultCache.onTestStarted();
+        }
+
+        @Override
+        protected void failed(Throwable e, Description description) {
+          CommandResultCache.onTestFailed();
+        }
+      };
 
   private static TemporaryFolder staticTemp = null;
 

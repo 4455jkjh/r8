@@ -97,6 +97,15 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
     return !inFlow.isEmpty();
   }
 
+  public boolean hasNonBaseInFlow() {
+    for (InFlow inFlow : inFlow) {
+      if (!inFlow.isBaseInFlow()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public Set<InFlow> getInFlow() {
     assert inFlow.isEmpty() || inFlow instanceof HashSet<?>;
     return inFlow;

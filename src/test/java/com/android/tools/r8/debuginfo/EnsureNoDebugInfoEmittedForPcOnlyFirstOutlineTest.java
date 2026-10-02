@@ -59,8 +59,7 @@ public class EnsureNoDebugInfoEmittedForPcOnlyFirstOutlineTest extends TestBase 
     testForR8(Backend.DEX)
         .addInnerClasses(getClass())
         .addKeepAllClassesRule()
-        // TODO(b/356841164): Use full version.
-        .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT.getMajor())
+        .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT)
         .compile()
         .apply(x -> System.out.println(x.getProguardMap()))
         .inspect(inspector -> inspect(inspector, true, false));
@@ -72,8 +71,7 @@ public class EnsureNoDebugInfoEmittedForPcOnlyFirstOutlineTest extends TestBase 
         .addInnerClasses(getClass())
         .addKeepAllClassesRule()
         .addOptionsModification(options -> options.testing.forcePcBasedEncoding = true)
-        // TODO(b/356841164): Use full version.
-        .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT.getMajor())
+        .setMinApi(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT)
         .compile()
         .apply(x -> System.out.println(x.getProguardMap()))
         .inspect(inspector -> inspect(inspector, true, true));

@@ -22,10 +22,8 @@ import com.android.tools.r8.smali.SmaliBuilder;
 import com.android.tools.r8.smali.SmaliBuilder.MethodSignature;
 import com.android.tools.r8.smali.SmaliTestBase;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
-import java.util.function.Consumer;
 import org.junit.Test;
 
 public class SwitchRewritingTest extends SmaliTestBase {
@@ -117,42 +115,45 @@ public class SwitchRewritingTest extends SmaliTestBase {
       String caseLabel = "case_" + i;
       switchSource.append("    " + (firstKey + i * keyStep) + " -> :" + caseLabel + "\n");
       targetCode.append("  :" + caseLabel + "\n");
+      targetCode.append("    const/16 p0, " + i + "\n");
       targetCode.append("    goto :return\n");
     }
     if (additionalLastKey != null) {
       String caseLabel = "case_" + totalKeys;
       switchSource.append("    " + additionalLastKey + " -> :" + caseLabel + "\n");
       targetCode.append("  :" + caseLabel + "\n");
+      targetCode.append("    const/16 p0, " + totalKeys + "\n");
       targetCode.append("    goto :return\n");
     }
 
-    MethodSignature signature = builder.addStaticMethod(
-        "void",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int"),
-        0,
-        "    sparse-switch p0, :sparse_switch_data",
-        "    goto :return",
-        targetCode.toString(),
-        "  :return",
-        "    return-void",
-        "  :sparse_switch_data",
-        "  .sparse-switch",
-        switchSource.toString(),
-        "  .end sparse-switch");
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int"),
+            0,
+            "    sparse-switch p0, :sparse_switch_data",
+            "    const/4 p0, -0x1",
+            "    goto :return",
+            targetCode.toString(),
+            "  :return",
+            "    return p0",
+            "  :sparse_switch_data",
+            "  .sparse-switch",
+            switchSource.toString(),
+            "  .end sparse-switch");
 
     builder.addMainMethod(
         2,
         "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "    const/4             v1, 0",
-        "    invoke-static       { v1 }, LTest;->method(I)V",
-        "    return-void"
-    );
+        "    invoke-static       { v1 }, LTest;->method(I)I",
+        "    move-result         v1",
+        "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
+        "    return-void");
 
-    Consumer<InternalOptions> optionsConsumer =
-        options -> options.testing.enableDeadSwitchCaseElimination = false;
     AndroidApp originalApplication = buildApplication(builder);
-    AndroidApp processedApplication = processApplication(originalApplication, optionsConsumer);
+    AndroidApp processedApplication = processApplication(originalApplication);
     DexEncodedMethod method = getMethod(processedApplication, signature);
     DexCode code = method.getCode().asDexCode();
     if (keyStep <= 2) {

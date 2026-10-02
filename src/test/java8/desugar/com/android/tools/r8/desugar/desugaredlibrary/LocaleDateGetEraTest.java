@@ -13,18 +13,17 @@ import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
+import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.transformers.MethodTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.chrono.ChronoLocalDate;
 import java.time.chrono.Era;
 import java.time.chrono.IsoEra;
-import java.util.Collection;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,7 +39,6 @@ public class LocaleDateGetEraTest extends DesugaredLibraryTestBase {
   private final TestParameters parameters;
   private final CompilationSpecification compilationSpecification;
   private final LibraryDesugaringSpecification libraryDesugaringSpecification;
-  private final Class<?> eraClass;
 
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
@@ -51,29 +49,36 @@ public class LocaleDateGetEraTest extends DesugaredLibraryTestBase {
             .withApiLevel(AndroidApiLevel.N)
             .build(),
         getJdk8Jdk11(),
-        SPECIFICATIONS_WITH_CF2CF,
-        ImmutableList.of(IsoEra.class, Era.class));
+        SPECIFICATIONS_WITH_CF2CF);
   }
 
   public LocaleDateGetEraTest(
       TestParameters parameters,
       LibraryDesugaringSpecification libraryDesugaringSpecification,
-      CompilationSpecification compilationSpecification,
-      Class<?> eraClass) {
+      CompilationSpecification compilationSpecification) {
     this.parameters = parameters;
     this.compilationSpecification = compilationSpecification;
     this.libraryDesugaringSpecification = libraryDesugaringSpecification;
-    this.eraClass = eraClass;
   }
 
   @Test
   public void testLocaleDate() throws Throwable {
-    SingleTestRunResult<?> run =
+    // Compile the getEra() call with both the Era and the IsoEra return type in the same program,
+    // and run each of them separately.
+    DesugaredLibraryTestCompileResult<?> compileResult =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addProgramClassFileData(getProgramClassFileData())
-            .addKeepMainRule(Executor.class)
-            .run(parameters.getRuntime(), Executor.class);
+            .addProgramClassFileData(
+                getProgramClassFileData(ExecutorEra.class, Era.class),
+                getProgramClassFileData(ExecutorIsoEra.class, IsoEra.class))
+            .addKeepMainRule(ExecutorEra.class)
+            .addKeepMainRule(ExecutorIsoEra.class)
+            .compile();
+    checkResult(compileResult.run(parameters.getRuntime(), ExecutorEra.class), Era.class);
+    checkResult(compileResult.run(parameters.getRuntime(), ExecutorIsoEra.class), IsoEra.class);
+  }
+
+  private void checkResult(SingleTestRunResult<?> run, Class<?> eraClass) {
     if (parameters.getRuntime().isCf()
         && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)
         && eraClass == IsoEra.class
@@ -95,37 +100,40 @@ public class LocaleDateGetEraTest extends DesugaredLibraryTestBase {
     }
   }
 
-  private Collection<byte[]> getProgramClassFileData() throws IOException {
-    return ImmutableList.of(
-        transformer(Executor.class)
-            .addMethodTransformer(
-                new MethodTransformer() {
-                  @Override
-                  public void visitMethodInsn(
-                      int opcode,
-                      String owner,
-                      String name,
-                      String descriptor,
-                      boolean isInterface) {
-                    if (opcode == Opcodes.INVOKEINTERFACE && name.equals("getEra")) {
-                      super.visitMethodInsn(
-                          Opcodes.INVOKEVIRTUAL,
-                          "java/time/LocalDate",
-                          name,
-                          "()" + DescriptorUtils.javaTypeToDescriptor(eraClass.getTypeName()),
-                          false);
-                      return;
-                    }
-                    if (opcode == Opcodes.CHECKCAST) {
-                      return;
-                    }
-                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                  }
-                })
-            .transform());
+  private byte[] getProgramClassFileData(Class<?> executorClass, Class<?> eraClass)
+      throws IOException {
+    return transformer(executorClass)
+        .addMethodTransformer(
+            new MethodTransformer() {
+              @Override
+              public void visitMethodInsn(
+                  int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                if (opcode == Opcodes.INVOKEINTERFACE && name.equals("getEra")) {
+                  super.visitMethodInsn(
+                      Opcodes.INVOKEVIRTUAL,
+                      "java/time/LocalDate",
+                      name,
+                      "()" + DescriptorUtils.javaTypeToDescriptor(eraClass.getTypeName()),
+                      false);
+                  return;
+                }
+                if (opcode == Opcodes.CHECKCAST) {
+                  return;
+                }
+                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+              }
+            })
+        .transform();
   }
 
-  static class Executor {
+  static class ExecutorEra {
+
+    public static void main(String[] args) {
+      System.out.println(((ChronoLocalDate) LocalDate.ofEpochDay(123456789L)).getEra());
+    }
+  }
+
+  static class ExecutorIsoEra {
 
     public static void main(String[] args) {
       System.out.println(((ChronoLocalDate) LocalDate.ofEpochDay(123456789L)).getEra());

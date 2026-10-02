@@ -128,9 +128,14 @@ public class InstancePut extends FieldInstruction implements FieldPut, InstanceF
 
   @Override
   public DeadInstructionResult canBeDeadCode(AppView<?> appView, IRCode code) {
-    if (object().isDefinedByInstructionSatisfying(Instruction::isNewInstance)
-        && !instructionInstanceCanThrow(appView, code.context())) {
-      return DeadInstructionResult.deadIfInValueIsDead(object());
+    if (object().isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
+      FieldResolutionResult resolutionResult =
+          appView.appInfo().resolveField(getField(), code.context());
+      if (!internalInstructionInstanceCanThrow(
+              appView, code.context(), SideEffectAssumption.NONE, resolutionResult)
+          && !resolutionResult.getResolvedField().isVolatile()) {
+        return DeadInstructionResult.deadIfInValueIsDead(object());
+      }
     }
     return DeadInstructionResult.notDead();
   }
@@ -158,6 +163,10 @@ public class InstancePut extends FieldInstruction implements FieldPut, InstanceF
       DexClassAndField field = resolutionResult.getResolutionPair();
       assert field != null : "NoSuchFieldError (resolution failure) should be caught.";
 
+      if (field.getAccessFlags().isVolatile()) {
+        return true;
+      }
+
       if (field.getType().isAlwaysNull(appViewWithLiveness)) {
         return false;
       }
@@ -183,15 +192,10 @@ public class InstancePut extends FieldInstruction implements FieldPut, InstanceF
       return false;
     }
 
-    if (allocator.options().canHaveIncorrectJoinForArrayOfInterfacesBug()) {
-      InstancePut instancePut = other.asInstancePut();
-
-      // If the value being written by this instruction is an array, then make sure that the value
-      // being written by the other instruction is the exact same value. Otherwise, the verifier
-      // may incorrectly join the types of these arrays to Object[].
-      if (value().getType().isArrayType() && value() != instancePut.value()) {
-        return false;
-      }
+    if (allocator.options().canHaveIncorrectJoinForArrayOfInterfacesBug()
+        && !identicalArrayValuesAfterRegisterAllocation(
+            value(), other.asInstancePut().value(), allocator)) {
+      return false;
     }
 
     return true;

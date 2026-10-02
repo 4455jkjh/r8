@@ -571,6 +571,28 @@ public abstract class Instruction
     return true;
   }
 
+  /**
+   * Returns true if the values {@code a} and {@code b} may be merged when sharing two instructions
+   * on devices with {@link
+   * com.android.tools.r8.utils.InternalOptions#canHaveIncorrectJoinForArrayOfInterfacesBug()}.
+   *
+   * <p>If one of the values is an array, then the two values must be the exact same value.
+   * Otherwise, the verifier may incorrectly join the types of these arrays to Object[].
+   *
+   * <p>Note that the array check must be applied to both values, and not only to the value of the
+   * receiver instruction. Otherwise {@link #identicalAfterRegisterAllocation} is neither symmetric
+   * nor transitive, since the null type is not an array type: a one sided check considers null and
+   * int[] identical in one direction only, and its symmetric closure would consider null identical
+   * to both int[] and String[], which are not identical to each other. Both properties are required
+   * as the relation is used as an {@link com.google.common.base.Equivalence} when deduplicating
+   * blocks in the IR finalizer.
+   */
+  protected static boolean identicalArrayValuesAfterRegisterAllocation(
+      Value a, Value b, RegisterAllocator allocator) {
+    assert allocator.options().canHaveIncorrectJoinForArrayOfInterfacesBug();
+    return a == b || !(a.getType().isArrayType() || b.getType().isArrayType());
+  }
+
   @SuppressWarnings("UnusedVariable")
   public boolean identicalAfterRegisterAllocation(
       Instruction other, RegisterAllocator allocator, MethodConversionOptions conversionOptions) {

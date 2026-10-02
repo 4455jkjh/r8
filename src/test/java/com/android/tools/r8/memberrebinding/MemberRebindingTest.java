@@ -41,7 +41,7 @@ public class MemberRebindingTest extends TestBase {
   private final String keepRuleFile;
   private final Path programFile;
   private final ThrowingConsumer<CodeInspector, Exception> inspection;
-  private final int minApiLevel;
+  private final AndroidApiLevel minApiLevel;
 
   @Rule
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
@@ -188,12 +188,12 @@ public class MemberRebindingTest extends TestBase {
       }
     }
 
-    public int getMinApiLevel() {
+    public AndroidApiLevel getMinApiLevel() {
       switch (version) {
         case PRE_N:
-          return AndroidApiLevel.getDefault().getMajor();
+          return AndroidApiLevel.getDefault();
         case N:
-          return AndroidApiLevel.N.getMajor();
+          return AndroidApiLevel.N;
         default:
           throw new Unreachable();
       }

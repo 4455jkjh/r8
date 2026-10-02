@@ -3,23 +3,19 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.positions;
 
-import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
-import com.android.tools.r8.kotlin.KotlinSourceDebugExtensionParser;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.kotlin.KotlinSourceDebugExtensionParser.KotlinSourceDebugExtensionParserResult;
-import com.android.tools.r8.utils.CfLineToMethodMapper;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.KotlinSourceDebugExtensionCollection;
 import com.android.tools.r8.utils.internal.collections.Pair;
-import java.util.Map;
-import java.util.Map.Entry;
 
 // PositionRemapper is a stateful function which takes a position (represented by a
 // DexDebugPositionState) and returns a remapped Position.
@@ -139,17 +135,17 @@ public interface ClassPositionRemapper {
 
     private final AppPositionRemapper baseRemapper;
     private final DexItemFactory factory;
-    private final CfLineToMethodMapper lineToMethodMapper;
+    private final KotlinInlineMethodMap kotlinInlineMethodMap;
     private final KotlinSourceDebugExtensionCollection kotlinSourceDebugExtensions;
 
     KotlinInlineFunctionAppPositionRemapper(
         AppView<?> appView,
         AppPositionRemapper baseRemapper,
-        CfLineToMethodMapper lineToMethodMapper,
         KotlinSourceDebugExtensionCollection kotlinSourceDebugExtensions) {
       this.baseRemapper = baseRemapper;
       this.factory = appView.dexItemFactory();
-      this.lineToMethodMapper = lineToMethodMapper;
+      this.kotlinInlineMethodMap = appView.getKotlinInlineMethodMap();
+      assert this.kotlinInlineMethodMap != null;
       this.kotlinSourceDebugExtensions = kotlinSourceDebugExtensions;
     }
 
@@ -195,58 +191,36 @@ public interface ClassPositionRemapper {
         @Override
         public Pair<Position, Position> createRemappedPosition(Position position) {
           int line = position.getLine();
-          Map.Entry<Integer, KotlinSourceDebugExtensionParser.Position> inlinedPosition =
-              kotlinSourceDebugExtension.lookupInlinedPosition(line);
+          var inlinedPosition = kotlinSourceDebugExtension.lookupInlinedPositionEntry(line);
           if (inlinedPosition == null) {
             return baseRemapper.createRemappedPosition(position);
           }
-          int inlineeLineDelta = line - inlinedPosition.getKey();
-          int originalInlineeLine = inlinedPosition.getValue().getRange().from + inlineeLineDelta;
-          try {
-            String binaryName = inlinedPosition.getValue().getSource().getPath();
-            String nameAndDescriptor =
-                lineToMethodMapper.lookupNameAndDescriptor(binaryName, originalInlineeLine);
-            if (nameAndDescriptor == null) {
-              return baseRemapper.createRemappedPosition(position);
-            }
-            String clazzDescriptor = DescriptorUtils.getDescriptorFromClassInternalName(binaryName);
-            String methodName = CfLineToMethodMapper.getName(nameAndDescriptor);
-            String methodDescriptor = CfLineToMethodMapper.getDescriptor(nameAndDescriptor);
-            String returnTypeDescriptor = DescriptorUtils.getReturnTypeDescriptor(methodDescriptor);
-            String[] argumentDescriptors =
-                DescriptorUtils.getArgumentTypeDescriptors(methodDescriptor);
-            DexString[] argumentDexStringDescriptors = new DexString[argumentDescriptors.length];
-            for (int i = 0; i < argumentDescriptors.length; i++) {
-              argumentDexStringDescriptors[i] = factory.createString(argumentDescriptors[i]);
-            }
-            DexMethod inlinee =
-                factory.createMethod(
-                    factory.createString(clazzDescriptor),
-                    factory.createString(methodName),
-                    factory.createString(returnTypeDescriptor),
-                    argumentDexStringDescriptors);
-            if (!inlinee.equals(position.getMethod())) {
-              // We have an inline from a different method than the current position.
-              Entry<Integer, KotlinSourceDebugExtensionParser.Position> calleePosition =
-                  kotlinSourceDebugExtension.lookupCalleePosition(line);
-              if (calleePosition != null) {
-                // Take the first line as the callee position
-                int calleeLine = Math.max(0, calleePosition.getValue().getRange().from);
-                position = position.builderWithCopy().setLine(calleeLine).build();
-              }
-              return baseRemapper.createRemappedPosition(
-                  SourcePosition.builder()
-                      .setLine(originalInlineeLine)
-                      .setMethod(inlinee)
-                      .setCallerPosition(position)
-                      .build());
-            }
-            // This is the same position, so we should really not mark this as an inline position.
-            // Fall through to the default case.
-          } catch (ResourceException ignored) {
-            // Intentionally left empty. Remapping of kotlin functions utility is a best effort
-            // mapping.
+          int inlineeLineDelta = line - inlinedPosition.start;
+          int originalInlineeLine = inlinedPosition.value.getRange().from + inlineeLineDelta;
+          String binaryName = inlinedPosition.value.getSource().getPath();
+          String clazzDescriptor = DescriptorUtils.getDescriptorFromClassInternalName(binaryName);
+          DexType inlineeType = factory.createType(clazzDescriptor);
+          DexMethod inlinee = kotlinInlineMethodMap.lookup(inlineeType, originalInlineeLine);
+          if (inlinee == null) {
+            return baseRemapper.createRemappedPosition(position);
           }
+          if (!inlinee.equals(position.getMethod())) {
+            // We have an inline from a different method than the current position.
+            var calleePosition = kotlinSourceDebugExtension.lookupCalleePosition(line);
+            if (calleePosition != null) {
+              // Take the first line as the callee position
+              int calleeLine = Math.max(0, calleePosition.getRange().from);
+              position = position.builderWithCopy().setLine(calleeLine).build();
+            }
+            return baseRemapper.createRemappedPosition(
+                SourcePosition.builder()
+                    .setLine(originalInlineeLine)
+                    .setMethod(inlinee)
+                    .setCallerPosition(position)
+                    .build());
+          }
+          // This is the same position, so we should really not mark this as an inline position.
+          // Fall through to the default case.
           return baseRemapper.createRemappedPosition(position);
         }
 

@@ -51,10 +51,6 @@ public class RunJdwpTests extends TestBase {
   static final boolean PRINT_STREAMS = true;
 
   static final String RUN_SCRIPT = ToolHelper.TOOLS_DIR + "run-jdwp-tests.py";
-  static final String DEX_LIB =
-      ToolHelper.THIRD_PARTY_DIR + "jdwp-tests/apache-harmony-jdwp-tests-hostdex.jar";
-  static final String JAR_LIB =
-      ToolHelper.THIRD_PARTY_DIR + "jdwp-tests/apache-harmony-jdwp-tests-host.jar";
 
   interface TestPredicate {
     boolean test(DexVm dexVm, Tool tool);
@@ -348,10 +344,10 @@ public class RunJdwpTests extends TestBase {
 
   String getTestLib(Tool tool) {
     if (tool == Tool.JAVAC) {
-      return ToolHelper.BUILD_DIR + "classes/test:" + JAR_LIB;
+      return ToolHelper.BUILD_DIR + "classes/test:" + TestDeps.getJdwpTestsJar(AndroidApiLevel.N);
     }
     if (tool == Tool.DX) {
-      return DEX_LIB;
+      return TestDeps.getJdwpTestsDexJar().toString();
     }
     assert tool == Tool.D8;
     return d8Out.toPath().resolve("classes.dex").toString();

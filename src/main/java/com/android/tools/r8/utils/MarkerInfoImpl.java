@@ -44,8 +44,20 @@ public class MarkerInfoImpl implements MarkerInfo {
   }
 
   @Override
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   public int getMinApi() {
-    return marker.hasMinApi() ? marker.getMinApi().intValue() : -1;
+    return getMinApiMajor();
+  }
+
+  @Override
+  public int getMinApiMajor() {
+    return marker.hasMinApi() ? marker.getMinApi().major : -1;
+  }
+
+  @Override
+  public int getMinApiMinor() {
+    return marker.hasMinApi() ? marker.getMinApi().minor : -1;
   }
 
   @Override

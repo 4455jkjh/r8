@@ -14,10 +14,11 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -84,7 +85,7 @@ public class PackageNamingTest extends TestBase {
             keepRulesFile.toString().endsWith("keep-rules-005.txt")
                 || keepRulesFile.toString().endsWith("keep-rules-106.txt"),
             TestShrinkerBuilder::addDontRepackage)
-        .setMinApi(21)
+        .setMinApi(new UncheckedApiLevel(21, 0))
         .compile()
         .inspect(inspection);
   }

@@ -175,7 +175,7 @@ public class MethodOptimizationInfoCollector {
       ProgramMethod method, IRCode code, OptimizationFeedback feedback, Timing timing) {
     timing.begin("Identify bridge info");
     feedback.setBridgeInfo(
-        method, BridgeAnalyzer.analyzeMethod(appView, method.getDefinition(), code));
+        method, new BridgeAnalyzer(appView).analyzeMethod(method.getDefinition(), code));
     timing.end();
   }
 
@@ -381,7 +381,9 @@ public class MethodOptimizationInfoCollector {
               }
               Value object =
                   instancePut.object().getAliasedValue(aliasesThroughAssumeAndCheckCasts);
-              if (object != receiver || instancePut.instructionInstanceCanThrow(appView, context)) {
+              if (object != receiver
+                  || instancePut.instructionInstanceCanThrow(appView, context)
+                  || field.isVolatile()) {
                 builder.setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
               }
 

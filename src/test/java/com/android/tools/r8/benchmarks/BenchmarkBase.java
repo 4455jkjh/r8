@@ -4,12 +4,11 @@
 package com.android.tools.r8.benchmarks;
 
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,21 +19,9 @@ public abstract class BenchmarkBase extends TestBase {
 
   // Benchmarks must be configured with the "none" runtime as each config defines a singleton
   // benchmark in golem.
-  public static List<Object[]> parametersFromConfigs(Iterable<BenchmarkConfig> configs) {
-    if ((System.getProperty("runtimes") == null || System.getProperty("runtimes").contains("none"))
-        && System.getProperty("shard_count") != null
-        && System.getProperty("shard_number") != null) {
-      int shardCount = Integer.parseInt(System.getProperty("shard_count"));
-      int shardNumber = Integer.parseInt(System.getProperty("shard_number"));
-      List<BenchmarkConfig> sharded = new ArrayList<>();
-      for (BenchmarkConfig config : configs) {
-        if (Math.floorMod(config.getIdentifier().hashCode(), shardCount) == shardNumber) {
-          sharded.add(config);
-        }
-      }
-      configs = sharded;
-    }
-    return buildParameters(configs, getTestParameters().withNoneRuntime().build());
+  public static List<Object[]> parametersFromConfig(BenchmarkConfig config) {
+    return buildParameters(
+        Collections.singletonList(config), getTestParameters().withNoneRuntime().build());
   }
 
   private final BenchmarkConfig config;
@@ -50,22 +37,6 @@ public abstract class BenchmarkBase extends TestBase {
 
   @Test
   public void testBenchmarks() throws Exception {
-    testBenchmark();
-  }
-
-  protected void testBenchmarkWithName(String name) throws Exception {
-    assumeTrue(config.getName().equals(name));
-    testBenchmark();
-  }
-
-  protected void testBenchmarkWithNameAndTarget(String name, BenchmarkTarget target)
-      throws Exception {
-    assumeTrue(config.getName().equals(name));
-    assumeTrue(config.getTarget().equals(target));
-    testBenchmark();
-  }
-
-  private void testBenchmark() throws Exception {
     // Slows down the windows bot considerably and does not add much extra value.
     assumeFalse(ToolHelper.isWindows());
     config.run(new BenchmarkEnvironment(config, temp, false));

@@ -40,8 +40,13 @@ dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
   sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
   // Declare local runtime dependencies.
+  runtimeOnlyData(project(":third_party", "aapt2"))
   runtimeOnlyData(project(":third_party", "dependenciesBucket"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
+  runtimeOnlyData(project(":third_party", "googleJavaFormat"))
+  runtimeOnlyData(project(":third_party", "googleKotlinFormat"))
   runtimeOnlyData(project(":third_party", "jdwpTests"))
+  runtimeOnlyData(project(":third_party", "kotlinR8TestResources"))
 }
 
 dependencies {
@@ -50,7 +55,6 @@ dependencies {
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
-  implementation(project(":main", "turboClassesOutput"))
   resourceShrinkerDepsJarScope(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))

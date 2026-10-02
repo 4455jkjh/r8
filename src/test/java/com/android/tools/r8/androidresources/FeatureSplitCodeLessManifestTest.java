@@ -13,6 +13,7 @@ import com.android.aapt.Resources.XmlElement;
 import com.android.aapt.Resources.XmlNode;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -25,7 +26,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -336,12 +336,7 @@ public class FeatureSplitCodeLessManifestTest extends TestBase {
 
   private static void validateWithBundletool(XmlNode xmlNode, boolean expectedHasCode)
       throws Exception {
-    Path bundletoolJar =
-        Paths.get(
-            ToolHelper.THIRD_PARTY_DIR,
-            "bundletool",
-            "bundletool-1.11.0",
-            "bundletool-all-1.11.0.jar");
+    Path bundletoolJar = TestDeps.getBundleToolJar();
     assertTrue(Files.exists(bundletoolJar));
     try (URLClassLoader loader =
         new URLClassLoader(

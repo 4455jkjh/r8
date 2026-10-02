@@ -137,6 +137,7 @@ public class KotlinDeclarationContainerInfo implements EnqueuerMetadataTraceable
                 propertyProcessor.syntheticMethodForAnnotationsSignature().toString());
         if (method != null) {
           hasBacking = true;
+          kotlinPropertyInfo.setHasSyntheticMethodForAnnotations();
           memberInfoConsumer.accept(
               method,
               new KotlinPropertyInfoDelegate(

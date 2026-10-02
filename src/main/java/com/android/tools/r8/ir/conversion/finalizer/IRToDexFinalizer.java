@@ -12,10 +12,11 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.conversion.finalizer.passes.BasicBlockReorderer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.BranchDiamondInverter;
+import com.android.tools.r8.ir.conversion.finalizer.passes.DeadRegisterStoreEliminator;
 import com.android.tools.r8.ir.conversion.finalizer.passes.DebugLocalUpdater;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockPrefixSharer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
-import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalPredecessorBlocksRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.RedundantInstructionsRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.desugar.nest.D8NestBasedAccessDesugaring;
@@ -30,12 +31,13 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final DeadCodeRemover deadCodeRemover;
   private final InternalOptions options;
   private final TrivialGotosCollapser trivialGotosCollapser;
-  private final IdenticalPredecessorBlocksRemover identicalPredecessorBlocksRemover;
+  private final IdenticalBlockRemover identicalBlockRemover;
   private final RedundantInstructionsRemover redundantInstructionsRemover;
   private final IdenticalBlockPrefixSharer identicalBlockPrefixSharer;
   private final IdenticalBlockSuffixSharer identicalBlockSuffixSharer;
   private final DebugLocalUpdater debugLocalUpdater;
   private final BranchDiamondInverter branchDiamondInverter;
+  private final DeadRegisterStoreEliminator deadRegisterStoreEliminator;
   private final BasicBlockReorderer basicBlockReorderer;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
@@ -43,12 +45,13 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     this.deadCodeRemover = deadCodeRemover;
     this.options = appView.options();
     this.trivialGotosCollapser = new TrivialGotosCollapser(this.appView);
-    identicalPredecessorBlocksRemover = new IdenticalPredecessorBlocksRemover(appView);
+    identicalBlockRemover = new IdenticalBlockRemover(appView);
     redundantInstructionsRemover = new RedundantInstructionsRemover(appView);
     identicalBlockPrefixSharer = new IdenticalBlockPrefixSharer(appView);
     identicalBlockSuffixSharer = new IdenticalBlockSuffixSharer(appView);
     debugLocalUpdater = new DebugLocalUpdater(appView);
     branchDiamondInverter = new BranchDiamondInverter(appView);
+    deadRegisterStoreEliminator = new DeadRegisterStoreEliminator(appView);
     this.basicBlockReorderer = new BasicBlockReorderer(this.appView);
   }
 
@@ -96,27 +99,28 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     registerAllocator.allocateRegisters();
     timing.end();
     trivialGotosCollapser.run(code, registerAllocator, timing);
+    // The debug local updater only has an effect when compiling in debug mode.
     debugLocalUpdater.run(code, registerAllocator, timing);
+    // The following passes are data flow passes and have to run in this order at the beginning.
+    // At this point, the basic block order has no backward edges except for loops, so the passes
+    // only iterate to a fixed point in methods with loops. This might no longer be the case after
+    // the identical block, prefix and suffix sharing passes below. The passes index their per-block
+    // state by block number and none of them adds or removes a block, so the blocks are densely
+    // renumbered once here.
+    code.resetNumbers();
     redundantInstructionsRemover.run(code, registerAllocator, timing);
-    boolean changed =
-        identicalPredecessorBlocksRemover
-            .run(code, registerAllocator, timing)
-            .hasChanged()
-            .isTrue();
-    changed |=
-        identicalBlockPrefixSharer.run(code, registerAllocator, timing).hasChanged().isTrue();
-    changed |=
-        identicalBlockSuffixSharer.run(code, registerAllocator, timing).hasChanged().isTrue();
-    changed |= branchDiamondInverter.run(code, registerAllocator, timing).hasChanged().isTrue();
-    if (changed) {
+    deadRegisterStoreEliminator.run(code, registerAllocator, timing);
+    // The next passes share identical basic blocks, basic block prefixes and basic block suffixes.
+    identicalBlockRemover.run(code, registerAllocator, timing);
+    identicalBlockPrefixSharer.run(code, registerAllocator, timing);
+    trivialGotosCollapser.run(code, registerAllocator, timing);
+    if (identicalBlockSuffixSharer.run(code, registerAllocator, timing).hasChanged().isTrue()) {
       trivialGotosCollapser.run(code, registerAllocator, timing);
-      identicalPredecessorBlocksRemover.run(code, registerAllocator, timing);
-      identicalBlockPrefixSharer.run(code, registerAllocator, timing);
-      identicalBlockSuffixSharer.run(code, registerAllocator, timing);
-      branchDiamondInverter.run(code, registerAllocator, timing);
+      identicalBlockRemover.run(code, registerAllocator, timing);
     }
-    // BasicBlockReorderer should be run near the end because other optimizations may change block
-    // ordering.
+    // The next passes change the shape of the CFG and the basic block ordering, so they have to run
+    // near the end.
+    branchDiamondInverter.run(code, registerAllocator, timing);
     basicBlockReorderer.run(code, registerAllocator, timing);
     trivialGotosCollapser.run(code, registerAllocator, timing);
     return registerAllocator;

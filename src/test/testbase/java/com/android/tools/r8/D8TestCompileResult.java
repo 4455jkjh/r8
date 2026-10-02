@@ -10,6 +10,7 @@ import com.android.tools.r8.metadata.D8BuildMetadata;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
@@ -27,7 +28,7 @@ public class D8TestCompileResult extends TestCompileResult<D8TestCompileResult, 
   D8TestCompileResult(
       TestState state,
       AndroidApp app,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       OutputMode outputMode,
       LibraryDesugaringTestConfiguration libraryDesugaringTestConfiguration,
       String proguardMap,

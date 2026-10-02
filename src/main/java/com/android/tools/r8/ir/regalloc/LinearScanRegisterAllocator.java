@@ -234,14 +234,10 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private List<LiveIntervals> liveIntervals = new ArrayList<>();
 
   // List of active intervals.
-  // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
-  private List<LiveIntervals> active = new LinkedList<>();
+  private List<LiveIntervals> active = new ArrayList<>();
 
   // List of intervals where the current instruction falls into one of their live range holes.
-  // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
-  protected List<LiveIntervals> inactive = new LinkedList<>();
+  protected List<LiveIntervals> inactive = new ArrayList<>();
 
   // List of intervals that no register has been allocated to sorted by first live range.
   protected PriorityQueue<LiveIntervals> unhandled = new PriorityQueue<>();
@@ -373,7 +369,6 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     insertRangeInvokeMoves();
     insertInitializedThisMove();
     ImmutableList<BasicBlock> blocks = computeLivenessInformation();
-    dedupCatchHandlerBlocks();
     timing.end();
     timing.begin("Allocate");
     performAllocation();
@@ -1322,45 +1317,47 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private void advanceStateToLiveIntervals(LiveIntervals unhandledInterval) {
     int start = unhandledInterval.getStart();
     // Check for active intervals that expired or became inactive.
-    Iterator<LiveIntervals> activeIterator = active.iterator();
-    while (activeIterator.hasNext()) {
-      LiveIntervals activeIntervals = activeIterator.next();
-      if (start >= activeIntervals.getEnd()) {
-        activeIterator.remove();
-        freeOccupiedRegistersForIntervals(activeIntervals);
-        if (start == activeIntervals.getEnd()) {
-          expiredHere.add(activeIntervals.getRegister());
-          if (activeIntervals.getType().isWide()) {
-            expiredHere.add(activeIntervals.getRegister() + 1);
+    active.removeIf(
+        activeIntervals -> {
+          if (start >= activeIntervals.getEnd()) {
+            freeOccupiedRegistersForIntervals(activeIntervals);
+            if (start == activeIntervals.getEnd()) {
+              expiredHere.add(activeIntervals.getRegister());
+              if (activeIntervals.getType().isWide()) {
+                expiredHere.add(activeIntervals.getRegister() + 1);
+              }
+            }
+            return true;
           }
-        }
-      } else if (!activeIntervals.overlapsPosition(start)) {
-        activeIterator.remove();
-        assert activeIntervals.hasRegister();
-        inactive.add(activeIntervals);
-        freeOccupiedRegistersForIntervals(activeIntervals);
-      }
-    }
+          if (!activeIntervals.overlapsPosition(start)) {
+            assert activeIntervals.hasRegister();
+            inactive.add(activeIntervals);
+            freeOccupiedRegistersForIntervals(activeIntervals);
+            return true;
+          }
+          return false;
+        });
 
     // Check for inactive intervals that expired or became reactivated.
-    Iterator<LiveIntervals> inactiveIterator = inactive.iterator();
-    while (inactiveIterator.hasNext()) {
-      LiveIntervals inactiveIntervals = inactiveIterator.next();
-      if (start >= inactiveIntervals.getEnd()) {
-        inactiveIterator.remove();
-        if (start == inactiveIntervals.getEnd()) {
-          expiredHere.add(inactiveIntervals.getRegister());
-          if (inactiveIntervals.getType().isWide()) {
-            expiredHere.add(inactiveIntervals.getRegister() + 1);
+    inactive.removeIf(
+        inactiveIntervals -> {
+          if (start >= inactiveIntervals.getEnd()) {
+            if (start == inactiveIntervals.getEnd()) {
+              expiredHere.add(inactiveIntervals.getRegister());
+              if (inactiveIntervals.getType().isWide()) {
+                expiredHere.add(inactiveIntervals.getRegister() + 1);
+              }
+            }
+            return true;
           }
-        }
-      } else if (inactiveIntervals.overlapsPosition(start)) {
-        inactiveIterator.remove();
-        assert inactiveIntervals.hasRegister();
-        active.add(inactiveIntervals);
-        takeFreeRegistersForIntervals(inactiveIntervals);
-      }
-    }
+          if (inactiveIntervals.overlapsPosition(start)) {
+            assert inactiveIntervals.hasRegister();
+            active.add(inactiveIntervals);
+            takeFreeRegistersForIntervals(inactiveIntervals);
+            return true;
+          }
+          return false;
+        });
   }
 
   private boolean invariantsHold(ArgumentReuseMode mode) {
@@ -2172,7 +2169,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private RegisterPositions computeFreePositions(
       LiveIntervals unhandledInterval, int registerConstraint) {
     // Set all free positions for possible registers to max integer.
-    RegisterPositions freePositions = new RegisterPositionsImpl(registerConstraint + 1);
+    RegisterPositions freePositions = new RegisterPositionsImpl(registerConstraint + 1, false);
 
     if (options().shouldCompileMethodInDebugMode(code.context())
         && !code.context().getAccessFlags().isStatic()) {
@@ -2262,8 +2259,11 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     // the next overlap.
     for (LiveIntervals intervals : inactive) {
       int inactiveRegister = intervals.getRegister();
-      if (inactiveRegister <= registerConstraint && unhandledInterval.overlaps(intervals)) {
+      if (hasUnblockedRegister(intervals, registerConstraint, freePositions)) {
         int nextOverlap = unhandledInterval.nextOverlap(intervals);
+        if (nextOverlap == -1) {
+          continue;
+        }
         for (int i = 0; i < intervals.requiredRegisters(); i++) {
           int register = inactiveRegister + i;
           if (register <= registerConstraint && !freePositions.isBlocked(register)) {
@@ -2283,6 +2283,19 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       }
     }
     return freePositions;
+  }
+
+  // Returns true if one of the registers of the given intervals is allowed by the register
+  // constraint and is not blocked in the given free positions.
+  private static boolean hasUnblockedRegister(
+      LiveIntervals intervals, int registerConstraint, RegisterPositions freePositions) {
+    for (int i = 0; i < intervals.requiredRegisters(); i++) {
+      int register = intervals.getRegister() + i;
+      if (register <= registerConstraint && !freePositions.isBlocked(register)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // Looks at surrounding alias live intervals and tries to assign similar registers to the current
@@ -2722,7 +2735,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private boolean allocateBlockedRegister(LiveIntervals unhandledInterval, int registerConstraint) {
     // Initialize all candidate registers to Integer.MAX_VALUE.
     RegisterPositions usePositions = new RegisterPositionsImpl(registerConstraint + 1);
-    RegisterPositions blockedPositions = new RegisterPositionsImpl(registerConstraint + 1);
+    RegisterPositions blockedPositions = new RegisterPositionsImpl(registerConstraint + 1, false);
 
     // Compute next use location for all currently active registers.
     for (LiveIntervals intervals : active) {
@@ -3489,77 +3502,6 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
   private void clearUserInfo() {
     code.blocks.forEach(BasicBlock::clearUserInfo);
-  }
-
-  private void dedupCatchHandlerBlocks() {
-    List<BasicBlock> candidateBlocks = new ArrayList<>();
-    for (BasicBlock block : code.getBlocks()) {
-      if (block.hasUniquePredecessor()
-          && block.getUniquePredecessor().hasCatchSuccessor(block)
-          && liveAtEntrySets.get(block).isEmpty()
-          && block.size() <= 2) {
-        candidateBlocks.add(block);
-      }
-    }
-    if (candidateBlocks.isEmpty()) {
-      return;
-    }
-    Set<BasicBlock> removedBlocks = Sets.newIdentityHashSet();
-    for (BasicBlock candidateBlock : candidateBlocks) {
-      assert !removedBlocks.contains(candidateBlock);
-      BasicBlock equivalentBlock = null;
-      for (BasicBlock block : candidateBlocks) {
-        if (block == candidateBlock || removedBlocks.contains(block)) {
-          continue;
-        }
-        if (isEquivalentCatchHandlers(candidateBlock, block)) {
-          equivalentBlock = block;
-          break;
-        }
-      }
-      if (equivalentBlock == null) {
-        continue;
-      }
-      assert !candidateBlock.hasCatchHandlers();
-      removedBlocks.add(candidateBlock);
-      for (BasicBlock tryBlock : candidateBlock.getPredecessors()) {
-        tryBlock.replaceSuccessor(candidateBlock, equivalentBlock);
-        if (!equivalentBlock.getPredecessors().contains(tryBlock)) {
-          equivalentBlock.getMutablePredecessors().add(tryBlock);
-        }
-      }
-      for (BasicBlock successor : candidateBlock.getSuccessors()) {
-        int index = successor.getPredecessors().indexOf(candidateBlock);
-        successor.getMutablePredecessors().remove(index);
-        for (Phi phi : successor.getPhis()) {
-          phi.removeOperand(index);
-        }
-      }
-    }
-    code.removeBlocks(removedBlocks);
-  }
-
-  // TODO(b/153139043): Generalize this. Maybe use BasicBlock subsumption.
-  private boolean isEquivalentCatchHandlers(BasicBlock block, BasicBlock other) {
-    assert liveAtEntrySets.get(block).isEmpty();
-    assert liveAtEntrySets.get(other).isEmpty();
-    if (block.size() != other.size() || block.size() > 2) {
-      return false;
-    }
-    if (block.size() == 2) {
-      if (!block.entry().isMoveException() || !other.entry().isMoveException()) {
-        return false;
-      }
-    }
-    if (block.exit().isGoto()
-        && other.exit().isGoto()
-        && block.getUniqueNormalSuccessor() == other.getUniqueNormalSuccessor()) {
-      return true;
-    }
-    if (block.exit().isReturn() && other.exit().isReturn()) {
-      return true;
-    }
-    return false;
   }
 
   // Rewrites casts on the form "lhs = (T) rhs" into "(T) rhs" and replaces the uses of lhs by rhs.

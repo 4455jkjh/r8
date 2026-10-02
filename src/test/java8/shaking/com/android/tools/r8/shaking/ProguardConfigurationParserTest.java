@@ -3329,7 +3329,8 @@ public class ProguardConfigurationParserTest extends TestBase {
             "# The proguard configuration file for the following section is include2.txt",
             "# Include 2",
             "# End of content from include2.txt"),
-        StringUtils.replaceAll(parsedConfiguration, temp.getRoot().toString() + separator, ""));
+        StringUtils.replaceAll(
+            parsedConfiguration, temp.getRoot().toPath().toAbsolutePath() + separator, ""));
   }
 
   @Test

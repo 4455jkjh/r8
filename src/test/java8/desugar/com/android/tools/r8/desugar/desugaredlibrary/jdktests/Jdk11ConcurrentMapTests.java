@@ -4,18 +4,13 @@
 
 package com.android.tools.r8.desugar.desugaredlibrary.jdktests;
 
-import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11SupportFiles.getPathsFiles;
-import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11SupportFiles.getTestNGMainRunner;
-import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11SupportFiles.testNGPath;
-import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11SupportFiles.testNGSupportProgramFiles;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8SHRINK;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK8;
 import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
-import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
@@ -25,18 +20,19 @@ import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
-import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.transformers.MethodTransformer;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
 public class Jdk11ConcurrentMapTests extends DesugaredLibraryTestBase {
@@ -45,13 +41,22 @@ public class Jdk11ConcurrentMapTests extends DesugaredLibraryTestBase {
       Paths.get(ToolHelper.JDK_11_TESTS_DIR + "java/util/concurrent/ConcurrentMap/");
   private static final Path CONCURRENT_HASH_TESTS_FOLDER =
       Paths.get(ToolHelper.JDK_11_TESTS_DIR + "java/util/concurrent/ConcurrentHashMap/");
-  private static Path[] CONCURRENT_COMPILED_TESTS_FILES;
-  private static Path[] CONCURRENT_HASH_COMPILED_TESTS_FILES;
-  private static final Path[] SUPPORT_LIBS =
-      new Path[]{
-          Paths.get(ToolHelper.JDK_11_TESTS_DIR + "lib/testlibrary/jdk/testlibrary/Utils.java"),
-          Paths.get(ToolHelper.JDK_11_TESTS_DIR + "lib/testlibrary/jdk/testlibrary/Asserts.java")
+
+  // The OpenJDK tests are all main based tests. The following are not run:
+  //  - ConcurrentMap/ConcurrentRemoveIf, ConcurrentHashMap/ConcurrentAssociateTest,
+  //    ConcurrentHashMap/ConcurrentContainsKeyTest and ConcurrentHashMap/ToArray due to the non
+  //    desugared class CompletableFuture (TODO(b/134732760): Support Java 9+ libraries).
+  //  - ConcurrentHashMap/MapLoops due to the non desugared class SplittableRandom.
+  //  - ConcurrentHashMap/WhiteBox due to method handles.
+  private static final Path[] TESTS_TO_COMPILE =
+      new Path[] {
+        CONCURRENT_TESTS_FOLDER.resolve("ConcurrentModification.java"),
+        CONCURRENT_HASH_TESTS_FOLDER.resolve("MapCheck.java"),
+        CONCURRENT_HASH_TESTS_FOLDER.resolve("DistinctEntrySetElements.java")
       };
+
+  private static Path[] COMPILED_TESTS_FILES;
+  private static byte[] MAP_CHECK_WITH_SINGLE_TRIAL;
 
   private final TestParameters parameters;
   private final LibraryDesugaringSpecification libraryDesugaringSpecification;
@@ -82,110 +87,60 @@ public class Jdk11ConcurrentMapTests extends DesugaredLibraryTestBase {
 
   @BeforeClass
   public static void compileConcurrentClasses() throws Exception {
-    Path concurrentCompiledTestsFolder = getStaticTemp().newFolder("concurrentmap").toPath();
+    Path compiledTestsFolder = getStaticTemp().newFolder("concurrentmap").toPath();
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
-        .addClasspathFiles(testNGPath())
-        .addSourceFiles(getAllFilesWithSuffixInDirectory(CONCURRENT_TESTS_FOLDER, JAVA_EXTENSION))
-        .setOutputPath(concurrentCompiledTestsFolder)
+        .addSourceFiles(TESTS_TO_COMPILE)
+        .setOutputPath(compiledTestsFolder)
         .compile();
-    CONCURRENT_COMPILED_TESTS_FILES =
-        getAllFilesWithSuffixInDirectory(concurrentCompiledTestsFolder, CLASS_EXTENSION);
-    assert CONCURRENT_COMPILED_TESTS_FILES.length > 0;
+    Path mapCheckClassFile = compiledTestsFolder.resolve("MapCheck.class");
+    COMPILED_TESTS_FILES =
+        Arrays.stream(getAllFilesWithSuffixInDirectory(compiledTestsFolder, CLASS_EXTENSION))
+            .filter(file -> !file.equals(mapCheckClassFile))
+            .toArray(Path[]::new);
+    assert COMPILED_TESTS_FILES.length > 0;
+    MAP_CHECK_WITH_SINGLE_TRIAL = getMapCheckWithSingleTrial(mapCheckClassFile);
+  }
 
-    List<Path> concurrentHashFilesAndDependencies = new ArrayList<>();
-    Collections.addAll(
-        concurrentHashFilesAndDependencies,
-        getAllFilesWithSuffixInDirectory(CONCURRENT_HASH_TESTS_FOLDER, JAVA_EXTENSION));
-    Collections.addAll(concurrentHashFilesAndDependencies, SUPPORT_LIBS);
-    Path[] classesToCompile = concurrentHashFilesAndDependencies.toArray(new Path[0]);
-    Path concurrentHashCompiledTestsFolder =
-        getStaticTemp().newFolder("concurrenthashmap").toPath();
-    javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
-        .addClasspathFiles(testNGPath())
-        .addSourceFiles(classesToCompile)
-        .setOutputPath(concurrentHashCompiledTestsFolder)
-        .compile();
-    CONCURRENT_HASH_COMPILED_TESTS_FILES =
-        getAllFilesWithSuffixInDirectory(concurrentHashCompiledTestsFolder, CLASS_EXTENSION);
-    assert CONCURRENT_HASH_COMPILED_TESTS_FILES.length > 0;
+  // MapCheck runs 8 identical trials of all map operations by default, which takes ~50s on ART
+  // when using the desugared j$.util.concurrent.ConcurrentHashMap. Run a single trial instead. The
+  // number of trials cannot be passed as an argument, as that requires passing the map class name
+  // which is then loaded with Class.forName, bypassing library desugaring.
+  private static byte[] getMapCheckWithSingleTrial(Path mapCheckClassFile) throws Exception {
+    return transformer(mapCheckClassFile, Reference.classFromTypeName("MapCheck"))
+        .addMethodTransformer(
+            new MethodTransformer() {
+              @Override
+              public void visitIntInsn(int opcode, int operand) {
+                if (getMethod().getMethodName().equals("main")
+                    && opcode == Opcodes.BIPUSH
+                    && operand == 8) {
+                  super.visitIntInsn(opcode, 1);
+                } else {
+                  super.visitIntInsn(opcode, operand);
+                }
+              }
+            })
+        .transform();
   }
 
   @Test
-  public void testConcurrent() throws Exception {
-    // TODO(b/134732760): Support Java 9+ libraries.
-    // We skip the ConcurrentRemoveIf test because of the  non desugared class CompletableFuture.
-    String verbosity = "2";
-    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
-        .addProgramFiles(CONCURRENT_COMPILED_TESTS_FILES)
-        .addProgramFiles(testNGSupportProgramFiles())
-        .addProgramClassFileData(getTestNGMainRunner())
-        .applyIf(
-            !libraryDesugaringSpecification.hasNioFileDesugaring(parameters),
-            b -> b.addProgramFiles(getPathsFiles()))
-        .compile()
-        .withArt6Plus64BitsLib()
-        .run(parameters.getRuntime(), "TestNGMainRunner", verbosity, "ConcurrentModification")
-        .assertSuccessWithOutputThatMatches(
-            endsWith(StringUtils.lines("ConcurrentModification: SUCCESS")));
-  }
-
-  private Path[] concurrentHashTestToCompile() {
-    // We exclude WhiteBox.class because of Method handles, they are not supported on old devices
-    // and the test uses methods not present even on 28.
-    List<Path> toCompile = new ArrayList<>();
-    Collections.addAll(toCompile, CONCURRENT_HASH_COMPILED_TESTS_FILES);
-    toCompile.removeIf(file -> file.getFileName().toString().equals("WhiteBox.class"));
-    return toCompile.toArray(new Path[0]);
-  }
-
-  private String[] concurrentHashTestNGTestsToRun() {
-    List<String> toRun = new ArrayList<>();
-    // TODO(b/134732760): Support Java 9+ libraries.
-    // We exclude ConcurrentAssociateTest and ConcurrentContainsKeyTest due to non
-    // desugared class CompletableFuture.
-    // toRun.add("ConcurrentAssociateTest");
-    // toRun.add("ConcurrentContainsKeyTest");
-    return toRun.toArray(new String[0]);
-  }
-
-  private String[] concurrentHashMainTestsToRun() {
-    return new String[]{
-        "MapCheck",
-        // TODO(b/134732760): Support Java 9+ libraries.
-        // Following fails due to non desugared class SplittableRandom.
-        // "MapLoops",
-        // TODO(b/134732760): Support Java 9+ libraries.
-        // Following fails due to non desugared class CompletableFuture.
-        // "ToArray",
-        "DistinctEntrySetElements",
-    };
-  }
-
-  @Test
-  public void testD8ConcurrentHash() throws Exception {
-    String verbosity = "2";
+  public void test() throws Exception {
     DesugaredLibraryTestCompileResult<?> compileResult =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addProgramFiles(concurrentHashTestToCompile())
-            .addProgramFiles(testNGSupportProgramFiles())
-            .addProgramClassFileData(getTestNGMainRunner())
-            .applyIf(
-                !libraryDesugaringSpecification.hasNioFileDesugaring(parameters),
-                b -> b.addProgramFiles(getPathsFiles()))
+            .addProgramFiles(COMPILED_TESTS_FILES)
+            .addProgramClassFileData(MAP_CHECK_WITH_SINGLE_TRIAL)
             .compile()
             .withArt6Plus64BitsLib();
-    for (String className : concurrentHashTestNGTestsToRun()) {
-      compileResult
-          .run(parameters.getRuntime(), "TestNGMainRunner", verbosity, className)
-          .assertSuccessWithOutputThatMatches(endsWith(StringUtils.lines(className + ": SUCCESS")));
-    }
-    for (String className : concurrentHashMainTestsToRun()) {
-      // Main jdk tests relies on the main function running without issues.
-      // Failure implies a runtime exception.
-      // We ensure that everything could be resolved (no missing method or class)
-      // with the assertion on stderr.
-      compileResult.run(parameters.getRuntime(), className).assertSuccess();
-    }
+    // Main jdk tests relies on the main function running without issues.
+    // Failure implies a runtime exception.
+    compileResult
+        .run(parameters.getRuntime(), "ConcurrentModification")
+        .assertSuccessWithOutputThatMatches(containsString("failed = 0"));
+    compileResult
+        .run(parameters.getRuntime(), "MapCheck")
+        .assertSuccessWithOutputThatMatches(
+            containsString("ConcurrentHashMap trials: 1 size: 50000"));
+    compileResult.run(parameters.getRuntime(), "DistinctEntrySetElements").assertSuccess();
   }
 }

@@ -65,7 +65,7 @@ public class ExtractMarkerTest extends TestBase {
     assertEquals(Version.LABEL, marker.getVersion());
     assertEquals(
         StringUtils.toLowerCase(CompilationMode.DEBUG.toString()), marker.getCompilationMode());
-    assertEquals(parameters.getApiLevel().getMajor(), marker.getMinApi().intValue());
+    assertEquals(parameters.getApiLevel().asUnchecked(), marker.getMinApi());
     assertEquals(includeClassesChecksum, marker.getHasChecksums());
   }
 
@@ -77,7 +77,7 @@ public class ExtractMarkerTest extends TestBase {
     D8.run(
         D8Command.builder()
             .addProgramFiles(CLASS_FILE)
-            .setMinApiLevel(parameters.getApiLevel().getMajor())
+            .setMinApiLevel(parameters.getApiLevel().asUnchecked())
             .setIncludeClassesChecksum(includeClassesChecksum)
             .setProgramConsumer(
                 new DexIndexedConsumer.ForwardingConsumer(null) {

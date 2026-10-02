@@ -12,18 +12,19 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.jasmin.JasminTestBase;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,9 +42,13 @@ public class FieldReadsJasminTest extends JasminTestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+  @Parameter(1)
+  public boolean disableAdditionalDebuggerSupport;
+
+  @Parameters(name = "{0}, disableAdditionalDebuggerSupport = {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   @Test
@@ -71,10 +76,7 @@ public class FieldReadsJasminTest extends JasminTestBase {
     ClassBuilder main = builder.addClass(MAIN);
     main.addStaticField("sField", "I");
     main.addMainMethod(
-        ".limit stack 2",
-        ".limit locals 1",
-        "  getstatic Main/sField I",
-        "  return");
+        ".limit stack 2", ".limit locals 1", "  getstatic Main/sField I", "  return");
 
     ensureNoFieldsRead(builder, main);
   }
@@ -102,6 +104,12 @@ public class FieldReadsJasminTest extends JasminTestBase {
       testForD8()
           .addProgramClassFileData(classes)
           .setMinApi(parameters)
+          .applyIf(
+              disableAdditionalDebuggerSupport,
+              b ->
+                  b.addOptionsModification(
+                      options -> options.disableAdditionalDebuggerSupport = true),
+              b -> b.setMode(CompilationMode.RELEASE))
           .compile()
           .inspect(inspector -> ensureNoFieldsRead(inspector, clazz.name, false));
     }
@@ -118,9 +126,10 @@ public class FieldReadsJasminTest extends JasminTestBase {
     ClassSubject classSubject = inspector.clazz(name);
     assertThat(classSubject, isPresent());
     if (isR8) {
-      classSubject.forAllFields(foundFieldSubject -> {
-        fail("Expect not to see any fields.");
-      });
+      classSubject.forAllFields(
+          foundFieldSubject -> {
+            fail("Expect not to see any fields.");
+          });
     }
     MethodSubject mainMethod = classSubject.mainMethod();
     assertThat(mainMethod, isPresent());
@@ -172,12 +181,16 @@ public class FieldReadsJasminTest extends JasminTestBase {
     ClassBuilder empty = builder.addClass(CLS);
     empty.addDefaultConstructor();
     empty.addField("protected", "aField", "I", null);
-    MethodSignature foo = empty.addStaticMethod("foo", ImmutableList.of("L" + CLS + ";"), "V",
-        ".limit stack 2",
-        ".limit locals 1",
-        "  aload 0",
-        "  getfield Empty/aField I",
-        "  return");
+    MethodSignature foo =
+        empty.addStaticMethod(
+            "foo",
+            ImmutableList.of("L" + CLS + ";"),
+            "V",
+            ".limit stack 2",
+            ".limit locals 1",
+            "  aload 0",
+            "  getfield Empty/aField I",
+            "  return");
 
     ClassBuilder main = builder.addClass(MAIN);
     main.addMainMethod(
@@ -226,11 +239,9 @@ public class FieldReadsJasminTest extends JasminTestBase {
         "  return");
 
     ClassBuilder main = builder.addClass(MAIN);
-    MethodSignature mainMethod = main.addMainMethod(
-        ".limit stack 2",
-        ".limit locals 1",
-        "  getstatic Empty/sField I",
-        "  return");
+    MethodSignature mainMethod =
+        main.addMainMethod(
+            ".limit stack 2", ".limit locals 1", "  getstatic Empty/sField I", "  return");
 
     inspect(
         builder,
@@ -280,11 +291,7 @@ public class FieldReadsJasminTest extends JasminTestBase {
     main.addDefaultConstructor();
     main.addStaticField("sField", "I", null);
     main.addClassInitializer(
-        ".limit stack 2",
-        ".limit locals 0",
-        "  bipush 1",
-        "  putstatic Main/sField I",
-        "  return");
+        ".limit stack 2", ".limit locals 0", "  bipush 1", "  putstatic Main/sField I", "  return");
     MethodSignature mainMethod =
         main.addMainMethod(
             ".limit stack 4",
@@ -315,6 +322,12 @@ public class FieldReadsJasminTest extends JasminTestBase {
       testForD8()
           .addProgramClassFileData(classes)
           .setMinApi(parameters)
+          .applyIf(
+              disableAdditionalDebuggerSupport,
+              b ->
+                  b.addOptionsModification(
+                      options -> options.disableAdditionalDebuggerSupport = true),
+              b -> b.setMode(CompilationMode.RELEASE))
           .compile()
           .inspect(d8Inspector);
     }

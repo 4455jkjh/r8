@@ -44,7 +44,7 @@ public class DumpInputsD8Test extends TestBase {
   @Test
   public void testD8() throws Exception {
     Path dump = temp.newFolder().toPath().resolve("dump.zip");
-    testForD8(parameters.getBackend())
+    testForD8(parameters)
         .addProgramClasses(TestClass.class)
         .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
         .addOptionsModification(
@@ -62,12 +62,13 @@ public class DumpInputsD8Test extends TestBase {
     Path proguardMapInputFile = temp.newFolder().toPath().resolve("proguard.map");
     List<String> proguardMapInputFileContent = ImmutableList.of("# Hello, mapping input.");
     FileUtils.writeTextFile(proguardMapInputFile, proguardMapInputFileContent);
-    testForD8(parameters.getBackend())
+    testForD8(parameters)
         .addProgramClasses(TestClass.class)
         .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
         .apply(
             b ->
-                b.getBuilder()
+                b.asD8TestBuilder()
+                    .getBuilder()
                     .setProguardMapInputFile(proguardMapInputFile)
                     .setProguardMapConsumer(StringConsumer.emptyConsumer()))
         .addOptionsModification(
@@ -79,7 +80,44 @@ public class DumpInputsD8Test extends TestBase {
     verifyDump(dump, proguardMapInputFileContent);
   }
 
+  @Test
+  public void testD8WithApiDatabase() throws Exception {
+    Path dump = temp.newFolder().toPath().resolve("dump.zip");
+    Path apiDatabaseFile = temp.newFolder().toPath().resolve("api-database.ser");
+    List<String> apiDatabaseContent = ImmutableList.of("fake-api-database-content");
+    FileUtils.writeTextFile(apiDatabaseFile, apiDatabaseContent);
+    testForD8(parameters)
+        .addProgramClasses(TestClass.class)
+        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .setApiDatabasePath(apiDatabaseFile)
+        .addOptionsModification(
+            options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))
+        .compileWithExpectedDiagnostics(
+            diagnostics ->
+                diagnostics.assertInfosMatch(
+                    diagnosticMessage(containsString("Dumped compilation inputs to:"))));
+    verifyDump(dump, null, apiDatabaseContent);
+
+    CompilerDump compilerDump = CompilerDump.fromArchive(dump, temp.newFolder().toPath());
+    assertTrue(compilerDump.hasApiDatabase());
+    assertEquals(apiDatabaseContent, FileUtils.readAllLines(compilerDump.getApiDatabaseFile()));
+
+    assertEquals(
+        compilerDump.getApiDatabaseFile(),
+        testForD8(parameters)
+            .applyCompilerDump(compilerDump)
+            .asD8TestBuilder()
+            .getBuilder()
+            .getApiDatabasePath());
+  }
+
   private void verifyDump(Path dumpFile, List<String> proguardMapInputFileContent)
+      throws IOException {
+    verifyDump(dumpFile, proguardMapInputFileContent, null);
+  }
+
+  private void verifyDump(
+      Path dumpFile, List<String> proguardMapInputFileContent, List<String> apiDatabaseContent)
       throws IOException {
     assertTrue(Files.exists(dumpFile));
     Path unzipped = temp.newFolder().toPath();
@@ -98,6 +136,11 @@ public class DumpInputsD8Test extends TestBase {
         proguardMapInputFileContent != null,
         FileUtils.readAllLines(unzipped.resolve("build.properties"))
             .contains("proguard-map-output=true"));
+    Path apiDatabase = unzipped.resolve("api-database.ser");
+    assertEquals(apiDatabaseContent != null, Files.exists(apiDatabase));
+    if (apiDatabaseContent != null) {
+      assertEquals(apiDatabaseContent, FileUtils.readAllLines(apiDatabase));
+    }
     Set<String> entries = new HashSet<>();
     ZipUtils.iter(
         unzipped.resolve("program.jar").toString(), (entry, input) -> entries.add(entry.getName()));

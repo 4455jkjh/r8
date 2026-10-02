@@ -21,7 +21,10 @@ import java.util.Map.Entry;
 public class Marker {
 
   public static final String VERSION = "version";
+  // MIN_API is deprecated in favor of MIN_API_MAJOR and MIN_API_MINOR.
   public static final String MIN_API = "min-api";
+  public static final String MIN_API_MAJOR = "min-api-major";
+  public static final String MIN_API_MINOR = "min-api-minor";
   public static final String DESUGARED_LIBRARY_IDENTIFIERS = "desugared-library-identifiers";
   public static final String SHA1 = "sha-1";
   public static final String COMPILATION_MODE = "compilation-mode";
@@ -115,19 +118,28 @@ public class Marker {
   }
 
   public boolean hasMinApi() {
-    return jsonObject.has(MIN_API);
+    // If MIN_API_MINOR is set alone it is ignored.
+    return jsonObject.has(MIN_API) || jsonObject.has(MIN_API_MAJOR);
   }
 
-  public Long getMinApi() {
-    return jsonObject.get(MIN_API).getAsLong();
+  public UncheckedApiLevel getMinApi() {
+    // MIN_API is deprecated so MIN_API_MAJOR takes precedence.
+    if (jsonObject.has(MIN_API_MAJOR)) {
+      int major = jsonObject.get(MIN_API_MAJOR).getAsInt();
+      int minor = jsonObject.has(MIN_API_MINOR) ? jsonObject.get(MIN_API_MINOR).getAsInt() : 0;
+      return new UncheckedApiLevel(major, minor);
+    }
+    return new UncheckedApiLevel(jsonObject.get(MIN_API).getAsInt());
   }
 
   public Marker setMinApi(int major, int minor) {
-    // TODO(b/356841164): Support minor version.
-    assert minor == 0
-        : "Minor version not yet supported: " + UncheckedApiLevel.toString(major, minor);
     assert !jsonObject.has(MIN_API);
+    assert !jsonObject.has(MIN_API_MAJOR);
+    assert !jsonObject.has(MIN_API_MINOR);
+    // MIN_API should be removed at some point.
     jsonObject.addProperty(MIN_API, major);
+    jsonObject.addProperty(MIN_API_MAJOR, major);
+    jsonObject.addProperty(MIN_API_MINOR, minor);
     return this;
   }
 

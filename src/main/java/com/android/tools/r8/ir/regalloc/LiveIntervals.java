@@ -452,6 +452,9 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   }
 
   public int nextOverlap(LiveIntervals other) {
+    if (getEnd() <= other.getStart() || other.getEnd() <= getStart()) {
+      return -1;
+    }
     Iterator<LiveRange> it = other.ranges.iterator();
     LiveRange otherRange = it.next();
     for (LiveRange range : ranges) {

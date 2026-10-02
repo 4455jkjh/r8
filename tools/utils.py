@@ -33,11 +33,8 @@ DEX_SEGMENTS_RESULT_PATTERN = re.compile('- ([^:]+): ([0-9]+)')
 DEPENDENCIES_DIR = os.path.join(THIRD_PARTY, 'dependencies')
 
 BUILD = os.path.join(REPO_ROOT, 'build')
-BUILD_JAVA_MAIN_CLASSPATH = os.pathsep.join(
-    (os.path.join(REPO_ROOT, 'd8_r8', 'main', 'build', 'classes', 'java',
-                  'main'),
-     os.path.join(REPO_ROOT, 'd8_r8', 'main', 'build', 'classes', 'java',
-                  'turbo')))
+BUILD_JAVA_MAIN_CLASSPATH = os.path.join(REPO_ROOT, 'd8_r8', 'main', 'build',
+                                         'classes', 'java', 'main')
 LIBS = os.path.join(BUILD, 'libs')
 CUSTOM_CONVERSION_DIR = os.path.join(THIRD_PARTY, 'openjdk',
                                      'custom_conversion')

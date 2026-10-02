@@ -124,14 +124,20 @@ public class InvokeExtractor<N extends NodeBase<N>> extends DefaultUseRegistry<P
       }
     }
 
+    if (resolutionResult.isAccessibleFrom(context, appViewWithLiveness).isFalse()) {
+      return;
+    }
+
+    DexMethod cacheKey =
+        target.withHolder(
+            resolutionResult.getInitialResolutionHolder(), appViewWithLiveness.dexItemFactory());
     ProgramMethodSet possibleProgramTargets =
         possibleProgramTargetsCache.computeIfAbsent(
-            target,
+            cacheKey,
             method -> {
               if (resolvedMethod.getDefinition().isVirtualMethod()) {
                 LookupResult lookupResult =
-                    resolutionResult.lookupVirtualDispatchTargets(
-                        context.getHolder(), appViewWithLiveness);
+                    resolutionResult.lookupVirtualDispatchTargets(null, appViewWithLiveness);
                 if (lookupResult.isLookupResultSuccess()) {
                   ProgramMethodSet targets = ProgramMethodSet.create();
                   lookupResult

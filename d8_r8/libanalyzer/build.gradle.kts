@@ -27,7 +27,6 @@ dependencies {
   compileOnly(libs.protobuf)
   compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(project(":main", "mainClassesOutput"))
-  compileOnly(project(":main", "turboClassesOutput"))
 }
 
 val jarTask =

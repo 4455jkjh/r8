@@ -18,3 +18,5 @@ tasks {
     }
   }
 }
+
+dependencies { runtimeOnlyData(project(":third_party", "smali")) }

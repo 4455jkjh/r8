@@ -11,6 +11,7 @@ import static com.android.tools.r8.ir.code.Opcodes.INVOKE_SUPER;
 import static com.android.tools.r8.ir.code.Opcodes.INVOKE_VIRTUAL;
 import static com.android.tools.r8.ir.code.Opcodes.RETURN;
 
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -33,9 +34,16 @@ import java.util.Set;
 
 public class BridgeAnalyzer {
 
+  private final BridgeAnalyzerAliasedValueConfiguration aliasedValueConfiguration;
+  private final DexItemFactory factory;
+
+  public BridgeAnalyzer(AppView<? extends AppInfoWithClassHierarchy> appView) {
+    aliasedValueConfiguration = new BridgeAnalyzerAliasedValueConfiguration();
+    factory = appView.dexItemFactory();
+  }
+
   /** Returns a {@link BridgeInfo} object describing this method if it is recognized as a bridge. */
-  public static BridgeInfo analyzeMethod(AppView<?> appView, DexEncodedMethod method, IRCode code) {
-    DexItemFactory factory = appView.dexItemFactory();
+  public BridgeInfo analyzeMethod(DexEncodedMethod method, IRCode code) {
     InstructionListIterator instructionIterator = code.entryBlock().listIterator();
     skipArgumentAndAssumeInstructions(instructionIterator);
     List<Value> captures = new ArrayList<>();
@@ -75,7 +83,7 @@ public class BridgeAnalyzer {
         case INVOKE_VIRTUAL:
           {
             InvokeMethod invoke = instruction.asInvokeMethod();
-            if (isBoxingInvoke(invoke, factory) || isUnboxingInvoke(invoke, factory)) {
+            if (isBoxingInvoke(invoke) || isUnboxingInvoke(invoke)) {
               if (!analyzeCheckCastBoxOrUnbox(
                   method, instruction, uniqueInvoke, forwardArgumentOffset)) {
                 return failure();
@@ -102,7 +110,7 @@ public class BridgeAnalyzer {
               return failure();
             }
             InvokeMethod invoke = instruction.asInvokeMethod();
-            if (!analyzeInvoke(invoke, factory, forwardArgumentOffset, captures)) {
+            if (!analyzeInvoke(invoke, forwardArgumentOffset, captures)) {
               return failure();
             }
             // Record that we have seen the single invoke instruction.
@@ -226,7 +234,7 @@ public class BridgeAnalyzer {
     return true;
   }
 
-  private static boolean analyzeCheckCastBoxOrUnbox(
+  private boolean analyzeCheckCastBoxOrUnbox(
       DexEncodedMethod method,
       Instruction checkCastBoxOrUnbox,
       InvokeMethod invoke,
@@ -237,9 +245,9 @@ public class BridgeAnalyzer {
   }
 
   @SuppressWarnings("ReferenceEquality")
-  private static boolean analyzeCheckCastBoxOrUnboxBeforeInvoke(
+  private boolean analyzeCheckCastBoxOrUnboxBeforeInvoke(
       Instruction checkCastBoxOrUnbox, int forwardArgumentOffset) {
-    Value object = checkCastBoxOrUnbox.getFirstOperand().getAliasedValue();
+    Value object = checkCastBoxOrUnbox.getFirstOperand().getAliasedValue(aliasedValueConfiguration);
     // It must be processing one of the arguments.
     if (!object.isArgument()) {
       return false;
@@ -260,6 +268,10 @@ public class BridgeAnalyzer {
     InvokeMethod invoke = outValue.singleUniqueUser().asInvokeMethod();
     if (invoke == null) {
       return false;
+    }
+    if (isBoxingInvoke(invoke) || isUnboxingInvoke(invoke)) {
+      // OK, we will check the validity of this invoke when processing it.
+      return true;
     }
     // The cast value must be used in the same argument position, unless the `this` value is unused.
     int expectedForwardArgumentIndex = argumentIndex + forwardArgumentOffset;
@@ -320,11 +332,8 @@ public class BridgeAnalyzer {
         && outValue.singleUniqueUser().isReturn();
   }
 
-  private static boolean analyzeInvoke(
-      InvokeMethod invoke,
-      DexItemFactory factory,
-      int forwardArgumentOffset,
-      List<Value> captures) {
+  private boolean analyzeInvoke(
+      InvokeMethod invoke, int forwardArgumentOffset, List<Value> captures) {
     int captureCount = captures.size();
     if (invoke.arguments().size() < captureCount) {
       return false;
@@ -347,15 +356,13 @@ public class BridgeAnalyzer {
         if (argumentIndex != incomingArgumentIndex + forwardArgumentOffset) {
           return false;
         }
-      } else if (isCheckCastBoxOrUnbox(argument.getDefinition(), factory)) {
-        int incomingArgumentIndex =
-            argument
-                .getDefinition()
-                .getFirstOperand()
-                .getAliasedValue()
-                .getDefinition()
-                .asArgument()
-                .getIndex();
+      } else if (isCheckCastBoxOrUnbox(argument.getDefinition())) {
+        Value incomingArgument = argument.getAliasedValue(aliasedValueConfiguration);
+        // It must be processing one of the arguments.
+        if (!incomingArgument.isArgument()) {
+          return false;
+        }
+        int incomingArgumentIndex = incomingArgument.getDefinition().asArgument().getIndex();
         if (argumentIndex != incomingArgumentIndex + forwardArgumentOffset) {
           return false;
         }
@@ -365,14 +372,14 @@ public class BridgeAnalyzer {
       // Validate that besides argument values only check-cast of argument values are allowed at
       // their argument position.
       assert argument.isArgument()
-          || (isCheckCastBoxOrUnbox(argument.getDefinition(), factory)
+          || (isCheckCastBoxOrUnbox(argument.getDefinition())
               && invoke
                   .getArgument(argumentIndex)
-                  .getAliasedValue(new BridgeAnalyzerAliasedValueConfiguration(factory))
+                  .getAliasedValue(aliasedValueConfiguration)
                   .isArgument()
               && invoke
                           .getArgument(argumentIndex)
-                          .getAliasedValue(new BridgeAnalyzerAliasedValueConfiguration(factory))
+                          .getAliasedValue(aliasedValueConfiguration)
                           .getDefinition()
                           .asArgument()
                           .getIndex()
@@ -398,33 +405,26 @@ public class BridgeAnalyzer {
     return null;
   }
 
-  private static boolean isCheckCastBoxOrUnbox(Instruction instruction, DexItemFactory factory) {
+  private boolean isCheckCastBoxOrUnbox(Instruction instruction) {
     if (instruction.isCheckCast()) {
       return true;
     }
     if (instruction.isInvokeMethod()) {
       InvokeMethod invoke = instruction.asInvokeMethod();
-      return isBoxingInvoke(invoke, factory) || isUnboxingInvoke(invoke, factory);
+      return isBoxingInvoke(invoke) || isUnboxingInvoke(invoke);
     }
     return false;
   }
 
-  private static boolean isBoxingInvoke(InvokeMethod invoke, DexItemFactory factory) {
+  private boolean isBoxingInvoke(InvokeMethod invoke) {
     return factory.boxPrimitiveMethods.contains(invoke.getInvokedMethod());
   }
 
-  private static boolean isUnboxingInvoke(InvokeMethod invoke, DexItemFactory factory) {
+  private boolean isUnboxingInvoke(InvokeMethod invoke) {
     return factory.unboxPrimitiveMethods.contains(invoke.getInvokedMethod());
   }
 
-  private static class BridgeAnalyzerAliasedValueConfiguration
-      implements AliasedValueConfiguration {
-
-    private final DexItemFactory factory;
-
-    private BridgeAnalyzerAliasedValueConfiguration(DexItemFactory factory) {
-      this.factory = factory;
-    }
+  private class BridgeAnalyzerAliasedValueConfiguration implements AliasedValueConfiguration {
 
     @Override
     public boolean isIntroducingAnAlias(Instruction instruction) {
@@ -433,7 +433,7 @@ public class BridgeAnalyzer {
       }
       if (instruction.isInvokeMethod()) {
         InvokeMethod invoke = instruction.asInvokeMethod();
-        return isBoxingInvoke(invoke, factory) || isUnboxingInvoke(invoke, factory);
+        return isBoxingInvoke(invoke) || isUnboxingInvoke(invoke);
       }
       return false;
     }

@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime;
@@ -99,7 +100,7 @@ public class AssertionsConfigurationJacocoTest extends TestBase implements Opcod
     List<String> cmdline = new ArrayList<>();
     cmdline.add(TestRuntime.getSystemRuntime().asCf().getJavaExecutable().toString());
     cmdline.add("-jar");
-    cmdline.add(ToolHelper.JACOCO_CLI.toString());
+    cmdline.add(TestDeps.getJacocoCliJar().toString());
     cmdline.add("instrument");
     cmdline.add(input.toString());
     cmdline.add("--dest");

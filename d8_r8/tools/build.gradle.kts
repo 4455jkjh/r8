@@ -9,9 +9,6 @@ plugins {
   id("net.ltgt.errorprone")
 }
 
-dependencies {
-  compileOnly(project(":main", "mainClassesOutput"))
-  compileOnly(project(":main", "turboClassesOutput"))
-}
+dependencies { compileOnly(project(":main", "mainClassesOutput")) }
 
 java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "tools", "java")) } }

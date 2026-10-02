@@ -48,7 +48,11 @@ public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
   }
 
   public static String toString(int major, int minor) {
-    return major + "." + minor;
+    if (minor == 0) {
+      return Integer.toString(major);
+    } else {
+      return major + "." + minor;
+    }
   }
 
   @Override

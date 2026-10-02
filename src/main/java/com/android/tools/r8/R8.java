@@ -35,6 +35,7 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
+import com.android.tools.r8.ir.analysis.proto.LargeProtoEnumRewriter;
 import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
@@ -63,6 +64,7 @@ import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeMethods;
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.kotlin.KotlinInlineMethodMap;
 import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.kotlin.KotlinMetadataUtils;
 import com.android.tools.r8.naming.IdentifierMinifier;
@@ -75,6 +77,7 @@ import com.android.tools.r8.optimize.MemberRebindingAnalysis;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLensFactory;
 import com.android.tools.r8.optimize.accessmodification.AccessModifier;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.VirtualRootMethodsAnalysis;
 import com.android.tools.r8.optimize.bridgehoisting.BridgeHoisting;
 import com.android.tools.r8.optimize.fields.FieldFinalizer;
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
@@ -214,8 +217,7 @@ public class R8 {
         command.getReporter(), () -> runInternal(app, options, executor));
   }
 
-  static void writeApplication(
-      AppView<?> appView, AndroidApp inputApp, ExecutorService executorService, Timing timing)
+  static void writeApplication(AppView<?> appView, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     InternalOptions options = appView.options();
     InspectorImpl.runInspections(options.outputInspections, appView.appInfo().classes());
@@ -224,9 +226,9 @@ public class R8 {
       assert marker != null;
       if (options.isGeneratingClassFiles()) {
         new CfApplicationWriter(appView, marker)
-            .write(options.getClassFileConsumer(), executorService, timing, inputApp);
+            .write(options.getClassFileConsumer(), executorService, timing);
       } else {
-        ApplicationWriter.create(appView, marker).write(executorService, timing, inputApp);
+        ApplicationWriter.create(appView, marker).write(executorService, timing);
       }
     } catch (IOException e) {
       throw new RuntimeException("Cannot write application", e);
@@ -327,6 +329,9 @@ public class R8 {
         MainDexListBuilder.checkForAssumedLibraryTypes(appView.appInfo());
       }
       DesugaredLibraryAmender.run(appView);
+      if (options.protoShrinking().isLargeProtoEnumRewritingEnabled()) {
+        LargeProtoEnumRewriter.run(appView, executorService, timing);
+      }
       InterfaceMethodRewriter.checkForAssumedLibraryTypes(appView.appInfo(), options);
       BackportedMethodRewriter.registerAssumedLibraryTypes(options);
       if (options.enableEnumUnboxing) {
@@ -422,6 +427,9 @@ public class R8 {
             options.reporter, options.proguardSeedsConsumer, bytes.toString());
         ExceptionUtils.withFinishedResourceHandler(options.reporter, options.proguardSeedsConsumer);
       }
+
+      appView.setKotlinInlineMethodMap(
+          KotlinInlineMethodMap.createForR8(appViewWithLiveness, executorService, timing));
 
       if (options.isShrinking()) {
         // Mark dead proto extensions fields as neither being read nor written. This step must
@@ -855,6 +863,9 @@ public class R8 {
           }
         }
 
+        VirtualRootMethodsAnalysis.promoteClassesAndMethodsToFinal(
+            appView, executorService, timing);
+
         // Perform minification.
         if (options.getProguardConfiguration().hasApplyMappingFile()) {
           timing.begin("apply-mapping");
@@ -949,7 +960,7 @@ public class R8 {
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
-      writeApplication(appView, inputApp, executorService, timing);
+      writeApplication(appView, executorService, timing);
       ResourceWriter.legacyWriteResources(appView, dexFileContent);
 
       assert appView.getDontWarnConfiguration().validate(options);

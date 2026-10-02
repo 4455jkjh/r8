@@ -47,6 +47,8 @@ public class InvokeInterfaceToSiblingMethodLibraryOverrideTest extends TestBase 
         .addProgramClasses(Main.class, I.class, A.class, A2.class, B.class)
         .addKeepMainRule(Main.class)
         .addKeepClassAndDefaultConstructor(B.class)
+        .addKeepRules(
+            "-keep,allowshrinking class " + A.class.getTypeName() + " { boolean getAsBoolean(); }")
         .enableInliningAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .compile()

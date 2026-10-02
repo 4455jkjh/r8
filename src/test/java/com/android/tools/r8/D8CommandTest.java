@@ -29,6 +29,7 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -127,7 +128,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     Collection<Marker> markers = ExtractMarkerUtils.extractMarkersFromFile(output);
     assertEquals(1, markers.size());
     Marker marker = markers.iterator().next();
-    assertEquals(24, marker.getMinApi().intValue());
+    assertEquals(new UncheckedApiLevel(24, 0), marker.getMinApi());
     assertEquals(Tool.D8, marker.getTool());
   }
 
@@ -247,22 +248,21 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             "                          # method name. The handler method must take a single"
                 + " argument of type",
             "                          # java.lang.Throwable and have return type void.",
-            "  --thread-count <number> # Use <number> of threads for compilation. If not specified"
-                + " the number will",
-            "                          # be based on heuristics taking the number of cores into"
-                + " account.",
+            "  --thread-count <number> # Use <number> of threads. If not specified the number will"
+                + " be based on",
+            "                          # heuristics taking the number of cores into account.",
             "  --map-diagnostics[:<type>] <from-level> <to-level>",
             "                          # Map diagnostics of <type> (default any) reported as"
                 + " <from-level> to",
             "                          # <to-level> where <from-level> and <to-level> are one of"
-                + " 'info', 'warning',",
-            "                          # or 'error' and the optional <type> is either the simple or"
-                + " fully qualified",
-            "                          # Java type name of a diagnostic. If <type> is unspecified,"
-                + " all diagnostics",
-            "                          # at <from-level> will be mapped. Note that fatal compiler"
-                + " errors cannot be",
-            "                          # mapped.",
+                + " 'none', 'info',",
+            "                          # 'warning', or 'error', and the optional <type> is either"
+                + " the simple or",
+            "                          # fully qualified Java type name of a diagnostic. If <type>"
+                + " is unspecified,",
+            "                          # all diagnostics at <from-level> will be mapped. Note that"
+                + " fatal compiler",
+            "                          # errors cannot be mapped.",
             "  --android-platform-build",
             "                          # Compile as a platform build where the"
                 + " runtime/bootclasspath is assumed to",

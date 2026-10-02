@@ -16,10 +16,12 @@ import static org.junit.Assert.fail;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.R8FullTestBuilder;
+import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.jasmin.JasminBuilder;
@@ -32,21 +34,34 @@ import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import org.junit.AfterClass;
 import org.junit.Assume;
 
 public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
 
   // This is the name of the Jasmin-generated class which contains the "main" method which will
   // invoke the tested method.
-  private static final String JASMIN_MAIN_CLASS = "TestMain";
+  protected static final String JASMIN_MAIN_CLASS = "TestMain";
+
+  private static BiFunction<String, String, Path> mainClassJars =
+      memoizeBiFunction(AbstractR8KotlinTestBase::buildMainJar);
+  private static final BiFunction<List<Path>, String, ProcessResult> javaResults =
+      memoizeBiFunction(ToolHelper::runJava);
+
+  @AfterClass
+  public static void tearDownMainClassJars() {
+    mainClassJars = memoizeBiFunction(AbstractR8KotlinTestBase::buildMainJar);
+  }
 
   protected final boolean allowAccessModification;
 
-  private final List<Path> classpath = new ArrayList<>();
+  protected final List<Path> classpath = new ArrayList<>();
   private final List<Path> extraClasspath = new ArrayList<>();
 
   protected final TestParameters testParameters;
@@ -170,7 +185,6 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
 
   protected MethodSubject checkMethodIsKept(
       ClassSubject classSubject, MethodSignature methodSignature) {
-    checkMethodPresenceInInput(classSubject.getOriginalTypeName(), methodSignature, true);
     return checkMethodIsKeptOrRemoved(classSubject, methodSignature, true);
   }
 
@@ -181,7 +195,6 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
   }
 
   protected void checkMethodIsRemoved(ClassSubject classSubject, MethodSignature methodSignature) {
-    checkMethodPresenceInInput(classSubject.getOriginalTypeName(), methodSignature, true);
     checkMethodIsKeptOrRemoved(classSubject, methodSignature, false);
   }
 
@@ -248,7 +261,7 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
     classpath.addAll(extraClasspath);
 
     // Compare with Java.
-    ToolHelper.ProcessResult javaResult = ToolHelper.runJava(classpath, mainClass);
+    ProcessResult javaResult = javaResults.apply(ImmutableList.copyOf(classpath), mainClass);
     if (javaResult.exitCode != 0) {
       System.out.println(javaResult.stdout);
       System.err.println(javaResult.stderr);
@@ -256,6 +269,13 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
     }
 
     // Build with R8
+    return compileWithR8(mainClass, configuration)
+        .run(testParameters.getRuntime(), mainClass)
+        .assertSuccessWithOutput(javaResult.stdout);
+  }
+
+  protected R8TestCompileResult compileWithR8(
+      String mainClass, ThrowableConsumer<R8FullTestBuilder> configuration) throws Exception {
     return testForR8(testParameters.getBackend())
         .addProgramFiles(classpath)
         .addKeepMainRule(mainClass)
@@ -264,9 +284,7 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
         .addDontObfuscate()
         .setMinApi(testParameters)
         .apply(configuration)
-        .compile()
-        .run(testParameters.getRuntime(), mainClass)
-        .assertSuccessWithOutput(javaResult.stdout);
+        .compile();
   }
 
   protected void checkClassExistsInInput(String className) {
@@ -307,17 +325,19 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
    * @param methodName the name of the static method to invoke
    * @return the name of the generated class
    */
-  protected String addMainToClasspath(String methodClass, String methodName) throws Exception {
+  private static Path buildMainJar(String methodClass, String methodName) throws Exception {
     JasminBuilder builder = new JasminBuilder();
     ClassBuilder mainClassBuilder =
         builder.addClass(DescriptorUtils.getInternalNameFromJavaType(JASMIN_MAIN_CLASS));
     mainClassBuilder.addMainMethod(
-        "invokestatic " + methodClass + "/" + methodName + "()V",
-        "return"
-    );
+        "invokestatic " + methodClass + "/" + methodName + "()V", "return");
+    Path output = getStaticTemp().newFolder().toPath().resolve("classes.jar");
+    writeClassFileDataToJar(output, builder.buildClasses());
+    return output;
+  }
 
-    Path output = writeToJar(builder);
-    addExtraClasspath(output);
+  protected String addMainToClasspath(String methodClass, String methodName) throws Exception {
+    addExtraClasspath(mainClassJars.apply(methodClass, methodName));
     return JASMIN_MAIN_CLASS;
   }
 }

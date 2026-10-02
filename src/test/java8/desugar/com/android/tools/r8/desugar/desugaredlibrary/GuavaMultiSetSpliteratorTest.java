@@ -8,8 +8,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.R8_L8SHRINK;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -63,7 +63,7 @@ public class GuavaMultiSetSpliteratorTest extends DesugaredLibraryTestBase {
       Assume.assumeTrue(parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L));
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
-        .addProgramFiles(ToolHelper.GUAVA_JRE)
+        .addProgramFiles(TestDeps.getGuavaJreJar())
         .addInnerClasses(getClass())
         .addOptionsModification(opt -> opt.ignoreMissingClasses = true)
         // The Guava embedded ProGuard rules include unused rules and unused -dontwarn patterns.

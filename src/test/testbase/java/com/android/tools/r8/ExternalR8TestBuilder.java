@@ -44,6 +44,9 @@ public class ExternalR8TestBuilder
   // Ordered list of program jar entries.
   private final List<Path> programJars = new ArrayList<>();
 
+  // Ordered list of classpath jar entries.
+  private final List<Path> classpathJars = new ArrayList<>();
+
   // Ordered list of library jar entries.
   private final List<Path> libJars = new ArrayList<>();
 
@@ -184,6 +187,12 @@ public class ExternalR8TestBuilder
           command.add(libJar.toAbsolutePath().toString());
         }
       }
+      if (!classpathJars.isEmpty()) {
+        for (Path classpathJar : classpathJars) {
+          command.add("--classpath");
+          command.add(classpathJar.toAbsolutePath().toString());
+        }
+      }
       if (dumpInputToFile != null) {
         command.add("--dumpinputtofile");
         command.add(dumpInputToFile);
@@ -286,7 +295,8 @@ public class ExternalR8TestBuilder
 
   @Override
   public ExternalR8TestBuilder addClasspathFiles(Collection<Path> files) {
-    throw new Unimplemented("No support for adding classpath data directly");
+    classpathJars.addAll(files);
+    return self();
   }
 
   @Override

@@ -23,6 +23,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Collection;
 import java.util.HashMap;
@@ -57,7 +58,7 @@ public class IntermediateModeMarkerTest extends TestBase {
 
     testForD8(Backend.DEX)
         .addProgramClasses(A.class)
-        .setMinApi(1)
+        .setMinApi(new UncheckedApiLevel(1, 0))
         .setProgramConsumer(
             new DexFilePerClassFileConsumer.ForwardingConsumer(null) {
               @Override
@@ -79,7 +80,7 @@ public class IntermediateModeMarkerTest extends TestBase {
 
     testForD8(Backend.DEX)
         .addProgramClasses(B.class)
-        .setMinApi(2)
+        .setMinApi(new UncheckedApiLevel(2, 0))
         .setProgramConsumer(
             new DexFilePerClassFileConsumer.ForwardingConsumer(null) {
               @Override
@@ -101,7 +102,7 @@ public class IntermediateModeMarkerTest extends TestBase {
 
     testForD8(Backend.DEX)
         .addProgramClasses(C.class)
-        .setMinApi(3)
+        .setMinApi(new UncheckedApiLevel(3, 0))
         .setIntermediate(true)
         .setProgramConsumer(
             new DexIndexedConsumer.ForwardingConsumer(null) {
@@ -120,19 +121,19 @@ public class IntermediateModeMarkerTest extends TestBase {
 
     // The per-class output has two outputs. Each has min-api 1.
     assertEquals(2, intermediatesA.size());
-    assertMinApiMarkers(1, intermediatesA.values());
+    assertMinApiMarkers(1, 0, intermediatesA.values());
     // The per-input-class-file output has one output with min-api 2.
     assertEquals(1, intermediatesB.size());
-    assertMinApiMarkers(2, intermediatesB.values());
+    assertMinApiMarkers(2, 0, intermediatesB.values());
     // The indexed output has one output with min-api 3.
     assertEquals(1, intermediatesC.size());
-    assertMinApiMarkers(3, intermediatesC.values());
+    assertMinApiMarkers(3, 0, intermediatesC.values());
 
     testForD8(Backend.DEX)
         .addProgramDexFileData(intermediatesA.values())
         .addProgramDexFileData(intermediatesB.values())
         .addProgramDexFileData(intermediatesC.values())
-        .setMinApi(4)
+        .setMinApi(new UncheckedApiLevel(4, 0))
         .compile()
         .inspect(
             inspector -> {
@@ -140,16 +141,26 @@ public class IntermediateModeMarkerTest extends TestBase {
               // The merge does not add a new marker.
               Collection<Marker> markers = inspector.getMarkers();
               assertEquals(3, markers.size());
-              assertTrue(markers.stream().anyMatch(m -> m.getMinApi() == 1));
-              assertTrue(markers.stream().anyMatch(m -> m.getMinApi() == 2));
-              assertTrue(markers.stream().anyMatch(m -> m.getMinApi() == 3));
-              assertTrue(markers.stream().noneMatch(m -> m.getMinApi() == 4));
+              assertTrue(
+                  markers.stream()
+                      .anyMatch(m -> m.getMinApi().equals(new UncheckedApiLevel(1, 0))));
+              assertTrue(
+                  markers.stream()
+                      .anyMatch(m -> m.getMinApi().equals(new UncheckedApiLevel(2, 0))));
+              assertTrue(
+                  markers.stream()
+                      .anyMatch(m -> m.getMinApi().equals(new UncheckedApiLevel(3, 0))));
+              assertTrue(
+                  markers.stream()
+                      .noneMatch(m -> m.getMinApi().equals(new UncheckedApiLevel(4, 0))));
             })
         .run(parameters.getRuntime(), A.class)
         .assertSuccessWithOutput(EXPECTED);
   }
 
-  private static void assertMinApiMarkers(int expectedMinApi, Collection<byte[]> dexPayloads)
+  @SuppressWarnings("SameParameterValue")
+  private static void assertMinApiMarkers(
+      int expectedMinApiMajor, int expectedMinApiMinor, Collection<byte[]> dexPayloads)
       throws CompilationFailedException {
     for (byte[] data : dexPayloads) {
       ExtractMarker.run(
@@ -161,7 +172,10 @@ public class IntermediateModeMarkerTest extends TestBase {
                     public void acceptMarkerInfo(MarkerInfoConsumerData data) {
                       assertTrue(data.hasMarkers());
                       for (MarkerInfo marker : data.getMarkers()) {
-                        assertEquals(expectedMinApi, marker.getMinApi());
+                        assertEquals(
+                            new UncheckedApiLevel(expectedMinApiMajor, expectedMinApiMinor),
+                            new UncheckedApiLevel(
+                                marker.getMinApiMajor(), marker.getMinApiMinor()));
                       }
                     }
 

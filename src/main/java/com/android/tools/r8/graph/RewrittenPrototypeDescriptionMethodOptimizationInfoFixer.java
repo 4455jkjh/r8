@@ -186,6 +186,8 @@ public class RewrittenPrototypeDescriptionMethodOptimizationInfoFixer
       if (returnValue.isSingleBoxedPrimitive()) {
         return returnValue.asSingleBoxedPrimitive().toPrimitive(appView.abstractValueFactory());
       }
+    } else if (rewrittenReturnInfo.getNewType().isVoidType()) {
+      return AbstractValue.unknown();
     }
     return returnValue;
   }

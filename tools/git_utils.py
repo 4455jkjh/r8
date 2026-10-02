@@ -3,9 +3,8 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-import re
-import subprocess
 import utils
+import subprocess
 
 
 def GitClone(url, checkout_dir):
@@ -42,55 +41,25 @@ def GitClAppendReviewers(cmd, reviewer, send_mail):
             cmd.append('--send-mail')
 
 
-CQ_EXCLUDE_PRESUBMIT = 'Cq-Exclude-Trybots: luci.r8.try:presubmit'
-
-
 def GitCommit(message):
     cmd = ['git', 'commit', '-a', '-m', message]
     utils.PrintCmd(cmd)
     return subprocess.check_call(cmd)
 
 
-def GitAmendCommitMessage(message):
-    cmd = ['git', 'commit', '--amend', '-m', message]
-    utils.PrintCmd(cmd)
-    return subprocess.check_call(cmd)
-
-
-def AddPresubmitExcludeToCommitMessage(message):
-    if CQ_EXCLUDE_PRESUBMIT in message:
-        return message
-    stripped = message.rstrip()
-    paragraphs = stripped.split('\n\n')
-    if len(paragraphs) > 1:
-        last_paragraph_lines = paragraphs[-1].splitlines()
-        if all(
-                re.match(r'^\s*[\w-]+:\s', line)
-                for line in last_paragraph_lines):
-            return stripped + '\n' + CQ_EXCLUDE_PRESUBMIT + '\n'
-    return stripped + '\n\n' + CQ_EXCLUDE_PRESUBMIT + '\n'
-
-
-def VersionCommitMessage(version,
-                         description=None,
-                         bugs=None,
-                         exclude_presubmit=False):
+def VersionCommitMessage(version, description=None, bugs=None):
     lines = ['Version %s' % version]
     if description:
         lines.append('')
         lines.append(description)
-    trailers = []
+    lines.append('')
     if bugs:
         for bug in sorted(bugs):
             bug_str = str(bug).strip()
             if not bug_str.startswith('b/'):
                 bug_str = 'b/%s' % bug_str
-            trailers.append('Bug: %s' % bug_str)
-    if exclude_presubmit:
-        trailers.append(CQ_EXCLUDE_PRESUBMIT)
-    if trailers:
-        lines.append('')
-        lines.extend(trailers)
+            lines.append('Bug: %s' % bug_str)
+    lines.append('Cq-Exclude-Trybots: luci.r8.try:presubmit')
     return '\n'.join(lines)
 
 

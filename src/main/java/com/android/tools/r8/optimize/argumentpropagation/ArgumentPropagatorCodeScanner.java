@@ -24,7 +24,6 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.AliasedValueConfiguration;
-import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
 import com.android.tools.r8.ir.code.FieldGet;
 import com.android.tools.r8.ir.code.FieldPut;
@@ -87,13 +86,10 @@ import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -198,47 +194,6 @@ public class ArgumentPropagatorCodeScanner {
     return inFlowComparator;
   }
 
-  // TODO(b/296030319): Allow lookups in the FieldStateCollection using DexField keys to avoid the
-  //  need for definitionFor here.
-  private boolean isFieldValueAlreadyUnknown(DexType staticType, DexField field) {
-    return isFieldValueAlreadyUnknown(staticType, appView.definitionFor(field).asProgramField());
-  }
-
-  private boolean isFieldValueAlreadyUnknown(DexType staticType, ProgramField field) {
-    // Only allow early graph pruning when the two nodes have the same type. If the given field is
-    // unknown, but flows to a field or method parameter with a less precise type, we still want
-    // this type propagation to happen.
-    return fieldStates.get(field).isUnknown()
-        && field.getType().isIdenticalTo(staticType)
-        && !newlyUnknownFieldsInCurrentWave.contains(field);
-  }
-
-  protected boolean isMethodParameterAlreadyUnknown(
-      DexType staticType, MethodParameter methodParameter, ProgramMethod method) {
-    assert methodParameter.getMethod().isIdenticalTo(method.getReference());
-    if (methodParameter.getType().isNotIdenticalTo(staticType)) {
-      // Only allow early graph pruning when the two nodes have the same type. If the given method
-      // parameter is unknown, but flows to a field or method parameter with a less precise type,
-      // we still want this type propagation to happen.
-      return false;
-    }
-    MethodState methodState =
-        methodStates.get(
-            method.getDefinition().belongsToDirectPool() || isMonomorphicVirtualMethod(method)
-                ? method.getReference()
-                : getVirtualRootMethod(method));
-    if (methodState.isPolymorphic()) {
-      methodState = methodState.asPolymorphic().getMethodStateForBounds(DynamicType.unknown());
-    }
-    if (methodState.isMonomorphic()) {
-      ValueState parameterState =
-          methodState.asMonomorphic().getParameterState(methodParameter.getIndex());
-      return parameterState.isUnknown();
-    }
-    assert methodState.isBottom() || methodState.isUnknown();
-    return methodState.isUnknown();
-  }
-
   boolean isMonomorphicVirtualMethod(ProgramMethod method) {
     boolean isMonomorphicVirtualMethod = isMonomorphicVirtualMethod(method.getReference());
     assert method.getDefinition().belongsToVirtualPool() || !isMonomorphicVirtualMethod;
@@ -273,6 +228,12 @@ public class ArgumentPropagatorCodeScanner {
     private final PathConstraintSupplier pathConstraintSupplier;
 
     private ComposableComputationTreeBuilder composableComputationTreeBuilder;
+
+    // State used by internalComputeNonReceiverValueState.
+    private Map<Value, NonEmptyValueState> cache = new IdentityHashMap<>();
+    private Set<Phi> seenPhis = Sets.newIdentityHashSet();
+    private DexType staticType;
+    private ProgramMember<?, ?> target;
 
     protected CodeScanner(
         AbstractValueSupplier abstractValueSupplier,
@@ -336,64 +297,93 @@ public class ArgumentPropagatorCodeScanner {
     }
 
     private NonEmptyValueState computeFieldState(
-        FieldPut fieldPut, ProgramField resolvedField, Timing timing) {
+        FieldPut fieldPut, ProgramField field, Timing timing) {
       timing.begin("Compute field state for field-put");
       Value value = fieldPut.value();
-      NonEmptyValueState result = computeFieldState(value, value, resolvedField);
+      NonEmptyValueState result = computeNonReceiverValueState(value, field.getType(), field);
       timing.end();
       return result;
     }
 
-    private NonEmptyValueState computeFieldState(
-        Value value, Value initialValue, ProgramField field) {
-      assert value == initialValue || initialValue.getAliasedValue().isPhi();
-
-      TypeElement fieldType = field.getType().toTypeElement(appView);
-      if (!value.getType().lessThanOrEqual(fieldType, appView)) {
+    private NonEmptyValueState computeNonReceiverValueState(
+        Value value, DexType staticType, ProgramMember<?, ?> target) {
+      TypeElement staticTypeElement = staticType.toTypeElement(appView);
+      if (!value.getType().lessThanOrEqual(staticTypeElement, appView)) {
         return ValueState.unknown();
       }
 
-      NonEmptyValueState inFlowState =
-          computeInFlowState(
-              field.getType(),
-              field,
-              value,
-              initialValue,
-              context,
-              phiOperandValue -> computeFieldState(phiOperandValue, initialValue, field));
+      assert this.cache.isEmpty();
+      assert this.seenPhis.isEmpty();
+      assert this.staticType == null;
+      assert this.target == null;
+      this.staticType = staticType;
+      this.target = target;
+      NonEmptyValueState result = internalGetOrComputeNonReceiverValueState(value);
+      this.cache.clear();
+      this.seenPhis.clear();
+      this.staticType = null;
+      this.target = null;
+      return result;
+    }
+
+    private NonEmptyValueState internalGetOrComputeNonReceiverValueState(Value value) {
+      return cache.computeIfAbsent(value, this::internalComputeNonReceiverValueState);
+    }
+
+    private NonEmptyValueState internalComputeNonReceiverValueState(Value value) {
+      if (value.isPhi()) {
+        // In presence of recursive phis we fall back to computing the state of the phi from the
+        // phi type instead of from its operands.
+        Phi phi = value.asPhi();
+        if (seenPhis.add(phi)) {
+          return computePhiState(phi);
+        }
+      }
+
+      // If the current value is an argument of the declaring method, then we have no information
+      // about its abstract value (yet). Instead of treating this as having an unknown runtime
+      // value, we record a flow constraint that specifies that all values that flow into the
+      // parameter of the declaring method also flows into the field or parameter being assigned.
+      NonEmptyValueState inFlowState = computeInFlowState(value);
       if (inFlowState != null) {
         return inFlowState;
       }
 
-      if (field.getType().isArrayType()) {
+      // Only track the nullability for array types.
+      if (staticType.isArrayType()) {
         Nullability nullability = value.getType().nullability();
         return ConcreteArrayTypeValueState.create(nullability);
       }
 
       AbstractValue abstractValue = abstractValueSupplier.getAbstractValue(value, appView, context);
-      if (abstractValue.isUnknown()) {
+      if (abstractValue.isUnknown() && target != null && target.isField()) {
         abstractValue =
             getFallbackAbstractValueForField(
-                field, () -> value.computeObjectState(appView, context));
+                target.asField(), () -> value.computeObjectState(appView, context));
       }
-      if (field.getType().isClassType()) {
-        DynamicType dynamicType =
-            WideningUtils.widenDynamicNonReceiverType(
-                appView, value.getDynamicType(appView), field.getType());
-        return ConcreteClassTypeValueState.create(abstractValue, dynamicType);
+
+      if (staticType.isClassType()) {
+        // For class types, we track both the abstract value and the dynamic type. If both are
+        // unknown, then use ValueState.unknown().
+        DynamicType dynamicType = value.getDynamicType(appView);
+        DynamicType widenedDynamicType =
+            WideningUtils.widenDynamicNonReceiverType(appView, dynamicType, staticType);
+        return ConcreteClassTypeValueState.create(abstractValue, widenedDynamicType);
       } else {
-        assert field.getType().isPrimitiveType();
+        // For primitive types, we only track the abstract value, thus if the abstract value is
+        // unknown, we use ValueState.unknown().
+        assert staticType.isPrimitiveType();
         return ConcretePrimitiveTypeValueState.create(abstractValue);
       }
     }
 
-    private BaseInFlow computeBaseInFlow(DexType staticType, Value value, ProgramMethod context) {
+    private BaseInFlow computeBaseInFlow(Value value) {
       Value valueRoot = value.getAliasedValue();
       if (valueRoot.isArgument()) {
         MethodParameter inParameter =
             methodParameterFactory.create(
                 context, valueRoot.getDefinition().asArgument().getIndex());
-        if (!widenBaseInFlow(staticType, inParameter, context).isUnknown()) {
+        if (!widenBaseInFlow(inParameter).isUnknown()) {
           return inParameter;
         }
       } else if (valueRoot.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
@@ -401,7 +391,7 @@ public class ArgumentPropagatorCodeScanner {
         ProgramField field = fieldGet.resolveField(appView, context).getProgramField();
         if (field != null) {
           FieldValue fieldValue = fieldValueFactory.create(field);
-          if (!widenBaseInFlow(staticType, fieldValue, context).isUnknown()) {
+          if (!widenBaseInFlow(fieldValue).isUnknown()) {
             return fieldValue;
           }
         }
@@ -415,23 +405,13 @@ public class ArgumentPropagatorCodeScanner {
     // TODO(b/302281503): Cache computed in flow so that we do not compute the same in flow for the
     //  same value multiple times.
     // TODO(b/302281503): Canonicalize computed in flow.
-    private InFlow computeInFlow(
-        DexType staticType,
-        ProgramMember<?, ?> target,
-        Value value,
-        Value initialValue,
-        ProgramMethod context,
-        Function<Value, NonEmptyValueState> valueStateSupplier) {
-      if (value != initialValue) {
-        assert initialValue.getAliasedValue().isPhi();
-        return computeBaseInFlow(staticType, value, context);
-      }
+    private InFlow computeInFlow(Value value) {
       Value valueRoot = value.getAliasedValue(aliasedValueConfiguration);
       if (valueRoot.isArgument()) {
         MethodParameter inParameter =
             methodParameterFactory.create(
                 context, valueRoot.getDefinition().asArgument().getIndex());
-        return castBaseInFlow(widenBaseInFlow(staticType, inParameter, context), value);
+        return castBaseInFlow(widenBaseInFlow(inParameter), value);
       } else if (valueRoot.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
         FieldGet fieldGet = valueRoot.getDefinition().asFieldGet();
         ProgramField field = fieldGet.resolveField(appView, context).getProgramField();
@@ -440,17 +420,12 @@ public class ArgumentPropagatorCodeScanner {
         }
         if (fieldGet.isInstanceGet()) {
           Value receiverValue = fieldGet.asInstanceGet().object();
-          BaseInFlow receiverInFlow = computeBaseInFlow(staticType, receiverValue, context);
-          if (receiverInFlow != null
-              && receiverInFlow.equals(widenBaseInFlow(staticType, receiverInFlow, context))) {
+          BaseInFlow receiverInFlow = computeBaseInFlow(receiverValue);
+          if (receiverInFlow != null && receiverInFlow.equals(widenBaseInFlow(receiverInFlow))) {
             return new InstanceFieldReadAbstractFunction(receiverInFlow, field.getReference());
           }
         }
-        return castBaseInFlow(
-            widenBaseInFlow(staticType, fieldValueFactory.create(field), context), value);
-      } else if (value.isPhi()) {
-        // TODO(b/302281503): Replace IfThenElseAbstractFunction by ComputationTreeNode (?).
-        return computeIfThenElseAbstractFunction(value.asPhi(), valueStateSupplier);
+        return castBaseInFlow(widenBaseInFlow(fieldValueFactory.create(field)), value);
       } else if (target != null && appView.getComposeReferences().isComposable(target)) {
         if (composableComputationTreeBuilder == null) {
           composableComputationTreeBuilder =
@@ -472,8 +447,15 @@ public class ArgumentPropagatorCodeScanner {
       return null;
     }
 
-    private IfThenElseAbstractFunction computeIfThenElseAbstractFunction(
-        Phi phi, Function<Value, NonEmptyValueState> valueStateSupplier) {
+    private NonEmptyValueState computeIfThenElseAbstractFunctionState(Phi phi) {
+      IfThenElseAbstractFunction fn = computeIfThenElseAbstractFunction(phi);
+      if (fn != null) {
+        return ConcreteValueState.create(staticType, fn);
+      }
+      return null;
+    }
+
+    private IfThenElseAbstractFunction computeIfThenElseAbstractFunction(Phi phi) {
       if (phi.getOperands().size() != 2 || !phi.hasOperandThatMatches(Value::isArgument)) {
         return null;
       }
@@ -494,9 +476,12 @@ public class ArgumentPropagatorCodeScanner {
       if (condition.getSingleOpenVariable() == null) {
         return null;
       }
-      NonEmptyValueState leftValue = valueStateSupplier.apply(phi.getOperand(0));
-      NonEmptyValueState rightValue = valueStateSupplier.apply(phi.getOperand(1));
-      if (leftValue.isUnknown() && rightValue.isUnknown()) {
+      NonEmptyValueState leftValue = internalGetOrComputeNonReceiverValueState(phi.getOperand(0));
+      if (leftValue.isUnknown() || leftValue.asConcrete().hasNonBaseInFlow()) {
+        return null;
+      }
+      NonEmptyValueState rightValue = internalGetOrComputeNonReceiverValueState(phi.getOperand(1));
+      if (rightValue.isUnknown() || rightValue.asConcrete().hasNonBaseInFlow()) {
         return null;
       }
       IfThenElseAbstractFunction result =
@@ -561,81 +546,101 @@ public class ArgumentPropagatorCodeScanner {
       return new CastAbstractFunction(inFlow.asBaseInFlow(), castType, nullability);
     }
 
-    private InFlow widenBaseInFlow(DexType staticType, BaseInFlow inFlow, ProgramMethod context) {
+    private InFlow widenBaseInFlow(BaseInFlow inFlow) {
       if (inFlow.isFieldValue()) {
-        if (isFieldValueAlreadyUnknown(staticType, inFlow.asFieldValue().getField())) {
+        if (isFieldValueAlreadyUnknown(inFlow.asFieldValue().getField())) {
           return AbstractValue.unknown();
         }
       } else {
         assert inFlow.isMethodParameter();
-        if (isMethodParameterAlreadyUnknown(staticType, inFlow.asMethodParameter(), context)) {
+        if (isMethodParameterAlreadyUnknown(inFlow.asMethodParameter(), context)) {
           return AbstractValue.unknown();
         }
       }
       return inFlow;
     }
 
-    private NonEmptyValueState computeInFlowState(
-        DexType staticType,
-        ProgramMember<?, ?> target,
-        Value value,
-        Value initialValue,
-        ProgramMethod context,
-        Function<Value, NonEmptyValueState> valueStateSupplier) {
-      assert value == initialValue || initialValue.getAliasedValue().isPhi();
-      InFlow inFlow =
-          computeInFlow(staticType, target, value, initialValue, context, valueStateSupplier);
+    // TODO(b/296030319): Allow lookups in the FieldStateCollection using DexField keys to avoid the
+    //  need for definitionFor here.
+    private boolean isFieldValueAlreadyUnknown(DexField field) {
+      return isFieldValueAlreadyUnknown(appView.definitionFor(field).asProgramField());
+    }
+
+    private boolean isFieldValueAlreadyUnknown(ProgramField field) {
+      // Only allow early graph pruning when the two nodes have the same type. If the given field is
+      // unknown, but flows to a field or method parameter with a less precise type, we still want
+      // this type propagation to happen.
+      return fieldStates.get(field).isUnknown()
+          && field.getType().isIdenticalTo(staticType)
+          && !newlyUnknownFieldsInCurrentWave.contains(field);
+    }
+
+    protected boolean isMethodParameterAlreadyUnknown(
+        MethodParameter methodParameter, ProgramMethod method) {
+      assert methodParameter.getMethod().isIdenticalTo(method.getReference());
+      if (methodParameter.getType().isNotIdenticalTo(staticType)) {
+        // Only allow early graph pruning when the two nodes have the same type. If the given method
+        // parameter is unknown, but flows to a field or method parameter with a less precise type,
+        // we still want this type propagation to happen.
+        return false;
+      }
+      MethodState methodState =
+          methodStates.get(
+              method.getDefinition().belongsToDirectPool() || isMonomorphicVirtualMethod(method)
+                  ? method.getReference()
+                  : getVirtualRootMethod(method));
+      if (methodState.isPolymorphic()) {
+        methodState = methodState.asPolymorphic().getMethodStateForBounds(DynamicType.unknown());
+      }
+      if (methodState.isMonomorphic()) {
+        ValueState parameterState =
+            methodState.asMonomorphic().getParameterState(methodParameter.getIndex());
+        return parameterState.isUnknown();
+      }
+      assert methodState.isBottom() || methodState.isUnknown();
+      return methodState.isUnknown();
+    }
+
+    private NonEmptyValueState computeInFlowState(Value value) {
+      InFlow inFlow = computeInFlow(value);
       if (inFlow != null && !inFlow.isUnknown()) {
         assert inFlow.isBaseInFlow()
             || inFlow.isAbstractComputation()
             || inFlow.isCastAbstractFunction()
-            || inFlow.isIfThenElseAbstractFunction()
             || inFlow.isInstanceFieldReadAbstractFunction();
         return ConcreteValueState.create(staticType, inFlow);
-      }
-      if (value.isPhi()) {
-        return computePhiState(value.asPhi(), staticType, context, valueStateSupplier);
       }
       return null;
     }
 
-    private NonEmptyValueState computePhiState(
-        Phi phi,
-        DexType staticType,
-        ProgramMethod context,
-        Function<Value, NonEmptyValueState> valueStateSupplier) {
+    private NonEmptyValueState computePhiState(Phi phi) {
+      // TODO(b/302281503): Replace IfThenElseAbstractFunction by ComputationTreeNode (?).
+      NonEmptyValueState fnState = computeIfThenElseAbstractFunctionState(phi);
+      if (fnState != null) {
+        return fnState;
+      }
+
       // TODO(b/302281503): Consider extending this to include field edges as well.
-      Set<Argument> arguments = Sets.newIdentityHashSet();
-      Set<Value> nonArguments = Sets.newIdentityHashSet();
+      List<Value> operands = new ArrayList<>();
       WorkList.newIdentityWorkList(phi)
           .process(
               (currentPhi, worklist) -> {
                 for (Value operand : currentPhi.getOperands()) {
                   if (operand.isPhi()) {
                     worklist.addIfNotSeen(operand.asPhi());
-                  } else if (operand.isArgument()) {
-                    arguments.add(operand.getDefinition().asArgument());
                   } else {
-                    nonArguments.add(operand);
+                    operands.add(operand);
                   }
                 }
               });
-      if (arguments.isEmpty()) {
-        return null;
-      }
-      Set<InFlow> inFlow = new HashSet<>(arguments.size());
-      for (Argument argument : arguments) {
-        inFlow.add(methodParameterFactory.create(context, argument.getIndex()));
-      }
-      NonEmptyValueState state = ConcreteValueState.create(staticType, inFlow);
-      List<Value> sortedNonArguments =
-          ListUtils.sort(nonArguments, Comparator.comparingInt(Value::getNumber));
-      for (Value nonArgument : sortedNonArguments) {
+      NonEmptyValueState state = internalGetOrComputeNonReceiverValueState(operands.get(0));
+      for (int i = 1; i < operands.size(); i++) {
+        Value operand = operands.get(i);
         state =
             state.mutableJoin(
                 appView,
                 appView.getDefaultAbstractValueJoiner(),
-                valueStateSupplier.apply(nonArgument),
+                internalGetOrComputeNonReceiverValueState(operand),
                 null,
                 staticType,
                 StateCloner.getIdentity());
@@ -936,12 +941,7 @@ public class ArgumentPropagatorCodeScanner {
         Value argumentValue = invoke.getArgument(argumentIndex);
         parameterStates.add(
             computeParameterStateForNonReceiver(
-                invoke,
-                singleTarget,
-                argumentIndex,
-                argumentValue,
-                argumentValue,
-                existingMethodState));
+                invoke, singleTarget, argumentIndex, argumentValue, existingMethodState));
       }
 
       // We simulate that the return value is used for methods with void return type. This ensures
@@ -983,10 +983,8 @@ public class ArgumentPropagatorCodeScanner {
         ProgramMethod singleTarget,
         int argumentIndex,
         Value value,
-        Value initialValue,
         ConcreteMonomorphicMethodStateOrBottom existingMethodState) {
       assert invoke.isInvokeStatic() || argumentIndex > 0;
-      assert value == initialValue || initialValue.getAliasedValue().isPhi();
 
       // Don't compute a state for this parameter if the stored state is already unknown.
       if (existingMethodState.isMonomorphic()
@@ -1000,51 +998,7 @@ public class ArgumentPropagatorCodeScanner {
         return ValueState.unused(parameterType);
       }
 
-      // If the value is an argument of the enclosing method, then clearly we have no information
-      // about its abstract value. Instead of treating this as having an unknown runtime value, we
-      // instead record a flow constraint that specifies that all values that flow into the
-      // parameter of this enclosing method also flows into the corresponding parameter of the
-      // methods potentially called from this invoke instruction.
-      NonEmptyValueState inFlowState =
-          computeInFlowState(
-              parameterType,
-              singleTarget,
-              value,
-              initialValue,
-              context,
-              phiOperandArgumentValue ->
-                  computeParameterStateForNonReceiver(
-                      invoke,
-                      singleTarget,
-                      argumentIndex,
-                      phiOperandArgumentValue,
-                      initialValue,
-                      existingMethodState));
-      if (inFlowState != null) {
-        return inFlowState;
-      }
-
-      // Only track the nullability for array types.
-      if (parameterType.isArrayType()) {
-        Nullability nullability = value.getType().nullability();
-        return ConcreteArrayTypeValueState.create(nullability);
-      }
-
-      AbstractValue abstractValue = abstractValueSupplier.getAbstractValue(value, appView, context);
-
-      // For class types, we track both the abstract value and the dynamic type. If both are
-      // unknown, then use UnknownParameterState.
-      if (parameterType.isClassType()) {
-        DynamicType dynamicType = value.getDynamicType(appView);
-        DynamicType widenedDynamicType =
-            WideningUtils.widenDynamicNonReceiverType(appView, dynamicType, parameterType);
-        return ConcreteClassTypeValueState.create(abstractValue, widenedDynamicType);
-      } else {
-        // For primitive types, we only track the abstract value, thus if the abstract value is
-        // unknown, we use UnknownParameterState.
-        assert parameterType.isPrimitiveType();
-        return ConcretePrimitiveTypeValueState.create(abstractValue);
-      }
+      return computeNonReceiverValueState(value, parameterType, singleTarget);
     }
 
     private boolean isUnused(InvokeMethod invoke, ProgramMethod singleTarget, int argumentIndex) {

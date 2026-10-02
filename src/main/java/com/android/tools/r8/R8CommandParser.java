@@ -251,41 +251,14 @@ public class R8CommandParser {
             (state, arg) -> state.builder.setMainDexListOutputPath(Paths.get(arg)))
         .apply(
             CliParserUtils.addForceAssertionOptions(state -> state.builder, state -> state.origin))
-        .option1(
-            "--thread-count",
-            "<number>",
-            "Use <number> of threads for compilation. If not specified the number will be based on"
-                + " heuristics taking the number of cores into account.",
-            (state, arg) ->
-                CliParserUtils.parsePositiveInt(
-                    arg,
-                    state.builder::setThreadCount,
-                    error ->
-                        state.builder.error(
-                            new StringDiagnostic(
-                                "Invalid argument to --thread-count: " + error, state.origin))))
-        .prefix2(
-            "--map-diagnostics",
-            "[:<type>]",
-            "<from-level>",
-            "<to-level>",
-            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
-                + " <from-level> and <to-level> are one of 'info', 'warning', or 'error' and the"
-                + " optional <type> is either the simple or fully qualified Java type name of a"
-                + " diagnostic. If <type> is unspecified, all diagnostics at <from-level> will be"
-                + " mapped. Note that fatal compiler errors cannot be mapped.",
-            (state, suffix, fromLevel, toLevel) ->
-                CliParserUtils.parseDiagnosticsMapping(
-                    suffix,
-                    fromLevel,
-                    toLevel,
-                    m ->
-                        state
-                            .builder
-                            .getReporter()
-                            .addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
-                    state.builder::error,
-                    state.origin))
+        .apply(
+            CliParserUtils.addThreadCountOption(
+                (state, threadCount) -> state.builder.setThreadCount(threadCount),
+                state -> state.builder.getReporter(),
+                state -> state.origin))
+        .apply(
+            CliParserUtils.addMapDiagnosticsOption(
+                state -> state.builder.getReporter(), state -> state.origin))
         .option1(
             "--map-id-template",
             "<template>",

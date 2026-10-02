@@ -243,6 +243,9 @@ public class MutableMethodOptimizationInfo extends MethodOptimizationInfo
       DexEncodedMethod method,
       GraphLens lens,
       GraphLens codeLens) {
+    if (method.getReturnType().isVoidType()) {
+      return unsetAbstractReturnValue();
+    }
     abstractReturnValue =
         abstractReturnValue.rewrittenWithLens(appView, method.getReturnType(), lens, codeLens);
     return this;
@@ -744,8 +747,9 @@ public class MutableMethodOptimizationInfo extends MethodOptimizationInfo
     abstractReturnValue = value;
   }
 
-  void unsetAbstractReturnValue() {
+  MutableMethodOptimizationInfo unsetAbstractReturnValue() {
     abstractReturnValue = UnknownValue.getInstance();
+    return this;
   }
 
   void setAbstractFunction(AbstractFunction abstractFunction) {

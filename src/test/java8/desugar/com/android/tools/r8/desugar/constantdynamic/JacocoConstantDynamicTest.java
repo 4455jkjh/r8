@@ -8,9 +8,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.jacoco.JacocoClasses;
@@ -82,7 +82,7 @@ public class JacocoConstantDynamicTest extends TestBase {
     Path agentOutputOnTheFly = output.resolve("on-the-fly");
     testForJvm(parameters)
         .addProgramFiles(testClasses.getOriginal())
-        .enableJaCoCoAgent(ToolHelper.JACOCO_AGENT, agentOutputOnTheFly)
+        .enableJaCoCoAgent(TestDeps.getJacocoAgentJar(), agentOutputOnTheFly)
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
     List<String> onTheFlyReport = testClasses.generateReport(agentOutputOnTheFly);
@@ -92,7 +92,8 @@ public class JacocoConstantDynamicTest extends TestBase {
     Path agentOutputOffline = output.resolve("offline");
     testForJvm(parameters)
         .addProgramFiles(testClasses.getInstrumented())
-        .configureJaCoCoAgentForOfflineInstrumentedCode(ToolHelper.JACOCO_AGENT, agentOutputOffline)
+        .configureJaCoCoAgentForOfflineInstrumentedCode(
+            TestDeps.getJacocoAgentJar(), agentOutputOffline)
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
     List<String> offlineReport = testClasses.generateReport(agentOutputOffline);
@@ -107,7 +108,7 @@ public class JacocoConstantDynamicTest extends TestBase {
       Path agentOutput = output.resolve("jacoco.exec");
       testForD8()
           .addProgramFiles(testClasses.getInstrumented())
-          .addProgramFiles(ToolHelper.JACOCO_AGENT)
+          .addProgramFiles(TestDeps.getJacocoAgentJar())
           .setMinApi(parameters)
           .compile()
           .runWithJaCoCo(agentOutput, parameters.getRuntime(), MAIN_CLASS)
@@ -122,7 +123,7 @@ public class JacocoConstantDynamicTest extends TestBase {
     } else {
       testForD8()
           .addProgramFiles(testClasses.getInstrumented())
-          .addProgramFiles(ToolHelper.JACOCO_AGENT)
+          .addProgramFiles(TestDeps.getJacocoAgentJar())
           .setMinApi(parameters)
           .compile();
     }

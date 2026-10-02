@@ -59,8 +59,20 @@ public class RelocatorCommandTest extends TestBase {
             "  --output <file>         # Output result in <outfile>.",
             "  --map <from->to>        # Registers a mapping.",
             "  --map-diagnostics[:<type>] <from-level> <to-level>",
-            "                          # Map diagnostics level.",
-            "  --thread-count <number> # A specified number of threads to run with.",
+            "                          # Map diagnostics of <type> (default any) reported as"
+                + " <from-level> to",
+            "                          # <to-level> where <from-level> and <to-level> are one of"
+                + " 'none', 'info',",
+            "                          # 'warning', or 'error', and the optional <type> is either"
+                + " the simple or",
+            "                          # fully qualified Java type name of a diagnostic. If <type>"
+                + " is unspecified,",
+            "                          # all diagnostics at <from-level> will be mapped. Note that"
+                + " fatal compiler",
+            "                          # errors cannot be mapped.",
+            "  --thread-count <number> # Use <number> of threads. If not specified the number will"
+                + " be based on",
+            "                          # heuristics taking the number of cores into account.",
             "  --version",
             "  -v                      # Print version.",
             "  --help",

@@ -31,6 +31,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -77,7 +78,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
       List<ProguardConfigurationRule> syntheticProguardRules,
       String proguardMap,
       CollectingGraphConsumer graphConsumer,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       List<Path> features,
       List<ExternalArtProfile> residualArtProfiles,
       Path resourceShrinkerOutput,
@@ -469,7 +470,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   public CR benchmarkDex2OatCodeSize(
       BenchmarkResults results, boolean enableDex2Oat, boolean enableDex2OatVerification)
       throws IOException {
-    if (results.isBenchmarkingCodeSize()) {
+    if (results.isBenchmarkingCodeSize() && !results.hasDex2OatSizeResult()) {
       if (enableDex2Oat) {
         Dex2OatTestRunResult dex2OatTestRunResult =
             runDex2Oat(new DexRuntime(DexVm.Version.LATEST_DEX2OAT))

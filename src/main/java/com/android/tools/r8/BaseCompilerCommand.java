@@ -188,6 +188,9 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     if (getAndroidPlatformBuild()) {
       builder.setAndroidPlatformBuild(true);
     }
+    if (getApiDatabasePath() != null) {
+      builder.setApiDatabasePath(getApiDatabasePath());
+    }
   }
 
   /**

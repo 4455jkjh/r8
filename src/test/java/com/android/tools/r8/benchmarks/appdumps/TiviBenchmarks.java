@@ -18,44 +18,17 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class TiviBenchmarks extends BenchmarkBase {
+public abstract class TiviBenchmarks extends BenchmarkBase {
 
   private static final Path dump = Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps", "tivi");
 
-  public TiviBenchmarks(BenchmarkConfig config, TestParameters parameters) {
+  protected TiviBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
-  }
-
-  @Parameters(name = "{0}")
-  public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
   }
 
   public static List<BenchmarkConfig> configs() {
     return ImmutableList.of(
-        AppDumpBenchmarkBuilder.builder()
-            .setName("TiviApp")
-            .setDumpDependencyPath(dump)
-            .setFromRevision(12215)
-            .buildR8(),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("TiviApp")
-            .setDumpDependencyPath(dump)
-            .setCompilationMode(CompilationMode.DEBUG)
-            .setFromRevision(12370)
-            .buildBatchD8(),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("TiviIncremental")
-            .setDumpDependencyPath(dump)
-            .setCompilationMode(CompilationMode.DEBUG)
-            .setFromRevision(12370)
-            .addProgramPackages("app/tivi")
-            .buildIncrementalD8(),
-        AppDumpBenchmarkBuilder.builder()
-            .setName("TiviAppPartial")
-            .setDumpDependencyPath(dump)
-            .setFromRevision(12215)
-            .buildR8WithPartialShrinking(TiviBenchmarks::configureR8Partial));
+        TiviAppR8.config(), TiviAppD8.config(), TiviIncremental.config(), TiviAppPartial.config());
   }
 
   private static void configureR8Partial(R8PartialTestBuilder testBuilder) {
@@ -65,5 +38,80 @@ public class TiviBenchmarks extends BenchmarkBase {
         .allowUnusedProguardConfigurationRules()
         // TODO(b/222228826): Disallow unrecognized diagnostics and open interfaces.
         .allowDiagnosticMessages();
+  }
+
+  protected static AppDumpBenchmarkBuilder builder(String name, int fromRevision) {
+    return AppDumpBenchmarkBuilder.builder()
+        .setName(name)
+        .setDumpDependencyPath(dump)
+        .setFromRevision(fromRevision);
+  }
+
+  public static class TiviAppR8 extends TiviBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("TiviApp", 12215).buildR8();
+    }
+
+    public TiviAppR8(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class TiviAppD8 extends TiviBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("TiviApp", 12370).setCompilationMode(CompilationMode.DEBUG).buildBatchD8();
+    }
+
+    public TiviAppD8(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class TiviIncremental extends TiviBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("TiviIncremental", 12370)
+          .setCompilationMode(CompilationMode.DEBUG)
+          .addProgramPackages("app/tivi")
+          .buildIncrementalD8();
+    }
+
+    public TiviIncremental(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class TiviAppPartial extends TiviBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("TiviAppPartial", 12215)
+          .buildR8WithPartialShrinking(TiviBenchmarks::configureR8Partial);
+    }
+
+    public TiviAppPartial(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
   }
 }

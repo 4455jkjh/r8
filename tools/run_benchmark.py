@@ -23,22 +23,12 @@ GOLEM_BUILD_TARGETS = [
 ] + GOLEM_BUILD_TARGETS_TESTS
 
 
-def get_golem_resource_path(benchmark):
-    return os.path.join('benchmarks', benchmark)
-
-
-def get_jdk_home(options, benchmark):
-    if options.golem:
-        return os.path.join(get_golem_resource_path(benchmark), 'linux')
+def get_jdk_home():
     return jdk.GetDefaultJdkHome()
 
 
 def parse_options(argv):
     result = argparse.ArgumentParser(description='Run test-based benchmarks.')
-    result.add_argument('--golem',
-                        help='Indicate this as a run on golem',
-                        default=False,
-                        action='store_true')
     result.add_argument('--benchmark',
                         help='The test benchmark to run',
                         required=True)
@@ -178,12 +168,6 @@ def main(argv, temp):
         temp = options.temp
         os.makedirs(temp, exist_ok=True)
 
-    if options.golem:
-        options.no_build = True
-        if options.nolib:
-            print("Error: golem should always run r8lib")
-            return 1
-
     if options.nolib:
         testBuildTargets = [
             utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR,
@@ -214,12 +198,9 @@ def main(argv, temp):
     if not options.no_build:
         gradle.run_gradle(buildTargets + ['-Pno_internal'])
 
-    if not options.golem:
-        # When running locally, change the working directory to be in 'temp'.
-        # This is hard to do properly within the JVM so we do it here.
-        with utils.ChangedWorkingDirectory(temp):
-            return run(options, r8jar, testjars)
-    else:
+    # Change the working directory to be in 'temp'.
+    # This is hard to do properly within the JVM so we do it here.
+    with utils.ChangedWorkingDirectory(temp):
         return run(options, r8jar, testjars)
 
 
@@ -235,7 +216,7 @@ def run(options, r8jar, testjars):
     if options.heap_size:
         xms = options.heap_size
         xmx = options.heap_size
-    jdkhome = get_jdk_home(options, options.benchmark)
+    jdkhome = get_jdk_home()
     cmd = [
         jdk.GetJavaExecutable(jdkhome),
         '-Xms' + xms,
@@ -272,11 +253,10 @@ def run(options, r8jar, testjars):
         )
     if options.print_times:
         cmd.append('-Dcom.android.tools.r8.printtimes=1')
-    if not options.golem:
-        cmd.extend([
-            f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
-            f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',
-        ])
+    cmd.extend([
+        f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
+        f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',
+    ])
     if options.iterations is not None:
         if options.iterations == 0:
             return
@@ -296,9 +276,6 @@ def run(options, r8jar, testjars):
         'com.android.tools.r8.benchmarks.BenchmarkMainEntryRunner',
         options.benchmark,
         options.target,
-        # When running locally the working directory is moved and we pass the
-        # repository root as an argument. The runner can then setup dependencies.
-        'golem' if options.golem else utils.REPO_ROOT,
     ])
     utils.PrintCmd(cmd, quiet=options.quiet)
     return subprocess.check_call(cmd)

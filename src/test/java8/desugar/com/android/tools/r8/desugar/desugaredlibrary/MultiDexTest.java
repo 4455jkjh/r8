@@ -10,8 +10,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK8;
 import static org.junit.Assert.assertFalse;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.graph.DexField;
@@ -22,10 +22,7 @@ import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,18 +30,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class MultiDexTest extends DesugaredLibraryTestBase {
-
-  private static final String[] JAR_NAMES =
-      new String[] {
-        "multidex-1.0.3.jar",
-        "multidex-instrumentation-1.0.3.jar",
-        "multidex-2.0.1.jar",
-        "multidex-instrumentation-2.0.0.jar"
-      };
-  private static final List<Path> MULTIDEX_JARS =
-      Arrays.stream(JAR_NAMES)
-          .map(jar -> Paths.get(ToolHelper.THIRD_PARTY_DIR + "multidex/" + jar))
-          .collect(Collectors.toList());
 
   private final TestParameters parameters;
   private final CompilationSpecification compilationSpecification;
@@ -57,7 +42,11 @@ public class MultiDexTest extends DesugaredLibraryTestBase {
         getTestParameters().withDexRuntimes().withAllApiLevels().build(),
         ImmutableList.of(JDK8, JDK11, JDK11_PATH),
         ImmutableList.of(D8_L8DEBUG),
-        MULTIDEX_JARS);
+        ImmutableList.of(
+            TestDeps.getMultidex1_0_3Jar(),
+            TestDeps.getMultidexInstrumentation1_0_3Jar(),
+            TestDeps.getMultidex2_0_1Jar(),
+            TestDeps.getMultidexInstrumentation2_0_0Jar()));
   }
 
   public MultiDexTest(

@@ -6,6 +6,7 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class ExternalR8TestCompileResult
       Path outputJar,
       ProcessResult processResult,
       String proguardMap,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       OutputMode outputMode) {
     super(state, AndroidApp.builder().addProgramFiles(outputJar).build(), minApiLevel, outputMode);
     assert processResult.exitCode == 0;

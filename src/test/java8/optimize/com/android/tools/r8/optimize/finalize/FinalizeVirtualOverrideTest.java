@@ -38,7 +38,7 @@ public class FinalizeVirtualOverrideTest extends TestBase {
   public void test() throws Exception {
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
-        .addKeepClassAndMembersRules(Main.class)
+        .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
         .enableNoVerticalClassMergingAnnotations()
@@ -62,6 +62,9 @@ public class FinalizeVirtualOverrideTest extends TestBase {
               assertThat(cClassSubject, isPresent());
               assertThat(
                   cClassSubject.uniqueMethodWithOriginalName("m"), allOf(isPresent(), isFinal()));
+
+              ClassSubject dClassSubject = inspector.clazz(D.class);
+              assertThat(dClassSubject, not(isPresent()));
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("A.m()", "B.m()", "C.m()");
@@ -73,6 +76,13 @@ public class FinalizeVirtualOverrideTest extends TestBase {
       new A().m();
       new B().m();
       new C().m();
+      if (alwaysFalse()) {
+        new D().m();
+      }
+    }
+
+    static boolean alwaysFalse() {
+      return false;
     }
   }
 
@@ -96,12 +106,22 @@ public class FinalizeVirtualOverrideTest extends TestBase {
   }
 
   @NeverClassInline
+  @NoVerticalClassMerging
   static class C extends B {
 
-    // Should be made final.
+    // Should be made final after D is pruned in the second round of tree shaking.
     @NeverInline
     public void m() {
       System.out.println("C.m()");
+    }
+  }
+
+  @NeverClassInline
+  static class D extends C {
+
+    @NeverInline
+    public void m() {
+      System.out.println("D.m()");
     }
   }
 }

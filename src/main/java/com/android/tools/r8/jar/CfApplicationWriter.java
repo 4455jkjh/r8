@@ -18,7 +18,6 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.naming.ProguardMapSupplier.ProguardMapSupplierResult;
 import com.android.tools.r8.threading.TaskCollection;
-import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramConsumer.InternalGlobalSyntheticsCfConsumer;
 import com.android.tools.r8.utils.InternalOptions;
@@ -52,19 +51,8 @@ public class CfApplicationWriter {
 
   public void write(ClassFileConsumer consumer, ExecutorService executorService, Timing timing)
       throws ExecutionException {
-    assert !options.hasMappingFileSupport();
-    write(consumer, executorService, timing, null);
-  }
-
-  public void write(
-      ClassFileConsumer consumer,
-      ExecutorService executorService,
-      Timing timing,
-      AndroidApp inputApp)
-      throws ExecutionException {
     timing.time(
-        "CfApplicationWriter.write",
-        () -> writeApplication(inputApp, consumer, executorService, timing));
+        "CfApplicationWriter.write", () -> writeApplication(consumer, executorService, timing));
   }
 
   private boolean includeMarker(Marker marker) {
@@ -79,7 +67,6 @@ public class CfApplicationWriter {
   }
 
   private void writeApplication(
-      AndroidApp inputApp,
       ClassFileConsumer consumer,
       ExecutorService executorService,
       Timing timing)
@@ -88,11 +75,10 @@ public class CfApplicationWriter {
 
     ProguardMapSupplierResult mapSupplierResult = ProguardMapSupplierResult.createEmpty();
     try {
-      if (options.hasMappingFileSupport()) {
+      if (options.shouldOutputMappingFile()) {
         assert marker.isPresent();
         mapSupplierResult =
             runAndWriteMap(
-                inputApp,
                 appView,
                 executorService,
                 timing,

@@ -1,22 +1,27 @@
 [versions]
+androidxAnnotation = "1.10.0"
 androidxCollection = "1.6.0"
-androidxTracing = "2.0.0-alpha05"
+androidxTracing = "2.0.3"
 # When updating update tools/asmifier.py and Toolhelper as well.
 asm = "9.10.1"
 ddmLib = "32.2.0"
 errorprone = "2.50.0"
 errorproneGradlePlugin = "5.1.0"
 fastUtil = "8.5.12"
+fastdoubleparser = "0.8.0"
+gcpGradlePlugin = "1.0.2"
 gson = "2.14.0"
 guava = "32.1.2-jre"
 javassist = "3.29.2-GA"
 junitJupiter = "5.14.3"
 junitPlatform = "1.14.3"
 kotlin = "1.9.20"
+# Determined by Gradle, needs to be updated with Gradle upgrades.
+kotlinDsl = "6.7.6"
 # This version is both our kotlin compiler and Gradle's (current) kotlin compiler.
 # If Gradle is upgraded, then this version might have to split into two and
 # the dependencies untangled.
-kotlinGradlePlugin = "2.2.21"
+kotlinGradlePlugin = "2.4.10"
 kotlinMetadata = "2.4.0"
 mockito = "2.10.0"
 playwright = "1.60.0"
@@ -31,6 +36,7 @@ tools = "31.5.0-alpha04"
 zipflinger = "9.0.0"
 
 [libraries]
+androidxAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
 androidxCollection = { module = "androidx.collection:collection", version.ref = "androidxCollection" }
 androidxTracingDriver = { module = "androidx.tracing:tracing", version.ref = "androidxTracing" }
 androidxTracingDriverDesktop = { module = "androidx.tracing:tracing-desktop", version.ref = "androidxTracing" }
@@ -42,7 +48,9 @@ asmCommons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 ddmLib = { module = "com.android.tools.ddms:ddmlib", version.ref = "ddmLib" }
 errorprone = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 errorproneGradlePlugin = { module = "net.ltgt.gradle:gradle-errorprone-plugin", version.ref = "errorproneGradlePlugin" }
+fastdoubleparserGradlePlugin = { module = "ch.randelshofer:fastdoubleparser", version.ref = "fastdoubleparser" }
 fastUtil  = { module = "it.unimi.dsi:fastutil", version.ref = "fastUtil" }
+gcpGradlePlugin = { module = "androidx.build.gradle.gcpbuildcache:androidx.build.gradle.gcpbuildcache.gradle.plugin", version.ref = "gcpGradlePlugin" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 guava  = { module = "com.google.guava:guava", version.ref = "guava" }
 javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
@@ -50,8 +58,10 @@ junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "juni
 junitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junitJupiter" }
 junitPlatform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatform" }
 kotlinAssignmentCompilerPlugin = { module = "org.jetbrains.kotlin:kotlin-assignment-compiler-plugin-embeddable", version.ref = "kotlinGradlePlugin"}
+kotlinBuildToolsCompat = { module = "org.jetbrains.kotlin:kotlin-build-tools-compat", version.ref = "kotlinGradlePlugin" }
 kotlinBuildToolsImpl = { module = "org.jetbrains.kotlin:kotlin-build-tools-impl", version.ref = "kotlinGradlePlugin" }
 kotlinCompilerEmbeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlinGradlePlugin" }
+kotlinDslGradlePlugin = { module = "org.gradle.kotlin.kotlin-dsl:org.gradle.kotlin.kotlin-dsl.gradle.plugin", version.ref = "kotlinDsl" }
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
 kotlinGradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlinGradlePlugin" }
 kotlinGradlePluginIdea = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-idea", version.ref = "kotlinGradlePlugin" }

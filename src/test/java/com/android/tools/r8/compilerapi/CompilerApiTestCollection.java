@@ -6,6 +6,7 @@ package com.android.tools.r8.compilerapi;
 import static com.android.tools.r8.ToolHelper.getClassPathForTests;
 import static com.android.tools.r8.ToolHelper.isTestingR8Lib;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.compilerapi.androidplatformbuild.AndroidPlatformBuildApiTest;
 import com.android.tools.r8.compilerapi.artprofiles.ArtProfilesForRewritingApiTest;
@@ -42,16 +43,11 @@ import com.android.tools.r8.partial.PartialOptimizationApiTest;
 import com.android.tools.r8.partial.PartialShrinkingPreviewApiTest;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.rules.TemporaryFolder;
 
 /** Collection of API tests for the D8/R8 compilers. */
 public class CompilerApiTestCollection extends BinaryCompatibilityTestCollection<CompilerApiTest> {
-
-  private static final String DIRNAME = "compiler_api_tests";
-  private static final Path BINARY_COMPATIBILITY_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "binary_compatibility_tests", DIRNAME, "tests.jar");
 
   private static final List<Class<? extends CompilerApiTest>> CLASSES_FOR_BINARY_COMPATIBILITY =
       ImmutableList.of(
@@ -127,7 +123,7 @@ public class CompilerApiTestCollection extends BinaryCompatibilityTestCollection
 
   @Override
   public Path getCheckedInTestJar() {
-    return BINARY_COMPATIBILITY_JAR;
+    return TestDeps.getCompilerApiBinaryCompatibilityJar();
   }
 
   // The API tests always link against the classpath that the test runner is using.

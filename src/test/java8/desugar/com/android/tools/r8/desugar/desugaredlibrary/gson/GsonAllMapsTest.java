@@ -7,8 +7,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.gson.GsonDesugaredLi
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -59,7 +59,7 @@ public class GsonAllMapsTest extends DesugaredLibraryTestBase {
     Assume.assumeTrue(libraryDesugaringSpecification.hasEmulatedInterfaceDesugaring(parameters));
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addProgramClassesAndInnerClasses(AllMapsTestClass.class)
-        .addProgramFiles(ToolHelper.GSON)
+        .addProgramFiles(TestDeps.getGsonJar())
         .addKeepMainRule(AllMapsTestClass.class)
         .addKeepRules(GSON_CONFIGURATION)
         .applyIf(

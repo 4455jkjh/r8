@@ -106,28 +106,9 @@ class TraceReferencesCommandParser {
                 state.output = Paths.get(arg);
               }
             })
-        .prefix2(
-            "--map-diagnostics",
-            "[:<type>]",
-            "<from-level>",
-            "<to-level>",
-            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
-                + " <from-level> and <to-level> are one of 'info', 'warning', or 'error' and the"
-                + " optional <type> is either the simple or fully qualified Java type name of a"
-                + " diagnostic. If <type> is unspecified, all diagnostics at <from-level> will be"
-                + " mapped. Note that fatal compiler errors cannot be mapped.",
-            (state, suffix, fromLevel, toLevel) ->
-                CliParserUtils.parseDiagnosticsMapping(
-                    suffix,
-                    fromLevel,
-                    toLevel,
-                    m ->
-                        state
-                            .builder
-                            .getReporter()
-                            .addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
-                    state.builder::error,
-                    state.origin))
+        .apply(
+            CliParserUtils.addMapDiagnosticsOption(
+                state -> state.builder.getReporter(), state -> state.origin))
         .option0(
             "--resolve-trivial-conflicts",
             "Resolve trivial duplicate class conflicts.",

@@ -4,17 +4,23 @@
 
 package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorCodeScanner;
-import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
+import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 /**
@@ -27,8 +33,30 @@ import java.util.function.Consumer;
 public class VirtualRootMethodsAnalysis extends VirtualRootMethodsAnalysisBase {
 
   public VirtualRootMethodsAnalysis(
-      AppView<AppInfoWithLiveness> appView, ImmediateProgramSubtypingInfo immediateSubtypingInfo) {
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo) {
     super(appView, immediateSubtypingInfo);
+  }
+
+  public static void promoteClassesAndMethodsToFinal(
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      ExecutorService executorService,
+      Timing timing)
+      throws ExecutionException {
+    if (appView.options().isOptimizing() && appView.options().isShrinking()) {
+      timing.begin("VirtualRootMethodsAnalysis");
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo =
+          ImmediateProgramSubtypingInfo.create(appView);
+      List<Set<DexProgramClass>> stronglyConnectedComponents =
+          new ProgramClassesBidirectedGraph(appView, immediateSubtypingInfo)
+              .computeStronglyConnectedComponents();
+      ThreadUtils.processItems(
+          stronglyConnectedComponents,
+          classes -> new VirtualRootMethodsAnalysis(appView, immediateSubtypingInfo).run(classes),
+          appView.options().getThreadingModule(),
+          executorService);
+      timing.end();
+    }
   }
 
   public void initializeVirtualRootMethods(

@@ -116,6 +116,7 @@ public class AndroidApp {
   public static final String dumpProguardInputMapFileName = "proguard_input.map";
   public static final String dumpR8IncludeFileName = "r8-include.txt";
   public static final String dumpR8ExcludeFileName = "r8-exclude.txt";
+  public static final String dumpApiDatabaseFileName = "api-database.ser";
 
   private static Map<FeatureSplit, String> dumpFeatureSplitFileNames(
       FeatureSplitConfiguration featureSplitConfiguration, String postfix) {
@@ -593,6 +594,14 @@ public class AndroidApp {
       }
       if (dumpOptions.hasPartialCompilationConfiguration()) {
         dumpPartialCompilationConfiguration(dumpOptions.getPartialCompilationConfiguration(), out);
+      }
+      Path apiDatabasePath =
+          dumpOptions.hasApiDatabase()
+              ? dumpOptions.getApiDatabasePath()
+              : (options != null ? options.apiModelingOptions().apiDatabasePath : null);
+      if (apiDatabasePath != null) {
+        writeToZipStream(
+            out, dumpApiDatabaseFileName, Files.readAllBytes(apiDatabasePath), ZipEntry.DEFLATED);
       }
       int nextDexIndex = 0;
       nextDexIndex =

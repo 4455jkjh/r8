@@ -5,6 +5,7 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.io.IOException;
@@ -19,7 +20,11 @@ public class ProguardTestCompileResult
   private final String proguardMap;
 
   ProguardTestCompileResult(
-      ProcessResult result, TestState state, Path outputJar, int minApiLevel, String proguardMap) {
+      ProcessResult result,
+      TestState state,
+      Path outputJar,
+      UncheckedApiLevel minApiLevel,
+      String proguardMap) {
     super(
         state,
         AndroidApp.builder().addProgramFiles(outputJar).build(),

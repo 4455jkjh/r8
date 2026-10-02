@@ -2695,7 +2695,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
                       .setCode(
                           methodSig -> {
                             Code code = generateTemplateMethod(appView.dexItemFactory(), methodSig);
-                            if (appView.options().hasMappingFileSupport()) {
+                            if (appView.options().shouldOutputMappingFile()) {
                               return code.getCodeAsInlining(
                                   methodSig, true, member, false, appView.dexItemFactory());
                             }
@@ -2761,7 +2761,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
                               methodSig -> {
                                 Code code =
                                     factoryHelper.create(appView.dexItemFactory(), methodSig);
-                                if (appView.options().hasMappingFileSupport()) {
+                                if (appView.options().shouldOutputMappingFile()) {
                                   return code.getCodeAsInlining(
                                       methodSig, true, member, false, appView.dexItemFactory());
                                 }

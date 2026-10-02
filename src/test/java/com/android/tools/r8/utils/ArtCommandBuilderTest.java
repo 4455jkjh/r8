@@ -4,11 +4,14 @@
 package com.android.tools.r8.utils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Kind;
+import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -18,6 +21,9 @@ public class ArtCommandBuilderTest {
 
   private static final String SCRIPT =
       System.getProperty("os.name").startsWith("Linux") ? "/bin/bash " : "tools/docker/run.sh ";
+  private static final String FORK_JOIN_PARALLELISM =
+      " -Djava.util.concurrent.ForkJoinPool.common.parallelism="
+          + Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
 
   @Before
   public void setUp() {
@@ -28,44 +34,52 @@ public class ArtCommandBuilderTest {
   @Test
   public void noArguments() {
     ArtCommandBuilder builder = new ArtCommandBuilder();
-    Assert.assertEquals(SCRIPT + ToolHelper.getArtBinary(), builder.build());
+    Assert.assertEquals(
+        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM, builder.build());
   }
 
   @Test
   public void simple() {
     ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
     builder.appendClasspath("xxx.dex").setMainClass("Test");
-    assertEquals(SCRIPT + ToolHelper.getArtBinary() + " -cp xxx.dex Test", builder.build());
+    assertEquals(
+        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM + " -cp xxx.dex Test",
+        builder.build());
   }
 
   @Test
   public void classpath() {
     ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
     builder.appendClasspath("xxx.dex").appendClasspath("yyy.jar");
-    assertEquals(SCRIPT + ToolHelper.getArtBinary() + " -cp xxx.dex:yyy.jar",
-                 builder.build());
+    assertEquals(
+        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM + " -cp xxx.dex:yyy.jar",
+        builder.build());
   }
 
   @Test
   public void artOptions() {
     ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
     builder.appendArtOption("-d").appendArtOption("--test");
-    assertEquals(SCRIPT + ToolHelper.getArtBinary() + " -d --test", builder.build());
+    assertEquals(
+        SCRIPT + ToolHelper.getArtBinary() + " -d --test" + FORK_JOIN_PARALLELISM, builder.build());
   }
 
   @Test
   public void artSystemProperties() {
     ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
     builder.appendArtSystemProperty("a.b.c", "1").appendArtSystemProperty("x.y.z", "2");
-    assertEquals(SCRIPT + ToolHelper.getArtBinary() + " -Da.b.c=1 -Dx.y.z=2",
-                 builder.build());
+    assertEquals(
+        SCRIPT + ToolHelper.getArtBinary() + " -Da.b.c=1 -Dx.y.z=2" + FORK_JOIN_PARALLELISM,
+        builder.build());
   }
 
   @Test
   public void programOptions() {
     ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder();
     builder.setMainClass("Test").appendProgramArgument("hello").appendProgramArgument("world");
-    assertEquals(SCRIPT + ToolHelper.getArtBinary() + " Test hello world", builder.build());
+    assertEquals(
+        SCRIPT + ToolHelper.getArtBinary() + FORK_JOIN_PARALLELISM + " Test hello world",
+        builder.build());
   }
 
   @Test
@@ -82,8 +96,11 @@ public class ArtCommandBuilderTest {
         .appendProgramArgument("hello")
         .appendProgramArgument("world");
     assertEquals(
-        SCRIPT + ToolHelper.getArtBinary()
-            + " -d --test -Da.b.c=1 -Dx.y.z=2 -cp xxx.dex:yyy.jar Test hello world",
+        SCRIPT
+            + ToolHelper.getArtBinary()
+            + " -d --test -Da.b.c=1 -Dx.y.z=2"
+            + FORK_JOIN_PARALLELISM
+            + " -cp xxx.dex:yyy.jar Test hello world",
         builder.build());
   }
 
@@ -101,8 +118,11 @@ public class ArtCommandBuilderTest {
         .appendProgramArgument("hello")
         .appendProgramArgument("world");
     assertEquals(
-        SCRIPT + ToolHelper.getArtBinary()
-            + " -d --test -Da.b.c=1 -Dx.y.z=2 -cp xxx.dex:yyy.jar Test hello world",
+        SCRIPT
+            + ToolHelper.getArtBinary()
+            + " -d --test -Da.b.c=1 -Dx.y.z=2"
+            + FORK_JOIN_PARALLELISM
+            + " -cp xxx.dex:yyy.jar Test hello world",
         builder.build());
   }
 
@@ -111,8 +131,42 @@ public class ArtCommandBuilderTest {
     for (DexVm version : ToolHelper.getArtVersions()) {
       ToolHelper.ArtCommandBuilder builder = new ToolHelper.ArtCommandBuilder(version);
       builder.setMainClass("Test").appendProgramArgument("hello").appendProgramArgument("world");
-      assertEquals(SCRIPT + ToolHelper.getArtBinary(version)
-          + " Test hello world", builder.build());
+      assertEquals(
+          SCRIPT + ToolHelper.getArtBinary(version) + FORK_JOIN_PARALLELISM + " Test hello world",
+          builder.build());
     }
+  }
+
+  @Test
+  public void testProcessTimeout() {
+    Assume.assumeTrue(ToolHelper.isLinux());
+    ProcessBuilder wrapperBuilder =
+        new ProcessBuilder("/bin/bash", "-c", "echo out-msg; echo err-msg >&2; sleep 60 & wait");
+    RuntimeException wrapperException =
+        assertThrows(
+            RuntimeException.class,
+            () -> ToolHelper.runProcess(wrapperBuilder, System.out, 200, TimeUnit.MILLISECONDS));
+    assertTrue(
+        wrapperException.getMessage(),
+        wrapperException.getMessage().contains("Process timed out after 200 milliseconds"));
+    assertTrue(
+        wrapperException.getMessage(), wrapperException.getMessage().contains("STDOUT:\nout-msg"));
+    assertTrue(
+        wrapperException.getMessage(), wrapperException.getMessage().contains("STDERR:\nerr-msg"));
+
+    ProcessBuilder directBuilder =
+        new ProcessBuilder(
+            "/bin/bash", "-c", "echo direct-out; echo direct-err >&2; exec sleep 60");
+    RuntimeException directException =
+        assertThrows(
+            RuntimeException.class,
+            () -> ToolHelper.runProcess(directBuilder, System.out, 200, TimeUnit.MILLISECONDS));
+    assertTrue(
+        directException.getMessage(),
+        directException.getMessage().contains("Process timed out after 200 milliseconds"));
+    assertTrue(
+        directException.getMessage(), directException.getMessage().contains("STDOUT:\ndirect-out"));
+    assertTrue(
+        directException.getMessage(), directException.getMessage().contains("STDERR:\ndirect-err"));
   }
 }

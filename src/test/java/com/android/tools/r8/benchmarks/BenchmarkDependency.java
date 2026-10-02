@@ -27,8 +27,6 @@ public class BenchmarkDependency {
   private final String directoryName;
 
   // Location in the R8 source tree.
-  // This should never be directly exposed as its actual location will differ on golem.
-  // See `getRoot` to obtain the actual dependency root.
   private final Path location;
 
   public BenchmarkDependency(String name, String directoryName, Path location) {
@@ -54,6 +52,6 @@ public class BenchmarkDependency {
   }
 
   public Path getRoot(BenchmarkEnvironment environment) {
-    return environment.translateDependencyPath(directoryName, location);
+    return location.resolve(directoryName);
   }
 }

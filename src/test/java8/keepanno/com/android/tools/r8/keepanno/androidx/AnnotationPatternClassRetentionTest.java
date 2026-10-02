@@ -59,6 +59,16 @@ public class AnnotationPatternClassRetentionTest extends KeepAnnoTestBase {
                         KotlinCompilerVersion.MAX_SUPPORTED_VERSION
                             .getCompiler()
                             .getKotlinAnnotationJar())))
+        .applyIfR8(
+            b ->
+                b.addClasspathFiles(
+                    ImmutableList.of(
+                        KotlinCompilerVersion.MAX_SUPPORTED_VERSION
+                            .getCompiler()
+                            .getKotlinStdlibJar(),
+                        KotlinCompilerVersion.MAX_SUPPORTED_VERSION
+                            .getCompiler()
+                            .getKotlinAnnotationJar())))
         .setExcludedOuterClass(getClass())
         .run(TestClass.class)
         .assertSuccessWithOutput(EXPECTED)

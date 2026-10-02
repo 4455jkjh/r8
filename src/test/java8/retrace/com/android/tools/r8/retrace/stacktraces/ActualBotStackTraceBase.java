@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.retrace.stacktraces;
 
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestDeps;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,7 +12,7 @@ import java.nio.file.Path;
 public abstract class ActualBotStackTraceBase implements StackTraceForTest {
 
   public String r8MappingFromGitSha(String sha) {
-    Path resolve = ToolHelper.RETRACE_MAPS_DIR.resolve(sha + "-r8lib.jar.map");
+    Path resolve = TestDeps.getR8MappingsPath(sha + "-r8lib.jar.map");
     try {
       return new String(Files.readAllBytes(resolve));
     } catch (IOException e) {

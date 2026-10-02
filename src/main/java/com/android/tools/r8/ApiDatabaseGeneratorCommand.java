@@ -173,14 +173,12 @@ public final class ApiDatabaseGeneratorCommand {
       return box.get();
     }
 
-    public void error(Diagnostic diagnostic) {
-      reporter.error(diagnostic);
+    public Reporter getReporter() {
+      return reporter;
     }
 
-    public Builder addDiagnosticsLevelMapping(
-        DiagnosticsLevel from, String diagnosticsClassName, DiagnosticsLevel to) {
-      reporter.addDiagnosticsLevelMapping(from, diagnosticsClassName, to);
-      return this;
+    public void error(Diagnostic diagnostic) {
+      reporter.error(diagnostic);
     }
   }
 }

@@ -22,6 +22,10 @@ public class NumberGenerator implements ValueFactory {
     return nextValueNumber;
   }
 
+  public void setNextValueNumber(int nextValueNumber) {
+    this.nextValueNumber = nextValueNumber;
+  }
+
   @Override
   public Value createValue(TypeElement type, DebugLocalInfo localInfo) {
     return new Value(next(), type, localInfo);

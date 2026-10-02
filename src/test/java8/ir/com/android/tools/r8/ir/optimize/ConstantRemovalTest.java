@@ -26,8 +26,8 @@ import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockPrefixSharer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
-import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalPredecessorBlocksRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.RedundantInstructionsRemover;
 import com.android.tools.r8.ir.regalloc.LinearScanRegisterAllocator;
 import com.android.tools.r8.ir.regalloc.LiveIntervals;
@@ -173,7 +173,7 @@ public class ConstantRemovalTest {
             MethodConversionOptions.nonConverting());
     LinearScanRegisterAllocator allocator = new MockLinearScanRegisterAllocator(appView, code);
     Timing timing = Timing.empty();
-    new IdenticalPredecessorBlocksRemover(appView).run(code, allocator, timing);
+    new IdenticalBlockRemover(appView).run(code, allocator, timing);
     new RedundantInstructionsRemover(appView).run(code, allocator, timing);
     new IdenticalBlockPrefixSharer(appView).run(code, allocator, timing);
     new IdenticalBlockSuffixSharer(appView).run(code, allocator, timing);

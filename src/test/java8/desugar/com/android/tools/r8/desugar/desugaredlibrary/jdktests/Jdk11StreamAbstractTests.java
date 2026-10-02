@@ -17,7 +17,6 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.SingleTestRunResult;
@@ -34,11 +33,16 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -90,24 +94,21 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
   private static final Path JDK_11_STREAM_TEST_FILES_DIR =
       Paths.get(ToolHelper.THIRD_PARTY_DIR + "openjdk/jdk-11-test/java/util/stream/test");
   private static Path[] JDK_11_STREAM_TEST_COMPILED_FILES;
+  private static final Map<String, Path> TESTNG_SUPPORT_DEX_CACHE = new HashMap<>();
 
-  private static Path[] getJdk11StreamTestFiles() throws Exception {
-    Path[] files = getAllFilesWithSuffixInDirectory(JDK_11_STREAM_TEST_FILES_DIR, JAVA_EXTENSION);
+  private static Path[] getJdk11StreamTestFiles() {
+    Set<String> runnableRelativePaths = new HashSet<>();
+    runnableRelativePaths.addAll(Arrays.asList(STREAM_CLOSE_TESTS));
+    runnableRelativePaths.addAll(Arrays.asList(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_AND_V7));
+    runnableRelativePaths.addAll(Arrays.asList(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_ONLY));
+    runnableRelativePaths.addAll(Arrays.asList(SUCCESSFUL_RUNNABLE_TESTS));
+    Path[] files =
+        runnableRelativePaths.stream()
+            .map(JDK_11_STREAM_TEST_FILES_DIR::resolve)
+            .toArray(Path[]::new);
     assert files.length > 0;
     return files;
   }
-
-  private static final String[] FAILING_RUNNABLE_TESTS = new String[] {
-        // Disabled, D8 generated code raises AbstractMethodError instead of NPE because of API
-        // unsupported in the desugared library.
-        // "org/openjdk/tests/java/util/stream/SpliteratorTest.java",
-        // Disabled because both the stream close issue and the Random issue (See below).
-        // "org/openjdk/tests/java/util/stream/LongPrimitiveOpsTests.java",
-        // Disabled because explicit cast done on a wrapped value.
-        // "org/openjdk/tests/java/util/SplittableRandomTest.java",
-        // Disabled due to a desugaring failure due to the extended library used for the test.
-        // "org/openjdk/tests/java/util/stream/IterateTest.java",
-      };
 
   // Cannot succeed with JDK 8 desugared library because use J9 features.
   // Stream close issue with try with resource desugaring mixed with partial library desugaring.
@@ -182,45 +183,37 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
         "org/openjdk/tests/java/util/stream/FindAnyOpTest.java"
       };
 
-  private boolean streamCloseTestShouldSucceed() {
+  private boolean streamCloseTestShouldSucceed(boolean isNewerThanV4_4_4) {
     if (libraryDesugaringSpecification == JDK8_JAVA_BASE_EXT) {
       return false;
     }
     // TODO(b/216047740): Investigate if this runs on Dalvik VMs.
     // StreamCloseTest relies on suppressed exceptions which may not work on Dalvik VMs.
-    return parameters.getDexRuntimeVersion().isNewerThan(Version.V4_4_4);
+    return isNewerThanV4_4_4;
   }
 
-  Map<String, String> getSuccessfulTests() {
+  private Map<String, String> getSuccessfulTests(boolean isV7OrNewer, boolean isNewerThanV4_4_4) {
     Map<String, String> runnableTests = getRunnableTests(SUCCESSFUL_RUNNABLE_TESTS);
     if (libraryDesugaringSpecification != JDK8_JAVA_BASE_EXT) {
       runnableTests.putAll(getRunnableTests(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_ONLY));
-      if (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0)) {
+      if (isV7OrNewer) {
         runnableTests.putAll(getRunnableTests(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_AND_V7));
       }
     }
-    if (streamCloseTestShouldSucceed()) {
+    if (streamCloseTestShouldSucceed(isNewerThanV4_4_4)) {
       runnableTests.putAll(getRunnableTests(STREAM_CLOSE_TESTS));
     }
     return runnableTests;
   }
 
-  Map<String, String> getFailingTests() {
-    Map<String, String> runnableTests = getRunnableTests(FAILING_RUNNABLE_TESTS);
-    if (libraryDesugaringSpecification == JDK8_JAVA_BASE_EXT) {
-      runnableTests.putAll(getRunnableTests(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_ONLY));
-      runnableTests.putAll(getRunnableTests(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_AND_V7));
-    } else if (!parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0)) {
-      runnableTests.putAll(getRunnableTests(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_AND_V7));
-    }
-    if (!streamCloseTestShouldSucceed()) {
-      runnableTests.putAll(getRunnableTests(STREAM_CLOSE_TESTS));
-    }
-    return runnableTests;
+  Map<String, String> getSuccessfulTests() {
+    return getSuccessfulTests(
+        parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
+        parameters.getDexRuntimeVersion().isNewerThan(Version.V4_4_4));
   }
 
   private static Map<String, String> getRunnableTests(String[] tests) {
-    IdentityHashMap<String, String> pathToName = new IdentityHashMap<>();
+    Map<String, String> pathToName = new LinkedHashMap<>();
     int javaExtSize = JAVA_EXTENSION.length();
     for (String runnableTest : tests) {
       String nameWithoutJavaExt = runnableTest.substring(0, runnableTest.length() - javaExtSize);
@@ -231,25 +224,9 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
     return pathToName;
   }
 
-  private static String[] missingDesugaredMethods() {
-    // These methods are from Java 9 and not supported in the current desugared libraries.
-    return new String[] {
-      // Stream
-      "takeWhile(",
-      "dropWhile(",
-      "iterate(",
-      "range(",
-      "doubles(",
-      // Collectors
-      "filtering(",
-      "flatMapping(",
-      // isDefault()Z in class Ljava/lang/reflect/Method
-      "isDefault("
-    };
-  }
-
   @BeforeClass
   public static void compileJdk11StreamTests() throws Exception {
+    TESTNG_SUPPORT_DEX_CACHE.clear();
     JDK_11_STREAM_TEST_CLASSES_DIR = getStaticTemp().newFolder("stream").toPath();
     List<String> options =
         Arrays.asList(
@@ -268,29 +245,78 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
     assert JDK_11_STREAM_TEST_COMPILED_FILES.length > 0;
   }
 
+  @AfterClass
+  public static void clearTestNGSupportDexCache() {
+    TESTNG_SUPPORT_DEX_CACHE.clear();
+  }
+
   Map<String, String> split(Map<String, String> input, int index) {
     return Jdk11TestInputSplitter.split(input, index, SPLIT);
   }
 
-  public void testStream(Map<String, String> successes, Map<String, String> failures)
-      throws Throwable {
+  public void testStream(Map<String, String> successes) throws Throwable {
     Assume.assumeFalse(
         "getAllFilesWithSuffixInDirectory() seems to find different files on Windows",
         ToolHelper.isWindows());
     assumeTrue(
         "Requires Java base extensions, should add it when not desugaring",
-        parameters.getApiLevel().getMajor() < AndroidApiLevel.N.getMajor());
+        parameters.getApiLevel().isLessThan(AndroidApiLevel.N));
 
     DesugaredLibraryTestCompileResult<?> compileResult = compileStreamTestsToDex();
-    runSuccessfulTests(compileResult, successes);
-    runFailingTests(compileResult, failures);
+    SingleTestRunResult<?> result = runAllTests(compileResult, successes);
+    runSuccessfulTests(result, successes);
+  }
+
+  private Path getTestNGSupportDex() throws Exception {
+    String key = parameters.getApiLevel() + ":" + libraryDesugaringSpecification;
+    Path cached = TESTNG_SUPPORT_DEX_CACHE.get(key);
+    if (cached != null) {
+      return cached;
+    }
+    Path dexZip =
+        testForD8(getStaticTemp())
+            .addProgramFiles(testNGSupportProgramFiles())
+            .addLibraryFiles(libraryDesugaringSpecification.getLibraryFiles())
+            .setMinApi(parameters)
+            .compile()
+            .writeToZip();
+    TESTNG_SUPPORT_DEX_CACHE.put(key, dexZip);
+    return dexZip;
+  }
+
+  private static void addSplitPrefixes(Set<String> prefixes, Map<String, String> splitMap) {
+    for (String className : splitMap.values()) {
+      prefixes.add(JDK_11_STREAM_TEST_CLASSES_DIR.resolve(className.replace('.', '/')).toString());
+    }
+  }
+
+  private List<Path> getFilesToCompileForSplit() {
+    Set<String> prefixes = new HashSet<>();
+    for (boolean isV7OrNewer : new boolean[] {false, true}) {
+      for (boolean isNewerThanV4_4_4 : new boolean[] {false, true}) {
+        addSplitPrefixes(
+            prefixes, split(getSuccessfulTests(isV7OrNewer, isNewerThanV4_4_4), getIndex()));
+      }
+    }
+    int classExtLen = CLASS_EXTENSION.length();
+    return Arrays.stream(JDK_11_STREAM_TEST_COMPILED_FILES)
+        .filter(
+            file -> {
+              String fileStr = file.toString();
+              if (fileStr.contains("lang/invoke")) {
+                return false;
+              }
+              String withoutExt = fileStr.substring(0, fileStr.length() - classExtLen);
+              int dollarIdx = withoutExt.indexOf('$');
+              String outerPrefix = dollarIdx >= 0 ? withoutExt.substring(0, dollarIdx) : withoutExt;
+              return prefixes.contains(outerPrefix);
+            })
+        .collect(Collectors.toList());
   }
 
   DesugaredLibraryTestCompileResult<?> compileStreamTestsToDex() throws Exception {
-    List<Path> filesToCompile =
-        Arrays.stream(JDK_11_STREAM_TEST_COMPILED_FILES)
-            .filter(file -> !file.toString().contains("lang/invoke"))
-            .collect(Collectors.toList());
+    List<Path> filesToCompile = getFilesToCompileForSplit();
+    Path testNGSupportDex = getTestNGSupportDex();
     // Prohibit publicizing LoggingTestCase#setContext. Currently L8 does not support modifying the
     // InternalOptions for the R8 compilation inside L8, so we use a system property.
     System.setProperty(
@@ -303,7 +329,7 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
               !libraryDesugaringSpecification.hasNioFileDesugaring(parameters),
               b -> b.addProgramFiles(getPathsFiles()))
           .addProgramFiles(getSafeVarArgsFile())
-          .addProgramFiles(testNGSupportProgramFiles())
+          .applyOnBuilder(b -> b.addClasspathFiles(testNGSupportProgramFiles()))
           .addProgramClassFileData(getTestNGMainRunner())
           .addL8KeepRules(
               // Keep LoggingTestCase#setContext so that it is not publicized.
@@ -314,6 +340,7 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
           .disableL8AnnotationRemoval()
           .setTrackDesugaredApiConversions()
           .compile()
+          .addRunClasspathFiles(testNGSupportDex)
           .withArt6Plus64BitsLib();
     } finally {
       System.clearProperty(
@@ -321,53 +348,69 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
     }
   }
 
-  private void runSuccessfulTests(
+  private SingleTestRunResult<?> runAllTests(
       DesugaredLibraryTestCompileResult<?> compileResult, Map<String, String> successes)
       throws Exception {
-    String verbosity = "2"; // Increase verbosity for debugging.DesugaredLibraryTestBuilder
+    String verbosity = "2"; // Increase verbosity for debugging.
+    List<String> args = new ArrayList<>(1 + successes.size());
+    args.add(verbosity);
     for (String path : successes.keySet()) {
       assert successes.get(path) != null;
-      SingleTestRunResult<?> result =
-          compileResult.run(
-              parameters.getRuntime(), "TestNGMainRunner", verbosity, successes.get(path));
-      assertTrue(
-          "Failure in " + path + "\n" + result,
-          result
-              .getStdOut()
-              .endsWith(StringUtils.lines("Tests result in " + successes.get(path) + ": SUCCESS")));
+      args.add(successes.get(path));
     }
+    if (args.size() == 1) {
+      return null;
+    }
+    return compileResult.run(
+        parameters.getRuntime(), "TestNGMainRunner", args.toArray(new String[0]));
   }
 
-  private void runFailingTests(
-      DesugaredLibraryTestCompileResult<?> compileResult, Map<String, String> failures)
-      throws Exception {
-    // For failing runnable tests, we just ensure that they do not fail due to desugaring, but
-    // due to an expected failure (missing API, etc.).
-    String verbosity = "2"; // Increase verbosity for debugging.
-    for (String path : failures.keySet()) {
-      assert failures.get(path) != null;
-      SingleTestRunResult<?> result =
-          compileResult.run(
-              parameters.getRuntime(), "TestNGMainRunner", verbosity, failures.get(path));
-      String stdout = result.getStdOut();
-      if (stdout.contains("java.lang.NoSuchMethodError")
-          && Arrays.stream(missingDesugaredMethods()).anyMatch(stdout::contains)) {
-        // TODO(b/134732760): support Java 9 APIs.
-      } else if (stdout.contains("in class Ljava/util/Random")
-          && stdout.contains("java.lang.NoSuchMethodError")) {
-        // TODO(b/134732760): Random Java 9 Apis, support or do not use them.
-      } else if (stdout.contains("java.lang.AssertionError")) {
-        // TODO(b/134732760): Investigate and fix these issues.
-      } else {
-        String errorMessage = "STDOUT:\n" + result.getStdOut() + "STDERR:\n" + result.getStdErr();
-        fail(errorMessage);
-      }
+  private static String extractClassStdOut(String stdOut, String className) {
+    String startMarker = StringUtils.lines("Running tests in " + className);
+    int startIndex = stdOut.indexOf(startMarker);
+    if (startIndex < 0) {
+      return null;
+    }
+    String resultPrefix = "Tests result in " + className + ": ";
+    int resultIndex = stdOut.indexOf(resultPrefix, startIndex + startMarker.length());
+    if (resultIndex < 0) {
+      return null;
+    }
+    String lineSeparator = System.lineSeparator();
+    int lineEnd = stdOut.indexOf(lineSeparator, resultIndex + resultPrefix.length());
+    if (lineEnd < 0) {
+      return null;
+    }
+    return stdOut.substring(startIndex, lineEnd + lineSeparator.length());
+  }
+
+  private void runSuccessfulTests(SingleTestRunResult<?> result, Map<String, String> successes) {
+    for (String path : successes.keySet()) {
+      String className = successes.get(path);
+      assert className != null;
+      String classStdOut =
+          result != null ? extractClassStdOut(result.getStdOut(), className) : null;
+      assertTrue(
+          "Failure in " + path + "\n" + result,
+          classStdOut != null
+              && classStdOut.endsWith(
+                  StringUtils.lines("Tests result in " + className + ": SUCCESS")));
     }
   }
 
   @Test
   public void testStream() throws Throwable {
-    testStream(split(getSuccessfulTests(), getIndex()), split(getFailingTests(), getIndex()));
+    Assume.assumeFalse(
+        "getAllFilesWithSuffixInDirectory() seems to find different files on Windows",
+        ToolHelper.isWindows());
+    assumeTrue(
+        "Requires Java base extensions, should add it when not desugaring",
+        parameters.getApiLevel().isLessThan(AndroidApiLevel.N));
+
+    DesugaredLibraryTestCompileResult<?> compileResult = compileStreamTestsToDex();
+    Map<String, String> successes = split(getSuccessfulTests(), getIndex());
+    SingleTestRunResult<?> result = runAllTests(compileResult, successes);
+    runSuccessfulTests(result, successes);
   }
 
   abstract int getIndex();

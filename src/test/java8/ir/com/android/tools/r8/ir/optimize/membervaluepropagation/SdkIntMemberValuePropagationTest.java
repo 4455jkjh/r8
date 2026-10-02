@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.membervaluepropagation;
 
+import static com.android.tools.r8.CompilationMode.RELEASE;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -88,6 +89,7 @@ public class SdkIntMemberValuePropagationTest extends TestBase {
         .addLibraryClassFileData(getTransformedBuildVERSIONClass())
         .addLibraryFiles(parameters.getDefaultRuntimeLibrary())
         .setMinApi(parameters)
+        .setMode(RELEASE)
         .compile()
         .inspect(inspector -> verifyOutput(inspector, Compiler.D8))
         .addRunClasspathClassFileData(getTransformedBuildVERSIONClass())

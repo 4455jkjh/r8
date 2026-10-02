@@ -249,7 +249,6 @@ common_test_options = [
     "--print-times",
     "--no_internal",
     "--one_line_per_test",
-    "--archive_failures",
 ]
 
 default_timeout = time.hour * 6
@@ -293,6 +292,7 @@ def r8_builder(
         triggering_policy = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
+        properties = None,
         **kwargs):
     priority = priority if priority else (25 if bucket == "try" else 26)
     release = name.endswith("release")
@@ -308,6 +308,15 @@ def r8_builder(
         max_concurrent_invocations = max_concurrent_invocations,
     ) if bucket == "ci" else None)
 
+    properties = dict(properties) if properties else {}
+    env = dict(properties.get("env", {}))
+    if release:
+        env["R8_BOT_RELEASE"] = "1"
+    if bucket == "ci":
+        env["R8_BOT_POST_SUBMIT"] = "1"
+    if env:
+        properties["env"] = env
+
     luci.builder(
         name = name,
         bucket = bucket,
@@ -321,6 +330,7 @@ def r8_builder(
         triggering_policy = triggering_policy,
         executable = "rex",
         resultdb_settings = resultdb.settings(enable = True, bq_exports = None, history_options = None),
+        properties = properties,
         **kwargs
     )
     if bucket == "ci":
@@ -386,6 +396,10 @@ def r8_tester_with_default(
         max_concurrent_invocations = 1,
         execution_timeout = time.hour * 2,
         extra_properties = {}):
+    extra_properties = dict(extra_properties)
+    env = dict(extra_properties.get("env", {}))
+    env["R8_BOT_TESTER"] = "1"
+    extra_properties["env"] = env
     r8_tester(
         name,
         test_options + common_test_options,
@@ -420,6 +434,10 @@ def archivers():
                 properties["test_options"] = ["--variant=jdk11_legacy"]
             else:
                 properties["test_options"] = ["--variant=jdk8"]
+        else:
+            properties["env"] = {
+                "R8_BOT_ARCHIVE": "1",
+            }
 
         r8_builder(
             name,
@@ -536,6 +554,11 @@ r8_tester_with_default(
     bucket = "try",
     trigger = False,
     priority = 20,
+    extra_properties = {
+        "env": {
+            "R8_BOT_COMPILE_ONLY": "1",
+        },
+    },
 )
 
 def perf_size():
@@ -554,6 +577,9 @@ def perf_size():
                 "builder_group": "internal.client.r8",
                 "test_options": ["--upload-baseline"] if bucket == "ci" else [],
                 "test_wrapper": "tools/perf_size.py",
+                "env": {
+                    "R8_BOT_SIZE": "1",
+                },
             },
         )
 
@@ -562,6 +588,22 @@ perf_size()
 r8_tester_with_default(
     "linux-all",
     ["--runtimes=all", "--all_tests", "--command_cache_dir=.ccache"],
+    bucket = "try",
+    trigger = False,
+    dimensions = get_dimensions(tester = True),
+)
+
+r8_tester_with_default(
+    "linux-cq",
+    ["--runtimes=CQ", "--all_tests", "--command_cache_dir=.ccache"],
+    bucket = "try",
+    trigger = False,
+    dimensions = get_dimensions(tester = True),
+)
+
+r8_tester_with_default(
+    "linux-dry-run",
+    ["--runtimes=dry-run", "--all_tests", "--command_cache_dir=.ccache"],
     bucket = "try",
     trigger = False,
     dimensions = get_dimensions(tester = True),
@@ -580,9 +622,29 @@ r8_tester_with_default(
     },
 )
 
+r8_tester_with_default(
+    "presubmit-dry-run",
+    [],
+    bucket = "try",
+    trigger = False,
+    dimensions = get_dimensions(coordinator = True),
+    execution_timeout = 12 * time.hour,
+    extra_properties = {
+        "testers": ["linux-dry-run", "linux-perf-size"],
+        "shard_count": 3,
+    },
+)
+
 luci.cq_tryjob_verifier(
     builder = "try/presubmit",
     cq_group = "main-cq",
+    mode_allowlist = [cq.MODE_FULL_RUN],
+)
+
+luci.cq_tryjob_verifier(
+    builder = "try/presubmit-dry-run",
+    cq_group = "main-cq",
+    mode_allowlist = [cq.MODE_DRY_RUN],
 )
 
 r8_tester_with_default(
@@ -748,7 +810,6 @@ app_dump()
 def desugared_library():
     test_options = [
         "--one_line_per_test",
-        "--archive_failures",
         "--no_internal",
         "--no_arttests",
         "--desugared-library",
@@ -779,7 +840,7 @@ r8_builder(
     expiration_timeout = time.hour * 35,
     properties = {
         "builder_group": "internal.client.r8",
-        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-dev", "--one_line_per_test", "--archive_failures", "--no-internal", "*kotlin*", "*debug*"],
+        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-dev", "--one_line_per_test", "--no-internal", "*kotlin*", "*debug*"],
     },
 )
 
@@ -791,7 +852,7 @@ r8_builder(
     expiration_timeout = time.hour * 35,
     properties = {
         "builder_group": "internal.client.r8",
-        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-old", "--one_line_per_test", "--archive_failures", "--no-internal", "*kotlin*", "*debug*"],
+        "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-old", "--one_line_per_test", "--no-internal", "*kotlin*", "*debug*"],
     },
 )
 

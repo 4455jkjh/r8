@@ -7,6 +7,7 @@ package com.android.tools.r8.ir.optimize.intlongarithmetic;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -130,7 +131,7 @@ public class ComposeBinopTest extends TestBase {
   }
 
   @Test
-  public void testD8() throws Exception {
+  public void testRuntime() throws Exception {
     testForRuntime(parameters)
         .addProgramClasses(Main.class)
         .run(parameters.getRuntime(), Main.class)
@@ -142,6 +143,7 @@ public class ComposeBinopTest extends TestBase {
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class)
         .addKeepMainRule(Main.class)
+        .enableConstantArgumentAnnotations()
         .enableInliningAnnotations()
         .setMinApi(parameters)
         .compile()
@@ -239,6 +241,7 @@ public class ComposeBinopTest extends TestBase {
       composeTests(i3);
     }
 
+    @KeepConstantArguments
     @NeverInline
     private static void bitSameInput(int a) {
       // a & a => a, a | a => a.
@@ -249,6 +252,7 @@ public class ComposeBinopTest extends TestBase {
       System.out.println(a - a);
     }
 
+    @KeepConstantArguments
     @NeverInline
     private static void shareShiftCstRight(int a, int b) {
       // (x shift: val) | (y shift: val) => (x | y) shift: val.
@@ -261,6 +265,7 @@ public class ComposeBinopTest extends TestBase {
       System.out.println((a >>> 3) & (b >>> 3));
     }
 
+    @KeepConstantArguments
     @NeverInline
     private static void shareShiftCstLeft(int a) {
       // (x shift: val) | (y shift: val) => (x | y) shift: val.
@@ -273,6 +278,7 @@ public class ComposeBinopTest extends TestBase {
       System.out.println((116 >>> a) & (227 >>> a));
     }
 
+    @KeepConstantArguments
     @NeverInline
     private static void shareShiftVar(int a, int b, int c) {
       // (x shift: val) | (y shift: val) => (x | y) shift: val.
@@ -285,6 +291,7 @@ public class ComposeBinopTest extends TestBase {
       System.out.println((a >>> c) & (b >>> c));
     }
 
+    @KeepConstantArguments
     @NeverInline
     private static void andOrCompositionCst(int a) {
       // For all permutations of & and |, represented by &| and |&.
@@ -296,6 +303,7 @@ public class ComposeBinopTest extends TestBase {
       System.out.println((a | 0b10101010) | (a | 0b11110000));
     }
 
+    @KeepConstantArguments
     @NeverInline
     private static void andOrCompositionVar(int a, int b, int c) {
       // For all permutations of & and |.
@@ -306,6 +314,7 @@ public class ComposeBinopTest extends TestBase {
       System.out.println((a | b) | (a | c));
     }
 
+    @KeepConstantArguments
     @NeverInline
     private static void composeTests(int dirty) {
       // This is rewritten to ((0b0001111111111110 & dirty) >> 3).

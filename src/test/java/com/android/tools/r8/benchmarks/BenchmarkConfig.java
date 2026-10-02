@@ -315,10 +315,6 @@ public class BenchmarkConfig {
     return id.getName();
   }
 
-  public String getDependencyDirectoryName() {
-    return getName();
-  }
-
   public BenchmarkTarget getTarget() {
     return id.getTarget();
   }

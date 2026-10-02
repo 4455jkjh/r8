@@ -109,7 +109,7 @@ public abstract class KotlinTestBase extends TestBase {
   }
 
   protected Path getJavaJarFile(String folder) {
-    return Paths.get(ToolHelper.THIRD_PARTY_DIR, RSRC, folder + FileUtils.JAR_EXTENSION);
+    return TestDeps.getKotlinR8TestResourcesPath(folder + FileUtils.JAR_EXTENSION);
   }
 
   protected KotlinCompilerTool kotlinCompilerTool() {

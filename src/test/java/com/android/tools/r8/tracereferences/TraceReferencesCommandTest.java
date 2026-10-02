@@ -92,14 +92,14 @@ public class TraceReferencesCommandTest extends TestBase {
             "                          # Map diagnostics of <type> (default any) reported as"
                 + " <from-level> to",
             "                          # <to-level> where <from-level> and <to-level> are one of"
-                + " 'info', 'warning',",
-            "                          # or 'error' and the optional <type> is either the simple or"
-                + " fully qualified",
-            "                          # Java type name of a diagnostic. If <type> is unspecified,"
-                + " all diagnostics",
-            "                          # at <from-level> will be mapped. Note that fatal compiler"
-                + " errors cannot be",
-            "                          # mapped.",
+                + " 'none', 'info',",
+            "                          # 'warning', or 'error', and the optional <type> is either"
+                + " the simple or",
+            "                          # fully qualified Java type name of a diagnostic. If <type>"
+                + " is unspecified,",
+            "                          # all diagnostics at <from-level> will be mapped. Note that"
+                + " fatal compiler",
+            "                          # errors cannot be mapped.",
             "  --resolve-trivial-conflicts",
             "                          # Resolve trivial duplicate class conflicts.",
             "  --version",

@@ -145,6 +145,9 @@ def make_parser():
         help='Disable desugared-libary if it will be set from dump',
         default=False,
         action='store_true')
+    parser.add_argument('--api-database',
+                        help='Set api-database (default set from dump)',
+                        default=None)
     parser.add_argument('--loop',
                         help='Run the compilation in a loop',
                         default=False,
@@ -235,6 +238,9 @@ class Dump(object):
 
     def desugared_library_json(self):
         return self.if_exists('desugared-library.json')
+
+    def api_database_file(self):
+        return self.if_exists('api-database.ser')
 
     def proguard_input_map(self):
         return self.if_exists('proguard_input.map')
@@ -563,7 +569,7 @@ def clean_config_line(line, minify, optimize, shrink):
 
 
 def compile_reflective_helper(temp, jdkhome, no_build=False):
-    main_classes_dir = utils.BUILD_JAVA_MAIN_CLASSPATH.split(os.pathsep)[0]
+    main_classes_dir = utils.BUILD_JAVA_MAIN_CLASSPATH
     if not no_build or not os.path.exists(main_classes_dir):
         gradle.run_gradle([utils.GRADLE_TASK_MAIN_COMPILE])
     base_path = os.path.join(
@@ -747,6 +753,11 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             ])
         if dump.desugared_library_json() and not args.disable_desugared_lib:
             cmd.extend(['--desugared-lib', dump.desugared_library_json()])
+        api_database = args.api_database if args.api_database else dump.api_database_file(
+        )
+        if api_database and (is_d8_compiler(compiler) or
+                             is_r8_compiler(compiler)):
+            cmd.extend(['--api-database', api_database])
         if (is_r8_compiler(compiler) or compiler == 'l8') and config_files:
             if hasattr(args,
                        'config_files_consumer') and args.config_files_consumer:

@@ -45,9 +45,6 @@ val mainClassesOutput =
   configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
 val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
 val mainResources = configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope) }
-val turboClassesScope by configurations.dependencyScope("turboClassesScope")
-val turboClassesOutput =
-  configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
 
 val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig by
@@ -67,20 +64,30 @@ dependencies {
   mainClassesScope(project(":main", "mainClassesOutput"))
 
   mainResourcesScope(project(":main", "mainResources"))
-  turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":keepradius", "keepradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
-  implementation(project(":main", "turboClassesOutput"))
   resourceShrinkerClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":third_party", "bundletool"))
+  runtimeOnlyData(project(":third_party", "compilerApi"))
+  runtimeOnlyData(project(":third_party", "composeExamplesChangedBitwiseValuePropagation"))
+  runtimeOnlyData(project(":third_party", "dagger"))
+  runtimeOnlyData(project(":third_party", "gson"))
+  runtimeOnlyData(project(":third_party", "guavaJre"))
+  runtimeOnlyData(project(":third_party", "jacoco"))
   runtimeOnlyData(project(":third_party", "jdwpTests"))
+  runtimeOnlyData(project(":third_party", "jsr223"))
+  runtimeOnlyData(project(":third_party", "processKeepRulesBinaryCompatibility"))
+  runtimeOnlyData(project(":third_party", "rhino"))
+  runtimeOnlyData(project(":third_party", "rhinoAndroid"))
+  runtimeOnlyData(project(":third_party", "smali"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->
@@ -187,7 +194,6 @@ fun Test.setupTestTask() {
     project
       .files(
         mainClassesOutput,
-        turboClassesOutput,
         distDepsFiles,
         mainResources,
         keepAnnoClassesConfig,
@@ -232,7 +238,6 @@ subprojects {
 
     add("implementation", project(":main", "mainClassesOutput"))
     add("implementation", project(":main", "mainResources"))
-    add("implementation", project(":main", "turboClassesOutput"))
     add("implementation", project(":keepanno", "keepannoClasses"))
     add("implementation", project(":testbase"))
     add("implementation", project(":testbase", "depsJar"))

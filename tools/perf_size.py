@@ -39,7 +39,7 @@ SIZE_COMPILEDUMPS = {
     'NewPipe': 'newpipe',
 }
 
-COMPILEDUMP_COMPILERS = ('r8full', 'd8')
+COMPILEDUMP_COMPILERS = ('r8full', 'd8-debug', 'd8-release')
 
 
 def get_compiledump_key(dump_name, compiler):
@@ -126,7 +126,7 @@ def ensure_build_artifacts(options):
         utils.R8_TESTS_JAR,
         utils.R8_TESTS_DEPS_JAR,
         utils.R8_TESTBASE_JAR,
-        utils.BUILD_JAVA_MAIN_CLASSPATH.split(os.pathsep)[0],
+        utils.BUILD_JAVA_MAIN_CLASSPATH,
         os.path.join(utils.REPO_ROOT, 'd8_r8', 'keepanno', 'build', 'classes',
                      'java', 'main'),
         os.path.join(utils.REPO_ROOT, 'd8_r8', 'test_modules', 'tests_java_8',
@@ -269,11 +269,18 @@ def run_single_compiledump(dump_name, compiler, r8_jar, version_label, temp_dir,
     dump_temp = os.path.join(temp_dir, f'dump_{dump_name}_{compiler}')
     os.makedirs(dump_temp, exist_ok=True)
 
+    if compiler.startswith('d8-'):
+        actual_compiler = 'd8'
+        compilation_mode = compiler.split('-', 1)[1]
+    else:
+        actual_compiler = compiler
+        compilation_mode = None
+
     raw_args = [
         '-d',
         dump_path,
         '--compiler',
-        compiler,
+        actual_compiler,
         '--r8-jar',
         r8_jar,
         '--version',
@@ -285,8 +292,10 @@ def run_single_compiledump(dump_name, compiler, r8_jar, version_label, temp_dir,
         '--xmx',
         '8g',
     ]
-    if compiler == 'd8':
+    if actual_compiler == 'd8':
         raw_args.extend(['--min-api', '21'])
+    if compilation_mode:
+        raw_args.extend(['--compilation-mode', compilation_mode])
     args = compiledump.make_parser().parse_args(raw_args)
 
     start = time.time()
@@ -476,7 +485,14 @@ def build_binary_sizes_dict(items):
             continue
         name = entry.get('name', key)
         kind = entry.get('kind', '')
-        tool = 'd8' if 'd8' in kind or key.endswith(':d8') else 'r8'
+        if 'd8-debug' in kind or key.endswith(':d8-debug'):
+            tool = 'd8-debug'
+        elif 'd8-release' in kind or key.endswith(':d8-release'):
+            tool = 'd8-release'
+        elif 'd8' in kind or key.endswith(':d8'):
+            tool = 'd8'
+        else:
+            tool = 'r8'
         binary_sizes[f'{name} ({tool})'] = int(dex_size)
     return binary_sizes
 
@@ -487,18 +503,12 @@ def format_pct_diff(base_val, patch_val):
     diff_bytes = patch_val - base_val
     pct = (diff_bytes / float(base_val)) * 100.0
     sign = '+' if diff_bytes > 0 else ''
-    text = f'{sign}{pct:.2f}% ({sign}{diff_bytes:,} B)'
+    text = f'{sign}{pct:.2f}%'
     if diff_bytes < 0:
         return f'🟢 **{text}**'
     if diff_bytes > 0:
         return f'🔴 **{text}**'
     return text
-
-
-def format_size(val):
-    if val is None or val <= 0:
-        return '—'
-    return f'{val:,}'
 
 
 def geomean_ratio(ratios):
@@ -509,14 +519,11 @@ def geomean_ratio(ratios):
 
 def generate_markdown_summary(base_hash, base_items, patch_items):
     short_base = base_hash[:8] if len(base_hash) >= 8 else base_hash
-    headers = [
-        'Target', 'Type', 'DEX Size', 'DEX Δ%', 'OAT Size', 'OAT Δ%',
-        'Resource Size', 'Res Δ%'
-    ]
+    headers = ['Target', 'Type', 'DEX Δ%', 'OAT Δ%', 'Res Δ%']
     metrics = ('dex_size', 'oat_size', 'resource_size')
     ratios = {m: [] for m in metrics}
-    totals = {m: 0 for m in metrics}
     data_rows = []
+    has_diff = False
 
     for key, patch_entry in patch_items.items():
         base_entry = (base_items or {}).get(key, {})
@@ -525,11 +532,10 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
         for m in metrics:
             b_val = base_entry.get(m)
             p_val = patch_entry.get(m)
-            if p_val:
-                totals[m] += p_val
-                if b_val:
-                    ratios[m].append(float(p_val) / float(b_val))
-            row_cells.append(format_size(p_val))
+            if p_val and b_val:
+                ratios[m].append(float(p_val) / float(b_val))
+                if p_val != b_val:
+                    has_diff = True
             row_cells.append(format_pct_diff(b_val, p_val))
         data_rows.append(row_cells)
 
@@ -551,13 +557,17 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
         f'DEX: {dex_gm}, OAT: {oat_gm}'
     ]
     if not base_items:
+        lines.append('')
         lines.append(
-            f'*(No cached baseline available for `main` @ `{short_base}`; '
-            'showing absolute sizes only)*')
+            f'*(No cached baseline available for `main` @ `{short_base}`)*')
+        return '\n'.join(lines)
+    if not has_diff:
+        lines.append('')
+        lines.append('No size difference.')
+        return '\n'.join(lines)
 
-    footer_row = ['**Total / Geomean**', '']
+    footer_row = ['**Geomean**', '']
     for m in metrics:
-        footer_row.append(f'**{format_size(totals[m])}**')
         footer_row.append(fmt_geomean(ratios[m]))
 
     # PolyGerrit's <gr-formatted-text> renders GFM pipe tables into HTML

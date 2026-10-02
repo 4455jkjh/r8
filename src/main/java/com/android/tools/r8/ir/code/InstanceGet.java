@@ -20,6 +20,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.ir.analysis.ClassInitializationAnalysis;
@@ -29,6 +30,7 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
+import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
@@ -49,6 +51,15 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
   public static InstanceGet copyOf(IRCode code, InstanceGet original) {
     Value newValue = code.createValue(original.getOutType(), original.getLocalInfo());
     return copyOf(newValue, original);
+  }
+
+  @Override
+  public DeadCodeRemover.DeadInstructionResult canBeDeadCode(AppView<?> appView, IRCode code) {
+    if (appView.options().debug && !appView.options().disableAdditionalDebuggerSupport) {
+      // Instruction may trigger a field-accessed breakpoint in a debugger
+      return DeadCodeRemover.DeadInstructionResult.notDead();
+    }
+    return super.canBeDeadCode(appView, code);
   }
 
   public static InstanceGet copyOf(Value newValue, InstanceGet original) {
@@ -136,6 +147,17 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
   @Override
   public boolean instructionTypeCanThrow() {
     return true;
+  }
+
+  @Override
+  public boolean instructionMayHaveSideEffects(
+      AppView<?> appView,
+      ProgramMethod context,
+      AbstractValueSupplier abstractValueSupplier,
+      SideEffectAssumption assumption) {
+    FieldResolutionResult resolutionResult = appView.appInfo().resolveField(getField(), context);
+    return internalInstructionInstanceCanThrow(appView, context, assumption, resolutionResult)
+        || resolutionResult.getResolvedField().isVolatile();
   }
 
   @Override

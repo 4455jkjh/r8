@@ -37,8 +37,7 @@ public class ReturnBlockCanonicalizerRewriter extends CodeRewriterPass<AppInfo> 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
     assert options.isRelease();
-    return code.getBlocks().size() >= 3
-        && options.getTestingOptions().enableDeadSwitchCaseElimination;
+    return code.getBlocks().size() >= 3;
   }
 
   @Override

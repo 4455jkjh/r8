@@ -3,11 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.kotlin.reflection;
 
+import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.KotlinCompileMemoizer;
+import com.android.tools.r8.KotlinCompilerTool.KotlinCompiler;
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.R8FullTestBuilder;
+import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
@@ -16,6 +19,7 @@ import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import java.util.List;
+import java.util.function.BiFunction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -37,6 +41,44 @@ public class ReflectiveConstructionWithInlineClassTest extends KotlinTestBase {
           getKotlinSourceFileFromResources(
               DescriptorUtils.getInternalNameFromJavaType(PKG), KOTLIN_FILE));
 
+  private static final BiFunction<KotlinTestParameters, AndroidApiLevel, D8TestCompileResult>
+      compiledForD8 =
+          memoizeBiFunction(
+              (kotlinParameters, apiLevel) -> {
+                KotlinCompiler kotlinc = kotlinParameters.getCompiler();
+                return testForD8(getStaticTemp())
+                    .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
+                    .addProgramFiles(kotlinc.getKotlinStdlibJar())
+                    .addProgramFiles(kotlinc.getKotlinReflectJar())
+                    .setMinApi(apiLevel)
+                    .enableServiceLoader()
+                    .compile();
+              });
+
+  private static final BiFunction<KotlinTestParameters, AndroidApiLevel, R8TestCompileResult>
+      compiledForR8KeepDataClass =
+          memoizeBiFunction(
+              (kotlinParameters, apiLevel) ->
+                  configureR8(kotlinParameters, apiLevel)
+                      .addDontObfuscate()
+                      .compile()
+                      .assertNoErrorMessages()
+                      .apply(
+                          KotlinMetadataTestBase
+                              ::verifyExpectedWarningsFromKotlinReflectAndStdLib));
+
+  private static final BiFunction<KotlinTestParameters, AndroidApiLevel, R8TestCompileResult>
+      compiledForR8KeepDataClassAndInlineClass =
+          memoizeBiFunction(
+              (kotlinParameters, apiLevel) ->
+                  configureR8(kotlinParameters, apiLevel)
+                      .addKeepRules("-keep class " + PKG + ".Value { *; }")
+                      .compile()
+                      .assertNoErrorMessages()
+                      .apply(
+                          KotlinMetadataTestBase
+                              ::verifyExpectedWarningsFromKotlinReflectAndStdLib));
+
   @Parameters(name = "{0}, {1}")
   public static List<Object[]> data() {
     return buildParameters(
@@ -45,8 +87,6 @@ public class ReflectiveConstructionWithInlineClassTest extends KotlinTestBase {
             // Internal classes are supported from Kotlin 1.5.
             .withCompilersStartingFromIncluding(KotlinCompilerVersion.KOTLINC_1_5_0)
             .withOldCompilersStartingFrom(KotlinCompilerVersion.KOTLINC_1_5_0)
-            .withAllLambdaGenerations()
-            .withAllTargetVersions()
             .build());
   }
 
@@ -61,9 +101,7 @@ public class ReflectiveConstructionWithInlineClassTest extends KotlinTestBase {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
-        .addProgramFiles(kotlinc.getKotlinStdlibJar())
-        .addProgramFiles(kotlinc.getKotlinReflectJar())
-        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.LATEST))
+        .addRunClasspathFiles(kotlinc.getKotlinStdlibJar(), kotlinc.getKotlinReflectJar())
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
   }
@@ -71,24 +109,24 @@ public class ReflectiveConstructionWithInlineClassTest extends KotlinTestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    testForD8()
-        .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
-        .addProgramFiles(kotlinc.getKotlinStdlibJar())
-        .addProgramFiles(kotlinc.getKotlinReflectJar())
-        .setMinApi(parameters)
-        .enableServiceLoader()
+    compiledForD8
+        .apply(kotlinParameters, parameters.getApiLevel())
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
   }
 
-  private R8FullTestBuilder configureR8(R8FullTestBuilder builder) {
-    return builder
+  private static R8FullTestBuilder configureR8(
+      KotlinTestParameters kotlinParameters, AndroidApiLevel apiLevel) {
+    KotlinCompiler kotlinc = kotlinParameters.getCompiler();
+    return testForR8(getStaticTemp(), apiLevel == null ? Backend.CF : Backend.DEX)
         .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
         .addProgramFiles(kotlinc.getKotlinStdlibJar())
         .addProgramFiles(kotlinc.getKotlinReflectJar())
         .addProgramFiles(kotlinc.getKotlinAnnotationJar())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.LATEST))
-        .setMinApi(parameters)
+        // Add java.lang.invoke.LambdaMetafactory for class file generation.
+        .applyIf(apiLevel == null, b -> b.addLibraryFiles(TestDeps.getCoreLambdaStubsJar()))
+        .setMinApi(apiLevel)
         .addKeepMainRule(MAIN_CLASS)
         .addKeepClassAndMembersRules(PKG + ".Data")
         .addKeepEnumsRule()
@@ -103,25 +141,16 @@ public class ReflectiveConstructionWithInlineClassTest extends KotlinTestBase {
 
   @Test
   public void testR8KeepDataClass() throws Exception {
-    configureR8(testForR8(parameters.getBackend()).addDontObfuscate())
-        // Add java.lang.invoke.LambdaMetafactory for class file generation.
-        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(TestDeps.getCoreLambdaStubsJar()))
-        .compile()
-        .assertNoErrorMessages()
-        .apply(KotlinMetadataTestBase::verifyExpectedWarningsFromKotlinReflectAndStdLib)
+    compiledForR8KeepDataClass
+        .apply(kotlinParameters, parameters.getApiLevel())
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertFailureWithErrorThatThrows(IllegalArgumentException.class);
   }
 
   @Test
   public void testR8KeepDataClassAndInlineClass() throws Exception {
-    configureR8(testForR8(parameters.getBackend()))
-        .addKeepRules("-keep class " + PKG + ".Value { *; }")
-        // Add java.lang.invoke.LambdaMetafactory for class file generation.
-        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(TestDeps.getCoreLambdaStubsJar()))
-        .compile()
-        .assertNoErrorMessages()
-        .apply(KotlinMetadataTestBase::verifyExpectedWarningsFromKotlinReflectAndStdLib)
+    compiledForR8KeepDataClassAndInlineClass
+        .apply(kotlinParameters, parameters.getApiLevel())
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
   }

@@ -6,6 +6,7 @@ package com.android.tools.r8.jdk9.twr.twrcloseresource;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
@@ -17,7 +18,6 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,8 +28,6 @@ import org.junit.runners.Parameterized.Parameters;
 public class TwrCloseResourceRunnerTest extends TestBase {
   private static final String TEST_CLASS =
       TwrCloseResourceRunnerTest.class.getPackageName() + ".TwrCloseResourceTest";
-
-  public static Path ANY_REACHABLE_JAR = Paths.get(ToolHelper.CORE_LAMBDA_STUBS);
 
   private static final String EXPECTED_RESULT =
       StringUtils.lines(
@@ -51,11 +49,12 @@ public class TwrCloseResourceRunnerTest extends TestBase {
 
   @Test
   public void testD8() throws Exception {
+    Path anyReachableJar = TestDeps.getCoreLambdaStubsJar();
     testForD8(parameters.getBackend())
         .addProgramClassFileData(IfaceDump.dump(), TwrCloseResourceTestDump.dump())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.LATEST))
         .setMinApi(parameters)
-        .run(parameters.getRuntime(), TEST_CLASS, ANY_REACHABLE_JAR.toAbsolutePath().toString())
+        .run(parameters.getRuntime(), TEST_CLASS, anyReachableJar.toAbsolutePath().toString())
         .assertSuccessWithOutput(EXPECTED_RESULT);
   }
 
@@ -80,7 +79,10 @@ public class TwrCloseResourceRunnerTest extends TestBase {
                     .setDisableMinification(true)
                     .addProguardConfiguration(
                         ImmutableList.of("-keepattributes *"), Origin.unknown()))
-        .run(parameters.getRuntime(), TEST_CLASS, ANY_REACHABLE_JAR.toAbsolutePath().toString())
+        .run(
+            parameters.getRuntime(),
+            TEST_CLASS,
+            TestDeps.getCoreLambdaStubsJar().toAbsolutePath().toString())
         .assertSuccessWithOutput(EXPECTED_RESULT);
   }
 }

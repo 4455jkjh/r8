@@ -382,6 +382,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     protoShrinking.enableGeneratedMessageLiteBuilderShrinking = true;
     protoShrinking.enableGeneratedExtensionRegistryShrinking = true;
     protoShrinking.enableEnumLiteProtoShrinking = true;
+    protoShrinking.enableLargeProtoEnumRewriting = true;
   }
 
   void disableAllOptimizations() {
@@ -460,6 +461,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean convertPcBasedDebugInfoToNative =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.convertPcBasedDebugInfoToNative", false);
+
+  public boolean disableAdditionalDebuggerSupport =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.disableAdditionalDebuggerSupport", false);
 
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;
@@ -1488,7 +1493,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // If non null it must be and passed to the consumer.
   public InternalMapConsumer mapConsumer = null;
 
-  public boolean hasMappingFileSupport() {
+  public boolean shouldOutputMappingFile() {
     return mapConsumer != null;
   }
 
@@ -2284,6 +2289,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // Breaks the Chrome build if this is not enabled because of MethodToInvoke switchMaps.
     // See b/174530756 for more details.
     public boolean enableProtoEnumSwitchMapShrinking = true;
+    public boolean enableLargeProtoEnumRewriting = false;
 
     public void disable() {
       enableGeneratedExtensionRegistryShrinking = false;
@@ -2307,6 +2313,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     @SuppressWarnings("ReferenceEquality")
     public boolean isEnumLiteProtoShrinkingEnabled() {
       return enableEnumLiteProtoShrinking;
+    }
+
+    public boolean isLargeProtoEnumRewritingEnabled() {
+      return enableLargeProtoEnumRewriting;
     }
 
     @SuppressWarnings("ReferenceEquality")
@@ -2583,7 +2593,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableBridgeHoistingToSharedSyntheticSuperclass = false;
     public boolean enableBridgeHoistingToSharedSyntheticSuperclassReturnSpecialization = true;
     public boolean enableCheckCastAndInstanceOfRemoval = true;
-    public boolean enableDeadSwitchCaseElimination = true;
     public boolean disableEnqueuerDeferredTracingForWrittenReferenceFields =
         System.getProperty("com.android.tools.r8.disableEnqueuerDeferredTracing") != null;
     public boolean enableInvokeSuperToInvokeVirtualRewriting = true;

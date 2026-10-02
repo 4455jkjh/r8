@@ -50,7 +50,7 @@ public class SanityCheck extends TestBase {
   private static final String THREADING_MODULE_SERVICE_FILE =
       "META-INF/services/com.android.tools.r8.threading.ThreadingModuleProvider";
   private static final String RESOURCE_SHRINKER_KOTLIN_MODULE =
-      "META-INF/resourceshrinker.kotlin_module";
+      "META-INF/d8-r8_resourceshrinker.kotlin_module";
 
   @Parameters
   public static TestParametersCollection data() {

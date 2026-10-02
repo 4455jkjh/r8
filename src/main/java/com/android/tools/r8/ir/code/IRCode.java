@@ -1296,6 +1296,29 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     return basicBlockNumberGenerator.peek();
   }
 
+  /**
+   * Renumbers the basic blocks from 0 in {@link #blocks} iteration order, so that the block numbers
+   * are dense and {@code block.getNumber()} can be used to index arrays of size {@code
+   * blocks.size()}. Blocks created after this point are still numbered by {@link
+   * #getNextBlockNumber()} and therefore do not preserve the dense numbering.
+   */
+  public void resetNumbers() {
+    int blockNumber = 0;
+    for (BasicBlock block : blocks) {
+      block.setNumber(blockNumber++);
+    }
+    basicBlockNumberGenerator.setNextValueNumber(blocks.size());
+  }
+
+  public boolean assertBasicBlockNumbersReset() {
+    int blockNumber = 0;
+    for (BasicBlock block : blocks) {
+      assert block.getNumber() == blockNumber++;
+    }
+    assert basicBlockNumberGenerator.peek() == blocks.size();
+    return true;
+  }
+
   public ConstClass createConstClass(AppView<?> appView, DexType type) {
     Value out = createValue(TypeElement.classClassType(appView, definitelyNotNull()));
     return new ConstClass(out, type);

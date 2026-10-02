@@ -6,6 +6,7 @@ package com.android.tools.r8.desugar.desugaredlibrary.kotlin;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_3_72;
 import static com.android.tools.r8.KotlinTestBase.getCompileMemoizer;
+import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -61,7 +62,7 @@ public class KotlinMetadataTest extends DesugaredLibraryTestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters().withAllRuntimesAndApiLevels().build(),
-        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build(),
+        getKotlinTestParameters().withAllCompilers().build(),
         DEFAULT_SPECIFICATIONS,
         ImmutableList.of(LibraryDesugaringSpecification.JDK11));
   }
@@ -69,6 +70,8 @@ public class KotlinMetadataTest extends DesugaredLibraryTestBase {
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
+    // The JVM run does not depend on the compilation specification.
+    assumeTrue(compilationSpecification == D8_L8DEBUG);
     KotlinCompiler kotlinc = kotlinParameters.getCompiler();
     testForRuntime(parameters)
         .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))

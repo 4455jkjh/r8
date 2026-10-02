@@ -57,9 +57,79 @@ private fun registerTestDep(configurationName: String, dir: File, propName: Stri
 // This should be called 'dependencies' but that is reserved in gradle, so dependenciesBucket.
 registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencies"), "DEPENDENCIES")
 
+registerTestDep("aapt2", ThirdPartyDeps.aapt2, "AAPT2")
+
+registerTestDep("bundletool", ThirdPartyDeps.bundletool, "BUNDLETOOL")
+
+registerTestDep("compilerApi", ThirdPartyDeps.compilerApi, "COMPILER_API")
+
+registerTestDep(
+  "composeExamplesChangedBitwiseValuePropagation",
+  ThirdPartyDeps.composeExamplesChangedBitwiseValuePropagation,
+  "COMPOSE_EXAMPLES_CHANGED_BITWISE_VALUE_PROPAGATION",
+)
+
 registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
 
+registerTestDep("dagger", ThirdPartyDeps.dagger, "DAGGER")
+
+registerTestDep(
+  "desugarLibraryConversions",
+  ThirdPartyDeps.desugarLibraryConversions,
+  "DESUGAR_LIBRARY_CONVERSIONS",
+)
+
+registerTestDep("googleJavaFormat", ThirdPartyDeps.googleJavaFormat, "GOOGLE_JAVA_FORMAT")
+
+registerTestDep("googleKotlinFormat", ThirdPartyDeps.googleKotlinFormat, "GOOGLE_KOTLIN_FORMAT")
+
+registerTestDep("gson", ThirdPartyDeps.gson, "GSON")
+
+registerTestDep("guavaJre", ThirdPartyDeps.guavaJre, "GUAVA_JRE")
+
+registerTestDep("jacoco", ThirdPartyDeps.jacoco, "JACOCO")
+
+registerTestDep("jdk21Float16Test", ThirdPartyDeps.jdk21Float16Test, "JDK21_FLOAT16_TEST")
+
 registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
+
+registerTestDep("jsr223", ThirdPartyDeps.jsr223, "JSR223")
+
+registerTestDep(
+  "kotlinR8TestResources",
+  ThirdPartyDeps.kotlinR8TestResources,
+  "KOTLIN_R8_TEST_RESOURCES",
+)
+
+registerTestDep("kotlinxCoroutines", ThirdPartyDeps.kotlinxCoroutines, "KOTLINX_COROUTINES")
+
+registerTestDep("multidex", ThirdPartyDeps.multidex, "MULTIDEX")
+
+registerTestDep(
+  "processKeepRulesBinaryCompatibility",
+  ThirdPartyDeps.processKeepRulesBinaryCompatibility,
+  "PROCESS_KEEP_RULES_BINARY_COMPATIBILITY",
+)
+
+registerTestDep("r8Mappings", ThirdPartyDeps.r8Mappings, "R8_MAPPINGS")
+
+registerTestDep(
+  "retraceBinaryCompatibility",
+  ThirdPartyDeps.retraceBinaryCompatibility,
+  "RETRACE_BINARY_COMPATIBILITY",
+)
+
+registerTestDep(
+  "retracePartitionFormats",
+  ThirdPartyDeps.retracePartitionFormats,
+  "RETRACE_PARTITION_FORMATS",
+)
+
+registerTestDep("rhino", ThirdPartyDeps.rhino, "RHINO")
+
+registerTestDep("rhinoAndroid", ThirdPartyDeps.rhinoAndroid, "RHINO_ANDROID")
+
+registerTestDep("smali", ThirdPartyDeps.smali, "SMALI")
 
 val internalTasks =
   if (!providers.gradleProperty("no_internal").isPresent) {

@@ -11,9 +11,7 @@ import com.android.tools.r8.benchmarks.BenchmarkEnvironment;
 import com.android.tools.r8.benchmarks.BenchmarkMethod;
 import com.android.tools.r8.benchmarks.BenchmarkTarget;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,23 +23,23 @@ import org.junit.runners.Parameterized.Parameters;
 
 /** Example of setting up a benchmark based on the testing infrastructure. */
 @RunWith(Parameterized.class)
-public class HelloWorldBenchmark extends BenchmarkBase {
+public abstract class HelloWorldBenchmark extends BenchmarkBase {
 
-  @Parameters(name = "{0}")
-  public static List<Object[]> data() {
-    return parametersFromConfigs(configs());
-  }
-
-  public HelloWorldBenchmark(BenchmarkConfig config, TestParameters parameters) {
+  protected HelloWorldBenchmark(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
   }
 
   /** Static method to add benchmarks to the benchmark collection. */
   public static List<BenchmarkConfig> configs() {
-    Builder<BenchmarkConfig> benchmarks = ImmutableList.builder();
-    makeBenchmark(BenchmarkTarget.D8, HelloWorldBenchmark::benchmarkD8, benchmarks);
-    makeBenchmark(BenchmarkTarget.R8, HelloWorldBenchmark::benchmarkR8, benchmarks);
-    return benchmarks.build();
+    return ImmutableList.of(
+        D8Dex.config(),
+        D8DexNoLib.config(),
+        D8Cf.config(),
+        D8CfNoLib.config(),
+        R8Dex.config(),
+        R8DexNoLib.config(),
+        R8Cf.config(),
+        R8CfNoLib.config());
   }
 
   // Options/parameter setup to define variants of the benchmark above.
@@ -66,36 +64,163 @@ public class HelloWorldBenchmark extends BenchmarkBase {
     }
   }
 
-  private static void makeBenchmark(
+  private static BenchmarkConfig makeBenchmark(
       BenchmarkTarget target,
-      Function<Options, BenchmarkMethod> method,
-      ImmutableList.Builder<BenchmarkConfig> benchmarks) {
-    for (boolean includeLibrary : BooleanUtils.values()) {
-      for (Backend backend : Backend.values()) {
-        Options options = new Options(target, backend, includeLibrary);
-        BenchmarkConfig.Builder builder =
-            BenchmarkConfig.builder()
-                // The benchmark is required to have a unique combination of name and target.
-                .setName(options.getName())
-                .setTarget(target)
-                // The benchmark is required to have at least one metric.
-                .measureRunTime()
-                .measureCodeSize()
-                // The benchmark is required to have a runner method which defines the actual
-                // execution.
-                .setMethod(method.apply(options))
-                // The benchmark is required to set a "golem from revision".
-                // Find this value by looking at the current revision on golem.
-                .setFromRevision(12215)
-                // The benchmark can optionally time the warmup. This is not needed to use a warmup
-                // in the actual run, only to include it as its own benchmark entry on golem.
-                .measureWarmup();
-        // If compiling with a library it needs to be added as a dependency.
-        if (options.library != null) {
-          builder.addDependency(options.library);
-        }
-        benchmarks.add(builder.build());
-      }
+      Backend backend,
+      boolean includeLibrary,
+      Function<Options, BenchmarkMethod> method) {
+    Options options = new Options(target, backend, includeLibrary);
+    BenchmarkConfig.Builder builder =
+        BenchmarkConfig.builder()
+            // The benchmark is required to have a unique combination of name and target.
+            .setName(options.getName())
+            .setTarget(target)
+            // The benchmark is required to have at least one metric.
+            .measureRunTime()
+            .measureCodeSize()
+            // The benchmark is required to have a runner method which defines the actual
+            // execution.
+            .setMethod(method.apply(options))
+            // The benchmark is required to set a "golem from revision".
+            // Find this value by looking at the current revision on golem.
+            .setFromRevision(12215)
+            // The benchmark can optionally time the warmup. This is not needed to use a warmup
+            // in the actual run, only to include it as its own benchmark entry on golem.
+            .measureWarmup();
+    // If compiling with a library it needs to be added as a dependency.
+    if (options.library != null) {
+      builder.addDependency(options.library);
+    }
+    return builder.build();
+  }
+
+  public static class D8Dex extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(BenchmarkTarget.D8, Backend.DEX, true, HelloWorldBenchmark::benchmarkD8);
+    }
+
+    public D8Dex(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class D8DexNoLib extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(
+          BenchmarkTarget.D8, Backend.DEX, false, HelloWorldBenchmark::benchmarkD8);
+    }
+
+    public D8DexNoLib(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class D8Cf extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(BenchmarkTarget.D8, Backend.CF, true, HelloWorldBenchmark::benchmarkD8);
+    }
+
+    public D8Cf(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class D8CfNoLib extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(BenchmarkTarget.D8, Backend.CF, false, HelloWorldBenchmark::benchmarkD8);
+    }
+
+    public D8CfNoLib(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8Dex extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(BenchmarkTarget.R8, Backend.DEX, true, HelloWorldBenchmark::benchmarkR8);
+    }
+
+    public R8Dex(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8DexNoLib extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(
+          BenchmarkTarget.R8, Backend.DEX, false, HelloWorldBenchmark::benchmarkR8);
+    }
+
+    public R8DexNoLib(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8Cf extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(BenchmarkTarget.R8, Backend.CF, true, HelloWorldBenchmark::benchmarkR8);
+    }
+
+    public R8Cf(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class R8CfNoLib extends HelloWorldBenchmark {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return makeBenchmark(BenchmarkTarget.R8, Backend.CF, false, HelloWorldBenchmark::benchmarkR8);
+    }
+
+    public R8CfNoLib(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
     }
   }
 
