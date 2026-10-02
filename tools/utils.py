@@ -548,6 +548,75 @@ def ensure_worktree_deps(quiet=False, worktree_root=None):
         print(
             f'Linked {linked_deps} pre-downloaded dependencies from {main_repo}'
         )
+    ensure_worktree_intellij_config(worktree_root=wt_root)
+
+
+def ensure_worktree_intellij_config(worktree_root=None):
+    wt_root = worktree_root or REPO_ROOT
+    main_repo = get_main_repo_root(wt_root)
+    if not main_repo:
+        return
+
+    wt_idea = os.path.join(wt_root, '.idea')
+    main_idea = os.path.join(main_repo, '.idea')
+    if not os.path.isdir(main_idea):
+        return
+
+    wt_gradle_xml = os.path.join(wt_idea, 'gradle.xml')
+    wt_misc_xml = os.path.join(wt_idea, 'misc.xml')
+
+    def file_contains(path, substring):
+        if not os.path.isfile(path):
+            return False
+        try:
+            with open(path, 'r') as f:
+                return substring in f.read()
+        except Exception:
+            return False
+
+    gradle_configured = file_contains(wt_gradle_xml, 'myGradleHome')
+    misc_configured = file_contains(wt_misc_xml, 'ProjectRootManager')
+    if gradle_configured and misc_configured:
+        return
+
+    try:
+        os.makedirs(wt_idea, exist_ok=True)
+        shared_files = [
+            'gradle.xml', 'misc.xml', 'vcs.xml', 'compiler.xml', 'kotlinc.xml',
+            '.gitignore'
+        ]
+        for fname in shared_files:
+            src = os.path.join(main_idea, fname)
+            dst = os.path.join(wt_idea, fname)
+            if not os.path.isfile(src):
+                continue
+            if fname == 'gradle.xml' and not gradle_configured:
+                with open(src, 'r') as f:
+                    content = f.read()
+                main_gradle_dir = os.path.join(main_repo, 'third_party',
+                                               'gradle')
+                user_home_abs = os.path.abspath(USER_HOME)
+                main_gradle_abs = os.path.abspath(main_gradle_dir)
+                if main_gradle_abs.startswith(user_home_abs + os.sep):
+                    rel_gradle = os.path.relpath(main_gradle_abs,
+                                                 user_home_abs).replace(
+                                                     '\\', '/')
+                    content = content.replace(
+                        f'$USER_HOME$/{rel_gradle}',
+                        '$PROJECT_DIR$/third_party/gradle')
+                content = content.replace(main_gradle_dir.replace('\\', '/'),
+                                          '$PROJECT_DIR$/third_party/gradle')
+                content = content.replace(main_gradle_dir,
+                                          '$PROJECT_DIR$/third_party/gradle')
+                with open(dst, 'w') as f:
+                    f.write(content)
+            elif fname == 'misc.xml' and not misc_configured:
+                shutil.copy2(src, dst)
+            elif not os.path.exists(dst):
+                shutil.copy2(src, dst)
+    except Exception as e:
+        Warn(
+            f'Warning: Failed to configure IntelliJ settings for worktree: {e}')
 
 
 def seed_gradle_user_home(gradle_user_home, worktree_root=None):
