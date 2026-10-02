@@ -67,7 +67,7 @@ public class ReturnBlockCanonicalizerRewriter extends CodeRewriterPass<AppInfo> 
    */
   private Collection<List<BasicBlock>> computeMergeableExitBlockGroups(IRCode code) {
     List<BasicBlock> normalExits = code.computeNormalExitBlocks();
-    if (!Return.shouldOnlyMergeIdenticalReturnValues(options, code.context())) {
+    if (!Return.shouldOnlyMergeIdenticalReturnValues(appView, code.context(), normalExits)) {
       return Collections.singletonList(normalExits);
     }
     Map<Value, List<BasicBlock>> returnValueToExitBlocks = new LinkedHashMap<>();

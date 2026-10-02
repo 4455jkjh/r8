@@ -93,7 +93,10 @@ public class TypeChecker {
     if (instruction.isReturnVoid()) {
       return true;
     }
-    TypeElement valueType = instruction.returnValue().getType();
+    return isAssignableToReturnType(instruction.returnValue().getType(), method);
+  }
+
+  public boolean isAssignableToReturnType(TypeElement valueType, DexEncodedMethod method) {
     TypeElement returnType =
         TypeElement.fromDexType(
             method.getReference().proto.returnType, Nullability.maybeNull(), appView);
