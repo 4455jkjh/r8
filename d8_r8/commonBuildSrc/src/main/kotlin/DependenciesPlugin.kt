@@ -611,10 +611,10 @@ public object ThirdPartyDeps {
     )
   public val tivi: ThirdPartyDependency =
     ThirdPartyDependency("tivi", Paths.get("third_party", "opensource-apps", "tivi").toFile())
-  public val youtube1719: ThirdPartyDependency =
+  public val youtube2140: ThirdPartyDependency =
     ThirdPartyDependency(
-      "youtube-17.19",
-      Paths.get("third_party", "youtube", "youtube.android_17.19").toFile(),
+      "youtube-21.40",
+      Paths.get("third_party", "youtube", "youtube.android_21.40").toFile(),
       testOnly = true,
       type = DependencyType.X20,
     )

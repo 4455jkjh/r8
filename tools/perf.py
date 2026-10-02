@@ -170,6 +170,9 @@ LOCAL_BENCHMARKS = {
     'SystemUIAppTreeShaking': {
         'targets': ['r8-full']
     },
+    'YouTubeApp': {
+        'targets': ['r8-full']
+    },
 }
 # A collection of build benchmarks that are tracked on CI.
 # These are run using gradle_benchmark.py.

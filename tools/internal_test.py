@@ -38,8 +38,6 @@ import time
 import utils
 import run_on_app
 
-import youtube_data
-
 # How often the bot/tester should check state
 PULL_DELAY = 30
 TEST_RESULT_DIR = 'internal'
@@ -56,8 +54,6 @@ STDERR = 'stderr'
 STDOUT = 'stdout'
 EXITCODE = 'exitcode'
 TIMED_OUT = 'timed_out'
-
-BENCHMARK_APPS = [youtube_data]
 
 DEPENDENT_PYTHON_FILES = [gradle, utils, run_on_app]
 

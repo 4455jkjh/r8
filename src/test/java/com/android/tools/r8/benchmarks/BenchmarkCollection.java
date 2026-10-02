@@ -14,6 +14,7 @@ import com.android.tools.r8.benchmarks.helloworld.HelloWorldBenchmark;
 import com.android.tools.r8.benchmarks.retrace.RetraceStackTraceBenchmark;
 import com.android.tools.r8.internal.benchmarks.appdumps.AGSABenchmarks;
 import com.android.tools.r8.internal.benchmarks.appdumps.SystemUIBenchmarks;
+import com.android.tools.r8.internal.benchmarks.appdumps.YouTubeBenchmarks;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,7 +73,8 @@ public class BenchmarkCollection {
         RetraceStackTraceBenchmark.configs(),
         ComposeSamplesBenchmarks.configs(),
         ChromeBenchmarks.configs(),
-        SystemUIBenchmarks.configs());
+        SystemUIBenchmarks.configs(),
+        YouTubeBenchmarks.configs());
   }
 
   /** Compute and print the golem configuration. */

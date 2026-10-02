@@ -19,10 +19,9 @@ import thread_utils
 from thread_utils import print_thread
 import toolhelper
 import utils
-import youtube_data
 
 TYPES = ['dex', 'deploy', 'proguarded']
-APPS = ['nest', 'youtube']
+APPS = ['nest']
 COMPILERS = ['d8', 'r8']
 COMPILER_BUILDS = ['full', 'lib']
 
@@ -224,7 +223,6 @@ DISABLED_PERMUTATIONS = [
 def get_permutations():
     data_providers = {
         'nest': nest_data,
-        'youtube': youtube_data,
     }
     # Check to ensure that we add all variants here.
     assert len(APPS) == len(data_providers)
@@ -419,9 +417,6 @@ def get_version_and_data(options):
     if options.app == 'nest':
         version = options.version or '20180926'
         data = nest_data
-    elif options.app == 'youtube':
-        version = options.version or youtube_data.LATEST_VERSION
-        data = youtube_data
     else:
         raise Exception("You need to specify '--app={}'".format('|'.join(APPS)))
     return version, data
