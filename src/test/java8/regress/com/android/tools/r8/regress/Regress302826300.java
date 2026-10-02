@@ -5,7 +5,7 @@ package com.android.tools.r8.regress;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -35,7 +35,7 @@ public class Regress302826300 extends TestBase {
     // This is illustrating the problem from b/302826300 using just D8 (in which case we don't
     // introduce the error, the error is in the build setup). The actual bug is introduced by
     // R8, see MemberRebindingWithApiDatabaseLookupTest.
-    D8TestRunResult run =
+    D8TestMultiRunResult run =
         testForD8(parameters.getBackend())
             // We simply pass LibraryBaseClass as program, but could also compile it separately and
             // pass as bootclasspath when running.

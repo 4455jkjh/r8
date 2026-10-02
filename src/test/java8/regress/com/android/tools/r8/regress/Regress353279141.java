@@ -9,7 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -63,7 +63,7 @@ public class Regress353279141 extends TestBase {
             });
   }
 
-  private R8TestRunResult runR8Compat(boolean dontOptimize)
+  private R8TestMultiRunResult runR8Compat(boolean dontOptimize)
       throws CompilationFailedException, ExecutionException, IOException {
     return testForR8Compat(parameters.getBackend())
         .addInnerClasses(getClass())

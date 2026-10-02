@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class R8PartialTestBuilder
-    extends R8TestBuilder<R8PartialTestCompileResult, R8TestRunResult, R8PartialTestBuilder> {
+    extends R8TestBuilder<R8PartialTestCompileResult, R8TestMultiRunResult, R8PartialTestBuilder> {
 
   private final ArrayList<Class<?>> includedClasses = new ArrayList<>();
   private final ArrayList<Class<?>> excludedClasses = new ArrayList<>();

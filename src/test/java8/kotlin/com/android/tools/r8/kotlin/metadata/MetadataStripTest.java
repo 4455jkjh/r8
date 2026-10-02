@@ -15,7 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.AnnotationSubject;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -50,7 +50,7 @@ public class MetadataStripTest extends KotlinMetadataTestBase {
   @Test
   public void testJstyleRunnable() throws Exception {
     final String mainClassName = "lambdas_jstyle_runnable.MainKt";
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
             .addProgramFiles(getJavaJarFile(FOLDER))

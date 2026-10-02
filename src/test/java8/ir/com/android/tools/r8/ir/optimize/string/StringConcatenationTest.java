@@ -9,7 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -222,7 +222,7 @@ public class StringConcatenationTest extends TestBase {
   public void testR8() throws Exception {
     assumeTrue("CF does not rewrite move results.", parameters.isDexRuntime());
 
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(MAIN)
             .enableInliningAnnotations()

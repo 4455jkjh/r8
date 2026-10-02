@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -81,7 +81,7 @@ public class GetClassLdcClassTest extends TestBase {
 
   @Test
   public void testWithVersionUpgrade() throws Exception {
-    R8TestRunResult run =
+    R8TestMultiRunResult run =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(getDowngradedClass(Runner.class))
             // Here the main class is not downgraded, thus the output may upgrade to that version.

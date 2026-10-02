@@ -7,9 +7,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
-import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
@@ -208,7 +208,7 @@ public class InnerClassNameTestRunner extends TestBase {
             .setMinApi(parameters)
             .compile();
     checkWarningsAboutMalformedAttribute(d8CompileResult);
-    D8TestRunResult d8RunResult = d8CompileResult.run(parameters.getRuntime(), MAIN_CLASS);
+    D8TestMultiRunResult d8RunResult = d8CompileResult.run(parameters.getRuntime(), MAIN_CLASS);
     d8RunResult.assertSuccessWithOutput(getExpectedNonMinified(config.getInnerClassName()));
   }
 
@@ -240,7 +240,7 @@ public class InnerClassNameTestRunner extends TestBase {
             .apply(this::checkWarningsAboutMalformedAttribute);
 
     CodeInspector inspector = r8CompileResult.inspector();
-    R8TestRunResult r8RunResult = r8CompileResult.run(parameters.getRuntime(), MAIN_CLASS);
+    R8TestMultiRunResult r8RunResult = r8CompileResult.run(parameters.getRuntime(), MAIN_CLASS);
     switch (config) {
       case DEFAULT:
       case OUTER_ENDS_WITH_DOLLAR:

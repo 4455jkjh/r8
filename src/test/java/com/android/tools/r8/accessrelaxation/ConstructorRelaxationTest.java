@@ -8,7 +8,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -181,7 +181,7 @@ public final class ConstructorRelaxationTest extends AccessRelaxationTestBase {
             "22_32_main_z");
     Class<?> mainClass = CtorTestMain.class;
 
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(mainClass)
             .addProgramClasses(CLASSES)

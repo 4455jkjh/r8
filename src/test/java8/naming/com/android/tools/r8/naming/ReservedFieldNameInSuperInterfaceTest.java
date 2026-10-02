@@ -11,7 +11,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.NeverPropagateValue;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -47,7 +47,7 @@ public class ReservedFieldNameInSuperInterfaceTest extends TestBase {
   @Test
   public void testProgramField() throws Exception {
     String expectedOutput = StringUtils.lines("Hello world!");
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(Backend.DEX)
             .addProgramClasses(TestClass.class, A.class, I.class, J.class)
             .addKeepMainRule(TestClass.class)

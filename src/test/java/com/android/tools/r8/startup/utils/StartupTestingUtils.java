@@ -9,7 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.D8TestBuilder;
-import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
@@ -133,13 +133,13 @@ public class StartupTestingUtils {
     diagnostics.assertNoMessages();
   }
 
-  public static ThrowingConsumer<D8TestRunResult, RuntimeException> removeStartupListFromStdout(
-      Consumer<ExternalStartupItem> startupItemConsumer) {
+  public static ThrowingConsumer<D8TestMultiRunResult, RuntimeException>
+      removeStartupListFromStdout(Consumer<ExternalStartupItem> startupItemConsumer) {
     return runResult -> removeStartupListFromStdout(runResult, startupItemConsumer);
   }
 
   public static void removeStartupListFromStdout(
-      D8TestRunResult runResult, Consumer<ExternalStartupItem> startupItemConsumer) {
+      D8TestMultiRunResult runResult, Consumer<ExternalStartupItem> startupItemConsumer) {
     TestDiagnosticMessagesImpl diagnostics = new TestDiagnosticMessagesImpl();
     HumanReadableArtProfileParser parser =
         HumanReadableArtProfileParser.builder()

@@ -9,7 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.ClassFileConsumer;
-import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.DexIndexedConsumer.ArchiveConsumer;
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
@@ -244,7 +244,7 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
     runD8(mainJar, getExpected());
   }
 
-  private D8TestRunResult runD8(Path jar) throws Exception {
+  private D8TestMultiRunResult runD8(Path jar) throws Exception {
     Path output = temp.newFile("output.zip").toPath();
     ProgramConsumer programConsumer =
         parameters.isCfRuntime()

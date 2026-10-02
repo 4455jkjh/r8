@@ -8,11 +8,11 @@ import com.android.tools.r8.utils.AndroidApp;
 import java.nio.file.Path;
 import java.util.List;
 
-public class ExternalR8TestRunResult extends MultiTestRunResult<ExternalR8TestRunResult> {
+public class ExternalR8TestMultiRunResult extends MultiTestRunResult<ExternalR8TestMultiRunResult> {
 
   private final Path outputJar;
 
-  public ExternalR8TestRunResult(
+  public ExternalR8TestMultiRunResult(
       AndroidApp app,
       Path outputJar,
       String proguardMap,
@@ -27,7 +27,7 @@ public class ExternalR8TestRunResult extends MultiTestRunResult<ExternalR8TestRu
   }
 
   @Override
-  protected ExternalR8TestRunResult self() {
+  protected ExternalR8TestMultiRunResult self() {
     return this;
   }
 }

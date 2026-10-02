@@ -14,7 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -44,7 +44,7 @@ public class RepackageLambdaMissingInterfaceTest extends RepackageTestBase {
         .assertSuccessWithOutputLinesIf(parameters.isCfRuntime(), "0");
   }
 
-  private R8TestRunResult runTest(boolean repackage) throws Exception {
+  private R8TestMultiRunResult runTest(boolean repackage) throws Exception {
     R8TestCompileResult compileResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(ClassWithLambda.class, Main.class)

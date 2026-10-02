@@ -11,7 +11,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
@@ -95,7 +95,7 @@ public class ProtoShrinkingTest extends ProtoShrinkingTestBase {
   @Test
   public void testR8() throws Exception {
     protoRuntime.assumeIsNewerThanOrEqualToMinimumRequiredRuntime(protoTestSources);
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .apply(protoRuntime::addRuntime)
             .apply(protoRuntime::workaroundProtoMessageRemoval)

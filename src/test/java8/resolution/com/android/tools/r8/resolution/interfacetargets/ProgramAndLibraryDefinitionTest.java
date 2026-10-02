@@ -9,7 +9,7 @@ import static com.android.tools.r8.resolution.interfacetargets.ProgramAndLibrary
 
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
@@ -87,7 +87,7 @@ public class ProgramAndLibraryDefinitionTest extends TestBase {
     if (libraryB != null) {
       compileResult.addRunClasspathClassFileData(libraryB);
     }
-    R8TestRunResult runResult = compileResult.run(parameters.getRuntime(), Main.class);
+    R8TestMultiRunResult runResult = compileResult.run(parameters.getRuntime(), Main.class);
     if (isExpectedToFailWithNoClassDefError()) {
       runResult.assertFailureWithErrorThatThrows(NoClassDefFoundError.class);
     } else if (isExpectedToFailWithICCE()) {

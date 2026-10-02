@@ -9,9 +9,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 
 import com.android.tools.r8.AsmTestBase;
-import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.R8FullTestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
@@ -63,7 +63,7 @@ public class Regress78493232_WithPhi extends AsmTestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    D8TestRunResult result =
+    D8TestMultiRunResult result =
         testForD8()
             .addProgramClasses(CLASSES)
             .addProgramClassFileData(CLASS_BYTES)
@@ -85,7 +85,7 @@ public class Regress78493232_WithPhi extends AsmTestBase {
 
   private void testR8(boolean treeShake) throws Exception {
     parameters.assumeDexRuntime();
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(CLASSES)
             .addProgramClassFileData(CLASS_BYTES)

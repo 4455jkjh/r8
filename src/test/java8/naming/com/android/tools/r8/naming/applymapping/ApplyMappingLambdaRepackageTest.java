@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoAccessModification;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -31,7 +31,7 @@ public class ApplyMappingLambdaRepackageTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult firstRunResult =
+    R8TestMultiRunResult firstRunResult =
         testForR8(parameters.getBackend())
             .addProgramClassesAndInnerClasses(Main.class, PackagePrivate.class, Foo.class)
             .setMinApi(parameters)
@@ -42,7 +42,7 @@ public class ApplyMappingLambdaRepackageTest extends TestBase {
             .enableNoAccessModificationAnnotationsForMembers()
             .run(parameters.getRuntime(), Main.class)
             .assertSuccessWithOutputLines("Hello World");
-    R8TestRunResult secondRunResult =
+    R8TestMultiRunResult secondRunResult =
         testForR8(parameters.getBackend())
             .addProgramClassesAndInnerClasses(Main.class, PackagePrivate.class, Foo.class)
             .setMinApi(parameters)

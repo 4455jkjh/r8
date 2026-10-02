@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 public class IntermediateCfD8TestBuilder
-    extends TestBuilder<D8TestRunResult, IntermediateCfD8TestBuilder> {
+    extends TestBuilder<D8TestMultiRunResult, IntermediateCfD8TestBuilder> {
 
   public static IntermediateCfD8TestBuilder create(TestState state, AndroidApiLevel apiLevel) {
     assert state != null;
@@ -57,10 +57,10 @@ public class IntermediateCfD8TestBuilder
   }
 
   @Override
-  public D8TestRunResult run(TestRuntime runtime, String mainClass, String... args)
+  public D8TestMultiRunResult run(TestRuntime runtime, String mainClass, String... args)
       throws CompilationFailedException, ExecutionException, IOException {
     D8TestCompileResult cf2cfCompileResult = cf2cf.compile();
-    D8TestRunResult runResult =
+    D8TestMultiRunResult runResult =
         cf2dex.addProgramFiles(cf2cfCompileResult.writeToZip()).run(runtime, mainClass, args);
     if (cf2cfCompileResult.hasSyntheticItems()) {
       runResult.getState().setSyntheticItems(cf2cfCompileResult.getSyntheticItems());

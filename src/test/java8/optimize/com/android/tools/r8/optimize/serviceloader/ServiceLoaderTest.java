@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.NoMethodStaticizing;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.AppServices;
@@ -75,7 +75,7 @@ public class ServiceLoaderTest extends TestBase {
       serviceImplementations.add(WorldGreeter.class.getTypeName());
     }
 
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addInnerClasses(ServiceLoaderTest.class)
             .addKeepMainRule(TestClass.class)

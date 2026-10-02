@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.R8FullTestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -48,7 +48,7 @@ public class Regress131349148 extends TestBase {
 
   @Test
   public void testNoInlineReflectiveOperationExceptionPreL() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(TestClass.class, ClassWithCatchReflectiveOperation.class)
             .addKeepMainRule(TestClass.class)

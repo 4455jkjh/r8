@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 public class ExternalR8TestCompileResult
-    extends TestCompileResult<ExternalR8TestCompileResult, ExternalR8TestRunResult> {
+    extends TestCompileResult<ExternalR8TestCompileResult, ExternalR8TestMultiRunResult> {
 
   private final Path outputJar;
   private final ProcessResult processResult;
@@ -79,7 +79,7 @@ public class ExternalR8TestCompileResult
   }
 
   @Override
-  protected ExternalR8TestRunResult createRunResult(List<SingleTestRunResult> results) {
-    return new ExternalR8TestRunResult(app, outputJar, proguardMap, state, results);
+  protected ExternalR8TestMultiRunResult createRunResult(List<SingleTestRunResult> results) {
+    return new ExternalR8TestMultiRunResult(app, outputJar, proguardMap, state, results);
   }
 }

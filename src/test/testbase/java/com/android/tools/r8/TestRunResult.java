@@ -55,7 +55,7 @@ public abstract class TestRunResult<RR extends TestRunResult<RR>> {
     throw new Unreachable();
   }
 
-  public boolean isR8TestRunResult() {
+  public boolean isR8TestMultiRunResult() {
     return false;
   }
 

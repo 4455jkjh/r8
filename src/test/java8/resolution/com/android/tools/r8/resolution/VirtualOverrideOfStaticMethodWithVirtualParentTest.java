@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.AsmTestBase;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
@@ -226,7 +226,7 @@ public class VirtualOverrideOfStaticMethodWithVirtualParentTest extends AsmTestB
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(CLASSES)
             .addProgramClassFileData(DUMPS)

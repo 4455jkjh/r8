@@ -35,7 +35,7 @@ public class ExternalR8TestBuilder
         R8Command,
         Builder,
         ExternalR8TestCompileResult,
-        ExternalR8TestRunResult,
+        ExternalR8TestMultiRunResult,
         ExternalR8TestBuilder> {
 
   // The r8.jar to run.

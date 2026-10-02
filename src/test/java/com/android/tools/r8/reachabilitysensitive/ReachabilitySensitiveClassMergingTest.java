@@ -11,7 +11,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -46,7 +46,7 @@ public class ReachabilitySensitiveClassMergingTest extends TestBase {
     return getTestParameters().withDexRuntimes().withAllApiLevels().build();
   }
 
-  private R8TestBuilder<?, R8TestRunResult, ?> configureCommonR8() {
+  private R8TestBuilder<?, R8TestMultiRunResult, ?> configureCommonR8() {
     return testForR8(parameters)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()

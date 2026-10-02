@@ -8,7 +8,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -112,7 +112,7 @@ public class ValidNameConflictTest extends JasminTestBase {
           .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(programClassFileData)
             .addKeepMainRule(CLASS_NAME)
@@ -151,7 +151,7 @@ public class ValidNameConflictTest extends JasminTestBase {
           .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(programClassFileData)
             .addKeepMainRule(CLASS_NAME)
@@ -213,7 +213,7 @@ public class ValidNameConflictTest extends JasminTestBase {
           .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(programClassFileData)
             .addKeepMainRule(CLASS_NAME)
@@ -252,7 +252,7 @@ public class ValidNameConflictTest extends JasminTestBase {
           .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(programClassFileData)
             .addKeepMainRule(CLASS_NAME)
@@ -333,7 +333,7 @@ public class ValidNameConflictTest extends JasminTestBase {
           .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(programClassFileData)
             .addKeepMainRule(CLASS_NAME)
@@ -386,7 +386,7 @@ public class ValidNameConflictTest extends JasminTestBase {
           .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(programClassFileData)
             .addKeepMainRule(CLASS_NAME)

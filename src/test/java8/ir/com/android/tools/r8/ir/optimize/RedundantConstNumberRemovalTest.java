@@ -11,7 +11,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -65,7 +65,7 @@ public class RedundantConstNumberRemovalTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addInnerClasses(RedundantConstNumberRemovalTest.class)
             .addKeepClassAndMembersRules(TestClass.class)

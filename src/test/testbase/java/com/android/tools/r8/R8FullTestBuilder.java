@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class R8FullTestBuilder
-    extends R8TestBuilder<R8TestCompileResult, R8TestRunResult, R8FullTestBuilder> {
+    extends R8TestBuilder<R8TestCompileResult, R8TestMultiRunResult, R8FullTestBuilder> {
 
   private R8FullTestBuilder(TestState state, Builder builder, Backend backend) {
     super(state, builder, backend);

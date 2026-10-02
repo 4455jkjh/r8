@@ -11,8 +11,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.D8TestRunResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
@@ -242,7 +242,7 @@ public class GetNameTest extends GetNameTestBase {
   public void testD8() throws Exception {
     assumeTrue("Only run D8 for Dex backend)", parameters.isDexRuntime() && !enableMinification);
 
-    D8TestRunResult result =
+    D8TestMultiRunResult result =
         testForD8()
             .debug()
             .addProgramFiles(classPaths)
@@ -267,7 +267,7 @@ public class GetNameTest extends GetNameTestBase {
   @Test
   public void testR8_pinning() throws Exception {
     // Pinning the test class.
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramFiles(classPaths)
             .addKeepMainRule(MAIN)
@@ -294,7 +294,7 @@ public class GetNameTest extends GetNameTestBase {
   @Test
   public void testR8_shallow_pinning() throws Exception {
     // Shallow pinning the test class.
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramFiles(classPaths)
             .addKeepMainRule(MAIN)

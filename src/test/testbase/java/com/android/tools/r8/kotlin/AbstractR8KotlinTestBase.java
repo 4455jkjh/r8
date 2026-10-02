@@ -17,7 +17,7 @@ import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
@@ -239,11 +239,11 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
         "}");
   }
 
-  protected R8TestRunResult runTest(String folder, String mainClass) throws Exception {
+  protected R8TestMultiRunResult runTest(String folder, String mainClass) throws Exception {
     return runTest(folder, mainClass, null);
   }
 
-  protected R8TestRunResult runTest(
+  protected R8TestMultiRunResult runTest(
       String folder, String mainClass, ThrowableConsumer<R8FullTestBuilder> configuration)
       throws Exception {
     Assume.assumeTrue(ToolHelper.artSupported() || ToolHelper.compareAgaintsGoldenFiles());

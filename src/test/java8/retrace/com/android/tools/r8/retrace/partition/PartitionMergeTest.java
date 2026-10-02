@@ -10,7 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
@@ -68,7 +68,7 @@ public class PartitionMergeTest extends TestBase {
   public void testMergeDisjoint() throws Exception {
     // Build two disjoint partitioned mapping files.
     Path part1 = temp.newFile("part1.zip").toPath();
-    R8TestRunResult runResult1 =
+    R8TestMultiRunResult runResult1 =
         testForR8(parameters)
             .addProgramClasses(A.class)
             .addKeepRules(
@@ -85,7 +85,7 @@ public class PartitionMergeTest extends TestBase {
             .run(parameters.getRuntime(), A.class);
 
     Path part2 = temp.newFile("part2.zip").toPath();
-    R8TestRunResult runResult2 =
+    R8TestMultiRunResult runResult2 =
         testForR8(parameters)
             .addProgramClasses(B.class)
             .addKeepRules(

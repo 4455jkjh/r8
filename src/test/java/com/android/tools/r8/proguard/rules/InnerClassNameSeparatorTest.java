@@ -7,7 +7,7 @@ package com.android.tools.r8.proguard.rules;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
@@ -38,7 +38,7 @@ public class InnerClassNameSeparatorTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addOptionsModification(InternalOptions::disableNameReflectionOptimization)
             .allowUnusedProguardConfigurationRules(separator.equals("."))

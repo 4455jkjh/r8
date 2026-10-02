@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.DataEntryResource;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -72,7 +72,7 @@ public class R8FeatureSplitServiceLoaderTest extends SplitterTestBase {
     Path base = temp.newFile("base.zip").toPath();
     Path feature1Path = temp.newFile("feature1.zip").toPath();
     Path feature2Path = temp.newFile("feature2.zip").toPath();
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(Base.class, I.class)
             .setMinApi(parameters)
@@ -103,7 +103,7 @@ public class R8FeatureSplitServiceLoaderTest extends SplitterTestBase {
 
   @Test
   public void testR8AllLoaded() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(Base.class, I.class)
             .setMinApi(parameters)
@@ -151,7 +151,7 @@ public class R8FeatureSplitServiceLoaderTest extends SplitterTestBase {
 
   @Test
   public void testR8WithServiceFileInSeparateFeature() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(Base.class, I.class)
             .setMinApi(parameters)

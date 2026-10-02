@@ -10,7 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.KeepUnusedReturnValue;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8FullTestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
@@ -75,7 +75,7 @@ public class RetraceInlineeWithNoSuchMethodErrorTest extends TestBase {
             .enableInliningAnnotations()
             .enableKeepUnusedReturnValueAnnotations()
             .enableExperimentalMapFileVersion();
-    R8TestRunResult runResult;
+    R8TestMultiRunResult runResult;
     if (throwReceiverNpe) {
       runResult =
           r8FullTestBuilder

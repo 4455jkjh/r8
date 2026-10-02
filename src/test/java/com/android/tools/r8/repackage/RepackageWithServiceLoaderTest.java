@@ -11,7 +11,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.DataEntryResource;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DataResourceConsumerForTesting;
@@ -37,7 +37,7 @@ public class RepackageWithServiceLoaderTest extends RepackageTestBase {
   @Test
   public void test() throws Exception {
     Box<DataResourceConsumerForTesting> dataResourceConsumer = new Box<>();
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addInnerClasses(getClass())
             .addDataResources(

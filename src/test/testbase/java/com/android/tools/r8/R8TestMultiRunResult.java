@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-public class R8TestRunResult extends MultiTestRunResult<R8TestRunResult> {
+public class R8TestMultiRunResult extends MultiTestRunResult<R8TestMultiRunResult> {
 
   public interface GraphInspectorSupplier {
     GraphInspector get() throws IOException;
@@ -22,7 +22,7 @@ public class R8TestRunResult extends MultiTestRunResult<R8TestRunResult> {
 
   private final GraphInspectorSupplier graphInspector;
 
-  public R8TestRunResult(
+  public R8TestMultiRunResult(
       AndroidApp app,
       String proguardMap,
       GraphInspectorSupplier graphInspector,
@@ -33,16 +33,16 @@ public class R8TestRunResult extends MultiTestRunResult<R8TestRunResult> {
   }
 
   @Override
-  public boolean isR8TestRunResult() {
+  public boolean isR8TestMultiRunResult() {
     return true;
   }
 
   @Override
-  protected R8TestRunResult self() {
+  protected R8TestMultiRunResult self() {
     return this;
   }
 
-  public <E extends Throwable> R8TestRunResult inspectOriginalStackTrace(
+  public <E extends Throwable> R8TestMultiRunResult inspectOriginalStackTrace(
       ThrowingBiConsumer<StackTrace, CodeInspector, E> consumer) throws E, IOException {
     CodeInspector inspector = internalGetCodeInspector();
     for (SingleTestRunResult singleResult : getSingleRunResults()) {
@@ -56,13 +56,13 @@ public class R8TestRunResult extends MultiTestRunResult<R8TestRunResult> {
     return graphInspector.get();
   }
 
-  public R8TestRunResult inspectGraph(Consumer<GraphInspector> consumer)
+  public R8TestMultiRunResult inspectGraph(Consumer<GraphInspector> consumer)
       throws IOException, ExecutionException {
     consumer.accept(graphInspector());
     return self();
   }
 
-  public <E extends Throwable> R8TestRunResult inspectStackTrace(
+  public <E extends Throwable> R8TestMultiRunResult inspectStackTrace(
       ThrowingBiConsumer<StackTrace, CodeInspector, E> consumer) throws E, IOException {
     CodeInspector inspector = internalGetCodeInspector();
     for (SingleTestRunResult singleResult : getSingleRunResults()) {

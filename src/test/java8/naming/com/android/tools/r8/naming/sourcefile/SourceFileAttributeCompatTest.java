@@ -45,7 +45,7 @@ public class SourceFileAttributeCompatTest extends TestBase {
   }
 
   private void checkSourceFileIsRemoved(TestRunResult<?> result) throws Exception {
-    if (result.isR8TestRunResult()) {
+    if (result.isR8TestMultiRunResult()) {
       // R8 and R8/compat differ from PG in that at least the default source file attribute is
       // retained. This ensures better stack traces on various VMs and has next to no size overhead.
       checkSourceFileIsReplacedByDefault(result);

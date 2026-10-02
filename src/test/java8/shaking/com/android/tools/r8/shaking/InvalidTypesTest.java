@@ -12,8 +12,8 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
-import com.android.tools.r8.D8TestRunResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
@@ -283,7 +283,7 @@ public class InvalidTypesTest extends JasminTestBase {
     } else {
       assert parameters.isDexRuntime();
 
-      D8TestRunResult d8Result =
+      D8TestMultiRunResult d8Result =
           testForD8()
               .addProgramFiles(inputJar)
               .setMinApi(parameters)
@@ -293,7 +293,7 @@ public class InvalidTypesTest extends JasminTestBase {
 
     boolean allowDiagnosticWarningMessages =
         mode == Mode.INVOKE_UNVERIFIABLE_METHOD && !useInterface;
-    R8TestRunResult r8Result =
+    R8TestMultiRunResult r8Result =
         testForR8(parameters.getBackend())
             .addProgramFiles(inputJar)
             .addKeepMainRule(mainClass.name)

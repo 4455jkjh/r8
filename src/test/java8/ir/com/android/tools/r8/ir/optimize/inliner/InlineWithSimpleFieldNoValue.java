@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.optimize.inliner;
 
 import static junit.framework.TestCase.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -48,7 +48,7 @@ public class InlineWithSimpleFieldNoValue extends TestBase {
 
   @Test
   public void test() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(Backend.DEX)
             .addKeepMainRule(TestClass.class)
             .addProgramClasses(TestClass.class, InlineFrom.class)

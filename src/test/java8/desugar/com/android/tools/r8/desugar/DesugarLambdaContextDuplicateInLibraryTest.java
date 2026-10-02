@@ -6,7 +6,7 @@ package com.android.tools.r8.desugar;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -102,7 +102,7 @@ public class DesugarLambdaContextDuplicateInLibraryTest extends TestBase {
             parameters.isCfRuntime(),
             r -> r.assertSuccessWithOutput(EXPECTED),
             // TODO(b/191747442): A library class and its derivatives should be pinned.
-            R8TestRunResult::assertFailure);
+            R8TestMultiRunResult::assertFailure);
   }
 
   interface LibraryInterface {

@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.DexIndexedConsumer.ArchiveConsumer;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
@@ -210,7 +210,7 @@ public class ConstClassCanonicalizationTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         (isCompat ? testForR8Compat(parameters.getBackend()) : testForR8(parameters.getBackend()))
             .addProgramClassesAndInnerClasses(MAIN)
             .addKeepMainRule(MAIN)

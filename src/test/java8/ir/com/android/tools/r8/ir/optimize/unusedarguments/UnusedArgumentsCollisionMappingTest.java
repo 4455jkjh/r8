@@ -11,7 +11,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -41,7 +41,7 @@ public class UnusedArgumentsCollisionMappingTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(Main.class)
             .setMinApi(parameters)

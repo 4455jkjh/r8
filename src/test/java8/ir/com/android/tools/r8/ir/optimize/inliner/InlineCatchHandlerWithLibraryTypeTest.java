@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
@@ -115,7 +115,7 @@ public class InlineCatchHandlerWithLibraryTypeTest extends TestBase {
         .apply(this::checkResult);
   }
 
-  private void checkResult(R8TestRunResult runResult) {
+  private void checkResult(R8TestMultiRunResult runResult) {
     // The bootclasspath for our build of 4.4.4 does not contain various bits. Allow verify error.
     // Correct compilation should ensure that all programs run without error.
     runResult.applyIfDexRuntime(

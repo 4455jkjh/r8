@@ -5,7 +5,7 @@
 package com.android.tools.r8.shaking.attributes;
 
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -61,7 +61,7 @@ public class KeepEnclosingMethodForKeptMethodTest extends TestBase {
     runTest(testForR8Compat(parameters.getBackend())).assertSuccessWithOutputLines(EXPECTED);
   }
 
-  private R8TestRunResult runTest(R8TestBuilder<?, R8TestRunResult, ?> testBuilder)
+  private R8TestMultiRunResult runTest(R8TestBuilder<?, R8TestMultiRunResult, ?> testBuilder)
       throws Exception {
     return testBuilder
         .addInnerClasses(KeptClass.class)

@@ -7,7 +7,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -93,7 +93,7 @@ public class StringFormatTest extends TestBase {
 
   @Test
   public void testReleaseR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(MAIN, TestFormattable.class)
             .enableInliningAnnotations()
@@ -106,7 +106,7 @@ public class StringFormatTest extends TestBase {
 
   @Test
   public void testDebugR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(MAIN, TestFormattable.class)
             .enableInliningAnnotations()

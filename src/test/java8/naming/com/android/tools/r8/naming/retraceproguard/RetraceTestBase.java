@@ -7,7 +7,7 @@ package com.android.tools.r8.naming.retraceproguard;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersBuilder;
@@ -66,7 +66,7 @@ public abstract class RetraceTestBase extends TestBase {
       BiConsumer<StackTrace, StackTrace> checker,
       ThrowableConsumer<R8TestCompileResult> compileResultConsumer)
       throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         (compat ? testForR8Compat(parameters.getBackend()) : testForR8(parameters.getBackend()))
             .setMode(mode)
             .enableProguardTestOptions()

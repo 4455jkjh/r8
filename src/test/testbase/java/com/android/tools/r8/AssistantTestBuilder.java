@@ -28,7 +28,7 @@ public class AssistantTestBuilder
         R8AssistantCommand,
         R8AssistantCommand.Builder,
         AssistantTestCompileResult,
-        AssistantTestRunResult,
+        AssistantTestMultiRunResult,
         AssistantTestBuilder> {
 
   private final D8TestBuilder initialCompileBuilder;

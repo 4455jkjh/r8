@@ -11,7 +11,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoMethodStaticizing;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -54,7 +54,7 @@ public class MissingClassJoinsToObjectTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .enableInliningAnnotations()
             .addProgramClasses(TestClass.class, A.class)

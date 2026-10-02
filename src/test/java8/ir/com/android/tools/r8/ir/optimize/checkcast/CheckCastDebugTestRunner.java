@@ -7,7 +7,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
@@ -37,7 +37,8 @@ public class CheckCastDebugTestRunner extends DebugTestBase {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
-  public R8TestRunResult runR8(ThrowableConsumer<DebugTestConfig> configConsumer) throws Exception {
+  public R8TestMultiRunResult runR8(ThrowableConsumer<DebugTestConfig> configConsumer)
+      throws Exception {
     return testForR8(parameters.getBackend())
         .addProgramClassesAndInnerClasses(A.class, B.class, C.class, MAIN)
         .addKeepMainRule(MAIN)
@@ -61,7 +62,7 @@ public class CheckCastDebugTestRunner extends DebugTestBase {
 
   @Test
   public void test_differentLocals() throws Throwable {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         runR8(
             config ->
                 runDebugTest(
@@ -114,7 +115,7 @@ public class CheckCastDebugTestRunner extends DebugTestBase {
 
   @Test
   public void test_sameLocal() throws Throwable {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         runR8(
             config ->
                 runDebugTest(
