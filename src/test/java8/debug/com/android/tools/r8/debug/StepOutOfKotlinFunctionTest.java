@@ -66,7 +66,7 @@ public class StepOutOfKotlinFunctionTest extends KotlinDebugTestBase implements 
         run(),
         checkLine("B495480702.kt", 1),
         stepOut(INTELLIJ_FILTER),
-        checkLine("B495480702.kt", parameters.isCfRuntime() ? 4 : 5),
+        checkLine("B495480702.kt", 4),
         run());
   }
 

@@ -442,9 +442,14 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         && partialSubCompilationConfiguration == null;
   }
 
+  public boolean disableAdditionalDebuggerSupport =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.disableAdditionalDebuggerSupport", false);
+
   // TODO(b/340669208): Figure out if this should be default behavior.
   public boolean ensureJvmCompatibleStepOutBehavior =
-      System.getProperty("com.android.tools.r8.enableJvmCompatibleStepOutBehavior") != null
+      !disableAdditionalDebuggerSupport
+          || System.getProperty("com.android.tools.r8.enableJvmCompatibleStepOutBehavior") != null
           || System.getenv("R8_ENABLE_JVM_COMPATIBLE_STEP_OUT_BEHAVIOR") != null;
 
   // Flags to toggle if DEX code objects should pass-through without IR processing.
@@ -461,10 +466,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean convertPcBasedDebugInfoToNative =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.convertPcBasedDebugInfoToNative", false);
-
-  public boolean disableAdditionalDebuggerSupport =
-      SystemPropertyUtils.parseSystemPropertyOrDefault(
-          "com.android.tools.r8.disableAdditionalDebuggerSupport", false);
 
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;
