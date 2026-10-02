@@ -253,13 +253,14 @@ common_test_options = [
 
 default_timeout = time.hour * 6
 
-def get_dimensions(windows = False, internal = False, archive = False, tester = False, jammy = True, coordinator = False):
+def get_dimensions(windows = False, internal = False, archive = False, tester = False, jammy = True, coordinator = False, perf = False):
     # We use the following setup:
     #   windows -> always windows machine
     #   internal -> always internal, single small, machine
     #   archive -> archive or normal machines (normal machines set archive)
     #   tester -> tester or normal machines
     #   coordinator -> coordinator machines
+    #   perf -> always the dedicated perf machine
     #   all_other -> normal linux machines
     dimensions = {
         "cpu": "x86-64",
@@ -279,6 +280,8 @@ def get_dimensions(windows = False, internal = False, archive = False, tester = 
         dimensions["archive"] = "true"
     elif tester:
         dimensions["tester"] = "true"
+    elif perf:
+        dimensions["perf"] = "true"
     else:
         dimensions["normal"] = "true"
     return dimensions
@@ -486,7 +489,7 @@ def perf():
         r8_builder(
             name,
             category = "perf",
-            dimensions = get_dimensions(),
+            dimensions = get_dimensions(perf = True),
             triggering_policy = scheduler.policy(
                 kind = scheduler.GREEDY_BATCHING_KIND,
                 max_batch_size = 1,
@@ -502,7 +505,7 @@ def perf():
     r8_builder(
         "perf-gm_release",
         category = "perf",
-        dimensions = get_dimensions(),
+        dimensions = get_dimensions(perf = True),
         triggering_policy = scheduler.policy(
             kind = scheduler.GREEDY_BATCHING_KIND,
             max_batch_size = 1,
