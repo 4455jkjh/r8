@@ -1162,6 +1162,12 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       setHintForDestRegOfCheckCast(unhandledInterval);
       setHintToPromote2AddrInstruction(unhandledInterval);
 
+      // Advance the state before allocating the registers of the invoke/range arguments below, so
+      // that the registers of the intervals that expired before this interval are free.
+      timing.begin("Advance state");
+      advanceStateToLiveIntervals(unhandledInterval);
+      timing.end();
+
       // If this interval value has an invoke/rangerange user, then fix the registers for the
       // consecutive arguments now and add hints to the live intervals leading up to this
       // invoke/range. This looks forward and propagate hints backwards to avoid many moves in
@@ -1171,12 +1177,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       timing.end();
       if (unhandledInterval.hasRegister()) {
         // The value itself is in the chain that has now gotten registers allocated.
+        expiredHere.clear();
         continue;
       }
-
-      timing.begin("Advance state");
-      advanceStateToLiveIntervals(unhandledInterval);
-      timing.end();
 
       // Perform the actual allocation.
       timing.begin("Alloc single");
