@@ -4,6 +4,7 @@
 package com.android.tools.r8.libanalyzer;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public abstract class LibraryAnalyzerResultInspector<
     T, I extends LibraryAnalyzerResultInspector<T, I>> {
@@ -12,6 +13,11 @@ public abstract class LibraryAnalyzerResultInspector<
 
   LibraryAnalyzerResultInspector(T result) {
     this.result = result;
+  }
+
+  public I assertAbsent() {
+    assertNull(result);
+    return self();
   }
 
   public I assertPresent() {

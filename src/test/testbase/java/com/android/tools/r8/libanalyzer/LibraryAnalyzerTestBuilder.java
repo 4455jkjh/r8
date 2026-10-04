@@ -19,6 +19,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +46,7 @@ public class LibraryAnalyzerTestBuilder {
   private AarOrJar aarOrJar;
   private AndroidApp.Builder androidAppBuilder = AndroidApp.builder();
   private List<String> keepRules = new ArrayList<>();
+  private List<Collection<String>> secondaryKeepRules = new ArrayList<>();
 
   private LibraryAnalyzerTestBuilder(TemporaryFolder temp) {
     this.commandBuilder = LibraryAnalyzerCommand.builder(diagnostics);
@@ -53,6 +55,12 @@ public class LibraryAnalyzerTestBuilder {
 
   public static LibraryAnalyzerTestBuilder create(TemporaryFolder temp) {
     return new LibraryAnalyzerTestBuilder(temp);
+  }
+
+  public <E extends Exception> LibraryAnalyzerTestBuilder apply(
+      ThrowingConsumer<LibraryAnalyzerTestBuilder, E> fn) throws E {
+    fn.accept(this);
+    return this;
   }
 
   public LibraryAnalyzerTestBuilder addDefaultLibrary() {
@@ -66,6 +74,15 @@ public class LibraryAnalyzerTestBuilder {
 
   public LibraryAnalyzerTestBuilder addKeepRules(Collection<String> keepRules) {
     this.keepRules.addAll(keepRules);
+    return this;
+  }
+
+  public LibraryAnalyzerTestBuilder addSecondaryAarOrJar(String... keepRules) {
+    return addSecondaryAarOrJar(Arrays.asList(keepRules));
+  }
+
+  public LibraryAnalyzerTestBuilder addSecondaryAarOrJar(Collection<String> keepRules) {
+    this.secondaryKeepRules.add(keepRules);
     return this;
   }
 
@@ -111,9 +128,9 @@ public class LibraryAnalyzerTestBuilder {
     assertNotNull("Must call setAar() or setJar() to specify input type.", aarOrJar);
     Box<LibraryAnalyzerResult> LibraryAnalyzerResult = new Box<>();
     if (aarOrJar == AarOrJar.AAR) {
-      commandBuilder.addAarPath(createAar());
+      createAars().forEach(commandBuilder::addAarPath);
     } else {
-      commandBuilder.addJarPath(createJar());
+      createJars().forEach(commandBuilder::addJarPath);
     }
     LibraryAnalyzerCommand command =
         commandBuilder.setInternalOutputConsumer(LibraryAnalyzerResult::set).build();
@@ -122,20 +139,30 @@ public class LibraryAnalyzerTestBuilder {
     return new LibraryAnalyzerCompileResult(LibraryAnalyzerResult.get());
   }
 
-  private Path createAar() {
+  private List<Path> createAars() {
+    List<Path> aarPaths = new ArrayList<>();
+    aarPaths.add(createAar(androidAppBuilder.build(), keepRules));
+    androidAppBuilder = null;
+    keepRules = null;
+    for (Collection<String> secondaryKeepRule : secondaryKeepRules) {
+      aarPaths.add(createAar(AndroidApp.builder().build(), secondaryKeepRule));
+    }
+    secondaryKeepRules = null;
+    return aarPaths;
+  }
+
+  private Path createAar(AndroidApp app, Collection<String> keepRules) {
     try {
-      Path aarDir = temp.newFolder("aar").toPath();
+      Path aarDir = temp.newFolder().toPath();
       Path classesJarPath = aarDir.resolve("classes.jar");
-      androidAppBuilder.build().writeToZipForTesting(classesJarPath, OutputMode.ClassFile);
-      androidAppBuilder = null;
+      app.writeToZipForTesting(classesJarPath, OutputMode.ClassFile);
 
       if (!keepRules.isEmpty()) {
         Path proguardTxtPath = aarDir.resolve("proguard.txt");
         Files.write(proguardTxtPath, keepRules, StandardCharsets.UTF_8);
-        keepRules = null;
       }
 
-      Path aarPath = temp.newFile("lib.aar").toPath();
+      Path aarPath = temp.newFolder().toPath().resolve("lib.aar");
       ZipUtils.zip(aarPath, aarDir);
       return aarPath;
     } catch (IOException e) {
@@ -143,20 +170,30 @@ public class LibraryAnalyzerTestBuilder {
     }
   }
 
-  private Path createJar() {
+  private List<Path> createJars() {
+    List<Path> jarPaths = new ArrayList<>();
+    jarPaths.add(createJar(androidAppBuilder.build(), keepRules));
+    androidAppBuilder = null;
+    keepRules = null;
+    for (Collection<String> secondaryKeepRule : secondaryKeepRules) {
+      jarPaths.add(createJar(AndroidApp.builder().build(), secondaryKeepRule));
+    }
+    secondaryKeepRules = null;
+    return jarPaths;
+  }
+
+  private Path createJar(AndroidApp app, Collection<String> keepRules) {
     try {
-      Path jarDir = temp.newFolder("jar").toPath();
-      androidAppBuilder.build().writeToDirectory(jarDir, OutputMode.ClassFile);
-      androidAppBuilder = null;
+      Path jarDir = temp.newFolder().toPath();
+      app.writeToDirectory(jarDir, OutputMode.ClassFile);
 
       if (!keepRules.isEmpty()) {
         Path libProPath = jarDir.resolve("META-INF/proguard/lib.pro");
         Files.createDirectories(libProPath.getParent());
         Files.write(libProPath, keepRules, StandardCharsets.UTF_8);
-        keepRules = null;
       }
 
-      Path jarPath = temp.newFile("lib.jar").toPath();
+      Path jarPath = temp.newFolder().toPath().resolve("lib.jar");
       ZipUtils.zip(jarPath, jarDir);
       return jarPath;
     } catch (IOException e) {

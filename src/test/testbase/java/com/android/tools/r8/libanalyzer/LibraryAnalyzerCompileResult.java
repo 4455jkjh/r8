@@ -23,14 +23,20 @@ public class LibraryAnalyzerCompileResult {
   public <E extends Exception> LibraryAnalyzerCompileResult inspectD8CompileResult(
       ThrowingConsumer<D8CompileResultInspector, E> inspector) {
     inspector.acceptWithRuntimeException(
-        new D8CompileResultInspector(LibraryAnalyzerResult.getD8CompileResult()));
+        new D8CompileResultInspector(
+            LibraryAnalyzerResult.hasD8CompileResult()
+                ? LibraryAnalyzerResult.getD8CompileResult()
+                : null));
     return this;
   }
 
   public <E extends Exception> LibraryAnalyzerCompileResult inspectR8CompileResult(
       ThrowingConsumer<R8CompileResultInspector, E> inspector) {
     inspector.acceptWithRuntimeException(
-        new R8CompileResultInspector(LibraryAnalyzerResult.getR8CompileResult()));
+        new R8CompileResultInspector(
+            LibraryAnalyzerResult.hasR8CompileResult()
+                ? LibraryAnalyzerResult.getR8CompileResult()
+                : null));
     return this;
   }
 
@@ -38,7 +44,9 @@ public class LibraryAnalyzerCompileResult {
       ThrowingConsumer<ValidateConsumerKeepRulesResultInspector, E> inspector) {
     inspector.acceptWithRuntimeException(
         new ValidateConsumerKeepRulesResultInspector(
-            LibraryAnalyzerResult.getValidateConsumerKeepRulesResult()));
+            LibraryAnalyzerResult.hasValidateConsumerKeepRulesResult()
+                ? LibraryAnalyzerResult.getValidateConsumerKeepRulesResult()
+                : null));
     return this;
   }
 }
