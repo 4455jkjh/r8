@@ -573,8 +573,13 @@ def perf_size():
             dimensions = get_dimensions(tester = True),
             trigger = bucket == "ci",
             priority = 25 if bucket == "try" else 20,
-            max_concurrent_invocations = 2,
-            execution_timeout = time.minute * 30,
+            # Run for every commit so that each main commit gets a cached baseline.
+            triggering_policy = scheduler.policy(
+                kind = scheduler.GREEDY_BATCHING_KIND,
+                max_batch_size = 1,
+                max_concurrent_invocations = 3,
+            ) if bucket == "ci" else None,
+            execution_timeout = time.hour * 1,
             expiration_timeout = time.hour * 35,
             properties = {
                 "builder_group": "internal.client.r8",
