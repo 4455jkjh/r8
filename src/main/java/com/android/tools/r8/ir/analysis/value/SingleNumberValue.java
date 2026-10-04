@@ -54,13 +54,18 @@ public class SingleNumberValue extends SingleConstValue
   }
 
   @Override
-  public OptionalBool isSubsetOf(int[] values) {
-    return OptionalBool.of(ArrayUtils.containsInt(values, getIntValue()));
+  public boolean isBoolean() {
+    return isSingleBoolean();
   }
 
   @Override
   public boolean isSingleBoolean() {
     return isFalse() || isTrue();
+  }
+
+  @Override
+  public OptionalBool isSubsetOf(int[] values) {
+    return OptionalBool.of(ArrayUtils.containsInt(values, getIntValue()));
   }
 
   @Override

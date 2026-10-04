@@ -37,6 +37,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class IfSimplificationTest extends SmaliTestBase {
 
   static String[] ifOpcode;
+
   static {
     ifOpcode = new String[6];
     ifOpcode[IfType.EQ.ordinal()] = "if-eq";
@@ -57,17 +58,18 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void ifZeroNeqZero() {
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        Collections.emptyList(),
-        1,
-        "  const v0, 0",
-        "  if-nez v0, :label_2",
-        ":label_1",
-        "  return v0",
-        ":label_2",
-        "  const v0, 1",
-        "  goto :label_1");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            Collections.emptyList(),
+            1,
+            "  const v0, 0",
+            "  if-nez v0, :label_2",
+            ":label_1",
+            "  return v0",
+            ":label_2",
+            "  const v0, 1",
+            "  goto :label_1");
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
     assertTrue(code.instructions[0] instanceof DexConst4);
@@ -77,17 +79,18 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void ifTwoEqZero() {
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        Collections.emptyList(),
-        1,
-        "  const v0, 2",
-        "  if-eqz v0, :label_2",
-        ":label_1",
-        "  return v0",
-        ":label_2",
-        "  const v0, 1",
-        "  goto :label_1");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            Collections.emptyList(),
+            1,
+            "  const v0, 2",
+            "  if-eqz v0, :label_2",
+            ":label_1",
+            "  return v0",
+            ":label_2",
+            "  const v0, 1",
+            "  goto :label_1");
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
     assertTrue(code.instructions[0] instanceof DexConst4);
@@ -97,21 +100,22 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void b() {
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        Collections.singletonList("int"),
-        1,
-        "  const v0, 0",
-        "  if-nez v0, :label_2",
-        ":label_1",
-        "  return v0",
-        ":label_2",
-        "  if-nez p0, :label_3",
-        "  const v0, 1",
-        "  goto :label_1",
-        ":label_3",
-        "  const v0, 2",
-        "  goto :label_1");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            Collections.singletonList("int"),
+            1,
+            "  const v0, 0",
+            "  if-nez v0, :label_2",
+            ":label_1",
+            "  return v0",
+            ":label_2",
+            "  if-nez p0, :label_3",
+            "  const v0, 1",
+            "  goto :label_1",
+            ":label_3",
+            "  const v0, 2",
+            "  goto :label_1");
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
     assertTrue(code.instructions[0] instanceof DexConst4);
@@ -121,21 +125,22 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void c() {
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        Collections.singletonList("int"),
-        1,
-        "  const v0, 0",
-        "  if-nez v0, :label_2",
-        ":label_1",
-        "  return v0",
-        ":label_2",
-        "  if-nez p0, :label_3",
-        "  const v0, 1",
-        "  goto :label_1",
-        ":label_3",
-        "  const p0, 0",
-        "  goto :label_2");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            Collections.singletonList("int"),
+            1,
+            "  const v0, 0",
+            "  if-nez v0, :label_2",
+            ":label_1",
+            "  return v0",
+            ":label_2",
+            "  if-nez p0, :label_3",
+            "  const v0, 1",
+            "  goto :label_1",
+            ":label_3",
+            "  const p0, 0",
+            "  goto :label_2");
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
     assertTrue(code.instructions[0] instanceof DexConst4);
@@ -145,28 +150,29 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void d() {
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        Collections.singletonList("int"),
-        1,
-        "  const v0, 0",
-        "  if-nez v0, :label_2",
-        ":label_1",
-        "  return v0",
-        ":label_2",
-        "  if-nez p0, :label_3",
-        "  const v0, 1",
-        "  goto :label_4",
-        ":label_3",
-        "  const p0, 0",
-        "  goto :label_2",
-        ":label_4",
-        "  if-nez p0, :label_5",
-        "  const v0, 1",
-        "  goto :label_4",
-        ":label_5",
-        "  const p0, 0",
-        "  goto :label_2");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            Collections.singletonList("int"),
+            1,
+            "  const v0, 0",
+            "  if-nez v0, :label_2",
+            ":label_1",
+            "  return v0",
+            ":label_2",
+            "  if-nez p0, :label_3",
+            "  const v0, 1",
+            "  goto :label_4",
+            ":label_3",
+            "  const p0, 0",
+            "  goto :label_2",
+            ":label_4",
+            "  if-nez p0, :label_5",
+            "  const v0, 1",
+            "  goto :label_4",
+            ":label_5",
+            "  const p0, 0",
+            "  goto :label_2");
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
     assertTrue(code.instructions[0] instanceof DexConst4);
@@ -176,24 +182,25 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void e() {
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        ImmutableList.of("int", "int", "int"),
-        1,
-        "  const v0, 0",
-        "  if-nez v0, :x",
-        "  const v0, 1",
-        "  if-nez p0, :x",
-        "  const v0, 2",
-        "  if-nez p1, :x",
-        "  const v0, 3",
-        "  if-nez p2, :return",
-        "  const v0, 4",
-        "  goto :return",
-        ":x",
-        "  add-int v0, v0, p0",
-        ":return",
-        "  return v0");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            ImmutableList.of("int", "int", "int"),
+            1,
+            "  const v0, 0",
+            "  if-nez v0, :x",
+            "  const v0, 1",
+            "  if-nez p0, :x",
+            "  const v0, 2",
+            "  if-nez p1, :x",
+            "  const v0, 3",
+            "  if-nez p2, :return",
+            "  const v0, 4",
+            "  goto :return",
+            ":x",
+            "  add-int v0, v0, p0",
+            ":return",
+            "  return v0");
     DexCode code = method.getCode().asDexCode();
     assertEquals(12, code.instructions.length);
     assertTrue(code.instructions[11] instanceof DexReturn);
@@ -201,17 +208,18 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void f() {
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        Collections.singletonList("int"),
-        1,
-        "  const v0, 0",
-        "  if-nez v0, :label_2",
-        ":label_1",
-        "  return v0",
-        ":label_2",
-        "  const v0, 1",
-        "  goto :label_2");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            Collections.singletonList("int"),
+            1,
+            "  const v0, 0",
+            "  if-nez v0, :label_2",
+            ":label_1",
+            "  return v0",
+            ":label_2",
+            "  const v0, 1",
+            "  goto :label_2");
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
     assertTrue(code.instructions[0] instanceof DexConst4);
@@ -240,13 +248,7 @@ public class IfSimplificationTest extends SmaliTestBase {
       }
     }
 
-    int[] testValues = new int[]{
-        100,
-        1,
-        0,
-        -1,
-        100
-    };
+    int[] testValues = new int[] {100, 1, 0, -1, 100};
 
     List<TestData> tests = new ArrayList<>();
     for (int i = 0; i < testValues.length; i++) {
@@ -257,19 +259,20 @@ public class IfSimplificationTest extends SmaliTestBase {
 
     for (TestData test : tests) {
       for (IfType type : IfType.values()) {
-        DexEncodedMethod method = oneMethodApplication(
-            "int",
-            Collections.singletonList("int"),
-            2,
-            "  const v0, 0x" + Integer.toHexString(test.a),
-            "  const v1, 0x" + Integer.toHexString(test.b),
-            "  " + ifOpcode[type.ordinal()] + " v0, v1, :label_2",
-            "  const v0, 0",
-            ":label_1",
-            "  return v0",
-            ":label_2",
-            "  const v0, 1",
-            "  goto :label_1");
+        DexEncodedMethod method =
+            oneMethodApplication(
+                "int",
+                Collections.singletonList("int"),
+                2,
+                "  const v0, 0x" + Integer.toHexString(test.a),
+                "  const v1, 0x" + Integer.toHexString(test.b),
+                "  " + ifOpcode[type.ordinal()] + " v0, v1, :label_2",
+                "  const v0, 0",
+                ":label_1",
+                "  return v0",
+                ":label_2",
+                "  const v0, 1",
+                "  goto :label_1");
         DexCode code = method.getCode().asDexCode();
         assertEquals(2, code.instructions.length);
         assertTrue(code.instructions[0] instanceof DexConst4);
@@ -288,18 +291,19 @@ public class IfSimplificationTest extends SmaliTestBase {
       ifInstruction = "  " + ifOpcode[type.ordinal()] + " v1, v0, :label_2";
     }
 
-    DexEncodedMethod method = oneMethodApplication(
-        "int",
-        Collections.singletonList("int"),
-        1,
-        "  const v0, 0x00",
-        ifInstruction,
-        "  const v0, 0",
-        ":label_1",
-        "  return v0",
-        ":label_2",
-        "  const v0, 1",
-        "  goto :label_1");
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "int",
+            Collections.singletonList("int"),
+            1,
+            "  const v0, 0x00",
+            ifInstruction,
+            "  const v0, 0",
+            ":label_1",
+            "  return v0",
+            ":label_2",
+            "  const v0, 2",
+            "  goto :label_1");
     DexCode code = method.getCode().asDexCode();
     assertEquals(5, code.instructions.length);
     assertTrue(expected.isInstance(code.instructions[0]));
@@ -422,47 +426,50 @@ public class IfSimplificationTest extends SmaliTestBase {
 
   @Test
   public void y() {
-    DexEncodedMethod method = oneMethodApplication(
-        "boolean",
-        Lists.newArrayList("Test", "java.lang.Object"),
-        6,
-        "      const-wide/16       v4, 0x0000000000000000L  # 0",
-        "      const/4             v0, 0x01  # 1",
-        "      const/4             v3, 0x00  # 0",
-        "      const/4             v1, 0x00  # 0",
-        "      if-ne               v6, v7, :label_8",
-        "    :label_7",
-        "      return              v0",
-        "    :label_8",
-        "      if-nez              v7, :label_12",
-        "      move                v0, v1",
-        "      goto                :label_7",
-        "    :label_12",
-        "      instance-of         v2, v7, LTest;",
-        "      if-nez              v2, :label_18",
-        "      move                v0, v1",
-        "      goto                :label_7",
-        "    :label_18",
-        "      check-cast          v7, LTest;",
-        "      cmp-long            v2, v4, v4",
-        "      if-nez              v2, :label_50",
-        "      invoke-static       { v3, v3 }, LTest;->a(Ljava/lang/Object;Ljava/lang/Object;)Z",
-        "      move-result         v2",
-        "      if-eqz              v2, :label_50",
-        "      invoke-static       { v3, v3 }, LTest;->a(Ljava/lang/Object;Ljava/lang/Object;)Z",
-        "      move-result         v2",
-        "      if-eqz              v2, :label_50",
-        "      invoke-static       { v1 }, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
-        "      move-result-object  v2",
-        "      invoke-static       { v1 }, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
-        "      move-result-object  v3",
-        "      invoke-static       { v2, v3 }, LTest;->a(Ljava/lang/Object;Ljava/lang/Object;)Z",
-        "      move-result         v2",
-        "      if-nez              v2, :label_7",
-        "    :label_50",
-        "      move                v0, v1",
-        "      goto                :label_7"
-    );
+    DexEncodedMethod method =
+        oneMethodApplication(
+            "boolean",
+            Lists.newArrayList("Test", "java.lang.Object"),
+            6,
+            "      const-wide/16       v4, 0x0000000000000000L  # 0",
+            "      const/4             v0, 0x01  # 1",
+            "      const/4             v3, 0x00  # 0",
+            "      const/4             v1, 0x00  # 0",
+            "      if-ne               v6, v7, :label_8",
+            "    :label_7",
+            "      return              v0",
+            "    :label_8",
+            "      if-nez              v7, :label_12",
+            "      move                v0, v1",
+            "      goto                :label_7",
+            "    :label_12",
+            "      instance-of         v2, v7, LTest;",
+            "      if-nez              v2, :label_18",
+            "      move                v0, v1",
+            "      goto                :label_7",
+            "    :label_18",
+            "      check-cast          v7, LTest;",
+            "      cmp-long            v2, v4, v4",
+            "      if-nez              v2, :label_50",
+            "      invoke-static       { v3, v3 },"
+                + " LTest;->a(Ljava/lang/Object;Ljava/lang/Object;)Z",
+            "      move-result         v2",
+            "      if-eqz              v2, :label_50",
+            "      invoke-static       { v3, v3 },"
+                + " LTest;->a(Ljava/lang/Object;Ljava/lang/Object;)Z",
+            "      move-result         v2",
+            "      if-eqz              v2, :label_50",
+            "      invoke-static       { v1 }, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+            "      move-result-object  v2",
+            "      invoke-static       { v1 }, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+            "      move-result-object  v3",
+            "      invoke-static       { v2, v3 },"
+                + " LTest;->a(Ljava/lang/Object;Ljava/lang/Object;)Z",
+            "      move-result         v2",
+            "      if-nez              v2, :label_7",
+            "    :label_50",
+            "      move                v0, v1",
+            "      goto                :label_7");
     assertEquals(20, method.getCode().asDexCode().getInstructions().length);
   }
 }

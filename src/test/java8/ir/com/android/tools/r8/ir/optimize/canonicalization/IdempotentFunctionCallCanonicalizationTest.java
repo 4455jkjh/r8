@@ -119,14 +119,8 @@ class IdempotentFunctionMain {
 @RunWith(Parameterized.class)
 public class IdempotentFunctionCallCanonicalizationTest extends TestBase {
   private static final Class<?> MAIN = IdempotentFunctionMain.class;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "0223332",
-      "true",
-      "false",
-      "8",
-      "35",
-      "3141592654"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines("0223332", "true", "false", "8", "35", "3141592654");
   private static final String BOOLEAN_DESCRIPTOR = "Ljava/lang/Boolean;";
   private static final String INTEGER_DESCRIPTOR = "Ljava/lang/Integer;";
   private static final String LONG_DESCRIPTOR = "Ljava/lang/Long;";
@@ -158,21 +152,27 @@ public class IdempotentFunctionCallCanonicalizationTest extends TestBase {
   }
 
   private static long countValueOf(MethodSubject method, String descriptor) {
-    return Streams.stream(method.iterateInstructions(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return isValueOf(instructionSubject.getMethod(), descriptor);
-      }
-      return false;
-    })).count();
+    return Streams.stream(
+            method.iterateInstructions(
+                instructionSubject -> {
+                  if (instructionSubject.isInvoke()) {
+                    return isValueOf(instructionSubject.getMethod(), descriptor);
+                  }
+                  return false;
+                }))
+        .count();
   }
 
   private static long countMaxCall(MethodSubject method) {
-    return Streams.stream(method.iterateInstructions(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return instructionSubject.getMethod().name.toString().equals("max");
-      }
-      return false;
-    })).count();
+    return Streams.stream(
+            method.iterateInstructions(
+                instructionSubject -> {
+                  if (instructionSubject.isInvoke()) {
+                    return instructionSubject.getMethod().name.toString().equals("max");
+                  }
+                  return false;
+                }))
+        .count();
   }
 
   private void test(
@@ -196,6 +196,10 @@ public class IdempotentFunctionCallCanonicalizationTest extends TestBase {
   public void testD8() throws Exception {
     assumeTrue("Only run D8 for Dex backend", parameters.isDexRuntime());
 
+    int expectedIntValueOfCount = parameters.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug() ? 5 : 2;
+    int expectedLongValueOfCount =
+        parameters.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug() ? 10 : 7;
+
     D8TestRunResult result =
         testForD8()
             .addProgramClasses(MAIN)
@@ -208,10 +212,8 @@ public class IdempotentFunctionCallCanonicalizationTest extends TestBase {
         TOTAL_MAX_CALLS,
         // TODO(b/145259212): Should be `EXPECTED_BOOLEAN_VALUE_OF` (2).
         6,
-        // TODO(b/145253152): Should be `EXPECTED_INTEGER_VALUE_OF` (2).
-        5,
-        // TODO(b/145253152): Should be `EXPECTED_LONG_VALUE_OF` (7).
-        10);
+        expectedIntValueOfCount,
+        expectedLongValueOfCount);
 
     result =
         testForD8()
@@ -225,10 +227,8 @@ public class IdempotentFunctionCallCanonicalizationTest extends TestBase {
         TOTAL_MAX_CALLS,
         // TODO(b/145259212): Should be `EXPECTED_BOOLEAN_VALUE_O` (2).
         6,
-        // TODO(b/145253152): Should be `EXPECTED_INTEGER_VALUE_OF` (2).
-        5,
-        // TODO(b/145253152): Should be `EXPECTED_LONG_VALUE_OF` (7).
-        10);
+        expectedIntValueOfCount,
+        expectedLongValueOfCount);
   }
 
   @Test

@@ -143,14 +143,6 @@ public class ConstNumber extends ConstInstruction {
     return value == 0;
   }
 
-  public boolean isIntegerZero() {
-    return outType() == ValueType.INT && getIntValue() == 0;
-  }
-
-  public boolean isIntegerOne() {
-    return outType() == ValueType.INT && getIntValue() == 1;
-  }
-
   public boolean isIntegerNegativeOne(NumericType type) {
     assert type == NumericType.INT || type == NumericType.LONG;
     if (type == NumericType.INT) {

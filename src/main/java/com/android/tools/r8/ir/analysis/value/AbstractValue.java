@@ -151,6 +151,10 @@ public abstract class AbstractValue implements ComputationTreeNode {
         "Abstract value " + this + " does not have a known array length.");
   }
 
+  public boolean isBoolean() {
+    return false;
+  }
+
   public boolean isSingleBoxedPrimitive() {
     return false;
   }
