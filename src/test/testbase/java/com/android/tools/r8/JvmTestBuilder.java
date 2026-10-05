@@ -8,6 +8,8 @@ import com.android.tools.r8.debug.CfDebugTestConfig;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.AndroidSdkIntFullEncoding;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.collect.ObjectArrays;
@@ -207,7 +209,16 @@ public class JvmTestBuilder extends TestBuilder<SingleTestRunResult, JvmTestBuil
   }
 
   public JvmTestBuilder addAndroidBuildVersion(AndroidApiLevel apiLevel) {
+    return addAndroidBuildVersion(apiLevel.asUnchecked());
+  }
+
+  public JvmTestBuilder addAndroidBuildVersion(UncheckedApiLevel apiLevel) {
     addVmArguments("-D" + AndroidBuildVersion.PROPERTY + "=" + apiLevel.getMajor());
+    addVmArguments(
+        "-D"
+            + AndroidBuildVersion.VERSION_FULL_PROPERTY
+            + "="
+            + AndroidSdkIntFullEncoding.encode(apiLevel));
     return addProgramClasses(AndroidBuildVersion.class);
   }
 }

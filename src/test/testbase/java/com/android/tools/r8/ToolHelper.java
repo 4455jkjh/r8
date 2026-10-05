@@ -1285,7 +1285,7 @@ public class ToolHelper {
   }
 
   private static String formatApiLevel(AndroidApiLevel apiLevel) {
-    return apiLevel.getMajor() + (apiLevel.getMinor() == 0 ? "" : "." + apiLevel.getMinor());
+    return apiLevel.getNumericString();
   }
 
   public static Path getApiVersionsXmlFile(AndroidApiLevel apiLevel) {
@@ -1455,8 +1455,7 @@ public class ToolHelper {
   }
 
   public static AndroidApiLevel getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel threshold) {
-    AndroidApiLevel minApiLevelForDexVm = getMinApiLevelForDexVm();
-    return minApiLevelForDexVm.getMajor() < threshold.getMajor() ? minApiLevelForDexVm : threshold;
+    return getMinApiLevelForDexVm().min(threshold);
   }
 
   public static AndroidApiLevel getMinApiLevelForDexVm() {
@@ -1528,7 +1527,7 @@ public class ToolHelper {
     if (version != null) {
       return version;
     }
-    throw new Unreachable("No Android VM for API level " + apiLevel.getMajor());
+    throw new Unreachable("No Android VM for API level " + apiLevel.getNumericString());
   }
 
   public static DexVersion getDexFileVersionForVm(DexVm vm) {

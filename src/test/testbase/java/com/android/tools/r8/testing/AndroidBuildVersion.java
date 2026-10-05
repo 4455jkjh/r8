@@ -10,5 +10,8 @@ package com.android.tools.r8.testing;
  */
 public class AndroidBuildVersion {
   public static final String PROPERTY = "com.android.tools.r8.testing.AndroidBuildVersion.VERSION";
+  public static final String VERSION_FULL_PROPERTY =
+      "com.android.tools.r8.testing.AndroidBuildVersion.VERSION_FULL";
   public static int VERSION = Integer.parseInt(System.getProperty(PROPERTY));
+  public static int VERSION_FULL = Integer.parseInt(System.getProperty(VERSION_FULL_PROPERTY));
 }

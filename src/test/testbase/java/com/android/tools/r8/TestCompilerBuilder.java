@@ -21,6 +21,7 @@ import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
+import com.android.tools.r8.utils.AndroidSdkIntFullEncoding;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ForwardingOutputStream;
 import com.android.tools.r8.utils.InternalOptions;
@@ -47,7 +48,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -137,7 +137,8 @@ public abstract class TestCompilerBuilder<
   protected OutputMode outputMode = OutputMode.DexIndexed;
   private boolean isBenchmarkRunner = false;
 
-  private Optional<Integer> isAndroidBuildVersionAdded = null;
+  private boolean isAndroidBuildVersionAdded = false;
+  private UncheckedApiLevel androidBuildVersion = null;
 
   private static final Map<UncheckedApiLevel, Set<String>> allGlobalSynthetics =
       new ConcurrentHashMap<>();
@@ -153,17 +154,27 @@ public abstract class TestCompilerBuilder<
   }
 
   public T addAndroidBuildVersion() {
-    return addAndroidBuildVersion(null);
+    return addAndroidBuildVersion((UncheckedApiLevel) null);
   }
 
   public T addAndroidBuildVersion(AndroidApiLevel specifiedApiLevel) {
+    return addAndroidBuildVersion(
+        specifiedApiLevel == null ? null : specifiedApiLevel.asUnchecked());
+  }
+
+  public T addAndroidBuildVersion(UncheckedApiLevel specifiedApiLevel) {
     addProgramClasses(AndroidBuildVersion.class);
     return markAndroidBuildVersionAsActive(specifiedApiLevel);
   }
 
   public T markAndroidBuildVersionAsActive(AndroidApiLevel specifiedApiLevel) {
-    isAndroidBuildVersionAdded =
-        Optional.ofNullable(specifiedApiLevel == null ? null : specifiedApiLevel.getMajor());
+    return markAndroidBuildVersionAsActive(
+        specifiedApiLevel == null ? null : specifiedApiLevel.asUnchecked());
+  }
+
+  public T markAndroidBuildVersionAsActive(UncheckedApiLevel specifiedApiLevel) {
+    isAndroidBuildVersionAdded = true;
+    androidBuildVersion = specifiedApiLevel;
     return self();
   }
 
@@ -465,17 +476,13 @@ public abstract class TestCompilerBuilder<
       cr =
           internalCompile(builder, optionsConsumer, Suppliers.memoize(sink::build), benchmark)
               .addRunClasspathFiles(additionalRunClassPath);
-      if (isAndroidBuildVersionAdded != null) {
-        int version;
-        if (isAndroidBuildVersionAdded.isPresent()) {
-          version = isAndroidBuildVersionAdded.get();
-        } else {
-          // TODO(b/356841164): Use full version.
-          assert builder.getUncheckedMinApiLevel().getMinor() == 0
-              : "Minor API version not yet supported: " + builder.getUncheckedMinApiLevel();
-          version = builder.getUncheckedMinApiLevel().getMajor();
-        }
-        cr.setSystemProperty(AndroidBuildVersion.PROPERTY, "" + version);
+      if (isAndroidBuildVersionAdded) {
+        UncheckedApiLevel version =
+            androidBuildVersion != null ? androidBuildVersion : builder.getUncheckedMinApiLevel();
+        cr.setSystemProperty(AndroidBuildVersion.PROPERTY, Integer.toString(version.getMajor()));
+        cr.setSystemProperty(
+            AndroidBuildVersion.VERSION_FULL_PROPERTY,
+            Integer.toString(AndroidSdkIntFullEncoding.encode(version)));
       }
       return cr;
     } finally {
@@ -542,7 +549,7 @@ public abstract class TestCompilerBuilder<
     return setMode(CompilationMode.RELEASE);
   }
 
-  public T setMinApiThreshold(AndroidApiLevel minApiThreshold) {
+  public final T setMinApiThreshold(AndroidApiLevel minApiThreshold) {
     assert backend == Backend.DEX;
     AndroidApiLevel minApi = ToolHelper.getMinApiLevelForDexVmNoHigherThan(minApiThreshold);
     return setMinApi(minApi);
@@ -553,8 +560,8 @@ public abstract class TestCompilerBuilder<
     return setMinApi(new UncheckedApiLevel(minApiMajor));
   }
 
-  public T setMinApi(AndroidApiLevel minApiLevel) {
-    return setMinApi(minApiLevel.asUnchecked());
+  public final T setMinApi(AndroidApiLevel minApiLevel) {
+    return setMinApi(minApiLevel == null ? null : minApiLevel.asUnchecked());
   }
 
   public T setMinApi(TestParameters parameters) {

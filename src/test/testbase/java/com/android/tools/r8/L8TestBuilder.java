@@ -192,7 +192,7 @@ public class L8TestBuilder {
         .setMode(mode)
         .setIncludeClassesChecksum(true)
         .addDesugaredLibraryConfiguration(desugaredLibrarySpecification)
-        .setMinApiLevel(apiLevel.getMajor())
+        .setMinApiLevel(apiLevel.asUnchecked())
         .setProgramConsumer(computeProgramConsumer(sink));
     addProgramClassFileData(l8Builder);
     Path mapping = null;

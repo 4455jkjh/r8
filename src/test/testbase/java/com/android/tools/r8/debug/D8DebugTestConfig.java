@@ -42,7 +42,7 @@ public class D8DebugTestConfig extends DexDebugTestConfig {
       return ToolHelper.runD8(
           builder
               .addProgramFiles(paths)
-              .setMinApiLevel(apiLevel.getMajor())
+              .setMinApiLevel(apiLevel.getMajor(), apiLevel.getMinor())
               .setMode(CompilationMode.DEBUG)
               .addLibraryFiles(ToolHelper.getAndroidJar(apiLevel)),
           optionsConsumer);

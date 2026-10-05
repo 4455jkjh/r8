@@ -278,7 +278,7 @@ public class TestParameters {
   public String toString() {
     StringBuilder builder = new StringBuilder(runtime.toString());
     if (apiLevel != null) {
-      builder.append(", api:").append(apiLevel.getMajor());
+      builder.append(", api:").append(apiLevel.getNumericString());
     }
     if (partialCompilationTestParameters.isSome()) {
       builder.append(", partial:").append(partialCompilationTestParameters);
