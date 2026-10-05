@@ -8,6 +8,7 @@ import static com.android.tools.r8.MarkerMatcher.markerBackend;
 import static com.android.tools.r8.MarkerMatcher.markerCompilationMode;
 import static com.android.tools.r8.MarkerMatcher.markerMinApi;
 import static com.android.tools.r8.MarkerMatcher.markerTool;
+import static com.android.tools.r8.utils.codeinspector.AssertUtils.assertFailsCompilationIf;
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethod;
 import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -15,9 +16,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.AccessFlags;
@@ -26,9 +27,11 @@ import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,9 +44,13 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withDefaultDexRuntime().build();
+  @Parameter(1)
+  public boolean enableMappingOutput;
+
+  @Parameters(name = "{0}, map output: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withDefaultDexRuntime().build(), BooleanUtils.values());
   }
 
   @Test
@@ -69,39 +76,46 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
     // Compiling with D8 should normally not perform dex-to-dex optimizations.
     testForD8()
         .addProgramFiles(originalCompileResult)
+        .applyIf(enableMappingOutput, D8TestBuilder::internalEnableMappingOutput)
         .release()
         .setMinApi(AndroidApiLevel.N)
         .compile()
         .inspect(inspector -> inspect(inspector, false));
 
     // Dex-to-dex optimizations should optimize the code.
-    Path reoptimizedCompileResult =
-        testForD8()
-            .addProgramFiles(originalCompileResult)
-            .addOptionsModification(
-                options -> {
-                  assertFalse(options.enableDexToDexCodeOptimizations);
-                  options.enableDexToDexCodeOptimizations = true;
-                })
-            .release()
-            .setMinApi(AndroidApiLevel.N)
-            .compile()
-            .inspect(inspector -> inspect(inspector, true))
-            .writeToZip();
-    Collection<Marker> reoptimizedMarkers =
-        ExtractMarkerUtils.extractMarkersFromFile(reoptimizedCompileResult);
-    assertMarkersMatch(
-        reoptimizedMarkers,
-        allOf(
-            markerTool(Tool.D8),
-            markerCompilationMode(CompilationMode.RELEASE),
-            markerBackend(Backend.DEX),
-            markerMinApi(AndroidApiLevel.B)),
-        allOf(
-            markerTool(Tool.D8ReOpt),
-            markerCompilationMode(CompilationMode.RELEASE),
-            markerBackend(Backend.DEX),
-            markerMinApi(AndroidApiLevel.N)));
+    // TODO(b/569565448): Should not fail with NullPointerException when mapping output is enabled.
+    assertFailsCompilationIf(
+        enableMappingOutput,
+        () -> {
+          Path reoptimizedCompileResult =
+              testForD8()
+                  .addProgramFiles(originalCompileResult)
+                  .addOptionsModification(
+                      options -> {
+                        assertFalse(options.enableDexToDexCodeOptimizations);
+                        options.enableDexToDexCodeOptimizations = true;
+                      })
+                  .applyIf(enableMappingOutput, D8TestBuilder::internalEnableMappingOutput)
+                  .release()
+                  .setMinApi(AndroidApiLevel.N)
+                  .compile()
+                  .inspect(inspector -> inspect(inspector, true))
+                  .writeToZip();
+          Collection<Marker> reoptimizedMarkers =
+              ExtractMarkerUtils.extractMarkersFromFile(reoptimizedCompileResult);
+          assertMarkersMatch(
+              reoptimizedMarkers,
+              allOf(
+                  markerTool(Tool.D8),
+                  markerCompilationMode(CompilationMode.RELEASE),
+                  markerBackend(Backend.DEX),
+                  markerMinApi(AndroidApiLevel.B)),
+              allOf(
+                  markerTool(Tool.D8ReOpt),
+                  markerCompilationMode(CompilationMode.RELEASE),
+                  markerBackend(Backend.DEX),
+                  markerMinApi(AndroidApiLevel.N)));
+        });
   }
 
   private void inspect(CodeInspector inspector, boolean optimized) {
