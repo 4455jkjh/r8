@@ -141,7 +141,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
                 .setMinApi(parameters)
                 .compileWithExpectedDiagnostics(
                     diagnostics ->
-                        diagnostics.assertErrorThatMatches(
+                        diagnostics.assertErrorsMatch(
                             allOf(
                                 diagnosticMessage(containsString("Expected char '-'")),
                                 diagnosticOrigin(hasPart("META-INF/proguard/jar.rules")),
@@ -160,7 +160,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
                 .setMinApi(parameters)
                 .compileWithExpectedDiagnostics(
                     diagnostics ->
-                        diagnostics.assertErrorThatMatches(
+                        diagnostics.assertErrorsMatch(
                             diagnosticMessage(
                                 containsString("Options with file names are not supported")))));
   }
@@ -177,7 +177,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
                 .setMinApi(parameters)
                 .compileWithExpectedDiagnostics(
                     diagnostics ->
-                        diagnostics.assertErrorThatMatches(
+                        diagnostics.assertErrorsMatch(
                             diagnosticMessage(
                                 containsString("Options with file names are not supported")))));
   }
@@ -198,7 +198,10 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
         throw new ResourceException(Origin.unknown(), "Unexpected");
       }
       return ImmutableList.of(
-          ProgramResource.fromBytes(Origin.unknown(), Kind.CF, bytes,
+          ProgramResource.fromBytes(
+              Origin.unknown(),
+              Kind.CF,
+              bytes,
               Collections.singleton(DescriptorUtils.javaTypeToDescriptor(A.class.getTypeName()))));
     }
 
@@ -225,7 +228,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
                 .setMinApi(parameters)
                 .compileWithExpectedDiagnostics(
                     diagnostics ->
-                        diagnostics.assertErrorThatMatches(
+                        diagnostics.assertErrorsMatch(
                             allOf(
                                 diagnosticMessage(
                                     containsString("Cannot provide data resources after all")),

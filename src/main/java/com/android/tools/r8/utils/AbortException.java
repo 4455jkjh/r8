@@ -32,7 +32,9 @@ public class AbortException extends RuntimeException {
 
   @Override
   public String getMessage() {
-    return diagnostic.getDiagnosticMessage();
+    return diagnostic instanceof ExceptionDiagnostic
+        ? ((ExceptionDiagnostic) diagnostic).getCause().getMessage()
+        : diagnostic.getDiagnosticMessage();
   }
 
   public Origin getOrigin() {

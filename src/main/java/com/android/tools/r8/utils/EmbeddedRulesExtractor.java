@@ -148,17 +148,6 @@ public class EmbeddedRulesExtractor implements DataResourceProvider.Visitor {
     return uptoCompilerVersion.isNewer(compilerVersion);
   }
 
-  private void parse(
-      Iterable<ProguardConfigurationSource> sources, ProguardConfigurationParser parser) {
-    for (ProguardConfigurationSource source : sources) {
-      try {
-        parser.parse(source);
-      } catch (Exception e) {
-        reporter.error(new ExceptionDiagnostic(e, source.getOrigin()));
-      }
-    }
-  }
-
   private List<ProguardConfigurationSource> getRelevantRules() {
     return r8Sources.isEmpty() ? proguardSources : r8Sources;
   }
@@ -169,11 +158,11 @@ public class EmbeddedRulesExtractor implements DataResourceProvider.Visitor {
   }
 
   public void parseAllRules(ProguardConfigurationParser parser) {
-    parse(Iterables.concat(proguardSources, r8Sources), parser);
+    parser.parse(Iterables.concat(proguardSources, r8Sources));
   }
 
   public void parseRelevantRules(ProguardConfigurationParser parser) {
-    parse(getRelevantRules(), parser);
+    parser.parse(getRelevantRules());
   }
 
   public void visitRelevantRules(Consumer<ProguardConfigurationSource> consumer) {

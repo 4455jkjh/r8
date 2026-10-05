@@ -3,16 +3,26 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.errors.ProguardRuleParserErrorDiagnostic;
 import com.android.tools.r8.libanalyzer.LibraryAnalyzerTestBuilder.AarOrJar;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.google.common.collect.Iterables;
 import java.util.List;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,7 +45,6 @@ public class LibraryAnalyzerInvalidKeepRulesTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    BooleanBox oom = new BooleanBox();
     testForLibraryAnalyzer()
         .addProgramClasses(Main.class)
         .addDefaultLibrary()
@@ -48,22 +57,38 @@ public class LibraryAnalyzerInvalidKeepRulesTest extends TestBase {
             })
         .setAarOrJar(aarOrJar)
         .setMinApi(AndroidApiLevel.getDefault())
-        .compileWithExpectedDiagnostics(
-            diagnostics -> {
-              try {
-                for (Diagnostic diagnostic :
-                    Iterables.concat(diagnostics.getErrors(), diagnostics.getWarnings())) {
-                  diagnostic.getDiagnosticMessage();
-                }
-              } catch (OutOfMemoryError e) {
-                oom.set();
-              }
-            })
+        .compileWithExpectedDiagnostics(this::inspectDiagnostics)
         .inspectD8CompileResult(D8CompileResultInspector::assertPresent)
         .inspectR8CompileResult(R8CompileResultInspector::assertAbsent)
         .inspectValidateConsumerKeepRulesResult(
             ValidateConsumerKeepRulesResultInspector::assertAbsent);
-    assertTrue(oom.get());
+  }
+
+  private void inspectDiagnostics(TestDiagnosticMessages diagnostics) {
+    diagnostics
+        .assertNoInfos()
+        .assertWarningsMatch(getExpectedWarningMatcher(), getExpectedWarningMatcher())
+        .assertErrorsMatch(getExpectedErrorMatcher(), getExpectedErrorMatcher());
+
+    int maxBytes = 0;
+    for (Diagnostic diagnostic :
+        Iterables.concat(diagnostics.getErrors(), diagnostics.getWarnings())) {
+      maxBytes = Math.max(maxBytes, diagnostic.getDiagnosticMessage().getBytes().length);
+    }
+    assertTrue(Integer.toString(maxBytes), maxBytes < 10000);
+  }
+
+  private static Matcher<Diagnostic> getExpectedWarningMatcher() {
+    return allOf(
+        diagnosticType(ExceptionDiagnostic.class),
+        diagnosticException(CompilationFailedException.class),
+        diagnosticMessage(not(containsString("ExceptionDiagnostic"))));
+  }
+
+  private static Matcher<Diagnostic> getExpectedErrorMatcher() {
+    return allOf(
+        diagnosticType(ProguardRuleParserErrorDiagnostic.class),
+        diagnosticMessage(containsString("Options with file names are not supported")));
   }
 
   static class Main {
