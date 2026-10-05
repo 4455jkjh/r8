@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.TypeChecker;
 import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
+import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
@@ -104,10 +105,54 @@ public class Return extends JumpInstruction {
   @Override
   public boolean identicalAfterRegisterAllocation(
       Instruction other, RegisterAllocator allocator, MethodConversionOptions conversionOptions) {
-    return super.identicalAfterRegisterAllocation(other, allocator, conversionOptions)
-        && (!shouldOnlyMergeIdenticalReturnValues(allocator.options(), allocator.getProgramMethod())
+    if (!super.identicalAfterRegisterAllocation(other, allocator, conversionOptions)) {
+      return false;
+    }
+    if (isReturnVoid()) {
+      return true;
+    }
+    Value otherReturnValue = other.asReturn().returnValue();
+    return (!shouldOnlyMergeIdenticalReturnValues(allocator.options(), allocator.getProgramMethod())
             || identicalArrayValuesAfterRegisterAllocation(
-                returnValue(), other.asReturn().returnValue(), allocator));
+                returnValue(), otherReturnValue, allocator))
+        && identicalClassValuesAfterRegisterAllocation(returnValue(), otherReturnValue, allocator);
+  }
+
+  /**
+   * Returns true if the return values {@code a} and {@code b} may be merged when sharing two
+   * returns.
+   *
+   * <p>If one of the values is not a subtype of the method return type, for example because it is
+   * based on a missing class, then the two values must be the exact same value. Otherwise, the join
+   * of the merged return values, which is java.lang.Object for missing classes, may not type check
+   * against the method return type.
+   *
+   * <p>Note that it is not sufficient to check that the join of {@code a} and {@code b} is
+   * assignable to the return type, since that is not transitive when one of the values is null: for
+   * a method returning Base and a missing class C, the joins of null and C, and of null and Base,
+   * are assignable to Base, but the join of C and Base is java.lang.Object. The relation must be
+   * transitive as it is used as an {@link com.google.common.base.Equivalence} when deduplicating
+   * blocks in the IR finalizer.
+   */
+  @SuppressWarnings("ReferenceEquality")
+  private static boolean identicalClassValuesAfterRegisterAllocation(
+      Value a, Value b, RegisterAllocator allocator) {
+    if (a == b) {
+      return true;
+    }
+    AppView<?> appView = allocator.getAppView();
+    ProgramMethod method = allocator.getProgramMethod();
+    if (!appView.enableWholeProgramOptimizations() || !method.getReturnType().isClassType()) {
+      return true;
+    }
+    TypeElement returnType =
+        TypeElement.fromDexType(method.getReturnType(), Nullability.maybeNull(), appView);
+    TypeChecker typeChecker =
+        new TypeChecker(appView.withClassHierarchy(), VerifyTypesHelper.create(appView));
+    return typeChecker.isAssignableToReturnType(
+            a.getType().join(returnType, appView), method.getDefinition())
+        && typeChecker.isAssignableToReturnType(
+            b.getType().join(returnType, appView), method.getDefinition());
   }
 
   /**
