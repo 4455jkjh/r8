@@ -47,6 +47,7 @@ import com.android.tools.r8.synthesis.SyntheticClassBuilder;
 import com.android.tools.r8.synthesis.SyntheticItems.SyntheticKindSelector;
 import com.android.tools.r8.synthesis.SyntheticMethodBuilder;
 import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.structural.Ordered;
@@ -275,11 +276,15 @@ public class InterfaceDesugaringSyntheticHelper {
   private boolean isAlreadyPresentOnFinalLibraryClass(DexClassAndMethod method) {
     assert method.isLibraryMethod();
     if (!method.getHolder().isFinal()
-        || !appView.apiLevelCompute().isEnabled()
         || libraryDesugaringOptions
             .getTypeRewriter()
             .hasRewrittenTypeInSignature(method.getProto())) {
       return false;
+    }
+    if (!appView.apiLevelCompute().isEnabled()) {
+      // Some first-party users desugar without the API database.
+      return method.getReference().isIdenticalTo(factory.stringMembers.isEmpty)
+          && appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.G);
     }
     return appView
         .apiLevelCompute()

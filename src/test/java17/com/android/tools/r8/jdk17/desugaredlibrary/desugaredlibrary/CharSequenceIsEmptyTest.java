@@ -82,9 +82,6 @@ public class CharSequenceIsEmptyTest extends DesugaredLibraryTestBase {
   }
 
   private void inspect(CodeInspector inspector) {
-    if (compilationSpecification.isCfToCf()) {
-      return;
-    }
     MethodSubject main = inspector.clazz(Main.class).uniqueMethodWithOriginalName("main");
     assertEquals(
         parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.G),
