@@ -9,7 +9,9 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
+import com.android.tools.r8.ir.analysis.value.DefiniteBitsIntNumberValue;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
+import com.android.tools.r8.ir.code.And;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.IRCode;
@@ -26,8 +28,10 @@ import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.info.CallSiteOptimizationInfo;
+import com.android.tools.r8.utils.NumberUtils;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.collections.WorkList;
+import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -35,6 +39,7 @@ import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Implementation of Sparse Conditional Constant Propagation from the paper of Wegman and Zadeck
@@ -180,6 +185,7 @@ public class SparseConditionalConstantPropagation extends CodeRewriterPass<AppIn
                   }
                 }
               });
+      rewriteAndWithDefiniteBits(affectedValues, hasChanged);
       for (BasicBlock block : blockToAnalyze) {
         block.deduplicatePhis();
       }
@@ -190,6 +196,177 @@ public class SparseConditionalConstantPropagation extends CodeRewriterPass<AppIn
         code.removeRedundantBlocks();
       }
       return changed;
+    }
+
+    private void rewriteAndWithDefiniteBits(AffectedValues affectedValues, BooleanBox hasChanged) {
+      if (!options.getTestingOptions().enableAndWithDefiniteBitsOptimization) {
+        return;
+      }
+      // Find And instructions that produces an out-value with known bits information.
+      Map<And, DefiniteBitsIntNumberValue> andsToProcess =
+          new TreeMap<>(Comparator.comparingInt(x -> x.outValue().getNumber()));
+      for (Map.Entry<Value, AbstractValue> entry : mapping.entrySet()) {
+        AbstractValue abstractValue = entry.getValue();
+        if (!abstractValue.isDefiniteBitsIntNumberValue()) {
+          continue;
+        }
+        Value value = entry.getKey();
+        if (!value.hasAnyUsers()
+            || value.hasLocalInfo()
+            || !value.isDefinedByInstructionSatisfying(
+                i -> i.isAnd() && i.asAnd().getNumericType().isInt())) {
+          continue;
+        }
+        andsToProcess.put(
+            value.getDefinition().asAnd(), abstractValue.asDefiniteBitsIntNumberValue());
+      }
+      andsToProcess.forEach(
+          (and, definiteBits) -> {
+            if (internalRewriteAndWithDefiniteBits(and, definiteBits, affectedValues)) {
+              hasChanged.set();
+            }
+          });
+    }
+
+    private boolean internalRewriteAndWithDefiniteBits(
+        And and, DefiniteBitsIntNumberValue andAbstractValue, AffectedValues affectedValues) {
+      AbstractValue leftAbstractValue = getCachedAbstractValue(and.leftValue());
+      if (leftAbstractValue.isUnknown() && and.leftValue().knownToBeBoolean()) {
+        leftAbstractValue = appView.abstractValueFactory().createDefiniteBitsBooleanNumberValue();
+      }
+
+      AbstractValue rightAbstractValue = getCachedAbstractValue(and.rightValue());
+      if (rightAbstractValue.isUnknown() && and.rightValue().knownToBeBoolean()) {
+        rightAbstractValue = appView.abstractValueFactory().createDefiniteBitsBooleanNumberValue();
+      }
+
+      Value nonConstantValue;
+      AbstractValue nonConstantAbstractValue;
+      Value maskValue;
+      if (and.rightValue().isConstNumber()
+          && leftAbstractValue.hasDefinitelySetAndUnsetBitsInformation()) {
+        nonConstantValue = and.leftValue();
+        nonConstantAbstractValue = leftAbstractValue;
+        maskValue = and.rightValue();
+      } else if (and.leftValue().isConstNumber()
+          && rightAbstractValue.hasDefinitelySetAndUnsetBitsInformation()) {
+        nonConstantValue = and.rightValue();
+        nonConstantAbstractValue = rightAbstractValue;
+        maskValue = and.leftValue();
+      } else {
+        return false;
+      }
+
+      if (maskValue.hasLocalInfo()) {
+        return false;
+      }
+
+      int mask = maskValue.getConstInt();
+      int setBits = nonConstantAbstractValue.getDefinitelySetIntBits();
+      int unsetBits = nonConstantAbstractValue.getDefinitelyUnsetIntBits();
+
+      // If all bits cleared by the mask (~mask) are already definitely unset in x, then
+      // (x & mask) == x.
+      if ((~unsetBits & ~mask) == 0) {
+        and.outValue().replaceUsers(nonConstantValue, affectedValues);
+        return true;
+      }
+
+      // Look if the result of the And instruction is only used by an If instruction.
+      Value andValue = and.outValue();
+      if (andValue.hasSingleUniqueUser()
+          && !andValue.hasPhiUsers()
+          && andValue.singleUniqueUser().isIf()) {
+        If theIf = andValue.singleUniqueUser().asIf();
+        if (theIf.getType().isEqualsOrNotEquals()) {
+          Value comparisonValue = null;
+          int comparison = 0;
+          boolean hasConstantComparison = false;
+          if (theIf.isZeroTest()) {
+            hasConstantComparison = true;
+          } else {
+            Value other = theIf.lhs() == andValue ? theIf.rhs() : theIf.lhs();
+            if (other.isConstInt()) {
+              comparisonValue = other;
+              comparison = comparisonValue.getConstInt();
+              hasConstantComparison = true;
+            }
+          }
+          if (hasConstantComparison && andAbstractValue.maybeContainsInt(comparison)) {
+            int knownBits = setBits | unsetBits;
+            int unknownBits = ~knownBits;
+            if ((unknownBits & ~mask) == 0) {
+              // All unknown bits of the `nonConstantValue` are inside `mask`, and all bits outside
+              // `mask` are known in `x`. Move the `mask` into the comparison value by rewriting
+              // `(x & mask) ==/!= c` to `x ==/!= (c | (setBits & ~mask))`.
+              int newComparison = comparison | (setBits & ~mask);
+              InstructionListIterator ifIterator = theIf.getBlock().listIterator(theIf);
+              If newIf;
+              if (newComparison == 0) {
+                newIf = new If(theIf.getType(), nonConstantValue);
+              } else {
+                Value newConstValue =
+                    ifIterator.insertConstIntInstruction(code, appView.options(), newComparison);
+                newIf = new If(theIf.getType(), ImmutableList.of(nonConstantValue, newConstValue));
+              }
+              newIf.setPosition(theIf.getPosition(), options);
+              ifIterator.next();
+              ifIterator.replaceCurrentInstruction(newIf);
+              return true;
+            }
+
+            // Otherwise, simplify the bitwise operations by stripping known bits of
+            // `nonConstantValue` from the mask and the If comparison value.
+            int newMask = mask & unknownBits;
+            int newComparison = comparison & unknownBits;
+            if (shouldReplaceMask(mask, newMask)) {
+              InstructionListIterator andIterator = and.getBlock().listIterator(and);
+              Value newMaskValue =
+                  andIterator.insertConstIntInstruction(code, appView.options(), newMask);
+              and.replaceValue(maskValue, newMaskValue);
+              if (newComparison != comparison) {
+                InstructionListIterator ifIterator = theIf.getBlock().listIterator(theIf);
+                if (newComparison == 0) {
+                  ifIterator.next();
+                  ifIterator.replaceCurrentInstruction(new If(theIf.getType(), andValue));
+                } else {
+                  Value newConstValue =
+                      ifIterator.insertConstIntInstruction(code, appView.options(), newComparison);
+                  theIf.replaceValue(comparisonValue, newConstValue);
+                }
+              }
+              return true;
+            }
+          }
+        }
+      }
+
+      // Clear bits from the mask that are already known to be unset in the operand, i.e.,
+      // rewrite `(nonConstantValue & mask)` to `(nonConstantValue & (mask & ~unsetBits))`.
+      int newMask = mask & ~unsetBits;
+      if (shouldReplaceMask(mask, newMask)) {
+        InstructionListIterator andIterator = and.getBlock().listIterator(and);
+        Value newMaskValue =
+            andIterator.insertConstIntInstruction(code, appView.options(), newMask);
+        and.replaceValue(maskValue, newMaskValue);
+        return true;
+      }
+      return false;
+    }
+
+    // Only replace a mask by a simpler mask if the encoding of the new mask is not larger than the
+    // encoding of the original mask.
+    private boolean shouldReplaceMask(int mask, int newMask) {
+      if (newMask == mask) {
+        return false;
+      }
+      if (NumberUtils.is8Bit(mask)) {
+        return NumberUtils.is8Bit(newMask);
+      }
+      if (NumberUtils.is16Bit(mask)) {
+        return NumberUtils.is16Bit(newMask);
+      }
+      return true;
     }
 
     private AbstractValue getCachedAbstractValue(Value value) {
