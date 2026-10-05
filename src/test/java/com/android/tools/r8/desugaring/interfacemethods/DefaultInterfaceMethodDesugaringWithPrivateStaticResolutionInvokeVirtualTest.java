@@ -8,7 +8,6 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -104,16 +103,17 @@ public class DefaultInterfaceMethodDesugaringWithPrivateStaticResolutionInvokeVi
     // Invalid invoke case is where the invoke-virtual targets C.m.
     if (invalidInvoke) {
       if (!isR8) {
-        // Up to 4.4 the exception for targeting a private static was ICCE.
-        if (isDexOlderThanOrEqual(Version.V4_4_4)) {
-          result.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
-          return;
-        }
-        // Then up to 6.0 the runtime just ignores privates leading to incorrectly hitting I.m
-        if (isDexOlderThanOrEqual(Version.V6_0_1)) {
-          result.assertSuccessWithOutput(EXPECTED);
-          return;
-        }
+        result
+            // Up to 4.4 the exception for targeting a private static was ICCE.
+            .applyIfDexRuntime(
+            v -> v.isOlderThanOrEqual(Version.V4_4_4),
+            r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
+            // Then up to 6.0 the runtime just ignores privates leading to incorrectly hitting I.m
+            v -> v.isNewerThan(Version.V4_4_4) && v.isOlderThanOrEqual(Version.V6_0_1),
+            r -> r.assertSuccessWithOutput(EXPECTED),
+            // The expected behavior is IAE since the resolved method is private.
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class));
+        return;
       }
       // The expected behavior is IAE since the resolved method is private.
       result.assertFailureWithErrorThatThrows(IllegalAccessError.class);
@@ -123,24 +123,11 @@ public class DefaultInterfaceMethodDesugaringWithPrivateStaticResolutionInvokeVi
     // The non-invalid case is where the invoke-virtual targets A.m.
 
     // In the successful case ART since 6.0 incorrectly throws IAE due to the private override.
-    if (unexpectedArtFailure()) {
-      result.assertFailureWithErrorThatThrows(IllegalAccessError.class);
-      return;
-    }
-
     // The expected behavior is that the resolution of A.m will resolve and hit I.m.
-    result.assertSuccessWithOutput(EXPECTED);
-  }
-
-  private boolean isDexOlderThanOrEqual(Version version) {
-    return parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().getVersion().isOlderThanOrEqual(version);
-  }
-
-  private boolean unexpectedArtFailure() {
-    return parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isNewerThan(DexVm.ART_6_0_1_HOST)
-        && parameters.getRuntime().asDex().getVm().isOlderThan(DexVm.ART_12_0_0_HOST);
+    result.applyIfDexRuntime(
+        v -> v.isNewerThan(Version.V6_0_1) && v.isOlderThan(Version.V12_0_0),
+        r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class),
+        r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   static class TestClass {

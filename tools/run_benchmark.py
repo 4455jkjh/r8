@@ -207,7 +207,7 @@ def main(argv, temp):
 def run(options, r8jar, testjars):
     xms = '8g'
     xmx = '8g'
-    if 'AGSA' in options.benchmark:
+    if 'AGSA' in options.benchmark or 'YouTube' in options.benchmark:
         xms = '32g'
         xmx = '32g'
     elif options.benchmark == 'SystemUIAppGc':

@@ -53,12 +53,14 @@ def branch_version_less_than(b1, b2):
         return True
     return False
 
+
 # Find all release branches between OLDEST_BRANCH and DEV_BRANCH
 def get_release_branches():
     # Release branches are assumed to be of the form 'origin/X.Y'
     out = run_cmd(['git', 'branch', '-r', '-l'])
-    natsort = lambda s: [int(t) if t.isdigit() else t.lower()
-                         for t in re.split(r'(\d+)', s)]
+    natsort = lambda s: [
+        int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', s)
+    ]
     lines = sorted(out.split('\n'), key=natsort)
     pattern = re.compile(r'origin/(\d+).(\d+)')
     releases = []
@@ -77,7 +79,7 @@ def get_release_branches():
     return releases
 
 
-# Find the most recent commit hash that is for a -dev version.
+# Find the most recent commit hash that is for a -dev or -alpha version.
 # This is the starting point for the map of commits after cutoff from main.
 def find_dev_cutoff(branch_version):
     out = run_cmd([
@@ -85,10 +87,10 @@ def find_dev_cutoff(branch_version):
         'log',
         'origin/%d.%d' % branch_version,
         '--grep',
-        'Version .*-dev',
+        r'Version .*\(-dev\|-alpha[[:digit:]]\+\)',
         '--pretty=oneline',
     ])
-    # Format of output is: <hash> Version <version>-dev
+    # Format of output is: <hash> Version <version>-(dev|alpha<N>)
     try:
         hash = out[0:out.index(' ')]
         return [Branch('%d.%d' % branch_version, hash)]

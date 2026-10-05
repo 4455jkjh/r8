@@ -12,15 +12,15 @@ import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.resolution.virtualtargets.package_a.ViewModel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,21 +56,17 @@ public class PackagePrivateOverrideSameMethodNameTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult runResult =
-        testForR8(parameters.getBackend())
-            .addProgramClasses(ViewModel.class, SubViewModel.class, Main.class)
-            .addKeepMainRule(Main.class)
-            .setMinApi(parameters)
-            .enableInliningAnnotations()
-            .enableNeverClassInliningAnnotations()
-            .addDontObfuscateUnless(minification)
-            .run(parameters.getRuntime(), Main.class)
-            .apply(this::assertSuccessOutput);
-    if (parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik()) {
-      runResult.inspectFailure(this::inspect);
-    } else {
-      runResult.inspect(this::inspect);
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(ViewModel.class, SubViewModel.class, Main.class)
+        .addKeepMainRule(Main.class)
+        .setMinApi(parameters)
+        .enableInliningAnnotations()
+        .enableNeverClassInliningAnnotations()
+        .addDontObfuscateUnless(minification)
+        .compile()
+        .inspect(this::inspect)
+        .run(parameters.getRuntime(), Main.class)
+        .apply(this::assertSuccessOutput);
   }
 
   private void inspect(CodeInspector inspector) {
@@ -89,11 +85,10 @@ public class PackagePrivateOverrideSameMethodNameTest extends TestBase {
   }
 
   private void assertSuccessOutput(TestRunResult<?> result) {
-    if (parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik()) {
-      result.assertFailureWithErrorThatMatches(containsString("overrides final"));
-    } else {
-      result.assertSuccessWithOutputLines(EXPECTED);
-    }
+    result.applyIfDexRuntime(
+        Version::isDalvik,
+        r -> r.assertFailureWithErrorThatMatches(containsString("overrides final")),
+        r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   @NeverClassInline

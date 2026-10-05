@@ -8,12 +8,14 @@ import static java.util.Collections.emptyList;
 import com.android.tools.r8.benchmarks.appdumps.ChromeBenchmarks;
 import com.android.tools.r8.benchmarks.appdumps.ComposeSamplesBenchmarks;
 import com.android.tools.r8.benchmarks.appdumps.NowInAndroidBenchmarks;
+import com.android.tools.r8.benchmarks.appdumps.OpenSourceBenchmarks;
 import com.android.tools.r8.benchmarks.appdumps.TiviBenchmarks;
 import com.android.tools.r8.benchmarks.desugaredlib.L8Benchmark;
 import com.android.tools.r8.benchmarks.helloworld.HelloWorldBenchmark;
 import com.android.tools.r8.benchmarks.retrace.RetraceStackTraceBenchmark;
 import com.android.tools.r8.internal.benchmarks.appdumps.AGSABenchmarks;
 import com.android.tools.r8.internal.benchmarks.appdumps.SystemUIBenchmarks;
+import com.android.tools.r8.internal.benchmarks.appdumps.YouTubeBenchmarks;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,8 +73,10 @@ public class BenchmarkCollection {
         TiviBenchmarks.configs(),
         RetraceStackTraceBenchmark.configs(),
         ComposeSamplesBenchmarks.configs(),
+        OpenSourceBenchmarks.configs(),
         ChromeBenchmarks.configs(),
-        SystemUIBenchmarks.configs());
+        SystemUIBenchmarks.configs(),
+        YouTubeBenchmarks.configs());
   }
 
   /** Compute and print the golem configuration. */

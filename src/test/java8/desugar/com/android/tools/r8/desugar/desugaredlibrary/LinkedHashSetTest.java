@@ -48,14 +48,11 @@ public class LinkedHashSetTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testLinkedHashSet() throws Throwable {
-    String stdOut =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(getClass())
-            .run(parameters.getRuntime(), Executor.class)
-            .assertSuccess()
-            .getStdOut();
-    assertLines2By2Correct(stdOut);
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(getClass())
+        .run(parameters.getRuntime(), Executor.class)
+        .assertSuccess()
+        .inspectStdOut(this::assertLines2By2Correct);
   }
 
   @SuppressWarnings("WeakerAccess")

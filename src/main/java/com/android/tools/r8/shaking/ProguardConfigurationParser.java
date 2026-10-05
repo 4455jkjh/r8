@@ -270,7 +270,7 @@ public class ProguardConfigurationParser {
     parse(ImmutableList.of(source));
   }
 
-  public void parse(List<ProguardConfigurationSource> sources) {
+  public void parse(Iterable<ProguardConfigurationSource> sources) {
     for (ProguardConfigurationSource source : sources) {
       try {
         new ProguardConfigurationSourceParser(source).parse();

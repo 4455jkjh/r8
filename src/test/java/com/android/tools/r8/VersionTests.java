@@ -59,7 +59,7 @@ public class VersionTests extends TestBase {
 
   @Test
   public void testDevelopmentPredicate() {
-    if (LABEL.equals("main") || LABEL.contains("-dev")) {
+    if (LABEL.equals("main") || LABEL.contains("-dev") || LABEL.contains("-alpha")) {
       assertTrue(Version.isDevelopmentVersion());
     } else {
       // This is a release branch, but Version.isDevelopmentVersion will still return true
@@ -85,6 +85,14 @@ public class VersionTests extends TestBase {
     // '-dev' suffix is checked before 'isEngineering'.
     assertTrue(Version.isDevelopmentVersion("1.2.3-dev", false));
     assertTrue(Version.isDevelopmentVersion("1.2.3-dev", true));
+
+    assertEquals(1, Version.getMajorVersion("1.2.0-alpha03"));
+    assertEquals(2, Version.getMinorVersion("1.2.0-alpha03"));
+    assertEquals(0, Version.getPatchVersion("1.2.0-alpha03"));
+    assertEquals("alpha03", Version.getPreReleaseString("1.2.0-alpha03"));
+    // '-alpha' is checked before 'isEngineering'.
+    assertTrue(Version.isDevelopmentVersion("1.2.0-alpha03", false));
+    assertTrue(Version.isDevelopmentVersion("1.2.0-alpha03", true));
 
     assertEquals(1, Version.getMajorVersion("1.2.3"));
     assertEquals(2, Version.getMinorVersion("1.2.3"));

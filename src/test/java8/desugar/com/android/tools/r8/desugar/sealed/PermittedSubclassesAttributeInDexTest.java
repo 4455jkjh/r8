@@ -78,9 +78,9 @@ public class PermittedSubclassesAttributeInDexTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
+        .applyIfDexRuntime(
             // TODO(b/270941147): Partial DEX support in Android U DP1 (reflective APIs).
-            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V14_0_0),
+            version -> version.isNewerThanOrEqual(Version.V14_0_0),
             r ->
                 r.assertSuccessWithOutput(
                     parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.U)

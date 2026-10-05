@@ -46,7 +46,7 @@ public class NestedComposableArgumentPropagationTest extends TestBase {
       switch (this) {
         case A:
         case B:
-          return 5;
+          return 4;
         case C:
           return 3;
         default:
@@ -88,7 +88,9 @@ public class NestedComposableArgumentPropagationTest extends TestBase {
     for (ComposableFunction composableFunction : ComposableFunction.values()) {
       CodeStats codeStats = result.get(composableFunction);
       assertEquals(
-          composableFunction.getExpectedNumberOfIfInstructions(), codeStats.numberOfIfInstructions);
+          composableFunction.toString(),
+          composableFunction.getExpectedNumberOfIfInstructions(),
+          codeStats.numberOfIfInstructions);
     }
   }
 

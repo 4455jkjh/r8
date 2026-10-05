@@ -35,7 +35,7 @@ public class SunMiscUnsafeApiTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withDexRuntimes().withMaximumApiLevel().build();
+    return getTestParameters().withDexRuntimes().withMaximumApiLevel().build();
   }
 
   @Test

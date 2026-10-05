@@ -5,10 +5,10 @@
 package com.android.tools.r8.resolution;
 
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -21,7 +21,7 @@ public class ArrayCloneInDefaultInterfaceMethodAfterClassInliningTest extends Te
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder()
+    return getTestParameters()
         .withAllRuntimes()
         .withApiLevel(apiLevelWithDefaultInterfaceMethodsSupport())
         .build();
@@ -49,7 +49,7 @@ public class ArrayCloneInDefaultInterfaceMethodAfterClassInliningTest extends Te
         .apply(this::checkOutput);
   }
 
-  private void checkOutput(SingleTestRunResult<?> r) {
+  private void checkOutput(TestRunResult<?> r) {
     r.assertSuccessWithOutputLines("0");
   }
 

@@ -15,11 +15,11 @@ import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -150,7 +150,7 @@ public class ApiModelOutlineMethodMissingClassTest extends TestBase {
     }
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     boolean preMockApis =
         parameters.isCfRuntime() || parameters.getApiLevel().isLessThan(initialLibraryMockLevel);
     boolean postMockApis =

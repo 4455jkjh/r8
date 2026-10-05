@@ -17,6 +17,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -238,10 +239,10 @@ public class RecordComponentAnnotationsTest extends TestBase {
         .applyIf(
             parameters.isDexRuntime(),
             r ->
-                r.assertSuccessWithOutput(
-                    runtimeWithRecordsSupport(parameters.getRuntime())
-                        ? EXPECTED_RESULT_DESUGARED_RECORD_SUPPORT
-                        : EXPECTED_RESULT_DESUGARED_NO_RECORD_SUPPORT),
+                r.applyIfDexRuntime(
+                    Version::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED_RECORD_SUPPORT),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED_NO_RECORD_SUPPORT)),
             r ->
                 r.assertSuccessWithOutput(ART_EXPECTED_RESULT)
                     .inspect(
@@ -387,10 +388,10 @@ public class RecordComponentAnnotationsTest extends TestBase {
                         ? ART_EXPECTED_RESULT_R8
                         : ART_EXPECTED_RESULT_R8_NO_KEEP_ANNOTATIONS),
             r ->
-                r.assertSuccessWithOutput(
-                    runtimeWithRecordsSupport(parameters.getRuntime())
-                        ? EXPECTED_RESULT_DESUGARED_RECORD_SUPPORT
-                        : EXPECTED_RESULT_DESUGARED_NO_RECORD_SUPPORT));
+                r.applyIfDexRuntime(
+                    Version::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED_RECORD_SUPPORT),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED_NO_RECORD_SUPPORT)));
   }
 
   @Target({ElementType.FIELD, ElementType.RECORD_COMPONENT})

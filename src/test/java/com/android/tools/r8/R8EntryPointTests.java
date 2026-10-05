@@ -37,7 +37,7 @@ public class R8EntryPointTests extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withNoneRuntime().build();
+    return getTestParameters().withNoneRuntime().build();
   }
 
   public R8EntryPointTests(TestParameters parameters) {

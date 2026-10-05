@@ -110,23 +110,15 @@ public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    runTest(
-        testForD8(parameters.getBackend()),
-        parameters.getDexRuntimeVersion().isDalvik()
-            ? VerifyError.class
-            // TODO(b/214382176): Extend resolution to support multiple definition results.
-            : AbstractMethodError.class);
+    runTest(testForD8(parameters.getBackend()), true);
   }
 
   @Test
   public void testR8() throws Exception {
-    runTest(
-        testForR8(parameters.getBackend()).addKeepMainRule(Main.class), AbstractMethodError.class);
+    runTest(testForR8(parameters.getBackend()).addKeepMainRule(Main.class), false);
   }
 
-  private void runTest(
-      TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder,
-      Class<? extends Throwable> errorIfNotSupportingDefaultMethods)
+  private void runTest(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder, boolean isD8)
       throws Exception {
     testBuilder
         .addProgramClasses(K.class, Main.class)
@@ -137,12 +129,14 @@ public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLinesIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED)
-        // TODO(b/230289235): Extend to support multiple definition results.
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.canUseDefaultAndStaticInterfaceMethods(),
-            errorIfNotSupportingDefaultMethods);
+        .applyIfDexRuntime(
+            parameters.canUseDefaultAndStaticInterfaceMethods(),
+            r -> r.assertSuccessWithOutputLines(EXPECTED),
+            // TODO(b/230289235): Extend to support multiple definition results.
+            version -> isD8 && version.isDalvik(),
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            // TODO(b/214382176): Extend resolution to support multiple definition results.
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   public interface I {

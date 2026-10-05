@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.optimize.serviceloader;
 
-import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V7_0_0;
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -180,14 +180,6 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
     }
   }
 
-  private boolean isAndroid7() {
-    // Runtime uses boot classloader rather than system classloader on this version. See b/130164528
-    // for more details.
-    // The CL that changed behaviour after Nougat is:
-    // https://android-review.googlesource.com/c/platform/libcore/+/273135
-    return parameters.isDexRuntime() && parameters.getDexRuntimeVersion() == V7_0_0;
-  }
-
   @Test
   public void testRewritingWithNoImpls()
       throws IOException, CompilationFailedException, ExecutionException {
@@ -205,8 +197,8 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
         .addKeepMainRule(MainRunner.class)
         .compile()
         .run(parameters.getRuntime(), MainRunner.class)
-        .applyIf(
-            isAndroid7() && !enableRewriting,
+        .applyIfDexRuntime(
+            version -> version == V7_0_0 && !enableRewriting,
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
             runResult ->
@@ -225,8 +217,8 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
         .addKeepMainRule(MainRunner.class)
         .compile()
         .run(parameters.getRuntime(), MainRunner.class)
-        .applyIf(
-            isAndroid7() && !enableRewriting,
+        .applyIfDexRuntime(
+            version -> version == V7_0_0 && !enableRewriting,
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
             runResult ->
@@ -301,11 +293,11 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
         .allowDiagnosticInfoMessages(enableRewriting)
         .compileWithExpectedDiagnostics(expectedDiagnostics)
         .run(parameters.getRuntime(), MainRunner.class)
-        .applyIf(
-            !isAndroid7(),
-            runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT),
+        .applyIfDexRuntime(
+            version -> version == V7_0_0,
             runResult ->
-                runResult.assertFailureWithErrorThatThrows(ServiceConfigurationError.class));
+                runResult.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
+            runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 
   @Test
@@ -357,8 +349,8 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
               verifyServiceMetaInf(inspector, Service.class, ServiceImpl.class);
             })
         .run(parameters.getRuntime(), MainRunner.class)
-        .applyIf(
-            isAndroid7(),
+        .applyIfDexRuntime(
+            version -> version == V7_0_0,
             r -> r.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
@@ -376,8 +368,8 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
               verifyServiceMetaInf(inspector, NonPublicService.class, ServiceImpl.class);
             })
         .run(parameters.getRuntime(), MainWithNonPublicService.class)
-        .applyIf(
-            isAndroid7(),
+        .applyIfDexRuntime(
+            version -> version == V7_0_0,
             r -> r.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
             r -> r.assertSuccessWithOutputLines("Hello World!"));
   }

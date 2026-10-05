@@ -12,7 +12,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
@@ -37,23 +37,30 @@ public class InvokeFinalTest extends TestBase {
   @Test
   public void testCallingFinal()
       throws IOException, CompilationFailedException, ExecutionException {
-    boolean hasIncorrectSuperLookup =
-        parameters.isDexRuntime()
-            && parameters.getRuntime().asDex().getVm().isNewerThan(DexVm.ART_4_4_4_HOST)
-            && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_6_0_1_HOST);
     TestRunResult<?> runResult =
         testForRuntime(parameters)
             .addProgramClasses(Main.class, A.class)
             .addProgramClassFileData(
                 getClassWithTransformedInvoked(B.class), getClassWithTransformedInvoked(C.class))
             .run(parameters.getRuntime(), Main.class)
-            .assertSuccessWithOutputLines(
-                "Hello from B",
-                "Hello from B",
-                hasIncorrectSuperLookup ? "Hello from A" : "Hello from B",
-                "Hello from B",
-                "Hello from A",
-                "Hello from B");
+            .applyIfDexRuntime(
+                v -> v.isNewerThan(Version.V4_4_4) && v.isOlderThanOrEqual(Version.V6_0_1),
+                r ->
+                    r.assertSuccessWithOutputLines(
+                        "Hello from B",
+                        "Hello from B",
+                        "Hello from A",
+                        "Hello from B",
+                        "Hello from A",
+                        "Hello from B"),
+                r ->
+                    r.assertSuccessWithOutputLines(
+                        "Hello from B",
+                        "Hello from B",
+                        "Hello from B",
+                        "Hello from B",
+                        "Hello from A",
+                        "Hello from B"));
   }
 
   private byte[] getClassWithTransformedInvoked(Class<?> clazz) throws IOException {

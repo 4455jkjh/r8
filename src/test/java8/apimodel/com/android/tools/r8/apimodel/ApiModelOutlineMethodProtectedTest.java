@@ -11,11 +11,11 @@ import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLeve
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -125,7 +125,7 @@ public class ApiModelOutlineMethodProtectedTest extends TestBase {
         .apply(this::checkOutput);
   }
 
-  public void checkOutput(SingleTestRunResult<?> runResult) {
+  public void checkOutput(TestRunResult<?> runResult) {
     if (parameters.isDexRuntime() && runApiLevel().isGreaterThanOrEqualTo(methodApiLevel)) {
       runResult.assertSuccessWithOutputLines(
           "Could not access LibraryClass::addedOn27",

@@ -41,7 +41,7 @@ public class SupportedClassFileVersionsTest extends TestBase implements Opcodes 
         .addProgramClassFileData(dump(version))
         .run(parameters.getRuntime(), "Test")
         .applyIf(
-            c ->
+            (DesugarTestConfiguration c) ->
                 DesugarTestConfiguration.isNotDesugared(c) // This implies CF runtime.
                     && version.major() > parameters.asCfRuntime().getVm().getClassfileVersion(),
             r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),

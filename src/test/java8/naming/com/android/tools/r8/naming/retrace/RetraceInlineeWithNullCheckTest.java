@@ -9,6 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Before;
@@ -42,12 +43,11 @@ public class RetraceInlineeWithNullCheckTest extends TestBase {
 
   @Before
   public void setup() throws Exception {
-    // Get the expected stack trace by running on the JVM/ART.
-    expectedStackTrace =
-        testForRuntime(parameters)
-            .addProgramClasses(Caller.class, Foo.class)
-            .run(parameters.getRuntime(), Caller.class, getArgs())
-            .getStackTrace();
+    // Get the expected stack trace by running on the JVM.
+    testForJvm(temp)
+        .addProgramClasses(Caller.class, Foo.class)
+        .run(TestRuntime.getDefaultCfRuntime(), Caller.class, getArgs())
+        .inspectStackTrace(stackTrace -> expectedStackTrace = stackTrace);
   }
 
   @Test

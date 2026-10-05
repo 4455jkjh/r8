@@ -15,6 +15,7 @@ import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -111,16 +112,11 @@ public class Regress78493232_WithPhi extends AsmTestBase {
   }
 
   private void checkResult(TestRunResult<?> result) {
-    switch (parameters.getDexRuntimeVersion()) {
-      case V6_0_1:
-        result.assertSuccessWithOutput("Completed successfully after 1000 iterations\n");
-        break;
-      case V5_1_1:
-        result.assertSuccessWithOutput(EXPECTED);
-        break;
-      default:
-        result.assertFailureWithErrorThatThrows(VerifyError.class);
-        break;
-    }
+    result.applyIfDexRuntime(
+        version -> version == Version.V6_0_1,
+        r -> r.assertSuccessWithOutput("Completed successfully after 1000 iterations\n"),
+        version -> version == Version.V5_1_1,
+        r -> r.assertSuccessWithOutput(EXPECTED),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class));
   }
 }

@@ -12,9 +12,9 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.shaking.attributes.testclasses.Outer;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -47,13 +47,13 @@ public class KeepInnerClassesEnclosingMethodAnnotationsTest extends TestBase {
 
   private static class TestResult {
 
-    final String stdout;
+    final TestRunResult<?> result;
     final CodeInspector inspector;
     final ClassSubject outer;
     final ClassSubject inner;
 
-    TestResult(SingleTestRunResult<?> result) throws Throwable {
-      this.stdout = result.getStdOut();
+    TestResult(TestRunResult<?> result) throws Throwable {
+      this.result = result;
       this.inspector = result.inspector();
       this.outer = inspector.clazz(Outer.class);
       this.inner = inspector.clazz(Outer.Inner.class);
@@ -73,17 +73,23 @@ public class KeepInnerClassesEnclosingMethodAnnotationsTest extends TestBase {
   }
 
   private void noInnerClassesEnclosingMethodInformation(TestResult result) {
-    List<String> lines = StringUtils.splitLines(result.stdout);
-    assertEquals(2, lines.size());
-    assertEquals("No declared classes", lines.get(0));
-    assertEquals("No declaring classes", lines.get(1));
+    result.result.inspectStdOut(
+        stdout -> {
+          List<String> lines = StringUtils.splitLines(stdout);
+          assertEquals(2, lines.size());
+          assertEquals("No declared classes", lines.get(0));
+          assertEquals("No declaring classes", lines.get(1));
+        });
   }
 
   private void fullInnerClassesEnclosingMethodInformation(TestResult result) {
-    List<String> lines = StringUtils.splitLines(result.stdout);
-    assertEquals(2, lines.size());
-    assertEquals("Declared class: " + result.inner.getFinalName(), lines.get(0));
-    assertEquals("Declaring class: " + result.outer.getFinalName(), lines.get(1));
+    result.result.inspectStdOut(
+        stdout -> {
+          List<String> lines = StringUtils.splitLines(stdout);
+          assertEquals(2, lines.size());
+          assertEquals("Declared class: " + result.inner.getFinalName(), lines.get(0));
+          assertEquals("Declaring class: " + result.outer.getFinalName(), lines.get(1));
+        });
   }
 
   @Test

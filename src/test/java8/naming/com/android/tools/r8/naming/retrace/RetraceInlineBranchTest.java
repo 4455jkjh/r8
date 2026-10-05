@@ -15,6 +15,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.List;
@@ -42,11 +43,10 @@ public class RetraceInlineBranchTest extends TestBase {
   @Before
   public void setup() throws Exception {
     // Get the expected stack trace by running on the JVM.
-    expectedStackTrace =
-        testForRuntime(parameters)
-            .addInnerClasses(getClass())
-            .run(parameters.getRuntime(), Main.class)
-            .getStackTrace();
+    testForJvm(temp)
+        .addInnerClasses(getClass())
+        .run(TestRuntime.getDefaultCfRuntime(), Main.class)
+        .inspectStackTrace(stackTrace -> expectedStackTrace = stackTrace);
   }
 
   @Test

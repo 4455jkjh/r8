@@ -20,8 +20,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -81,6 +81,7 @@ public class Jdk11ConcurrentLinkedQueueTests extends DesugaredLibraryTestBase {
             .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
             .withAllApiLevels()
             .withApiLevel(AndroidApiLevel.N)
+            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_MINIMAL, JDK11, JDK11_PATH),
         ImmutableSet.of(D8_L8DEBUG, D8_L8SHRINK));
@@ -182,11 +183,14 @@ public class Jdk11ConcurrentLinkedQueueTests extends DesugaredLibraryTestBase {
             .inspectL8WithSyntheticItems(this::inspect)
             .withArt6Plus64BitsLib();
     for (String success : toRun) {
-      SingleTestRunResult<?> result =
+      TestRunResult<?> result =
           compileResult.run(parameters.getRuntime(), "TestNGMainRunner", verbosity, success);
       assertTrue(
           "Failure in " + success + "\n" + result,
-          result.getStdOut().contains(StringUtils.lines(success + ": SUCCESS")));
+          result
+              .asSingleRuntimeResult()
+              .getStdOut()
+              .contains(StringUtils.lines(success + ": SUCCESS")));
     }
   }
 

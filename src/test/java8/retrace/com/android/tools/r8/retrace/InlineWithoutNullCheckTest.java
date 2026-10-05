@@ -47,27 +47,24 @@ public class InlineWithoutNullCheckTest extends TestBase {
   @Before
   public void setup() throws Exception {
     // Get the expected stack traces by running on the runtime to test.
-    expectedStackTraceForInlineMethod =
-        testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
-            .addInnerClasses(InlineWithoutNullCheckTest.class)
-            .run(parameters.getRuntime(), TestClassForInlineMethod.class)
-            .writeProcessResult(System.out)
-            .assertFailure()
-            .getStackTrace();
-    expectedStackTraceForInlineField =
-        testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
-            .addInnerClasses(InlineWithoutNullCheckTest.class)
-            .run(parameters.getRuntime(), TestClassForInlineField.class)
-            .writeProcessResult(System.out)
-            .assertFailure()
-            .getStackTrace();
-    expectedStackTraceForInlineStaticField =
-        testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
-            .addInnerClasses(InlineWithoutNullCheckTest.class)
-            .run(parameters.getRuntime(), TestClassForInlineStaticField.class)
-            .writeProcessResult(System.out)
-            .assertFailure()
-            .getStackTrace();
+    testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
+        .addInnerClasses(InlineWithoutNullCheckTest.class)
+        .run(parameters.getRuntime(), TestClassForInlineMethod.class)
+        .writeProcessResult(System.out)
+        .assertFailure()
+        .inspectStackTrace(stackTrace -> expectedStackTraceForInlineMethod = stackTrace);
+    testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
+        .addInnerClasses(InlineWithoutNullCheckTest.class)
+        .run(parameters.getRuntime(), TestClassForInlineField.class)
+        .writeProcessResult(System.out)
+        .assertFailure()
+        .inspectStackTrace(stackTrace -> expectedStackTraceForInlineField = stackTrace);
+    testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
+        .addInnerClasses(InlineWithoutNullCheckTest.class)
+        .run(parameters.getRuntime(), TestClassForInlineStaticField.class)
+        .writeProcessResult(System.out)
+        .assertFailure()
+        .inspectStackTrace(stackTrace -> expectedStackTraceForInlineStaticField = stackTrace);
 
     // Check the expected stack traces from running on the runtime to test.
     assertThat(

@@ -11,8 +11,8 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ir.optimize.reflection.Outer.TestHelper;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -164,7 +164,7 @@ public class GetSimpleNameTest extends GetNameTestBase {
         .assertSuccessWithOutput(JVM_OUTPUT);
   }
 
-  private void test(SingleTestRunResult<?> result, boolean isOptimizing) throws Exception {
+  private void test(TestRunResult<?> result, boolean isOptimizing) throws Exception {
     CodeInspector codeInspector = result.inspector();
     ClassSubject mainClass = codeInspector.clazz(MAIN);
     MethodSubject mainMethod = mainClass.mainMethod();

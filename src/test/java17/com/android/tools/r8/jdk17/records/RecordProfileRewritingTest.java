@@ -21,6 +21,7 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
 import com.android.tools.r8.references.ClassReference;
@@ -89,9 +90,11 @@ public class RecordProfileRewritingTest extends TestBase {
                         inspectD8(profileInspector, inspector, compileResult.getSyntheticItems()),
                     options -> options.testing.disableRecordApplicationReaderMap = true))
         .run(parameters.getRuntime(), MAIN_REFERENCE.getTypeName())
-        .applyIf(
+        .applyIfDexRuntime(
             isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
+                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            Version::hasRecordsSupport,
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
             r -> r.assertFailureWithErrorThatThrows(ClassNotFoundException.class));
   }
@@ -99,7 +102,7 @@ public class RecordProfileRewritingTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(runtimeWithRecordsSupport(parameters.getRuntime()) || parameters.isDexRuntime());
+    assumeTrue(parameters.isDexRuntime() || runtimeWithRecordsSupport(parameters.getRuntime()));
     R8TestCompileResult compileResult =
         testForR8(parameters.getBackend())
             .addInnerClassesAndStrippedOuter(getClass())

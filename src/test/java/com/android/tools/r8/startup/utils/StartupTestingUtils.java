@@ -10,6 +10,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
@@ -145,9 +146,10 @@ public class StartupTestingUtils {
             .setReporter(new Reporter(diagnostics))
             .setProfileBuilder(createStartupItemFactory(startupItemConsumer))
             .build();
+    SingleTestRunResult singleResult = runResult.asSingleRuntimeResult();
     StringBuilder stdoutBuilder = new StringBuilder();
     String startupDescriptorPrefix = "[" + startupInstrumentationTag + "] ";
-    for (String line : StringUtils.splitLines(runResult.getStdOut(), true)) {
+    for (String line : StringUtils.splitLines(singleResult.getStdOut(), true)) {
       if (line.startsWith(startupDescriptorPrefix)) {
         String message = line.substring(startupDescriptorPrefix.length());
         assertTrue(parser.parseRule(message));
@@ -156,7 +158,7 @@ public class StartupTestingUtils {
       }
     }
     diagnostics.assertNoMessages();
-    runResult.getResult().setStdout(stdoutBuilder.toString());
+    singleResult.getResult().setStdout(stdoutBuilder.toString());
   }
 
   public static void addStartupProfile(

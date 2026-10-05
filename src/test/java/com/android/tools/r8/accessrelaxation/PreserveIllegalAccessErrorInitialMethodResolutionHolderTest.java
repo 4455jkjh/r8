@@ -49,8 +49,8 @@ public class PreserveIllegalAccessErrorInitialMethodResolutionHolderTest extends
         .addProgramClasses(A.class)
         .addProgramClassFileData(programClassFileData)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V5_1_1),
+        .applyIfDexRuntime(
+            v -> v.isNewerThanOrEqual(Version.V5_1_1),
             TestRunResult::assertSuccessWithEmptyOutput,
             runResult -> runResult.assertFailureWithErrorThatThrows(IllegalAccessError.class));
   }

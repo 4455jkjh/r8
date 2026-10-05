@@ -17,6 +17,7 @@ import com.android.tools.r8.dex.code.DexConstWide;
 import com.android.tools.r8.dex.code.DexConstWideHigh16;
 import com.android.tools.r8.dex.code.DexDivInt;
 import com.android.tools.r8.dex.code.DexDivInt2Addr;
+import com.android.tools.r8.dex.code.DexGoto;
 import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.dex.code.DexInvokeStatic;
 import com.android.tools.r8.dex.code.DexInvokeStaticRange;
@@ -1141,7 +1142,7 @@ public class OutlineTest extends SmaliTestBase {
             })
         // Run the code and expect a parsable long.
         .run(parameters.getRuntime(), DEFAULT_MAIN_CLASS_NAME)
-        .apply(rr -> Long.parseLong(rr.getStdOut()));
+        .apply(rr -> Long.parseLong(rr.asSingleRuntimeResult().getStdOut()));
   }
 
   @Test
@@ -1442,7 +1443,7 @@ public class OutlineTest extends SmaliTestBase {
               assertTrue(code.instructions[1] instanceof DexInvokeStatic);
               assertTrue(code.instructions[2] instanceof DexMoveResult);
               assertTrue(code.instructions[3] instanceof DexDivInt2Addr);
-              assertTrue(code.instructions[4] instanceof DexReturn);
+              assertTrue(code.instructions[4] instanceof DexGoto);
               assertTrue(code.instructions[5] instanceof DexConst4);
               assertTrue(code.instructions[6] instanceof DexReturn);
               DexInvokeStatic invoke = (DexInvokeStatic) code.instructions[1];
@@ -1913,12 +1914,13 @@ public class OutlineTest extends SmaliTestBase {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
     builder.addDefaultConstructor();
 
-    List<String> codeToOutline = ImmutableList.of(
-        "    invoke-interface      { v1 }, Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
-        "    invoke-interface      { v1 }, Ljava/util/Collection;->isEmpty()Z",
-        "    move-result         v0",
-        "    return              v0"
-    );
+    List<String> codeToOutline =
+        ImmutableList.of(
+            "    invoke-interface      { v1 },"
+                + " Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
+            "    invoke-interface      { v1 }, Ljava/util/Collection;->isEmpty()Z",
+            "    move-result         v0",
+            "    return              v0");
 
     String returnType = "boolean";
     MethodSignature signature1 =

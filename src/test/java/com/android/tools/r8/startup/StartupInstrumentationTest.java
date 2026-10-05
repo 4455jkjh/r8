@@ -14,8 +14,8 @@ import com.android.tools.r8.startup.profile.ExternalStartupClass;
 import com.android.tools.r8.startup.profile.ExternalStartupItem;
 import com.android.tools.r8.startup.profile.ExternalStartupMethod;
 import com.android.tools.r8.startup.utils.StartupTestingUtils;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.File;
@@ -42,7 +42,8 @@ public class StartupInstrumentationTest extends TestBase {
   @Parameters(name = "{1}, logcat: {0}")
   public static List<Object[]> data() {
     return buildParameters(
-        BooleanUtils.values(), getTestParameters().withDexRuntimesAndAllApiLevels().build());
+        BooleanUtils.values(),
+        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build());
   }
 
   @Test

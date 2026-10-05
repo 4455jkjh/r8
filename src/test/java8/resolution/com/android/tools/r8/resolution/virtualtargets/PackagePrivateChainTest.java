@@ -14,8 +14,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -78,16 +77,13 @@ public class PackagePrivateChainTest extends TestBase {
 
   @Test
   public void testRuntime() throws ExecutionException, CompilationFailedException, IOException {
-    TestRunResult<?> runResult =
-        testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
-            .addProgramClasses(Top.class, Middle.class, Bottom.class, TopRunner.class, Main.class)
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_TARGET)) {
-      runResult.assertFailureWithErrorThatMatches(containsString("clear overrides final"));
-    } else {
-      runResult.assertSuccessWithOutputLines(EXPECTED);
-    }
+    testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
+        .addProgramClasses(Top.class, Middle.class, Bottom.class, TopRunner.class, Main.class)
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            r -> r.assertFailureWithErrorThatMatches(containsString("clear overrides final")),
+            r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   @Test

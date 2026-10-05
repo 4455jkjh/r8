@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 // The type arguments R8Command, Builder is not relevant for running Proguard.
 public class ProguardTestBuilder
     extends TestShrinkerBuilder<
-        R8Command, Builder, ProguardTestCompileResult, ProguardTestRunResult, ProguardTestBuilder> {
+        R8Command, Builder, ProguardTestCompileResult, SingleTestRunResult, ProguardTestBuilder> {
 
   // Version of Proguard to use.
   private final ProguardVersion version;

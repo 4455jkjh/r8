@@ -7,11 +7,11 @@ package com.android.tools.r8.apimodel;
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLevelForClass;
 
 import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.Test;
@@ -92,7 +92,7 @@ public class ApiModelOutlineMethodUnknownTest extends TestBase {
         .apply(this::checkOutput);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (parameters.isDexRuntime()
         && parameters.getApiLevel().isGreaterThanOrEqualTo(classApiLevel)) {
       runResult.assertSuccessWithOutputLines("LibraryClass::unknownApiLevel");

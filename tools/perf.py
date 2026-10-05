@@ -17,6 +17,12 @@ if utils.is_bot():
 
 # A collection of benchmarks that should be run on the perf bot.
 EXTERNAL_BENCHMARKS = {
+    'BookStoryApp': {
+        'targets': ['r8-full']
+    },
+    'BookStoryAppPartial': {
+        'targets': ['r8-full']
+    },
     'ChromeApp': {
         'targets': ['r8-full']
     },
@@ -24,6 +30,18 @@ EXTERNAL_BENCHMARKS = {
         'targets': ['r8-full']
     },
     'CraneApp': {
+        'targets': ['r8-full']
+    },
+    'FeederApp': {
+        'targets': ['r8-full']
+    },
+    'FeederAppPartial': {
+        'targets': ['r8-full']
+    },
+    'FossifyFileManagerApp': {
+        'targets': ['r8-full']
+    },
+    'FossifyFileManagerAppPartial': {
         'targets': ['r8-full']
     },
     'HelloWorld': {
@@ -56,6 +74,18 @@ EXTERNAL_BENCHMARKS = {
     'JetSnackApp': {
         'targets': ['r8-full']
     },
+    'KeePassDXApp': {
+        'targets': ['r8-full']
+    },
+    'KeePassDXAppPartial': {
+        'targets': ['r8-full']
+    },
+    'NewPipeKotlinApp': {
+        'targets': ['r8-full']
+    },
+    'NewPipeKotlinAppPartial': {
+        'targets': ['r8-full']
+    },
     'NowInAndroidApp': {
         'targets': ['d8', 'r8-full']
     },
@@ -81,6 +111,18 @@ EXTERNAL_BENCHMARKS = {
         'targets': ['d8']
     },
     'NowInAndroidAppPartial': {
+        'targets': ['r8-full']
+    },
+    'OmniNotesApp': {
+        'targets': ['r8-full']
+    },
+    'OmniNotesAppPartial': {
+        'targets': ['r8-full']
+    },
+    'OpenTracksApp': {
+        'targets': ['r8-full']
+    },
+    'OpenTracksAppPartial': {
         'targets': ['r8-full']
     },
     'OwlApp': {
@@ -125,6 +167,12 @@ EXTERNAL_BENCHMARKS = {
     'R8-1GB-PARTITION': {
         'targets': ['retrace']
     },
+    'ReadYouApp': {
+        'targets': ['r8-full']
+    },
+    'ReadYouAppPartial': {
+        'targets': ['r8-full']
+    },
     'ReplyApp': {
         'targets': ['r8-full']
     },
@@ -132,6 +180,12 @@ EXTERNAL_BENCHMARKS = {
         'targets': ['r8-full']
     },
     'TiviAppPartial': {
+        'targets': ['r8-full']
+    },
+    'TuskyApp': {
+        'targets': ['r8-full']
+    },
+    'TuskyAppPartial': {
         'targets': ['r8-full']
     },
 }
@@ -168,6 +222,9 @@ LOCAL_BENCHMARKS = {
         'targets': ['r8-full']
     },
     'SystemUIAppTreeShaking': {
+        'targets': ['r8-full']
+    },
+    'YouTubeApp': {
         'targets': ['r8-full']
     },
 }

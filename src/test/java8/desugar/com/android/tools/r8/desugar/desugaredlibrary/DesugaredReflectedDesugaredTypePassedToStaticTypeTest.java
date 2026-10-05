@@ -8,8 +8,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -48,7 +48,7 @@ public class DesugaredReflectedDesugaredTypePassedToStaticTypeTest
 
   @Test
   public void testDate() throws Exception {
-    SingleTestRunResult<?> runResult =
+    TestRunResult<?> runResult =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
             .addInnerClasses(getClass())

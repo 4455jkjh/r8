@@ -87,10 +87,10 @@ public class FilesSymLinkTest extends DesugaredLibraryTestBase {
             parameters.getRuntime(),
             TestClass.class,
             String.valueOf(parameters.getApiLevel().getMajor()))
-        .assertSuccessWithOutput(
-            libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
-                ? EXPECTED_RESULT
-                : EXPECTED_RESULT_DESUGARING);
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARING));
   }
 
   public static class TestClass {

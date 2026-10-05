@@ -12,11 +12,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -99,17 +99,17 @@ public class ApiModelMockClassLoadingByClassForNameTest extends TestBase {
         .inspect(this::inspect);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (isGreaterOrEqualToMockLevel()) {
       runResult.assertSuccessWithOutputLines("Hello World!");
     } else {
-      runResult.assertSuccessWithOutputLines("ClassNotFoundException");
+      runResult
+          .assertSuccessWithOutputLines("ClassNotFoundException")
+          .applyIfDexRuntime(
+              version -> version.isNewerThanOrEqual(Version.V7_0_0),
+              result ->
+                  result.assertStderrMatches(not(containsString("This dex file is invalid"))));
     }
-    runResult.applyIf(
-        !isGreaterOrEqualToMockLevel()
-            && parameters.isDexRuntime()
-            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-        result -> result.assertStderrMatches(not(containsString("This dex file is invalid"))));
   }
 
   private void inspect(CodeInspector inspector) {

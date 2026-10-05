@@ -4,17 +4,15 @@
 
 package com.android.tools.r8.resolution.packageprivate;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -79,36 +77,30 @@ public class PackagePrivateWithDefaultMethodTest extends TestBase {
 
   @Test
   public void testRuntime() throws ExecutionException, CompilationFailedException, IOException {
-    TestRunResult<?> runResult =
-        testForRuntime(parameters)
-            .addProgramClasses(
-                Abstract.class, I.class, A.class, NonAbstractExtendingA.class, J.class, Main.class)
-            .addProgramClassFileData(getNonAbstractWithoutDeclaredMethods())
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_TARGET)) {
-      runResult.assertFailure();
-    } else {
-      runResult.assertFailureWithErrorThatMatches(containsString("AbstractMethodError"));
-    }
+    testForRuntime(parameters)
+        .addProgramClasses(
+            Abstract.class, I.class, A.class, NonAbstractExtendingA.class, J.class, Main.class)
+        .addProgramClassFileData(getNonAbstractWithoutDeclaredMethods())
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            TestRunResult::assertFailure,
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   @Test
   public void testR8() throws ExecutionException, CompilationFailedException, IOException {
-    R8TestRunResult runResult =
-        testForR8(parameters.getBackend())
-            .addProgramClasses(
-                Abstract.class, I.class, A.class, NonAbstractExtendingA.class, J.class, Main.class)
-            .addProgramClassFileData(getNonAbstractWithoutDeclaredMethods())
-            .setMinApi(parameters)
-            .addKeepMainRule(Main.class)
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_TARGET)) {
-      runResult.assertFailure();
-    } else {
-      runResult.assertFailureWithErrorThatMatches(containsString("AbstractMethodError"));
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(
+            Abstract.class, I.class, A.class, NonAbstractExtendingA.class, J.class, Main.class)
+        .addProgramClassFileData(getNonAbstractWithoutDeclaredMethods())
+        .setMinApi(parameters)
+        .addKeepMainRule(Main.class)
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            TestRunResult::assertFailure,
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   private byte[] getNonAbstractWithoutDeclaredMethods() throws IOException {

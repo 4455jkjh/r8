@@ -8,11 +8,11 @@ import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLeve
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.verifyThat;
 
 import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -34,7 +34,11 @@ public class ApiModelOutlineConstClassTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private void setupTestBuilder(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder) {
@@ -122,7 +126,7 @@ public class ApiModelOutlineConstClassTest extends TestBase {
             Main.class.getMethod("main", String[].class), classApiLevel);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (addToBootClasspath()) {
       runResult.assertSuccessWithOutputLines(EXPECTED);
     } else {

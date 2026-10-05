@@ -42,7 +42,7 @@ public class B124152497 extends TestBase {
             FloatTestClass.class,
             ShortTestClass.class),
         BooleanUtils.values(),
-        getTestParameters().withAllRuntimesAndApiLevels().build());
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build());
   }
 
   @Test

@@ -198,11 +198,12 @@ public final class NonConstructorRelaxationTest extends AccessRelaxationTestBase
             .setMinApi(parameters)
             .run(parameters.getRuntime(), mainClass);
 
-    assertEquals(
-        getExpectedOutputForInstanceMethodRelaxationTest(),
-        result
-            .getStdOut()
-            .replace("java.lang.IncompatibleClassChangeError", "java.lang.IllegalAccessError"));
+    result.inspectStdOut(
+        stdOut ->
+            assertEquals(
+                getExpectedOutputForInstanceMethodRelaxationTest(),
+                stdOut.replace(
+                    "java.lang.IncompatibleClassChangeError", "java.lang.IllegalAccessError")));
 
     // When vertical class merging is enabled, Itf1 is merged into Sub1 and Itf2 is merged into
     // Sub2, and as a result of these merges, neither Sub1 nor Sub2 end up in the output because of

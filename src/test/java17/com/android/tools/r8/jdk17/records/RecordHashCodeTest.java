@@ -13,6 +13,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
@@ -59,9 +60,11 @@ public class RecordHashCodeTest extends TestBase {
     testForD8(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
+        .applyIfDexRuntime(
             isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
+                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            Version::hasRecordsSupport,
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }

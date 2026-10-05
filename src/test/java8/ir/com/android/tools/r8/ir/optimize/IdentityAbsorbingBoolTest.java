@@ -63,10 +63,13 @@ public class IdentityAbsorbingBoolTest extends TestBase {
     inspector
         .clazz(Main.class)
         .forAllMethods(
-            m ->
+            m -> {
+              if (!m.getOriginalMethodName().equals("main")) {
                 assertTrue(
                     m.streamInstructions()
-                        .noneMatch(i -> i.isIntLogicalBinop() || i.isIntArithmeticBinop())));
+                        .noneMatch(i -> i.isIntLogicalBinop() || i.isIntArithmeticBinop()));
+              }
+            });
   }
 
   static class Main {

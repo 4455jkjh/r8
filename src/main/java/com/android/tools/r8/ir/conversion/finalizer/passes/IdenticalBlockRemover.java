@@ -64,7 +64,7 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
     Iterator<BasicBlock> iterator = code.blocks.descendingIterator();
     while (iterator.hasNext()) {
       BasicBlock block = iterator.next();
-      if (block == code.entryBlock() || block.getInstructions().size() == 1) {
+      if (block == code.entryBlock() || !isWorthDeduplicating(code, block)) {
         continue;
       }
       BasicBlock otherBlock = seenBlocks.putIfAbsent(equivalence.wrap(block), block);
@@ -75,6 +75,14 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
     }
     code.removeBlocks(blocksToRemove);
     return CodeRewriterResult.hasChanged(hasChanged);
+  }
+
+  // Single-instruction blocks are not worth deduplicating, except returns when generating DEX:
+  // ART compiles each return to an epilogue restoring the callee-saved registers, whereas the goto
+  // replacing a return is never larger than the return in DEX (see DexBuilder).
+  private static boolean isWorthDeduplicating(IRCode code, BasicBlock block) {
+    return block.getInstructions().size() > 1
+        || (block.exit().isReturn() && code.getConversionOptions().isGeneratingDex());
   }
 
   private static void mergeBlocks(

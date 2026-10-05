@@ -77,13 +77,11 @@ public class TypeSwitchMissingClassTest extends TestBase {
 
   private void assertResult(TestRunResult<?> r) {
     if (present.clazz.equals(C.class)) {
-      if (parameters.isDexRuntime()
-          && parameters.getDexRuntimeVersion().isOlderThanOrEqual(Version.V4_4_4)) {
-        // Type switch desugaring is not supported below api 21.
-        r.assertFailureWithErrorThatThrows(VerifyError.class);
-      } else {
-        r.assertSuccessWithOutput(EXPECTED_OUTPUT);
-      }
+      // Type switch desugaring is not supported below api 21.
+      r.applyIfDexRuntime(
+          version -> version.isOlderThanOrEqual(Version.V4_4_4),
+          res -> res.assertFailureWithErrorThatThrows(VerifyError.class),
+          res -> res.assertSuccessWithOutput(EXPECTED_OUTPUT));
     } else {
       r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class);
     }

@@ -23,6 +23,7 @@ from thread_utils import print_thread
 import utils
 
 BUCKET = 'perf-size-results'
+MAX_SUMMARY_BYTES = 4000
 
 SIZE_BENCHMARKS = {
     'NowInAndroidAppWithResourceShrinking': 'android/nowinandroid',
@@ -31,6 +32,24 @@ SIZE_BENCHMARKS = {
     'ReplyApp': 'android/compose-samples/reply',
     'TiviApp': 'tivi',
     'ChromeApp': 'chrome',
+    'FeederApp': 'android/feeder',
+    'FeederAppPartial': 'android/feeder',
+    'BookStoryApp': 'android/bookstory',
+    'BookStoryAppPartial': 'android/bookstory',
+    'ReadYouApp': 'android/readyou',
+    'ReadYouAppPartial': 'android/readyou',
+    'FossifyFileManagerApp': 'android/fossify-filemanager',
+    'FossifyFileManagerAppPartial': 'android/fossify-filemanager',
+    'NewPipeKotlinApp': 'android/newpipe',
+    'NewPipeKotlinAppPartial': 'android/newpipe',
+    'TuskyApp': 'android/tusky',
+    'TuskyAppPartial': 'android/tusky',
+    'KeePassDXApp': 'android/keepassdx',
+    'KeePassDXAppPartial': 'android/keepassdx',
+    'OmniNotesApp': 'android/omninotes',
+    'OmniNotesAppPartial': 'android/omninotes',
+    'OpenTracksApp': 'android/opentracks',
+    'OpenTracksAppPartial': 'android/opentracks',
 }
 
 SIZE_COMPILEDUMPS = {
@@ -497,18 +516,26 @@ def build_binary_sizes_dict(items):
     return binary_sizes
 
 
-def format_pct_diff(base_val, patch_val):
+def format_bytes(num_bytes):
+    abs_bytes = abs(num_bytes)
+    if abs_bytes < 1024:
+        return f'{num_bytes}B'
+    if abs_bytes < 1024 * 1024:
+        return f'{num_bytes / 1024.0:.1f}KB'
+    return f'{num_bytes / (1024.0 * 1024.0):.2f}MB'
+
+
+def format_diff(base_val, patch_val):
     if base_val is None or patch_val is None or base_val <= 0:
         return '—'
     diff_bytes = patch_val - base_val
-    pct = (diff_bytes / float(base_val)) * 100.0
+    if diff_bytes == 0:
+        return '0B'
+    pct = abs(diff_bytes / float(base_val)) * 100.0
     sign = '+' if diff_bytes > 0 else ''
-    text = f'{sign}{pct:.2f}%'
-    if diff_bytes < 0:
-        return f'🟢 **{text}**'
-    if diff_bytes > 0:
-        return f'🔴 **{text}**'
-    return text
+    text = f'{sign}{format_bytes(diff_bytes)} ({pct:.2f}%)'
+    badge = '🟢' if diff_bytes < 0 else '🔴'
+    return f'{badge} **{text}**'
 
 
 def geomean_ratio(ratios):
@@ -517,27 +544,55 @@ def geomean_ratio(ratios):
     return math.exp(sum(math.log(r) for r in ratios) / len(ratios))
 
 
+def display_name_and_type(key, entry):
+    name = entry.get('name', key)
+    kind = entry.get('kind', '')
+    if 'd8-debug' in kind:
+        return name, 'd8-debug'
+    if 'd8-release' in kind:
+        return name, 'd8-rel'
+    if name.endswith('Partial'):
+        return name[:-len('Partial')], 'r8-part'
+    return name, 'r8'
+
+
+def max_abs_pct_change(base_entry, patch_entry, metrics):
+    result = 0.0
+    for m in metrics:
+        b_val = base_entry.get(m)
+        p_val = patch_entry.get(m)
+        if b_val and p_val:
+            result = max(result, abs(float(p_val) - b_val) / b_val)
+    return result
+
+
 def generate_markdown_summary(base_hash, base_items, patch_items):
     short_base = base_hash[:8] if len(base_hash) >= 8 else base_hash
-    headers = ['Target', 'Type', 'DEX Δ%', 'OAT Δ%', 'Res Δ%']
+    headers = ['Target', 'Type', 'DEX Δ', 'OAT Δ', 'Res Δ']
     metrics = ('dex_size', 'oat_size', 'resource_size')
     ratios = {m: [] for m in metrics}
-    data_rows = []
-    has_diff = False
+    changed_rows = []
 
     for key, patch_entry in patch_items.items():
         base_entry = (base_items or {}).get(key, {})
-        display_name = patch_entry.get('name', key)
-        row_cells = [f'`{display_name}`', patch_entry.get('kind', '')]
+        display_name, display_type = display_name_and_type(key, patch_entry)
+        row_cells = [f'`{display_name}`', display_type]
+        row_has_diff = False
         for m in metrics:
             b_val = base_entry.get(m)
             p_val = patch_entry.get(m)
             if p_val and b_val:
                 ratios[m].append(float(p_val) / float(b_val))
                 if p_val != b_val:
-                    has_diff = True
-            row_cells.append(format_pct_diff(b_val, p_val))
-        data_rows.append(row_cells)
+                    row_has_diff = True
+            row_cells.append(format_diff(b_val, p_val))
+        if row_has_diff:
+            changed_rows.append((max_abs_pct_change(base_entry, patch_entry,
+                                                    metrics), row_cells))
+
+    # Only list targets with a size change, largest relative change first.
+    changed_rows.sort(key=lambda r: r[0], reverse=True)
+    data_rows = [row for _, row in changed_rows]
 
     def fmt_geomean(r_list):
         gm = geomean_ratio(r_list)
@@ -561,7 +616,7 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
         lines.append(
             f'*(No cached baseline available for `main` @ `{short_base}`)*')
         return '\n'.join(lines)
-    if not has_diff:
+    if not data_rows:
         lines.append('')
         lines.append('No size difference.')
         return '\n'.join(lines)
@@ -586,34 +641,52 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
     def display_width(s):
         return sum(2 if ord(c) > 0xFFFF else 1 for c in s)
 
-    padded_headers = pad_cells(headers)
-    padded_data = [pad_cells(r) for r in data_rows]
-    padded_footer = pad_cells(footer_row)
-    all_rows = [padded_headers] + padded_data + [padded_footer]
-    widths = [
-        max(display_width(r[i]) for r in all_rows) for i in range(len(headers))
-    ]
+    def render(rows):
+        padded_headers = pad_cells(headers)
+        padded_data = [pad_cells(r) for r in rows]
+        padded_footer = pad_cells(footer_row)
+        all_rows = [padded_headers] + padded_data + [padded_footer]
+        widths = [
+            max(display_width(r[i])
+                for r in all_rows)
+            for i in range(len(headers))
+        ]
 
-    def fmt_row(row):
-        cells = []
-        for i, cell in enumerate(row):
-            extra = widths[i] - display_width(cell)
-            cells.append(cell + (' ' * extra) if i < 2 else (' ' * extra) +
-                         cell)
-        return '| ' + ' | '.join(cells) + ' |'
+        # Gerrit's email CommentFormatter only renders a paragraph as <pre>
+        # (monospace, whitespace preserved) if a line starts with whitespace.
+        # GFM still parses pipe tables indented by up to 3 spaces.
+        def fmt_row(row):
+            cells = []
+            for i, cell in enumerate(row):
+                extra = widths[i] - display_width(cell)
+                cells.append(cell + (' ' * extra) if i < 2 else (' ' * extra) +
+                             cell)
+            return ' | ' + ' | '.join(cells) + ' |'
 
-    align_row = '| ' + ' | '.join(
-        ':---' if i < 2 else '---:' for i in range(len(headers))) + ' |'
+        align_row = ' | ' + ' | '.join(':' + '-' * (w - 1) if i < 2 else '-' *
+                                       (w - 1) + ':'
+                                       for i, w in enumerate(widths)) + ' |'
 
-    lines.extend([
-        '',
-        fmt_row(padded_headers),
-        align_row,
-        *(fmt_row(r) for r in padded_data),
-        fmt_row(padded_footer),
-        '',
-    ])
-    return '\n'.join(lines)
+        table_lines = lines + [
+            '',
+            fmt_row(padded_headers),
+            align_row,
+            *(fmt_row(r) for r in padded_data),
+            fmt_row(padded_footer),
+            '',
+        ]
+        omitted = len(data_rows) - len(rows)
+        if omitted:
+            table_lines.append(f'*…and {omitted} more changed targets*')
+        return '\n'.join(table_lines)
+
+    # The summary is posted as a Gerrit comment and must stay within
+    # MAX_SUMMARY_BYTES, so include as many of the largest changes as fit.
+    for count in range(len(data_rows), -1, -1):
+        markdown = render(data_rows[:count])
+        if len(markdown.encode('utf-8')) <= MAX_SUMMARY_BYTES:
+            return markdown
+    return markdown
 
 
 def main(argv=None):

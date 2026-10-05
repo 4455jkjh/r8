@@ -4,7 +4,6 @@
 package com.android.tools.r8.accessrelaxation;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -69,9 +68,8 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
   }
 
   private void run(
-      SmaliBuilder builder,
-      String expectedException,
-      Consumer<CodeInspector> inspectorConsumer) throws Exception {
+      SmaliBuilder builder, boolean expectFailure, Consumer<CodeInspector> inspectorConsumer)
+      throws Exception {
     R8TestRunResult result =
         testForR8(parameters.getBackend())
             .addProgramDexFileData(builder.compile())
@@ -82,11 +80,14 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
             .addOptionsModification(o -> o.inlinerOptions().enableInlining = false)
             .setMinApi(parameters)
             .run(parameters.getRuntime(), CLASS_NAME);
-    if (expectedException == null) {
+    if (!expectFailure) {
       result.assertSuccessWithOutput("0");
       result.inspect(inspectorConsumer::accept);
     } else {
-      result.assertFailureWithErrorThatMatches(containsString(expectedException));
+      result.applyIfDexRuntime(
+          v -> v.isOlderThanOrEqual(Version.V4_4_4),
+          r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+          r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
       result.inspectFailure(inspectorConsumer::accept);
     }
   }
@@ -107,13 +108,9 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
   public void invokeDirectToAlreadyStaticMethod() throws Exception {
     SmaliBuilder builder = buildTestClass(
         "invoke-direct { v1 }, L" + CLASS_NAME + ";->bar()I");
-    String expectedError =
-        parameters.getRuntime().asDex().getVm().getVersion().isOlderThanOrEqual(Version.V4_4_4)
-            ? "VerifyError"
-            : "IncompatibleClassChangeError";
     run(
         builder,
-        expectedError,
+        true,
         dexInspector -> {
           ClassSubject clazz = dexInspector.clazz(CLASS_NAME);
           assertThat(clazz, isPresent());
@@ -144,7 +141,7 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
         "invoke-direct { v1 }, L" + CLASS_NAME + ";->foo()I");
     run(
         builder,
-        null,
+        false,
         dexInspector -> {
           ClassSubject clazz = dexInspector.clazz(CLASS_NAME);
           assertThat(clazz, isPresent());

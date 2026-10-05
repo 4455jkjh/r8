@@ -10,8 +10,10 @@ import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.DebugLocalsChange;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -21,6 +23,8 @@ import java.util.Set;
 
 /** Identify common prefixes in successor blocks and share them. */
 public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
+
+  private static final int MAX_DEAD_REGISTER_LOOKAHEAD_DEPTH = 3;
 
   public IdenticalBlockPrefixSharer(AppView<?> appView) {
     super(appView);
@@ -83,15 +87,20 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
       }
 
       // If the first instruction in all successors is not the same, we cannot merge them into the
-      // predecessor.
-      Instruction instruction = firstNormalSuccessor.entry();
+      // predecessor, unless it can be shared by a subset of the successors.
+      List<BasicBlock> sharingSuccessors = normalSuccessors;
       for (int i = 1; i < normalSuccessors.size(); i++) {
         BasicBlock otherNormalSuccessor = normalSuccessors.get(i);
         Instruction otherInstruction = otherNormalSuccessor.entry();
-        if (!equivalence.equivalent(instruction, otherInstruction)) {
-          return hasChanged;
+        if (!equivalence.equivalent(firstNormalSuccessor.entry(), otherInstruction)) {
+          sharingSuccessors = findSharingSuccessorSubset(block, equivalence, allocator);
+          if (sharingSuccessors == null) {
+            return hasChanged;
+          }
+          break;
         }
       }
+      Instruction instruction = sharingSuccessors.get(0).entry();
 
       if (instruction.instructionTypeCanThrow()) {
         // Each block with one or more catch handlers may have at most one throwing instruction.
@@ -145,9 +154,9 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
         return hasChanged;
       }
 
-      // Remove the instruction from the normal successors.
-      for (BasicBlock normalSuccessor : normalSuccessors) {
-        normalSuccessor.entry().removeIgnoreValues();
+      // Remove the instruction from the sharing successors.
+      for (BasicBlock sharingSuccessor : sharingSuccessors) {
+        sharingSuccessor.entry().removeIgnoreValues();
       }
       hasChanged = true;
 
@@ -191,6 +200,92 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
         }
       }
     }
+  }
+
+  /**
+   * Returns a subset of at least two normal successors that start with the same non-throwing
+   * instruction, such that the register written by this instruction is dead on entry to all the
+   * other normal successors. Returns null if there is no such subset.
+   */
+  private static List<BasicBlock> findSharingSuccessorSubset(
+      BasicBlock block, InstructionEquivalence equivalence, RegisterAllocator allocator) {
+    List<BasicBlock> normalSuccessors = block.getNormalSuccessors();
+    if (normalSuccessors.size() <= 2 || allocator.options().debug) {
+      return null;
+    }
+    for (BasicBlock candidate : normalSuccessors) {
+      Instruction instruction = candidate.entry();
+      if (instruction.instructionTypeCanThrow()
+          || !instruction.hasOutValue()
+          || !instruction.outValue().needsRegister()) {
+        continue;
+      }
+      List<BasicBlock> sharingSuccessors = new ArrayList<>();
+      List<BasicBlock> otherSuccessors = new ArrayList<>();
+      for (BasicBlock normalSuccessor : normalSuccessors) {
+        if (equivalence.equivalent(instruction, normalSuccessor.entry())) {
+          sharingSuccessors.add(normalSuccessor);
+        } else {
+          otherSuccessors.add(normalSuccessor);
+        }
+      }
+      if (sharingSuccessors.size() >= 2
+          && Iterables.all(
+              otherSuccessors, other -> isOutValueDeadAtEntry(instruction, other, allocator))) {
+        return sharingSuccessors;
+      }
+    }
+    return null;
+  }
+
+  private static boolean isOutValueDeadAtEntry(
+      Instruction instruction, BasicBlock block, RegisterAllocator allocator) {
+    Value outValue = instruction.outValue();
+    int outRegister = allocator.getRegisterForValue(outValue, instruction.getNumber());
+    for (int i = 0; i < outValue.requiredRegisters(); i++) {
+      if (!isRegisterDeadAtEntry(
+          block, outRegister + i, allocator, MAX_DEAD_REGISTER_LOOKAHEAD_DEPTH)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Conservatively returns true if the register is written before being read on all paths from the
+   * entry of the given block, looking at most depth blocks ahead. Any exceptional exit before the
+   * register is clobbered effectively cannot mark the register as dead on entry.
+   */
+  private static boolean isRegisterDeadAtEntry(
+      BasicBlock block, int register, RegisterAllocator allocator, int depth) {
+    for (Instruction instruction : block.getInstructions()) {
+      if ((instruction.instructionTypeCanThrow() && block.hasCatchHandlers())
+          || Iterables.any(
+              instruction.inValues(),
+              inValue -> usesRegister(inValue, instruction, register, allocator))) {
+        return false;
+      }
+      if (instruction.hasOutValue()
+          && usesRegister(instruction.outValue(), instruction, register, allocator)) {
+        return true;
+      }
+    }
+    // Blocks without normal successors end with a return or a throw.
+    List<BasicBlock> normalSuccessors = block.getNormalSuccessors();
+    return normalSuccessors.isEmpty()
+        || (depth > 0
+            && Iterables.all(
+                normalSuccessors,
+                successor -> isRegisterDeadAtEntry(successor, register, allocator, depth - 1)));
+  }
+
+  private static boolean usesRegister(
+      Value value, Instruction instruction, int register, RegisterAllocator allocator) {
+    if (!value.needsRegister()) {
+      return false;
+    }
+    int valueRegister = allocator.getRegisterForValue(value, instruction.getNumber());
+    return valueRegister <= register && register < valueRegister + value.requiredRegisters();
   }
 
   private static boolean mayShareIdenticalBlockPrefix(BasicBlock block) {

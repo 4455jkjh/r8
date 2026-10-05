@@ -35,7 +35,10 @@ import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Position;
+import com.android.tools.r8.ir.code.Shl;
+import com.android.tools.r8.ir.code.Shr;
 import com.android.tools.r8.ir.code.Switch;
+import com.android.tools.r8.ir.code.Ushr;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.code.Xor;
@@ -140,10 +143,17 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
           }
         }
 
+        if (simplifyNonBooleanCondition(code, block)) {
+          simplified = true;
+          if (!block.exit().isIf()) {
+            continue;
+          }
+        }
+
         // Unable to determine which branch will be taken. Check if the true target can safely be
         // rewritten to the false target.
         if (behavioralSubsumption.isSubsumedBy(
-            theIf.inValues().get(0), theIf.getPosition(),
+            theIf.lhs(), theIf.getPosition(),
             theIf.getTrueTarget(), theIf.fallthroughBlock())) {
           simplifyIfWithKnownCondition(block, theIf, theIf.fallthroughBlock());
           simplified = true;
@@ -220,7 +230,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     }
 
     if (theIf.isNullTest()) {
-      assert theIf.getType() == IfType.EQ || theIf.getType() == IfType.NE;
+      assert theIf.getType().isEqualsOrNotEquals();
 
       if (lhs.isAlwaysNull(appView)) {
         simplifyIfWithKnownCondition(block, theIf, theIf.targetFromNullObject());
@@ -233,7 +243,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       }
     }
 
-    if (theIf.getType() == IfType.EQ || theIf.getType() == IfType.NE) {
+    if (theIf.getType().isEqualsOrNotEquals()) {
       AbstractValue lhsAbstractValue = lhs.getAbstractValue(appView, code.context());
       if (lhsAbstractValue.isConstantOrNonConstantNumberValue()
           && !lhsAbstractValue.asConstantOrNonConstantNumberValue().maybeContainsInt(0)) {
@@ -241,13 +251,25 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
         simplifyIfWithKnownCondition(block, theIf, theIf.targetFromCondition(1));
         return true;
       }
-      if (!lhsRoot.isPhi() && lhsRoot.getDefinition().isXor()) {
+      if (lhsRoot.isDefinedByInstructionSatisfying(Instruction::isXor)) {
         Xor xor = lhsRoot.getDefinition().asXor();
         Value input = extractXorTrueInput(xor);
         if (input != null) {
           // ifeqz !a => ifnez a
           // ifnez !a => ifeqz a
           block.replaceLastInstruction(new If(theIf.getType().inverted(), input));
+          return true;
+        }
+      }
+      if (lhsRoot.isDefinedByInstructionSatisfying(Instruction::isUshr)) {
+        Ushr ushr = lhsRoot.getDefinition().asUshr();
+        if (ushr.getNumericType() == NumericType.INT
+            && ushr.rightValue().isConstInt()
+            && (ushr.rightValue().getConstInt() & 0x1f) == 31) {
+          // ifeqz (a >>> 31) => ifgez a
+          // ifnez (a >>> 31) => ifltz a
+          IfType newIfType = theIf.getType() == IfType.EQ ? IfType.GE : IfType.LT;
+          block.replaceLastInstruction(new If(newIfType, ushr.leftValue()));
           return true;
         }
       }
@@ -324,7 +346,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     if (lhsRoot.isDefinedByInstructionSatisfying(Instruction::isCreatingInstanceOrArray)
         && rhsRoot.isDefinedByInstructionSatisfying(Instruction::isCreatingInstanceOrArray)) {
       // Comparing two newly created objects.
-      assert theIf.getType() == IfType.EQ || theIf.getType() == IfType.NE;
+      assert theIf.getType().isEqualsOrNotEquals();
       simplifyIfWithKnownCondition(block, theIf, theIf.targetFromCondition(1));
       return true;
     }
@@ -338,7 +360,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       return true;
     }
 
-    if (theIf.getType() == IfType.EQ || theIf.getType() == IfType.NE) {
+    if (theIf.getType().isEqualsOrNotEquals()) {
       AbstractValue lhsAbstractValue = lhs.getAbstractValue(appView, code.context());
       AbstractValue rhsAbstractValue = rhs.getAbstractValue(appView, code.context());
       if (lhsAbstractValue.isConstantOrNonConstantNumberValue()
@@ -397,7 +419,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       }
     }
 
-    if (theIf.getType() == IfType.EQ || theIf.getType() == IfType.NE) {
+    if (theIf.getType().isEqualsOrNotEquals()) {
       ProgramMethod context = code.context();
       AbstractValue abstractValue = lhs.getAbstractValue(appView, context);
       if (abstractValue.isSingleConstClassValue()) {
@@ -521,11 +543,19 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
    *
    * which can be replaced by a fallthrough and the phi value can be replaced
    * by an xor instruction which is smaller.
+   *
+   * (3) Similarly, when the two constants c0 and c1 satisfy (c0 << 1) == c1,
+   * (c0 >>> 1) == c1, or (c0 >> 1) == c1, the diamond can be replaced by a
+   * fallthrough and a shift of c0 by booleanValue.
    */
   private boolean simplifyKnownBooleanCondition(IRCode code, BasicBlock block) {
     If theIf = block.exit().asIf();
-    Value testValue = theIf.inValues().get(0);
-    if (theIf.isZeroTest() && testValue.knownToBeBoolean()) {
+    Value lhs = theIf.lhs();
+    if (theIf.isZeroTest()
+        && theIf.getType().isEqualsOrNotEquals()
+        && (lhs.knownToBeBoolean()
+            || (!options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
+                && lhs.getAbstractValue(appView, code.context()).isBoolean()))) {
       BasicBlock trueBlock = theIf.getTrueTarget();
       BasicBlock falseBlock = theIf.fallthroughBlock();
       if (isBlockSupportedBySimplifyKnownBooleanCondition(trueBlock)
@@ -534,32 +564,31 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
         BasicBlock targetBlock = trueBlock.getSuccessors().get(0);
         if (targetBlock.getPredecessors().size() == 2) {
           int trueIndex = targetBlock.getPredecessors().indexOf(trueBlock);
-          int falseIndex = trueIndex == 0 ? 1 : 0;
+          int falseIndex = 1 - trueIndex;
           int deadPhis = 0;
           // Locate the phis that have the same value as the boolean and replace them
           // by the boolean in all users.
           for (Phi phi : targetBlock.getPhis()) {
             Value trueValue = phi.getOperand(trueIndex);
             Value falseValue = phi.getOperand(falseIndex);
-            if (trueValue.isConstNumber() && falseValue.isConstNumber()) {
+            if (phi.getType().isInt() && trueValue.isConstNumber() && falseValue.isConstNumber()) {
               ConstNumber trueNumber = trueValue.getConstInstruction().asConstNumber();
               ConstNumber falseNumber = falseValue.getConstInstruction().asConstNumber();
-              if ((theIf.getType() == IfType.EQ
-                      && trueNumber.isIntegerZero()
-                      && falseNumber.isIntegerOne())
-                  || (theIf.getType() == IfType.NE
-                      && trueNumber.isIntegerOne()
-                      && falseNumber.isIntegerZero())) {
-                phi.replaceUsers(testValue);
+              ConstNumber zeroNumber = theIf.getType() == IfType.EQ ? trueNumber : falseNumber;
+              ConstNumber oneNumber = theIf.getType() == IfType.EQ ? falseNumber : trueNumber;
+              int zeroInt = zeroNumber.getIntValue();
+              int oneInt = oneNumber.getIntValue();
+              if (zeroInt == 0 && oneInt == 1) {
+                phi.replaceUsers(lhs);
                 deadPhis++;
-              } else if ((theIf.getType() == IfType.NE
-                      && trueNumber.isIntegerZero()
-                      && falseNumber.isIntegerOne())
-                  || (theIf.getType() == IfType.EQ
-                      && trueNumber.isIntegerOne()
-                      && falseNumber.isIntegerZero())) {
+              } else if ((zeroInt == 1 && oneInt == 0)
+                  || (!options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
+                      && zeroInt != oneInt
+                      && ((zeroInt << 1) == oneInt
+                          || (zeroInt >>> 1) == oneInt
+                          || (zeroInt >> 1) == oneInt))) {
                 Value newOutValue = code.createValue(phi.getType(), phi.getLocalInfo());
-                ConstNumber cstToUse = trueNumber.isIntegerOne() ? trueNumber : falseNumber;
+                ConstNumber cstToUse = zeroNumber;
                 BasicBlock phiBlock = phi.getBlock();
                 Position phiPosition = phiBlock.getPosition();
                 InstructionList instructions = phiBlock.getInstructions();
@@ -571,9 +600,19 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
                   instructions.addBefore(cstToUse, prevHead);
                 }
                 phi.replaceUsers(newOutValue);
-                Instruction newInstruction =
-                    Xor.create(NumericType.INT, newOutValue, testValue, cstToUse.outValue());
-                // The xor is replacing a phi so it does not have an actual position.
+                Instruction newInstruction;
+                if (zeroInt == 1 && oneInt == 0) {
+                  newInstruction =
+                      Xor.create(NumericType.INT, newOutValue, lhs, cstToUse.outValue());
+                } else if ((zeroInt << 1) == oneInt) {
+                  newInstruction = new Shl(NumericType.INT, newOutValue, cstToUse.outValue(), lhs);
+                } else if ((zeroInt >>> 1) == oneInt) {
+                  newInstruction = new Ushr(NumericType.INT, newOutValue, cstToUse.outValue(), lhs);
+                } else {
+                  assert (zeroInt >> 1) == oneInt;
+                  newInstruction = new Shr(NumericType.INT, newOutValue, cstToUse.outValue(), lhs);
+                }
+                // The binop is replacing a phi so it does not have an actual position.
                 newInstruction.setPosition(phiPosition);
                 instructions.addBefore(newInstruction, prevHead);
                 deadPhis++;
@@ -593,7 +632,94 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
-  @SuppressWarnings("ReferenceEquality")
+  /**
+   * Rewrites simple `if` diamonds that materialize `0`/`1` (or `1`/`0`) into branchless bit
+   * operations when doing so produces strictly smaller code.
+   */
+  private boolean simplifyNonBooleanCondition(IRCode code, BasicBlock block) {
+    if (options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()) {
+      return false;
+    }
+    If theIf = block.exit().asIf();
+    Value lhs = theIf.lhs();
+    if (!lhs.getType().isInt()) {
+      return false;
+    }
+    BasicBlock trueBlock = theIf.getTrueTarget();
+    BasicBlock falseBlock = theIf.fallthroughBlock();
+    if (!isBlockSupportedBySimplifyKnownBooleanCondition(trueBlock)
+        || !isBlockSupportedBySimplifyKnownBooleanCondition(falseBlock)
+        || trueBlock.getSuccessors().get(0) != falseBlock.getSuccessors().get(0)) {
+      return false;
+    }
+    BasicBlock targetBlock = trueBlock.getSuccessors().get(0);
+    if (targetBlock.getPredecessors().size() != 2 || targetBlock.getPhis().size() != 1) {
+      return false;
+    }
+    Phi phi = targetBlock.getPhis().get(0);
+    if (!phi.getType().isInt()) {
+      return false;
+    }
+
+    int trueIndex = targetBlock.getPredecessors().indexOf(trueBlock);
+    int falseIndex = 1 - trueIndex;
+    Value trueValue = phi.getOperand(trueIndex);
+    Value falseValue = phi.getOperand(falseIndex);
+    if (!trueValue.isConstNumber() || !falseValue.isConstNumber()) {
+      return false;
+    }
+
+    ConstNumber trueNumber = trueValue.getConstInstruction().asConstNumber();
+    ConstNumber falseNumber = falseValue.getConstInstruction().asConstNumber();
+    Position phiPosition = targetBlock.getPosition();
+    InstructionList instructions = targetBlock.getInstructions();
+    Instruction prevHead = instructions.getFirst();
+
+    // Case 1: Sign-bit tests (`if-gez` / `if-ltz`).
+    // An `if` diamond is 5 DEX code units (`if-*z` (2) + `const/4 0` (1) + `const/4 1` (1) +
+    // `goto` (1)), whereas extracting the sign bit is 2 or 3 code units.
+    if (theIf.isZeroTest() && (theIf.getType() == IfType.GE || theIf.getType() == IfType.LT)) {
+      int geZeroInt = (theIf.getType() == IfType.GE ? trueNumber : falseNumber).getIntValue();
+      int ltZeroInt = (theIf.getType() == IfType.GE ? falseNumber : trueNumber).getIntValue();
+      if (geZeroInt == 0 && ltZeroInt == 1) {
+        // `lhs < 0 ? 1 : 0` -> `lhs >>> 31` (2 DEX code units: `ushr-int/lit8`).
+        ConstNumber const31 = code.createIntConstant(31);
+        const31.setPosition(phiPosition);
+        instructions.addBefore(const31, prevHead);
+        Value newOutValue = code.createValue(phi.getType(), phi.getLocalInfo());
+        phi.replaceUsers(newOutValue);
+        Instruction ushr = new Ushr(NumericType.INT, newOutValue, lhs, const31.outValue());
+        ushr.setPosition(phiPosition);
+        instructions.addBefore(ushr, prevHead);
+        rewriteIfToGoto(block, theIf, trueBlock, falseBlock);
+        return true;
+      }
+      if (geZeroInt == 1 && ltZeroInt == 0) {
+        // `lhs >= 0 ? 1 : 0` -> `(~lhs) >>> 31` (3 DEX code units: `not-int` (1) +
+        // `ushr-int/lit8` (2)).
+        ConstNumber constMinus1 = code.createIntConstant(-1);
+        constMinus1.setPosition(phiPosition);
+        instructions.addBefore(constMinus1, prevHead);
+        Value notValue = code.createValue(phi.getType());
+        Instruction notInstruction =
+            Xor.create(NumericType.INT, notValue, lhs, constMinus1.outValue());
+        notInstruction.setPosition(phiPosition);
+        instructions.addBefore(notInstruction, prevHead);
+        ConstNumber const31 = code.createIntConstant(31);
+        const31.setPosition(phiPosition);
+        instructions.addBefore(const31, prevHead);
+        Value newOutValue = code.createValue(phi.getType(), phi.getLocalInfo());
+        phi.replaceUsers(newOutValue);
+        Instruction ushr = new Ushr(NumericType.INT, newOutValue, notValue, const31.outValue());
+        ushr.setPosition(phiPosition);
+        instructions.addBefore(ushr, prevHead);
+        rewriteIfToGoto(block, theIf, trueBlock, falseBlock);
+        return true;
+      }
+    }
+    return false;
+  }
+
   private boolean isBlockSupportedBySimplifyKnownBooleanCondition(BasicBlock b) {
     if (b.isTrivialGoto()) {
       return true;
@@ -603,8 +729,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     if (b.exit().isGoto() && (instructionSize == 2 || instructionSize == 3)) {
       Instruction constInstruction = b.getInstructions().getLast().getPrev();
       if (constInstruction.isConstNumber()) {
-        if (!constInstruction.asConstNumber().isIntegerOne()
-            && !constInstruction.asConstNumber().isIntegerZero()) {
+        if (!constInstruction.getOutType().isInt()) {
           return false;
         }
         if (instructionSize == 2) {

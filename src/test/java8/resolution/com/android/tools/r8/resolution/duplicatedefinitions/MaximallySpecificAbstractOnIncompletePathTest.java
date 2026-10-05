@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.resolution.duplicatedefinitions;
 
-import com.android.tools.r8.ToolHelper;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -14,6 +12,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -96,14 +95,15 @@ public class MaximallySpecificAbstractOnIncompletePathTest extends TestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    Version dexRuntime = parameters.getDexRuntimeVersion();
     testForD8(parameters.getBackend())
         .apply(this::setupTestBuilder)
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrowsIf(dexRuntime.isDalvik(), VerifyError.class)
-        .assertFailureWithErrorThatThrowsIf(!dexRuntime.isDalvik(), AbstractMethodError.class);
+        .applyIfDexRuntime(
+            Version::isDalvik,
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   @Test

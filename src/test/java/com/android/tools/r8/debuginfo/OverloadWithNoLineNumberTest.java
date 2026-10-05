@@ -50,31 +50,38 @@ public class OverloadWithNoLineNumberTest extends TestBase {
             .addKeepAttributeLineNumberTable()
             .run(parameters.getRuntime(), SimpleCallChainClassWithOverloads.class)
             .assertFailureWithErrorThatThrows(RuntimeException.class);
-    Retrace.run(
-        RetraceCommand.builder()
-            .setMappingSupplier(
-                ProguardMappingSupplier.builder()
-                    .setProguardMapProducer(ProguardMapProducer.fromString(result.proguardMap()))
-                    .build())
-            .setStackTrace(
-                result.getOriginalStackTrace().getStackTraceLines().stream()
-                    .map(line -> line.originalLine)
-                    .collect(Collectors.toList()))
-            .setRetracedStackTraceConsumer(
-                retraced -> {
-                  String className = typeName(SimpleCallChainClassWithOverloads.class);
-                  assertEquals(
-                      StringUtils.joinLines(
-                          "\tat " + className + ".void test(long)(" + SOURCE_FILE_NAME + ")",
-                          "\tat " + className + ".void test()(" + SOURCE_FILE_NAME + ")",
-                          "\tat "
-                              + className
-                              + ".void main(java.lang.String[])("
-                              + SOURCE_FILE_NAME
-                              + ":10)"),
-                      StringUtils.joinLines(retraced));
-                })
-            .setVerbose(true)
-            .build());
+    result.inspectOriginalStackTrace(
+        stackTrace ->
+            Retrace.run(
+                RetraceCommand.builder()
+                    .setMappingSupplier(
+                        ProguardMappingSupplier.builder()
+                            .setProguardMapProducer(
+                                ProguardMapProducer.fromString(result.proguardMap()))
+                            .build())
+                    .setStackTrace(
+                        stackTrace.getStackTraceLines().stream()
+                            .map(line -> line.originalLine)
+                            .collect(Collectors.toList()))
+                    .setRetracedStackTraceConsumer(
+                        retraced -> {
+                          String className = typeName(SimpleCallChainClassWithOverloads.class);
+                          assertEquals(
+                              StringUtils.joinLines(
+                                  "\tat "
+                                      + className
+                                      + ".void test(long)("
+                                      + SOURCE_FILE_NAME
+                                      + ")",
+                                  "\tat " + className + ".void test()(" + SOURCE_FILE_NAME + ")",
+                                  "\tat "
+                                      + className
+                                      + ".void main(java.lang.String[])("
+                                      + SOURCE_FILE_NAME
+                                      + ":10)"),
+                              StringUtils.joinLines(retraced));
+                        })
+                    .setVerbose(true)
+                    .build()));
   }
 }

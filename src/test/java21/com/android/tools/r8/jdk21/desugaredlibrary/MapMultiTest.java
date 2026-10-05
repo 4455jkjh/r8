@@ -11,6 +11,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -55,16 +56,15 @@ public class MapMultiTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  public String[] getExpectedResult(boolean desugLib) {
-    if (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V14_0_0)) {
-      if (desugLib && libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
-        // Unfortunately these methods are in android.jar from 14 but not in desugared library
-        // and are not supported.
-        return INVALID_EXPECTED_RESULT;
-      }
-      return EXPECTED_RESULT;
-    }
-    return INVALID_EXPECTED_RESULT;
+  public void checkExpectedResult(TestRunResult<?> result, boolean desugLib) {
+    // Unfortunately these methods are in android.jar from 14 but not in desugared library
+    // and are not supported.
+    result.applyIfDexRuntime(
+        version ->
+            version.isNewerThanOrEqual(Version.V14_0_0)
+                && !(desugLib && libraryDesugaringSpecification.hasStreamDesugaring(parameters)),
+        r -> r.assertSuccessWithOutputLines(EXPECTED_RESULT),
+        r -> r.assertSuccessWithOutputLines(INVALID_EXPECTED_RESULT));
   }
 
   @Test
@@ -76,7 +76,7 @@ public class MapMultiTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Executor.class)
-        .assertSuccessWithOutputLines(getExpectedResult(false));
+        .apply(r -> checkExpectedResult(r, false));
   }
 
   @Test
@@ -87,7 +87,7 @@ public class MapMultiTest extends DesugaredLibraryTestBase {
         .allowDiagnosticWarningMessages(parameters.getApiLevel().equals(AndroidApiLevel.MAIN))
         .addKeepMainRule(Executor.class)
         .run(parameters.getRuntime(), Executor.class)
-        .assertSuccessWithOutputLines(getExpectedResult(true));
+        .apply(r -> checkExpectedResult(r, true));
   }
 
   static class Executor {

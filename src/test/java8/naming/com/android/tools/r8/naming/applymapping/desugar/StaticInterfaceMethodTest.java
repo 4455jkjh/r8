@@ -14,6 +14,7 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -108,12 +109,12 @@ public class StaticInterfaceMethodTest extends TestBase {
         .compile()
         .addRunClasspathFiles(libraryResult.writeToZip())
         .run(parameters.getRuntime(), ProgramClass.class)
-        .applyIf(
+        .applyIfDexRuntime(
             parameters.canUseDefaultAndStaticInterfaceMethods(),
-            rr -> rr.assertSuccessWithOutput(EXPECTED),
-            parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik(),
-            rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
-            rr -> rr.assertFailureWithErrorThatThrows(ClassNotFoundException.class));
+            r -> r.assertSuccessWithOutput(EXPECTED),
+            Version::isDalvik,
+            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
+            r -> r.assertFailureWithErrorThatThrows(ClassNotFoundException.class));
   }
 
   @Test

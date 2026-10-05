@@ -16,10 +16,10 @@ public abstract class TestBuilderCollection<
         T extends TestBuilderCollection<C, RR, T>>
     extends TestBuilder<RR, T> {
 
-  final List<Pair<C, TestBuilder<? extends SingleTestRunResult<?>, ?>>> builders;
+  final List<Pair<C, TestBuilder<? extends TestRunResult<?>, ?>>> builders;
 
   TestBuilderCollection(
-      TestState state, List<Pair<C, TestBuilder<? extends SingleTestRunResult<?>, ?>>> builders) {
+      TestState state, List<Pair<C, TestBuilder<? extends TestRunResult<?>, ?>>> builders) {
     super(state);
     assert !builders.isEmpty();
     this.builders = builders;

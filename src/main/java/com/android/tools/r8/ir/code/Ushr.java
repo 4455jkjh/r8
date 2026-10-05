@@ -11,6 +11,7 @@ import com.android.tools.r8.dex.code.DexUshrIntLit8;
 import com.android.tools.r8.dex.code.DexUshrLong;
 import com.android.tools.r8.dex.code.DexUshrLong2Addr;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -105,6 +106,22 @@ public class Ushr extends LogicalBinop {
   @Override
   AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
     return AbstractCalculator.ushrLongs(appView, left, right);
+  }
+
+  @Override
+  public AbstractValue getAbstractValue(
+      AppView<?> appView, ProgramMethod context, AbstractValueSupplier abstractValueSupplier) {
+    if (outValue.hasLocalInfo()) {
+      return AbstractValue.unknown();
+    }
+    AbstractValue result = super.getAbstractValue(appView, context, abstractValueSupplier);
+    if (result.isUnknown() && type == NumericType.INT) {
+      if ((rightValue().isConstInt() && (rightValue().getConstInt() & 0x1f) == 31)
+          || leftValue().knownToBeBoolean()) {
+        return appView.abstractValueFactory().createDefiniteBitsBooleanNumberValue();
+      }
+    }
+    return result;
   }
 
   @Override

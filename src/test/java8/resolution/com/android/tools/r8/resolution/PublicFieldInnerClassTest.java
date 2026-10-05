@@ -74,7 +74,7 @@ public class PublicFieldInnerClassTest extends TestBase {
 
   @Parameterized.Parameters(name = "Backend: {0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public PublicFieldInnerClassTest(TestParameters parameters) {

@@ -35,7 +35,8 @@ public class R8RunSmaliTestsTest extends TestBase {
   @Parameters(name = "{0}: {1}")
   public static Collection<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimesAndAllApiLevels().build(), tests.keySet());
+        getTestParameters().withDexRuntimesAndAllApiLevels().withoutCollapsedDexRuntimes().build(),
+        tests.keySet());
   }
 
   private static Map<String, String> tests;

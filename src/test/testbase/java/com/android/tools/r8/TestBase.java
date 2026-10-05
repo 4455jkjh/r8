@@ -341,13 +341,13 @@ public class TestBase {
     return testForD8(temp, backend);
   }
 
-  public TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testForD8(
+  public TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testForD8(
       TestParameters parameters) {
     return testForD8(parameters.getBackend(), parameters.getPartialCompilationTestParameters())
         .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
   }
 
-  public TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testForD8(
+  public TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testForD8(
       Backend backend, PartialCompilationTestParameters partialCompilationTestParameters) {
     if (partialCompilationTestParameters.isNone()) {
       return testForD8(temp, backend);
@@ -377,7 +377,7 @@ public class TestBase {
     return testForJvm(temp);
   }
 
-  public TestBuilder<? extends SingleTestRunResult<?>, ?> testForRuntime(
+  public TestBuilder<? extends TestRunResult<?>, ?> testForRuntime(
       TestRuntime runtime, Consumer<D8TestBuilder> d8TestBuilderConsumer) {
     if (runtime.isCf()) {
       return testForJvm(temp);
@@ -389,13 +389,12 @@ public class TestBase {
     }
   }
 
-  public TestBuilder<? extends SingleTestRunResult<?>, ?> testForRuntime(
+  public TestBuilder<? extends TestRunResult<?>, ?> testForRuntime(
       TestRuntime runtime, AndroidApiLevel apiLevel) {
     return testForRuntime(runtime, d8TestBuilder -> d8TestBuilder.setMinApi(apiLevel));
   }
 
-  public TestBuilder<? extends SingleTestRunResult<?>, ?> testForRuntime(
-      TestParameters parameters) {
+  public TestBuilder<? extends TestRunResult<?>, ?> testForRuntime(TestParameters parameters) {
     return testForRuntime(parameters.getRuntime(), parameters.getApiLevel());
   }
 
@@ -425,7 +424,7 @@ public class TestBase {
     assert parameters.hasApiLevel()
         : "No API level. Add .withAllApiLevelsAlsoForCf() to test parameters?";
     ImmutableList.Builder<
-            Pair<DesugarTestConfiguration, TestBuilder<? extends SingleTestRunResult<?>, ?>>>
+            Pair<DesugarTestConfiguration, TestBuilder<? extends TestRunResult<?>, ?>>>
         builders = ImmutableList.builder();
     if (parameters.isCfRuntime()) {
       assumeTrue(parameters.getPartialCompilationTestParameters().isNone());
@@ -635,7 +634,7 @@ public class TestBase {
   }
 
   public static TestParametersBuilder getTestParameters() {
-    return TestParameters.builder();
+    return new TestParametersBuilder();
   }
 
   public static KotlinTestParameters.Builder getKotlinTestParameters() {
@@ -1968,9 +1967,11 @@ public class TestBase {
   }
 
   public static boolean runtimeWithJavaTime(TestParameters parameters) {
-    return parameters.isCfRuntime()
-        || parameters.isDexRuntimeVersionNewerThanOrEqual(
-            ToolHelper.getDexVersionForApiLevel(apiLevelWithJavaTime()));
+    return parameters.isCfRuntime() || runtimeWithJavaTime(parameters.getDexRuntimeVersion());
+  }
+
+  public static boolean runtimeWithJavaTime(DexVm.Version version) {
+    return version.isNewerThanOrEqual(ToolHelper.getDexVersionForApiLevel(apiLevelWithJavaTime()));
   }
 
   public boolean canUseFilledNewArrayOfInteger(TestParameters parameters) {

@@ -59,7 +59,8 @@ public class R8InliningTest extends TestBase {
   @Parameters(name = "{1}, allow access modification: {0}")
   public static Collection<Object[]> data() {
     return buildParameters(
-        BooleanUtils.values(), getTestParameters().withAllRuntimesAndApiLevels().build());
+        BooleanUtils.values(),
+        getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build());
   }
 
   private final boolean allowAccessModification;

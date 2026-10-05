@@ -6,7 +6,6 @@ package com.android.tools.r8;
 
 import static org.junit.Assert.assertNotNull;
 
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -60,7 +59,7 @@ public class L8TestCompileResult extends TestCompileResult<L8TestCompileResult, 
   }
 
   @Override
-  protected L8TestRunResult createRunResult(TestRuntime runtime, ProcessResult result) {
+  protected L8TestRunResult createRunResult(List<SingleTestRunResult> results) {
     throw new Unimplemented();
   }
 

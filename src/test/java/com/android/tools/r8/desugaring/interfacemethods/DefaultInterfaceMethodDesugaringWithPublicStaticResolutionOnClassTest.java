@@ -69,9 +69,10 @@ public class DefaultInterfaceMethodDesugaringWithPublicStaticResolutionOnClassTe
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring()
-                && parameters.isDexRuntimeVersion(Version.V7_0_0),
+        .applyIfDexRuntime(
+            v ->
+                parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring()
+                    && v.isEqualTo(Version.V7_0_0),
             r -> r.assertSuccessWithOutput(EXPECTED_INVALID),
             r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }

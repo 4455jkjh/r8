@@ -12,9 +12,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.NoHorizontalClassMerging;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -337,21 +337,22 @@ public class ParameterTypeTest extends TestBase {
               assertNotEquals(enableArgumentPropagation, subSubject.isPresent());
             })
         .run(parameters.getRuntime(), mainClassName)
-        .applyIf(
+        .applyIfDexRuntime(
             enableArgumentPropagation || parameters.isCfRuntime(),
-            SingleTestRunResult::assertSuccess,
-            result ->
-                result.assertFailureWithErrorThatMatches(
+            TestRunResult::assertSuccess,
+            version ->
+                version.isNewerThan(Version.V4_4_4) && version.isOlderThanOrEqual(Version.V15_0_0),
+            r ->
+                r.assertFailureWithErrorThatMatches(
                     containsString(
-                        parameters.getDexRuntimeVersion().isNewerThan(Version.V4_4_4)
-                            ? "type "
-                                + (parameters
-                                        .getDexRuntimeVersion()
-                                        .isOlderThanOrEqual(Version.V15_0_0)
-                                    ? "Precise "
-                                    : "")
-                                + "Reference: Foo[] but expected Reference: SubInterface[]"
-                            : "[LFoo; is not instance of [LSubInterface;")))
+                        "type Precise Reference: Foo[] but expected Reference: SubInterface[]")),
+            version -> version.isNewerThan(Version.V15_0_0),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    containsString("type Reference: Foo[] but expected Reference: SubInterface[]")),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    containsString("[LFoo; is not instance of [LSubInterface;")))
         .assertStderrMatches(not(containsString("ClassNotFoundException")));
   }
 

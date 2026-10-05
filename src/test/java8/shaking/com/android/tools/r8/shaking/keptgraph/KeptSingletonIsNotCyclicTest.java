@@ -40,7 +40,7 @@ public class KeptSingletonIsNotCyclicTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withCfRuntimes().build();
+    return getTestParameters().withCfRuntimes().build();
   }
 
   public KeptSingletonIsNotCyclicTest(TestParameters parameters) {

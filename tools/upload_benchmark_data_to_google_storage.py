@@ -90,7 +90,7 @@ def get_release_commits():
     for branch in get_release_branches():
         (major, minor) = branch.split('.')
         candidate_commits = subprocess.check_output([
-            'git', 'log', '--grep=-dev', '--max-count=100',
+            'git', 'log', '--grep=-dev', '--grep=-alpha', '--max-count=100',
             '--pretty=format:%H %s', 'origin/' + branch, '--',
             'src/main/java/com/android/tools/r8/Version.java'
         ]).decode('utf-8').strip().splitlines()
@@ -99,7 +99,7 @@ def get_release_commits():
             git_hash = candidate_commit[:separator_index]
             git_title = candidate_commit[separator_index + 1:]
             if not re.search(
-                    r'^Version %s\.%s\.(0|[1-9]\d*)-dev$' %
+                    r'^Version %s\.%s\.((0|[1-9]\d*)-dev|0-alpha\d+)$' %
                 (major, minor), git_title):
                 continue
             release_commits.append(historic_run.git_commit_from_hash(git_hash))

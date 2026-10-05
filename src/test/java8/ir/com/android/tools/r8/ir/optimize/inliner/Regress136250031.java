@@ -25,7 +25,7 @@ public class Regress136250031 extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder()
+    return getTestParameters()
         .withCfRuntimes()
         .withDefaultDexRuntime()
         .withMaximumApiLevel()

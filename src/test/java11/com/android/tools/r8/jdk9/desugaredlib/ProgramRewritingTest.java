@@ -16,10 +16,10 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
@@ -100,7 +100,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
   @Test
   public void testRewriting() throws Throwable {
     Box<String> keepRules = new Box<>();
-    SingleTestRunResult<?> run =
+    TestRunResult<?> run =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
             .addInnerClassesAndStrippedOuter(getClass())
@@ -117,10 +117,14 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
                   }
                 })
             .run(parameters.getRuntime(), TEST_CLASS);
-    assertResultIsCorrect(run.getStdOut(), run.getStdErr(), keepRules.get());
+    run.applyIfDexRuntime(
+        version -> version.isOlderThanOrEqual(Version.V4_4_4),
+        r -> assertResultIsCorrect(r.getStdOut(), r.getStdErr(), keepRules.get(), true),
+        r -> assertResultIsCorrect(r.getStdOut(), r.getStdErr(), keepRules.get(), false));
   }
 
-  private void assertResultIsCorrect(String stdOut, String stdErr, String keepRules) {
+  private void assertResultIsCorrect(
+      String stdOut, String stdErr, String keepRules, boolean isOlderThanOrEqualKitKat) {
     if (parameters.getApiLevel().getMajor() < AndroidApiLevel.N.getMajor()) {
       if (compilationSpecification.isL8Shrink()) {
         assertGeneratedKeepRulesAreCorrect(keepRules);
@@ -129,7 +133,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
         assertLines2By2Correct(stdOut);
       }
     }
-    if (parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_HOST)) {
+    if (isOlderThanOrEqualKitKat) {
       // Flaky: There might be a missing method on lambda deserialization.
       assertTrue(
           !stdErr.contains("Could not find method")

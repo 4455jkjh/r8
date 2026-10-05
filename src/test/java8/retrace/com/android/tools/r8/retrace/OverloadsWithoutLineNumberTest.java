@@ -48,26 +48,29 @@ public class OverloadsWithoutLineNumberTest extends TestBase {
             .run(parameters.getRuntime(), Main.class)
             .assertFailureWithErrorThatMatches(containsString("FOO"));
 
-    Box<List<String>> box = new Box<>();
-    List<String> originalStackTrace =
-        run.getOriginalStackTrace().getStackTraceLines().stream()
-            .map(x -> x.originalLine)
-            .collect(Collectors.toList());
-    RetraceCommand.Builder builder =
-        RetraceCommand.builder()
-            .setMappingSupplier(
-                ProguardMappingSupplier.builder()
-                    .setProguardMapProducer(ProguardMapProducer.fromString(run.proguardMap()))
-                    .build())
-            .setStackTrace(originalStackTrace)
-            .setRetracedStackTraceConsumer(box::set)
-            .setVerbose(true);
-    Retrace.run(builder.build());
-    assertEquals(
-        "\tat "
-            + typeName(ClassWithOverload.class)
-            + ".void test(int)(OverloadsWithoutLineNumberTest.java)",
-        box.get().get(1));
+    run.inspectOriginalStackTrace(
+        stackTrace -> {
+          Box<List<String>> box = new Box<>();
+          List<String> originalStackTrace =
+              stackTrace.getStackTraceLines().stream()
+                  .map(x -> x.originalLine)
+                  .collect(Collectors.toList());
+          RetraceCommand.Builder builder =
+              RetraceCommand.builder()
+                  .setMappingSupplier(
+                      ProguardMappingSupplier.builder()
+                          .setProguardMapProducer(ProguardMapProducer.fromString(run.proguardMap()))
+                          .build())
+                  .setStackTrace(originalStackTrace)
+                  .setRetracedStackTraceConsumer(box::set)
+                  .setVerbose(true);
+          Retrace.run(builder.build());
+          assertEquals(
+              "\tat "
+                  + typeName(ClassWithOverload.class)
+                  + ".void test(int)(OverloadsWithoutLineNumberTest.java)",
+              box.get().get(1));
+        });
   }
 
   public static class ClassWithOverload {

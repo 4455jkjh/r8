@@ -63,7 +63,11 @@ public class BackportMainDexTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withApiLevel(AndroidApiLevel.J).build();
+    return getTestParameters()
+        .withAllRuntimes()
+        .withApiLevel(AndroidApiLevel.J)
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   private String[] getRunArgs() {

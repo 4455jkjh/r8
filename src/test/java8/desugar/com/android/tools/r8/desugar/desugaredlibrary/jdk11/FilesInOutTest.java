@@ -185,9 +185,8 @@ public class FilesInOutTest extends DesugaredLibraryTestBase {
   }
 
   @SuppressWarnings("RedundantCast")
-  private String getExpectedResult() {
-    if (parameters.isCfRuntime()
-        || libraryDesugaringSpecification.usesPlatformFileSystem(parameters)) {
+  private String getExpectedResult(boolean usesPlatformFileSystem) {
+    if (parameters.isCfRuntime() || usesPlatformFileSystem) {
       return String.format(EXPECTED_RESULT, (Object[]) EXPECTED_RESULT_NO_DESUGARING);
     }
     return String.format(EXPECTED_RESULT, (Object[]) EXPECTED_RESULT_DESUGARING);
@@ -202,7 +201,7 @@ public class FilesInOutTest extends DesugaredLibraryTestBase {
       testForJvm(parameters)
           .addInnerClasses(getClass())
           .run(parameters.getRuntime(), TestClass.class)
-          .assertSuccessWithOutput(getExpectedResult());
+          .assertSuccessWithOutput(getExpectedResult(true));
       return;
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
@@ -211,7 +210,10 @@ public class FilesInOutTest extends DesugaredLibraryTestBase {
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(getExpectedResult(true)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(false)));
   }
 
   public static class TestClass {

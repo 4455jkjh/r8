@@ -12,7 +12,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.resolution.virtualtargets.package_a.ViewModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,12 +57,10 @@ public class PackagePrivateFinalOverrideInterfaceTest extends TestBase {
   }
 
   public void assertResult(TestRunResult<?> runResult) {
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_HOST)) {
-      runResult.assertFailureWithErrorThatMatches(containsString("overrides final"));
-    } else {
-      runResult.assertSuccessWithOutputLines("Zoolander::clear()");
-    }
+    runResult.applyIfDexRuntime(
+        version -> version.isOlderThanOrEqual(Version.V4_4_4),
+        r -> r.assertFailureWithErrorThatMatches(containsString("overrides final")),
+        r -> r.assertSuccessWithOutputLines("Zoolander::clear()"));
   }
 
   public interface I {

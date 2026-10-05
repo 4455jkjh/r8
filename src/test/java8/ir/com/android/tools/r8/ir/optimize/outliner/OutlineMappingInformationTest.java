@@ -10,6 +10,7 @@ import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -48,10 +49,10 @@ public class OutlineMappingInformationTest extends TestBase {
   @Before
   public void setup() throws Exception {
     expectedStackTrace =
-        testForRuntime(parameters)
+        testForJvm(temp)
             .addProgramClasses(TestClass.class, TestClass2.class, Greeter.class)
             .run(
-                parameters.getRuntime(),
+                TestRuntime.getDefaultCfRuntime(),
                 TestClass.class,
                 throwInFirstOutline ? "0" : "1",
                 throwOnFirstCall ? "0" : "1")

@@ -48,7 +48,6 @@ import com.android.tools.r8.ir.regalloc.RegisterPositions.RegisterType;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.internal.IntObjPredicate;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.LinkedHashSetUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -1163,6 +1162,12 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       setHintForDestRegOfCheckCast(unhandledInterval);
       setHintToPromote2AddrInstruction(unhandledInterval);
 
+      // Advance the state before allocating the registers of the invoke/range arguments below, so
+      // that the registers of the intervals that expired before this interval are free.
+      timing.begin("Advance state");
+      advanceStateToLiveIntervals(unhandledInterval);
+      timing.end();
+
       // If this interval value has an invoke/rangerange user, then fix the registers for the
       // consecutive arguments now and add hints to the live intervals leading up to this
       // invoke/range. This looks forward and propagate hints backwards to avoid many moves in
@@ -1172,12 +1177,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       timing.end();
       if (unhandledInterval.hasRegister()) {
         // The value itself is in the chain that has now gotten registers allocated.
+        expiredHere.clear();
         continue;
       }
-
-      timing.begin("Advance state");
-      advanceStateToLiveIntervals(unhandledInterval);
-      timing.end();
 
       // Perform the actual allocation.
       timing.begin("Alloc single");
@@ -1990,6 +1992,15 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         || longHalfOverlappingLong(register, rightReg);
   }
 
+  // Returns true if the register cannot be assigned to the intervals due to a runtime bug.
+  private boolean isRegisterRejectedByRuntimeWorkaround(int register, LiveIntervals intervals) {
+    return (needsLongResultOverlappingLongOperandsWorkaround(intervals)
+            && isLongResultOverlappingLongOperands(register, intervals))
+        || (needsSingleResultOverlappingLongOperandsWorkaround(intervals)
+            && isSingleResultOverlappingLongOperands(register, intervals))
+        || (needsArrayGetWideWorkaround(intervals) && isArrayGetArrayRegister(register, intervals));
+  }
+
   // Intervals overlap a move exception interval if one of the splits of the intervals does.
   // Since spill and restore moves are always put after the move exception we cannot give
   // a non-move exception interval the same register as a move exception instruction.
@@ -2423,14 +2434,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     if (freePosition < unhandledInterval.getEnd()) {
       return false;
     }
-    // Check for overlapping long registers issue.
-    if (needsLongResultOverlappingLongOperandsWorkaround(unhandledInterval)
-        && isLongResultOverlappingLongOperands(register, unhandledInterval)) {
-      return false;
-    }
-    // Check for aget-wide bug in recent Art VMs.
-    if (needsArrayGetWideWorkaround(unhandledInterval)
-        && isArrayGetArrayRegister(register, unhandledInterval)) {
+    if (isRegisterRejectedByRuntimeWorkaround(register, unhandledInterval)) {
       return false;
     }
     assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
@@ -2645,44 +2649,6 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return candidate;
   }
 
-  private int handleWorkaround(
-      Predicate<LiveIntervals> workaroundNeeded,
-      IntObjPredicate<LiveIntervals> workaroundNeededForCandidate,
-      int candidate,
-      LiveIntervals unhandledInterval,
-      int registerConstraint,
-      boolean needsRegisterPair,
-      RegisterPositionsWithExtraBlockedRegisters freePositions,
-      RegisterType type) {
-    if (workaroundNeeded.test(unhandledInterval)) {
-      int lastCandidate = candidate;
-      while (workaroundNeededForCandidate.test(candidate, unhandledInterval)) {
-        // Make the unusable register unavailable for allocation and try again.
-        freePositions.setBlockedTemporarily(candidate);
-        candidate =
-            getLargestCandidate(
-                unhandledInterval, registerConstraint, freePositions, needsRegisterPair, type);
-        // If there are only invalid candidates of the give type we will end up with the same
-        // candidate returned again once we have tried them all. In that case we didn't find a
-        // valid register candidate and we need to broaden the search to other types.
-        if (lastCandidate == candidate) {
-          assert false
-              : "Unexpected attempt to take blocked register "
-                  + candidate
-                  + " in "
-                  + code.context().toSourceString();
-          return REGISTER_CANDIDATE_NOT_FOUND;
-        }
-        // If we did not find a valid register, then give up, and broaden the search to other types.
-        if (candidate == REGISTER_CANDIDATE_NOT_FOUND) {
-          return candidate;
-        }
-        lastCandidate = candidate;
-      }
-    }
-    return candidate;
-  }
-
   private int getLargestValidCandidate(
       LiveIntervals unhandledInterval,
       int registerConstraint,
@@ -2699,36 +2665,29 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     // the end of this method.
     RegisterPositionsWithExtraBlockedRegisters usePositionsWrapper =
         new RegisterPositionsWithExtraBlockedRegisters(usePositions);
-    candidate =
-        handleWorkaround(
-            this::needsLongResultOverlappingLongOperandsWorkaround,
-            this::isLongResultOverlappingLongOperands,
-            candidate,
-            unhandledInterval,
-            registerConstraint,
-            needsRegisterPair,
-            usePositionsWrapper,
-            type);
-    candidate =
-        handleWorkaround(
-            this::needsSingleResultOverlappingLongOperandsWorkaround,
-            this::isSingleResultOverlappingLongOperands,
-            candidate,
-            unhandledInterval,
-            registerConstraint,
-            needsRegisterPair,
-            usePositionsWrapper,
-            type);
-    candidate =
-        handleWorkaround(
-            this::needsArrayGetWideWorkaround,
-            this::isArrayGetArrayRegister,
-            candidate,
-            unhandledInterval,
-            registerConstraint,
-            needsRegisterPair,
-            usePositionsWrapper,
-            type);
+    while (isRegisterRejectedByRuntimeWorkaround(candidate, unhandledInterval)) {
+      // Make the unusable register unavailable for allocation and try again.
+      usePositionsWrapper.setBlockedTemporarily(candidate);
+      int lastCandidate = candidate;
+      candidate =
+          getLargestCandidate(
+              unhandledInterval, registerConstraint, usePositionsWrapper, needsRegisterPair, type);
+      // If there are only invalid candidates of the give type we will end up with the same
+      // candidate returned again once we have tried them all. In that case we didn't find a
+      // valid register candidate and we need to broaden the search to other types.
+      if (lastCandidate == candidate) {
+        assert false
+            : "Unexpected attempt to take blocked register "
+                + candidate
+                + " in "
+                + code.context().toSourceString();
+        return REGISTER_CANDIDATE_NOT_FOUND;
+      }
+      // If we did not find a valid register, then give up, and broaden the search to other types.
+      if (candidate == REGISTER_CANDIDATE_NOT_FOUND) {
+        return candidate;
+      }
+    }
     return candidate;
   }
 

@@ -43,13 +43,14 @@ public class InvokeSpecialOnOtherInterfaceTest extends TestBase {
         .addProgramClassFileData(getClassWithTransformedInvoked())
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/144410139): Consider making this a compilation failure when generating DEX.
-        .applyIf(
+        .applyIfDexRuntime(
             parameters.isCfRuntime(),
             r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
-            !(parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V13_0_0)
-                && parameters.canUseDefaultAndStaticInterfaceMethods()),
-            r -> r.assertSuccessWithOutputLines("Hello World!"),
-            r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
+            version ->
+                version.isNewerThanOrEqual(Version.V13_0_0)
+                    && parameters.canUseDefaultAndStaticInterfaceMethods(),
+            r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+            r -> r.assertSuccessWithOutputLines("Hello World!"));
   }
 
   @Test
@@ -66,14 +67,14 @@ public class InvokeSpecialOnOtherInterfaceTest extends TestBase {
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/144410139): Consider making this a compilation failure when generating DEX.
-        .applyIf(
+        .applyIfDexRuntime(
             parameters.isCfRuntime(),
             r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
-            parameters.isDexRuntime() && !parameters.canUseDefaultAndStaticInterfaceMethods(),
+            version -> !parameters.canUseDefaultAndStaticInterfaceMethods(),
             r -> r.assertSuccessWithOutputLines("Hello World!"),
-            parameters.isDexRuntime()
-                && !parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V13_0_0)
-                && parameters.canUseDefaultAndStaticInterfaceMethods(),
+            version ->
+                parameters.canUseDefaultAndStaticInterfaceMethods()
+                    && version.isOlderThan(Version.V13_0_0),
             r -> r.assertFailureWithErrorThatThrows(NullPointerException.class),
             r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
   }

@@ -14,8 +14,8 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -71,6 +71,7 @@ public class Jdk11Jsr166Tests extends DesugaredLibraryTestBase {
             .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
             .withAllApiLevels()
             .withApiLevel(AndroidApiLevel.N)
+            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_MINIMAL, JDK11, JDK11_PATH),
         ImmutableSet.of(D8_L8DEBUG, D8_L8SHRINK));
@@ -200,11 +201,10 @@ public class Jdk11Jsr166Tests extends DesugaredLibraryTestBase {
             .inspectL8WithSyntheticItems(this::inspect)
             .withArt6Plus64BitsLib();
     for (TestInfo testInfo : toRun) {
-      SingleTestRunResult<?> result =
-          compileResult.run(parameters.getRuntime(), testInfo.getName());
+      TestRunResult<?> result = compileResult.run(parameters.getRuntime(), testInfo.getName());
       assertTrue(
           "Failure in " + testInfo.getName() + "\n" + result,
-          result.getStdOut().startsWith(testInfo.getStartsWith()));
+          result.asSingleRuntimeResult().getStdOut().startsWith(testInfo.getStartsWith()));
     }
   }
 

@@ -31,7 +31,7 @@ public class InvokeSuperInDefaultInterfaceMethodToNonImmediateInterfaceTest exte
   @Parameterized.Parameters(name = "{0}, J.m(): {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        TestParameters.builder()
+        getTestParameters()
             .withCfRuntimes()
             .enableApiLevelsForCf()
             .withDexRuntimes()

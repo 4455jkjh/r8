@@ -14,6 +14,7 @@ import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -76,12 +77,13 @@ public class SimpleRecordTest extends TestBase {
             i -> RecordTestUtils.assertNoJavaLangRecord(i, parameters),
             options -> options.testing.disableRecordApplicationReaderMap = true)
         .run(parameters.getRuntime(), SimpleRecord.class)
-        .applyIf(
+        .applyIfDexRuntime(
             isRecordsFullyDesugaredForD8(parameters)
-                || runtimeWithRecordsSupport(parameters.getRuntime()),
+                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            Version::hasRecordsSupport,
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
             r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
-    ;
   }
 
   @Test

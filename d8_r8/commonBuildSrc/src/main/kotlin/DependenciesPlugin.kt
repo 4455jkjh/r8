@@ -507,10 +507,55 @@ public object ThirdPartyDeps {
     )
   public val node: ThirdPartyDependency =
     ThirdPartyDependency("node", Paths.get("third_party", "node", "24.16.0", "linux").toFile())
+  public val bookstory: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "bookstory",
+      Paths.get("third_party", "opensource-apps", "android", "bookstory").toFile(),
+    )
+  public val feeder: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "feeder",
+      Paths.get("third_party", "opensource-apps", "android", "feeder").toFile(),
+    )
+  public val fossifyFileManager: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "fossify-filemanager",
+      Paths.get("third_party", "opensource-apps", "android", "fossify-filemanager").toFile(),
+    )
+  public val keepassdx: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "keepassdx",
+      Paths.get("third_party", "opensource-apps", "android", "keepassdx").toFile(),
+    )
+  public val newpipe: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "newpipe",
+      Paths.get("third_party", "opensource-apps", "android", "newpipe").toFile(),
+    )
   public val nowinandroid: ThirdPartyDependency =
     ThirdPartyDependency(
       "nowinandroid",
       Paths.get("third_party", "opensource-apps", "android", "nowinandroid").toFile(),
+    )
+  public val omninotes: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "omninotes",
+      Paths.get("third_party", "opensource-apps", "android", "omninotes").toFile(),
+    )
+  public val opentracks: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "opentracks",
+      Paths.get("third_party", "opensource-apps", "android", "opentracks").toFile(),
+    )
+  public val readyou: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "readyou",
+      Paths.get("third_party", "opensource-apps", "android", "readyou").toFile(),
+    )
+  public val tusky: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "tusky",
+      Paths.get("third_party", "opensource-apps", "android", "tusky").toFile(),
     )
   public val prettier: ThirdPartyDependency =
     ThirdPartyDependency("prettier", Paths.get("third_party", "prettier", "3.8.3").toFile())
@@ -611,10 +656,10 @@ public object ThirdPartyDeps {
     )
   public val tivi: ThirdPartyDependency =
     ThirdPartyDependency("tivi", Paths.get("third_party", "opensource-apps", "tivi").toFile())
-  public val youtube1719: ThirdPartyDependency =
+  public val youtube2140: ThirdPartyDependency =
     ThirdPartyDependency(
-      "youtube-17.19",
-      Paths.get("third_party", "youtube", "youtube.android_17.19").toFile(),
+      "youtube-21.40",
+      Paths.get("third_party", "youtube", "youtube.android_21.40").toFile(),
       testOnly = true,
       type = DependencyType.X20,
     )

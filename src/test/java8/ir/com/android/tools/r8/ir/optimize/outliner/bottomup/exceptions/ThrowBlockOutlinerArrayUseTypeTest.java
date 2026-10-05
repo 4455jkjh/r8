@@ -8,9 +8,9 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.KeepUnusedArguments;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerTestBase;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.Outline;
@@ -35,8 +35,7 @@ public class ThrowBlockOutlinerArrayUseTypeTest extends BottomUpOutlinerTestBase
             .enableUnusedArgumentAnnotations());
   }
 
-  private void runTest(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testBuilder)
+  private void runTest(TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testBuilder)
       throws Exception {
     TestCompileResult<?, ?> compileResult =
         testBuilder.addInnerClasses(getClass()).apply(this::configure).compile();

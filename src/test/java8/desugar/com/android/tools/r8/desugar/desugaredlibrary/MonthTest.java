@@ -80,7 +80,7 @@ public class MonthTest extends DesugaredLibraryTestBase {
     return UK_EXPECTED_RESULT;
   }
 
-  private String getRUExpectedResult() {
+  private String getRUExpectedResult(Version version) {
     if (parameters.isCfRuntime()) {
       if (parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
         return RU_EXPECTED_RESULT;
@@ -91,7 +91,6 @@ public class MonthTest extends DesugaredLibraryTestBase {
       if (libraryDesugaringSpecification == JDK8) {
         return RU_EXPECTED_RESULT_DOT_NARROW_LOWERCASE_JDK8;
       }
-      Version version = parameters.getDexRuntimeVersion();
       if (version.isOlderThan(Version.V4_4_4)) {
         return RU_STANDALONE_EXPECTED_RESULT_LONG_NARROW_UPPERCASE;
       }
@@ -103,7 +102,7 @@ public class MonthTest extends DesugaredLibraryTestBase {
     return RU_EXPECTED_RESULT_DOT;
   }
 
-  private String getRUStandaloneExpectedResult() {
+  private String getRUStandaloneExpectedResult(Version version) {
     if (parameters.isCfRuntime()) {
       if (parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
         return RU_STANDALONE_EXPECTED_RESULT_ALL_UPPERCASE;
@@ -114,7 +113,6 @@ public class MonthTest extends DesugaredLibraryTestBase {
       if (libraryDesugaringSpecification == JDK8) {
         return MISSING_STANDALONE;
       }
-      Version version = parameters.getDexRuntimeVersion();
       if (version.isOlderThan(Version.V4_4_4)) {
         return RU_STANDALONE_EXPECTED_RESULT_LONG_NARROW_UPPERCASE;
       }
@@ -126,11 +124,11 @@ public class MonthTest extends DesugaredLibraryTestBase {
     return RU_STANDALONE_EXPECTED_RESULT_NARROW_UPPERCASE;
   }
 
-  private String getExpectedResult() {
+  private String getExpectedResult(Version version) {
     return getUKStandaloneExpectedResult()
         + UK_EXPECTED_RESULT
-        + getRUStandaloneExpectedResult()
-        + getRUExpectedResult();
+        + getRUStandaloneExpectedResult(version)
+        + getRUExpectedResult(version);
   }
 
   @Test
@@ -140,14 +138,19 @@ public class MonthTest extends DesugaredLibraryTestBase {
       testForJvm(parameters)
           .addInnerClasses(MonthTest.class)
           .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutput(getExpectedResult());
+          .assertSuccessWithOutput(getExpectedResult(null));
       return;
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V4_4_4),
+            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V4_0_4)),
+            version -> version.isInRangeInclusive(Version.V4_4_4, Version.V5_1_1),
+            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V4_4_4)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V6_0_1)));
   }
 
   static class Main {

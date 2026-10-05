@@ -6,12 +6,12 @@ package com.android.tools.r8.resolution;
 
 import static com.android.tools.r8.references.Reference.classFromClass;
 import static com.android.tools.r8.references.Reference.methodFromMethod;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
@@ -55,15 +55,16 @@ public class InvokeCustomOnNonOverriddenInterfaceMethodTest extends TestBase {
         .apply(this::checkRunResult);
   }
 
-  private void checkRunResult(SingleTestRunResult<?> result) {
-    if (parameters.isCfRuntime()
-        || parameters.asDexRuntime().getVersion().isNewerThanOrEqual(Version.V10_0_0)) {
-      result.assertSuccessWithOutputLines(EXPECTED);
-    } else {
-      // Fails due to b/115964401.
-      assertEquals(Version.V9_0_0, parameters.getDexRuntimeVersion());
-      result.assertFailureWithErrorThatThrows(WrongMethodTypeException.class);
-    }
+  private void checkRunResult(TestRunResult<?> result) {
+    result.applyIfDexRuntime(
+        parameters.isCfRuntime(),
+        r -> r.assertSuccessWithOutputLines(EXPECTED),
+        version -> version.isNewerThanOrEqual(Version.V10_0_0),
+        r -> r.assertSuccessWithOutputLines(EXPECTED),
+        // Fails due to b/115964401.
+        version -> version.isEqualTo(Version.V9_0_0),
+        r -> r.assertFailureWithErrorThatThrows(WrongMethodTypeException.class),
+        r -> fail("Unexpected runtime"));
   }
 
   private static byte[] getInvokeCustomTransform() throws Throwable {

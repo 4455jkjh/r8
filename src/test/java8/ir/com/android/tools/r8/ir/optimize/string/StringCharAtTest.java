@@ -11,10 +11,10 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestRunResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -60,7 +60,7 @@ public class StringCharAtTest extends TestBase {
   }
 
   private void inspect(
-      SingleTestRunResult<?> result,
+      TestRunResult<?> result,
       int expectedConstantCalls,
       int expectedOutOfBoundsCalls,
       int expectedNonConstantCalls)

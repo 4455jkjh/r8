@@ -131,7 +131,14 @@ public class TestConfigurationHelper {
       stackTraceForResultSink: String? = null,
     ) {
       val info = resultSinkInfo ?: return
-      if (desc == null || result == null || desc.className == null) return
+      if (
+        desc == null ||
+          result == null ||
+          desc.className == null ||
+          result.resultType == TestResult.ResultType.SKIPPED
+      ) {
+        return
+      }
 
       val displayName = desc.displayName
       val methodName = desc.name.substringBefore('[')
@@ -151,7 +158,6 @@ public class TestConfigurationHelper {
         when (result.resultType) {
           TestResult.ResultType.SUCCESS -> "PASSED"
           TestResult.ResultType.FAILURE -> "FAILED"
-          TestResult.ResultType.SKIPPED -> "SKIPPED"
           else -> "PRECLUDED"
         }
       val durationMs = result.endTime - result.startTime
@@ -201,11 +207,6 @@ public class TestConfigurationHelper {
 
           if (result.resultType == TestResult.ResultType.FAILURE) {
             add("failureReason", JsonObject().apply { addProperty("kind", "ORDINARY") })
-          } else if (result.resultType == TestResult.ResultType.SKIPPED) {
-            add(
-              "skippedReason",
-              JsonObject().apply { addProperty("kind", "DISABLED_AT_DECLARATION") },
-            )
           }
 
           val summaryHtml = "<p>Arguments string: $argumentString</p>"

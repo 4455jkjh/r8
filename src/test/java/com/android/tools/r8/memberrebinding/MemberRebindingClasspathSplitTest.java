@@ -150,12 +150,12 @@ public class MemberRebindingClasspathSplitTest extends TestBase {
         .compile()
         .apply(split.addToRunClasspath)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            split.expectFailure && parameters.isDexRuntimeVersionOlderThanOrEqual(Version.V4_4_4),
+        .applyIfDexRuntime(
+            !split.expectFailure,
+            rr -> rr.assertSuccessWithOutputLines("A", "A"),
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
-            split.expectFailure,
-            rr -> rr.assertFailureWithErrorThatThrows(IllegalAccessError.class),
-            rr -> rr.assertSuccessWithOutputLines("A", "A"));
+            rr -> rr.assertFailureWithErrorThatThrows(IllegalAccessError.class));
   }
 
   public static class C extends MemberRebindingClasspathSplitTestClasses.B {

@@ -3,10 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,7 +55,7 @@ public class B370303498Test extends TestBase {
             parameters.isCfRuntime(),
             r -> r.assertFailureWithErrorThatThrows(ArrayIndexOutOfBoundsException.class),
             // TODO(b/370303498): Should throw ArrayIndexOutOfBoundsException.
-            SingleTestRunResult::assertSuccess);
+            TestRunResult::assertSuccess);
   }
 
   static class TestClass {

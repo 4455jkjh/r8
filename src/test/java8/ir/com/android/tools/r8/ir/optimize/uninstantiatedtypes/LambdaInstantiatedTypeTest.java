@@ -29,7 +29,7 @@ public class LambdaInstantiatedTypeTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   public LambdaInstantiatedTypeTest(TestParameters parameters) {

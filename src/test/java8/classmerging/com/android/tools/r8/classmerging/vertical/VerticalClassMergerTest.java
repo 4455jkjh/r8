@@ -81,7 +81,7 @@ public class VerticalClassMergerTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection params() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   public VerticalClassMergerTest(TestParameters parameters) {
@@ -1216,6 +1216,7 @@ public class VerticalClassMergerTest extends TestBase {
             .addProgramResourceProviders(input.getProgramResourceProviders())
             .run(parameters.getRuntime(), main)
             .assertSuccess()
+            .asSingleRuntimeResult()
             .getStdOut();
 
     compileResult.run(parameters.getRuntime(), main).assertSuccessWithOutput(d8Result);

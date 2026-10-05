@@ -148,15 +148,14 @@ public class NoRelaxationForSerializableTest extends AccessRelaxationTestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), MAIN)
-        .applyIf(
-            parameters.isCfRuntime()
-                || parameters.getDexRuntimeVersion().isEqualToOneOf(Version.V5_1_1, Version.V8_1_0)
-                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V10_0_0),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
             runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT),
-            parameters.isDexRuntimeVersion(Version.DEFAULT)
-                || parameters.isDexRuntimeVersion(Version.V6_0_1)
-                || parameters.isDexRuntimeVersion(Version.V7_0_0)
-                || parameters.isDexRuntimeVersion(Version.V9_0_0),
+            v ->
+                v.isEqualToOneOf(Version.V5_1_1, Version.V8_1_0)
+                    || v.isNewerThanOrEqual(Version.V10_0_0),
+            runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            v -> v.isEqualToOneOf(Version.DEFAULT, Version.V6_0_1, Version.V7_0_0, Version.V9_0_0),
             runResult -> runResult.assertFailureWithErrorThatThrows(UnsatisfiedLinkError.class),
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(NoSuchAlgorithmException.class));
@@ -189,17 +188,18 @@ public class NoRelaxationForSerializableTest extends AccessRelaxationTestBase {
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), MAIN)
-        .applyIf(
-            parameters.isCfRuntime()
-                || parameters.getDexRuntimeVersion().isEqualToOneOf(Version.V5_1_1, Version.V8_1_0)
-                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V10_0_0),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
             runResult ->
                 runResult.assertFailureWithErrorThatMatches(
                     containsString("Could not deserialize")),
-            parameters.isDexRuntimeVersion(Version.DEFAULT)
-                || parameters.isDexRuntimeVersion(Version.V6_0_1)
-                || parameters.isDexRuntimeVersion(Version.V7_0_0)
-                || parameters.isDexRuntimeVersion(Version.V9_0_0),
+            v ->
+                v.isEqualToOneOf(Version.V5_1_1, Version.V8_1_0)
+                    || v.isNewerThanOrEqual(Version.V10_0_0),
+            runResult ->
+                runResult.assertFailureWithErrorThatMatches(
+                    containsString("Could not deserialize")),
+            v -> v.isEqualToOneOf(Version.DEFAULT, Version.V6_0_1, Version.V7_0_0, Version.V9_0_0),
             runResult -> runResult.assertFailureWithErrorThatThrows(UnsatisfiedLinkError.class),
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(NoSuchAlgorithmException.class));

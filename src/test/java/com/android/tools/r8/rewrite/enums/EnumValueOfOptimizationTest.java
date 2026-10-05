@@ -56,19 +56,18 @@ public class EnumValueOfOptimizationTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
+        .applyIfDexRuntime(
             parameters.isCfRuntime()
                 || enableNoVerticalClassMergingAnnotations
                 || enumKeepRules.isStudio(),
             runResult ->
                 runResult.assertSuccessWithOutputLines(
                     "npe OK", "iae1 OK", "iae2 OK", "iae3 OK", "iae4 OK"),
-            parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik(),
+            Version::isDalvik,
             runResult ->
                 runResult.assertSuccessWithOutputLines(
                     "npe OK", "iae1 OK", "iae2 OK", "iae3 OK", "npe OK"),
-            parameters.isDexRuntime()
-                && parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V10_0_0),
+            version -> version.isNewerThanOrEqual(Version.V10_0_0),
             runResult ->
                 runResult.assertSuccessWithOutputLines(
                     "npe OK", "iae1 OK", "iae2 OK", "iae3 OK", "nsme->re OK"),

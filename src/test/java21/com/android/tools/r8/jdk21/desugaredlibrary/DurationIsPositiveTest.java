@@ -61,11 +61,15 @@ public class DurationIsPositiveTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Executor.class)
-        .applyIf(
-            parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.O)
-                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(V16_0_0),
+        .applyIfDexRuntime(
+            version ->
+                parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.O)
+                    || version.isNewerThanOrEqual(V16_0_0),
             b -> b.assertSuccessWithOutput(EXPECTED_RESULT),
-            parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V8_1_0),
+            version ->
+                parameters.getApiLevel().isLessThan(AndroidApiLevel.O)
+                    && version.isNewerThanOrEqual(Version.V8_1_0)
+                    && version.isOlderThan(V16_0_0),
             b -> b.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
             b -> b.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }

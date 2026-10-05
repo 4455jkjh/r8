@@ -10,6 +10,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,9 +32,9 @@ public class StaticGetSharingRetraceTest extends TestBase {
   @Test
   public void testHoist() throws Exception {
     StackTrace expectedStackTrace =
-        testForRuntime(parameters)
+        testForJvm(temp)
             .addInnerClasses(getClass())
-            .run(parameters.getRuntime(), MainHoist.class)
+            .run(TestRuntime.getDefaultCfRuntime(), MainHoist.class)
             .getStackTrace();
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
@@ -49,9 +50,9 @@ public class StaticGetSharingRetraceTest extends TestBase {
   @Test
   public void testSink() throws Exception {
     StackTrace expectedStackTrace =
-        testForRuntime(parameters)
+        testForJvm(temp)
             .addInnerClasses(getClass())
-            .run(parameters.getRuntime(), MainSink.class)
+            .run(TestRuntime.getDefaultCfRuntime(), MainSink.class)
             .getStackTrace();
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())

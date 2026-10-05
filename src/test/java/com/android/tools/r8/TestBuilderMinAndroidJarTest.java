@@ -31,6 +31,7 @@ public class TestBuilderMinAndroidJarTest extends TestBase {
     return getTestParameters()
         .withAllRuntimes()
         .withApiLevelsStartingAtIncluding(AndroidApiLevel.N)
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

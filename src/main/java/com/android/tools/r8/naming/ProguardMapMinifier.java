@@ -271,21 +271,42 @@ public class ProguardMapMinifier {
     assert !signature.isQualified();
     if (signature instanceof MethodSignature) {
       DexMethod originalMethod = ((MethodSignature) signature).toDexMethod(factory, type);
-      addMemberNaming(
-          originalMethod, memberNaming, addToAdditionalMaps ? additionalMethodNamings : null);
       DexClass holder = appView.definitionForHolder(originalMethod);
       DexEncodedMethod definition = originalMethod.lookupOnClass(holder);
-      if (definition == null || !definition.accessFlags.isPrivate()) {
-        nonPrivateMembers.put(originalMethod, memberNaming);
+      // When propagating mappings from an implemented interface (addToAdditionalMaps is true), do
+      // not overwrite an existing mapping on the current type: static methods with the same
+      // signature on the class and interface may be mapped to different names, and virtual methods
+      // must already agree on the renamed name.
+      if (!addToAdditionalMaps || !memberNames.containsKey(originalMethod)) {
+        addMemberNaming(
+            originalMethod, memberNaming, addToAdditionalMaps ? additionalMethodNamings : null);
+        if (definition == null || !definition.accessFlags.isPrivate()) {
+          nonPrivateMembers.put(originalMethod, memberNaming);
+        }
+      } else {
+        assert definition == null
+            || definition.isStatic()
+            || memberNames
+                .get(originalMethod)
+                .getRenamedName()
+                .equals(memberNaming.getRenamedName());
       }
     } else {
       DexField originalField = ((FieldSignature) signature).toDexField(factory, type);
-      addMemberNaming(
-          originalField, memberNaming, addToAdditionalMaps ? additionalFieldNamings : null);
-      DexClass holder = appView.definitionForHolder(originalField);
-      DexEncodedField field = originalField.lookupOnClass(holder);
-      if (field == null || !field.isPrivate()) {
-        nonPrivateMembers.put(originalField, memberNaming);
+      // Fields are allowed to be named differently in the hierarchy (for example, when both an
+      // interface and an implementing class define a field with the same name and type, such as
+      // $r8$clinit, FieldNameMinifier renames them to distinct names). Do not overwrite an
+      // existing field mapping on the current type when propagating interface mappings.
+      if (!addToAdditionalMaps || !memberNames.containsKey(originalField)) {
+        addMemberNaming(
+            originalField, memberNaming, addToAdditionalMaps ? additionalFieldNamings : null);
+        DexClass holder = appView.definitionForHolder(originalField);
+        DexEncodedField field = originalField.lookupOnClass(holder);
+        if (field == null || !field.isPrivate()) {
+          nonPrivateMembers.put(originalField, memberNaming);
+        }
+      } else {
+        // Fields are allowed to be named differently in the hierarchy.
       }
     }
   }

@@ -51,7 +51,7 @@ public class FloatToDoubleTest extends NumberConversionTestBase {
           Float.POSITIVE_INFINITY,
           Float.NEGATIVE_INFINITY
         },
-        TestParameters.builder().withNoneRuntime().build());
+        getTestParameters().withNoneRuntime().build());
   }
 
   @Test

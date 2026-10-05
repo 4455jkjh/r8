@@ -4,7 +4,6 @@
 package com.android.tools.r8.resolution;
 
 import static com.android.tools.r8.ToolHelper.getMostRecentAndroidJar;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.R8TestRunResult;
@@ -12,8 +11,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -147,29 +145,16 @@ public class VirtualOverrideOfPrivateStaticMethodWithVirtualParentTest extends T
   }
 
   private void checkResult(TestRunResult<?> runResult, boolean isCorrectedByR8) {
-    if (expectedToIncorrectlyRun(parameters.getRuntime(), isCorrectedByR8)) {
-      // Do to incorrect resolution, some Art VMs will resolve to Base.f (ignoring A.f) and thus
-      // virtual dispatch to C.f. See b/140013075.
-      runResult.assertSuccessWithOutputLines("Called C.f");
-    } else {
-      runResult.assertFailureWithErrorThatMatches(
-          containsString(expectedRuntimeError(isCorrectedByR8)));
-    }
-  }
-
-  private boolean expectedToIncorrectlyRun(TestRuntime runtime, boolean isCorrectedByR8) {
-    return !isCorrectedByR8
-        && runtime.isDex()
-        && runtime.asDex().getVm().isNewerThan(DexVm.ART_4_4_4_HOST)
-        && runtime.asDex().getVm().isOlderThanOrEqual(DexVm.ART_7_0_0_HOST);
-  }
-
-  private String expectedRuntimeError(boolean isCorrectedByR8) {
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_HOST)
-        && !isCorrectedByR8) {
-      return "IncompatibleClassChangeError";
-    }
-    return "IllegalAccessError";
+    runResult.applyIfDexRuntime(
+        // Do to incorrect resolution, some Art VMs will resolve to Base.f (ignoring A.f) and
+        // thus virtual dispatch to C.f. See b/140013075.
+        version ->
+            !isCorrectedByR8
+                && version.isNewerThan(Version.V4_4_4)
+                && version.isOlderThanOrEqual(Version.V7_0_0),
+        r -> r.assertSuccessWithOutputLines("Called C.f"),
+        version -> !isCorrectedByR8 && version.isOlderThanOrEqual(Version.V4_4_4),
+        r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
+        r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class));
   }
 }

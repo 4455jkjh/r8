@@ -315,6 +315,11 @@ public abstract class TestRuntime {
       return this;
     }
 
+    @Override
+    public List<DexRuntime> asDexRuntimes() {
+      return ImmutableList.of(this);
+    }
+
     public DexVm getVm() {
       return vm;
     }
@@ -353,6 +358,68 @@ public abstract class TestRuntime {
 
     public boolean hasRecordsSupport() {
       return getVersion().hasRecordsSupport();
+    }
+  }
+
+  // Wrapper for multiple DEX runtimes sharing the same compilation parameters.
+  public static class CollapsedDexRuntimes extends TestRuntime {
+
+    private final List<DexRuntime> runtimes;
+
+    public CollapsedDexRuntimes(List<DexRuntime> runtimes) {
+      assert runtimes.size() > 1;
+      this.runtimes = ImmutableList.copyOf(runtimes);
+    }
+
+    @Override
+    public String name() {
+      return "dex-[" + StringUtils.join(",", runtimes, r -> r.getVersion().toString()) + "]";
+    }
+
+    @Override
+    public boolean isDex() {
+      return true;
+    }
+
+    @Override
+    public DexRuntime asDex() {
+      throw new Unreachable("Cannot get single DexRuntime from CollapsedDexRuntimes: " + this);
+    }
+
+    @Override
+    public List<DexRuntime> asDexRuntimes() {
+      return runtimes;
+    }
+
+    @Override
+    public AndroidApiLevel maxSupportedApiLevel() {
+      AndroidApiLevel max = AndroidApiLevel.LATEST;
+      for (DexRuntime runtime : runtimes) {
+        AndroidApiLevel level = runtime.maxSupportedApiLevel();
+        if (level.isLessThan(max)) {
+          max = level;
+        }
+      }
+      return max;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (!(other instanceof CollapsedDexRuntimes)) {
+        return false;
+      }
+      CollapsedDexRuntimes collapsedDexRuntimes = (CollapsedDexRuntimes) other;
+      return runtimes.equals(collapsedDexRuntimes.runtimes);
+    }
+
+    @Override
+    public int hashCode() {
+      return runtimes.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return name();
     }
   }
 
@@ -474,6 +541,10 @@ public abstract class TestRuntime {
 
   public DexRuntime asDex() {
     return null;
+  }
+
+  public List<DexRuntime> asDexRuntimes() {
+    throw new Unreachable();
   }
 
   public CfRuntime asCf() {

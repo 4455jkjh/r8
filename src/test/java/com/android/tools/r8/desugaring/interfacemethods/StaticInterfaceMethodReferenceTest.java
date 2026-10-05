@@ -10,7 +10,7 @@ import com.android.tools.r8.TestBuilderCollection;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
@@ -65,16 +65,11 @@ public class StaticInterfaceMethodReferenceTest extends TestBase {
     if (isInterface
         && parameters.isDexRuntime()
         && parameters.getApiLevel().isLessThan(apiLevelWithStaticInterfaceMethodsSupport())) {
-      result.assertFailureWithErrorThatThrows(
-          parameters
-                  .getRuntime()
-                  .asDex()
-                  .getVm()
-                  .getVersion()
-                  .isOlderThanOrEqual(DexVm.Version.V4_4_4)
-              // On <= 4.4.4 a verify error happens due to the static invoke on an interface.
-              ? VerifyError.class
-              : NoSuchMethodError.class);
+      result.applyIfDexRuntime(
+          v -> v.isOlderThanOrEqual(Version.V4_4_4),
+          // On <= 4.4.4 a verify error happens due to the static invoke on an interface.
+          r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+          r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
       return;
     }
     checkResult(result);

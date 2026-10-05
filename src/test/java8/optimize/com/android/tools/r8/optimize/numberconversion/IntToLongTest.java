@@ -25,7 +25,7 @@ public class IntToLongTest extends NumberConversionTestBase {
   public static List<Object[]> data() {
     return buildParameters(
         new Integer[] {128, 65408, -65408, 42, -32, 0, Integer.MAX_VALUE, Integer.MIN_VALUE},
-        TestParameters.builder().withNoneRuntime().build());
+        getTestParameters().withNoneRuntime().build());
   }
 
   @Test

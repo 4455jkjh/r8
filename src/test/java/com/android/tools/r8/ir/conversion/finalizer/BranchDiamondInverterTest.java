@@ -13,6 +13,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexGoto;
 import com.android.tools.r8.dex.code.DexInstruction;
+import com.android.tools.r8.dex.code.DexReturn;
 import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -49,12 +50,18 @@ public class BranchDiamondInverterTest extends TestBase {
               assertTrue(methodSubject.isPresent());
               DexCode dexCode = methodSubject.getMethod().getCode().asDexCode();
               int gotoCount = 0;
+              int returnCount = 0;
               for (DexInstruction instruction : dexCode.instructions) {
                 if (instruction instanceof DexGoto) {
                   gotoCount++;
+                } else if (instruction instanceof DexReturn) {
+                  returnCount++;
                 }
               }
-              assertEquals(0, gotoCount);
+              // The fallthrough goto of the branch diamond is eliminated; the only remaining goto
+              // jumps to the canonicalized return block.
+              assertEquals(1, gotoCount);
+              assertEquals(1, returnCount);
             })
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines("15", "-1", "-1");

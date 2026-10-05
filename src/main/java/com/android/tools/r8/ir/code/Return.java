@@ -12,14 +12,21 @@ import com.android.tools.r8.dex.code.DexReturn;
 import com.android.tools.r8.dex.code.DexReturnObject;
 import com.android.tools.r8.dex.code.DexReturnVoid;
 import com.android.tools.r8.dex.code.DexReturnWide;
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.analysis.TypeChecker;
+import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
+import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import java.util.List;
 
 public class Return extends JumpInstruction {
 
@@ -92,6 +99,51 @@ public class Return extends JumpInstruction {
   @Override
   public void buildDex(DexBuilder builder) {
     builder.addReturn(this, createDexInstruction(builder));
+  }
+
+  @Override
+  public boolean identicalAfterRegisterAllocation(
+      Instruction other, RegisterAllocator allocator, MethodConversionOptions conversionOptions) {
+    return super.identicalAfterRegisterAllocation(other, allocator, conversionOptions)
+        && (!shouldOnlyMergeIdenticalReturnValues(allocator.options(), allocator.getProgramMethod())
+            || identicalArrayValuesAfterRegisterAllocation(
+                returnValue(), other.asReturn().returnValue(), allocator));
+  }
+
+  /**
+   * Returns true if returns of distinct values must not be merged in the given method.
+   *
+   * <p>When ART may compute an incorrect join for arrays of interfaces, merging distinct array
+   * return values can lead to verification errors.
+   *
+   * <p>When the return values are based on missing classes, their join is java.lang.Object, which
+   * may not type check against the method return type.
+   */
+  public static boolean shouldOnlyMergeIdenticalReturnValues(
+      AppView<?> appView, ProgramMethod method, List<BasicBlock> normalExits) {
+    return shouldOnlyMergeIdenticalReturnValues(appView.options(), method)
+        || !isJoinOfReturnValuesAssignableToReturnType(appView, method, normalExits);
+  }
+
+  private static boolean shouldOnlyMergeIdenticalReturnValues(
+      InternalOptions options, ProgramMethod method) {
+    return options.canHaveIncorrectJoinForArrayOfInterfacesBug()
+        && method.getReturnType().isArrayType();
+  }
+
+  private static boolean isJoinOfReturnValuesAssignableToReturnType(
+      AppView<?> appView, ProgramMethod method, List<BasicBlock> normalExits) {
+    if (normalExits.size() < 2
+        || !appView.enableWholeProgramOptimizations()
+        || !method.getReturnType().isClassType()) {
+      return true;
+    }
+    TypeElement joinType = TypeElement.getBottom();
+    for (BasicBlock exitBlock : normalExits) {
+      joinType = joinType.join(exitBlock.exit().asReturn().returnValue().getType(), appView);
+    }
+    return new TypeChecker(appView.withClassHierarchy(), VerifyTypesHelper.create(appView))
+        .isAssignableToReturnType(joinType, method.getDefinition());
   }
 
   @Override

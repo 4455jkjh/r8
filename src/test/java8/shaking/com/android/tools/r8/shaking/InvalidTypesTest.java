@@ -13,8 +13,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
 import com.android.tools.r8.D8TestRunResult;
-import com.android.tools.r8.ProguardTestRunResult;
 import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.jasmin.JasminBuilder;
@@ -273,7 +273,7 @@ public class InvalidTypesTest extends JasminTestBase {
               .run(parameters.getRuntime(), mainClass.name);
       checkTestRunResult(jvmResult, Compiler.JAVAC);
 
-      ProguardTestRunResult proguardResult =
+      SingleTestRunResult proguardResult =
           testForProguard()
               .addProgramFiles(inputJar)
               .addKeepMainRule(mainClass.name)

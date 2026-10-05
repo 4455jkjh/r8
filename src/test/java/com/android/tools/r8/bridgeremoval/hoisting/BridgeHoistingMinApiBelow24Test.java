@@ -56,11 +56,10 @@ public class BridgeHoistingMinApiBelow24Test extends TestBase {
         .enableNoMethodStaticizingAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isCfRuntime()
-                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
-            rr -> rr.assertSuccessWithOutputLines("Caught UOE"),
-            rr -> rr.assertFailureWithErrorThatThrows(AbstractMethodError.class));
+        .applyIfDexRuntime(
+            v -> v.isOlderThan(Version.V7_0_0),
+            rr -> rr.assertFailureWithErrorThatThrows(AbstractMethodError.class),
+            rr -> rr.assertSuccessWithOutputLines("Caught UOE"));
   }
 
   @NeverClassInline

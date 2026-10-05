@@ -9,11 +9,11 @@ import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLeve
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.Test;
@@ -126,7 +126,7 @@ public class ApiModelOutlinePackagePrivateTest extends TestBase {
         .apply(this::checkResultOnBootClassPath);
   }
 
-  private void checkResultOnBootClassPath(SingleTestRunResult<?> runResult) {
+  private void checkResultOnBootClassPath(TestRunResult<?> runResult) {
     runResult
         .assertSuccessWithOutputLinesIf(!willInvokeLibraryMethods(), "Not calling API")
         // We are expecting an IllegalAccessError since LibraryClass is on bootclasspath and

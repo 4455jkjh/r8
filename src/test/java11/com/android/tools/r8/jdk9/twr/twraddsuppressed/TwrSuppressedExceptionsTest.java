@@ -48,15 +48,6 @@ public class TwrSuppressedExceptionsTest extends TestBase {
         .build();
   }
 
-  public boolean runtimeHasSuppressedExceptionsSupport() {
-    // TODO(b/214239152): Update this if desugaring is changed.
-    // Despite 4.0.4 being API level 15 and add suppressed being officially added in 19 it is
-    // actually implemented. Thus, the backport implementation will use the functionality and run
-    // as expected by RI.
-    return parameters.isCfRuntime()
-        || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V4_0_4);
-  }
-
   public boolean apiLevelHasSuppressedExceptionsSupport(boolean isDesugaring) {
     return !isDesugaring
         || parameters
@@ -78,8 +69,14 @@ public class TwrSuppressedExceptionsTest extends TestBase {
     testForDesugaring(parameters)
         .addProgramClassFileData(getProgramInputs())
         .run(parameters.getRuntime(), TEST_CLASS)
-        .assertSuccessWithOutput(
-            runtimeHasSuppressedExceptionsSupport() ? StringUtils.lines("CLOSE") : "NONE")
+        // TODO(b/214239152): Update this if desugaring is changed.
+        // Despite 4.0.4 being API level 15 and add suppressed being officially added in 19 it is
+        // actually implemented. Thus, the backport implementation will use the functionality and
+        // run as expected by RI.
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V4_0_4),
+            r -> r.assertSuccessWithOutput("NONE"),
+            r -> r.assertSuccessWithOutput(StringUtils.lines("CLOSE")))
         .inspectIf(
             DesugarTestConfiguration::isDesugared,
             inspector -> {
@@ -131,8 +128,10 @@ public class TwrSuppressedExceptionsTest extends TestBase {
               }
             })
         .run(parameters.getRuntime(), TEST_CLASS)
-        .assertSuccessWithOutput(
-            runtimeHasSuppressedExceptionsSupport() ? StringUtils.lines("CLOSE") : "NONE")
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V4_0_4),
+            r -> r.assertSuccessWithOutput("NONE"),
+            r -> r.assertSuccessWithOutput(StringUtils.lines("CLOSE")))
         .inspect(
             inspector -> {
               IntBox gets = new IntBox(0);

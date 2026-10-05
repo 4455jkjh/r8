@@ -11,11 +11,10 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Before;
@@ -40,15 +39,10 @@ public class RetraceInlineConditionTest extends TestBase {
   @Before
   public void setup() throws Exception {
     // Get the expected stack trace by running on the JVM.
-    TestBuilder<? extends SingleTestRunResult<?>, ?> testBuilder =
-        testForRuntime(parameters).addInnerClasses(getClass());
-    SingleTestRunResult<?> runResult = testBuilder.run(parameters.getRuntime(), Main.class);
-    if (parameters.isCfRuntime()) {
-      expectedStackTrace = runResult.map(StackTrace::extractFromJvm);
-    } else {
-      expectedStackTrace =
-          StackTrace.extractFromArt(runResult.getStdErr(), parameters.asDexRuntime().getVm());
-    }
+    testForJvm(temp)
+        .addInnerClasses(getClass())
+        .run(TestRuntime.getDefaultCfRuntime(), Main.class)
+        .inspectStackTrace(stackTrace -> expectedStackTrace = stackTrace);
   }
 
   @Test

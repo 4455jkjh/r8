@@ -7,6 +7,7 @@ import static com.google.common.base.Predicates.alwaysFalse;
 
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.TestRuntime.CollapsedDexRuntimes;
 import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.TestRuntime.NoneRuntime;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiPredicate;
@@ -31,6 +33,7 @@ public class TestParametersBuilder {
   private Predicate<TestParameters> filter = alwaysFalse();
   private Predicate<TestParameters> partialFilter = alwaysFalse();
   private boolean hasDexRuntimeFilter = false;
+  private boolean allowCollapsedDexRuntimes = true;
 
   TestParametersBuilder() {}
 
@@ -261,6 +264,15 @@ public class TestParametersBuilder {
     return withApiLevelsStartingAtIncluding(TestBase.apiLevelWithDefaultInterfaceMethodsSupport());
   }
 
+  public TestParametersBuilder withCollapsedDexRuntimes(boolean allowCollapsedDexRuntimes) {
+    this.allowCollapsedDexRuntimes = allowCollapsedDexRuntimes;
+    return this;
+  }
+
+  public TestParametersBuilder withoutCollapsedDexRuntimes() {
+    return withCollapsedDexRuntimes(false);
+  }
+
   public TestParametersCollection build() {
     assert !enableApiLevels || enableApiLevelsForCf || hasDexRuntimeFilter;
     List<TestParameters> availableParameters =
@@ -268,7 +280,49 @@ public class TestParametersBuilder {
             .flatMap(this::createTestParameters)
             .filter(filter)
             .collect(Collectors.toList());
+    if (enableApiLevels && allowCollapsedDexRuntimes) {
+      availableParameters = collapseDexRuntimes(availableParameters);
+    }
     return new TestParametersCollection(availableParameters);
+  }
+
+  private List<TestParameters> collapseDexRuntimes(List<TestParameters> parameters) {
+    Map<AndroidApiLevel, Map<PartialCompilationTestParameters, List<TestParameters>>> groups =
+        new LinkedHashMap<>();
+    for (TestParameters parameter : parameters) {
+      if (parameter.isDexRuntime() && parameter.hasApiLevel()) {
+        groups
+            .computeIfAbsent(parameter.getApiLevel(), k -> new LinkedHashMap<>())
+            .computeIfAbsent(
+                parameter.getPartialCompilationTestParameters(), k -> new ArrayList<>())
+            .add(parameter);
+      }
+    }
+    List<TestParameters> result = new ArrayList<>();
+    for (TestParameters parameter : parameters) {
+      if (parameter.isDexRuntime() && parameter.hasApiLevel()) {
+        List<TestParameters> group =
+            groups
+                .get(parameter.getApiLevel())
+                .remove(parameter.getPartialCompilationTestParameters());
+        if (group != null) {
+          if (group.size() == 1) {
+            result.add(group.get(0));
+          } else {
+            List<DexRuntime> dexRuntimes =
+                group.stream().map(TestParameters::asDexRuntime).collect(Collectors.toList());
+            result.add(
+                new TestParameters(
+                    new CollapsedDexRuntimes(dexRuntimes),
+                    parameter.getApiLevel(),
+                    parameter.getPartialCompilationTestParameters()));
+          }
+        }
+      } else {
+        result.add(parameter);
+      }
+    }
+    return result;
   }
 
   private Stream<TestParameters> createTestParameters(TestRuntime runtime) {

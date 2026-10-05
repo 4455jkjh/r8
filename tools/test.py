@@ -298,7 +298,7 @@ def ParseOptions():
         help='Test filters. They are additive and support wildcards (e.g., *).')
     options, args = result.parse_known_args()
     if options.java_max_memory_size is None:
-        # YouTubeV1719Test OOM's with 4G, so raise xmx to 6G when running internal tests.
+        # Raise xmx to 6G when running internal tests.
         default_xmx = '4G' if options.no_internal else '6G'
         options.java_max_memory_size = os.environ.get('R8_JAVA_MAX_MEMORY_SIZE',
                                                       default_xmx)

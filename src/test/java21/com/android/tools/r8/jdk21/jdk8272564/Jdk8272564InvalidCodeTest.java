@@ -50,9 +50,8 @@ public class Jdk8272564InvalidCodeTest extends TestBase {
         .addProgramClasses(I.class)
         .addProgramClassFileData(getTransformedClass())
         .run(parameters.getRuntime(), A.class)
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters.asDexRuntime().getVersion().isOlderThanOrEqual(Version.V4_4_4),
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
             r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
@@ -70,9 +69,8 @@ public class Jdk8272564InvalidCodeTest extends TestBase {
         .addKeepMainRule(A.class)
         .addOptionsModification(options -> options.testing.allowInvokeErrors = true)
         .run(parameters.getRuntime(), A.class)
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters.asDexRuntime().getVersion().isOlderThanOrEqual(Version.V4_4_4),
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
             r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
             r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }

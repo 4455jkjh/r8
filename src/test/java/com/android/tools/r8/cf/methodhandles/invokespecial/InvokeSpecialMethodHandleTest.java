@@ -43,7 +43,7 @@ public class InvokeSpecialMethodHandleTest extends TestBase {
   @Parameters(name = "{0}, lookup:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        TestParameters.builder()
+        getTestParameters()
             // Runtimes without Handle APIs fail in various ways. Start testing beyond that point.
             .withDexRuntimesStartingFromExcluding(Version.V7_0_0)
             .withAllApiLevels()
@@ -121,24 +121,21 @@ public class InvokeSpecialMethodHandleTest extends TestBase {
     if (lookupType == LookupType.DYNAMIC && hasInvokePolymorphicCompileSupport()) {
       result.assertSuccessWithOutput(getExpected());
     } else if (lookupType == LookupType.CONSTANT && hasConstMethodCompileSupport()) {
-      if (parameters.isDexRuntimeVersion(Version.V9_0_0)) {
-        // VM 9 incorrectly prints out the overridden method despite the direct target.
-        result.assertSuccessWithOutput("");
-      } else if (parameters.isDexRuntimeVersion(Version.V13_0_0)) {
-        // TODO(b/235807678): Subsequent ART VMs incorrectly throw IAE.
-        result.assertFailureWithErrorThatThrows(IllegalAccessError.class);
-      } else if (parameters.isDexRuntime()
-          && parameters.asDexRuntime().getVersion().isNewerThan(Version.V9_0_0)) {
-        // VMs between 9 and 13 segfault.
-        if (parameters.asDexRuntime().getVersion().isNewerThanOrEqual(Version.V14_0_0)) {
-          result.assertFailureWithOutputThatMatches(
-              containsString("reverting to SIG_DFL handler for signal 11"));
-        } else {
-          result.assertFailureWithErrorThatMatches(containsString("HandleUnexpectedSignal"));
-        }
-      } else {
-        result.assertSuccessWithOutput(getExpected());
-      }
+      result.applyIfDexRuntime(
+          Version.V9_0_0::isEqualTo,
+          // VM 9 incorrectly prints out the overridden method despite the direct target.
+          r -> r.assertSuccessWithEmptyOutput(),
+          Version.V13_0_0::isEqualTo,
+          // TODO(b/235807678): Subsequent ART VMs incorrectly throw IAE.
+          r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class),
+          version -> version.isNewerThanOrEqual(Version.V14_0_0),
+          r ->
+              r.assertFailureWithOutputThatMatches(
+                  containsString("reverting to SIG_DFL handler for signal 11")),
+          version -> version.isNewerThan(Version.V9_0_0) && version.isOlderThan(Version.V13_0_0),
+          // VMs between 9 and 13 segfault.
+          r -> r.assertFailureWithErrorThatMatches(containsString("HandleUnexpectedSignal")),
+          r -> r.assertSuccessWithOutput(getExpected()));
     } else {
       result.assertFailureWithErrorThatMatches(
           containsString(

@@ -13,8 +13,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AccessFlags;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
@@ -82,18 +81,18 @@ public class PackagePrivateReentryWithNarrowingTest extends TestBase {
   @Test
   public void testRuntime()
       throws ExecutionException, CompilationFailedException, IOException, NoSuchMethodException {
-    TestRunResult<?> runResult =
-        testForRuntime(parameters)
-            .addProgramClasses(A.class, B.class, C.class, Main.class)
-            .addProgramClassFileData(getDWithPackagePrivateFoo())
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.isCfRuntime()
-        || parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_TARGET)
-        || parameters.getRuntime().asDex().getVm().isNewerThanOrEqual(DexVm.ART_13_0_0_TARGET)) {
-      runResult.assertSuccessWithOutputLines(EXPECTED);
-    } else {
-      runResult.assertSuccessWithOutputLines(EXPECTED_ART);
-    }
+    testForRuntime(parameters)
+        .addProgramClasses(A.class, B.class, C.class, Main.class)
+        .addProgramClassFileData(getDWithPackagePrivateFoo())
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
+            r -> r.assertSuccessWithOutputLines(EXPECTED),
+            version ->
+                version.isOlderThanOrEqual(Version.V4_4_4)
+                    || version.isNewerThanOrEqual(Version.V13_0_0),
+            r -> r.assertSuccessWithOutputLines(EXPECTED),
+            r -> r.assertSuccessWithOutputLines(EXPECTED_ART));
   }
 
   @Test

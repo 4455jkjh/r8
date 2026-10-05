@@ -45,12 +45,13 @@ public class RecordOnlyReferencedFromCodeTest extends TestBase {
         .addDontOptimize()
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntimeVersion(Version.V14_0_0)
-                && parameters.getApiLevel().equals(AndroidApiLevel.U)
-                && parameters.getPartialCompilationTestParameters().isNone(),
-            // TODO(b/193004879): The Enqueuer should "prepare" all methods, even if they do not
-            //  require desugaring.
+        // TODO(b/193004879): The Enqueuer should "prepare" all methods, even if they do not
+        //  require desugaring.
+        .applyIfDexRuntime(
+            version ->
+                version.isEqualTo(Version.V14_0_0)
+                    && parameters.getApiLevel().equals(AndroidApiLevel.U)
+                    && parameters.getPartialCompilationTestParameters().isNone(),
             rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
             rr -> rr.assertSuccessWithOutputLines("false"));
   }

@@ -12,6 +12,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.resolution.virtualtargets.package_a.ViewModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,11 +56,10 @@ public class PackagePrivateOverridePublicizerTest extends TestBase {
   }
 
   private void assertSuccessOutput(TestRunResult<?> result) {
-    if (parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik()) {
-      result.assertFailureWithErrorThatMatches(containsString("overrides final"));
-    } else {
-      result.assertSuccessWithOutputLines(EXPECTED);
-    }
+    result.applyIfDexRuntime(
+        Version::isDalvik,
+        r -> r.assertFailureWithErrorThatMatches(containsString("overrides final")),
+        r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   @NeverClassInline

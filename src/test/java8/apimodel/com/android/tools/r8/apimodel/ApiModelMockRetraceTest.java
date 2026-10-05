@@ -9,10 +9,10 @@ import static com.android.tools.r8.apimodel.ApiModelingTestHelper.verifyThat;
 import static com.android.tools.r8.naming.retrace.StackTrace.containsLine;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.naming.retrace.StackTrace.EquivalenceWithoutFileNameAndLineNumber;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -64,7 +64,7 @@ public class ApiModelMockRetraceTest extends TestBase {
         .stubbedBetween(AndroidApiLevel.L_MR1, mockLevel);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (!addToBootClasspath()) {
       runResult.assertFailureWithErrorThatThrows(NoClassDefFoundError.class);
       return;

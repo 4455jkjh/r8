@@ -65,12 +65,10 @@ public class InvokeStaticInterfaceNestedTest extends TestBase {
       runResult.assertSuccessWithOutputLines(UNEXPECTED_SUCCESS);
       return;
     }
-    Version version = parameters.getRuntime().asDex().getVm().getVersion();
-    if (version.isOlderThanOrEqual(Version.V4_4_4)) {
-      runResult.assertFailureWithErrorThatThrows(VerifyError.class);
-    } else {
-      runResult.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
-    }
+    runResult.applyIfDexRuntime(
+        version -> version.isOlderThanOrEqual(Version.V4_4_4),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+        r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
   }
 
   @Test

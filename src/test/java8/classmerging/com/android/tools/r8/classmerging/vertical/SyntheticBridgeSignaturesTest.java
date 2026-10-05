@@ -13,10 +13,10 @@ import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions.InlinerOptions;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +36,11 @@ public class SyntheticBridgeSignaturesTest extends VerticalClassMergerTestBase {
   @Parameters(name = "{1}, inlining: {0}")
   public static List<Object[]> data() {
     return buildParameters(
-        BooleanUtils.values(), TestBase.getTestParameters().withAllRuntimesAndApiLevels().build());
+        BooleanUtils.values(),
+        TestBase.getTestParameters()
+            .withAllRuntimesAndApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build());
   }
 
   public SyntheticBridgeSignaturesTest(boolean allowInlining, TestParameters parameters) {

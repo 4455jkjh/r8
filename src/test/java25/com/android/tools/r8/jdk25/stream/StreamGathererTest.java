@@ -59,8 +59,8 @@ public class StreamGathererTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Executor.class)
-        .applyIf(
-            parameters.getDexRuntimeVersion().isNewerThan(V16_0_0),
+        .applyIfDexRuntime(
+            version -> version.isNewerThan(V16_0_0),
             b -> b.assertSuccessWithOutput(EXPECTED_RESULT),
             b -> b.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }

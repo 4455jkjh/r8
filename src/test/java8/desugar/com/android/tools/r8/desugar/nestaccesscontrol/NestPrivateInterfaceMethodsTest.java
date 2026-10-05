@@ -54,7 +54,7 @@ public class NestPrivateInterfaceMethodsTest extends TestBase {
         .run(parameters.getRuntime(), TestClass.class)
         // TODO(b/191115349): Nest desugar does not downgrade the classfile version.
         .applyIf(
-            c ->
+            (DesugarTestConfiguration c) ->
                 DesugarTestConfiguration.isNotJavac(c)
                     || parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11),
             r -> r.assertSuccessWithOutput(EXPECTED),

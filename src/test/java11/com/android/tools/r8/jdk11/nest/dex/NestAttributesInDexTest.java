@@ -67,21 +67,24 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
   private void checkResult(TestRunResult<?> result) {
     if (isRuntimeWithNestSupport(parameters.getRuntime())) {
       result.assertSuccessWithOutput(EXPECTED_OUTPUT);
-    } else if (parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V14_0_0)) {
-      // TODO(b/247047415): Partial DEX support in Android U DP1 (reflective APIs).
-      result.assertSuccessWithOutput(R8_EXPECTED_OUTPUT);
     } else {
-      result.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
+      result.applyIfDexRuntime(
+          version -> version.isNewerThanOrEqual(Version.V14_0_0),
+          // TODO(b/247047415): Partial DEX support in Android U DP1 (reflective APIs).
+          r -> r.assertSuccessWithOutput(R8_EXPECTED_OUTPUT),
+          r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
     }
   }
 
   private void checkResultR8(TestRunResult<?> result) {
     // TODO(b/247047415): Partial DEX support in Android U DP1 (reflective APIs).
-    if (parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V14_0_0)
-        || isRuntimeWithNestSupport(parameters.getRuntime())) {
+    if (isRuntimeWithNestSupport(parameters.getRuntime())) {
       result.assertSuccessWithOutput(R8_EXPECTED_OUTPUT);
     } else {
-      result.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
+      result.applyIfDexRuntime(
+          version -> version.isNewerThanOrEqual(Version.V14_0_0),
+          r -> r.assertSuccessWithOutput(R8_EXPECTED_OUTPUT),
+          r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class));
     }
   }
 

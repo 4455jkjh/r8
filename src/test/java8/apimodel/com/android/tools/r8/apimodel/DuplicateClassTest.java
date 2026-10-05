@@ -11,6 +11,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,8 +45,8 @@ public class DuplicateClassTest extends TestBase {
         .compile()
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Hello World")
-        .applyIf(
-            parameters.getDexRuntimeVersion().isDalvik(),
+        .applyIfDexRuntime(
+            Version::isDalvik,
             result ->
                 assertThat(
                     result.getStdErr(),

@@ -77,7 +77,8 @@ public class SwitchCaseRemovalTest extends TestBase {
       assertEquals(
           1, methodSubject.streamInstructions().filter(InstructionSubject::isConstNull).count());
       assertEquals(
-          2, methodSubject.streamInstructions().filter(InstructionSubject::isReturnObject).count());
+          parameters.isCfRuntime() ? 2 : 1,
+          methodSubject.streamInstructions().filter(InstructionSubject::isReturnObject).count());
       verifyUniqueSwitchHasExactCases(methodSubject.buildIR(), ImmutableSet.of(0));
     }
 

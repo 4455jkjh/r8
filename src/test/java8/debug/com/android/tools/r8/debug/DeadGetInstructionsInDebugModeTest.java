@@ -32,7 +32,7 @@ public class DeadGetInstructionsInDebugModeTest extends DebugTestBase implements
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder()
+    return getTestParameters()
         .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
         .withApiLevel(AndroidApiLevel.B)
         .build();

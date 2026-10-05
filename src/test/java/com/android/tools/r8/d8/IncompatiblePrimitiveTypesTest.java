@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.d8;
 
-import static org.hamcrest.core.StringContains.containsString;
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -16,7 +14,6 @@ import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import org.hamcrest.Matcher;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -85,13 +82,11 @@ public class IncompatiblePrimitiveTypesTest extends TestBase {
             .addProgramFiles(inputJar)
             .setMinApi(parameters)
             .run(parameters.getRuntime(), "TestClass");
-    if (parameters.getRuntime().asDex().getVm().getVersion().isNewerThan(Version.V4_4_4)) {
-      d8Result.assertSuccessWithOutput(expectedOutput);
-    } else {
-      // TODO(b/119812046): On Art 4.0.4 and 4.4.4 it is a verification error to use one short type
-      //  as another short type.
-      Matcher<String> expectedError = containsString("java.lang.VerifyError");
-      d8Result.assertFailureWithErrorThatMatches(expectedError);
-    }
+    d8Result.applyIfDexRuntime(
+        v -> v.isNewerThan(Version.V4_4_4),
+        r -> r.assertSuccessWithOutput(expectedOutput),
+        // TODO(b/119812046): On Art 4.0.4 and 4.4.4 it is a verification error to use one
+        //  short type as another short type.
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class));
   }
 }

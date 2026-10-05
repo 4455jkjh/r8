@@ -20,8 +20,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.L8TestBuilder;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestState;
 import com.android.tools.r8.ToolHelper;
@@ -93,6 +93,7 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
             .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .withApiLevel(AndroidApiLevel.O)
+            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK8, JDK11_PATH),
         ImmutableList.of(D8_L8DEBUG, D8_L8SHRINK));
@@ -526,17 +527,20 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
     List<String> args = new ArrayList<>(1 + toRun.length);
     args.add(verbosity);
     Collections.addAll(args, toRun);
-    SingleTestRunResult<?> result =
+    TestRunResult<?> result =
         compileResult.run(parameters.getRuntime(), "TestNGMainRunner", args.toArray(new String[0]));
     for (String success : toRun) {
-      if (result.getStdErr().contains("Couldn't find any tzdata")) {
+      if (result.asSingleRuntimeResult().getStdErr().contains("Couldn't find any tzdata")) {
         // TODO(b/134732760): fix missing time zone data.
-      } else if (result.getStdErr().contains("no microsecond precision")) {
+      } else if (result.asSingleRuntimeResult().getStdErr().contains("no microsecond precision")) {
         // Emulator precision, won't fix.
       } else {
         assertTrue(
             "Failure in " + success + "\n" + result,
-            result.getStdOut().contains(StringUtils.lines(success + ": SUCCESS")));
+            result
+                .asSingleRuntimeResult()
+                .getStdOut()
+                .contains(StringUtils.lines(success + ": SUCCESS")));
       }
     }
   }

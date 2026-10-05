@@ -70,15 +70,14 @@ public class ApiModelNoDesugaredLibraryReferenceTest extends DesugaredLibraryTes
                         })
                     .acceptWithRuntimeException(b))
         .run(parameters.getRuntime(), Executor.class)
-        .applyIf(
-            parameters.getDexRuntimeVersion().isDalvik(),
-            result -> result.assertSuccessWithOutputLines("java.nio.file.Paths"))
-        .applyIf(
-            parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V5_1_1, Version.V7_0_0),
+        .applyIfDexRuntime(
+            Version::isDalvik, result -> result.assertSuccessWithOutputLines("java.nio.file.Paths"))
+        .applyIfDexRuntime(
+            version -> version.isInRangeInclusive(Version.V5_1_1, Version.V7_0_0),
             result ->
                 result.assertSuccessWithOutputLines("Failed resolution of: Ljava/nio/file/Paths;"))
-        .applyIf(
-            parameters.getDexRuntimeVersion().isNewerThan(Version.V7_0_0),
+        .applyIfDexRuntime(
+            version -> version.isNewerThan(Version.V7_0_0),
             result -> result.assertSuccessWithOutputLines("~"))
         .inspect(
             inspector -> {

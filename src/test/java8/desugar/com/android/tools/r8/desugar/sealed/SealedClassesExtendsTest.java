@@ -81,7 +81,7 @@ public class SealedClassesExtendsTest extends TestBase {
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
-            c ->
+            (DesugarTestConfiguration c) ->
                 DesugarTestConfiguration.isNotJavac(c)
                     || parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
             r -> r.assertSuccessWithOutput(EXPECTED),

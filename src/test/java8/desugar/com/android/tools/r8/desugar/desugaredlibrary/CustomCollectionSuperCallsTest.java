@@ -45,15 +45,12 @@ public class CustomCollectionSuperCallsTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testCollection() throws Exception {
-    String stdOut =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(getClass())
-            .addKeepMainRule(Executor.class)
-            .run(parameters.getRuntime(), Executor.class)
-            .assertSuccess()
-            .getStdOut();
-    assertLines2By2Correct(stdOut);
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Executor.class)
+        .run(parameters.getRuntime(), Executor.class)
+        .assertSuccess()
+        .inspectStdOut(this::assertLines2By2Correct);
   }
 
   static class Executor {

@@ -215,7 +215,15 @@ public abstract class TestCompileResult<
     return outputMode;
   }
 
-  protected abstract RR createRunResult(TestRuntime runtime, ProcessResult result);
+  protected SingleTestRunResult createSingleRunResult(TestRuntime runtime, ProcessResult result) {
+    return new SingleTestRunResult(app, runtime, result, state);
+  }
+
+  protected abstract RR createRunResult(List<SingleTestRunResult> results);
+
+  protected RR createRunResult(TestRuntime runtime, ProcessResult result) {
+    return createRunResult(Collections.singletonList(createSingleRunResult(runtime, result)));
+  }
 
   @Deprecated
   public RR run(Class<?> mainClass) throws ExecutionException, IOException {
@@ -717,7 +725,6 @@ public abstract class TestCompileResult<
   }
 
   RR runArt(TestRuntime runtime, String mainClass, String... arguments) throws IOException {
-    DexVm vm = runtime.asDex().getVm();
     // TODO(b/127785410): Always assume a non-null runtime.
     Path out = state.getNewTempFolder().resolve("out.zip");
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
@@ -727,51 +734,62 @@ public abstract class TestCompileResult<
                 additionalRunClassPath.stream().map(Path::toString).collect(Collectors.toList()))
             .add(out.toString())
             .build();
-    Consumer<ArtCommandBuilder> commandConsumer =
-        withArt6Plus64BitsLib && vm.getVersion().isNewerThanOrEqual(DexVm.Version.V6_0_1)
-            ? builder -> builder.appendArtOption("--64")
-            : builder -> {};
-    commandConsumer =
-        commandConsumer.andThen(
-            builder -> {
-              if (!additionalBootClasspath.isEmpty()) {
-                DexVm dexVm = runtime.asDex().getVm();
-                if (dexVm.isNewerThan(DexVm.ART_4_4_4_HOST)) {
-                  builder.appendArtOption("-Ximage:/system/non/existent/image.art");
-                  builder.appendArtOption("-Xnoimage-dex2oat");
-                }
-                try {
-                  for (String s : ToolHelper.getBootLibs(dexVm)) {
-                    builder.appendBootClasspath(new File(s).getCanonicalPath());
+    List<DexRuntime> dexRuntimes = runtime.asDexRuntimes();
+    List<SingleTestRunResult> singleRunResults = new ArrayList<>(dexRuntimes.size());
+    for (DexRuntime dexRuntime : dexRuntimes) {
+      DexVm vm = dexRuntime.getVm();
+      Consumer<ArtCommandBuilder> commandConsumer =
+          withArt6Plus64BitsLib && vm.getVersion().isNewerThanOrEqual(DexVm.Version.V6_0_1)
+              ? builder -> builder.appendArtOption("--64")
+              : builder -> {};
+      commandConsumer =
+          commandConsumer.andThen(
+              builder -> {
+                if (!additionalBootClasspath.isEmpty()) {
+                  if (vm.isNewerThan(DexVm.ART_4_4_4_HOST)) {
+                    builder.appendArtOption("-Ximage:/system/non/existent/image.art");
+                    builder.appendArtOption("-Xnoimage-dex2oat");
                   }
-                } catch (Exception e) {
-                  throw new RuntimeException();
+                  try {
+                    for (String s : ToolHelper.getBootLibs(vm)) {
+                      builder.appendBootClasspath(new File(s).getCanonicalPath());
+                    }
+                  } catch (Exception e) {
+                    throw new RuntimeException();
+                  }
+                  additionalBootClasspath.forEach(
+                      path -> builder.appendBootClasspath(path.toString()));
                 }
-                additionalBootClasspath.forEach(
-                    path -> builder.appendBootClasspath(path.toString()));
-              }
-              for (String vmArgument : vmArguments) {
-                builder.appendArtOption(vmArgument);
-              }
-            });
-    ProcessResult result =
-        ToolHelper.runArtRaw(
-            classPath, mainClass, commandConsumer, vm, withArtFrameworks, arguments);
-    return createRunResult(runtime, result);
+                for (String vmArgument : vmArguments) {
+                  builder.appendArtOption(vmArgument);
+                }
+              });
+      ProcessResult result =
+          ToolHelper.runArtRaw(
+              classPath, mainClass, commandConsumer, vm, withArtFrameworks, arguments);
+      singleRunResults.add(createSingleRunResult(dexRuntime, result));
+    }
+    return createRunResult(singleRunResults);
   }
 
   public Dex2OatTestRunResult runDex2Oat(TestRuntime runtime) throws IOException {
     assert getBackend() == DEX;
-    DexVm vm = runtime.asDex().getVm();
-    Path tmp = state.getNewTempFolder();
     Path dexFile = writeToZip();
-    Path oatFile = tmp.resolve("out.oat");
+    List<DexRuntime> dexRuntimes = runtime.asDexRuntimes();
+    List<SingleTestRunResult> singleRunResults = new ArrayList<>(dexRuntimes.size());
+    Path lastOatFile = null;
+    for (DexRuntime dexRuntime : dexRuntimes) {
+      DexVm vm = dexRuntime.getVm();
+      Path tmp = state.getNewTempFolder();
+      Path oatFile = tmp.resolve("out.oat");
+      lastOatFile = oatFile;
+      ProcessResult result =
+          ToolHelper.runDex2OatRaw(
+              dexFile, oatFile, Files.createDirectory(tmp.resolve("other")), vm);
+      singleRunResults.add(new SingleTestRunResult(app, dexRuntime, result, state));
+    }
     return new Dex2OatTestRunResult(
-        app,
-        oatFile,
-        runtime,
-        ToolHelper.runDex2OatRaw(dexFile, oatFile, Files.createDirectory(tmp.resolve("other")), vm),
-        state);
+        app, dexRuntimes.size() == 1 ? lastOatFile : null, state, singleRunResults);
   }
 
   public CR benchmarkCodeSize(BenchmarkResults results) throws IOException, ResourceException {

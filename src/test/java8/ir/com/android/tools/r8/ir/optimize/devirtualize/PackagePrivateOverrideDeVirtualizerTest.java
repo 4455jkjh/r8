@@ -11,6 +11,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -70,11 +71,10 @@ public class PackagePrivateOverrideDeVirtualizerTest extends TestBase {
   }
 
   private void assertSuccessOutput(TestRunResult<?> result) {
-    if (parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik()) {
-      result.assertSuccessWithOutputLines(EXPECTED_DALVIK);
-    } else {
-      result.assertSuccessWithOutputLines(EXPECTED);
-    }
+    result.applyIfDexRuntime(
+        Version::isDalvik,
+        r -> r.assertSuccessWithOutputLines(EXPECTED_DALVIK),
+        r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   @SuppressWarnings("override") /* after changing the package the clear method is not overridden */

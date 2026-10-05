@@ -10,6 +10,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestParametersCollection;
@@ -23,14 +24,14 @@ import org.junit.Test;
 
 // This test is should explicitly not be parameterized and using the test parameters as it is
 // testing the correctness of the test-parameters set up.
-public class TestParametersTest {
+public class TestParametersTest extends TestBase {
 
   @Test
   public void testNoneRuntime() {
     assumeFalse(
         "Test is only valid when no runtimes property is set",
         TestParametersBuilder.isRuntimesPropertySet());
-    TestParametersCollection params = TestParameters.builder().withNoneRuntime().build();
+    TestParametersCollection params = getTestParameters().withNoneRuntime().build();
     assertTrue(params.stream().anyMatch(TestParameters::isNoneRuntime));
   }
 
@@ -39,7 +40,7 @@ public class TestParametersTest {
     assumeFalse(
         "Test is only valid when no runtimes property is set",
         TestParametersBuilder.isRuntimesPropertySet());
-    TestParametersCollection params = TestParameters.builder().withAllRuntimes().build();
+    TestParametersCollection params = getTestParameters().withAllRuntimes().build();
     assertTrue(params.stream().noneMatch(TestParameters::isNoneRuntime));
     assertTrue(params.stream().anyMatch(TestParameters::isDexRuntime));
     assertTrue(params.stream().anyMatch(TestParameters::isCfRuntime));
@@ -51,8 +52,7 @@ public class TestParametersTest {
         "Test is only valid when no runtimes property is set",
         TestParametersBuilder.isRuntimesPropertySet());
     // This test may also fail once the tests can be configured for with API levels to run.
-    TestParametersCollection params =
-        TestParameters.builder().withAllRuntimesAndApiLevels().build();
+    TestParametersCollection params = getTestParameters().withAllRuntimesAndApiLevels().build();
     assertTrue(params.stream().noneMatch(TestParameters::isNoneRuntime));
     assertTrue(params.stream().anyMatch(p -> p.isCfRuntime() && p.getApiLevel() == null));
     // Default API levels are min and max for each DEX VM.
@@ -61,9 +61,9 @@ public class TestParametersTest {
         .forEach(
             p -> {
               if (p.isDexRuntime()) {
-                levels
-                    .computeIfAbsent(p.getRuntime().asDex(), key -> new HashSet<>())
-                    .add(p.getApiLevel());
+                for (DexRuntime dexRuntime : p.getRuntime().asDexRuntimes()) {
+                  levels.computeIfAbsent(dexRuntime, key -> new HashSet<>()).add(p.getApiLevel());
+                }
               }
             });
     assertFalse(levels.isEmpty());
@@ -80,7 +80,11 @@ public class TestParametersTest {
     assumeTrue(!TestParametersBuilder.isRuntimesPropertySet()
         || TestParametersBuilder.getRuntimesProperty().contains("dex-default"));
     assertTrue(
-        TestParameters.builder().withAllRuntimesAndApiLevels().build().stream()
+        getTestParameters()
+            .withAllRuntimesAndApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build()
+            .stream()
             .anyMatch(parameter -> parameter.getRuntime().name().equals("dex-default")));
   }
 
@@ -90,7 +94,11 @@ public class TestParametersTest {
     assumeTrue(!TestParametersBuilder.isRuntimesPropertySet()
         || TestParametersBuilder.getRuntimesProperty().contains("dex-4.4.4"));
     assertTrue(
-        TestParameters.builder().withAllRuntimesAndApiLevels().build().stream()
+        getTestParameters()
+            .withAllRuntimesAndApiLevels()
+            .withoutCollapsedDexRuntimes()
+            .build()
+            .stream()
             .anyMatch(parameter -> parameter.getRuntime().name().equals("dex-4.4.4")));
   }
 }

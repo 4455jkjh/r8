@@ -69,6 +69,11 @@ public class DefiniteBitsIntNumberValue extends NonConstantNumberValue {
   }
 
   @Override
+  public boolean isBoolean() {
+    return (definitelyUnsetBits & ~1) == ~1;
+  }
+
+  @Override
   public boolean isDefiniteBitsIntNumberValue() {
     return true;
   }

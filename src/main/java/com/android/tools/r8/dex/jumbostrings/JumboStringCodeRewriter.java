@@ -349,13 +349,15 @@ public class JumboStringCodeRewriter {
     LinkedList<DexInstruction> instructions = new LinkedList<>();
     Collections.addAll(instructions, getCode().instructions);
     int offsetDelta;
+    boolean offsetChanged;
     do {
       ListIterator<DexInstruction> it = instructions.listIterator();
       offsetDelta = 0;
+      offsetChanged = false;
       while (it.hasNext()) {
         DexInstruction instruction = it.next();
-        int orignalOffset = instruction.getOffset();
-        instruction.setOffset(orignalOffset + offsetDelta);
+        int originalOffset = instruction.getOffset();
+        instruction.setOffset(originalOffset + offsetDelta);
         if (instruction.isConstString()) {
           DexConstString string16 = (DexConstString) instruction;
           int index = mapping.getOffsetFor(string16.getString());
@@ -363,7 +365,7 @@ public class JumboStringCodeRewriter {
             rewriteConstString1620ToConstStringJumbo(
                 string16, string16.AA, string16.getString(), it);
             offsetDelta++;
-            hasInstructionWithChangedOffset = true;
+            offsetChanged = true;
           } else if (canUseConstString20() && index >= firstConstString20) {
             if (string16.AA < 16) {
               DexConstString20 string20 = new DexConstString20(string16.AA, string16.getString());
@@ -374,7 +376,7 @@ public class JumboStringCodeRewriter {
               rewriteConstString1620ToConstStringJumbo(
                   string16, string16.AA, string16.getString(), it);
               offsetDelta++;
-              hasInstructionWithChangedOffset = true;
+              offsetChanged = true;
             }
           }
         } else if (instruction.isConstString20()) {
@@ -384,7 +386,7 @@ public class JumboStringCodeRewriter {
             rewriteConstString1620ToConstStringJumbo(
                 string20, string20.A, string20.getString(), it);
             offsetDelta++;
-            hasInstructionWithChangedOffset = true;
+            offsetChanged = true;
           } else if (!canUseConstString20() || index < firstConstString20) {
             DexConstString string16 = new DexConstString(string20.A, string20.getString());
             string16.setOffset(string20.getOffset());
@@ -418,7 +420,7 @@ public class JumboStringCodeRewriter {
                 break;
             }
             offsetDelta = rewriteIfToIfAndGoto(offsetDelta, it, condition, newCondition);
-            hasInstructionWithChangedOffset = true;
+            offsetChanged = true;
           }
         } else if (instruction
             instanceof DexFormat21t) { // IfEqz, IfGez, IfGtz, IfLez, IfLtz, IfNez
@@ -448,7 +450,7 @@ public class JumboStringCodeRewriter {
                 break;
             }
             offsetDelta = rewriteIfToIfAndGoto(offsetDelta, it, condition, newCondition);
-            hasInstructionWithChangedOffset = true;
+            offsetChanged = true;
           }
         } else if (instruction instanceof DexGoto) {
           DexGoto jump = (DexGoto) instruction;
@@ -466,7 +468,7 @@ public class JumboStringCodeRewriter {
             replaceTarget(jump, newJump);
             List<DexInstruction> targets = instructionTargets.remove(jump);
             instructionTargets.put(newJump, targets);
-            hasInstructionWithChangedOffset = true;
+            offsetChanged = true;
           }
         } else if (instruction instanceof DexGoto16) {
           DexGoto16 jump = (DexGoto16) instruction;
@@ -479,7 +481,7 @@ public class JumboStringCodeRewriter {
             replaceTarget(jump, newJump);
             List<DexInstruction> targets = instructionTargets.remove(jump);
             instructionTargets.put(newJump, targets);
-            hasInstructionWithChangedOffset = true;
+            offsetChanged = true;
           }
         } else if (instruction instanceof DexGoto32) {
           // Instruction big enough for any offset.
@@ -495,8 +497,8 @@ public class JumboStringCodeRewriter {
             DexInstruction instructionBeforePayload = it.hasPrevious() ? it.previous() : null;
             if (instructionBeforePayload != null
                 && instructionBeforePayload.isSimpleNop()
-                && debugEventTargets.get(orignalOffset) == null
-                && tryRangeStartAndEndTargets.get(orignalOffset) == null) {
+                && debugEventTargets.get(originalOffset) == null
+                && tryRangeStartAndEndTargets.get(originalOffset) == null) {
               it.remove();
               offsetDelta--;
             } else {
@@ -508,14 +510,15 @@ public class JumboStringCodeRewriter {
               it.add(nop);
               offsetDelta++;
             }
-            instruction.setOffset(orignalOffset + offsetDelta);
+            instruction.setOffset(originalOffset + offsetDelta);
             it.next();
-            hasInstructionWithChangedOffset = true;
+            offsetChanged = true;
           }
           // Instruction big enough for any offset.
         }
       }
-    } while (offsetDelta > 0);
+      hasInstructionWithChangedOffset |= offsetChanged;
+    } while (offsetChanged);
     return instructions;
   }
 

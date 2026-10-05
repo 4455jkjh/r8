@@ -7,8 +7,8 @@ package com.android.tools.r8.desugar.desugaredlibrary;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -63,7 +63,7 @@ public class DayOfWeekTest extends DesugaredLibraryTestBase {
             libraryDesugaringSpecification == LibraryDesugaringSpecification.JDK8
                 || parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.O),
             b -> b.assertSuccessWithOutputLines("6", "7"),
-            SingleTestRunResult::assertFailure);
+            TestRunResult::assertFailure);
   }
 
   static class Main {

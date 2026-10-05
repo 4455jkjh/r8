@@ -25,7 +25,11 @@ public class CompanionClassWithSignatureTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().enableApiLevelsForCf().build();
+    return getTestParameters()
+        .withAllRuntimesAndApiLevels()
+        .enableApiLevelsForCf()
+        .withoutCollapsedDexRuntimes()
+        .build();
   }
 
   public CompanionClassWithSignatureTest(TestParameters parameters) {

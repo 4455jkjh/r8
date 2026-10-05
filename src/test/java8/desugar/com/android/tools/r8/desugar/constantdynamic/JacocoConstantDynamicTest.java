@@ -42,7 +42,11 @@ public class JacocoConstantDynamicTest extends TestBase {
   @Parameters(name = "{0}, useConstantDynamic: {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
+        getTestParameters()
+            .withAllRuntimes()
+            .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedDexRuntimes()
+            .build(),
         BooleanUtils.values());
   }
 

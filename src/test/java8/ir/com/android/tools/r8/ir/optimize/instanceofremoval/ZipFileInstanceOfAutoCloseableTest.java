@@ -10,7 +10,9 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -50,17 +52,13 @@ public class ZipFileInstanceOfAutoCloseableTest extends TestBase {
     this.parameters = parameters;
   }
 
-  private boolean runtimeZipFileIsCloseable() {
-    return parameters.isCfRuntime()
-        || parameters
-            .getRuntime()
-            .asDex()
-            .maxSupportedApiLevel()
-            .isGreaterThanOrEqualTo(AndroidApiLevel.K);
-  }
-
-  private String expectedOutput() {
-    return runtimeZipFileIsCloseable() ? EXPECTED_POST_API_19 : EXPECTED_PRE_API_19;
+  private void checkResult(TestRunResult<?> result) {
+    result.applyIfDexRuntime(
+        parameters.isCfRuntime(),
+        r -> r.assertSuccessWithOutput(EXPECTED_POST_API_19),
+        version -> version.isNewerThanOrEqual(Version.V4_4_4),
+        r -> r.assertSuccessWithOutput(EXPECTED_POST_API_19),
+        r -> r.assertSuccessWithOutput(EXPECTED_PRE_API_19));
   }
 
   private Path getAndroidJar() {
@@ -83,7 +81,7 @@ public class ZipFileInstanceOfAutoCloseableTest extends TestBase {
         .setMinApi(parameters)
         .addLibraryFiles(getAndroidJar())
         .run(parameters.getRuntime(), TestClass.class, getZipFile())
-        .assertSuccessWithOutput(expectedOutput());
+        .apply(this::checkResult);
   }
 
   @Test
@@ -94,7 +92,7 @@ public class ZipFileInstanceOfAutoCloseableTest extends TestBase {
         .setMinApi(parameters)
         .addLibraryFiles(getAndroidJar())
         .run(parameters.getRuntime(), TestClass.class, getZipFile())
-        .assertSuccessWithOutput(expectedOutput());
+        .apply(this::checkResult);
   }
 
   @Test

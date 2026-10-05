@@ -59,17 +59,14 @@ public class CustomCollectionTest extends DesugaredLibraryTestBase {
 
   @Test
   public void testCollection() throws Throwable {
-    String stdOut =
-        testForDesugaredLibrary(
-                parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addInnerClasses(getClass())
-            .addKeepMainRule(Executor.class)
-            .compile()
-            .inspect(this::assertCustomCollectionCallsCorrect)
-            .run(parameters.getRuntime(), Executor.class)
-            .assertSuccess()
-            .getStdOut();
-    assertResultCorrect(stdOut);
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Executor.class)
+        .compile()
+        .inspect(this::assertCustomCollectionCallsCorrect)
+        .run(parameters.getRuntime(), Executor.class)
+        .assertSuccess()
+        .inspectStdOut(this::assertResultCorrect);
   }
 
   private void assertResultCorrect(String stdOut) {

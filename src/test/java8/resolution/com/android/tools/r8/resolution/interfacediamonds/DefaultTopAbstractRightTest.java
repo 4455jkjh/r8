@@ -19,7 +19,6 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.Collections;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -66,7 +65,10 @@ public class DefaultTopAbstractRightTest extends TestBase {
         .addProgramClasses(CLASSES)
         .addProgramClassFileData(transformB())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatMatches(getExpectedErrorMatcher());
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   @Test
@@ -78,19 +80,6 @@ public class DefaultTopAbstractRightTest extends TestBase {
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
         .assertFailureWithErrorThatMatches(containsString("AbstractMethodError"));
-  }
-
-  private Matcher<String> getExpectedErrorMatcher() {
-    if (parameters.isDexRuntime()
-        && parameters
-            .getRuntime()
-            .asDex()
-            .getVm()
-            .getVersion()
-            .isOlderThanOrEqual(Version.V4_4_4)) {
-      return containsString("VerifyError");
-    }
-    return containsString("AbstractMethodError");
   }
 
   public interface T {

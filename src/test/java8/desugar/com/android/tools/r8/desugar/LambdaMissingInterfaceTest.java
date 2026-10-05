@@ -13,6 +13,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,11 +56,12 @@ public class LambdaMissingInterfaceTest extends TestBase {
         .addRunClasspathClasses(MissingInterface.class)
         .run(parameters.getRuntime(), Main.class)
         // We allow for renaming if the class is missing
-        .assertFailureWithErrorThatMatchesIf(
-            parameters.getDexRuntimeVersion().isDalvik(),
-            containsString(descriptor(MissingInterface.class) + "' is not accessible"))
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.getDexRuntimeVersion().isDalvik(), IllegalAccessError.class);
+        .applyIfDexRuntime(
+            Version::isDalvik,
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    containsString(descriptor(MissingInterface.class) + "' is not accessible")),
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class));
   }
 
   interface MissingInterface {

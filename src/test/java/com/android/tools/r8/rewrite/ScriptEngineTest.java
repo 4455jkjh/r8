@@ -12,7 +12,6 @@ import static org.junit.Assert.assertNotNull;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.DataEntryResource;
-import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
@@ -55,71 +54,70 @@ public class ScriptEngineTest extends ScriptEngineTestBase {
   @Test
   public void test() throws IOException, CompilationFailedException, ExecutionException {
     Path path = temp.newFile("out.zip").toPath();
-    R8TestRunResult runResult =
-        testForR8(parameters.getBackend())
-            .addInnerClasses(ScriptEngineTest.class)
-            .addKeepMainRule(TestClass.class)
-            .applyIf(
-                parameters.isDexRuntime(),
-                testBuilder ->
-                    testBuilder.addOptionsModification(
-                        options ->
-                            options
-                                .getOpenClosedInterfacesOptions()
-                                .suppressAllOpenInterfacesDueToMissingClasses()))
-            .setMinApi(parameters)
-            .addDataResources(
-                DataEntryResource.fromBytes(
-                    StringUtils.lines(MyScriptEngine1FactoryImpl.class.getTypeName()).getBytes(),
-                    "META-INF/services/" + ScriptEngineFactory.class.getTypeName(),
-                    Origin.unknown()))
-            .addDataResources(
-                DataEntryResource.fromBytes(
-                    StringUtils.lines(MyScriptEngine2FactoryImpl.class.getTypeName()).getBytes(),
-                    "META-INF/services/" + ScriptEngineFactory.class.getTypeName(),
-                    Origin.unknown()))
-            .apply(
-                b -> {
-                  if (parameters.isDexRuntime()) {
-                    addRhinoForAndroid(b);
-                    b.allowDiagnosticWarningMessages();
-                  }
-                })
-            // TODO(b/136633154): This should work both with and without -dontobfuscate.
-            .addDontObfuscate()
-            // TODO(b/136633154): This should work both with and without -dontshrink.
-            .addDontShrink()
-            .compile()
-            .applyIf(
-                parameters.isDexRuntime(),
-                result ->
-                    result.assertAllWarningMessagesMatch(
-                        anyOf(
-                            containsString("Missing class "),
-                            containsString(
-                                "it is required for default or static interface methods"
-                                    + " desugaring"),
-                            allOf(
-                                containsString("Unverifiable code in `"),
-                                containsString("org.mozilla.javascript.tools.")))))
-            .writeToZip(path)
-            .run(parameters.getRuntime(), TestClass.class);
-    if (parameters.isDexRuntimeVersion(Version.V7_0_0)) {
-      // TODO(b/290592800): sun.misc.Service is defined on bootclasspath for android 7.
-      runResult.assertFailureWithErrorThatThrows(IllegalAccessError.class);
-    } else {
-      // TODO(b/136633154): This should provide 2 script engines on both runtimes. The use of
-      //  the rhino-android library on Android will add the Rhino script engine, and the JVM
-      //  comes with "Oracle Nashorn" included.
-      runResult.assertSuccessWithOutput(
-          parameters.isCfRuntime()
-              // No default JS engine starting from JDK-14 where Nashorn was removed,
-              // see b/227162584.
-              ? (parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
-                  ? StringUtils.lines("MyEngine1", "MyEngine2")
-                  : StringUtils.lines("MyEngine1", "MyEngine2", "Oracle Nashorn"))
-              : StringUtils.lines("Mozilla Rhino", "MyEngine1", "MyEngine2"));
-    }
+    testForR8(parameters.getBackend())
+        .addInnerClasses(ScriptEngineTest.class)
+        .addKeepMainRule(TestClass.class)
+        .applyIf(
+            parameters.isDexRuntime(),
+            testBuilder ->
+                testBuilder.addOptionsModification(
+                    options ->
+                        options
+                            .getOpenClosedInterfacesOptions()
+                            .suppressAllOpenInterfacesDueToMissingClasses()))
+        .setMinApi(parameters)
+        .addDataResources(
+            DataEntryResource.fromBytes(
+                StringUtils.lines(MyScriptEngine1FactoryImpl.class.getTypeName()).getBytes(),
+                "META-INF/services/" + ScriptEngineFactory.class.getTypeName(),
+                Origin.unknown()))
+        .addDataResources(
+            DataEntryResource.fromBytes(
+                StringUtils.lines(MyScriptEngine2FactoryImpl.class.getTypeName()).getBytes(),
+                "META-INF/services/" + ScriptEngineFactory.class.getTypeName(),
+                Origin.unknown()))
+        .apply(
+            b -> {
+              if (parameters.isDexRuntime()) {
+                addRhinoForAndroid(b);
+                b.allowDiagnosticWarningMessages();
+              }
+            })
+        // TODO(b/136633154): This should work both with and without -dontobfuscate.
+        .addDontObfuscate()
+        // TODO(b/136633154): This should work both with and without -dontshrink.
+        .addDontShrink()
+        .compile()
+        .applyIf(
+            parameters.isDexRuntime(),
+            result ->
+                result.assertAllWarningMessagesMatch(
+                    anyOf(
+                        containsString("Missing class "),
+                        containsString(
+                            "it is required for default or static interface methods"
+                                + " desugaring"),
+                        allOf(
+                            containsString("Unverifiable code in `"),
+                            containsString("org.mozilla.javascript.tools.")))))
+        .writeToZip(path)
+        .run(parameters.getRuntime(), TestClass.class)
+        // TODO(b/290592800): sun.misc.Service is defined on bootclasspath for android 7.
+        .applyIfDexRuntime(
+            version -> version.isEqualTo(Version.V7_0_0),
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class),
+            // TODO(b/136633154): This should provide 2 script engines on both runtimes. The use of
+            //  the rhino-android library on Android will add the Rhino script engine, and the JVM
+            //  comes with "Oracle Nashorn" included.
+            r ->
+                r.assertSuccessWithOutput(
+                    parameters.isCfRuntime()
+                        // No default JS engine starting from JDK-14 where Nashorn was removed,
+                        // see b/227162584.
+                        ? (parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
+                            ? StringUtils.lines("MyEngine1", "MyEngine2")
+                            : StringUtils.lines("MyEngine1", "MyEngine2", "Oracle Nashorn"))
+                        : StringUtils.lines("Mozilla Rhino", "MyEngine1", "MyEngine2")));
 
     // TODO(b/136633154): On the JVM this should always be there as the service loading is in
     //  the library. On Android we should be able to rewrite the code and not have it.

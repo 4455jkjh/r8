@@ -88,14 +88,14 @@ public class MemberRebindingAmbiguousDispatchToLibraryTest extends TestBase {
 
   private void checkOutput(TestRunResult<?> result) {
     if (parameters.isDexRuntime() && interfaceAsSymbolicReference) {
-      if (parameters.getDexRuntimeVersion().isDalvik()) {
-        result.assertFailureWithErrorThatThrows(VerifyError.class);
-      } else if (parameters.getDexRuntimeVersion().isOlderThan(Version.V7_0_0)) {
-        result.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
-      } else {
-        // TODO(b/259227990): If the SuperClass.foo() is not abstract we produce a working program.
-        result.assertFailureWithErrorThatThrows(AbstractMethodError.class);
-      }
+      result.applyIfDexRuntime(
+          Version::isDalvik,
+          r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+          version -> !version.isDalvik() && version.isOlderThan(Version.V7_0_0),
+          r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
+          // TODO(b/259227990): If the SuperClass.foo() is not abstract we produce a working
+          // program.
+          r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class));
     } else if (abstractMethodOnSuperClass || interfaceAsSymbolicReference) {
       result.assertFailureWithErrorThatThrows(AbstractMethodError.class);
     } else {

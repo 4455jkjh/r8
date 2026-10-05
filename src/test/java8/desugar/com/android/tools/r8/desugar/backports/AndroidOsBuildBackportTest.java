@@ -6,10 +6,10 @@ package com.android.tools.r8.desugar.backports;
 
 import static com.android.tools.r8.utils.AndroidApiLevel.BAKLAVA;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AccessFlags;
@@ -50,7 +50,7 @@ public class AndroidOsBuildBackportTest extends AbstractBackportTest {
         r ->
             r.applyIf(
                 parameters.getApiLevel().isLessThan(BAKLAVA),
-                SingleTestRunResult::assertSuccess,
+                TestRunResult::assertSuccess,
                 // No backporting from BAKLAVA, so android.os.Build not found (not in host ART
                 // runtime).
                 rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));
@@ -62,7 +62,7 @@ public class AndroidOsBuildBackportTest extends AbstractBackportTest {
         r ->
             r.applyIf(
                 parameters.getApiLevel().isLessThan(BAKLAVA),
-                SingleTestRunResult::assertSuccess,
+                TestRunResult::assertSuccess,
                 // No backporting from BAKLAVA, so android.os.Build not found (not in host ART
                 // runtime).
                 rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));

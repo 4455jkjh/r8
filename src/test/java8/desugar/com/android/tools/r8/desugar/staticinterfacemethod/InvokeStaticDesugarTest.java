@@ -12,18 +12,17 @@ import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.DesugarTestConfiguration;
 import com.android.tools.r8.PartialCompilationTestParameters;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -66,18 +65,15 @@ public class InvokeStaticDesugarTest extends TestBase {
     // Intermediate not used in this test.
     assumeFalse(intermediate);
 
-    TestRunResult<?> runResult =
-        testForDesugaring(parameters)
-            .addLibraryClasses(Library.class)
-            .addProgramClasses(Main.class)
-            .addRunClasspathFiles(compileRunClassPath())
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_4_4_4_HOST)) {
-      runResult.assertFailureWithErrorThatMatches(containsString("java.lang.VerifyError"));
-    } else {
-      runResult.assertSuccessWithOutputLines(EXPECTED);
-    }
+    testForDesugaring(parameters)
+        .addLibraryClasses(Library.class)
+        .addProgramClasses(Main.class)
+        .addRunClasspathFiles(compileRunClassPath())
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfDexRuntime(
+            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+            r -> r.assertFailureWithErrorThatMatches(containsString("java.lang.VerifyError")),
+            r -> r.assertSuccessWithOutputLines(EXPECTED));
   }
 
   @Test
@@ -101,36 +97,50 @@ public class InvokeStaticDesugarTest extends TestBase {
         .collectSyntheticItems()
         .run(parameters.getRuntime(), Main.class)
         .applyIf(
-            // When double desugaring to API level below L two synthetics are seen.
-            c ->
-                DesugarTestConfiguration.isDesugared(c)
-                    && (parameters.isCfRuntime()
-                        || parameters
-                            .getRuntime()
-                            .asDex()
-                            .getVm()
-                            .isNewerThan(DexVm.ART_4_4_4_HOST))
-                    && parameters.getApiLevel().isLessThan(AndroidApiLevel.L),
+            // The reference javac run only sees the synthetics from the initial compilation.
+            DesugarTestConfiguration::isJavac,
             r -> {
-              assertEquals(intermediate ? 1 : 2, countSynthetics(r, initialCompileResult));
+              assertEquals(1, countSynthetics(r, initialCompileResult.getSyntheticItems(), null));
               r.assertSuccessWithOutputLines(EXPECTED);
             },
-            // Don't inspect failing code, as inspection is only supported when run succeeds,
-            // and testForDesugaring does not have separate compile where the code can be
-            // inspected before running.
-            c ->
-                parameters.isDexRuntime()
-                    && parameters
-                        .getRuntime()
-                        .asDex()
-                        .getVm()
-                        .isOlderThanOrEqual(DexVm.ART_4_4_4_HOST),
-            r -> r.assertFailureWithErrorThatMatches(containsString("java.lang.VerifyError")),
+            // When double desugaring to API level below L two synthetics are seen.
+            (DesugarTestConfiguration c) ->
+                DesugarTestConfiguration.isDesugared(c)
+                    && parameters.getApiLevel().isLessThan(AndroidApiLevel.L),
+            r ->
+                r.applyIfDexRuntime(
+                    // Don't inspect failing code, as inspection is only supported when run
+                    // succeeds, and testForDesugaring does not have separate compile where the
+                    // code can be inspected before running.
+                    version -> version.isOlderThanOrEqual(Version.V4_4_4),
+                    res ->
+                        res.assertFailureWithErrorThatMatches(
+                            containsString("java.lang.VerifyError")),
+                    res -> {
+                      assertEquals(
+                          intermediate ? 1 : 2,
+                          countSynthetics(
+                              res,
+                              res.getSyntheticItems(),
+                              initialCompileResult.getSyntheticItems()));
+                      res.assertSuccessWithOutputLines(EXPECTED);
+                    }),
             // When double desugaring to API level L and above one synthetics seen.
-            r -> {
-              assertEquals(1, countSynthetics(r, initialCompileResult));
-              r.assertSuccessWithOutputLines(EXPECTED);
-            });
+            r ->
+                r.applyIfDexRuntime(
+                    version -> version.isOlderThanOrEqual(Version.V4_4_4),
+                    res ->
+                        res.assertFailureWithErrorThatMatches(
+                            containsString("java.lang.VerifyError")),
+                    res -> {
+                      assertEquals(
+                          1,
+                          countSynthetics(
+                              res,
+                              res.getSyntheticItems(),
+                              initialCompileResult.getSyntheticItems()));
+                      res.assertSuccessWithOutputLines(EXPECTED);
+                    }));
   }
 
   private Path compileRunClassPath() throws Exception {
@@ -151,16 +161,11 @@ public class InvokeStaticDesugarTest extends TestBase {
   }
 
   private int countSynthetics(
-      SingleTestRunResult<?> r, TestCompileResult<?, ?> initialCompileResult) {
+      TestRunResult<?> r,
+      SyntheticItemsTestUtils syntheticItems,
+      SyntheticItemsTestUtils ignoreSyntheticItems) {
     try {
-      if (r.isJvmTestRunResult()) {
-        return getSyntheticMethods(r.inspector(), initialCompileResult.getSyntheticItems(), null)
-            .size();
-      } else {
-        return getSyntheticMethods(
-                r.inspector(), r.getSyntheticItems(), initialCompileResult.getSyntheticItems())
-            .size();
-      }
+      return getSyntheticMethods(r.inspector(), syntheticItems, ignoreSyntheticItems).size();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

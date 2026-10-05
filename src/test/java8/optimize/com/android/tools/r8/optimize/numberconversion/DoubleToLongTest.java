@@ -53,7 +53,7 @@ public class DoubleToLongTest extends NumberConversionTestBase {
           Double.POSITIVE_INFINITY,
           Double.NEGATIVE_INFINITY
         },
-        TestParameters.builder().withNoneRuntime().build());
+        getTestParameters().withNoneRuntime().build());
   }
 
   @Test

@@ -6,15 +6,25 @@ package com.android.tools.r8;
 import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyThrowingConsumer;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNotNull;
 
+import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.debug.DebugTestConfig;
+import com.android.tools.r8.naming.retrace.StackTrace;
+import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
+import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import com.google.common.base.Predicates;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.hamcrest.Matcher;
 
 /**
@@ -25,7 +35,41 @@ import org.hamcrest.Matcher;
  */
 public abstract class TestRunResult<RR extends TestRunResult<RR>> {
 
+  private final TestState state;
+  protected final AndroidApp app;
+  protected final String proguardMap;
+
+  protected TestRunResult() {
+    this(null, null, null);
+  }
+
+  protected TestRunResult(AndroidApp app, String proguardMap, TestState state) {
+    this.app = app;
+    this.proguardMap = proguardMap;
+    this.state = state;
+  }
+
   abstract RR self();
+
+  public SingleTestRunResult asSingleRuntimeResult() {
+    throw new Unreachable();
+  }
+
+  public boolean isR8TestRunResult() {
+    return false;
+  }
+
+  public TestState getState() {
+    return state;
+  }
+
+  public AndroidApp app() {
+    return app;
+  }
+
+  public SyntheticItemsTestUtils getSyntheticItems() {
+    return getState().getSyntheticItems();
+  }
 
   public abstract RR assertSuccess();
 
@@ -37,13 +81,102 @@ public abstract class TestRunResult<RR extends TestRunResult<RR>> {
 
   public abstract RR assertStderrMatches(Matcher<String> matcher);
 
-  public abstract <E extends Throwable> RR inspect(ThrowingConsumer<CodeInspector, E> consumer)
-      throws IOException, ExecutionException, E;
+  public <E extends Throwable> RR inspectStdOut(ThrowingConsumer<String, E> consumer) throws E {
+    throw new Unreachable();
+  }
 
-  public abstract <E extends Throwable> RR inspectFailure(
-      ThrowingConsumer<CodeInspector, E> consumer) throws IOException, E;
+  protected CodeInspector internalGetCodeInspector() throws IOException {
+    assertNotNull(app);
+    return proguardMap == null ? new CodeInspector(app) : new CodeInspector(app, proguardMap);
+  }
 
-  public abstract RR disassemble() throws IOException, ExecutionException;
+  public CodeInspector inspector() throws IOException {
+    assertSuccess();
+    return internalGetCodeInspector();
+  }
+
+  public <E extends Throwable> RR inspect(ThrowingConsumer<CodeInspector, E> consumer)
+      throws IOException, ExecutionException, E {
+    CodeInspector inspector = inspector();
+    consumer.accept(inspector);
+    return self();
+  }
+
+  public <E extends Throwable> RR inspectFailure(ThrowingConsumer<CodeInspector, E> consumer)
+      throws IOException, E {
+    assertFailure();
+    CodeInspector inspector = internalGetCodeInspector();
+    consumer.accept(inspector);
+    return self();
+  }
+
+  public <E extends Throwable> RR inspectStackTrace(ThrowingConsumer<StackTrace, E> consumer)
+      throws E {
+    throw new Unreachable();
+  }
+
+  public <E extends Throwable> RR inspectOriginalStackTrace(
+      ThrowingConsumer<StackTrace, E> consumer) throws E {
+    throw new Unreachable();
+  }
+
+  public RR disassemble(PrintStream ps) throws ExecutionException, IOException {
+    ToolHelper.disassemble(app, ps);
+    return self();
+  }
+
+  public RR disassemble() throws IOException, ExecutionException {
+    return disassemble(System.out);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder builder = new StringBuilder();
+    appendInfo(builder);
+    return builder.toString();
+  }
+
+  String errorMessage(String message) {
+    return errorMessage(message, null);
+  }
+
+  String errorMessage(String message, String expected) {
+    StringBuilder builder = new StringBuilder(message).append('\n');
+    if (expected != null) {
+      if (expected.contains(System.lineSeparator())) {
+        builder.append("EXPECTED:").append(System.lineSeparator()).append(expected);
+      } else {
+        builder.append("EXPECTED: ").append(expected);
+      }
+      builder.append(System.lineSeparator());
+    }
+    appendInfo(builder);
+    return builder.toString();
+  }
+
+  protected void appendInfo(StringBuilder builder) {
+    builder.append("APPLICATION: ");
+    appendApplication(builder);
+    builder.append('\n');
+    appendProcessResult(builder);
+  }
+
+  private void appendApplication(StringBuilder builder) {
+    builder.append(app == null ? "<default>" : app.toString());
+  }
+
+  void appendProcessResult(StringBuilder builder) {
+    throw new Unreachable();
+  }
+
+  public RR writeProcessResult(PrintStream ps) {
+    throw new Unreachable();
+  }
+
+  public <E extends Throwable> RR debugger(ThrowingConsumer<DebugTestConfig, E> consumer)
+      throws E, IOException {
+    throw new Unreachable();
+  }
 
   public <E extends Throwable> RR apply(ThrowingConsumer<? super RR, E> fn) throws E {
     fn.accept(self());
@@ -137,6 +270,165 @@ public abstract class TestRunResult<RR extends TestRunResult<RR>> {
       elseConsumer.accept(self());
     }
     return self();
+  }
+
+  public <T extends Throwable> RR applyIfDexRuntime(
+      Predicate<DexVm.Version> condition,
+      ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer)
+      throws T {
+    return applyIfDexRuntime(condition, thenConsumer, emptyThrowingConsumer());
+  }
+
+  public <S extends Throwable, T extends Throwable> RR applyIfDexRuntime(
+      Predicate<DexVm.Version> condition1,
+      ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+      ThrowingConsumer<? super SingleTestRunResult, T> elseConsumer)
+      throws S, T {
+    Predicate<DexVm.Version> condition2 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer2 =
+        ThrowingConsumer.unreachable();
+    return applyIfDexRuntime(condition1, thenConsumer1, condition2, thenConsumer2, elseConsumer);
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable> RR applyIfDexRuntime(
+      Predicate<DexVm.Version> condition1,
+      ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+      Predicate<DexVm.Version> condition2,
+      ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+      ThrowingConsumer<? super SingleTestRunResult, U> elseConsumer)
+      throws S, T, U {
+    Predicate<DexVm.Version> condition3 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer3 =
+        ThrowingConsumer.unreachable();
+    return applyIfDexRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        elseConsumer);
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable, V extends Throwable>
+      RR applyIfDexRuntime(
+          Predicate<DexVm.Version> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<DexVm.Version> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<DexVm.Version> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V {
+    Predicate<DexVm.Version> condition4 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer4 =
+        ThrowingConsumer.unreachable();
+    return applyIfDexRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        condition4,
+        thenConsumer4,
+        elseConsumer);
+  }
+
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      RR applyIfDexRuntime(
+          Predicate<DexVm.Version> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<DexVm.Version> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<DexVm.Version> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<DexVm.Version> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    throw new Unreachable();
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable> RR applyIfDexRuntime(
+      boolean condition1,
+      ThrowingConsumer<RR, S> thenConsumer1,
+      Predicate<DexVm.Version> condition2,
+      ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+      ThrowingConsumer<? super SingleTestRunResult, U> elseConsumer)
+      throws S, T, U {
+    Predicate<DexVm.Version> condition3 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer3 =
+        ThrowingConsumer.unreachable();
+    return applyIfDexRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        elseConsumer);
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable, V extends Throwable>
+      RR applyIfDexRuntime(
+          boolean condition1,
+          ThrowingConsumer<RR, S> thenConsumer1,
+          Predicate<DexVm.Version> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<DexVm.Version> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V {
+    Predicate<DexVm.Version> condition4 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer4 =
+        ThrowingConsumer.unreachable();
+    return applyIfDexRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        condition4,
+        thenConsumer4,
+        elseConsumer);
+  }
+
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      RR applyIfDexRuntime(
+          boolean condition1,
+          ThrowingConsumer<RR, S> thenConsumer1,
+          Predicate<DexVm.Version> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<DexVm.Version> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<DexVm.Version> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    if (condition1) {
+      thenConsumer1.accept(self());
+      return self();
+    }
+    return applyIfDexRuntime(
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        condition4,
+        thenConsumer4,
+        elseConsumer);
   }
 
   public <S> S map(Function<RR, S> fn) {

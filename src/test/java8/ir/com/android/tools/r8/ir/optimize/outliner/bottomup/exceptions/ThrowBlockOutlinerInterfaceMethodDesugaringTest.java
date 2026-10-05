@@ -6,9 +6,9 @@ package com.android.tools.r8.ir.optimize.outliner.bottomup.exceptions;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerTestBase;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.Outline;
@@ -29,8 +29,7 @@ public class ThrowBlockOutlinerInterfaceMethodDesugaringTest extends BottomUpOut
     runTest(testForR8(parameters).addKeepMainRule(Main.class));
   }
 
-  private void runTest(
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testBuilder)
+  private void runTest(TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testBuilder)
       throws Exception {
     TestCompileResult<?, ?> compileResult =
         testBuilder
@@ -67,7 +66,7 @@ public class ThrowBlockOutlinerInterfaceMethodDesugaringTest extends BottomUpOut
 
   private void inspectOutput(
       CodeInspector inspector,
-      TestCompilerBuilder<?, ?, ?, ? extends SingleTestRunResult<?>, ?> testBuilder) {
+      TestCompilerBuilder<?, ?, ?, ? extends TestRunResult<?>, ?> testBuilder) {
     if (testBuilder.isR8TestBuilder()) {
       return;
     }

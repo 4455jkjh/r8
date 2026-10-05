@@ -67,11 +67,10 @@ public class InstantBackportJava25Test extends DesugaredLibraryTestBase {
     testForD8(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutputIf(
-            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V8_1_0), EXPECTED_OUTPUT)
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V8_1_0),
-            NoClassDefFoundError.class);
+        .applyIfDexRuntime(
+            version -> version.isNewerThanOrEqual(Version.V8_1_0),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }
 
   @Test
@@ -92,11 +91,10 @@ public class InstantBackportJava25Test extends DesugaredLibraryTestBase {
         .addOptionsModification(opt -> opt.ignoreMissingClasses = true)
         .allowDiagnosticWarningMessages(parameters.getApiLevel().isLessThan(AndroidApiLevel.O))
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutputIf(
-            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V8_1_0), EXPECTED_OUTPUT)
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V8_1_0),
-            NoClassDefFoundError.class);
+        .applyIfDexRuntime(
+            version -> version.isNewerThanOrEqual(Version.V8_1_0),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
   }
 
   @Test

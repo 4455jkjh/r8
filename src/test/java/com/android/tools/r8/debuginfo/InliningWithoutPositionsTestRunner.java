@@ -43,7 +43,7 @@ public class InliningWithoutPositionsTestRunner extends TestBase {
   public static Collection<Object[]> data() {
     List<Object[]> testCases = new ArrayList<>();
     for (TestParameters parameters :
-        TestParameters.builder().withAllRuntimes().withApiLevel(AndroidApiLevel.B).build()) {
+        getTestParameters().withAllRuntimes().withApiLevel(AndroidApiLevel.B).build()) {
       for (int i = 0; i < 16; ++i) {
         for (Location throwLocation : Location.values()) {
           if (throwLocation != Location.MAIN) {

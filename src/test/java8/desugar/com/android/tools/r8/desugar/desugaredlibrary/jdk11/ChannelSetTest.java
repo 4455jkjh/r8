@@ -121,14 +121,17 @@ public class ChannelSetTest extends DesugaredLibraryTestBase {
             parameters.getRuntime(),
             TestClass.class,
             Integer.toString(parameters.getApiLevel().getMajor()))
-        .assertSuccessWithOutput(getExpectedResult());
+        .applyIfDexRuntime(
+            libraryDesugaringSpecification::usesPlatformFileSystem,
+            r -> r.assertSuccessWithOutput(getExpectedResult(true)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(false)));
   }
 
-  private String getExpectedResult() {
+  private String getExpectedResult(boolean usesPlatformFileSystem) {
     if (!libraryDesugaringSpecification.hasNioFileDesugaring(parameters)) {
       return EXPECTED_RESULT_NO_DESUGARING;
     }
-    return libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
+    return usesPlatformFileSystem
         ? EXPECTED_RESULT_DESUGARING_PLATFORM_FILE_SYSTEM
         : EXPECTED_RESULT_DESUGARING;
   }

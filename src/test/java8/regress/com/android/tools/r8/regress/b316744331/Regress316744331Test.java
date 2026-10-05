@@ -7,10 +7,10 @@ package com.android.tools.r8.regress.b316744331;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.debug.DebugTestBase;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
@@ -56,7 +56,7 @@ public class Regress316744331Test extends DebugTestBase {
     }
   }
 
-  private TestBuilder<? extends SingleTestRunResult<?>, ?> getTestBuilder() {
+  private TestBuilder<? extends TestRunResult<?>, ?> getTestBuilder() {
     return testForRuntime(parameters)
         .addClasspathClasses(Regress316744331TestClass.class)
         .addProgramClasses(Regress316744331TestClass.class);

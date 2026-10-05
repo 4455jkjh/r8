@@ -115,8 +115,14 @@ public abstract class LogicalBinop extends Binop {
     }
     AbstractValue leftAbstractValue =
         abstractValueSupplier.getAbstractValue(leftValue(), appView, context);
+    if (leftAbstractValue.isUnknown() && leftValue().knownToBeBoolean()) {
+      leftAbstractValue = appView.abstractValueFactory().createDefiniteBitsBooleanNumberValue();
+    }
     AbstractValue rightAbstractValue =
         abstractValueSupplier.getAbstractValue(rightValue(), appView, context);
+    if (rightAbstractValue.isUnknown() && rightValue().knownToBeBoolean()) {
+      rightAbstractValue = appView.abstractValueFactory().createDefiniteBitsBooleanNumberValue();
+    }
     if (leftAbstractValue.isSingleNumberValue() && rightAbstractValue.isSingleNumberValue()) {
       SingleNumberValue leftConst = leftAbstractValue.asSingleNumberValue();
       SingleNumberValue rightConst = rightAbstractValue.asSingleNumberValue();

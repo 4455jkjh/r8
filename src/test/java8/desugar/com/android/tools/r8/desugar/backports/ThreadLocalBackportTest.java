@@ -15,6 +15,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -91,25 +92,17 @@ public class ThreadLocalBackportTest extends DesugaredLibraryTestBase {
   }
 
   private void checkExpected(TestRunResult<?> result) {
-    result.applyIf(
-        parameters.getRuntime().isCf()
-            || parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
-            || parameters
-                .getRuntime()
-                .asDex()
-                .getMinApiLevel()
-                .isGreaterThanOrEqualTo(AndroidApiLevel.O),
-        r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
-        parameters.getRuntime().isDex()
-            && parameters
-                .getRuntime()
-                .asDex()
-                .getMinApiLevel()
-                .isGreaterThanOrEqualTo(AndroidApiLevel.N)
-            && parameters.getRuntime().asDex().getMinApiLevel().isLessThan(AndroidApiLevel.O)
-            && parameters.getApiLevel().isLessThan(AndroidApiLevel.N),
-        r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
-        r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+    if (parameters.getRuntime().isCf()
+        || parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)) {
+      result.assertSuccessWithOutput(EXPECTED_OUTPUT);
+    } else {
+      result.applyIfDexRuntime(
+          version -> version.isNewerThanOrEqual(Version.V8_1_0),
+          r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+          version -> version.isEqualTo(Version.V7_0_0),
+          r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+          r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+    }
   }
 
   static class TestClass {

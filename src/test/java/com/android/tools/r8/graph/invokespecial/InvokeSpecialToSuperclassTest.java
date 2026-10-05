@@ -10,7 +10,7 @@ import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.List;
@@ -40,26 +40,21 @@ public class InvokeSpecialToSuperclassTest extends TestBase {
     this.holder = holder;
   }
 
-  public String getExpectedResult(boolean r8) {
-    if (holder == S.class
-        && parameters.isDexRuntime()
-        && !r8
-        && parameters.getDexRuntimeVersion().isNewerThanOrEqual(ToolHelper.DexVm.Version.V5_1_1)
-        && parameters.getDexRuntimeVersion().isOlderThanOrEqual(ToolHelper.DexVm.Version.V6_0_1)) {
-      // TODO(b/175285016): Should be "A".
-      // On Android 5-6, the result for S.class is "S" instead of "A" with D8 compilation.
-      return "S";
-    }
-    return "A";
-  }
-
   @Test
   public void testRuntime() throws Exception {
     testForRuntime(parameters.getRuntime(), parameters.getApiLevel())
         .addProgramClasses(S.class, A.class, EmptySubA.class, Main.class)
         .addProgramClassFileData(getClassBWithTransformedInvoked(holder))
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(getExpectedResult(false));
+        .applyIfDexRuntime(
+            version ->
+                holder == S.class
+                    && version.isNewerThanOrEqual(Version.V5_1_1)
+                    && version.isOlderThanOrEqual(Version.V6_0_1),
+            // TODO(b/175285016): Should be "A".
+            // On Android 5-6, the result for S.class is "S" instead of "A" with D8 compilation.
+            r -> r.assertSuccessWithOutputLines("S"),
+            r -> r.assertSuccessWithOutputLines("A"));
   }
 
   @Test
@@ -70,7 +65,7 @@ public class InvokeSpecialToSuperclassTest extends TestBase {
         .addKeepMainRule(Main.class)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(getExpectedResult(true));
+        .assertSuccessWithOutputLines("A");
   }
 
   private byte[] getClassBWithTransformedInvoked(Class<?> holder) throws IOException {

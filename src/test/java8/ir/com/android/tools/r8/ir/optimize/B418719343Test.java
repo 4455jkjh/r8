@@ -58,9 +58,8 @@ public class B418719343Test extends TestBase {
         .compile()
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/418568424): Should succeed with expected output.
-        .applyIf(
-            parameters.isDexRuntime()
-                && parameters.getDexRuntimeVersion().isInRangeInclusive(V14_0_0, V15_0_0),
+        .applyIfDexRuntime(
+            version -> version.isInRangeInclusive(V14_0_0, V15_0_0),
             rr -> rr.assertSuccessWithOutputLines("-21090195", "over"),
             rr -> rr.assertSuccessWithOutputLines("-21130949", "over"));
   }

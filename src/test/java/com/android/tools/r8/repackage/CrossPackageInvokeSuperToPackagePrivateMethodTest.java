@@ -86,18 +86,20 @@ public class CrossPackageInvokeSuperToPackagePrivateMethodTest extends TestBase 
   }
 
   private void inspectRunResult(R8TestRunResult runResult) {
-    if (parameters.isCfRuntime()
-        || parameters.getRuntime().asDex().getVm().getVersion().isDalvik()) {
-      runResult.assertSuccessWithOutputLines("A", "B", "A", "C", "D", "C");
-    } else {
-      runResult.assertSuccessWithOutputLines("A", "B", "A", "C", "D", "B", "A");
-      if (parameters.getRuntime().asDex().getVm().getVersion().isOlderThanOrEqual(Version.V7_0_0)) {
-        runResult.assertStderrMatches(
-            allOf(
-                containsString("Before Android 4.1, method"),
-                containsString("would have incorrectly overridden the package-private method")));
-      }
-    }
+    runResult.applyIfDexRuntime(
+        parameters.isCfRuntime(),
+        r -> r.assertSuccessWithOutputLines("A", "B", "A", "C", "D", "C"),
+        Version::isDalvik,
+        r -> r.assertSuccessWithOutputLines("A", "B", "A", "C", "D", "C"),
+        version -> !version.isDalvik() && version.isOlderThanOrEqual(Version.V7_0_0),
+        r -> {
+          r.assertSuccessWithOutputLines("A", "B", "A", "C", "D", "B", "A");
+          r.assertStderrMatches(
+              allOf(
+                  containsString("Before Android 4.1, method"),
+                  containsString("would have incorrectly overridden the package-private method")));
+        },
+        r -> r.assertSuccessWithOutputLines("A", "B", "A", "C", "D", "B", "A"));
   }
 
   static class TestClass {

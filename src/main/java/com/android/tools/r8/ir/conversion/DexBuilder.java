@@ -1107,6 +1107,11 @@ public class DexBuilder {
     return registerAllocator.getProgramMethod();
   }
 
+  // In debug mode, returns with a position are not duplicated to preserve the line information.
+  private boolean canDuplicateReturn(Instruction instruction) {
+    return instruction.isReturn() && (!options.debug || instruction.getPosition().isNone());
+  }
+
   // Dex instruction wrapper with information to compute instruction sizes and offsets for jumps.
   private abstract static class Info {
 
@@ -1364,10 +1369,9 @@ public class DexBuilder {
       } else {
         size = 3;
       }
-      if (targetInfo.getIR().isReturn() && targetInfo.getIR().getPosition().isNone()) {
+      if (builder.canDuplicateReturn(targetInfo.getIR())) {
         // Set the size to the min of the size of the return and the size of the goto. When
-        // adding instructions, we use the return if the computed size matches the size of the
-        // return.
+        // adding instructions, we use the return if the goto does not fit in one code unit.
         assert !(targetInfo instanceof FallThroughInfo);
         size = Math.min(targetInfo.getSize(), size);
       }
@@ -1384,10 +1388,13 @@ public class DexBuilder {
       if (relativeOffset < 0) {
         builder.hasBackwardsBranch = true;
       }
-      // Emit a return if the target is a return and the size of the return is the computed
-      // size of this instruction.
+      // Emit a return if the target is a return and the goto does not fit in one code unit.
+      // Otherwise, the goto is as small as the return, and sharing the return reduces the size of
+      // the ART compiled code, since each return restores the callee-saved registers.
       Return ret = targetInfo.getIR().asReturn();
-      if (ret != null && size == targetInfo.getSize() && ret.getPosition().isNone()) {
+      if (ret != null
+          && builder.canDuplicateReturn(ret)
+          && (relativeOffset < Byte.MIN_VALUE || relativeOffset > Byte.MAX_VALUE)) {
         DexInstruction dex = ret.createDexInstruction(builder);
         dex.setOffset(getOffset()); // for better printing of the dex code.
         instructions.add(dex);

@@ -55,16 +55,15 @@ public class UninitializedPutFieldSelfTest extends TestBase {
   @Test
   public void testD8Dex() throws Exception {
     parameters.assumeDexRuntime();
-    boolean willFailVerification =
-        parameters.getDexRuntimeVersion().isOlderThan(Version.V5_1_1)
-            || parameters.getDexRuntimeVersion().isNewerThan(Version.V6_0_1);
     testForD8()
         .addProgramClassFileData(dump())
         .setMinApi(parameters)
         .compileWithExpectedDiagnostics(this::inspect)
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrowsIf(willFailVerification, VerifyError.class)
-        .assertSuccessWithOutputLinesIf(!willFailVerification, "Main::foo");
+        .applyIfDexRuntime(
+            v -> v.isOlderThan(Version.V5_1_1) || v.isNewerThan(Version.V6_0_1),
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            r -> r.assertSuccessWithOutputLines("Main::foo"));
   }
 
   private void inspect(TestDiagnosticMessages diagnostics) {

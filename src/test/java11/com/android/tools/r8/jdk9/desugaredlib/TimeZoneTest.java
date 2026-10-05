@@ -10,6 +10,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
 
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -71,25 +72,24 @@ public class TimeZoneTest extends DesugaredLibraryTestBase {
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertSuccessWithOutput(getExpectedOutput(true));
+        .apply(r -> checkExpectedOutput(r, true));
   }
 
-  private String getExpectedOutput(boolean desugaring) {
-    if (parameters.isDexRuntime()) {
-      // On 4.4.4 the tzdata is missing and the behavior is different than art VMs.
-      if (parameters.getDexRuntimeVersion() == Version.V4_4_4) {
-        return EXPECTED_OUTPUT_NO_TZ_DATA_4_4_4;
-      }
-      // VMs from 12.0.0 to 16.0.0, the tz data is missing. The desugared library behavior uses
-      // emulated tz data and is as if the tz data was present. The non desugared behavior is
-      // different since the tz data is missing.
-      if (parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V12_0_0, Version.V16_0_0)) {
-        if (!desugaring || !libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)) {
-          return EXPECTED_OUTPUT_NO_TZ_DATA;
-        }
-      }
-    }
-    return EXPECTED_OUTPUT;
+  private void checkExpectedOutput(TestRunResult<?> result, boolean desugaring) {
+    result
+        // On 4.4.4 the tzdata is missing and the behavior is different than art VMs.
+        .applyIfDexRuntime(
+        version -> version == Version.V4_4_4,
+        r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_NO_TZ_DATA_4_4_4),
+        // VMs from 12.0.0 to 16.0.0, the tz data is missing. The desugared library behavior uses
+        // emulated tz data and is as if the tz data was present. The non desugared behavior is
+        // different since the tz data is missing.
+        version ->
+            version.isInRangeInclusive(Version.V12_0_0, Version.V16_0_0)
+                && (!desugaring
+                    || !libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)),
+        r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_NO_TZ_DATA),
+        r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 
   @Test
@@ -104,7 +104,7 @@ public class TimeZoneTest extends DesugaredLibraryTestBase {
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertSuccessWithOutput(getExpectedOutput(false));
+        .apply(r -> checkExpectedOutput(r, false));
   }
 
   public static class TimeZoneMain {

@@ -31,12 +31,14 @@ public class DesugaredLibraryTestBase extends TestBase {
       return getTestParameters()
           .withDexRuntimesStartingFromIncluding(Version.V7_0_0)
           .withApiLevelsEndingAtExcluding(AndroidApiLevel.N)
+          .withoutCollapsedDexRuntimes()
           .build();
     }
     if (apiLevel == AndroidApiLevel.O) {
       return getTestParameters()
           .withDexRuntimesStartingFromIncluding(Version.V8_1_0)
           .withApiLevelsEndingAtExcluding(AndroidApiLevel.O)
+          .withoutCollapsedDexRuntimes()
           .build();
     }
     throw new Error("Unsupported conversion parameters");

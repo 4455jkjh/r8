@@ -9,11 +9,11 @@ import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLeve
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.verifyThat;
 
 import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -100,7 +100,7 @@ public class ApiModelMockInheritedClassTest extends TestBase {
         .stubbedBetween(AndroidApiLevel.L_MR1, mockLevel);
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (isGreaterOrEqualToMockLevel()) {
       runResult.assertSuccessWithOutputLines("ProgramClass::foo");
     } else {

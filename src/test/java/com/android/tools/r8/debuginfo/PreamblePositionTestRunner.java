@@ -62,14 +62,22 @@ public class PreamblePositionTestRunner extends TestBase {
         .assertFailureWithErrorThatMatches(containsString("<true-branch-exception>"))
         .assertFailure()
         // Must have either explicit line = 0 or no line info at all unless ART 17 or newer.
-        .assertFailureWithErrorThatMatches(
-            anyOf(
-                containsString(fileName + ":0"),
-                allOf(
-                    containsString("at " + TEST_PACKAGE + "." + TEST_CLASS + ".main"),
-                    (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V17_0_0)
-                        ? containsString(fileName + ":")
-                        : (not(containsString(fileName + ":")))))));
+        .applyIfDexRuntime(
+            v -> v.isNewerThanOrEqual(Version.V17_0_0),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    anyOf(
+                        containsString(fileName + ":0"),
+                        allOf(
+                            containsString("at " + TEST_PACKAGE + "." + TEST_CLASS + ".main"),
+                            containsString(fileName + ":")))),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    anyOf(
+                        containsString(fileName + ":0"),
+                        allOf(
+                            containsString("at " + TEST_PACKAGE + "." + TEST_CLASS + ".main"),
+                            not(containsString(fileName + ":"))))));
 
     result
         .run(parameters.getRuntime(), TEST_PACKAGE + "." + TEST_CLASS, "1")

@@ -103,6 +103,8 @@ includeTestProject(":tests_java_8:apimodel")
 
 includeTestProject(":tests_java_8:classmerging")
 
+includeTestProject(":tests_java_8:debug")
+
 includeTestProject(":tests_java_8:ir")
 
 includeTestProject(":tests_java_8:shaking")

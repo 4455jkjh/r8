@@ -43,6 +43,7 @@ public class MainDexWithSynthesizedClassesTest extends TestBase {
     return getTestParameters()
         .withAllRuntimes()
         .withApiLevelsEndingAtExcluding(nativeMultiDexLevel)
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 

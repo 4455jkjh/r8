@@ -75,14 +75,13 @@ public class MissingClassJoinsToObjectTest extends TestBase {
                                         + ".main(java.lang.String[])`")))))
             .addRunClasspathFiles(getRuntimeClasspath())
             .run(parameters.getRuntime(), TestClass.class);
-    if (parameters.isCfRuntime()
-        || (parameters.isDexRuntime()
-            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0))) {
-      // TODO(b/154792347): The analysis of types in the presence of undefined is incomplete.
-      result.assertFailureWithErrorThatThrows(VerifyError.class);
-    } else {
-      result.assertSuccessWithOutput(EXPECTED);
-    }
+    // TODO(b/154792347): The analysis of types in the presence of undefined is incomplete.
+    result.applyIfDexRuntime(
+        parameters.isCfRuntime(),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+        v -> v.isNewerThanOrEqual(V17_0_0),
+        r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+        r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   static class A {

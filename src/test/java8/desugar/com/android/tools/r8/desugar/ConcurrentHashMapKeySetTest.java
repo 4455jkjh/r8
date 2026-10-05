@@ -6,8 +6,7 @@ package com.android.tools.r8.desugar;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
@@ -35,17 +34,14 @@ public class ConcurrentHashMapKeySetTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    TestRunResult<?> result =
-        testForDesugaring(parameters)
-            .addInnerClasses(ConcurrentHashMapKeySetTest.class)
-            .run(parameters.getRuntime(), TestClass.class);
-    if (parameters.isDexRuntime()
-        && parameters.getRuntime().asDex().getMinApiLevel().isLessThan(AndroidApiLevel.Q)) {
-      // TODO(b/123160897): Support desugaring of the Java 8 change to ConcurrentHashMap::keySet.
-      result.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
-    } else {
-      result.assertSuccessWithOutput(EXPECTED);
-    }
+    testForDesugaring(parameters)
+        .addInnerClasses(ConcurrentHashMapKeySetTest.class)
+        .run(parameters.getRuntime(), TestClass.class)
+        // TODO(b/123160897): Support desugaring of the Java 8 change to ConcurrentHashMap::keySet.
+        .applyIfDexRuntime(
+            version -> version.isOlderThan(Version.V10_0_0),
+            r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED));
     // TODO(b/123160897): Inspect that keySet has changed on API level < Q / JDK8.
   }
 

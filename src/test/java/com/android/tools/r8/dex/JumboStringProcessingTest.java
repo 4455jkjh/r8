@@ -4,6 +4,7 @@
 package com.android.tools.r8.dex;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.TestBase;
@@ -14,12 +15,17 @@ import com.android.tools.r8.dex.code.DexBase2Format;
 import com.android.tools.r8.dex.code.DexConst4;
 import com.android.tools.r8.dex.code.DexConstString;
 import com.android.tools.r8.dex.code.DexConstStringJumbo;
+import com.android.tools.r8.dex.code.DexGoto;
+import com.android.tools.r8.dex.code.DexGoto16;
 import com.android.tools.r8.dex.code.DexGoto32;
 import com.android.tools.r8.dex.code.DexIfEq;
 import com.android.tools.r8.dex.code.DexIfEqz;
 import com.android.tools.r8.dex.code.DexIfNe;
 import com.android.tools.r8.dex.code.DexIfNez;
 import com.android.tools.r8.dex.code.DexInstruction;
+import com.android.tools.r8.dex.code.DexNop;
+import com.android.tools.r8.dex.code.DexPackedSwitch;
+import com.android.tools.r8.dex.code.DexPackedSwitchPayload;
 import com.android.tools.r8.dex.code.DexReturnVoid;
 import com.android.tools.r8.dex.jumbostrings.JumboStringCodeRewriter;
 import com.android.tools.r8.graph.DexCode;
@@ -164,6 +170,72 @@ public class JumboStringProcessingTest extends TestBase {
     DexInstruction[] rewrittenInstructions = code.instructions;
     assertEquals(289, countJumboStrings(rewrittenInstructions));
     assertEquals(0, countSimpleNops(rewrittenInstructions));
+  }
+
+  @Test
+  public void gotoExpansionWithPayloadNopRemoval() {
+    DexItemFactory factory = new DexItemFactory();
+    DexString string = factory.createString("turn into jumbo");
+    List<DexInstruction> instructions = new ArrayList<>();
+    int offset = 0;
+
+    // Goto at offset 0 targeting ReturnVoid at offset 127 (max 1-byte offset).
+    DexGoto gotoInstruction = new DexGoto(127);
+    gotoInstruction.setOffset(offset);
+    instructions.add(gotoInstruction);
+    offset += gotoInstruction.getSize();
+
+    // ConstString at offset 1 that will expand to ConstStringJumbo (+1 code unit),
+    // pushing ReturnVoid to offset 128.
+    DexConstString stringInstruction = new DexConstString(0, string);
+    stringInstruction.setOffset(offset);
+    instructions.add(stringInstruction);
+    offset += stringInstruction.getSize();
+
+    // PackedSwitch at offset 3 targeting payload at offset 130.
+    int switchOffset = offset;
+    DexPackedSwitch switchInstruction = new DexPackedSwitch(0);
+    switchInstruction.setOffset(offset);
+    switchInstruction.setPayloadOffset(130 - switchOffset);
+    instructions.add(switchInstruction);
+    offset += switchInstruction.getSize();
+
+    while (offset < 127) {
+      DexConst4 constInstruction = new DexConst4(0, 0);
+      constInstruction.setOffset(offset);
+      instructions.add(constInstruction);
+      offset += constInstruction.getSize();
+    }
+
+    assertEquals(127, offset);
+    DexReturnVoid returnInstruction = new DexReturnVoid();
+    returnInstruction.setOffset(offset);
+    instructions.add(returnInstruction);
+    offset += returnInstruction.getSize();
+
+    DexConst4 beforeNop = new DexConst4(0, 0);
+    beforeNop.setOffset(offset);
+    instructions.add(beforeNop);
+    offset += beforeNop.getSize();
+
+    // Simple nop before payload at offset 129; when ConstString expands (+1), the payload
+    // alignment removes this nop (-1), resulting in net offsetDelta == 0 at the end of pass 1.
+    DexNop nopInstruction = new DexNop();
+    nopInstruction.setOffset(offset);
+    instructions.add(nopInstruction);
+    offset += nopInstruction.getSize();
+
+    assertEquals(130, offset);
+    DexPackedSwitchPayload payload = new DexPackedSwitchPayload(0, new int[] {127 - switchOffset});
+    payload.setOffset(offset);
+    instructions.add(payload);
+
+    DexCode code =
+        jumboStringProcess(factory, string, instructions.toArray(DexInstruction.EMPTY_ARRAY));
+    DexInstruction[] rewrittenInstructions = code.instructions;
+    assertTrue(rewrittenInstructions[0] instanceof DexGoto16);
+    DexGoto16 jump = (DexGoto16) rewrittenInstructions[0];
+    assertEquals(returnInstruction.getOffset(), jump.getOffset() + jump.AAAA);
   }
 
   private DexCode jumboStringProcess(

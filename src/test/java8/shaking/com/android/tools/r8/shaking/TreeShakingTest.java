@@ -8,6 +8,7 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder.DiagnosticsConsumer;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
@@ -44,6 +45,10 @@ import org.junit.runners.Parameterized.Parameters;
  * lambdas to determine if the right bits of the application are kept or discarded.
  */
 public abstract class TreeShakingTest extends TestBase {
+
+  public static TestParametersBuilder getTestParameters() {
+    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+  }
 
   @Parameters(name = "{0} minify:{1}")
   public static List<Object[]> defaultTreeShakingParameters() {

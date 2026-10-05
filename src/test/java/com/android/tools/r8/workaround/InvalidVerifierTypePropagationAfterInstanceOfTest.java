@@ -66,13 +66,13 @@ public class InvalidVerifierTypePropagationAfterInstanceOfTest extends TestBase 
   }
 
   private void checkRunResult(TestRunResult<?> runResult, boolean isR8) {
-    runResult.applyIf(
-        parameters.isCfRuntime()
-            || parameters.getDexRuntimeVersion().isOlderThan(Version.V7_0_0)
-            || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V15_0_0)
-            || isR8,
-        TestRunResult::assertSuccessWithEmptyOutput,
-        rr -> runResult.assertFailureWithErrorThatThrows(VerifyError.class));
+    runResult.applyIfDexRuntime(
+        version ->
+            !isR8
+                && version.isNewerThanOrEqual(Version.V7_0_0)
+                && version.isOlderThan(Version.V15_0_0),
+        rr -> rr.assertFailureWithErrorThatThrows(VerifyError.class),
+        TestRunResult::assertSuccessWithEmptyOutput);
   }
 
   static class Main {

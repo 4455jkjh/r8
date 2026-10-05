@@ -48,12 +48,8 @@ public class TestParameters {
     this.representativeApiLevelForRuntime = representativeApiLevelForRuntime;
   }
 
-  public static TestParametersBuilder builder() {
-    return new TestParametersBuilder();
-  }
-
   public static TestParametersCollection justNoneRuntime() {
-    return builder().withNoneRuntime().build();
+    return new TestParametersBuilder().withNoneRuntime().build();
   }
 
   public boolean canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug() {

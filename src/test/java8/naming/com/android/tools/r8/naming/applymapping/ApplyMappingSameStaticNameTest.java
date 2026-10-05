@@ -23,12 +23,23 @@ public class ApplyMappingSameStaticNameTest extends TestBase {
 
   public static final String pgMap =
       StringUtils.lines(
+          I.class.getTypeName() + " -> " + I.class.getTypeName() + ":",
+          "  boolean[] jacocoInit() -> a",
+          "  int f1 -> c",
           A.class.getTypeName() + " -> " + A.class.getTypeName() + ":",
           "  boolean[] jacocoInit() -> a",
           "  int f1 -> c",
           B.class.getTypeName() + " -> " + B.class.getTypeName() + ":",
           "  boolean[] jacocoInit() -> b",
           "  int f1 -> d");
+
+  public interface I {
+    static boolean[] jacocoInit() {
+      return null;
+    }
+
+    int f1 = 0;
+  }
 
   public static class A {
     public static boolean[] jacocoInit() {
@@ -38,7 +49,10 @@ public class ApplyMappingSameStaticNameTest extends TestBase {
     public static int f1 = 1;
   }
 
-  public static class B extends A {
+  // B is abstract and implements I so ProguardMapMinifier propagates non-private interface
+  // mappings from I onto B when B is on the classpath, testing that B's own static method and
+  // field mappings are not overwritten by I's differently-named static method and field mappings.
+  public abstract static class B extends A implements I {
     public static boolean[] jacocoInit() {
       return null;
     }
@@ -46,7 +60,7 @@ public class ApplyMappingSameStaticNameTest extends TestBase {
     public static int f1 = 2;
   }
 
-  public static class C {}
+  public static class C extends B {}
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -60,7 +74,7 @@ public class ApplyMappingSameStaticNameTest extends TestBase {
   public void test_b131532229() throws Exception {
     testForR8(parameters.getBackend())
         .addDontShrink()
-        .addLibraryClasses(A.class, B.class)
+        .addClasspathClasses(I.class, A.class, B.class)
         .addLibraryFiles(parameters.getDefaultRuntimeLibrary())
         .addProgramClasses(C.class)
         .addApplyMapping(pgMap)

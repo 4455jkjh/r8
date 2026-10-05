@@ -169,7 +169,7 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
         getSuperTypes(kmClass.getSupertypes(), factory, reporter),
         getSealedSubClasses(kmClass.getSealedSubclasses(), factory),
         getNestedClasses(hostClass, kmClass.getNestedClasses(), factory),
-        setEnumEntries(kmClass, hostClass),
+        setEnumEntries(kmClass, hostClass, memberInfoConsumer),
         anonymousObjectOrigin,
         packageName,
         KotlinLocalDelegatedPropertyInfo.create(
@@ -177,7 +177,7 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
         kmClass.getInlineClassUnderlyingPropertyName(),
         KotlinTypeInfo.create(kmClass.getInlineClassUnderlyingType(), factory, reporter),
         originalMembersWithKotlinInfo,
-        setCompanionObject(kmClass, hostClass, reporter),
+        setCompanionObject(kmClass, hostClass, reporter, memberInfoConsumer),
         ListUtils.map(
             kmClass.getContextReceiverTypes(),
             contextRecieverType -> KotlinTypeInfo.create(contextRecieverType, factory, reporter)));
@@ -228,14 +228,18 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
     return superTypeInfos.build();
   }
 
-  private static String setCompanionObject(KmClass kmClass, DexClass hostClass, Reporter reporter) {
+  private static String setCompanionObject(
+      KmClass kmClass,
+      DexClass hostClass,
+      Reporter reporter,
+      BiConsumer<DexEncodedMember<?, ?>, KotlinMemberLevelInfo> memberInfoConsumer) {
     String companionObjectName = kmClass.getCompanionObject();
     if (companionObjectName == null) {
       return companionObjectName;
     }
     for (DexEncodedField field : hostClass.fields()) {
       if (field.getReference().name.toString().equals(companionObjectName)) {
-        field.setKotlinMemberInfo(new KotlinCompanionInfo(companionObjectName));
+        memberInfoConsumer.accept(field, new KotlinCompanionInfo(companionObjectName));
         return companionObjectName;
       }
     }
@@ -244,7 +248,10 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
     return companionObjectName;
   }
 
-  private static List<String> setEnumEntries(KmClass kmClass, DexClass hostClass) {
+  private static List<String> setEnumEntries(
+      KmClass kmClass,
+      DexClass hostClass,
+      BiConsumer<DexEncodedMember<?, ?>, KotlinMemberLevelInfo> memberInfoConsumer) {
     List<String> enumEntries = kmClass.getEnumEntries();
     if (enumEntries.isEmpty()) {
       return enumEntries;
@@ -257,7 +264,7 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
             field -> {
               String fieldName = field.getName().toString();
               if (enumEntryStrings.contains(fieldName)) {
-                field.setKotlinMemberInfo(new KotlinEnumEntryInfo(fieldName));
+                memberInfoConsumer.accept(field, new KotlinEnumEntryInfo(fieldName));
               }
             });
     return enumEntries;

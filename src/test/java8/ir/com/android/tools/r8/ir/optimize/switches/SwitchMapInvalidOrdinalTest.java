@@ -36,8 +36,8 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
         .setMinApi(parameters)
         .addInnerClasses(SwitchMapInvalidOrdinalTest.class)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0),
+        .applyIfDexRuntime(
+            version -> version.isNewerThanOrEqual(V17_0_0),
             r -> r.assertFailureWithErrorThatThrows(IllegalAccessException.class),
             r -> r.assertSuccessWithOutputLines("a", "b", "0", "a"));
   }
@@ -59,8 +59,8 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
         // When the code reaches the switch the first time, then the switch map int[] gets
         // initialized based on the values in the enum at this point creating a mapping ordinal to
         // switch map entry. Here D and X have 3 as ordinal.
-        .applyIf(
-            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0),
+        .applyIfDexRuntime(
+            version -> version.isNewerThanOrEqual(V17_0_0),
             r -> r.assertFailureWithErrorThatThrows(IllegalAccessException.class),
             r -> r.assertSuccessWithOutputLines("a", "b", "0", "a"));
   }

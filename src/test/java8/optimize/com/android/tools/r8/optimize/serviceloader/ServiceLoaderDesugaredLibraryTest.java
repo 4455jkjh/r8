@@ -12,8 +12,8 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -123,10 +123,12 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
         .apply(b -> configureD8(b, false))
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            runtimeWithJavaTime(parameters),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
-            SingleTestRunResult::assertFailure);
+            DesugaredLibraryTestBase::runtimeWithJavaTime,
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            TestRunResult::assertFailure);
   }
 
   @Test
@@ -140,10 +142,12 @@ public class ServiceLoaderDesugaredLibraryTest extends DesugaredLibraryTestBase 
         .setMinApi(parameters)
         .addKeepMainRule(TestClass.class)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            runtimeWithJavaTime(parameters),
+        .applyIfDexRuntime(
+            parameters.isCfRuntime(),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
-            SingleTestRunResult::assertFailure);
+            DesugaredLibraryTestBase::runtimeWithJavaTime,
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            TestRunResult::assertFailure);
   }
 
   static class TestClass {

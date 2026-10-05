@@ -14,12 +14,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
@@ -42,7 +42,7 @@ public class ApiModelAndroidxApiImplTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimesAndApiLevels().withoutCollapsedDexRuntimes().build();
   }
 
   private AndroidApiLevel getMaxSupportedApiLevel() {
@@ -170,7 +170,7 @@ public class ApiModelAndroidxApiImplTest extends TestBase {
     }
   }
 
-  private void checkOutput(SingleTestRunResult<?> runResult) {
+  private void checkOutput(TestRunResult<?> runResult) {
     if (getMaxSupportedApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.R)) {
       runResult.assertSuccessWithOutputLines(
           "LibraryClass23::foo", "LibraryClass26::bar", "LibraryClass30::baz");
