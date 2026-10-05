@@ -527,7 +527,7 @@ def gradle_benchmark():
     r8_builder(
         "build_perf",
         category = "build",
-        dimensions = get_dimensions(),
+        dimensions = get_dimensions(perf = True),
         triggering_policy = scheduler.policy(
             kind = scheduler.GREEDY_BATCHING_KIND,
             max_batch_size = 1,
