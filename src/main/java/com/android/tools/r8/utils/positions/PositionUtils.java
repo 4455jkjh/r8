@@ -43,13 +43,16 @@ public class PositionUtils {
   }
 
   private static boolean mustHaveResidualDebugInfo(InternalOptions options, DexCode code) {
+    DexDebugInfo debugInfo = code.getDebugInfo();
+    if (debugInfo != null && debugInfo.isNativePcBasedInfo()) {
+      return false;
+    }
     // All code objects must have debug info if discarding it is not allowed.
     if (!options.allowDiscardingResidualDebugInfo()) {
       return true;
     }
     // Otherwise debug info is only needed for code sequences with at least one position.
-    DexDebugInfo debugInfo = code.getDebugInfo();
-    if (debugInfo == null || debugInfo.isNativePcBasedInfo()) {
+    if (debugInfo == null) {
       return false;
     }
     if (debugInfo.isPcBasedInfo()) {
