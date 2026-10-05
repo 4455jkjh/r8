@@ -632,8 +632,7 @@ public abstract class Instruction
     }
     // Finally check that the dex instructions for the generated code actually are the same.
     if (conversionOptions.isGeneratingDex()
-        && !DexBuilder.identicalInstructionsAfterBuildingDexCode(
-            this, other, allocator, conversionOptions)) {
+        && !DexBuilder.identicalInstructionsAfterBuildingDexCode(this, other, allocator)) {
       return false;
     }
     return true;

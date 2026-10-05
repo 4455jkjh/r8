@@ -106,7 +106,6 @@ public class DexBuilder {
   private final LinearScanRegisterAllocator registerAllocator;
 
   private final InternalOptions options;
-  private final MethodConversionOptions conversionOptions;
 
   // List of information about switch payloads that have to be created at the end of the
   // dex code.
@@ -142,42 +141,22 @@ public class DexBuilder {
   public DexBuilder(
       IRCode ir,
       BytecodeMetadataProvider bytecodeMetadataProvider,
-      LinearScanRegisterAllocator registerAllocator,
-      InternalOptions options) {
-    this(ir, bytecodeMetadataProvider, registerAllocator, options, ir.getConversionOptions());
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  public DexBuilder(
-      IRCode ir,
-      BytecodeMetadataProvider bytecodeMetadataProvider,
       RegisterAllocator registerAllocator,
-      InternalOptions options,
-      MethodConversionOptions conversionOptions) {
-    assert ir == null || conversionOptions == ir.getConversionOptions();
+      InternalOptions options) {
     this.appView = registerAllocator.getAppView();
     this.ir = ir;
     this.bytecodeMetadataBuilder = BytecodeMetadata.builder(bytecodeMetadataProvider);
     this.registerAllocator = (LinearScanRegisterAllocator) registerAllocator;
     this.options = options;
-    this.conversionOptions = conversionOptions;
     if (isBuildingForComparison()) {
       instructionToInfo = new Info[1];
     }
   }
 
   public static boolean identicalInstructionsAfterBuildingDexCode(
-      Instruction a,
-      Instruction b,
-      RegisterAllocator allocator,
-      MethodConversionOptions conversionOptions) {
+      Instruction a, Instruction b, RegisterAllocator allocator) {
     DexBuilder builder =
-        new DexBuilder(
-            null,
-            BytecodeMetadataProvider.empty(),
-            allocator,
-            allocator.options(),
-            conversionOptions);
+        new DexBuilder(null, BytecodeMetadataProvider.empty(), allocator, allocator.options());
     Info infoA = buildInfoForComparison(a, builder);
     Info infoB = buildInfoForComparison(b, builder);
     return infoA.identicalInstructions(infoB, builder);
@@ -805,16 +784,6 @@ public class DexBuilder {
     add(argument, new FallThroughInfo(argument));
   }
 
-  public void addReturn(Return ret, DexInstruction dex) {
-    if (nextBlock != null
-        && ret.identicalAfterRegisterAllocation(
-            nextBlock.entry(), registerAllocator, conversionOptions)) {
-      addNothing(ret);
-    } else {
-      add(ret, dex);
-    }
-  }
-
   private void add(Instruction ir, Info info) {
     if (isBuildingForComparison()) {
       // We are building for instruction comparison, so just set the info.
@@ -865,22 +834,8 @@ public class DexBuilder {
       }
     }
     assert instruction != null;
-    if (instruction.isReturn()) {
-      assert getInfo(instruction) instanceof FallThroughInfo;
-      return getTargetInfo(computeNextBlock(block));
-    }
     assert instruction.isGoto();
     return getTargetInfo(instruction.asGoto().getTarget());
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  private BasicBlock computeNextBlock(BasicBlock block) {
-    ListIterator<BasicBlock> it = ir.listIterator();
-    BasicBlock current = it.next();
-    while (current != block) {
-      current = it.next();
-    }
-    return it.next();
   }
 
   // Helper for computing switch payloads.

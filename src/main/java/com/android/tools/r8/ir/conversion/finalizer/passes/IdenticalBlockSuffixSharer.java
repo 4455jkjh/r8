@@ -6,7 +6,6 @@ package com.android.tools.r8.ir.conversion.finalizer.passes;
 
 import static com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser.isFallthroughBlock;
 import static com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser.unlinkTrivialGotoBlock;
-import static com.android.tools.r8.ir.regalloc.LiveIntervals.NO_REGISTER;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
@@ -64,46 +63,6 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
     boolean hasChanged = false;
     Set<BasicBlock> blocksToRemove = Sets.newIdentityHashSet();
     Collection<BasicBlock> blocks = code.blocks;
-    List<BasicBlock> normalExits = code.computeNormalExitBlocks();
-    Set<BasicBlock> syntheticNormalExits = Sets.newIdentityHashSet();
-    if (normalExits.size() > 1) {
-      if (code.context().getReturnType().isVoidType()
-          || code.getConversionOptions().isGeneratingClassFiles()) {
-        BasicBlock syntheticNormalExit = new BasicBlock(code.metadata());
-        syntheticNormalExit.getMutablePredecessors().addAll(normalExits);
-        syntheticNormalExits.add(syntheticNormalExit);
-      } else {
-        Int2ReferenceMap<List<BasicBlock>> normalExitPartitioning =
-            new Int2ReferenceOpenHashMap<>();
-        for (BasicBlock block : normalExits) {
-          int returnRegister =
-              block
-                  .exit()
-                  .asReturn()
-                  .returnValue()
-                  .getLiveIntervals()
-                  .getSplitCovering(block.exit().getNumber())
-                  .getRegister();
-          assert returnRegister != NO_REGISTER;
-          List<BasicBlock> blocksWithReturnRegister;
-          if (normalExitPartitioning.containsKey(returnRegister)) {
-            blocksWithReturnRegister = normalExitPartitioning.get(returnRegister);
-          } else {
-            blocksWithReturnRegister = new ArrayList<>();
-            normalExitPartitioning.put(returnRegister, blocksWithReturnRegister);
-          }
-          blocksWithReturnRegister.add(block);
-        }
-        for (List<BasicBlock> blocksWithSameReturnRegister : normalExitPartitioning.values()) {
-          BasicBlock syntheticNormalExit = new BasicBlock(code.metadata());
-          syntheticNormalExit.getMutablePredecessors().addAll(blocksWithSameReturnRegister);
-          syntheticNormalExits.add(syntheticNormalExit);
-        }
-      }
-      blocks = new ArrayList<>(code.getBlocks().size() + syntheticNormalExits.size());
-      blocks.addAll(code.getBlocks());
-      blocks.addAll(syntheticNormalExits);
-    }
     do {
       Map<BasicBlock, BasicBlock> newBlocks = new IdentityHashMap<>();
       InstructionEquivalence equivalence = new InstructionEquivalence(allocator, code);
@@ -122,14 +81,6 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
                 lastInstructionToBlocks.computeIfAbsent(
                     equivalence.wrap(lastInstruction), (k) -> new ArrayList<>());
             value.add(pred);
-          } else if (pred.exit().isReturn()
-              && pred.getSuccessors().isEmpty()
-              && pred.getInstructions().size() > 2) {
-            Instruction lastInstruction = pred.exit();
-            List<BasicBlock> value =
-                lastInstructionToBlocks.computeIfAbsent(
-                    equivalence.wrap(lastInstruction), (k) -> new ArrayList<>());
-            value.add(pred);
           }
         }
         // For each group of predecessors of size 2 or more, find the largest common suffix and
@@ -142,14 +93,14 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
           int commonSuffixSize = firstPred.getInstructions().size();
           for (int i = 1; i < predsWithSameLastInstruction.size(); i++) {
             BasicBlock pred = predsWithSameLastInstruction.get(i);
-            assert pred.exit().isGoto() || pred.exit().isReturn();
+            assert pred.exit().isGoto();
             commonSuffixSize =
                 Math.min(commonSuffixSize, sharedSuffixSize(firstPred, pred, allocator, code));
           }
 
           int sizeDelta = overhead - (predsWithSameLastInstruction.size() - 1) * commonSuffixSize;
 
-          // Don't share a suffix that is just a single goto or return instruction.
+          // Don't share a suffix that is just a single goto instruction.
           if (commonSuffixSize <= 1 || sizeDelta >= 0) {
             continue;
           }
@@ -158,7 +109,7 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
                   code,
                   commonSuffixSize,
                   predsWithSameLastInstruction,
-                  syntheticNormalExits.contains(block) ? null : block,
+                  block,
                   allocator,
                   blocksToRemove);
           // Insert the new block after a predecessor that keeps some instructions, so that it falls
@@ -194,8 +145,7 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
       RegisterAllocator allocator,
       Set<BasicBlock> blocksToRemove) {
     BasicBlock first = preds.get(0);
-    assert (successorBlock != null && first.exit().isGoto())
-        || (successorBlock == null && first.exit().isReturn());
+    assert successorBlock != null && first.exit().isGoto();
     BasicBlock newBlock = new BasicBlock(code.metadata());
     newBlock.setNumber(code.getNextBlockNumber());
     Int2ReferenceMap<DebugLocalInfo> newBlockEntryLocals = null;
@@ -248,12 +198,8 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
       jump.setPosition(lastPosition);
       instructions.addLast(jump);
       newBlock.getMutablePredecessors().add(pred);
-      if (successorBlock != null) {
-        pred.replaceSuccessor(successorBlock, newBlock);
-        successorBlock.getMutablePredecessors().remove(pred);
-      } else {
-        pred.getMutableSuccessors().add(newBlock);
-      }
+      pred.replaceSuccessor(successorBlock, newBlock);
+      successorBlock.getMutablePredecessors().remove(pred);
       if (movedThrowingInstruction) {
         pred.clearCatchHandlers();
       }
@@ -262,9 +208,7 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
     if (newBlockEntryLocals != null) {
       newBlock.setLocalsAtEntry(newBlockEntryLocals);
     }
-    if (successorBlock != null) {
-      newBlock.link(successorBlock);
-    }
+    newBlock.link(successorBlock);
     for (BasicBlock pred : preds) {
       if (pred != code.entryBlock()
           && pred != successorBlock
@@ -293,7 +237,7 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
 
   private static int sharedSuffixSize(
       BasicBlock block0, BasicBlock block1, RegisterAllocator allocator, IRCode code) {
-    assert block0.exit().isGoto() || block0.exit().isReturn();
+    assert block0.exit().isGoto();
     // If the blocks do not agree on locals at exit then they don't have any shared suffix.
     if (!Objects.equals(localsAtBlockExit(block0), localsAtBlockExit(block1))) {
       return 0;

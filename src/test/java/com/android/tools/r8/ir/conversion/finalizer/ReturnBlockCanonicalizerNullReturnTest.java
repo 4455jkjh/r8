@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.ir.conversion.finalizer.passes;
+package com.android.tools.r8.ir.conversion.finalizer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -20,8 +20,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+/**
+ * Tests that returns of distinct null values are merged in a method returning an array, where the
+ * ReturnBlockCanonicalizer otherwise only merges returns of identical values.
+ */
 @RunWith(Parameterized.class)
-public class IdenticalBlockRemoverReturnTest extends TestBase {
+public class ReturnBlockCanonicalizerNullReturnTest extends TestBase {
 
   private static final String[] EXPECTED_OUTPUT =
       new String[] {"null", "null", "1:null", "C", "2:null", "C"};
@@ -36,11 +40,10 @@ public class IdenticalBlockRemoverReturnTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)
         .enableInliningAnnotations()
-        .setMinApi(parameters)
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)

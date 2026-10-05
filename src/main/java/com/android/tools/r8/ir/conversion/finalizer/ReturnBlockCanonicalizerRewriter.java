@@ -70,10 +70,19 @@ public class ReturnBlockCanonicalizerRewriter extends CodeRewriterPass<AppInfo> 
     if (!Return.shouldOnlyMergeIdenticalReturnValues(appView, code.context(), normalExits)) {
       return Collections.singletonList(normalExits);
     }
+    // Returns of null are merged even if the null values are distinct, since their join is null.
     Map<Value, List<BasicBlock>> returnValueToExitBlocks = new LinkedHashMap<>();
+    Value nullReturnValue = null;
     for (BasicBlock exitBlock : normalExits) {
+      Value returnValue = getReturnValue(exitBlock);
+      if (returnValue.getType().isNullType()) {
+        if (nullReturnValue == null) {
+          nullReturnValue = returnValue;
+        }
+        returnValue = nullReturnValue;
+      }
       returnValueToExitBlocks
-          .computeIfAbsent(getReturnValue(exitBlock), ignoreKey(ArrayList::new))
+          .computeIfAbsent(returnValue, ignoreKey(ArrayList::new))
           .add(exitBlock);
     }
     return returnValueToExitBlocks.values();
