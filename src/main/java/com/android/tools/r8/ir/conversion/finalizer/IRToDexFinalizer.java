@@ -10,7 +10,6 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.DexBuilder;
-import com.android.tools.r8.ir.conversion.finalizer.passes.BasicBlockReorderer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.BranchDiamondInverter;
 import com.android.tools.r8.ir.conversion.finalizer.passes.DeadRegisterStoreEliminator;
 import com.android.tools.r8.ir.conversion.finalizer.passes.DebugLocalUpdater;
@@ -38,7 +37,6 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final DebugLocalUpdater debugLocalUpdater;
   private final BranchDiamondInverter branchDiamondInverter;
   private final DeadRegisterStoreEliminator deadRegisterStoreEliminator;
-  private final BasicBlockReorderer basicBlockReorderer;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
     super(appView);
@@ -52,7 +50,6 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     debugLocalUpdater = new DebugLocalUpdater(appView);
     branchDiamondInverter = new BranchDiamondInverter(appView);
     deadRegisterStoreEliminator = new DeadRegisterStoreEliminator(appView);
-    this.basicBlockReorderer = new BasicBlockReorderer(this.appView);
   }
 
   @Override
@@ -121,7 +118,6 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     // The next passes change the shape of the CFG and the basic block ordering, so they have to run
     // near the end.
     branchDiamondInverter.run(code, registerAllocator, timing);
-    basicBlockReorderer.run(code, registerAllocator, timing);
     trivialGotosCollapser.run(code, registerAllocator, timing);
     return registerAllocator;
   }
