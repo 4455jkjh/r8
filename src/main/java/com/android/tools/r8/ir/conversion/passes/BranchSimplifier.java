@@ -640,6 +640,9 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     if (options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()) {
       return false;
     }
+    if (!options.getTestingOptions().enableSimplifyNonBooleanCondition) {
+      return false;
+    }
     If theIf = block.exit().asIf();
     Value lhs = theIf.lhs();
     if (!lhs.getType().isInt()) {
