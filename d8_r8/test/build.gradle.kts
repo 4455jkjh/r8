@@ -377,30 +377,21 @@ tasks {
       )
     }
 
-  val cleanUnzipTests =
-    register<Delete>("cleanUnzipTests") {
-      dependsOn(packageTests)
-      val outputDir = layout.buildDirectory.dir("unpacked/test")
-      setDelete(outputDir)
-    }
-
   val unzipTests =
-    register<Copy>("unzipTests") {
-      dependsOn(cleanUnzipTests)
+    register<Sync>("unzipTests") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       from(packageTests.map { injected.arcOps.zipTree(it.archiveFile) })
       into(layout.buildDirectory.dir("unpacked/test"))
     }
 
   val unzipTestBase =
-    register<Copy>("unzipTestBase") {
-      dependsOn(cleanUnzipTests)
+    register<Sync>("unzipTestBase") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       from(packageTestBase.map { injected.arcOps.zipTree(it.archiveFile) })
       into(layout.buildDirectory.dir("unpacked/testbase"))
     }
 
-  fun Copy.unzipRewrittenTestsForR8Lib(
+  fun Sync.unzipRewrittenTestsForR8Lib(
     rewrittenTestJarProvider: TaskProvider<SwissArmyKnifeTask>,
     outDirName: String,
   ) {
@@ -409,27 +400,13 @@ tasks {
     into(layout.buildDirectory.dir("unpacked/$outDirName"))
   }
 
-  val cleanUnzipRewrittenTestsForR8LibWithRelocatedDeps =
-    register<Delete>("cleanUnzipRewrittenTestsForR8LibWithRelocatedDeps") {
-      val outputDir = layout.buildDirectory.dir("unpacked/rewrittentests-r8lib")
-      setDelete(outputDir)
-    }
-
   val unzipRewrittenTestsForR8LibWithRelocatedDeps =
-    register<Copy>("unzipRewrittenTestsForR8LibWithRelocatedDeps") {
-      dependsOn(cleanUnzipRewrittenTestsForR8LibWithRelocatedDeps)
+    register<Sync>("unzipRewrittenTestsForR8LibWithRelocatedDeps") {
       unzipRewrittenTestsForR8Lib(rewriteTestsForR8LibWithRelocatedDeps, "rewrittentests-r8lib")
     }
 
-  val cleanUnzipRewrittenTestsForR8LibNoDeps =
-    register<Delete>("cleanUnzipRewrittenTestsForR8LibNoDeps") {
-      val outputDir = layout.buildDirectory.dir("unpacked/rewrittentests-r8lib-exclude-deps")
-      setDelete(outputDir)
-    }
-
   val unzipRewrittenTestsForR8LibNoDeps =
-    register<Copy>("unzipRewrittenTestsForR8LibNoDeps") {
-      dependsOn(cleanUnzipRewrittenTestsForR8LibNoDeps)
+    register<Sync>("unzipRewrittenTestsForR8LibNoDeps") {
       unzipRewrittenTestsForR8Lib(rewriteTestsForR8LibNoDeps, "rewrittentests-r8lib-exclude-deps")
     }
 
@@ -480,7 +457,7 @@ tasks {
 
   fun Test.testR8Lib(
     r8Lib: TaskProvider<CreateR8LibraryTask>,
-    unzipRewrittenTests: TaskProvider<Copy>,
+    unzipRewrittenTests: TaskProvider<Sync>,
   ) {
     logger.info("NOTE: Number of processors " + Runtime.getRuntime().availableProcessors())
     logger.info("NOTE: Max parallel forks " + maxParallelForks)
