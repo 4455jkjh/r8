@@ -3358,6 +3358,8 @@ public class DexItemFactory {
 
   public class ObjectsMethods {
 
+    public final DexMethod checkIndex =
+        createMethod(objectsType, createProto(intType, intType, intType), "checkIndex");
     public final DexMethod equals =
         createMethod(objectsType, createProto(booleanType, objectType, objectType), "equals");
     public final DexMethod hash =

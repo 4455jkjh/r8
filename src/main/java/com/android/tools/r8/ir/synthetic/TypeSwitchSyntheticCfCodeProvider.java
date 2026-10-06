@@ -101,12 +101,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
     // Objects.checkIndex(restart, length + 1);
     instructions.add(loadArg1());
     instructions.add(new CfConstNumber(bootstrapArgs.size() + 1, ValueType.INT));
-    DexMethod checkIndex =
-        factory.createMethod(
-            factory.objectsType,
-            factory.createProto(factory.intType, factory.intType, factory.intType),
-            "checkIndex");
-    instructions.add(new CfInvoke(Opcodes.INVOKESTATIC, checkIndex, false));
+    instructions.add(new CfInvoke(Opcodes.INVOKESTATIC, factory.objectsMethods.checkIndex, false));
     instructions.add(new CfStackInstruction(Opcode.Pop));
 
     if (!isPrimitiveSwitch) {
