@@ -39,9 +39,8 @@ public class ObjectsCheckIndexTest extends TestBase {
 
   @Test
   public void testD8() throws Exception {
-    testForD8(parameters.getBackend())
+    testForD8(parameters)
         .addProgramClassFileData(getProgramClassFileData())
-        .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines(
@@ -50,11 +49,10 @@ public class ObjectsCheckIndexTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addProgramClassFileData(getProgramClassFileData())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
-        .setMinApi(parameters)
         .compile()
         .inspect(
             inspector -> {
