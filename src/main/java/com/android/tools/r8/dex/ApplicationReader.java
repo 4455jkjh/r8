@@ -307,6 +307,7 @@ public class ApplicationReader {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private AndroidApiLevel validateOrComputeMinApiLevel(
       AndroidApiLevel computedMinApiLevel, DexReader dexReader) {
     DexVersion version = dexReader.getDexVersion();

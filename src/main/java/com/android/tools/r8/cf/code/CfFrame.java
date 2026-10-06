@@ -96,18 +96,21 @@ public class CfFrame extends CfInstruction implements Cloneable {
   }
 
   // Constructor used by CfCodePrinter.
+  @SuppressWarnings("ReferenceEquality")
   public CfFrame(Int2ObjectAVLTreeMap<FrameType> locals) {
     this((Int2ObjectSortedMap<FrameType>) locals, EMPTY_STACK);
     assert !locals.isEmpty() || locals == EMPTY_LOCALS : "Should use EMPTY_LOCALS instead";
   }
 
   // Constructor used by CfCodePrinter.
+  @SuppressWarnings("ReferenceEquality")
   public CfFrame(Deque<PreciseFrameType> stack) {
     this(EMPTY_LOCALS, stack);
     assert !stack.isEmpty() || stack == EMPTY_STACK : "Should use EMPTY_STACK instead";
   }
 
   // Constructor used by CfCodePrinter.
+  @SuppressWarnings("ReferenceEquality")
   public CfFrame(Int2ObjectAVLTreeMap<FrameType> locals, Deque<PreciseFrameType> stack) {
     this((Int2ObjectSortedMap<FrameType>) locals, stack);
     assert !locals.isEmpty() || locals == EMPTY_LOCALS : "Should use EMPTY_LOCALS instead";
@@ -324,6 +327,7 @@ public class CfFrame extends CfInstruction implements Cloneable {
     return frame.check(config, this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static PreciseFrameType getInitializedFrameType(
       UninitializedFrameType unInit, UninitializedFrameType other, DexType newType) {
     if (unInit.isUninitializedThis() && other.isUninitializedThis()) {
@@ -337,6 +341,7 @@ public class CfFrame extends CfInstruction implements Cloneable {
     return other;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public CfFrame mapReferenceTypes(Function<DexType, DexType> func) {
     boolean mapped = false;
     for (int var : locals.keySet()) {
@@ -385,6 +390,7 @@ public class CfFrame extends CfInstruction implements Cloneable {
     private boolean hasIncompleteUninitializedNew = false;
     private boolean seenStore = false;
 
+    @SuppressWarnings("ReferenceEquality")
     public Builder allocateStack(int size) {
       assert stack == EMPTY_STACK;
       if (size > 0) {
@@ -461,6 +467,7 @@ public class CfFrame extends CfInstruction implements Cloneable {
       return build();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private Int2ObjectAVLTreeMap<FrameType> ensureMutableLocals() {
       if (locals == EMPTY_LOCALS) {
         locals = new Int2ObjectAVLTreeMap<>();
@@ -468,6 +475,7 @@ public class CfFrame extends CfInstruction implements Cloneable {
       return (Int2ObjectAVLTreeMap<FrameType>) locals;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void ensureMutableStack() {
       if (stack == EMPTY_STACK) {
         stack = new ArrayDeque<>();

@@ -36,6 +36,7 @@ public class LensUtils {
    * @param valueRewriter Function that rewrites a value.
    * @param valueMerger Function that merges two values that have the same rewritten key.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static <K, V, P> Map<K, V> mutableRewriteMap(
       Map<K, V> map,
       IntFunction<Map<K, V>> mapFactory,

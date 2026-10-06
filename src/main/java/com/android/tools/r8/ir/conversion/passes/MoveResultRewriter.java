@@ -43,6 +43,7 @@ public class MoveResultRewriter extends CodeRewriterPass<AppInfo> {
   }
 
   // Replace result uses for methods where something is known about what is returned.
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code) {
     boolean changed = false;

@@ -384,6 +384,7 @@ public class NumberUnboxer implements ReprocessingOptimization {
     return 0;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void apply(
       AppView<AppInfoWithLiveness> appView,

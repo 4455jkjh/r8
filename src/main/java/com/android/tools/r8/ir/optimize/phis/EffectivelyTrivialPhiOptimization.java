@@ -147,6 +147,7 @@ public class EffectivelyTrivialPhiOptimization {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private SingleValueOrValue computeEffectivelyTrivialPhiValue(Phi phi) {
     Value representativeOperand = null;
     AbstractValue representativeOperandAbstractValue = null;

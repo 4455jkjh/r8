@@ -49,6 +49,7 @@ public class BranchDiamondInverter extends FinalizerRewriterPass<AppInfo> {
     return CodeRewriterResult.hasChanged(hasChanged);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean tryInvertBranch(
       BasicBlock block, If theIf, BasicBlockIterator iterator, RegisterAllocator allocator) {
     BasicBlock trueTargetBlock = theIf.getTrueTarget();
@@ -83,6 +84,7 @@ public class BranchDiamondInverter extends FinalizerRewriterPass<AppInfo> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean canRedirectToTarget(BasicBlock redirectTarget, BasicBlock sourceBlock) {
     return redirectTarget != sourceBlock
         && !redirectTarget.entry().isMoveException()

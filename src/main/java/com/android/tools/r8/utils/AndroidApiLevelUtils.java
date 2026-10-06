@@ -45,6 +45,7 @@ public class AndroidApiLevelUtils {
         caller, inlinee, appView, NopWhyAreYouNotInliningReporter.getInstance());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean isApiSafeForInlining(
       ProgramMethod caller,
       ProgramMethod inlinee,

@@ -184,6 +184,7 @@ public abstract class FieldValueAnalysis {
         });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean fieldMaybeReadBeforeInstruction(DexClassAndField field, Instruction instruction) {
     BasicBlock block = instruction.getBlock();
 
@@ -226,6 +227,7 @@ public abstract class FieldValueAnalysis {
    * Eagerly creates a mapping from each block to the set of fields that may be read in that block
    * and its transitive predecessors.
    */
+  @SuppressWarnings("ReferenceEquality")
   private Map<BasicBlock, AbstractFieldSet> createFieldsMaybeReadBeforeBlockInclusive() {
     Map<BasicBlock, AbstractFieldSet> result = new IdentityHashMap<>();
     Deque<BasicBlock> worklist = DequeUtils.newArrayDeque(code.entryBlock());

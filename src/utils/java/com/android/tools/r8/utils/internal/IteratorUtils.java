@@ -92,6 +92,7 @@ public class IteratorUtils {
    * Returns the previous element or null if !hasPrevious(). A subsequent call to iterator.remove()
    * will remove the peeked element.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static <T> T peekPrevious(ListIterator<T> iterator) {
     if (iterator.hasPrevious()) {
       T previous = iterator.previous();
@@ -106,6 +107,7 @@ public class IteratorUtils {
    * Returns the next element or null if !hasNext(). A subsequent call to iterator.remove() will
    * remove the peeked element.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static <T> T peekNext(ListIterator<T> iterator) {
     if (iterator.hasNext()) {
       T next = iterator.next();
@@ -170,6 +172,7 @@ public class IteratorUtils {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <T> boolean anyRemainingMatch(ListIterator<T> iterator, Predicate<T> predicate) {
     T state = peekNext(iterator);
     boolean result = false;

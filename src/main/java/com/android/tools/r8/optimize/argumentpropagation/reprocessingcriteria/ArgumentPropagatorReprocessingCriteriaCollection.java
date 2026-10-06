@@ -83,6 +83,7 @@ public class ArgumentPropagatorReprocessingCriteriaCollection {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private ParameterReprocessingCriteria analyzeArgumentUses(Argument argument) {
     // For now, always reprocess if we have non-trivial information about primitive types.
     // TODO(b/190154391): Introduce analysis for primitives.

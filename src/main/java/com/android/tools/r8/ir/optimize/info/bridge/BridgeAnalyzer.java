@@ -199,6 +199,7 @@ public class BridgeAnalyzer {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean processInstanceGetInstructions(
       DexEncodedMethod method,
       IRCode code,
@@ -332,6 +333,7 @@ public class BridgeAnalyzer {
         && outValue.singleUniqueUser().isReturn();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean analyzeInvoke(
       InvokeMethod invoke, int forwardArgumentOffset, List<Value> captures) {
     int captureCount = captures.size();
@@ -389,6 +391,7 @@ public class BridgeAnalyzer {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean analyzeReturn(
       Return ret, InvokeMethod invoke, Instruction returnCheckCastBoxOrUnbox) {
     // If we haven't seen an invoke this is not a bridge.

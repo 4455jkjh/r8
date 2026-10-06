@@ -40,6 +40,7 @@ public class OverloadedMethodOrdering {
     moveLargestCodeToFront(methods);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static ProgramMethod getFirstOverload(List<ProgramMethod> methods) {
     if (methods.size() <= 1) {
       return methods.get(0);

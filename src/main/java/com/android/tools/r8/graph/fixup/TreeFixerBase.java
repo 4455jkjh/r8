@@ -387,6 +387,7 @@ public abstract class TreeFixerBase {
     return changed ? newTypes : types;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexTypeList fixupTypeList(DexTypeList types) {
     DexType[] newTypes = fixupTypes(types.values);
     return newTypes != types.values ? new DexTypeList(newTypes) : types;

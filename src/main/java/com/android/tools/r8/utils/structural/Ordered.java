@@ -11,6 +11,7 @@ public interface Ordered<T extends Ordered<T>> extends Equatable<T>, Comparable<
   int compareTo(T other);
 
   /** Default equality is now defined by the order. */
+  @SuppressWarnings("ReferenceEquality")
   @Override
   default boolean isEqualTo(T other) {
     assert other != null;

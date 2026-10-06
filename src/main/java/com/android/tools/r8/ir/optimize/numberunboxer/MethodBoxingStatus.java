@@ -55,10 +55,12 @@ public class MethodBoxingStatus {
     return create(returnStatus.merge(other.returnStatus, numberUnboxerOptions), newArgStatuses);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isNoneUnboxable() {
     return this == NONE_UNBOXABLE;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isUnprocessedCandidate() {
     return this == UNPROCESSED_CANDIDATE;
   }
@@ -79,6 +81,7 @@ public class MethodBoxingStatus {
     return argStatuses;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public MethodBoxingStatus rewrittenWithLens(
       AppView<?> appView,
       GraphLens graphLens,

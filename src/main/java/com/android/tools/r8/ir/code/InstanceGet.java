@@ -62,6 +62,7 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
     return super.canBeDeadCode(appView, code);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static InstanceGet copyOf(Value newValue, InstanceGet original) {
     assert newValue != original.outValue();
     return InstanceGet.builder()
@@ -242,6 +243,7 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
     builder.add(new CfInstanceFieldRead(getField()), this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return object() == value;

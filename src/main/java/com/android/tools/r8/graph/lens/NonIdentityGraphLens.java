@@ -121,6 +121,7 @@ public abstract class NonIdentityGraphLens extends GraphLens {
     return type;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected FieldLookupResult internalLookupField(
       DexField reference, GraphLens codeLens, LookupFieldContinuation continuation) {
@@ -133,6 +134,7 @@ public abstract class NonIdentityGraphLens extends GraphLens {
         previous -> continuation.lookupField(internalDescribeLookupField(previous)));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected MethodLookupResult internalLookupMethod(
       DexMethod reference,
@@ -207,6 +209,7 @@ public abstract class NonIdentityGraphLens extends GraphLens {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean isIdentityLensForFields(GraphLens codeLens) {
     return this == codeLens;

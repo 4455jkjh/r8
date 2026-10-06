@@ -89,6 +89,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
         });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Map<Goto, BasicBlock> findGotosToRetarget(List<BasicBlock> candidates) {
     Map<Goto, BasicBlock> newTargets = new LinkedHashMap<>();
     candidateLoop:
@@ -169,6 +170,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
         : (isConstNumber(theIf.lhs()) ? theIf.rhs() : theIf.lhs());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private List<BasicBlock> computeCandidates(IRCode code) {
     List<BasicBlock> candidates = new ArrayList<>();
     for (BasicBlock block : ListUtils.filter(code.blocks, block -> block.exit().isIf())) {
@@ -226,6 +228,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
     newTargets.put(aGoto, newTarget);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Set<Phi> getAllowedPhis(Phi initialPhi) {
     WorkList<Phi> workList = WorkList.newIdentityWorkList(initialPhi);
     while (workList.hasNext()) {

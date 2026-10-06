@@ -233,6 +233,7 @@ public class LensCodeRewriter {
     timing.end();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewritePartial(
       IRCode code,
       ProgramMethod method,
@@ -1013,6 +1014,7 @@ public class LensCodeRewriter {
     affectedValues.narrowingWithAssumeRemoval(appView, code);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Deque<GraphLensInterval> getUnappliedLenses(
       ProgramMethod method, GraphLens graphLens, GraphLens codeLens) {
     Deque<GraphLensInterval> unappliedLenses = new ArrayDeque<>(8);
@@ -1043,6 +1045,7 @@ public class LensCodeRewriter {
     return unappliedLenses;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator insertCastForFieldAssignmentIfNeeded(
       IRCode code,
       BasicBlockIterator blocks,
@@ -1091,6 +1094,7 @@ public class LensCodeRewriter {
     return iterator;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator insertCastsForInvokeArgumentsIfNeeded(
       IRCode code,
       BasicBlockIterator blocks,
@@ -1143,6 +1147,7 @@ public class LensCodeRewriter {
     return iterator;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator insertCastForReturnIfNeeded(
       IRCode code,
       BasicBlockIterator blocks,

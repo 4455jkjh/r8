@@ -160,6 +160,7 @@ public class ListUtils {
    * Rewrites the input list based on the given function. Returns the mapped list if any elements
    * were rewritten, otherwise returns defaultValue.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static <T> List<T> mapOrElse(
       List<T> list, IntObjToObjFunction<T, T> fn, List<T> defaultValue) {
     ArrayList<T> result = null;
@@ -193,6 +194,7 @@ public class ListUtils {
     return mapOrElse(list, fn, list);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <T> void map(List<T> list, Function<T, T> fn, Consumer<List<T>> onChangedConsumer) {
     List<T> result = mapOrElse(list, fn);
     if (result != list) {

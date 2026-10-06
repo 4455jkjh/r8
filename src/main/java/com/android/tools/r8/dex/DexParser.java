@@ -260,6 +260,7 @@ public class DexParser<T extends DexClass> {
 
   // We explicitly reread the code objects even if they are deduplicated in the input (i.e., two
   // methods point to the same code object) to allow us to change code objects in our pipeline.
+  @SuppressWarnings("ReferenceEquality")
   private DexCode readCodeObject(int offset) {
     if (offset == 0) {
       return null;
@@ -541,6 +542,7 @@ public class DexParser<T extends DexClass> {
     return cacheAt(offset, function);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private <S> Object cacheAt(int offset, Supplier<S> function) {
     if (offset == 0) {
       return null; // return null for offset zero.
@@ -873,6 +875,7 @@ public class DexParser<T extends DexClass> {
     return methods;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void addClassDefsTo(Collection<T> classCollection, ApplicationReaderMap applicationReaderMap) {
     final DexSection dexSection = lookupSection(Constants.TYPE_CLASS_DEF_ITEM);
     final int length = dexSection.length;

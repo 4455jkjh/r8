@@ -170,6 +170,7 @@ public class MethodResolution {
    * href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html#jvms-5.4.3.3">Section
    * 5.4.3.3 of the JVM Spec</a>.
    */
+  @SuppressWarnings("ReferenceEquality")
   private MethodResolutionResult resolveMethodOnClassStep2(
       DexClass clazz,
       DexProto methodProto,
@@ -296,6 +297,7 @@ public class MethodResolution {
         this.split = split;
       }
 
+      @SuppressWarnings("ReferenceEquality")
       boolean isSplitToken() {
         return this != NO_SPLIT_TOKEN;
       }
@@ -327,6 +329,7 @@ public class MethodResolution {
       lookupPath(type, previousClass, Collections.emptySet());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void lookupPath(DexType type, DexClass previousClass, Set<SplitToken> splitTokens) {
       if (splitTokens.isEmpty() && !seenTypes.add(type)) {
         return;

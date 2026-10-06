@@ -90,6 +90,7 @@ public class ValueMayDependOnEnvironmentAnalysis {
     this.options = appView.options();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean anyValueMayDependOnEnvironment(Iterable<Value> values) {
     ValueGraph graph = new ValueGraph();
     Set<Instruction> consumedInstructions = Sets.newIdentityHashSet();
@@ -180,7 +181,7 @@ public class ValueMayDependOnEnvironmentAnalysis {
     return false;
   }
 
-  @SuppressWarnings("UnusedVariable")
+  @SuppressWarnings({"UnusedVariable", "ReferenceEquality"})
   private boolean addArrayValueToValueGraph(
       Value value,
       Node node,
@@ -288,6 +289,7 @@ public class ValueMayDependOnEnvironmentAnalysis {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean addNewInstanceValueToValueGraph(
       Value value,
       Node node,

@@ -15,6 +15,7 @@ public class CompareToVisitorWithNamingLens extends CompareToVisitorBase {
     return run(item1, item2, namingLens, (i1, i2, visitor) -> visitor.visit(i1, i2, visit));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <T> int run(
       T item1, T item2, NamingLens namingLens, CompareToAccept<T> compareToAccept) {
     if (item1 == item2) {

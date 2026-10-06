@@ -40,6 +40,7 @@ public class LongLivedClassSetBuilder<T extends DexClass>
     return rewrittenWithLens(appView.graphLens());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LongLivedClassSetBuilder<T> rewrittenWithLens(GraphLens newGraphLens) {
     // Check if the graph lens has changed (otherwise lens rewriting is not needed).
     if (newGraphLens == appliedGraphLens) {

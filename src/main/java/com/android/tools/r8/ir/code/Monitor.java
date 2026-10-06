@@ -134,6 +134,7 @@ public class Monitor extends Instruction {
     builder.addMonitor(type, object());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return object() == value;

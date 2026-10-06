@@ -40,6 +40,7 @@ public class SplitReturnRewriter extends CodeRewriterPass<AppInfo> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code) {
     int color = colorExceptionHandlers(code);

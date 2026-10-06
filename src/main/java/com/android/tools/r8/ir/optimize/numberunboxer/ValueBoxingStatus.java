@@ -66,6 +66,7 @@ public class ValueBoxingStatus {
     return !isNotUnboxable();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isNotUnboxable() {
     return this == NOT_UNBOXABLE;
   }
@@ -106,6 +107,7 @@ public class ValueBoxingStatus {
     return checkedWith(newDelta, newDeps, numberUnboxerOptions);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public ValueBoxingStatus rewrittenWithLens(
       AppView<?> appView, GraphLens graphLens, GraphLens codeLens, Set<DexMethod> prunedMethods) {
     if (transitiveDependencies.isEmpty()) {

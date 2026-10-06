@@ -170,6 +170,7 @@ public class RetracerForCodePrinting {
         .apply(this::toSourceString, this::toSourceString, this::toSourceString);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isEmpty() {
     return this == EMPTY;
   }

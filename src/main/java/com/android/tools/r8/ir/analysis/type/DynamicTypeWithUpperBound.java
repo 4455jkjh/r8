@@ -46,6 +46,7 @@ public class DynamicTypeWithUpperBound extends DynamicType {
     return create(appView, dynamicUpperBoundType, dynamicLowerBoundType);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static DynamicTypeWithUpperBound create(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       TypeElement dynamicUpperBoundType,
@@ -295,6 +296,7 @@ public class DynamicTypeWithUpperBound extends DynamicType {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public DynamicTypeWithUpperBound withNullability(Nullability nullability) {
     assert !hasDynamicLowerBoundType();

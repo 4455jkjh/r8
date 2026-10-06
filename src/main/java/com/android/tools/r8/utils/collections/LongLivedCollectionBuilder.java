@@ -31,6 +31,7 @@ public abstract class LongLivedCollectionBuilder<BuilderCollection, ResultCollec
     this.backing = factoryForBuilder.apply(2);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isRewrittenWithLens(GraphLens graphLens) {
     return appliedGraphLens == graphLens;
   }

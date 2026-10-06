@@ -73,6 +73,7 @@ public class FieldAccessInfoCollectionImpl
     removeIf((field, info) -> !definitions.definitionForHolder(field).isProgramClass());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public FieldAccessInfoCollectionImpl rewrittenWithLens(
       DexDefinitionSupplier definitions, GraphLens lens, GraphLens appliedLens, Timing timing) {

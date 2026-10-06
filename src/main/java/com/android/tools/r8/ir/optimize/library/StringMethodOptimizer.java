@@ -669,6 +669,7 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator optimizeToCharArray(
       IRCode code,
       BasicBlockIterator blockIterator,

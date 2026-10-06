@@ -321,6 +321,7 @@ public class DexSourceCode implements SourceCode {
         || dex instanceof DexMoveResultWide;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public int traceInstruction(int index, IRBuilder builder) {
     DexInstruction dex = code.instructions[index];

@@ -230,6 +230,7 @@ public class LinearFlowInstructionListIterator implements InstructionListIterato
     currentBlockIterator.removeOrReplaceByDebugLocalRead();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isLinearEdge(BasicBlock pred, BasicBlock succ) {
     assert pred.getSuccessors().contains(succ);
     assert succ.getPredecessors().contains(pred);

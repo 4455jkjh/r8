@@ -29,18 +29,22 @@ public class Nullability {
 
   private Nullability() {}
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isBottom() {
     return this == BOTTOM;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isDefinitelyNull() {
     return this == DEFINITELY_NULL;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isDefinitelyNotNull() {
     return this == DEFINITELY_NOT_NULL;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isMaybeNull() {
     return this == MAYBE_NULL;
   }
@@ -53,6 +57,7 @@ public class Nullability {
     return isMaybeNull();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Nullability join(Nullability other) {
     if (this == BOTTOM) {
       return other;
@@ -66,6 +71,7 @@ public class Nullability {
     return MAYBE_NULL;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Nullability meet(Nullability other) {
     if (this == MAYBE_NULL) {
       return other;
@@ -79,10 +85,12 @@ public class Nullability {
     return BOTTOM;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean lessThanOrEqual(Nullability other) {
     return join(other) == other;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean strictlyLessThan(Nullability other) {
     return !equals(other) && other == join(other);
   }
@@ -103,6 +111,7 @@ public class Nullability {
     return BOTTOM;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public String toString() {
     if (this == MAYBE_NULL) {

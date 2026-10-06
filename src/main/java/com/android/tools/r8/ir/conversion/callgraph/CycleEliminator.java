@@ -397,6 +397,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void pop(N node) {
     N popped = stack.pop();
     assert popped == node;
@@ -442,7 +443,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings({"JdkObsolete", "NonApiType"})
+  @SuppressWarnings({"JdkObsolete", "NonApiType", "ReferenceEquality"})
   private LinkedList<N> extractCycle(N entry) {
     LinkedList<N> cycle = new LinkedList<>();
     do {

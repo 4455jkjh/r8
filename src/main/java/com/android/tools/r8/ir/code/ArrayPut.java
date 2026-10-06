@@ -255,6 +255,7 @@ public class ArrayPut extends ArrayAccess {
     builder.add(new CfArrayStore(type), this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return array() == value;

@@ -75,6 +75,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
     private boolean mayHaveRedundantBlocks = false;
     private Set<Instruction> toRemove = NOTHING;
 
+    @SuppressWarnings("ReferenceEquality")
     CodeRewriterResult rewriteCode(IRCode code) {
       assert !mayHaveRedundantBlocks;
       assert toRemove == NOTHING;
@@ -351,6 +352,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       return Iterables.all(newArrayFilled.inValues(), Value::isConstant);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private NewArrayEmpty rewriteToNewArrayEmpty(
         IRCode code,
         BasicBlockInstructionListIterator instructionIterator,
@@ -532,6 +534,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       return copy.outValue();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void addToRemove(Instruction instruction) {
       if (toRemove == NOTHING) {
         toRemove = SetUtils.newIdentityHashSet();
@@ -662,6 +665,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void putNewValue(Value value) {
       DexItem constant = getConstant(value);
       assert constantOccurrences.containsKey(constant);

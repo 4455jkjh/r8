@@ -78,6 +78,7 @@ public abstract class FieldInstruction extends Instruction {
         appView, context, assumption, appView.appInfo().resolveField(field, context));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean internalInstructionInstanceCanThrow(
       AppView<?> appView,
       ProgramMethod context,

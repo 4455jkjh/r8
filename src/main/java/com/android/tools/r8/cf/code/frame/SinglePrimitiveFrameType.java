@@ -54,6 +54,7 @@ public abstract class SinglePrimitiveFrameType extends SingletonFrameType
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public final SingleFrameType join(
       AppView<? extends AppInfoWithClassHierarchy> appView, SingleFrameType frameType) {

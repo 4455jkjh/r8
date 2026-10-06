@@ -12,6 +12,7 @@ public class DynamicTypeWithLowerBound extends DynamicTypeWithUpperBound {
 
   private final ClassTypeElement dynamicLowerBoundType;
 
+  @SuppressWarnings("ReferenceEquality")
   private DynamicTypeWithLowerBound(
       ClassTypeElement dynamicUpperBoundType, ClassTypeElement dynamicLowerBoundType) {
     super(dynamicUpperBoundType);
@@ -20,6 +21,7 @@ public class DynamicTypeWithLowerBound extends DynamicTypeWithUpperBound {
     this.dynamicLowerBoundType = dynamicLowerBoundType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   static DynamicTypeWithLowerBound create(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       ClassTypeElement dynamicUpperBoundType,
@@ -74,6 +76,7 @@ public class DynamicTypeWithLowerBound extends DynamicTypeWithUpperBound {
         + ")";
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public DynamicTypeWithLowerBound withNullability(Nullability nullability) {
     if (getDynamicUpperBoundType().nullability() == nullability) {

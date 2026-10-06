@@ -606,6 +606,7 @@ public class CfSourceCode implements SourceCode {
     instruction.buildIR(builder, state, this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void recordStateForTarget(int target, Snapshot snapshot) {
     Snapshot existing = incomingState.get(target);
     Snapshot merged = CfState.merge(existing, snapshot, method);

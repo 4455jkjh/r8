@@ -85,6 +85,7 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing
     this.rewriter = new EnqueuerDeferredTracingRewriter(appView);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean deferTracingOfFieldAccess(
       DexField fieldReference,

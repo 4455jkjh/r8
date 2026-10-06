@@ -102,6 +102,7 @@ public class BidirectionalOneToManyHashMap<K, V> implements MutableBidirectional
     return backing.keySet();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Set<V> remove(K key) {
     Set<V> values = backing.remove(key);

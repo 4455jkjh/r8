@@ -12,6 +12,7 @@ import java.util.Map;
 public class NoNestedMergingPolicy
     extends VerticalClassMergerPolicyWithPreprocessing<Map<DexProgramClass, VerticalMergeGroup>> {
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean canMerge(
       VerticalMergeGroup group, Map<DexProgramClass, VerticalMergeGroup> groups) {

@@ -28,6 +28,7 @@ public class LiveRange implements Comparable<LiveRange> {
     return "[" + start + ", " + end + "[";
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInfinite() {
     return this == INFINITE;
   }

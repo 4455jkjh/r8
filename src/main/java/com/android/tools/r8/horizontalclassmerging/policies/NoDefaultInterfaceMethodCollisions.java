@@ -107,6 +107,7 @@ public class NoDefaultInterfaceMethodCollisions
     return newGroup.isTrivial() ? Collections.emptyList() : ListUtils.newLinkedList(newGroup);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Set<DexMethod> computeNewDefaultMethodsAddedToClassByMerge(
       DexProgramClass clazz, HorizontalMergeGroup group, Map<DexType, InterfaceInfo> infos) {
     // Run through the other classes in the merge group, and add the default interface methods that

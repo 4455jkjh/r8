@@ -149,6 +149,7 @@ public interface ClassPositionRemapper {
       this.kotlinSourceDebugExtensions = kotlinSourceDebugExtensions;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public ClassPositionRemapper createClassPositionRemapper(DexProgramClass clazz) {
       ClassPositionRemapper baseClassRemapper = baseRemapper.createClassPositionRemapper(clazz);

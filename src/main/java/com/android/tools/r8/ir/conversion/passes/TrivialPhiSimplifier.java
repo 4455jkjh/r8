@@ -91,6 +91,7 @@ public class TrivialPhiSimplifier extends CodeRewriterPass<AppInfo> {
   // trivial ones by the out value.
   // This is a simplified variant of the removeRedundantPhis algorithm in Section 3.2 of:
   // http://compilers.cs.uni-saarland.de/papers/bbhlmz13cc.pdf
+  @SuppressWarnings("ReferenceEquality")
   private static void replaceTrivialPhis(Value outValue) {
     List<Set<Value>> components = new SCC<Value>(Value::uniquePhiUsers).computeSCC(outValue);
     for (int i = components.size() - 1; i >= 0; i--) {

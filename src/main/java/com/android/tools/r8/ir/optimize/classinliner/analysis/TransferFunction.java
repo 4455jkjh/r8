@@ -241,6 +241,7 @@ class TransferFunction
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private ParameterUsages analyzeInvokeDirect(InvokeDirect invoke, NonEmptyParameterUsages state) {
     // We generally don't class inline instances that escape through invoke-direct calls, but we
     // make an exception for forwarding/parent constructor calls that does not leak the receiver.
@@ -375,6 +376,7 @@ class TransferFunction
         instruction.inValues(), this::isArgumentOfInterest);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isArgumentOfInterest(Value value) {
     assert value.getAliasedValue(aliasedValueConfiguration) == value;
     return value.isArgument() && argumentsOfInterest.contains(value);

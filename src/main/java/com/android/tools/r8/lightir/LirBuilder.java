@@ -313,6 +313,7 @@ public class LirBuilder<V, EV> {
     @Override
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {}
 
+    @SuppressWarnings("ReferenceEquality")
     public NameComputationPayload rewrittenWithLens(GraphLens graphLens, GraphLens codeLens) {
       NameComputationInfo<?> rewrittenNameComputationInfo =
           nameComputationInfo.rewrittenWithLens(graphLens, codeLens);

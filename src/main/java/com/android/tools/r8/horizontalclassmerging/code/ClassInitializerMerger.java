@@ -76,6 +76,7 @@ public class ClassInitializerMerger {
     return classInitializers.size() == 1;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexEncodedMethod moveSingleton(HorizontalMergeGroup group, DexItemFactory dexItemFactory) {
     assert isSingleton();
     ProgramMethod method = ListUtils.first(classInitializers);

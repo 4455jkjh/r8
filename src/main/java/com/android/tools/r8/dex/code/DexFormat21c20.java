@@ -92,6 +92,7 @@ abstract class DexFormat21c20<T extends IndexedDexItem> extends DexBase2Format {
     return formatSmaliString("v" + A + ", " + BBBB.toSmaliString());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean equals(
       DexInstruction other, BiPredicate<IndexedDexItem, IndexedDexItem> equality) {

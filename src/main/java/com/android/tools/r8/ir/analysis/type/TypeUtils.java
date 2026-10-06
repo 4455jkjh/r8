@@ -47,7 +47,7 @@ public class TypeUtils {
     }
 
     @Override
-    @SuppressWarnings("EqualsGetClass")
+    @SuppressWarnings({"EqualsGetClass", "ReferenceEquality"})
     public boolean equals(Object obj) {
       if (this == obj) {
         return true;
@@ -169,6 +169,7 @@ public class TypeUtils {
     return toReferenceTypeElement(instanceGet.getField().getHolderType(), appView);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static TypeElement computeUseTypeForInstancePut(
       AppView<?> appView,
       InstancePut instancePut,
@@ -185,6 +186,7 @@ public class TypeUtils {
     return useType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static TypeElement computeUseTypeForInvoke(
       AppView<?> appView,
       InvokeMethod invoke,

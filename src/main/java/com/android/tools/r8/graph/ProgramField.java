@@ -43,6 +43,7 @@ public class ProgramField extends DexClassAndField
         && accessInfo.isEffectivelyFinal(this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isStructurallyEqualTo(ProgramField other) {
     return getDefinition() == other.getDefinition() && getHolder() == other.getHolder();
   }

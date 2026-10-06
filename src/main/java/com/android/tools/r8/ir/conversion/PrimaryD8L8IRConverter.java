@@ -269,6 +269,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
         .synthesizeClasses(executorService, classSynthesizerEventConsumer, timing);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexApplication commitPendingSyntheticItems(
       AppView<AppInfo> appView, DexApplication application) {
     if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {

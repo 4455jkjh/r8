@@ -99,6 +99,7 @@ public class RecordRewritingNamingLens extends NonIdentityNamingLens {
     return namingLens.verifyRenamingConsistentWithResolution(item);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public NamingLens withoutDesugaredLibraryPrefixRewritingNamingLens() {
     NamingLens newParent = namingLens.withoutDesugaredLibraryPrefixRewritingNamingLens();

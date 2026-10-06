@@ -260,6 +260,7 @@ public class MemberRebindingAnalysis extends MemberRebindingHelper {
         });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean needsBridgeForInterfaceMethod(
       DexClass originalClass, DexClassAndMethod method, InvokeType invokeType) {
     return options.isGeneratingClassFiles()
@@ -268,6 +269,7 @@ public class MemberRebindingAnalysis extends MemberRebindingHelper {
         && method.getHolder().isInterface();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexMethod insertBridgeForInterfaceMethod(
       DexMethod method,
       DexClassAndMethod target,
@@ -342,6 +344,7 @@ public class MemberRebindingAnalysis extends MemberRebindingHelper {
     return target.getReference();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexClass findHolderForVisibilityBridge(
       DexClass currentClass, DexClass resolvedHolder, String initialResolutionPackage) {
     if (currentClass == resolvedHolder) {

@@ -55,6 +55,7 @@ public class PathConstraintAnalysisTransferFunction
     return new ConcretePathConstraintAnalysisState();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public PathConstraintAnalysisState computeBlockEntryState(
       BasicBlock block, BasicBlock predecessor, PathConstraintAnalysisState predecessorExitState) {

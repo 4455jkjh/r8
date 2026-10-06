@@ -63,6 +63,7 @@ public class LongLivedProgramMethodMapBuilder<V>
     return rewrittenWithLens(valueRewriter, appView.graphLens());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LongLivedProgramMethodMapBuilder<V> rewrittenWithLens(
       BiFunction<V, GraphLens, V> valueRewriter, GraphLens newGraphLens) {
     // Check if the graph lens has changed (otherwise lens rewriting is not needed).

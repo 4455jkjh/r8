@@ -293,6 +293,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
   }
 
   /** This will serialize a collection of DexReferences and apis into a byte stream. */
+  @SuppressWarnings("ReferenceEquality")
   private static int serializeIntoPayload(
       List<Pair<ApiDatabaseEntry, AndroidApiLevel>> pairs,
       ByteArrayOutputStream payload,

@@ -196,6 +196,7 @@ public class DexDistributionRefinement {
     return collector.getItems();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private PriorityQueue<Pair<VirtualFile, Integer>> findTargetFiles(
       VirtualFile sourceFile, Set<DexItem> items) {
     int estimatedSavingsFromRemovalInBytes =

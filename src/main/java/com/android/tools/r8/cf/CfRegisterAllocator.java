@@ -594,6 +594,7 @@ public class CfRegisterAllocator implements RegisterAllocator {
   }
 
   // First registermap can be empty, otherwise they must have identical keysets
+  @SuppressWarnings("ReferenceEquality")
   private void updateFirstRegisterMapByJoiningTheSecond(
       Int2ReferenceMap<TypeInfo> map1, Int2ReferenceMap<TypeInfo> map2) {
     if (map1.isEmpty()) {
@@ -613,6 +614,7 @@ public class CfRegisterAllocator implements RegisterAllocator {
   }
 
   // First stack can be empty, otherwise they must have the same size.
+  @SuppressWarnings("ReferenceEquality")
   private void updateFirstStackByJoiningTheSecond(List<TypeInfo> stack1, List<TypeInfo> stack2) {
     if (stack1.isEmpty()) {
       stack1.addAll(stack2);

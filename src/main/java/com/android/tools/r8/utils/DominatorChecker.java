@@ -48,6 +48,7 @@ public interface DominatorChecker {
       prevTargetBlock = subgraphExitBlock;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean check(BasicBlock targetBlock) {
       assert prevTargetBlock != null : "DominatorChecker cannot be used after returning false.";
@@ -96,6 +97,7 @@ public interface DominatorChecker {
      * Within the subgraph defined by the given entry/exit blocks, returns whether targetBlock
      * dominates the exit block.
      */
+    @SuppressWarnings("ReferenceEquality")
     private static boolean checkWithTraversal(
         BasicBlock subgraphEntryBlock,
         BasicBlock subgraphExitBlock,
@@ -120,6 +122,7 @@ public interface DominatorChecker {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   static DominatorChecker create(BasicBlock subgraphEntryBlock, BasicBlock subgraphExitBlock) {
     // Fast-path: blocks are the same.
     // As of Nov 2023: in Chrome for String.format() optimization, this covers 77% of cases.
@@ -177,7 +180,7 @@ public interface DominatorChecker {
    * Returns whether targetBlock dominates subgraphExitBlock by performing a depth-first traversal
    * from subgraphExitBlock to subgraphEntryBlock with targetBlock removed from the graph.
    */
-  @SuppressWarnings("InconsistentOverloads")
+  @SuppressWarnings({"InconsistentOverloads", "ReferenceEquality"})
   static boolean check(
       BasicBlock subgraphEntryBlock, BasicBlock subgraphExitBlock, BasicBlock targetBlock) {
     if (targetBlock == subgraphExitBlock) {

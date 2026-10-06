@@ -84,6 +84,7 @@ public class ArrayLength extends Instruction {
     return array().type.isNullable();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean identicalAfterRegisterAllocation(
       Instruction other, RegisterAllocator allocator, MethodConversionOptions conversionOptions) {
@@ -131,6 +132,7 @@ public class ArrayLength extends Instruction {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return array() == value;

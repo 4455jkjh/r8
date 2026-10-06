@@ -422,6 +422,7 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected boolean shouldApplyInliningToInlinee(
       AppView<?> appView, ProgramMethod context, ProgramMethod singleTarget, int inliningDepth) {

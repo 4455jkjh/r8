@@ -155,6 +155,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
     public abstract boolean maybeHasIndex(int i);
 
+    @SuppressWarnings("ReferenceEquality")
     boolean baseEquals(ArraySlot arraySlot) {
       return array == arraySlot.array && memberType == arraySlot.memberType;
     }
@@ -211,6 +212,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       return ObjectUtils.hashLLL(array, index, memberType);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object other) {
       if (this == other) {
@@ -229,6 +231,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     private final DexField field;
     private final Value object;
 
+    @SuppressWarnings("ReferenceEquality")
     private FieldAndObject(DexField field, Value receiver) {
       assert receiver == receiver.getAliasedValue();
       this.field = field;
@@ -240,6 +243,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       return field.hashCode() * 7 + object.hashCode();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object other) {
       if (this == other) {
@@ -320,6 +324,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         return value;
       }
 
+      @SuppressWarnings("ReferenceEquality")
       @Override
       public boolean equals(Object obj) {
         if (this == obj) {
@@ -414,11 +419,13 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         return phi.getType();
       }
 
+      @SuppressWarnings("ReferenceEquality")
       @Override
       public boolean isMaterializablePhiFromBlock(BasicBlock block) {
         return this.block == block;
       }
 
+      @SuppressWarnings("ReferenceEquality")
       @Override
       public boolean isMaterializablePhiNotFromBlock(BasicBlock block) {
         return this.block != block;
@@ -636,6 +643,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       return CodeRewriterResult.hasChanged(hasChanged);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void processInstructionsToRemove() {
       instructionsToRemove.forEach(
           (block, instructionsToRemoveInBlock) -> {
@@ -1444,6 +1452,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       assert mostRecentStaticFieldWrites == null;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private static <K> void intersectFieldValues(
         Map<K, ExistingOrMaterializableValue> fieldValues,
         Map<K, ExistingOrMaterializableValue> other) {

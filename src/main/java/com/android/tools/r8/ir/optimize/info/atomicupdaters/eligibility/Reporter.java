@@ -19,6 +19,7 @@ public class Reporter {
     reportInfo(appView, event, Reason.NO_REASON);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static String format(Event event, Reason reason) {
     String prefix;
     if (event.isFailure()) {

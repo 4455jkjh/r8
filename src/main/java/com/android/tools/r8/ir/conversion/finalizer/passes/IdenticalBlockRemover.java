@@ -54,6 +54,7 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
    * predecessors now target {@code otherBlock} directly, allowing the bottom-up pass to cascade and
    * merge identical predecessor blocks as well.
    */
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code, RegisterAllocator allocator) {
     boolean hasChanged = false;

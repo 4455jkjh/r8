@@ -909,6 +909,7 @@ public class ComposingBuilder {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean verifyAllOutlineCallSitesAreEqualTo(
         OutlineCallsiteMappingInformation outlineCallSite,
         List<ComputedMappedRangeForOutline> computedMappedRangeForOutlines) {

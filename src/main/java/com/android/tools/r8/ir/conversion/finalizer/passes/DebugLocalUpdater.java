@@ -115,6 +115,7 @@ public class DebugLocalUpdater extends FinalizerRewriterPass<AppInfo> {
     return CodeRewriterResult.hasChanged(changed);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Set<Move> computeUnneededMoves(
       BasicBlock block, DebugLocalsChange postSpillLocalsChange, RegisterAllocator allocator) {
     Set<Move> unneededMoves = Sets.newIdentityHashSet();

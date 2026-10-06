@@ -47,6 +47,7 @@ public class LoadStoreHelper {
     this.typesHelper = typesHelper;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean hasLocalInfoOrUsersOutsideThisBlock(Value value, BasicBlock block) {
     if (value.hasLocalInfo()) {
       return true;
@@ -115,6 +116,7 @@ public class LoadStoreHelper {
     blockIterator = null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void insertPhiMoves(CfRegisterAllocator allocator) {
     // Insert phi stores in all predecessors.
     for (BasicBlock block : code.blocks) {

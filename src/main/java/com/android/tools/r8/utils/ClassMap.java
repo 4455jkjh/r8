@@ -61,6 +61,7 @@ public abstract class ClassMap<T extends DexClass> {
     this.classProvider.set(null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   ClassMap(ClassProvider<T> classProvider) {
     assert classProvider == null || classProvider.getClassKind() == getClassKind();
     this.classes = new ConcurrentHashMap<>();

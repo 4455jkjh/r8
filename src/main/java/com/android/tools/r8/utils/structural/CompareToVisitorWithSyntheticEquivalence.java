@@ -18,6 +18,7 @@ public class CompareToVisitorWithSyntheticEquivalence extends CompareToVisitorBa
     return run(item1, item2, typeMap, methodMap, (i1, i2, visitor) -> visitor.visit(i1, i2, visit));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <T> int run(
       T item1,
       T item2,

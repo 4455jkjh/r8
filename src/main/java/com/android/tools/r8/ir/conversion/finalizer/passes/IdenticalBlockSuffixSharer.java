@@ -185,6 +185,7 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
     return CodeRewriterResult.hasChanged(hasChanged);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static BasicBlock createAndInsertBlockForSuffix(
       IRCode code,
       int suffixSize,

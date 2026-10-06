@@ -139,6 +139,7 @@ public class AssumeInserter {
     return assumedValuesBuilder.build();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void computeAssumedValuesInBlock(
       IRCode code,
       BasicBlockIterator blockIterator,
@@ -400,6 +401,7 @@ public class AssumeInserter {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void removeRedundantAssumeInstructions(AssumedValues assumedValues) {
     assumedValues.removeIf(
         (instruction, assumedValue, assumedValueInfo) -> {
@@ -441,6 +443,7 @@ public class AssumeInserter {
         });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Map<Instruction, Map<Value, AssumedValueInfo>> computeDominanceForAssumedValues(
       IRCode code, AssumedValues assumedValues) {
     Map<Instruction, Map<Value, AssumedValueInfo>> redundantAssumedValues = new IdentityHashMap<>();
@@ -615,6 +618,7 @@ public class AssumeInserter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void materializeSelectedAssumeInstructions(
       IRCode code,
       AssumedValues assumedValues,
@@ -708,6 +712,7 @@ public class AssumeInserter {
     return block;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static IntList findDominatedPredecessorIndexesInPhi(
       Phi user, Value assumedValue, Predicate<BasicBlock> dominatedByInsertionBlock) {
     assert user.getOperands().contains(assumedValue);
@@ -745,6 +750,7 @@ public class AssumeInserter {
     return isNullableReferenceType(value) && hasOtherNonDebugUsers(value, ignore);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean hasOtherNonDebugUsers(Value value, Instruction ignore) {
     return value.hasPhiUsers() || Iterables.any(value.uniqueUsers(), user -> user != ignore);
   }
@@ -834,6 +840,7 @@ public class AssumeInserter {
       return new Builder();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     void computeDominance(
         TriFunction<Instruction, Value, AssumedValueInfo, AssumedDominance> function) {
       Iterator<Entry<Instruction, Map<Value, AssumedValueInfo>>> outerIterator =

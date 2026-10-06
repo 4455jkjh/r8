@@ -86,6 +86,7 @@ public class LongLivedProgramMethodSetBuilder<T extends ProgramMethodSet> {
     return methods.contains(method.getReference());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isRewrittenWithLens(GraphLens graphLens) {
     return appliedGraphLens == graphLens;
   }
@@ -143,6 +144,7 @@ public class LongLivedProgramMethodSetBuilder<T extends ProgramMethodSet> {
     return rewrittenWithLens(appView.graphLens());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LongLivedProgramMethodSetBuilder<T> rewrittenWithLens(GraphLens newGraphLens) {
     // Check if the graph lens has changed (otherwise lens rewriting is not needed).
     if (newGraphLens == appliedGraphLens) {
@@ -183,6 +185,7 @@ public class LongLivedProgramMethodSetBuilder<T extends ProgramMethodSet> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean verifyIsRewrittenWithNewerLens(GraphLens graphLens) {
     assert appliedGraphLens != graphLens;
     assert appliedGraphLens.isNonIdentityLens();

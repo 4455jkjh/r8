@@ -982,6 +982,7 @@ public class LargeProtoEnumRewriter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewriteProgramClassInstructions(
       DexProgramClass clazz,
       Map<DexField, DexField> fieldMapping,

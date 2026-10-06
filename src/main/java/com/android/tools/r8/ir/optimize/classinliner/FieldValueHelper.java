@@ -35,6 +35,7 @@ final class FieldValueHelper {
   private final Map<BasicBlock, Value> ins = new IdentityHashMap<>();
   private final Map<BasicBlock, Value> outs = new IdentityHashMap<>();
 
+  @SuppressWarnings("ReferenceEquality")
   FieldValueHelper(DexField field, IRCode code, Instruction root, AppView<?> appView) {
     this.field = field;
     this.code = code;
@@ -45,6 +46,7 @@ final class FieldValueHelper {
     assert root.outValue() == root.outValue().getAliasedValue();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void replaceValue(Value oldValue, Value newValue) {
     for (Entry<BasicBlock, Value> entry : ins.entrySet()) {
       if (entry.getValue() == oldValue) {

@@ -42,7 +42,7 @@ public interface Equatable<T> {
    *   @Override boolean equals(Object other) { return Equatable.equalsImpl(this, other); }
    * </pre>
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "ReferenceEquality"})
   static <T extends Equatable<T>> boolean equalsImpl(T self, Object other) {
     assert self != null;
     if (self == other) {

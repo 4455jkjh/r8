@@ -81,6 +81,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     return CodeRewriterResult.hasChanged(loopRemoved);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void updateDominatedUsers(IRCode code, Map<Value, Value> replacements) {
     DominatorTree dominatorTree = new DominatorTree(code);
     replacements.forEach(
@@ -194,6 +195,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
    * into: `for (int j = 1; j < N + 1, j++) { ... }`. This avoids the need for calling
    * EnumUnboxingSharedUtility#values, which saves an array allocation.
    */
+  @SuppressWarnings("ReferenceEquality")
   private boolean tryOptimizeUnboxedEnumValuesLoop(
       IRCode code, NaturalIntLoopWithKnowIterations loop) {
     // Check that the loop has `int i = 0` and `i++`.
@@ -320,6 +322,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void tryInsertAssumeRangeInstruction(
       IRCode code, NaturalIntLoopWithKnowIterations loop, Map<Value, Value> replacements) {
     long loopStart = loop.initCounter.getIntValue();
@@ -363,6 +366,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
    * simply removed. (3) The loop has multiple exits and the phis are used outside the loop, this
    * would require dealing with complex merge point and postponing phis after the loop, we bail out.
    */
+  @SuppressWarnings("ReferenceEquality")
   private boolean analyzePhiUses(
       Set<BasicBlock> loopBody, If comparison, NaturalIntLoopWithKnowIterations.Builder builder) {
     // Check for single exit scenario.
@@ -416,6 +420,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
    * iteration of the loop increment the iterator by one of the following: i + cst, cst + i or i -
    * cst.
    */
+  @SuppressWarnings("ReferenceEquality")
   private boolean analyzeLoopIterator(
       If comparison, Phi loopPhi, NaturalIntLoopWithKnowIterations.Builder builder) {
     for (int i = 0; i < loopPhi.getOperands().size(); i++) {
@@ -490,6 +495,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
   /**
    * Analyze the loop comparison so that it compares a loopPhi with a constant, else answers null.
    */
+  @SuppressWarnings("ReferenceEquality")
   private Phi computeLoopPhi(If comparison) {
     Phi loopPhi = null;
     if (comparison.isZeroTest()) {
@@ -659,6 +665,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
       return comparison.targetFromCondition(comp, phiValue);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean has1Iteration() {
       return target(initCounter.getIntValue()) == loopBodyEntry
           && target(initCounter.getIntValue() + counterIncrement) == loopExit;

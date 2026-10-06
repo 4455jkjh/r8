@@ -63,6 +63,7 @@ public class CompilationContext {
    * the full compilation pipeline. Thus, this method should only be called on the main-thread
    * ensuring that the assigned ids are deterministic. The id itself has not particular meaning.
    */
+  @SuppressWarnings("ReferenceEquality")
   public ProcessorContext createProcessorContext() {
     ProcessorContext processorContext = new ProcessorContext(this, nextProcessorId++);
     assert verifyContext(processorContext);
@@ -169,6 +170,7 @@ public class CompilationContext {
       return getParent().buildSyntheticSuffix(builder).append(IDENTIFIER);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public UniqueContext createUniqueContext(DexProgramClass context) {
       assert mainThread == Thread.currentThread() : "Invoked on another thread than main";
       UniqueContext uniqueContext = new UniqueContext(this, context, incrementAndGetNextId());

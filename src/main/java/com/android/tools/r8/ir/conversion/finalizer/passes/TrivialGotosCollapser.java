@@ -97,6 +97,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean isFallthroughBlock(BasicBlock block) {
     for (BasicBlock pred : block.getPredecessors()) {
       if (pred.exit().fallthroughBlock() == block) {
@@ -106,6 +107,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean removedTrivialGotos(IRCode code) {
     ListIterator<BasicBlock> iterator = code.listIterator();
     assert iterator.hasNext();
@@ -128,6 +130,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void collapseTrivialGoto(
       IRCode code, BasicBlock block, BasicBlock nextBlock, List<BasicBlock> blocksToRemove) {
 
@@ -159,6 +162,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void collapseIfTrueTarget(BasicBlock block) {
     If insn = block.exit().asIf();
     BasicBlock target = insn.getTrueTarget();
@@ -183,6 +187,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void collapseNonFallthroughSwitchTargets(BasicBlock block) {
     Switch insn = block.exit().asSwitch();
     BasicBlock fallthroughBlock = insn.fallthroughBlock();

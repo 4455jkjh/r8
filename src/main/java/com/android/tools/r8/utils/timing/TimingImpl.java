@@ -93,6 +93,7 @@ public class TimingImpl extends TimingImplBase {
       return title + ": " + prettyTime(duration());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public String toString(Node top) {
       if (this == top) return toString();
       return "(" + prettyPercentage(duration(), top.duration()) + ") " + toString();
@@ -236,6 +237,7 @@ public class TimingImpl extends TimingImplBase {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void add(Collection<Timing> timings) {
       final boolean trackMemory = merged.trackMemory;
@@ -374,6 +376,7 @@ public class TimingImpl extends TimingImplBase {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void report() {
     assert stack.size() == 1 : "Unexpected non-singleton stack: " + stack;

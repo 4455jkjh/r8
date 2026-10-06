@@ -237,6 +237,7 @@ public abstract class Invoke extends Instruction {
     return argumentsAreConsecutiveInputArgumentsThatMatches(registerAllocator::isPinnedArgument);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean argumentsAreConsecutiveInputArgumentsThatMatches(Predicate<Value> predicate) {
     if (arguments().isEmpty()) {
       return false;

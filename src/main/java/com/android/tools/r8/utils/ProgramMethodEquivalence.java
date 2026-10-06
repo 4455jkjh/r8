@@ -17,6 +17,7 @@ public class ProgramMethodEquivalence extends Equivalence<ProgramMethod> {
     return INSTANCE;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected boolean doEquivalent(ProgramMethod method, ProgramMethod other) {
     return method.getDefinition() == other.getDefinition();

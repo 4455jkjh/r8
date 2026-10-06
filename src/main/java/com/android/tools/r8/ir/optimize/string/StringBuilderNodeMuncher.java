@@ -213,6 +213,7 @@ class StringBuilderNodeMuncher {
    */
   private static class MunchToString implements PeepholePattern {
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean optimize(
         StringBuilderNode originalRoot,
@@ -276,6 +277,7 @@ class StringBuilderNodeMuncher {
    */
   private static class MunchToStringIntoStringConcat implements PeepholePattern {
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean optimize(
         StringBuilderNode originalRoot,
@@ -393,6 +395,7 @@ class StringBuilderNodeMuncher {
 
   private static class MunchSingleAppendStringBuilderToStringValueOf implements PeepholePattern {
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean optimize(
         StringBuilderNode originalRoot,

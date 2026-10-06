@@ -557,6 +557,7 @@ public class LazyCfCode extends Code {
       return true;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private FrameType getFrameType(Object localType, CfFrame.Builder builder) {
       if (localType instanceof Label) {
         CfLabel label = getLabel((Label) localType);
@@ -579,6 +580,7 @@ public class LazyCfCode extends Code {
       return labelMap.computeIfAbsent(label, l -> new CfLabel());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexType parseAsmType(Object local) {
       assert local != null && local != Opcodes.TOP;
       if (local == Opcodes.INTEGER) {

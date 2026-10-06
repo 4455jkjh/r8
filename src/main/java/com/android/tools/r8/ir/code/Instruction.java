@@ -298,6 +298,7 @@ public abstract class Instruction
     replaceValue(oldValue, newValue, null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceValue(Value oldValue, Value newValue, Set<Value> affectedValues) {
     for (int i = 0; i < inValues.size(); i++) {
       if (oldValue == inValues.get(i)) {
@@ -587,6 +588,7 @@ public abstract class Instruction
    * as the relation is used as an {@link com.google.common.base.Equivalence} when deduplicating
    * blocks in the IR finalizer.
    */
+  @SuppressWarnings("ReferenceEquality")
   protected static boolean identicalArrayValuesAfterRegisterAllocation(
       Value a, Value b, RegisterAllocator allocator) {
     assert allocator.options().canHaveIncorrectJoinForArrayOfInterfacesBug();
@@ -668,6 +670,7 @@ public abstract class Instruction
     return !definesValueWithNonLocalUsages();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean definesValueWithNonLocalUsages() {
     if (hasOutValue()) {
       Value outValue = outValue();
@@ -1748,6 +1751,7 @@ public abstract class Instruction
   }
 
   /** Returns whether the given instruction is encountered via continuous calls to getNext(). */
+  @SuppressWarnings("ReferenceEquality")
   public boolean comesBefore(Instruction target) {
     assert target != this;
     assert target.block == block; // Probably a bug if this does not hold.

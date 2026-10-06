@@ -161,6 +161,7 @@ public class ConcretePolymorphicMethodState extends ConcreteMethodState
         : new ConcretePolymorphicMethodState(rewrittenReceiverBoundsToState);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public MethodState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
       DexMethodSignature methodSignature,

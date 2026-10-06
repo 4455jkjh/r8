@@ -37,7 +37,6 @@ public fun Project.configureErrorProneForJavaCompile() {
 
       // Moving away from identity and canonical items is not planned.
       options.errorprone.disable("IdentityHashMapUsage")
-      options.errorprone.disable("ReferenceEquality")
     }
 
     // Make all warnings errors. Warnings that we have chosen not to fix (or suppress) are disabled

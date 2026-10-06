@@ -146,6 +146,7 @@ public class RegisterMove implements Comparable<RegisterMove> {
     return src + dst * 3 + type.hashCode() * 5 + Objects.hashCode(definition);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean equals(Object other) {
     if (!(other instanceof RegisterMove)) {

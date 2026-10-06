@@ -22,6 +22,7 @@ public class NullabilityVariants<T extends ReferenceTypeElement> {
     return newElement;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void set(Nullability nullability, T element) {
     if (nullability == Nullability.maybeNull()) {
       maybeNullVariant = element;
@@ -35,6 +36,7 @@ public class NullabilityVariants<T extends ReferenceTypeElement> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   T get(Nullability nullability) {
     if (nullability == Nullability.maybeNull()) {
       return maybeNullVariant;

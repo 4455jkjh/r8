@@ -121,6 +121,7 @@ public class ClassTypeElement extends ReferenceTypeElement {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private ClassTypeElement createVariant(
       Nullability nullability, NullabilityVariants<ClassTypeElement> variants) {
     assert this.nullability != nullability;
@@ -649,6 +650,7 @@ public class ClassTypeElement extends ReferenceTypeElement {
     return lub;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean equals(Object o) {
     if (this == o) {

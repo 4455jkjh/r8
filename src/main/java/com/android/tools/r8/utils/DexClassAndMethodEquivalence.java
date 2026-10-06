@@ -17,6 +17,7 @@ public class DexClassAndMethodEquivalence extends Equivalence<DexClassAndMethod>
     return INSTANCE;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected boolean doEquivalent(DexClassAndMethod method, DexClassAndMethod other) {
     return method.getDefinition() == other.getDefinition();

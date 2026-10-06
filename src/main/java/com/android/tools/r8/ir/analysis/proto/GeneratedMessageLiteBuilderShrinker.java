@@ -212,6 +212,7 @@ public class GeneratedMessageLiteBuilderShrinker {
   }
 
   /** Returns true if an action was deferred. */
+  @SuppressWarnings("ReferenceEquality")
   public boolean deferDeadProtoBuilders(
       DexProgramClass clazz, ProgramMethod method, BooleanSupplier register) {
     if (!enableAggressiveBuilderOptimization) {

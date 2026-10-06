@@ -53,6 +53,7 @@ public class StaticGet extends FieldInstruction implements FieldGet, StaticField
     return copyOf(newValue, original);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static StaticGet copyOf(Value newValue, StaticGet original) {
     assert newValue != original.outValue();
     return new StaticGet(newValue, original.getField());

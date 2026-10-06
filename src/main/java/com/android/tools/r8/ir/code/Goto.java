@@ -22,6 +22,7 @@ public class Goto extends JumpInstruction {
     return visitor.visit(this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public BasicBlock getTarget() {
     assert getBlock().exit() == this;
     List<BasicBlock> successors = getBlock().getSuccessors();
@@ -29,6 +30,7 @@ public class Goto extends JumpInstruction {
     return successors.get(successors.size() - 1);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void setTarget(BasicBlock newTarget) {
     assert getBlock().exit() == this;
     List<BasicBlock> successors = getBlock().getMutableSuccessors();
@@ -55,6 +57,7 @@ public class Goto extends JumpInstruction {
     return 0;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public String toString() {
     BasicBlock myBlock = getBlock();
@@ -67,6 +70,7 @@ public class Goto extends JumpInstruction {
     return super.toString() + "block <unknown>";
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean identicalNonValueNonPositionParts(Instruction other) {
     return other.isGoto() && other.asGoto().getTarget() == getTarget();
@@ -87,6 +91,7 @@ public class Goto extends JumpInstruction {
     // Nothing to do.
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isTrivialGotoToTheNextBlock(IRCode code) {
     BasicBlock thisBlock = getBlock();
     ListIterator<BasicBlock> blockIterator = code.listIterator();

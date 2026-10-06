@@ -102,6 +102,7 @@ public abstract class ResidualSignatureMappingInformation extends ReferentialMap
       return StringUtils.join("", Arrays.asList(parameters), BraceType.PARENS) + returnType;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean isValid() {
       return this != INVALID_METHOD_SIGNATURE;
@@ -184,6 +185,7 @@ public abstract class ResidualSignatureMappingInformation extends ReferentialMap
       return type;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean isValid() {
       return this != INVALID_FIELD_SIGNATURE;

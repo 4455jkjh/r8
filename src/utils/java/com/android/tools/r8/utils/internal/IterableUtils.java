@@ -23,6 +23,7 @@ public class IterableUtils {
     return allIdentical(iterable, Function.identity());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <S, T> boolean allIdentical(Iterable<S> iterable, Function<S, T> fn) {
     Iterator<S> iterator = iterable.iterator();
     if (!iterator.hasNext()) {

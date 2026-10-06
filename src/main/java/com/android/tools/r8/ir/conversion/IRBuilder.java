@@ -263,6 +263,7 @@ public class IRBuilder {
       return values.hashCode();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object other) {
       if (!(other instanceof ValueList)) {
@@ -832,6 +833,7 @@ public class IRBuilder {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean verifyFilledPredecessors(BasicBlock block) {
     assert block.verifyFilledPredecessors();
     // TODO(zerny): Consider moving the validation of the initial control-flow graph to after its
@@ -886,6 +888,7 @@ public class IRBuilder {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void processWorklist() {
     for (WorklistItem item = ssaWorklist.poll(); item != null; item = ssaWorklist.poll()) {
       if (item.block.isFilled()) {
@@ -2174,6 +2177,7 @@ public class IRBuilder {
         : readRegisterRecursive(register, block, readingEdge, constraint, readType);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Value readRegisterRecursive(
       int register,
       BasicBlock block,
@@ -2626,6 +2630,7 @@ public class IRBuilder {
     closeCurrentBlock(new Goto());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void generateSplitEdgeBlocks() {
     assert currentBlock != null;
     assert currentBlock.isEmpty() || !currentBlock.getInstructions().getLast().isJumpInstruction();

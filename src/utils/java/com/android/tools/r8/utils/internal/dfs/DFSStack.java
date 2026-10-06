@@ -28,6 +28,7 @@ public class DFSStack<T> {
     return stackSet.contains(item);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Deque<T> getCycleStartingAt(T entry) {
     Deque<T> cycle = new ArrayDeque<>();
     do {
@@ -47,6 +48,7 @@ public class DFSStack<T> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void pop(T expectedItem) {
     T popped = stack.removeLast();
     assert popped == expectedItem;

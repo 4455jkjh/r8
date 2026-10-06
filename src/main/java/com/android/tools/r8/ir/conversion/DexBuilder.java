@@ -147,6 +147,7 @@ public class DexBuilder {
     this(ir, bytecodeMetadataProvider, registerAllocator, options, ir.getConversionOptions());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexBuilder(
       IRCode ir,
       BytecodeMetadataProvider bytecodeMetadataProvider,
@@ -370,6 +371,7 @@ public class DexBuilder {
     return code;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isTrivialFallthroughTarget(
       BasicBlock previousBlock, BasicBlock currentBlock) {
     return previousBlock.exit().isGoto()
@@ -377,6 +379,7 @@ public class DexBuilder {
         && currentBlock.getPredecessors().get(0) == previousBlock;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean removeTrivialGotoBlocks(IRCode code) {
     boolean changed = false;
     for (int blockIndex = 1; blockIndex < code.blocks.size(); blockIndex++) {
@@ -428,6 +431,7 @@ public class DexBuilder {
     return changed;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isFallthroughTargetToNonFallthroughTarget(
       BasicBlock pred, BasicBlock current, int blockIndex, IRCode code) {
     JumpInstruction exit = pred.exit();
@@ -601,6 +605,7 @@ public class DexBuilder {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void amendDebugPositionsForUnusedNonVoidMethods() {
     if (!appView.options().debug || !appView.options().ensureJvmCompatibleStepOutBehavior) {
       return;
@@ -691,6 +696,7 @@ public class DexBuilder {
     return registerAllocator.getArgumentRegisterForValue(value);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addGoto(Goto jump) {
     if (jump.getTarget() != nextBlock) {
       add(jump, new GotoInfo(jump));
@@ -731,6 +737,7 @@ public class DexBuilder {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addIf(If branch) {
     assert nextBlock == branch.fallthroughBlock();
     add(branch, new IfInfo(branch));
@@ -745,6 +752,7 @@ public class DexBuilder {
     add(instruction, new FallThroughInfo(instruction));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isNopInstruction(Instruction instruction, BasicBlock nextBlock) {
     return instruction.isArgument()
         || instruction.isDebugLocalsChange()
@@ -780,6 +788,7 @@ public class DexBuilder {
     add(ir, new MultiFixedSizeInfo(ir, dex));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addSwitch(IntSwitch s, DexFormat31t dex) {
     assert nextBlock == s.fallthroughBlock();
     switchPayloadInfos.add(new SwitchPayloadInfo(s, dex));
@@ -864,6 +873,7 @@ public class DexBuilder {
     return getTargetInfo(instruction.asGoto().getTarget());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private BasicBlock computeNextBlock(BasicBlock block) {
     ListIterator<BasicBlock> it = ir.listIterator();
     BasicBlock current = it.next();
@@ -1339,6 +1349,7 @@ public class DexBuilder {
       return 3;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public int computeSize(DexBuilder builder) {
       assert size < 0;
@@ -1466,6 +1477,7 @@ public class DexBuilder {
       return (If) getIR();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean branchesToSelf(DexBuilder builder) {
       If branch = getBranch();
       Info trueTargetInfo = builder.getTargetInfo(branch.getTrueTarget());

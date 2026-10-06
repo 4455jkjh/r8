@@ -99,6 +99,7 @@ class NonEmptyParameterUsagePerContext extends ParameterUsagePerContext {
     return backing.size();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   ParameterUsagePerContext rebuild(
       BiFunction<AnalysisContext, ParameterUsage, ParameterUsage> transformation) {

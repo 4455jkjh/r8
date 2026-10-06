@@ -193,6 +193,7 @@ public class GenericSignature {
       return interfaceBounds;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public FormalTypeParameter visit(GenericSignatureVisitor visitor) {
       FieldTypeSignature rewrittenClassBound = visitor.visitClassBound(classBound);
       List<FieldTypeSignature> rewrittenInterfaceBounds =
@@ -245,6 +246,7 @@ public class GenericSignature {
       return superInterfaceSignatures;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean hasSignature() {
       return this != noSignature();
@@ -274,6 +276,7 @@ public class GenericSignature {
       visitWithoutRewrite(registry.toVisitor());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public ClassSignature visit(GenericSignatureVisitor visitor, DexItemFactory factory) {
       if (hasNoSignature()) {
         return this;
@@ -516,6 +519,7 @@ public class GenericSignature {
       return null;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean hasSignature() {
       return this != GenericSignature.NO_FIELD_TYPE_SIGNATURE;
@@ -785,6 +789,7 @@ public class GenericSignature {
       return new ArrayTypeSignature(this);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public ArrayTypeSignature visit(GenericSignatureVisitor visitor) {
       TypeSignature rewrittenElementSignature = visitor.visitTypeSignature(elementSignature);
@@ -948,6 +953,7 @@ public class GenericSignature {
       return true;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean hasSignature() {
       return this != NO_METHOD_TYPE_SIGNATURE;
@@ -962,6 +968,7 @@ public class GenericSignature {
       visit(registry.toVisitor());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public MethodTypeSignature visit(GenericSignatureVisitor visitor) {
       if (hasNoSignature()) {
         return this;

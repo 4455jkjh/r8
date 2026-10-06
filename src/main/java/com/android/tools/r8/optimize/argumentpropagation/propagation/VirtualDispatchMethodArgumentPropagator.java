@@ -133,6 +133,7 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
       timing.end();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void promoteInactiveToActive(
         DexProgramClass clazz,
         DynamicTypeWithUpperBound bounds,
@@ -557,6 +558,7 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isUpperBoundSatisfied(ClassTypeElement upperBound, DexProgramClass currentClass) {
     DexType upperBoundType = upperBound.toDexType(appViewWithLiveness.dexItemFactory());
     DexProgramClass upperBoundClass =

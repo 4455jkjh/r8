@@ -334,6 +334,7 @@ public class CfBuilder {
     return height;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private CfCode buildCfCode() {
     StackHeightTracker stackHeightTracker = new StackHeightTracker();
     List<CfTryCatch> tryCatchRanges = new ArrayList<>();
@@ -440,6 +441,7 @@ public class CfBuilder {
     instructions = newInstructions;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isNopInstruction(Instruction instruction, BasicBlock nextBlock) {
     // From DexBuilder
     return instruction.isArgument()
@@ -521,6 +523,7 @@ public class CfBuilder {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void buildCfInstructions(
       BasicBlock block, BasicBlock nextBlock, boolean fallthrough, StackHeightTracker stack) {
     if (pendingFrame != null) {
@@ -678,6 +681,7 @@ public class CfBuilder {
     return type != null ? type : FrameType.initialized(typeInfo.getDexType());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private UninitializedFrameType findAllocator(BasicBlock liveBlock, TypeInfo typeInfo) {
     UninitializedFrameType res;
     Instruction definition;

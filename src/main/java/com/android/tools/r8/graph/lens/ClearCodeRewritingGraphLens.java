@@ -44,6 +44,7 @@ public class ClearCodeRewritingGraphLens extends DefaultNonIdentityGraphLens {
     throw new Unreachable();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected MethodLookupResult internalLookupMethod(
       DexMethod reference,

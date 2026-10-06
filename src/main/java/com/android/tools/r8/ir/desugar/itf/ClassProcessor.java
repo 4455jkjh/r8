@@ -227,6 +227,7 @@ final class ClassProcessor {
           : new ClassInfo(parent, forwardedMethodTargets, emulatedInterfaceInfo);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     boolean isEmpty() {
       return this == EMPTY;
     }

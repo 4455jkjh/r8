@@ -20,6 +20,7 @@ public class DefaultNonIdentityGraphLens extends NonIdentityGraphLens {
     super(appView, previousLens);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean isContextFreeForMethods(GraphLens codeLens) {
     if (this == codeLens) {
@@ -82,6 +83,7 @@ public class DefaultNonIdentityGraphLens extends NonIdentityGraphLens {
 
   // Prototype lookup APIs.
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public RewrittenPrototypeDescription lookupPrototypeChangesForMethodDefinition(
       DexMethod method, GraphLens codeLens) {

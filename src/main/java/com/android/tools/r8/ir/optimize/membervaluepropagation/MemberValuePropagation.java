@@ -152,6 +152,7 @@ public abstract class MemberValuePropagation<T extends AppInfo> {
 
   abstract void rewriteStaticPut(IRCode code, InstructionListIterator iterator, StaticPut current);
 
+  @SuppressWarnings("ReferenceEquality")
   boolean applyAssumeInfo(
       IRCode code,
       Set<Value> affectedValues,

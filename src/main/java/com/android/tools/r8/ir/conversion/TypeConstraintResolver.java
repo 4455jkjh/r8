@@ -213,6 +213,7 @@ public class TypeConstraintResolver {
     return verifyNoConstrainedUses(value, ImmutableSet.of());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean verifyNoConstrainedUses(Value value, Set<Value> assumeNoConstrainedUses) {
     for (Instruction user : value.uniqueUsers()) {
       if (user.isIf()) {

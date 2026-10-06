@@ -597,6 +597,7 @@ class ClassMerger {
   }
 
   // Returns the method that shadows the given method, or null if method is not shadowed.
+  @SuppressWarnings("ReferenceEquality")
   private DexEncodedMethod findMethodInTarget(DexEncodedMethod method) {
     DexEncodedMethod resolvedMethod =
         appView.appInfo().resolveMethodOnLegacy(target, method.getReference()).getResolvedMethod();

@@ -134,6 +134,7 @@ public class MergeBranches extends CodeRewriterPass<AppInfo> {
    * @return the target basic block that {@param ifInstruction} is guaranteed to jump to when coming
    *     from {@param pred}, or {@code null} if the outcome cannot be determined.
    */
+  @SuppressWarnings("ReferenceEquality")
   private BasicBlock getKnownTargetForPredecessor(If ifInstruction, BasicBlock pred) {
     BasicBlock current = pred;
     while (current != null) {
@@ -165,6 +166,7 @@ public class MergeBranches extends CodeRewriterPass<AppInfo> {
   }
 
   /** Determines whether the two If instructions evaluate the same (or inverted) condition. */
+  @SuppressWarnings("ReferenceEquality")
   private ConditionMatch matchCondition(If ifInstruction, If prevIfInstruction) {
     if (ifInstruction.isZeroTest() != prevIfInstruction.isZeroTest()) {
       return null;
@@ -229,6 +231,7 @@ public class MergeBranches extends CodeRewriterPass<AppInfo> {
    * Updates or rewrites phis in {@param block} and {@param targetJoinBlock} before retargeting
    * predecessors' {@link Goto} instructions to bypass {@param block}.
    */
+  @SuppressWarnings("ReferenceEquality")
   private void updatePhisBeforeRetargeting(
       IRCode code,
       BranchToMerge branchToMerge,
@@ -294,6 +297,7 @@ public class MergeBranches extends CodeRewriterPass<AppInfo> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Value getOperandForTargetJoinBlockPredecessor(
       BasicBlock operandPredBlock,
       BranchToMerge branchToMerge,
@@ -374,6 +378,7 @@ public class MergeBranches extends CodeRewriterPass<AppInfo> {
      * Finds the downstream basic block where the true and false targets of an If instruction
      * rejoin.
      */
+    @SuppressWarnings("ReferenceEquality")
     private static BasicBlock findTargetJoinBlock(BasicBlock target0, BasicBlock target1) {
       while (target0.exit().isGoto() && target0.hasUniqueSuccessorWithUniquePredecessor()) {
         target0 = target0.getUniqueSuccessor();

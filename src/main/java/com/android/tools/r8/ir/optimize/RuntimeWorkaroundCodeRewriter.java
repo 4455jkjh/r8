@@ -181,6 +181,7 @@ public class RuntimeWorkaroundCodeRewriter {
    * where v2 ~=~ v3 or v2 ~=~ v4 (with ~=~ being equal or an alias of) and the block is not a
    * fallthrough target.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static void workaroundDex2OatLinkedListBug(IRCode code, InternalOptions options) {
     if (!options.canHaveDex2OatLinkedListBug()) {
       return;
@@ -293,6 +294,7 @@ public class RuntimeWorkaroundCodeRewriter {
   }
 
   // See comment for InternalOptions.canHaveNumberConversionRegisterAllocationBug().
+  @SuppressWarnings("ReferenceEquality")
   public static void workaroundNumberConversionRegisterAllocationBug(
       AppView<?> appView, IRCode code) {
     if (!appView.options().canHaveNumberConversionRegisterAllocationBug()) {
@@ -349,6 +351,7 @@ public class RuntimeWorkaroundCodeRewriter {
     assert code.isConsistentSSA(appView);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void ensureInstructionBefore(
       IRCode code, Instruction addBefore, InstructionListIterator it) {
     // Force materialize a constant-zero before the long operation.
@@ -365,6 +368,7 @@ public class RuntimeWorkaroundCodeRewriter {
     it.add(fixitUser);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void ensureThrowingInstructionBefore(
       IRCode code, Instruction addBefore, InstructionListIterator it, Instruction instruction) {
     Instruction check = it.previous();
@@ -385,6 +389,7 @@ public class RuntimeWorkaroundCodeRewriter {
     return !(instruction.isDebugInstruction() || instruction.isMove());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isAliasOf(Value usedValue, Value definingValue) {
     while (true) {
       if (usedValue == definingValue) {
@@ -411,6 +416,7 @@ public class RuntimeWorkaroundCodeRewriter {
         && instruction.asBinop().getNumericType() == NumericType.LONG;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isFallthoughTarget(BasicBlock block) {
     for (BasicBlock pred : block.getPredecessors()) {
       if (pred.exit().fallthroughBlock() == block) {

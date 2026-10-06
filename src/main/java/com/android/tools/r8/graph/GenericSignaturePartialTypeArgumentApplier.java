@@ -176,6 +176,7 @@ public class GenericSignaturePartialTypeArgumentApplier implements GenericSignat
     return ListUtils.mapOrElse(typeSignatures, this::visitTypeSignature);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public ReturnType visitReturnType(ReturnType returnType) {
     if (returnType.isVoidDescriptor()) {

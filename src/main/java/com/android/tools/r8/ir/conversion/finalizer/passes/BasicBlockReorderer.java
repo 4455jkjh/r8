@@ -145,7 +145,7 @@ public class BasicBlockReorderer extends FinalizerRewriterPass<AppInfo> {
     }
   }
 
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "ReferenceEquality"})
   private static boolean orderFallthroughChains(
       IRCode code,
       Map<BasicBlock, Chain> unplacedChains,
@@ -201,6 +201,7 @@ public class BasicBlockReorderer extends FinalizerRewriterPass<AppInfo> {
     return gotoChain != null ? gotoChain : unplacedChains.values().iterator().next();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isConnectedByFallthrough(BasicBlock currentBlock, BasicBlock nextBlock) {
     JumpInstruction exit = currentBlock.exit();
     if (exit.isIf() || exit.isSwitch()) {

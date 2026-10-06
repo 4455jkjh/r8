@@ -190,6 +190,7 @@ public class RetraceBase<T, ST extends StackTraceElementProxy<T, ST>> {
       this.isVerbose = isVerbose;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     protected boolean doEquivalent(
         RetraceStackTraceElementProxy<T, ST> one, RetraceStackTraceElementProxy<T, ST> other) {

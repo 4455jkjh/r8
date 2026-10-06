@@ -38,6 +38,7 @@ public class StoreLoadToDupStorePeephole implements BasicBlockPeephole {
 
   private final PeepholeLayout layout = PeepholeLayout.lookForward(storeExp, loadExp, dupsExp);
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean match(InstructionListIterator it) {
     Match match = layout.test(it);

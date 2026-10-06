@@ -219,6 +219,7 @@ public class MemberRebindingIdentityLens extends DefaultNonIdentityGraphLens {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     void recordMethodAccess(DexMethod reference) {
       if (reference.getHolderType().isArrayType()) {
         return;

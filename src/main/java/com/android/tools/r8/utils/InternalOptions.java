@@ -1620,6 +1620,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void warningMissingInterfaceForDesugar(
       DexClass classToDesugar, DexClass implementing, DexType missing) {
     if (reportedMissingForDesugaring.add(missing)) {

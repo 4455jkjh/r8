@@ -102,6 +102,7 @@ public class AppInfo implements DexDefinitionSupplier {
     this.obsolete = obsolete;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public AppInfo prunedCopyFrom(
       PrunedItems prunedItems, ExecutorService executorService, Timing timing)
       throws ExecutionException {

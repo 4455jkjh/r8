@@ -154,6 +154,7 @@ public class Sub extends ArithmeticBinop {
     return Constants.U8BIT_MAX;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean needsValueInRegister(Value value) {
     if (leftValue() == rightValue()) {

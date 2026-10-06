@@ -77,6 +77,7 @@ public class ArrayTypeElement extends ReferenceTypeElement {
     return base;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private ArrayTypeElement createVariant(
       Nullability nullability, NullabilityVariants<ArrayTypeElement> variants) {
     assert this.nullability != nullability;
@@ -110,6 +111,7 @@ public class ArrayTypeElement extends ReferenceTypeElement {
     return nullability.toString() + " (" + memberTypeLattice.toString() + "[])";
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -146,6 +148,7 @@ public class ArrayTypeElement extends ReferenceTypeElement {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   ReferenceTypeElement join(ArrayTypeElement other, AppView<?> appView) {
     Nullability nullability = nullability().join(other.nullability());
     ReferenceTypeElement join =

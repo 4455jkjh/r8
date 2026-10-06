@@ -575,6 +575,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewriteNewArrayFilled(
       NewArrayFilled newArrayFilled,
       IRCode code,
@@ -816,6 +817,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         getSharedUtilityClass().ensureCheckNotZeroMethod(appView, context, eventConsumer));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void removeRedundantValuesArrayCloning(
       InvokeStatic invoke,
       AffectedValues affectedValues,

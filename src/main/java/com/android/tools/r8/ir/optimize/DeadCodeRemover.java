@@ -115,6 +115,7 @@ public class DeadCodeRemover {
   }
 
   // Add all blocks from where the in/debug-values to the instruction originates.
+  @SuppressWarnings("ReferenceEquality")
   private static void updateWorklist(WorkList<BasicBlock> worklist, Instruction instruction) {
     for (Value inValue : instruction.inValues()) {
       BasicBlock block = inValue.getBlockOrNull();

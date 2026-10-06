@@ -275,6 +275,7 @@ public class UndoConstructorInlining {
               byteWriter.toByteArray());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private LirCode<Integer> rewriteIR(ProgramMethod method, LirCode<Integer> code) {
       IRCode irCode = code.buildIR(method, appView);
       InstructionListIterator instructionIterator = irCode.instructionListIterator();

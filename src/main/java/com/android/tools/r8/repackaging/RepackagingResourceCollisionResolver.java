@@ -129,6 +129,7 @@ public class RepackagingResourceCollisionResolver {
   // When this happens we prohibit repackaging of all packages that collide with the current one,
   // by adding them to the `blocked` set. These packages will be subject to -flattenpackagehierarchy
   // instead of -repackageclasses.
+  @SuppressWarnings("ReferenceEquality")
   void acceptRepackagedPackage(ProgramPackage pkg) {
     Set<ProgramPackage> pkgCollisions =
         MapUtils.removeOrDefault(collisions, pkg, Collections.emptySet());

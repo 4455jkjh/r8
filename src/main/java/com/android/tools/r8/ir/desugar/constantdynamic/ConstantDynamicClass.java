@@ -426,6 +426,7 @@ public class ConstantDynamicClass {
     return type == appView.dexItemFactory().lookupType ? appView.dexItemFactory().objectType : type;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Code adaptCode(DexEncodedMethod method) {
     assert behaviour == CACHE_CONSTANT;
     Code code = method.getCode();

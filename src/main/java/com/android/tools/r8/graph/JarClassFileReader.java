@@ -101,6 +101,7 @@ public class JarClassFileReader<T extends DexClass> {
     ExceptionUtils.withOriginAttachmentHandler(origin, () -> internalRead(origin, bytes));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void internalRead(Origin origin, byte[] bytes) {
     if (bytes.length < CLASSFILE_HEADER.length) {
       throw new CompilationError("Invalid empty classfile", origin);
@@ -145,6 +146,7 @@ public class JarClassFileReader<T extends DexClass> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Attribute[] getAttributePrototypes() {
     if (classKind == ClassKind.PROGRAM) {
       return new Attribute[] {
@@ -433,6 +435,7 @@ public class JarClassFileReader<T extends DexClass> {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public FieldVisitor visitField(
         int access, String name, String desc, String signature, Object value) {
@@ -446,6 +449,7 @@ public class JarClassFileReader<T extends DexClass> {
       return new CreateFieldVisitor(this, access, name, desc, signature, value);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public MethodVisitor visitMethod(
         int access, String name, String desc, String signature, String[] exceptions) {
@@ -459,6 +463,7 @@ public class JarClassFileReader<T extends DexClass> {
       return new CreateMethodVisitor(access, name, desc, signature, exceptions, this);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     boolean shouldReadKeepAnnotations() {
       // Only compilers configured to read annotations should process them.
       // In all other instances (D8, relocater, etc.) they must be pass-through.
@@ -566,6 +571,7 @@ public class JarClassFileReader<T extends DexClass> {
       classConsumer.accept(clazz);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void checkRecord() {
       if (!accessFlags.isRecord()) {
         return;
@@ -586,6 +592,7 @@ public class JarClassFileReader<T extends DexClass> {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private ChecksumSupplier getChecksumSupplier(ClassKind<T> classKind) {
       if (application.options.encodeChecksums && classKind == ClassKind.PROGRAM) {
         CRC32 crc = new CRC32();
@@ -1000,6 +1007,7 @@ public class JarClassFileReader<T extends DexClass> {
       throw new Unreachable("visitCode() should not be called when SKIP_CODE is set");
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean classRequiresCode() {
       return parent.classKind == ClassKind.PROGRAM
           || (!parent.application.options.canUseNestBasedAccess()

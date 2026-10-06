@@ -45,6 +45,7 @@ public class ClassOptimizer extends StatelessLibraryMethodModelCollection {
     return factory.classType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public InstructionListIterator optimize(
       IRCode code,

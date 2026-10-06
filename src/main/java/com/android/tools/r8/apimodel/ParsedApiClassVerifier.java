@@ -217,6 +217,7 @@ public class ParsedApiClassVerifier {
       unionInternal(ref, ClassKind.INTERFACE);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void unionInternal(Object ref1, Object ref2) throws ApiDatabaseGeneratorException {
       Object root1 = unifier.findOrMakeSet(ref1);
       Object root2 = unifier.findOrMakeSet(ref2);

@@ -338,6 +338,7 @@ public abstract class KeepInfo<B extends Builder<B, K>, K extends KeepInfo<B, K>
         && typeAnnotationsInfo.isEqualTo(other.internalTypeAnnotationsInfo());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean equalsNoAnnotations(K other) {
     assert annotationsInfo.isTopOrBottom();
     assert typeAnnotationsInfo.isTopOrBottom();
@@ -403,6 +404,7 @@ public abstract class KeepInfo<B extends Builder<B, K>, K extends KeepInfo<B, K>
 
   public abstract List<String> lines();
 
+  @SuppressWarnings("ReferenceEquality")
   protected List<String> linesDifferentFromBase(KeepInfo<?, ?> base) {
     List<String> lines = new ArrayList<>();
     if (base.allowAccessModification != allowAccessModification) {

@@ -235,6 +235,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void computeEffectivelyUnusedConstraints(
         Argument argument,
         Value argumentValue,
@@ -311,6 +312,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
       return true;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private ComputationTreeUnopCompareNode getUnusedCondition(Value argumentValue, Phi phi) {
       if (phi.getOperands().size() != 2) {
         return null;
@@ -371,6 +373,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
           new MethodParameter(method, argument.getIndex()), condition);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private Phi getSingleUniquePhiUserInComposableIgnoringSkipToGroupEndPaths(Value argumentValue) {
       assert appView.options().callSiteOptimizationOptions().isComposableArgumentRemovalEnabled();
       assert appView.getComposeReferences().isComposable(method);

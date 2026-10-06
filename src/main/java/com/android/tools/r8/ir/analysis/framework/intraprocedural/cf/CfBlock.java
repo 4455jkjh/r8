@@ -123,6 +123,7 @@ public class CfBlock {
       this.lastInstructionIndex = lastInstructionIndex;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     boolean validate(CfControlFlowGraph cfg, InternalOptions options) {
       assert 0 <= firstInstructionIndex;
       assert firstInstructionIndex <= lastInstructionIndex;

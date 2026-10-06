@@ -214,6 +214,7 @@ public class ArrayConstructionSimplifier extends CodeRewriterPass<AppInfo> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean checkDominance(ArrayValues arrayValues) {
     Value arrayValue = arrayValues.getArrayValue();
 
@@ -265,6 +266,7 @@ public class ArrayConstructionSimplifier extends CodeRewriterPass<AppInfo> {
    * go through the last array-put, and that do not go through exceptional edges for new-array-empty
    * / array-puts that will be removed.
    */
+  @SuppressWarnings("ReferenceEquality")
   private static boolean anyPhiUsersReachableWhenOptimized(ArrayValues arrayValues) {
     Value arrayValue = arrayValues.getArrayValue();
     if (!arrayValue.hasPhiUsers()) {

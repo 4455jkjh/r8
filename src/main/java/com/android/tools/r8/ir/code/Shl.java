@@ -52,6 +52,7 @@ public class Shl extends LogicalBinop {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Shl asShl(Value leftValue, Value rightValue) {
     return leftValue == leftValue() && rightValue == rightValue() ? this : null;

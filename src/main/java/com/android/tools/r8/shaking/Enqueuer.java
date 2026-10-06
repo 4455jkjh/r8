@@ -2018,6 +2018,7 @@ public class Enqueuer {
         fieldReference, currentMethod, FieldAccessKind.INSTANCE_WRITE, metadata);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void traceInstanceFieldAccess(
       DexField fieldReference,
       ProgramMethod currentMethod,
@@ -2105,6 +2106,7 @@ public class Enqueuer {
     traceStaticFieldAccess(fieldReference, currentMethod, FieldAccessKind.STATIC_WRITE, metadata);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void traceStaticFieldAccess(
       DexField fieldReference,
       ProgramMethod currentMethod,
@@ -2187,6 +2189,7 @@ public class Enqueuer {
   // Actual actions performed.
   //
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean verifyIsMainThread() {
     assert Thread.currentThread() == mainThreadForTesting;
     return true;
@@ -3906,7 +3909,7 @@ public class Enqueuer {
     return builder.build(previousMainDexInfo);
   }
 
-  @SuppressWarnings("StringCaseLocaleUsage")
+  @SuppressWarnings({"StringCaseLocaleUsage", "ReferenceEquality"})
   public EnqueuerResult traceApplication(
       RootSet rootSet, ExecutorService executorService, Timing timing) throws ExecutionException {
     this.rootSet = rootSet;
@@ -4220,6 +4223,7 @@ public class Enqueuer {
           && injectedInterfaces.isEmpty();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void addLiveClasspathClass(DexClasspathClass clazz) {
       DexClasspathClass old = syntheticClasspathClasses.put(clazz.type, clazz);
       assert old == null || old == clazz;
@@ -4527,6 +4531,7 @@ public class Enqueuer {
     return (accessor, target) -> recordSyntheticLambdaAccessorMethod(lambdaClass, accessor, target);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void recordSyntheticLambdaAccessorMethod(
       LambdaClass lambdaClass, ProgramMethod accessor, DexMethod target) {
     assert mode.isInitialTreeShaking();

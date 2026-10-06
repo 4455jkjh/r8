@@ -136,6 +136,7 @@ public abstract class GraphLens {
         method, appliedLens, NonIdentityGraphLens::getPreviousMethodSignatureForMapping);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private <T extends DexReference> T getOriginalReference(
       T reference, GraphLens appliedLens, BiFunction<NonIdentityGraphLens, T, T> previousFn) {
     GraphLens current = this;
@@ -189,6 +190,7 @@ public abstract class GraphLens {
     return getRenamedReference(reference, appliedLens, nextFn, alwaysFalse());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private <T extends DexReference> T getRenamedReference(
       T reference,
       GraphLens appliedLens,

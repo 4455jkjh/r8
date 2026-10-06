@@ -151,6 +151,7 @@ final class InlineCandidateProcessor {
 
   // Checks if the root instruction defines eligible value, i.e. the value
   // exists and we have a definition of its class.
+  @SuppressWarnings("ReferenceEquality")
   EligibilityStatus isInstanceEligible() {
     eligibleInstance = root.outValue();
     if (eligibleInstance == null) {
@@ -210,6 +211,7 @@ final class InlineCandidateProcessor {
    *
    * @return null if all users are eligible, or the first ineligible user.
    */
+  @SuppressWarnings("ReferenceEquality")
   InstructionOrPhi areInstanceUsersEligible(LazyBox<InliningOracle> defaultOracle) {
     // No Phi users.
     if (eligibleInstance.hasPhiUsers()) {
@@ -372,6 +374,7 @@ final class InlineCandidateProcessor {
   //  * remove root instruction
   //
   // Returns `true` if at least one method was inlined.
+  @SuppressWarnings("ReferenceEquality")
   boolean processInlining(
       IRCode code,
       AffectedValues affectedValues,
@@ -583,6 +586,7 @@ final class InlineCandidateProcessor {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rebindIndirectEligibleInstanceUsersFromPhis() {
     // Building the inlinee can cause some of the eligibleInstance users to be phi's. These phi's
     // should be trivial.

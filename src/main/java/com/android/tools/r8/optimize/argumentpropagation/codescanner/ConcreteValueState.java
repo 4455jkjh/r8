@@ -85,6 +85,7 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
     inFlow = Collections.emptySet();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Set<InFlow> copyInFlow() {
     if (inFlow.isEmpty()) {
       assert inFlow == Collections.<InFlow>emptySet();
@@ -215,6 +216,7 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
     return mutableJoinInFlow(state.getInFlow());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean mutableJoinInFlow(Set<InFlow> otherInFlow) {
     if (otherInFlow.isEmpty()) {
       return false;

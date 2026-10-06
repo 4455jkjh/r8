@@ -133,6 +133,7 @@ public class SparseConditionalConstantPropagation extends CodeRewriterPass<AppIn
       return CodeRewriterResult.hasChanged(hasChanged);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean rewriteConstants() {
       AffectedValues affectedValues = new AffectedValues();
       List<BasicBlock> blockToAnalyze = new ArrayList<>();
@@ -228,6 +229,7 @@ public class SparseConditionalConstantPropagation extends CodeRewriterPass<AppIn
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean internalRewriteAndWithDefiniteBits(
         And and, DefiniteBitsIntNumberValue andAbstractValue, AffectedValues affectedValues) {
       AbstractValue leftAbstractValue = getCachedAbstractValue(and.leftValue());

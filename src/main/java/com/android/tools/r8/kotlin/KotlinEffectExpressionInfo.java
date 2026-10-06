@@ -65,6 +65,7 @@ public class KotlinEffectExpressionInfo implements EnqueuerMetadataTraceable {
     return builder.build();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void trace(KotlinMetadataUseRegistry registry) {
     if (this == NO_EXPRESSION) {
@@ -77,6 +78,7 @@ public class KotlinEffectExpressionInfo implements EnqueuerMetadataTraceable {
     forEachApply(orArguments, arg -> arg::trace, registry);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean rewrite(Consumer<KmEffectExpression> consumer, AppView<?> appView) {
     if (this == NO_EXPRESSION) {
       return false;

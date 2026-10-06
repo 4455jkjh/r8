@@ -52,6 +52,7 @@ public class Or extends LogicalBinop {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Or asOr(Value leftValue, Value rightValue) {
     return leftValue == leftValue() && rightValue == rightValue() ? this : null;

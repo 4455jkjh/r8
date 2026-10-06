@@ -329,6 +329,7 @@ public abstract class KeepInfoCollection {
       this.eventConsumer = eventConsumer;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void setMaterializedRules(MaterializedRules materializedRules) {
       assert this.materializedRules == MaterializedRules.empty();
       assert materializedRules != null;
@@ -532,6 +533,7 @@ public abstract class KeepInfoCollection {
       return keepFieldInfo.getOrDefault(field.getReference(), KeepFieldInfo.bottom());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void joinClass(DexProgramClass clazz, Consumer<? super KeepClassInfo.Joiner> fn) {
       eventConsumer.acceptKeepClassInfo(clazz.getType(), fn);
       KeepClassInfo info = getClassInfo(clazz);
@@ -625,6 +627,7 @@ public abstract class KeepInfoCollection {
       joinClass(clazz, KeepInfo.Joiner::top);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void joinMethod(ProgramMethod method, Consumer<? super KeepMethodInfo.Joiner> fn) {
       eventConsumer.acceptKeepMethodInfo(method.getReference(), fn);
       KeepMethodInfo info = getMethodInfo(method);

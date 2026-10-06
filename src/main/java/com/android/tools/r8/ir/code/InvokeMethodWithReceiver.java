@@ -112,6 +112,7 @@ public abstract class InvokeMethodWithReceiver extends InvokeMethod {
     return holder.isInSameNest(target.getHolder());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return value == getReceiver() || super.throwsNpeIfValueIsNull(value, appView, context);

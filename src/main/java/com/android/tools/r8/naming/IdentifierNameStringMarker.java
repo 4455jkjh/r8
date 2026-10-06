@@ -205,6 +205,7 @@ public class IdentifierNameStringMarker extends CodeRewriterPass<AppInfoWithClas
     return itemBasedString.getReference();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator decoupleIdentifierNameStringForFieldPutInstruction(
       IRCode code,
       ListIterator<BasicBlock> blocks,
@@ -251,6 +252,7 @@ public class IdentifierNameStringMarker extends CodeRewriterPass<AppInfoWithClas
     return iterator;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator decoupleIdentifierNameStringForInvokeInstruction(
       IRCode code,
       ListIterator<BasicBlock> blocks,

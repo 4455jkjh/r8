@@ -21,6 +21,7 @@ public final class CheckNotNullEnumUnboxerMethodClassification
     return argumentIndex;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isUseEligibleForUnboxing(InvokeStatic invoke, Value enumValue) {
     for (int argumentIndex = 0; argumentIndex < invoke.arguments().size(); argumentIndex++) {
       Value argument = invoke.getArgument(argumentIndex);

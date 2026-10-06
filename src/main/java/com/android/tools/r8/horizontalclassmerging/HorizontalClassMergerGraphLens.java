@@ -83,6 +83,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
     return IterableUtils.prependSingleton(previous, mergedClasses.getSourcesFor(previous));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected MethodLookupResult internalLookupMethod(
       DexMethod reference,
@@ -164,6 +165,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
     return prototypeChanges;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public RewrittenPrototypeDescription lookupPrototypeChangesForMethodDefinition(
       DexMethod newMethod, GraphLens codeLens) {

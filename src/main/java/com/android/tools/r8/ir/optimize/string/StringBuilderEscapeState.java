@@ -243,6 +243,7 @@ public class StringBuilderEscapeState extends AbstractState<StringBuilderEscapeS
       return this;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void ensureAliasesToDefinitions() {
       if (aliasesToDefinitions == previous.aliasesToDefinitions) {
         aliasesToDefinitions = new HashMap<>(previous.aliasesToDefinitions.size() + 1);
@@ -251,6 +252,7 @@ public class StringBuilderEscapeState extends AbstractState<StringBuilderEscapeS
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void ensureDefinitionToAliases() {
       if (definitionsToAliases == previous.definitionsToAliases) {
         definitionsToAliases = new HashMap<>(previous.definitionsToAliases.size() + 1);
@@ -259,12 +261,14 @@ public class StringBuilderEscapeState extends AbstractState<StringBuilderEscapeS
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void ensureNewEscaping() {
       if (escaped == previous.escaping) {
         escaped = new HashSet<>(escaped);
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void ensureNewLiveStringBuilders() {
       if (liveStringBuilders == previous.liveStringBuilders) {
         liveStringBuilders = new HashSet<>(liveStringBuilders);
@@ -275,6 +279,7 @@ public class StringBuilderEscapeState extends AbstractState<StringBuilderEscapeS
       return liveStringBuilders;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public StringBuilderEscapeState build() {
       assert liveStringBuilders.containsAll(escaped)
           : "Escaping is not a subset of live string builders";

@@ -192,6 +192,7 @@ public class DexClasspathClass extends DexClass
     return DexClasspathClass::specify;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void specify(StructuralSpecification<DexClasspathClass, ?> spec) {
     spec.withItem(DexClass::getType)
         .withItem(DexClass::getSuperType)

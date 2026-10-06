@@ -229,6 +229,7 @@ public class DexAnnotationSet extends CachedHashValueDexItem
     return rewrite(annotation -> filter.test(annotation) ? null : annotation);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexAnnotationSet rewrite(Function<DexAnnotation, DexAnnotation> rewriter) {
     if (isEmpty()) {
       return this;

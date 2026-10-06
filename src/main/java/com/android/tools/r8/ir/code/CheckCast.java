@@ -241,6 +241,7 @@ public class CheckCast extends Instruction implements TypeInstruction {
     return TypeElement.fromDexType(type, object().getType().nullability(), appView);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean verifyTypes(
       AppView<?> appView, ProgramMethod context, VerifyTypesHelper verifyTypesHelper) {

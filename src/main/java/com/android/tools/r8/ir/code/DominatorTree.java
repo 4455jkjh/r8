@@ -98,6 +98,7 @@ public class DominatorTree implements BasicBlockChangeListener {
    * @param dominator dominator to check against
    * @return whether {@param subject} is dominated by {@param dominator}
    */
+  @SuppressWarnings("ReferenceEquality")
   public boolean dominatedBy(BasicBlock subject, BasicBlock dominator) {
     assert !obsolete;
     if (subject == dominator) {
@@ -129,6 +130,7 @@ public class DominatorTree implements BasicBlockChangeListener {
    * @param dominator dominator to check against
    * @return whether {@param subject} is strictly dominated by {@param dominator}
    */
+  @SuppressWarnings("ReferenceEquality")
   public boolean strictlyDominatedBy(BasicBlock subject, BasicBlock dominator) {
     assert !obsolete;
     if (subject.getNumber() == 0 || subject == normalExitBlock) {
@@ -188,6 +190,7 @@ public class DominatorTree implements BasicBlockChangeListener {
    * <p>Iteration order is always the immediate dominator of the previously returned block. The
    * iteration starts by returning <code>dominated</code>.
    */
+  @SuppressWarnings("ReferenceEquality")
   public Iterable<BasicBlock> dominatorBlocks(BasicBlock dominated, Inclusive inclusive) {
     assert !obsolete;
     return () -> {
@@ -200,6 +203,7 @@ public class DominatorTree implements BasicBlockChangeListener {
               return current != null;
             }
 
+            @SuppressWarnings("ReferenceEquality")
             @Override
             public BasicBlock next() {
               if (!hasNext()) {
@@ -251,6 +255,7 @@ public class DominatorTree implements BasicBlockChangeListener {
   // A Simple, Fast Dominance Algorithm
   // Cooper, Keith D.; Harvey, Timothy J.; and Kennedy, Ken (2001).
   // http://www.cs.rice.edu/~keith/EMBED/dom.pdf
+  @SuppressWarnings("ReferenceEquality")
   private void build() {
     doms = new BasicBlock[sorted.length];
     doms[0] = sorted[0];
@@ -288,6 +293,7 @@ public class DominatorTree implements BasicBlockChangeListener {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private BasicBlock intersect(BasicBlock b1, BasicBlock b2) {
     BasicBlock finger1 = b1;
     BasicBlock finger2 = b2;

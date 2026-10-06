@@ -159,6 +159,7 @@ public class ValueIsDeadAnalysis {
     return analysisCache.get(valueRequiredToBeDead) == ValueIsDeadResult.NOT_DEAD;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean needsToProveThatValueIsDead(Value value, Value valueRequiredToBeDead) {
     // No need to record that the deadness of a values relies on its own removal.
     assert !hasProvenThatValueIsNotDead(valueRequiredToBeDead);

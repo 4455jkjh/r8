@@ -112,6 +112,7 @@ abstract class SyntheticDefinition<
     return compareTo(other, includeContext, graphLens, methodMap, classToFeatureSplitMap) == 0;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   int compareTo(
       D other,
       boolean includeContext,

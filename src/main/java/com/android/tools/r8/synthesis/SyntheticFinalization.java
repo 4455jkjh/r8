@@ -209,6 +209,7 @@ public class SyntheticFinalization {
     appView.notifyOptimizationFinished();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static void finalizeWithLiveness(
       AppView<AppInfoWithLiveness> appView, ExecutorService executorService, Timing timing)
       throws ExecutionException {

@@ -113,6 +113,7 @@ public class PreserveInterfaceMethodDispatch extends MultiClassPolicy {
         && canAddInterfacesFromTo(group, classGroup, interfaceToDefaultInterfaceMethodsOfInterest);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean canAddInterfacesFromTo(
       Collection<DexProgramClass> fromGroup,
       Collection<DexProgramClass> toGroup,

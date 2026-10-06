@@ -57,6 +57,7 @@ public class SplitIntSwitch extends CodeRewriterPass<AppInfo> {
     return CodeRewriterResult.hasChanged(changed);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean rewriteFirstIntSwitch(IRCode code) {
     for (BasicBlock block : code.blocks) {
       if (block.getLastInstruction().isIntSwitch()

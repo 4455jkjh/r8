@@ -436,6 +436,7 @@ public final class IdentifierNameStringUtils {
 
   // Perform a conservative evaluation of an array content of dex type values from its construction
   // until its use at a given instruction.
+  @SuppressWarnings("ReferenceEquality")
   private static DexTypeList evaluateTypeArrayContentFromConstructionToUse(
       NewArrayEmpty newArray, List<CheckCast> aliases, Instruction user, DexItemFactory factory) {
     int size = newArray.sizeIfConst();

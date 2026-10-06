@@ -120,6 +120,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
       return range;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void addMappingInformation(
         MappingInformation info, Consumer<MappingInformation> onProhibitedAddition) {
@@ -646,6 +647,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
       return renamedName;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void addMappingInformation(
         MappingInformation info, Consumer<MappingInformation> onProhibitedAddition) {
       if (additionalMappingInformation == EMPTY_MAPPING_INFORMATION) {

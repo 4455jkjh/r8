@@ -37,6 +37,7 @@ public abstract class LogicalBinop extends Binop {
     return leftValue().isConstant() && rightValue().isConstant();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean needsValueInRegister(Value value) {
     // Always require the left value in a register. If left and right are the same value, then

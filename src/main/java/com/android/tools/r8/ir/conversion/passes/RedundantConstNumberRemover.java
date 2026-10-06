@@ -176,6 +176,7 @@ public class RedundantConstNumberRemover extends CodeRewriterPass<AppInfo> {
     return number.getRawValue() == 0 ? 1 : 0;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean replaceDominatedConstNumbers(
       long withValue,
       Value newValue,

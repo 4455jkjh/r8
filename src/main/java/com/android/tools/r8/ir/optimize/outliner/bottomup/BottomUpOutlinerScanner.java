@@ -164,6 +164,7 @@ public class BottomUpOutlinerScanner {
 
     abstract Instruction getOutlineEnd();
 
+    @SuppressWarnings("ReferenceEquality")
     void processInstruction(Instruction instruction, Consumer<OutlineBuilder> continuation) {
       if (instruction != previousOutlineEnd) {
         switch (instruction.opcode()) {
@@ -309,6 +310,7 @@ public class BottomUpOutlinerScanner {
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean isStringBuilderMaybeUsedAfterOutlineEnd(Value stringBuilderValue) {
       if (getOutlineEnd().isThrow()) {
         return false;
@@ -412,6 +414,7 @@ public class BottomUpOutlinerScanner {
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void startOutline(
         Instruction firstOutlinedInstruction, Consumer<OutlineBuilder> continuation) {
       Instruction newFirstOutlinedInstruction;
@@ -454,6 +457,7 @@ public class BottomUpOutlinerScanner {
       return stringBuilderToStringInstruction;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     Outline tryBuildOutline() {
       // Recursively build up the outline method. On successful outline creation, the resulting
       // LirCode is passed to the continuation function.
@@ -515,6 +519,7 @@ public class BottomUpOutlinerScanner {
       return throwInstruction;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     void tryBuildOutline() {
       // Recursively build up the outline method. On successful outline creation, the resulting
       // LirCode is passed to the continuation function.
@@ -545,6 +550,7 @@ public class BottomUpOutlinerScanner {
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void processThrowInstruction(Consumer<OutlineBuilder> continuation) {
       Throw throwInstruction = block.exit().asThrow();
       Value exceptionValue = throwInstruction.exception();
@@ -572,6 +578,7 @@ public class BottomUpOutlinerScanner {
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void processExceptionConstructorCall(
         Instruction instruction, Consumer<OutlineBuilder> continuation) {
       InvokeDirect invoke = instruction.asInvokeConstructor(factory);
@@ -618,6 +625,7 @@ public class BottomUpOutlinerScanner {
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     void processInstruction(Instruction instruction, Consumer<OutlineBuilder> continuation) {
       if (instruction.isNewInstance()) {

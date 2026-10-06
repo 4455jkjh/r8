@@ -643,6 +643,7 @@ public class SyntheticItems {
     return contexts.get(0).getFeatureSplit();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static <T> boolean verifyAllHaveSameFeature(
       List<T> items, Function<T, FeatureSplit> getter) {
     assert !items.isEmpty();

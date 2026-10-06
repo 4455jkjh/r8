@@ -216,6 +216,7 @@ public class GenericSignatureContextBuilder {
     return computeTypeParameterContext(appView, reference, wasPruned, false, null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private TypeParameterContext computeTypeParameterContext(
       AppView<?> appView,
       DexReference reference,

@@ -89,6 +89,7 @@ public class MapUtils {
     return builder.build();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <T> void removeIdentityMappings(Map<T, T> map) {
     map.entrySet().removeIf(entry -> entry.getKey() == entry.getValue());
   }
@@ -202,6 +203,7 @@ public class MapUtils {
     return result;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <K, V> boolean equals(Map<K, V> one, Map<K, V> other) {
     if (one == other) {
       return true;

@@ -366,6 +366,7 @@ public class ThrowCatchOptimizer extends CodeRewriterPass<AppInfo> {
     assert code.isConsistentSSA(appView);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isSingleHandlerTrivial(BasicBlock firstBlock, IRCode code) {
     InstructionListIterator instructionIterator = firstBlock.listIterator();
     Instruction instruction = instructionIterator.next();
@@ -451,6 +452,7 @@ public class ThrowCatchOptimizer extends CodeRewriterPass<AppInfo> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void insertNotNullCheck(
       BasicBlock block,
       InstructionListIterator iterator,

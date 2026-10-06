@@ -273,6 +273,7 @@ public class InstancePut extends FieldInstruction implements FieldPut, InstanceF
     builder.add(new CfInstanceFieldWrite(getField()), this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return object() == value;

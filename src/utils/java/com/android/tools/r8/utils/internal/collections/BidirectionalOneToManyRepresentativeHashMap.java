@@ -59,6 +59,7 @@ public class BidirectionalOneToManyRepresentativeHashMap<K, V>
     return representatives.remove(key);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public K removeValue(V value) {
     K key = super.removeValue(value);

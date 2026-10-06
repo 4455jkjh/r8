@@ -154,6 +154,7 @@ public class LibraryDesugaringOptions {
     configureDesugaredLibrary(desugaredLibrarySpecification, "");
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void configureDesugaredLibrary(
       DesugaredLibrarySpecification desugaredLibrarySpecification, String synthesizedClassPrefix) {
     assert desugaredLibrarySpecification != null;

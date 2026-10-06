@@ -265,6 +265,7 @@ public class ParameterAnnotationsList extends DexItem
     return keepIf(not(predicate));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public ParameterAnnotationsList rewrite(Function<DexAnnotation, DexAnnotation> mapper) {
     if (isEmpty()) {
       return this;

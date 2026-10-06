@@ -829,6 +829,7 @@ public class Outliner implements ReprocessingOptimization {
 
     // Get int in-values for an instruction. For commutative binary operations using the current
     // return value (active out-value) make sure that that value is the left value.
+    @SuppressWarnings("ReferenceEquality")
     List<Value> orderedInValues(Instruction instruction, Value returnValue) {
       List<Value> inValues = instruction.inValues();
       if (instruction.isBinop() && instruction.asBinop().isCommutative()) {
@@ -1050,6 +1051,7 @@ public class Outliner implements ReprocessingOptimization {
     }
 
     // Add the current instruction to the outline.
+    @SuppressWarnings("ReferenceEquality")
     private void includeInstruction(Instruction instruction) {
       if (instruction.isAssume()) {
         Assume assume = instruction.asAssume();
@@ -1387,6 +1389,7 @@ public class Outliner implements ReprocessingOptimization {
     return outlineCollection.getAppliedGraphLens();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void prepareForPrimaryOptimizationPass(
       GraphLens graphLensForPrimaryOptimizationPass, ExecutorService executorService, Timing timing)
@@ -1401,6 +1404,7 @@ public class Outliner implements ReprocessingOptimization {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void applyAfterSecondRoundOfIrProcessing(
       PrimaryR8IRConverter converter,
@@ -1504,6 +1508,7 @@ public class Outliner implements ReprocessingOptimization {
         executorService);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void rewriteWithLens() {
     // Rewrite the outline collection with the graph lens, such that the reprocessing of methods
@@ -1546,6 +1551,7 @@ public class Outliner implements ReprocessingOptimization {
     timing.end();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static void getInstructions(
       AppView<?> appView, IRCode code, Consumer<List<Instruction>> consumer) {
     int maxNumberOfInstructionsToBeConsidered =

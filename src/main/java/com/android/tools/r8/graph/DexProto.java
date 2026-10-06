@@ -175,6 +175,7 @@ public class DexProto extends IndexedDexItem
     return factory.createProto(returnType, parameters);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexProto withoutParameters(IntObjPredicate<DexType> predicate, DexItemFactory factory) {
     if (parameters.isEmpty()) {
       return this;

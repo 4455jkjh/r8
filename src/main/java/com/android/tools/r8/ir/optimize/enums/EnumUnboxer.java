@@ -249,6 +249,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     return enumUnboxingCandidatesInfo.getCandidateClassOrNull(type);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void irAnalysis(
       ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
@@ -535,6 +536,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     eligibleEnums.add(enumType);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isLegitimateConstClassUser(
       Instruction user, ProgramMethod context, DexProgramClass enumClass) {
     if (user.isAssume()) {
@@ -617,6 +619,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
         || method.isIdenticalTo(classMethods.getSimpleName);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void addNullDependencies(IRCode code, Value nullValue, Set<DexType> eligibleEnums) {
     for (Instruction use : nullValue.uniqueUsers()) {
       if (use.isInvokeMethod()) {
@@ -655,6 +658,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Reason validateEnumUsages(IRCode code, Value value, DexProgramClass enumClass) {
     Reason result = Reason.ELIGIBLE;
     for (Instruction user : value.uniqueUsers()) {
@@ -692,6 +696,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     appliedGraphLens = newAppliedLens;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void prepareForPrimaryOptimizationPass(
       GraphLens graphLensForPrimaryOptimizationPass, ExecutorService executorService, Timing timing)
@@ -722,6 +727,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
             .findCandidates(graphLensForPrimaryOptimizationPass);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void apply(
       AppView<AppInfoWithLiveness> appView,
@@ -819,6 +825,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     timing.end();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void updateOptimizationInfos(
       ExecutorService executorService,
       OptimizationFeedbackDelayed feedback,
@@ -1343,6 +1350,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
 
   // A field put is valid only if the field is not on an enum, and the field type and the valuePut
   // have identical enum type.
+  @SuppressWarnings("ReferenceEquality")
   private Reason analyzeFieldPutUser(
       FieldInstruction fieldPut,
       IRCode code,
@@ -1392,6 +1400,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     return Reason.INVALID_IF_TYPES;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isEqualEnumCandidateType(
       TypeElement leftType, TypeElement rightType, DexProgramClass enumClass) {
     if (!leftType.isClassType() || !rightType.isClassType()) {
@@ -1409,6 +1418,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
   }
 
   // All invokes in the library are invalid, besides a few cherry picked cases such as ordinal().
+  @SuppressWarnings("ReferenceEquality")
   private Reason analyzeInvokeUser(
       InvokeMethod invoke,
       IRCode code,
@@ -1536,6 +1546,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
         singleTarget.getHolder());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Reason comparableAsUnboxedValues(InvokeMethod invoke) {
     assert invoke.inValues().size() == 2;
     TypeElement type1 = invoke.getFirstArgument().getType();
@@ -1554,6 +1565,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     return new UnboxedValueNonComparable(invoke.getInvokedMethod(), type1, type2);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Reason analyzeLibraryInvoke(
       InvokeMethod invoke,
       ProgramMethod context,
@@ -1708,6 +1720,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     return Reason.ELIGIBLE;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void reportEnumsAnalysis() {
     assert debugLogEnabled;
     Reporter reporter = appView.reporter();

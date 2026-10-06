@@ -186,6 +186,7 @@ public class MethodOptimizationInfoCollector {
     timing.end();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void analyzeReturns(
       IRCode code, OptimizationFeedback feedback, MethodProcessor methodProcessor) {
     ProgramMethod context = code.context();
@@ -561,6 +562,7 @@ public class MethodOptimizationInfoCollector {
     builder.setWrittenBeforeReadSet(state.getAbstractWrittenBeforeReadSet());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean couldBeReceiverValue(
       Value value,
       Value receiver,
@@ -742,6 +744,7 @@ public class MethodOptimizationInfoCollector {
   // Note that this method may have false positives, since the application could in principle
   // declare a method called checkParameterIsNotNull(parameter, message) in a package that starts
   // with "kotlin".
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isKotlinCheckParameterIsNotNull(
       AppView<?> appView, InvokeStatic invoke, Value value) {
     // We need to ignore the holder, since Kotlin adds different versions of null-check machinery,
@@ -1134,6 +1137,7 @@ public class MethodOptimizationInfoCollector {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isNonNullOnNormalExit(
       IRCode code, Value value, DominatorTree dominatorTree, Set<BasicBlock> normalExits) {
     assert value.getType().isReferenceType();
@@ -1188,6 +1192,7 @@ public class MethodOptimizationInfoCollector {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isNormalExitDominated(
       BasicBlock normalExit,
       IRCode code,

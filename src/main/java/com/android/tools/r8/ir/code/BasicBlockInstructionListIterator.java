@@ -71,6 +71,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     return next != null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Instruction next() {
     Instruction ret = next;
@@ -88,6 +89,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     throw new UnsupportedOperationException();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Instruction peekNext() {
     assert next == null || next.block == block : "Iterator invalidated: " + next;
@@ -99,6 +101,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     return next == null ? !instructionList.isEmpty() : next.prev != null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Instruction previous() {
     Instruction ret = next == null ? instructionList.getLastOrNull() : next.prev;
@@ -116,6 +119,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     throw new UnsupportedOperationException();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Instruction peekPrevious() {
     Instruction ret = next == null ? instructionList.getLastOrNull() : next.prev;
@@ -162,6 +166,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     instructionList.addBefore(instruction, next);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean hasPriorThrowingInstruction() {
     Instruction next = peekNext();
     for (Instruction ins : block.getInstructions()) {
@@ -175,6 +180,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public InstructionListIterator addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
       IRCode code,
@@ -237,6 +243,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
    *
    * @param instruction The instruction to replace with.
    */
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void set(Instruction instruction) {
     if (current == null) {
@@ -258,6 +265,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
   }
 
   /** Updates |current| and |next|, and returns the old |current|. */
+  @SuppressWarnings("ReferenceEquality")
   private Instruction removeHelper() {
     Instruction target = current;
     if (target == null) {
@@ -294,6 +302,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     instructionList.removeOrReplaceByDebugLocalRead(removeHelper());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void replaceCurrentInstruction(Instruction newInstruction, AffectedValues affectedValues) {
     if (current == null) {
@@ -542,6 +551,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     replaceCurrentInstruction(staticGet, affectedValues);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void replaceCurrentInstructionWithThrow(
       AppView<?> appView,
@@ -604,6 +614,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
             .build());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void replaceCurrentInstructionWithThrowNull(
       AppView<?> appView,
@@ -703,6 +714,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public BasicBlock split(
       IRCode code, ListIterator<BasicBlock> blocksIterator, boolean keepCatchHandlers) {
@@ -729,6 +741,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     return newBlock;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public BasicBlock split(IRCode code, int instructions, ListIterator<BasicBlock> blocksIterator) {
     // Split at the current cursor position.
@@ -772,6 +785,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void splitBlockAndCopyCatchHandlers(
       AppView<?> appView,
       IRCode code,
@@ -821,6 +835,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void appendCatchHandlers(
       AppView<?> appView,
       IRCode code,
@@ -850,6 +865,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void removeArgumentInstruction(
       InstructionListIterator iterator, Value expectedArgument) {
     assert iterator.hasNext();
@@ -860,6 +876,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     iterator.remove();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public BasicBlock inlineInvoke(
       AppView<?> appView,
@@ -1068,6 +1085,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     return invokeSuccessor;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator ensureSingleReturnInstruction(
       AppView<?> appView, IRCode code, List<BasicBlock> normalExits) {
     // First ensure that there will be not critical edges after inlining. This is needed since

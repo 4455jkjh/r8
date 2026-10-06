@@ -232,6 +232,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
             "ApiLevel computed", () -> apiLevelCompute.computeInitialMinApiLevel(options()));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean verifyMainThread() {
     assert mainThread == Thread.currentThread();
     return true;
@@ -392,6 +393,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     appInfoForDesugaring = null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public <U extends T> AppView<U> setAppInfo(U appInfo) {
     assert !appInfo.isObsolete();
     AppInfo previous = this.appInfo;
@@ -714,6 +716,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   /**
    * @return true if the graph lens changed, otherwise false.
    */
+  @SuppressWarnings("ReferenceEquality")
   public boolean setGraphLens(GraphLens graphLens) {
     if (graphLens != this.graphLens) {
       this.graphLens = graphLens;
@@ -1067,6 +1070,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return !cfByteCodePassThrough.isEmpty();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void pruneItems(PrunedItems prunedItems, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     if (prunedItems.isEmpty()) {
@@ -1379,6 +1383,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     timing.end(); // Rewrite AppView
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static NonIdentityGraphLens computeFirstUnappliedLens(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       NonIdentityGraphLens lens,

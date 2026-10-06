@@ -109,6 +109,7 @@ public class EnqueuerDeferredAnnotationTracing {
       this.kind = kind;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object obj) {
       if (obj == null) {

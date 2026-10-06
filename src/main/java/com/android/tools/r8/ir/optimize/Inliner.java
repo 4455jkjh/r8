@@ -1010,6 +1010,7 @@ public class Inliner {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void performForcedInlining(
       ProgramMethod method,
       IRCode code,
@@ -1139,6 +1140,7 @@ public class Inliner {
         appView, method, methodProcessor, inliningReasonStrategy, code);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void performInliningImpl(
       InliningOracle oracle,
       ProgramMethod context,
@@ -1189,6 +1191,7 @@ public class Inliner {
     affectedValues.narrowingWithAssumeRemoval(appView, code);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void inlineInvokes(
       InliningOracle oracle,
       ProgramMethod context,
@@ -1485,6 +1488,7 @@ public class Inliner {
     rewindBlockIterator(blockIterator, callerBlock, ConsumerUtils.emptyConsumer());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewindBlockIterator(
       ListIterator<BasicBlock> blockIterator,
       BasicBlock callerBlock,

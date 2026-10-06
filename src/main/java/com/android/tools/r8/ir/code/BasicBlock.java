@@ -71,6 +71,7 @@ public class BasicBlock {
 
   private Int2ReferenceMap<DebugLocalInfo> localsAtEntry;
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean consistentBlockInstructions(boolean argumentsAllowed, boolean debug, boolean ssa) {
     for (Instruction instruction : getInstructions()) {
       assert instruction.verifyValidPositionInfo(debug);
@@ -146,6 +147,7 @@ public class BasicBlock {
       this.second = second;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public int compareTo(Pair o) {
       if (first != o.first) {
@@ -342,6 +344,7 @@ public class BasicBlock {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean hasNormalSuccessor(BasicBlock block) {
     for (int i = successors.size() - numberOfNormalSuccessors(); i < successors.size(); i++) {
       if (successors.get(i) == block) {
@@ -481,6 +484,7 @@ public class BasicBlock {
     removeSuccessorsByIndex(successorsToRemove);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void swapSuccessors(BasicBlock a, BasicBlock b) {
     assert a != b;
     int aIndex = successors.indexOf(a);
@@ -511,6 +515,7 @@ public class BasicBlock {
   }
 
   // TODO(b/116174212): Remove the predecessor pointer from the old successor block.
+  @SuppressWarnings("ReferenceEquality")
   public void replaceSuccessor(BasicBlock block, BasicBlock newBlock) {
     assert successors.contains(block) : "attempt to replace non-existent successor";
 
@@ -611,6 +616,7 @@ public class BasicBlock {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean hasLinearFlow(BasicBlock current, BasicBlock target) {
     while (current != target) {
       if (current.getPredecessors().size() != 1) {
@@ -625,6 +631,7 @@ public class BasicBlock {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replacePredecessor(BasicBlock block, BasicBlock newBlock) {
     for (int i = 0; i < predecessors.size(); i++) {
       if (predecessors.get(i) == block) {
@@ -788,6 +795,7 @@ public class BasicBlock {
           private InstructionIterator iterator = iterator();
           private Instruction next = advance();
 
+          @SuppressWarnings("ReferenceEquality")
           private Instruction advance() {
             if (iterator.hasNext()) {
               Instruction next = iterator.next();
@@ -1033,6 +1041,7 @@ public class BasicBlock {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void removeCatchHandlerWithGuard(DexType guard) {
     int guardIndex = catchHandlers.getGuards().indexOf(guard);
     if (guardIndex >= 0) {
@@ -1047,6 +1056,7 @@ public class BasicBlock {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isCatchHandlerForSingleGuard() {
     assert predecessors.size() == 1;
     BasicBlock predecessor = predecessors.get(0);
@@ -1067,6 +1077,7 @@ public class BasicBlock {
     getMutableSuccessors().clear();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Set<BasicBlock> unlink(
       BasicBlock successor, DominatorTree dominator, AffectedValues affectedValues) {
     assert affectedValues != null;
@@ -1243,6 +1254,7 @@ public class BasicBlock {
     return hasEquivalentCatchHandlers(other, false);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean hasEquivalentCatchHandlers(BasicBlock other, boolean checkPhis) {
     if (this == other) {
       return true;
@@ -1323,6 +1335,7 @@ public class BasicBlock {
     return readOnThrowValue(register, readingEdge) != null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Value readCurrentDefinition(int register, EdgeType readingEdge) {
     // If the block reading the current definition is a catch successor, then we must return the
     // previous value of the throwing-instructions outgoing register if any.
@@ -1333,6 +1346,7 @@ public class BasicBlock {
     return currentDefinitions.get(register);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceCurrentDefinitions(Value oldValue, Value newValue) {
     assert oldValue.definition.getBlock() == this;
     assert !oldValue.isUsed();
@@ -1665,6 +1679,7 @@ public class BasicBlock {
     return block;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInstructionBeforeThrowingInstruction(Instruction instruction) {
     assert instruction.getBlock() == this;
     for (Instruction candidate : getInstructions()) {
@@ -1685,6 +1700,7 @@ public class BasicBlock {
   // Go backwards in the control flow graph until a block that is not a trivial goto block is found,
   // or a block that does not have a unique predecessor is found. Returns null if the goto chain is
   // cyclic.
+  @SuppressWarnings("ReferenceEquality")
   public BasicBlock startOfGotoChain() {
     // See Floyd's cycle-finding algorithm for reference.
     BasicBlock hare = this;
@@ -1702,6 +1718,7 @@ public class BasicBlock {
   }
 
   // Find the final target from this goto block. Returns null if the goto chain is cyclic.
+  @SuppressWarnings("ReferenceEquality")
   public BasicBlock endOfGotoChain() {
     // See Floyd's cycle-finding algorithm for reference.
     BasicBlock hare = this;
@@ -1718,6 +1735,7 @@ public class BasicBlock {
     return hare;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isSimpleAlwaysThrowingPath() {
     // See Floyd's cycle-finding algorithm for reference.
     BasicBlock hare = this;
@@ -1917,6 +1935,7 @@ public class BasicBlock {
    * @param firstInstructionOfNewBlock first instruction to put into the new block. Can be null.
    * @return Returns the new block.
    */
+  @SuppressWarnings("ReferenceEquality")
   public BasicBlock split(
       IRCode code, boolean keepCatchHandlers, Instruction firstInstructionOfNewBlock) {
     List<BasicBlock> blocks = code.blocks;
@@ -2139,6 +2158,7 @@ public class BasicBlock {
    * Return true if there is a path from the current {@link BasicBlock} to {@code target} or if
    * {@code target} is the same block than the current {@link BasicBlock}.
    */
+  @SuppressWarnings("ReferenceEquality")
   public boolean hasPathTo(BasicBlock target) {
     Set<BasicBlock> visitedBlocks = Sets.newIdentityHashSet();
     ArrayDeque<BasicBlock> blocks = new ArrayDeque<>();
@@ -2161,6 +2181,7 @@ public class BasicBlock {
   }
 
   private static class PhiEquivalence extends Equivalence<Phi> {
+    @SuppressWarnings("ReferenceEquality")
     @Override
     protected boolean doEquivalent(Phi a, Phi b) {
       assert a.getBlock() == b.getBlock();

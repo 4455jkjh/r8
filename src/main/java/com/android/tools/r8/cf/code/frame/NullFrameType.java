@@ -82,6 +82,7 @@ public class NullFrameType extends SingletonFrameType implements InitializedRefe
     return Opcodes.NULL;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public SingleFrameType join(
       AppView<? extends AppInfoWithClassHierarchy> appView, SingleFrameType frameType) {

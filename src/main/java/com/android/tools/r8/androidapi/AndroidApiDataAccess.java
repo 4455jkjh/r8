@@ -120,6 +120,7 @@ public abstract class AndroidApiDataAccess {
       return length;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isEmpty() {
       return this == EMPTY;
     }

@@ -78,6 +78,7 @@ public class MainDexInfo {
     return classList.contains(syntheticContextType);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isNone() {
     assert none() == NONE;
     return this == NONE;

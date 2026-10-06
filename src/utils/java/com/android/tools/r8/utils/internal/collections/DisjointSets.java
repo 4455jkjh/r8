@@ -26,6 +26,7 @@ public class DisjointSets<T> {
    *
    * <p>The <code>element</code> must not be present in any existing sets.
    */
+  @SuppressWarnings("ReferenceEquality")
   public T makeSet(T element) {
     assert !parent.containsKey(element);
     parent.put(element, element);
@@ -38,6 +39,7 @@ public class DisjointSets<T> {
    *
    * <p>Returns null if <code>element</code> is not in any sets.
    */
+  @SuppressWarnings("ReferenceEquality")
   public T findSet(T element) {
     T candidate = parent.get(element);
     if (candidate == null) {
@@ -104,6 +106,7 @@ public class DisjointSets<T> {
    *
    * <p>Returns the representative for the union set.
    */
+  @SuppressWarnings("ReferenceEquality")
   public T union(T representative1, T representative2) {
     // The two representatives must be roots in different trees.
     assert representative1 != null;
@@ -127,6 +130,7 @@ public class DisjointSets<T> {
    *
    * <p>Returns the representative for the union set.
    */
+  @SuppressWarnings("ReferenceEquality")
   public T unionWithMakeSet(T element1, T element2) {
     if (element1 == element2) {
       return findOrMakeSet(element1);

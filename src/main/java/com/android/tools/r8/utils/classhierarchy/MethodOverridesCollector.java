@@ -87,6 +87,7 @@ public class MethodOverridesCollector {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void visit(DexProgramClass clazz) {
       DexMethodSignatureSet interfaceMethodsOfInterestForClass =

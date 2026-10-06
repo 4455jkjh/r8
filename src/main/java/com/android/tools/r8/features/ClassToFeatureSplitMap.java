@@ -117,6 +117,7 @@ public class ClassToFeatureSplitMap {
         newClassToFeatureSplitMap, representativeStringsForFeatureSplit);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public int compareFeatureSplits(FeatureSplit featureSplitA, FeatureSplit featureSplitB) {
     assert featureSplitA != null;
     assert featureSplitB != null;
@@ -165,6 +166,7 @@ public class ClassToFeatureSplitMap {
     return getFeatureSplit(reference, appView.getSyntheticItems());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public FeatureSplit getFeatureSplit(DexReference reference, SyntheticItems syntheticItems) {
     DexType type = reference.getContextType();
     if (syntheticItems == null) {
@@ -225,6 +227,7 @@ public class ClassToFeatureSplitMap {
     return isInBaseOrSameFeatureAs(clazz, context, appView.getSyntheticItems());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInBaseOrSameFeatureAs(
       DexType clazz, ProgramDefinition context, SyntheticItems syntheticItems) {
     FeatureSplit split = getFeatureSplit(clazz, syntheticItems);
@@ -240,6 +243,7 @@ public class ClassToFeatureSplitMap {
     return isInSameFeature(definition, other, appView.getSyntheticItems());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInSameFeature(
       ProgramDefinition definition, ProgramDefinition other, SyntheticItems syntheticItems) {
     return getFeatureSplit(definition, syntheticItems) == getFeatureSplit(other, syntheticItems);
@@ -249,6 +253,7 @@ public class ClassToFeatureSplitMap {
     return timing.time("Rewrite ClassToFeatureSplitMap", () -> rewrittenWithLens(lens));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private ClassToFeatureSplitMap rewrittenWithLens(GraphLens lens) {
     Map<DexType, FeatureSplit> rewrittenClassToFeatureSplitMap = new IdentityHashMap<>();
     classToFeatureSplitMap.forEach(

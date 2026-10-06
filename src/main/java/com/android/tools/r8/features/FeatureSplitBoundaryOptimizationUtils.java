@@ -85,6 +85,7 @@ public class FeatureSplitBoundaryOptimizationUtils {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean isSafeForVerticalClassMerging(
       DexProgramClass sourceClass,
       DexProgramClass targetClass,

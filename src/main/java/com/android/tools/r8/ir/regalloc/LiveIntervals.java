@@ -141,6 +141,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return spilled;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isRematerializable() {
     assert splitParent == this;
     return isRematerializable;
@@ -168,6 +169,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return definition != null && definition.isArgument();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isSplitParent() {
     return this == splitParent;
   }
@@ -176,6 +178,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return nextConsecutive;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LiveIntervals getPreviousSplit() {
     if (this == splitParent) {
       return null;
@@ -185,6 +188,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return i >= 0 ? splitParent.getSplitChildren().get(i) : splitParent;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LiveIntervals getNextSplit() {
     splitParent.sortSplitChildrenIfNeeded();
     if (this == splitParent) {
@@ -347,6 +351,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     liveAtMoveExceptionEntry = true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private int computeMaxNonSpilledRegister(LinearScanRegisterAllocator allocator) {
     assert splitParent == this;
     assert maxNonSpilledRegister == NO_REGISTER;
@@ -606,6 +611,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return getSplitCovering(instruction.getNumber());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LiveIntervals getSplitCovering(int instructionNumber) {
     assert getSplitParent() == this;
     // Check if this interval itself is covering the instruction.
@@ -719,6 +725,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return builder.toString();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void computeRematerializable(
       LinearScanRegisterAllocator allocator, ArgumentReuseMode mode) {
     assert splitParent == this;

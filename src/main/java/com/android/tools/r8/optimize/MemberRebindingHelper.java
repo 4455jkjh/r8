@@ -38,6 +38,7 @@ public class MemberRebindingHelper {
     this.options = appView.options();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexMethod validMemberRebindingTargetForNonProgramMethod(
       DexClassAndMethod resolvedMethod,
       SingleResolutionResult<?> resolutionResult,

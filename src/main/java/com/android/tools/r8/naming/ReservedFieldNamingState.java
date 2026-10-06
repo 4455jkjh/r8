@@ -60,6 +60,7 @@ class ReservedFieldNamingState extends FieldNamingStateBase<InternalState> {
     includeInterfaceReservationState(reservedNames);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void includeInterfaceReservationState(ReservedFieldNamingState reservedNames) {
     if (reservedNames.interfaceMinificationState != null) {
       assert interfaceMinificationState == null
@@ -68,6 +69,7 @@ class ReservedFieldNamingState extends FieldNamingStateBase<InternalState> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void setInterfaceMinificationState(ReservedFieldNamingState namingState) {
     assert namingState != null;
     assert interfaceMinificationState == null || interfaceMinificationState == namingState;

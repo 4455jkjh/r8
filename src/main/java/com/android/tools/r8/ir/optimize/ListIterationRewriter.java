@@ -268,6 +268,7 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private AnalysisResult analyzeIterator(InvokeMethodWithReceiver iteratorInstr) {
     Value iteratorValue = iteratorInstr.outValue();
 
@@ -380,6 +381,7 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
         && method.getReturnType().isClassType();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewriteInstance(IRCode code, AnalysisResult analysisResult) {
     InvokeMethodWithReceiver iteratorInstr = analysisResult.iteratorInstr;
     InvokeMethodWithReceiver hasNextInstr = analysisResult.hasNextInstr;

@@ -188,6 +188,7 @@ public class TaskCollection<T> {
   }
 
   /** Derived await to get a subset of the results in a list. */
+  @SuppressWarnings("ReferenceEquality")
   public final List<T> awaitWithResults(Predicate<T> predicate) throws ExecutionException {
     if (predicate == null || predicate == alwaysTrue()) {
       return awaitWithResults();

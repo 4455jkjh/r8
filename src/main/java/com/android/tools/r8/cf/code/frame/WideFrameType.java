@@ -6,6 +6,7 @@ package com.android.tools.r8.cf.code.frame;
 
 public interface WideFrameType extends FrameType {
 
+  @SuppressWarnings("ReferenceEquality")
   default boolean lessThanOrEqualTo(WideFrameType frameType) {
     return join(frameType) == frameType;
   }

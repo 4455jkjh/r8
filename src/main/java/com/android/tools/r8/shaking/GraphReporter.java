@@ -386,6 +386,7 @@ public class GraphReporter {
     return keptGraphConsumer != null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean skipReporting(KeepReason reason) {
     assert reason != null;
     if (reason == KeepReasonWitness.INSTANCE) {

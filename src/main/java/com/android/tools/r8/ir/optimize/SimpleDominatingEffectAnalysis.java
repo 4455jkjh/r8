@@ -317,6 +317,7 @@ public class SimpleDominatingEffectAnalysis {
     return builder.build();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static SimpleEffectAnalysisResult canInlineWithoutSynthesizingNullCheckForReceiver(
       AppView<?> appView, IRCode code) {
     assert code.context().getDefinition().isVirtualMethod();

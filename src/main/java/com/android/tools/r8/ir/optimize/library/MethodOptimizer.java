@@ -36,6 +36,7 @@ public class MethodOptimizer extends StatelessLibraryMethodModelCollection {
     return dexItemFactory.methodType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public InstructionListIterator optimize(
       IRCode code,

@@ -61,6 +61,7 @@ public abstract class WidePrimitiveFrameType extends SingletonFrameType
     return 2;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public WideFrameType join(WideFrameType frameType) {
     return this == frameType ? this : FrameType.twoWord();

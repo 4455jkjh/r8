@@ -243,6 +243,7 @@ public class ArrayGet extends ArrayAccess {
         "Failure to constrain value: " + value + " by constraint: " + constraint);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return array() == value;

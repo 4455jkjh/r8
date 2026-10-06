@@ -573,6 +573,7 @@ public abstract class MethodResolutionResult
      * @param appInfo Application info.
      * @return The actual target for the invoke-super or {@code null} if no valid target is found.
      */
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public DexClassAndMethod lookupInvokeSuperTarget(
         DexProgramClass context, AppView<?> appView, AppInfoWithClassHierarchy appInfo) {
@@ -1095,6 +1096,7 @@ public abstract class MethodResolutionResult
       super(initialResolutionHolder, resolvedHolder, resolvedMethod);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public SingleResolutionResult<DexProgramClass> withInitialResolutionHolder(
         DexClass newInitialResolutionHolder) {
@@ -1135,6 +1137,7 @@ public abstract class MethodResolutionResult
       super(initialResolutionHolder, resolvedHolder, resolvedMethod);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public SingleClasspathResolutionResult withInitialResolutionHolder(
         DexClass newInitialResolutionHolder) {
@@ -1170,6 +1173,7 @@ public abstract class MethodResolutionResult
       super(initialResolutionHolder, resolvedHolder, resolvedMethod);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public SingleLibraryResolutionResult withInitialResolutionHolder(
         DexClass newInitialResolutionHolder) {
@@ -1747,6 +1751,7 @@ public abstract class MethodResolutionResult
           emptyResult, Collections.singletonList(responsibleTypeForNoSuchMethodResult));
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public MethodResolutionResult buildOrIfEmpty(
         MethodResolutionResult emptyResult,
         Collection<DexType> responsibleTypesForNoSuchMethodResult) {
@@ -1830,6 +1835,7 @@ public abstract class MethodResolutionResult
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private NoSuchMethodResult mergeNoSuchMethodErrors(
         Set<NoSuchMethodResult> noSuchMethodErrors, Collection<DexType> typesCausingErrorsHere) {
       Set<DexType> typesCausingError = SetUtils.newIdentityHashSet(typesCausingErrorsHere);

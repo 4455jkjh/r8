@@ -34,11 +34,13 @@ public class OutlineCollection {
     this.appliedGraphLens = graphLensForPrimaryOptimizationPass;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void remove(AppView<AppInfoWithLiveness> appView, ProgramMethod method) {
     assert appView.graphLens() == appliedGraphLens;
     outlines.remove(method.getReference());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void set(
       AppView<AppInfoWithLiveness> appView, ProgramMethod method, List<Outline> outlinesForMethod) {
     assert appView.graphLens() == appliedGraphLens;
@@ -51,6 +53,7 @@ public class OutlineCollection {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void rewriteWithLens(GraphLens currentGraphLens) {
     if (currentGraphLens == appliedGraphLens) {
       return;
@@ -74,6 +77,7 @@ public class OutlineCollection {
     appliedGraphLens = currentGraphLens;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private List<Outline> rewriteOutlinesWithLens(
       List<Outline> outlines, GraphLens currentGraphLens) {
     assert currentGraphLens != appliedGraphLens;

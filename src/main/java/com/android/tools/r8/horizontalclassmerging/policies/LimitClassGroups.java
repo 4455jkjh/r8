@@ -26,7 +26,7 @@ public class LimitClassGroups extends MultiClassPolicy {
 
   // TODO(b/270398965): Replace LinkedList.
   @Override
-  @SuppressWarnings({"JdkObsolete", "MixedMutabilityReturnType"})
+  @SuppressWarnings({"JdkObsolete", "MixedMutabilityReturnType", "ReferenceEquality"})
   public Collection<HorizontalMergeGroup> apply(HorizontalMergeGroup group) {
     if (group.size() <= maxGroupSize || group.isInterfaceGroup()) {
       return Collections.singletonList(group);

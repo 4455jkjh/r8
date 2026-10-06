@@ -45,6 +45,7 @@ public class IdentityAbstractFunction implements AbstractFunction {
     return InFlowKind.ABSTRACT_FUNCTION_IDENTITY;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public int internalCompareToSameKind(InFlow inFlow, InFlowComparator comparator) {
     assert this == inFlow;
