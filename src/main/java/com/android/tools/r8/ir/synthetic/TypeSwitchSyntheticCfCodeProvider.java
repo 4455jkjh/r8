@@ -50,6 +50,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
 
   private final List<DexValue> bootstrapArgs;
   private final DexType arg0Type;
+  private final boolean isRestartable;
   private final Dispatcher dispatcher;
   private final DexMethod intEq;
   private final Map<DexType, DexMethod> enumEqMethods;
@@ -73,6 +74,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
       DexType holder,
       DexType arg0Type,
       List<DexValue> bootstrapArgs,
+      boolean isRestartable,
       Dispatcher dispatcher,
       DexMethod intEq,
       Map<DexType, DexMethod> enumEqMethods,
@@ -81,6 +83,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
     super(appView, holder);
     this.arg0Type = arg0Type;
     this.bootstrapArgs = bootstrapArgs;
+    this.isRestartable = isRestartable;
     this.dispatcher = dispatcher;
     this.intEq = intEq;
     this.enumEqMethods = enumEqMethods;
@@ -98,11 +101,14 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
 
     CfFrame frame = computeCfFrame();
 
-    // Objects.checkIndex(restart, length + 1);
-    instructions.add(loadArg1());
-    instructions.add(new CfConstNumber(bootstrapArgs.size() + 1, ValueType.INT));
-    instructions.add(new CfInvoke(Opcodes.INVOKESTATIC, factory.objectsMethods.checkIndex, false));
-    instructions.add(new CfStackInstruction(Opcode.Pop));
+    if (isRestartable) {
+      // Objects.checkIndex(restart, length + 1);
+      instructions.add(loadArg1());
+      instructions.add(new CfConstNumber(bootstrapArgs.size() + 1, ValueType.INT));
+      instructions.add(
+          new CfInvoke(Opcodes.INVOKESTATIC, factory.objectsMethods.checkIndex, false));
+      instructions.add(new CfStackInstruction(Opcode.Pop));
+    }
 
     if (!isPrimitiveSwitch) {
       // if (obj == null) { return -1; }
@@ -128,8 +134,10 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
       cfLabels.add(new CfLabel());
     }
     cfLabels.add(defaultLabel);
-    instructions.add(loadArg1());
-    instructions.add(new CfSwitch(Kind.TABLE, defaultLabel, new int[] {0}, cfLabels));
+    if (isRestartable) {
+      instructions.add(loadArg1());
+      instructions.add(new CfSwitch(Kind.TABLE, defaultLabel, new int[] {0}, cfLabels));
+    }
 
     IntBox index = new IntBox(0);
     IntBox enumIndex = new IntBox(0);
@@ -138,8 +146,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
             dispatcher.generate(
                 dexValue,
                 dexType -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   if (!isPrimitiveSwitch) {
                     instructions.add(loadArg0());
                     instructions.add(new CfInstanceOf(dexType));
@@ -153,8 +160,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 intValue -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   if (isPrimitiveSwitch) {
                     instructions.add(new CfConstNumber(intValue, ValueType.INT));
@@ -180,8 +186,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 dexString -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   instructions.add(new CfConstString(dexString));
                   instructions.add(
@@ -192,8 +197,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 (type, enumField) -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   // TODO(b/399808482): In R8 release, we can analyze at compile-time program enum
                   //  and generate a fast check based on the field. But these information are not
                   //  available in Cf instructions.
@@ -214,8 +218,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 bool -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   if (isPrimitiveSwitch) {
                     instructions.add(
@@ -236,8 +239,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 dexNumber -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   if (dexNumber.isDexValueFloat()) {
                     instructions.add(new CfConstNumber(dexNumber.getRawValue(), ValueType.FLOAT));
@@ -285,7 +287,16 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
     return standardCfCodeFromInstructions(instructions);
   }
 
+  private void emitCaseLabelAndFrame(
+      int caseIndex, List<CfLabel> cfLabels, CfFrame frame, List<CfInstruction> instructions) {
+    if (isRestartable || caseIndex > 0) {
+      instructions.add(cfLabels.get(caseIndex));
+      instructions.add(frame);
+    }
+  }
+
   private CfLoad loadArg1() {
+    assert isRestartable;
     return new CfLoad(ValueType.INT, arg0Type.isWideType() ? 2 : 1);
   }
 
@@ -301,12 +312,11 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                 || arg0Type.isBooleanType()
             ? appView.dexItemFactory().intType
             : arg0Type;
-    CfFrame frame =
-        CfFrame.builder()
-            .appendLocal(FrameType.initialized(frameType))
-            .appendLocal(FrameType.intType())
-            .build();
-    return frame;
+    CfFrame.Builder builder = CfFrame.builder().appendLocal(FrameType.initialized(frameType));
+    if (isRestartable) {
+      builder.appendLocal(FrameType.intType());
+    }
+    return builder.build();
   }
 
   public static boolean allowsInlinedIntegerEquality(DexType arg0Type, DexItemFactory factory) {

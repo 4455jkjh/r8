@@ -96,6 +96,16 @@ public class CfConstNumber extends CfInstruction {
   }
 
   @Override
+  public CfConstNumber asConstNumber() {
+    return this;
+  }
+
+  @Override
+  public boolean isConstNumber() {
+    return true;
+  }
+
+  @Override
   public void write(
       AppView<?> appView,
       ProgramMethod context,

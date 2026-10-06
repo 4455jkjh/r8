@@ -15,7 +15,10 @@ import static com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchDesugaringHel
 
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
+import com.android.tools.r8.cf.code.CfInvokeDynamic;
 import com.android.tools.r8.cf.code.CfNew;
+import com.android.tools.r8.cf.code.CfStackInstruction;
+import com.android.tools.r8.cf.code.CfStackInstruction.Opcode;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppView;
@@ -107,7 +110,8 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
       }
       return DesugarDescription.nothing();
     }
-    DexCallSite callSite = instruction.asInvokeDynamic().getCallSite();
+    CfInvokeDynamic invokeDynamic = instruction.asInvokeDynamic();
+    DexCallSite callSite = invokeDynamic.getCallSite();
     if (isTypeSwitchCallSite(callSite, factory)) {
       return DesugarDescription.builder()
           .setDesugarRewrite(
@@ -121,6 +125,7 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
                   desugaringCollection,
                   dexItemFactory) ->
                   genSwitchMethod(
+                      invokeDynamic,
                       callSite,
                       eventConsumer,
                       theContext,
@@ -143,6 +148,7 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
                   desugaringCollection,
                   dexItemFactory) ->
                   genSwitchMethod(
+                      invokeDynamic,
                       callSite,
                       eventConsumer,
                       theContext,
@@ -155,13 +161,15 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
   }
 
   private List<CfInstruction> genSwitchMethod(
+      CfInvokeDynamic invokeDynamic,
       DexCallSite dexCallSite,
       CfInstructionDesugaringEventConsumer eventConsumer,
       ProgramMethod context,
       MethodProcessingContext methodProcessingContext,
       Scanner scanner,
       Dispatcher dispatcher) {
-    SwitchHelperGenerator gen = new SwitchHelperGenerator(appView, dexCallSite);
+    boolean isRestartable = CfRestartIndexAnalysis.isRestartable(invokeDynamic, context);
+    SwitchHelperGenerator gen = new SwitchHelperGenerator(appView, dexCallSite, isRestartable);
     DexProgramClass clazz =
         appView
             .getSyntheticItems()
@@ -179,6 +187,11 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
                         methodProcessingContext));
     eventConsumer.acceptTypeSwitchClass(clazz, context);
     assert gen.getDispatchMethod() != null;
+    if (!isRestartable) {
+      return ImmutableList.of(
+          new CfStackInstruction(Opcode.Pop),
+          new CfInvoke(Opcodes.INVOKESTATIC, gen.getDispatchMethod(), false));
+    }
     return ImmutableList.of(new CfInvoke(Opcodes.INVOKESTATIC, gen.getDispatchMethod(), false));
   }
 
