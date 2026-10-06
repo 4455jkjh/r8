@@ -12,7 +12,9 @@ import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMetho
 import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8TestBuilder;
@@ -20,14 +22,12 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.dex.Marker.Tool;
-import com.android.tools.r8.graph.AccessFlags;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -56,11 +56,14 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
   public void test() throws Exception {
     Path originalCompileResult =
         testForD8()
-            .addProgramClassFileData(getProgramClassFileData())
+            .addProgramClassFileData(getMainClassFileData())
+            .addOptionsModification(
+                options -> options.getTestingOptions().forcePcBasedEncoding = true)
+            .internalEnableMappingOutput()
             .release()
             .setMinApi(AndroidApiLevel.B)
             .compile()
-            .inspect(inspector -> inspect(inspector, false))
+            .inspect(inspector -> inspect(inspector, true, false))
             .writeToZip();
     Collection<Marker> originalMarkers =
         ExtractMarkerUtils.extractMarkersFromFile(originalCompileResult);
@@ -79,7 +82,21 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
         .release()
         .setMinApi(AndroidApiLevel.N)
         .compile()
-        .inspect(inspector -> inspect(inspector, false));
+        .inspect(inspector -> inspect(inspector, true, false));
+
+    // Dex-to-dex optimizations should not rewrite the code when no branches are simplified.
+    testForD8()
+        .addProgramFiles(originalCompileResult)
+        .addOptionsModification(
+            options -> {
+              assertFalse(options.enableDexToDexCodeOptimizations);
+              options.enableDexToDexCodeOptimizations = true;
+            })
+        .applyIf(enableMappingOutput, D8TestBuilder::internalEnableMappingOutput)
+        .release()
+        .setMinApi(AndroidApiLevel.M)
+        .compile()
+        .inspect(inspector -> inspect(inspector, !enableMappingOutput, false));
 
     // Dex-to-dex optimizations should optimize the code.
     Path reoptimizedCompileResult =
@@ -94,7 +111,7 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
             .release()
             .setMinApi(AndroidApiLevel.N)
             .compile()
-            .inspect(inspector -> inspect(inspector, true))
+            .inspect(inspector -> inspect(inspector, enableMappingOutput, true))
             .writeToZip();
     Collection<Marker> reoptimizedMarkers =
         ExtractMarkerUtils.extractMarkersFromFile(reoptimizedCompileResult);
@@ -112,25 +129,24 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
             markerMinApi(AndroidApiLevel.N)));
   }
 
-  private void inspect(CodeInspector inspector, boolean optimized) {
+  private void inspect(CodeInspector inspector, boolean expectPc, boolean expectOptimized) {
     ClassSubject mainClass = inspector.clazz(Main.class);
     MethodSubject mainMethod = mainClass.mainMethod();
     MethodSubject aboveMethod = mainClass.uniqueMethodWithFinalName("above");
     MethodSubject belowMethod = mainClass.uniqueMethodWithFinalName("below");
     assertThat(mainMethod, invokesMethod(aboveMethod));
-    assertThat(mainMethod, notIf(invokesMethod(belowMethod), optimized));
+    assertThat(mainMethod, notIf(invokesMethod(belowMethod), expectOptimized));
+    assertEquals(
+        expectPc, mainMethod.getMethod().getCode().asDexCode().getDebugInfo().isPcBasedInfo());
+    assertTrue(aboveMethod.getMethod().getCode().asDexCode().getDebugInfo().isPcBasedInfo());
+    assertTrue(belowMethod.getMethod().getCode().asDexCode().getDebugInfo().isPcBasedInfo());
   }
 
-  private static Collection<byte[]> getProgramClassFileData() throws NoSuchFieldException {
-    return ImmutableList.of(
-        transformer(Main.class)
-            .replaceClassDescriptorInMethodInstructions(
-                descriptor(VERSION.class), "Landroid/os/Build$VERSION;")
-            .transform(),
-        transformer(VERSION.class)
-            .setClassDescriptor("Landroid/os/Build$VERSION;")
-            .setAccessFlags(VERSION.class.getDeclaredField("SDK_INT"), AccessFlags::setFinal)
-            .transform());
+  private static byte[] getMainClassFileData() {
+    return transformer(Main.class)
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(VERSION.class), "Landroid/os/Build$VERSION;")
+        .transform();
   }
 
   static class Main {

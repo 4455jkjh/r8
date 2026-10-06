@@ -379,7 +379,7 @@ public class IRConverter {
   }
 
   private boolean needsIRConversion(
-      ProgramMethod method, MethodConversionOptions conversionOptions) {
+      ProgramMethod method, MutableMethodConversionOptions conversionOptions) {
     if (method.getDefinition().getCode().isThrowNullCode()) {
       return false;
     }
@@ -393,8 +393,14 @@ public class IRConverter {
       return !conversionOptions.isGeneratingClassFiles();
     } else {
       assert method.getDefinition().getCode().isDexCode();
-      assert !options.passthroughDexCode
-          || DexToDexCodeOptimizations.shouldOptimize(appView, method);
+      if (options.passthroughDexCode) {
+        // When dex-to-dex optimizations are enabled, avoid exploding debug info by not committing
+        // code that was not subject to the optimizations we were looking to apply.
+        assert DexToDexCodeOptimizations.shouldOptimize(appView, method);
+        if (!options.shouldOutputMappingFile()) {
+          conversionOptions.setBranchSimplificationRequired();
+        }
+      }
       return true;
     }
   }
@@ -990,6 +996,10 @@ public class IRConverter {
       BytecodeMetadataProvider bytecodeMetadataProvider,
       Timing timing,
       String printString) {
+    if (code.getConversionOptions().isBranchSimplificationRequired()
+        && !code.getConversionOptions().hasSeenBranchSimplification()) {
+      return;
+    }
     if (options.testing.roundtripThroughLir) {
       code = roundtripThroughLir(code, bytecodeMetadataProvider, timing);
     }

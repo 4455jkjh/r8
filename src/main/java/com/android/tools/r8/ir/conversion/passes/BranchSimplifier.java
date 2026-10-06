@@ -42,6 +42,7 @@ import com.android.tools.r8.ir.code.Ushr;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.code.Xor;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AffectedValues;
@@ -161,6 +162,9 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       }
     }
     if (simplified) {
+      if (code.getConversionOptions().isBranchSimplificationRequired()) {
+        code.mutateConversionOptions(MutableMethodConversionOptions::setSeenBranchSimplification);
+      }
       AffectedValues affectedValues = code.removeUnreachableBlocks();
       code.removeAllDeadAndTrivialPhis(null, affectedValues);
       affectedValues.narrowingWithAssumeRemoval(appView, code);
