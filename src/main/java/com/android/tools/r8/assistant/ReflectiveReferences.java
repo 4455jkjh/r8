@@ -12,6 +12,8 @@ public class ReflectiveReferences {
   public final DexType reflectiveOracleType;
   public final DexType reflectiveOperationReceiverType;
   public final DexMethod getReceiverMethod;
+  public final DexMethod onReturnObjectMethod;
+  public final DexMethod onReturnBooleanMethod;
 
   public ReflectiveReferences(DexItemFactory factory) {
     this.reflectiveOracleType = factory.createType(getDescriptor("ReflectiveOracle"));
@@ -22,6 +24,16 @@ public class ReflectiveReferences {
             reflectiveOracleType,
             factory.createProto(reflectiveOperationReceiverType),
             "getReceiver");
+    this.onReturnObjectMethod =
+        factory.createMethod(
+            reflectiveOracleType,
+            factory.createProto(factory.voidType, factory.intType, factory.objectType),
+            "onReturn");
+    this.onReturnBooleanMethod =
+        factory.createMethod(
+            reflectiveOracleType,
+            factory.createProto(factory.voidType, factory.intType, factory.booleanType),
+            "onReturn");
   }
 
   private static String getDescriptor(String className) {

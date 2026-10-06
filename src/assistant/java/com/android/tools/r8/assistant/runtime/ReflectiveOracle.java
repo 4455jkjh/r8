@@ -89,211 +89,257 @@ public class ReflectiveOracle {
     }
   }
 
-  public static void onClassNewInstance(Class<?> clazz) {
-    getInstance().onClassNewInstance(Stack.createStack(), clazz);
+  public static int onClassNewInstance(Class<?> clazz) {
+    return getInstance().onClassNewInstance(Stack.createStack(), clazz);
   }
 
-  public static void onClassForNameDefault(String className) {
+  public static int onClassForNameDefault(String className) {
+    if (className == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
     // The last parameter is implicitly the caller's holder class class loader.
-    getInstance().onClassForName(Stack.createStack(), className, true, null);
+    return getInstance().onClassForName(Stack.createStack(), className, true, null);
   }
 
-  public static void onClassForNameWithLoader(
+  public static int onClassForNameWithLoader(
       String className, boolean initialize, ClassLoader classLoader) {
-    getInstance().onClassForName(Stack.createStack(), className, initialize, classLoader);
+    if (className == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
+    return getInstance().onClassForName(Stack.createStack(), className, initialize, classLoader);
   }
 
-  public static void onClassGetDeclaredMethod(Class<?> clazz, String name, Class<?>... parameters) {
+  public static int onClassGetDeclaredMethod(Class<?> clazz, String name, Class<?>... parameters) {
+    if (clazz == null || name == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
     Class<?> returnType = null;
     try {
       Method declaredMethod = clazz.getDeclaredMethod(name, parameters);
       returnType = declaredMethod.getReturnType();
-    } catch (NoSuchMethodException e) {
+    } catch (NoSuchMethodException | RuntimeException | LinkageError e) {
+      // Logged as a failed lookup; the reflective call that follows throws the same exception.
     }
-    getInstance()
+    return getInstance()
         .onClassGetDeclaredMethod(Stack.createStack(), returnType, clazz, name, parameters);
   }
 
-  public static void onClassGetDeclaredMethods(Class<?> clazz) {
-    getInstance().onClassGetDeclaredMethods(Stack.createStack(), clazz);
+  public static int onClassGetDeclaredMethods(Class<?> clazz) {
+    return getInstance().onClassGetDeclaredMethods(Stack.createStack(), clazz);
   }
 
-  public static void onClassGetDeclaredField(Class<?> clazz, String fieldName) {
+  public static int onClassGetDeclaredField(Class<?> clazz, String fieldName) {
+    if (clazz == null || fieldName == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
     Class<?> fieldType = null;
     try {
       fieldType = clazz.getDeclaredField(fieldName).getType();
-    } catch (NoSuchFieldException e) {
+    } catch (NoSuchFieldException | RuntimeException | LinkageError e) {
+      // Logged as a failed lookup; the reflective call that follows throws the same exception.
     }
-    getInstance().onClassGetDeclaredField(Stack.createStack(), fieldType, clazz, fieldName);
+    return getInstance().onClassGetDeclaredField(Stack.createStack(), fieldType, clazz, fieldName);
   }
 
-  public static void onClassGetDeclaredFields(Class<?> clazz) {
-    getInstance().onClassGetDeclaredFields(Stack.createStack(), clazz);
+  public static int onClassGetDeclaredFields(Class<?> clazz) {
+    return getInstance().onClassGetDeclaredFields(Stack.createStack(), clazz);
   }
 
-  public static void onClassGetDeclaredConstructor(Class<?> clazz, Class<?>... parameters) {
-    getInstance().onClassGetDeclaredConstructor(Stack.createStack(), clazz, parameters);
+  public static int onClassGetDeclaredConstructor(Class<?> clazz, Class<?>... parameters) {
+    if (clazz == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
+    return getInstance().onClassGetDeclaredConstructor(Stack.createStack(), clazz, parameters);
   }
 
-  public static void onClassGetDeclaredConstructors(Class<?> clazz) {
-    getInstance().onClassGetDeclaredConstructors(Stack.createStack(), clazz);
+  public static int onClassGetDeclaredConstructors(Class<?> clazz) {
+    return getInstance().onClassGetDeclaredConstructors(Stack.createStack(), clazz);
   }
 
-  public static void onClassGetMethod(Class<?> clazz, String name, Class<?>[] parameterTypes) {
+  public static int onClassGetMethod(Class<?> clazz, String name, Class<?>[] parameterTypes) {
+    if (clazz == null || name == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
     Class<?> returnType = null;
     try {
       returnType = clazz.getMethod(name, parameterTypes).getReturnType();
-    } catch (NoSuchMethodException e) {
+    } catch (NoSuchMethodException | RuntimeException | LinkageError e) {
+      // Logged as a failed lookup; the reflective call that follows throws the same exception.
     }
-    getInstance().onClassGetMethod(Stack.createStack(), returnType, clazz, name, parameterTypes);
+    return getInstance()
+        .onClassGetMethod(Stack.createStack(), returnType, clazz, name, parameterTypes);
   }
 
-  public static void onClassGetMethods(Class<?> clazz) {
-    getInstance().onClassGetMethods(Stack.createStack(), clazz);
+  public static int onClassGetMethods(Class<?> clazz) {
+    return getInstance().onClassGetMethods(Stack.createStack(), clazz);
   }
 
-  public static void onClassGetField(Class<?> clazz, String name) {
+  public static int onClassGetField(Class<?> clazz, String name) {
+    if (clazz == null || name == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
     Class<?> fieldType = null;
     try {
       fieldType = clazz.getField(name).getType();
-    } catch (NoSuchFieldException e) {
+    } catch (NoSuchFieldException | RuntimeException | LinkageError e) {
+      // Logged as a failed lookup; the reflective call that follows throws the same exception.
     }
-    getInstance().onClassGetField(Stack.createStack(), fieldType, clazz, name);
+    return getInstance().onClassGetField(Stack.createStack(), fieldType, clazz, name);
   }
 
-  public static void onClassGetFields(Class<?> clazz) {
-    getInstance().onClassGetFields(Stack.createStack(), clazz);
+  public static int onClassGetFields(Class<?> clazz) {
+    return getInstance().onClassGetFields(Stack.createStack(), clazz);
   }
 
-  public static void onClassGetConstructor(Class<?> clazz, Class<?>... parameterTypes) {
-    getInstance().onClassGetConstructor(Stack.createStack(), clazz, parameterTypes);
+  public static int onClassGetConstructor(Class<?> clazz, Class<?>... parameterTypes) {
+    if (clazz == null) {
+      return ReflectiveOperationReceiver.NO_ID;
+    }
+    return getInstance().onClassGetConstructor(Stack.createStack(), clazz, parameterTypes);
   }
 
-  public static void onClassGetConstructors(Class<?> clazz) {
-    getInstance().onClassGetConstructors(Stack.createStack(), clazz);
+  public static int onClassGetConstructors(Class<?> clazz) {
+    return getInstance().onClassGetConstructors(Stack.createStack(), clazz);
   }
 
-  public static void onClassGetName(Class<?> clazz) {
-    getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.NAME);
+  public static int onClassGetName(Class<?> clazz) {
+    return getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.NAME);
   }
 
-  public static void onClassGetSimpleName(Class<?> clazz) {
-    getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.SIMPLE_NAME);
+  public static int onClassGetSimpleName(Class<?> clazz) {
+    return getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.SIMPLE_NAME);
   }
 
-  public static void onClassGetCanonicalName(Class<?> clazz) {
-    getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.CANONICAL_NAME);
+  public static int onClassGetCanonicalName(Class<?> clazz) {
+    return getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.CANONICAL_NAME);
   }
 
-  public static void onClassGetTypeName(Class<?> clazz) {
-    getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.TYPE_NAME);
+  public static int onClassGetTypeName(Class<?> clazz) {
+    return getInstance().onClassGetName(Stack.createStack(), clazz, NameLookupType.TYPE_NAME);
   }
 
-  public static void onClassGetSuperclass(Class<?> clazz) {
-    getInstance().onClassGetSuperclass(Stack.createStack(), clazz);
+  public static int onClassGetSuperclass(Class<?> clazz) {
+    return getInstance().onClassGetSuperclass(Stack.createStack(), clazz);
   }
 
-  public static void onClassAsSubclass(Class<?> holder, Class<?> clazz) {
-    getInstance().onClassAsSubclass(Stack.createStack(), holder, clazz);
+  public static int onClassAsSubclass(Class<?> holder, Class<?> clazz) {
+    return getInstance().onClassAsSubclass(Stack.createStack(), holder, clazz);
   }
 
-  public static void onClassIsInstance(Class<?> holder, Object object) {
-    getInstance().onClassIsInstance(Stack.createStack(), holder, object);
+  public static int onClassIsInstance(Class<?> holder, Object object) {
+    return getInstance().onClassIsInstance(Stack.createStack(), holder, object);
   }
 
-  public static void onClassCast(Class<?> holder, Object object) {
-    getInstance().onClassCast(Stack.createStack(), holder, object);
+  public static int onClassCast(Class<?> holder, Object object) {
+    return getInstance().onClassCast(Stack.createStack(), holder, object);
   }
 
-  public static void onClassGetComponentType(Class<?> clazz) {
-    getInstance().onClassGetComponentType(Stack.createStack(), clazz);
+  public static int onClassGetComponentType(Class<?> clazz) {
+    return getInstance().onClassGetComponentType(Stack.createStack(), clazz);
   }
 
-  public static void onClassGetPackage(Class<?> clazz) {
-    getInstance().onClassGetPackage(Stack.createStack(), clazz);
+  public static int onClassGetPackage(Class<?> clazz) {
+    return getInstance().onClassGetPackage(Stack.createStack(), clazz);
   }
 
-  public static void onClassIsAssignableFrom(Class<?> clazz, Class<?> sup) {
-    getInstance().onClassIsAssignableFrom(Stack.createStack(), clazz, sup);
+  public static int onClassIsAssignableFrom(Class<?> clazz, Class<?> sup) {
+    return getInstance().onClassIsAssignableFrom(Stack.createStack(), clazz, sup);
   }
 
-  public static void onClassIsAnnotation(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ANNOTATION);
+  public static int onClassIsAnnotation(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ANNOTATION);
   }
 
-  public static void onClassIsAnonymousClass(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ANONYMOUS_CLASS);
+  public static int onClassIsAnonymousClass(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ANONYMOUS_CLASS);
   }
 
-  public static void onClassIsArray(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ARRAY);
+  public static int onClassIsArray(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ARRAY);
   }
 
-  public static void onClassIsEnum(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ENUM);
+  public static int onClassIsEnum(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.ENUM);
   }
 
-  public static void onClassIsHidden(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.HIDDEN);
+  public static int onClassIsHidden(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.HIDDEN);
   }
 
-  public static void onClassIsInterface(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.INTERFACE);
+  public static int onClassIsInterface(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.INTERFACE);
   }
 
-  public static void onClassIsLocalClass(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.LOCAL_CLASS);
+  public static int onClassIsLocalClass(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.LOCAL_CLASS);
   }
 
-  public static void onClassIsMemberClass(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.MEMBER_CLASS);
+  public static int onClassIsMemberClass(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.MEMBER_CLASS);
   }
 
-  public static void onClassIsPrimitive(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.PRIMITIVE);
+  public static int onClassIsPrimitive(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.PRIMITIVE);
   }
 
-  public static void onClassIsRecord(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.RECORD);
+  public static int onClassIsRecord(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.RECORD);
   }
 
-  public static void onClassIsSealed(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.SEALED);
+  public static int onClassIsSealed(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.SEALED);
   }
 
-  public static void onClassIsSynthetic(Class<?> clazz) {
-    getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.SYNTHETIC);
+  public static int onClassIsSynthetic(Class<?> clazz) {
+    return getInstance().onClassFlag(Stack.createStack(), clazz, ClassFlag.SYNTHETIC);
   }
 
-  public static void onAtomicIntegerFieldUpdaterNewUpdater(Class<?> clazz, String name) {
-    getInstance().onAtomicFieldUpdaterNewUpdater(Stack.createStack(), int.class, clazz, name);
+  public static int onAtomicIntegerFieldUpdaterNewUpdater(Class<?> clazz, String name) {
+    return getInstance()
+        .onAtomicFieldUpdaterNewUpdater(Stack.createStack(), int.class, clazz, name);
   }
 
-  public static void onAtomicLongFieldUpdaterNewUpdater(Class<?> clazz, String name) {
-    getInstance().onAtomicFieldUpdaterNewUpdater(Stack.createStack(), long.class, clazz, name);
+  public static int onAtomicLongFieldUpdaterNewUpdater(Class<?> clazz, String name) {
+    return getInstance()
+        .onAtomicFieldUpdaterNewUpdater(Stack.createStack(), long.class, clazz, name);
   }
 
-  public static void onAtomicReferenceFieldUpdaterNewUpdater(
+  public static int onAtomicReferenceFieldUpdaterNewUpdater(
       Class<?> clazz, Class<?> fieldClass, String name) {
-    getInstance().onAtomicFieldUpdaterNewUpdater(Stack.createStack(), fieldClass, clazz, name);
+    return getInstance()
+        .onAtomicFieldUpdaterNewUpdater(Stack.createStack(), fieldClass, clazz, name);
   }
 
-  public static void onServiceLoaderLoad(Class<?> clazz) {
-    getInstance().onServiceLoaderLoad(Stack.createStack(), clazz, null);
+  public static int onServiceLoaderLoad(Class<?> clazz) {
+    return getInstance().onServiceLoaderLoad(Stack.createStack(), clazz, null);
   }
 
-  public static void onServiceLoaderLoadWithClassLoader(Class<?> clazz, ClassLoader classLoader) {
-    getInstance().onServiceLoaderLoad(Stack.createStack(), clazz, classLoader);
+  public static int onServiceLoaderLoadWithClassLoader(Class<?> clazz, ClassLoader classLoader) {
+    return getInstance().onServiceLoaderLoad(Stack.createStack(), clazz, classLoader);
   }
 
-  public static void onServiceLoaderLoadInstalled(Class<?> clazz) {
-    getInstance()
+  public static int onServiceLoaderLoadInstalled(Class<?> clazz) {
+    return getInstance()
         .onServiceLoaderLoad(Stack.createStack(), clazz, ClassLoader.getSystemClassLoader());
   }
 
-  public static void onProxyNewProxyInstance(
+  public static int onProxyNewProxyInstance(
       ClassLoader classLoader, Class<?>[] interfaces, InvocationHandler invocationHandler) {
-    getInstance()
+    return getInstance()
         .onProxyNewProxyInstance(Stack.createStack(), classLoader, interfaces, invocationHandler);
+  }
+
+  // Called after an instrumented reflective call returns normally, with the id returned by the
+  // corresponding onXxx stub before the call.
+  public static void onReturn(int id, Object result) {
+    if (id != ReflectiveOperationReceiver.NO_ID) {
+      getInstance().onReflectiveOperationReturned(id, result);
+    }
+  }
+
+  public static void onReturn(int id, boolean result) {
+    if (id != ReflectiveOperationReceiver.NO_ID) {
+      getInstance().onReflectiveOperationReturned(id, result);
+    }
   }
 }

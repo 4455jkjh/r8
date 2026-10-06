@@ -7,69 +7,75 @@ import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.lang.reflect.InvocationHandler;
 
+// The onXxx callbacks are called before the reflective call and return an id for the event, or
+// NO_ID if the receiver does not track results. If the reflective call returns normally,
+// onReflectiveOperationReturned is called with that id and the result (booleans are boxed).
 @KeepForApi
 public interface ReflectiveOperationReceiver {
 
+  int NO_ID = -1;
+
   boolean requiresStackInformation();
 
-  void onClassForName(Stack stack, String className, boolean initialize, ClassLoader classLoader);
+  int onClassForName(Stack stack, String className, boolean initialize, ClassLoader classLoader);
 
-  void onClassNewInstance(Stack stack, Class<?> clazz);
+  int onClassNewInstance(Stack stack, Class<?> clazz);
 
-  void onClassGetDeclaredMethod(
+  int onClassGetDeclaredMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters);
 
-  void onClassGetDeclaredMethods(Stack stack, Class<?> clazz);
+  int onClassGetDeclaredMethods(Stack stack, Class<?> clazz);
 
-  void onClassGetDeclaredField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName);
+  int onClassGetDeclaredField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName);
 
-  void onClassGetDeclaredFields(Stack stack, Class<?> clazz);
+  int onClassGetDeclaredFields(Stack stack, Class<?> clazz);
 
-  void onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters);
+  int onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters);
 
-  void onClassGetDeclaredConstructors(Stack stack, Class<?> clazz);
+  int onClassGetDeclaredConstructors(Stack stack, Class<?> clazz);
 
-  void onClassGetMethod(
+  int onClassGetMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters);
 
-  void onClassGetMethods(Stack stack, Class<?> clazz);
+  int onClassGetMethods(Stack stack, Class<?> clazz);
 
-  void onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName);
+  int onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName);
 
-  void onClassGetFields(Stack stack, Class<?> clazz);
+  int onClassGetFields(Stack stack, Class<?> clazz);
 
-  void onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters);
+  int onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters);
 
-  void onClassGetConstructors(Stack stack, Class<?> clazz);
+  int onClassGetConstructors(Stack stack, Class<?> clazz);
 
-  void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType);
+  int onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType);
 
-  void onClassGetSuperclass(Stack stack, Class<?> clazz);
+  int onClassGetSuperclass(Stack stack, Class<?> clazz);
 
-  void onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz);
+  int onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz);
 
-  void onClassIsInstance(Stack stack, Class<?> holder, Object object);
+  int onClassIsInstance(Stack stack, Class<?> holder, Object object);
 
-  void onClassCast(Stack stack, Class<?> holder, Object object);
+  int onClassCast(Stack stack, Class<?> holder, Object object);
 
-  void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag);
+  int onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag);
 
-  void onClassGetComponentType(Stack stack, Class<?> clazz);
+  int onClassGetComponentType(Stack stack, Class<?> clazz);
 
-  void onClassGetPackage(Stack stack, Class<?> clazz);
+  int onClassGetPackage(Stack stack, Class<?> clazz);
 
-  void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup);
+  int onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup);
 
-  void onAtomicFieldUpdaterNewUpdater(
-      Stack stack, Class<?> fieldClass, Class<?> clazz, String name);
+  int onAtomicFieldUpdaterNewUpdater(Stack stack, Class<?> fieldClass, Class<?> clazz, String name);
 
-  void onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader);
+  int onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader);
 
-  void onProxyNewProxyInstance(
+  int onProxyNewProxyInstance(
       Stack stack,
       ClassLoader classLoader,
       Class<?>[] interfaces,
       InvocationHandler invocationHandler);
+
+  void onReflectiveOperationReturned(int id, Object result);
 
   @KeepForApi
   enum ClassFlag {

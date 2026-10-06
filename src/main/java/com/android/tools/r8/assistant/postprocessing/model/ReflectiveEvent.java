@@ -5,16 +5,21 @@
 package com.android.tools.r8.assistant.postprocessing.model;
 
 import com.android.tools.r8.assistant.runtime.ReflectiveEventType;
+import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.utils.DescriptorUtils;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public abstract class ReflectiveEvent {
 
   private final ReflectiveEventType eventType;
   private final String[] stack;
+  private int id = ReflectiveOperationReceiver.NO_ID;
+  private final List<Object> results = new ArrayList<>();
 
   protected static DexType toTypeOrTripleStar(String javaType, DexItemFactory factory) {
     if (javaType == null) {
@@ -38,6 +43,36 @@ public abstract class ReflectiveEvent {
 
   public String[] getStack() {
     return stack;
+  }
+
+  public int getId() {
+    return id;
+  }
+
+  public void setId(int id) {
+    this.id = id;
+  }
+
+  // The distinct results of the normal returns of the operation, as summarized by the logger: null,
+  // a Boolean, a String, or a List<String> of member signatures. Empty if it never returned
+  // normally, for example because it threw.
+  public List<Object> getResults() {
+    return results;
+  }
+
+  public void addResult(Object result) {
+    results.add(result);
+  }
+
+  public boolean hasReturned() {
+    return !results.isEmpty();
+  }
+
+  // True if the log records the outcome of this event (it has an id) and it never returned
+  // normally. Logs written without after-call hooks have no ids, and their events are assumed to
+  // have succeeded.
+  public boolean neverReturned() {
+    return id != ReflectiveOperationReceiver.NO_ID && !hasReturned();
   }
 
   public boolean isAtomicFieldUpdaterNewUpdater() {

@@ -49,9 +49,10 @@ public class AtomicUpdaterTest extends TestBase {
   public static class Instrumentation extends EmptyReflectiveOperationReceiver {
 
     @Override
-    public void onAtomicFieldUpdaterNewUpdater(
+    public int onAtomicFieldUpdaterNewUpdater(
         Stack stack, Class<?> fieldClass, Class<?> clazz, String name) {
       System.out.println(fieldClass.getName() + " " + clazz.getName() + "#" + name);
+      return NO_ID;
     }
   }
 }

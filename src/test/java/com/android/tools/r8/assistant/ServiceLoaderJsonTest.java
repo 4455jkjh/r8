@@ -17,6 +17,7 @@ import com.android.tools.r8.assistant.runtime.ReflectiveOperationJsonLogger;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.utils.internal.Box;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -71,6 +72,12 @@ public class ServiceLoaderJsonTest extends TestBase {
     ServiceLoaderLoad updater2 = reflectiveEvents.get(2).asServiceLoaderLoad();
     assertEquals(
         ServiceLoaderTestClass.NameService.class.getName(), updater2.getType().toSourceString());
+
+    for (int i = 0; i < reflectiveEvents.size(); i++) {
+      assertEquals(i, reflectiveEvents.get(i).getId());
+      assertEquals(
+          ImmutableList.of("java.util.ServiceLoader"), reflectiveEvents.get(i).getResults());
+    }
 
     Box<KeepInfoCollectionExported> keepInfoBox = new Box<>();
     testForR8(parameters)

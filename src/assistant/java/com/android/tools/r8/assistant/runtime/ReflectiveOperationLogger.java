@@ -24,8 +24,9 @@ public class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
   }
 
   @Override
-  public void onClassNewInstance(Stack stack, Class<?> clazz) {
+  public int onClassNewInstance(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively created new instance of " + clazz.getName());
+    return NO_ID;
   }
 
   private String printMethod(String method, Class<?>... parameters) {
@@ -45,19 +46,19 @@ public class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
     }
     StringBuilder sb = new StringBuilder();
     sb.append("(");
-    Class<?> first = parameters[0];
-    for (Class<?> parameter : parameters) {
-      if (parameter != first) {
+    for (int i = 0; i < parameters.length; i++) {
+      if (i > 0) {
         sb.append(", ");
       }
-      sb.append(parameter.getName());
+      Class<?> parameter = parameters[i];
+      sb.append(parameter == null ? "null" : parameter.getName());
     }
     sb.append(")");
     return sb.toString();
   }
 
   @Override
-  public void onClassGetDeclaredMethod(
+  public int onClassGetDeclaredMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
     report(
         stack,
@@ -65,131 +66,153 @@ public class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
             + printMethod(method, parameters)
             + " on "
             + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
+  public int onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively got declared methods on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetDeclaredField(
+  public int onClassGetDeclaredField(
       Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
     report(stack, "Reflectively got declared field " + fieldName + " on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
+  public int onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively got declared fields on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+  public int onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
     report(
         stack,
         "Reflectively got declared constructor "
             + printConstructor(parameters)
             + " on "
             + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
+  public int onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively got declared constructors on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetMethod(
+  public int onClassGetMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
     report(
         stack,
         "Reflectively got method " + printMethod(method, parameters) + " on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetMethods(Stack stack, Class<?> clazz) {
+  public int onClassGetMethods(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively got methods on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
+  public int onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
     report(stack, "Reflectively got field " + fieldName + " on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetFields(Stack stack, Class<?> clazz) {
+  public int onClassGetFields(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively got fields on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+  public int onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
     report(
         stack,
         "Reflectively got constructor " + printConstructor(parameters) + " on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetConstructors(Stack stack, Class<?> clazz) {
+  public int onClassGetConstructors(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively got constructors on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
+  public int onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
     report(
         stack, "Reflectively got name on " + clazz.getName() + "(" + lookupType.toString() + ")");
+    return NO_ID;
   }
 
   @Override
-  public void onClassForName(
+  public int onClassForName(
       Stack stack, String className, boolean initialize, ClassLoader classLoader) {
     report(stack, "Reflectively called Class.forName on " + className);
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetComponentType(Stack stack, Class<?> clazz) {
+  public int onClassGetComponentType(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively called Class.getComponentType on " + clazz);
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetPackage(Stack stack, Class<?> clazz) {
+  public int onClassGetPackage(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively called Class.getPackage on " + clazz);
+    return NO_ID;
   }
 
   @Override
-  public void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
+  public int onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
     report(stack, "Reflectively called Class.isAssignableFrom on " + clazz + " with " + sup);
+    return NO_ID;
   }
 
   @Override
-  public void onClassGetSuperclass(Stack stack, Class<?> clazz) {
+  public int onClassGetSuperclass(Stack stack, Class<?> clazz) {
     report(stack, "Reflectively called Class.getSuperclass on " + clazz.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
+  public int onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
     report(
         stack,
         "Reflectively called Class.asSubclass on " + clazz.getName() + " from " + holder.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassIsInstance(Stack stack, Class<?> holder, Object object) {
+  public int onClassIsInstance(Stack stack, Class<?> holder, Object object) {
     report(
         stack, "Reflectively called Class.isInstance on " + object + " from " + holder.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassCast(Stack stack, Class<?> holder, Object object) {
+  public int onClassCast(Stack stack, Class<?> holder, Object object) {
     report(stack, "Reflectively called Class.cast on " + object + " from " + holder.getName());
+    return NO_ID;
   }
 
   @Override
-  public void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {
+  public int onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {
     report(stack, "Reflectively got class flag " + classFlag);
+    return NO_ID;
   }
 
   @Override
-  public void onAtomicFieldUpdaterNewUpdater(
+  public int onAtomicFieldUpdaterNewUpdater(
       Stack stack, Class<?> fieldClass, Class<?> clazz, String name) {
     report(
         stack,
@@ -199,15 +222,17 @@ public class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
             + clazz
             + "#"
             + name);
+    return NO_ID;
   }
 
   @Override
-  public void onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
+  public int onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
     report(stack, "Reflectively got ServiceLoader.load on " + clazz + " with " + classLoader);
+    return NO_ID;
   }
 
   @Override
-  public void onProxyNewProxyInstance(
+  public int onProxyNewProxyInstance(
       Stack stack,
       ClassLoader classLoader,
       Class<?>[] interfaces,
@@ -220,7 +245,11 @@ public class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
             + classLoader
             + " and "
             + invocationHandler);
+    return NO_ID;
   }
+
+  @Override
+  public void onReflectiveOperationReturned(int id, Object result) {}
 
   public boolean requiresStackInformation() {
     return true;

@@ -25,10 +25,12 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.Box;
+import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
@@ -168,6 +170,45 @@ public class JavaLangClassJsonTest extends TestBase {
     ClassNewInstance updater28 = reflectiveEvents.get(28).asClassNewInstance();
     assertEquals(ReflectiveEventType.CLASS_NEW_INSTANCE, updater28.getEventType());
     assertEquals(Bar.class.getName(), updater28.getType().toSourceString());
+
+    for (int i = 0; i < reflectiveEvents.size(); i++) {
+      assertEquals(i, reflectiveEvents.get(i).getId());
+    }
+    String fooName = Foo.class.getName();
+    String barName = Bar.class.getName();
+    assertEquals(ImmutableList.of(fooName), reflectiveEvents.get(1).getResults());
+    assertEquals(ImmutableList.of("java.lang.Object"), reflectiveEvents.get(2).getResults());
+    assertEquals(ImmutableList.of("void barr()"), updater03.getResults());
+    assertEquals(ImmutableList.of("int a"), updater04.getResults());
+    assertEquals(
+        ImmutableList.of(ImmutableList.of("void barr()", "void foo()", "void fooBar()")),
+        updater06.getResults());
+    assertEquals(ImmutableList.of(ImmutableList.of("int a", "int b")), updater07.getResults());
+    assertEquals(ImmutableList.of("<init>()"), updater08.getResults());
+    assertEquals(ImmutableList.of(ImmutableList.of("<init>()")), updater09.getResults());
+    assertEquals(ImmutableList.of(fooName), updater10.getResults());
+    assertEquals(
+        ImmutableList.of("com.android.tools.r8.assistant.JavaLangClassTestClass.Foo"),
+        updater11.getResults());
+    assertEquals(ImmutableList.of("Foo"), updater12.getResults());
+    // Class.getTypeName() throws NoSuchMethodError before API level 26.
+    assertEquals(
+        parameters.getApiLevel().isLessThan(AndroidApiLevel.O)
+            ? ImmutableList.of()
+            : ImmutableList.of(fooName),
+        updater13.getResults());
+    assertEquals(Collections.singletonList(null), reflectiveEvents.get(16).getResults());
+    assertEquals(ImmutableList.of("java.lang.Package"), reflectiveEvents.get(17).getResults());
+    assertEquals(ImmutableList.of(false), reflectiveEvents.get(18).getResults());
+    assertEquals(
+        ImmutableList.of(ImmutableList.of("int a", "int b", "int i")), updater20.getResults());
+    assertEquals(ImmutableList.of("int bar()"), updater22.getResults());
+    assertEquals(ImmutableList.of("int i"), updater23.getResults());
+    assertEquals(ImmutableList.of("<init>()"), updater24.getResults());
+    assertEquals(ImmutableList.of(barName), reflectiveEvents.get(25).getResults());
+    assertEquals(ImmutableList.of(true), reflectiveEvents.get(26).getResults());
+    assertEquals(ImmutableList.of(barName), reflectiveEvents.get(27).getResults());
+    assertEquals(ImmutableList.of(barName), updater28.getResults());
 
     Box<KeepInfoCollectionExported> keepInfoBox = new Box<>();
     testForR8(parameters)

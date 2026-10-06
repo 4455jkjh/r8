@@ -16,6 +16,7 @@ import com.android.tools.r8.assistant.runtime.ReflectiveOperationJsonLogger;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.utils.internal.Box;
+import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -64,6 +65,14 @@ public class ClassForNameJsonTest extends TestBase {
     assertEquals(
         "com.android.tools.r8.assistant.ClassForNameTestClass",
         event0.getClassName().getTypeName());
+    assertEquals(0, event0.getId());
+    assertEquals(
+        ImmutableList.of("com.android.tools.r8.assistant.ClassForNameTestClass"),
+        event0.getResults());
+    assertEquals(1, reflectiveEvents.get(1).getId());
+    assertEquals(
+        ImmutableList.of("com.android.tools.r8.assistant.ClassForNameTestClass"),
+        reflectiveEvents.get(1).getResults());
 
     Box<KeepInfoCollectionExported> keepInfoBox = new Box<>();
     testForR8(parameters)

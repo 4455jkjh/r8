@@ -243,7 +243,7 @@ public class InstrumentedReflectiveMethodList {
   private DexMethod getMethodReferenceWithParameterTypes(String name, DexType... dexTypes) {
     return factory.createMethod(
         reflectiveReferences.reflectiveOracleType,
-        factory.createProto(factory.voidType, dexTypes),
+        factory.createProto(factory.intType, dexTypes),
         name);
   }
 
@@ -251,7 +251,7 @@ public class InstrumentedReflectiveMethodList {
     return factory.createMethod(
         reflectiveReferences.reflectiveOracleType,
         factory.createProto(
-            factory.voidType, factory.classType, factory.stringType, factory.classArrayType),
+            factory.intType, factory.classType, factory.stringType, factory.classArrayType),
         name);
   }
 }

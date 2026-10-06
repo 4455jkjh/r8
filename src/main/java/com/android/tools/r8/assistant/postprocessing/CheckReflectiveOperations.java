@@ -23,7 +23,12 @@ public class CheckReflectiveOperations {
     List<ReflectiveEvent> reflectiveEvents = parser.parse(logFile);
     KeepInfoCollectionExported keepInfo = KeepInfoCollectionExported.parse(keepInfoDirectory);
     for (ReflectiveEvent event : reflectiveEvents) {
-      System.out.println("Event: " + event + ", isKept: " + event.isKeptBy(keepInfo));
+      if (event.neverReturned()) {
+        // The call threw already in the instrumented app, so there is nothing to keep for it.
+        System.out.println("Event: " + event + ", threw");
+      } else {
+        System.out.println("Event: " + event + ", isKept: " + event.isKeptBy(keepInfo));
+      }
     }
   }
 }

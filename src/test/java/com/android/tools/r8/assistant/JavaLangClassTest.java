@@ -101,92 +101,108 @@ public class JavaLangClassTest extends TestBase {
     }
 
     @Override
-    public void onClassForName(
+    public int onClassForName(
         Stack stack, String className, boolean initialize, ClassLoader classLoader) {
       printNumIfTrue(className.endsWith("Foo"), 1);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetComponentType(Stack stack, Class<?> clazz) {
+    public int onClassGetComponentType(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.toString().endsWith("Foo"), 12);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetPackage(Stack stack, Class<?> clazz) {
+    public int onClassGetPackage(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.toString().endsWith("Foo"), 13);
+      return NO_ID;
     }
 
     @Override
-    public void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
+    public int onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
       printNumIfTrue(clazz.toString().endsWith("Foo"), 15);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredMethod(
+    public int onClassGetDeclaredMethod(
         Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
       printNumIfTrue(clazz.getName().endsWith("Foo"), 2);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
+    public int onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Foo"), 4);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredField(
+    public int onClassGetDeclaredField(
         Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
       printNumIfTrue(
           clazz.getName().endsWith("Foo") && (fieldName.equals("a") || fieldName.equals("b")), 3);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
+    public int onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Foo"), 32);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    public int onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
       printNumIfTrue(clazz.getName().endsWith("Foo"), 30);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
+    public int onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Foo"), 31);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetMethod(
+    public int onClassGetMethod(
         Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
       printNumIfTrue(clazz.getName().endsWith("Bar"), 20);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetMethods(Stack stack, Class<?> clazz) {
+    public int onClassGetMethods(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Bar"), 22);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
+    public int onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
       printNumIfTrue(clazz.getName().endsWith("Bar"), 21);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetFields(Stack stack, Class<?> clazz) {
+    public int onClassGetFields(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Bar"), 33);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    public int onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
       printNumIfTrue(clazz.getName().endsWith("Bar"), 34);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetConstructors(Stack stack, Class<?> clazz) {
+    public int onClassGetConstructors(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Bar"), 35);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
+    public int onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
       if (lookupType == NameLookupType.NAME) {
         printNumIfTrue(clazz.getName().endsWith("Foo"), 5);
       }
@@ -199,31 +215,37 @@ public class JavaLangClassTest extends TestBase {
       if (lookupType == NameLookupType.TYPE_NAME) {
         printNumIfTrue(clazz.getName().endsWith("Foo"), 8);
       }
+      return NO_ID;
     }
 
     @Override
-    public void onClassNewInstance(Stack stack, Class<?> clazz) {
+    public int onClassNewInstance(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Bar"), 50);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetSuperclass(Stack stack, Class<?> clazz) {
+    public int onClassGetSuperclass(Stack stack, Class<?> clazz) {
       printNumIfTrue(clazz.getName().endsWith("Foo"), 9);
+      return NO_ID;
     }
 
     @Override
-    public void onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
+    public int onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
       printNumIfTrue(holder.getName().endsWith("Bar"), 40);
+      return NO_ID;
     }
 
     @Override
-    public void onClassIsInstance(Stack stack, Class<?> holder, Object object) {
+    public int onClassIsInstance(Stack stack, Class<?> holder, Object object) {
       printNumIfTrue(holder.getName().endsWith("Bar"), 41);
+      return NO_ID;
     }
 
     @Override
-    public void onClassCast(Stack stack, Class<?> holder, Object object) {
+    public int onClassCast(Stack stack, Class<?> holder, Object object) {
       printNumIfTrue(holder.getName().endsWith("Bar"), 42);
+      return NO_ID;
     }
   }
 }
