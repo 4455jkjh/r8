@@ -2622,6 +2622,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableAtomicFieldUpdaterLogs =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableAtomicFieldUpdaterExtenderLogs", false);
+    public boolean enableBasicBlockReorderer =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.basicblockreorderer", false);
     public boolean enableVerticalClassMergerLensAssertion = false;
     public boolean forceRedundantConstNumberRemoval = false;
     public boolean forceSplitReturnRewriter = false;
