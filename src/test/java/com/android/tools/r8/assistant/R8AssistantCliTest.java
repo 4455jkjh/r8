@@ -15,6 +15,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
+import com.android.tools.r8.assistant.cli.FakeAndroidSdk;
 import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -24,7 +25,9 @@ import java.io.BufferedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -81,8 +84,16 @@ public class R8AssistantCliTest extends TestBase {
   public void testAssistantJarOnApk() throws Exception {
     Path inputApk = buildTestApk();
     Path outputApk = temp.newFile("output.apk").toPath();
+    FakeAndroidSdk sdk = FakeAndroidSdk.create(temp.newFolder().toPath());
 
-    ProcessResult result = ToolHelper.runR8Assistant(inputApk, outputApk);
+    ProcessResult result =
+        ToolHelper.runR8Assistant(
+            inputApk,
+            outputApk,
+            "--sdk",
+            sdk.getDirectory().toString(),
+            "--ks",
+            sdk.getKeystore().toString());
     assertEquals(result.toString(), 0, result.exitCode);
 
     List<String> entryNames = new ArrayList<>();
@@ -111,6 +122,40 @@ public class R8AssistantCliTest extends TestBase {
     assertThat(logContent, containsString(Bar.class.getName()));
     assertThat(logContent, containsString("callMe"));
     assertThat(logContent, containsString("CLASS_FOR_NAME"));
+  }
+
+  @Test
+  public void testHelpVersionAndUsageOnJar() throws Exception {
+    ProcessResult helpResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."), ToolHelper.R8_ASSISTANT_LIB_JAR, Collections.singletonList("--help"));
+    assertEquals(helpResult.toString(), 0, helpResult.exitCode);
+    assertThat(
+        helpResult.stdout, containsString("Usage: java -jar r8-assistant.jar <command> [options]"));
+
+    ProcessResult instrumentHelpResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."), ToolHelper.R8_ASSISTANT_LIB_JAR, Arrays.asList("instrument", "--help"));
+    assertEquals(instrumentHelpResult.toString(), 0, instrumentHelpResult.exitCode);
+    assertThat(
+        instrumentHelpResult.stdout,
+        containsString("Usage: java -jar r8-assistant.jar instrument"));
+
+    ProcessResult versionResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."),
+            ToolHelper.R8_ASSISTANT_LIB_JAR,
+            Collections.singletonList("--version"));
+    assertEquals(versionResult.toString(), 0, versionResult.exitCode);
+    assertThat(versionResult.stdout, startsWith("R8 Assistant "));
+
+    ProcessResult invalidResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."),
+            ToolHelper.R8_ASSISTANT_LIB_JAR,
+            Collections.singletonList("--unknown"));
+    assertEquals(invalidResult.toString(), 2, invalidResult.exitCode);
+    assertThat(invalidResult.stderr, containsString("Unknown option: --unknown"));
   }
 
   @Test
