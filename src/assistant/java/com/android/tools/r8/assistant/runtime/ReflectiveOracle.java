@@ -9,6 +9,8 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 @KeepForApi
 public class ReflectiveOracle {
@@ -327,6 +329,48 @@ public class ReflectiveOracle {
       ClassLoader classLoader, Class<?>[] interfaces, InvocationHandler invocationHandler) {
     return getInstance()
         .onProxyNewProxyInstance(Stack.createStack(), classLoader, interfaces, invocationHandler);
+  }
+
+  public static int onClassGetGenericSuperclass(Class<?> clazz) {
+    return getInstance().onClassGetGenericSuperclass(Stack.createStack(), clazz);
+  }
+
+  public static int onClassGetGenericInterfaces(Class<?> clazz) {
+    return getInstance().onClassGetGenericInterfaces(Stack.createStack(), clazz);
+  }
+
+  public static int onClassLoaderLoadClass(ClassLoader classLoader, String className) {
+    return getInstance().onClassLoaderLoadClass(Stack.createStack(), classLoader, className);
+  }
+
+  public static int onResourceBundleGetBundle(String baseName) {
+    return getInstance().onResourceBundleGetBundle(Stack.createStack(), baseName, null, null);
+  }
+
+  public static int onResourceBundleGetBundleWithControl(
+      String baseName, ResourceBundle.Control control) {
+    return getInstance().onResourceBundleGetBundle(Stack.createStack(), baseName, null, null);
+  }
+
+  public static int onResourceBundleGetBundleWithLocale(String baseName, Locale locale) {
+    return getInstance().onResourceBundleGetBundle(Stack.createStack(), baseName, locale, null);
+  }
+
+  public static int onResourceBundleGetBundleWithLocaleAndControl(
+      String baseName, Locale locale, ResourceBundle.Control control) {
+    return getInstance().onResourceBundleGetBundle(Stack.createStack(), baseName, locale, null);
+  }
+
+  public static int onResourceBundleGetBundleWithLocaleAndLoader(
+      String baseName, Locale locale, ClassLoader classLoader) {
+    return getInstance()
+        .onResourceBundleGetBundle(Stack.createStack(), baseName, locale, classLoader);
+  }
+
+  public static int onResourceBundleGetBundleWithLocaleLoaderAndControl(
+      String baseName, Locale locale, ClassLoader classLoader, ResourceBundle.Control control) {
+    return getInstance()
+        .onResourceBundleGetBundle(Stack.createStack(), baseName, locale, classLoader);
   }
 
   // Called after an instrumented reflective call returns normally, with the id returned by the

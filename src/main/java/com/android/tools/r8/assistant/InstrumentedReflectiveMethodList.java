@@ -135,6 +135,17 @@ public class InstrumentedReflectiveMethodList {
     builder.put(
         factory.classMethods.getSuperclass,
         getMethodReferenceWithClassParameter("onClassGetSuperclass"));
+    DexType reflectType = factory.createType("Ljava/lang/reflect/Type;");
+    builder.put(
+        factory.createMethod(
+            factory.classType, factory.createProto(reflectType), "getGenericSuperclass"),
+        getMethodReferenceWithClassParameter("onClassGetGenericSuperclass"));
+    builder.put(
+        factory.createMethod(
+            factory.classType,
+            factory.createProto(reflectType.toArrayType(factory)),
+            "getGenericInterfaces"),
+        getMethodReferenceWithClassParameter("onClassGetGenericInterfaces"));
     builder.put(
         factory.createMethod(
             factory.classType, factory.createProto(factory.classType), "getComponentType"),
@@ -225,7 +236,73 @@ public class InstrumentedReflectiveMethodList {
             factory.classArrayType,
             factory.invocationHandlerType));
 
+    // ClassLoader methods.
+
+    builder.put(
+        factory.createMethod(
+            factory.classLoaderType,
+            factory.createProto(factory.classType, factory.stringType),
+            "loadClass"),
+        getMethodReferenceWithParameterTypes(
+            "onClassLoaderLoadClass", factory.classLoaderType, factory.stringType));
+
+    // ResourceBundle methods.
+
+    DexType resourceBundleType = factory.createType("Ljava/util/ResourceBundle;");
+    DexType controlType = factory.createType("Ljava/util/ResourceBundle$Control;");
+    DexType localeType = factory.javaUtilLocaleType;
+    putResourceBundleGetBundle(
+        builder, resourceBundleType, "onResourceBundleGetBundle", factory.stringType);
+    putResourceBundleGetBundle(
+        builder,
+        resourceBundleType,
+        "onResourceBundleGetBundleWithControl",
+        factory.stringType,
+        controlType);
+    putResourceBundleGetBundle(
+        builder,
+        resourceBundleType,
+        "onResourceBundleGetBundleWithLocale",
+        factory.stringType,
+        localeType);
+    putResourceBundleGetBundle(
+        builder,
+        resourceBundleType,
+        "onResourceBundleGetBundleWithLocaleAndControl",
+        factory.stringType,
+        localeType,
+        controlType);
+    putResourceBundleGetBundle(
+        builder,
+        resourceBundleType,
+        "onResourceBundleGetBundleWithLocaleAndLoader",
+        factory.stringType,
+        localeType,
+        factory.classLoaderType);
+    putResourceBundleGetBundle(
+        builder,
+        resourceBundleType,
+        "onResourceBundleGetBundleWithLocaleLoaderAndControl",
+        factory.stringType,
+        localeType,
+        factory.classLoaderType,
+        controlType);
+
     return builder.build();
+  }
+
+  // ResourceBundle.getBundle is static, so the stub takes the same parameters.
+  private void putResourceBundleGetBundle(
+      ImmutableMap.Builder<DexMethod, DexMethod> builder,
+      DexType resourceBundleType,
+      String stubName,
+      DexType... parameterTypes) {
+    builder.put(
+        factory.createMethod(
+            resourceBundleType,
+            factory.createProto(resourceBundleType, parameterTypes),
+            "getBundle"),
+        getMethodReferenceWithParameterTypes(stubName, parameterTypes));
   }
 
   private DexMethod getMethodReferenceWithClassParameter(String name) {

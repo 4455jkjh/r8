@@ -8,6 +8,8 @@ import com.android.tools.r8.assistant.runtime.ReflectiveEventType;
 import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.utils.DescriptorUtils;
 import java.util.ArrayList;
@@ -20,6 +22,12 @@ public abstract class ReflectiveEvent {
   private final String[] stack;
   private int id = ReflectiveOperationReceiver.NO_ID;
   private final List<Object> results = new ArrayList<>();
+
+  protected static ClassReference toClassOrNull(String name) {
+    return name == null || name.isEmpty() || "null".equals(name)
+        ? null
+        : Reference.classFromTypeName(name);
+  }
 
   protected static DexType toTypeOrTripleStar(String javaType, DexItemFactory factory) {
     if (javaType == null) {
@@ -147,6 +155,30 @@ public abstract class ReflectiveEvent {
     return null;
   }
 
+  public boolean isClassGetGenericSupertypes() {
+    return false;
+  }
+
+  public ClassGetGenericSupertypes asClassGetGenericSupertypes() {
+    return null;
+  }
+
+  public boolean isClassLoaderLoadClass() {
+    return false;
+  }
+
+  public ClassLoaderLoadClass asClassLoaderLoadClass() {
+    return null;
+  }
+
+  public boolean isResourceBundleGetBundle() {
+    return false;
+  }
+
+  public ResourceBundleGetBundle asResourceBundleGetBundle() {
+    return null;
+  }
+
   public abstract String getContentsString();
 
   public abstract boolean isKeptBy(KeepInfoCollectionExported keepInfoCollectionExported);
@@ -201,6 +233,13 @@ public abstract class ReflectiveEvent {
         return new ServiceLoaderLoad(eventType, stack, args, factory);
       case PROXY_NEW_PROXY_INSTANCE:
         return new ProxyNewProxyInstance(eventType, stack, args, factory);
+      case CLASS_GET_GENERIC_SUPERCLASS:
+      case CLASS_GET_GENERIC_INTERFACES:
+        return new ClassGetGenericSupertypes(eventType, stack, args, factory);
+      case CLASS_LOADER_LOAD_CLASS:
+        return new ClassLoaderLoadClass(eventType, stack, args);
+      case RESOURCE_BUNDLE_GET_BUNDLE:
+        return new ResourceBundleGetBundle(eventType, stack, args);
     }
     return new ReflectiveEvent(eventType, stack) {
       @Override

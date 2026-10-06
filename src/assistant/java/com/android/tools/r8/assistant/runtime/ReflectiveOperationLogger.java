@@ -9,6 +9,7 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.lang.reflect.InvocationHandler;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 @KeepForApi
@@ -245,6 +246,37 @@ public class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
             + classLoader
             + " and "
             + invocationHandler);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetGenericSuperclass(Stack stack, Class<?> clazz) {
+    if (clazz == null) {
+      return NO_ID;
+    }
+    report(stack, "Reflectively called Class.getGenericSuperclass on " + clazz.getName());
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetGenericInterfaces(Stack stack, Class<?> clazz) {
+    if (clazz == null) {
+      return NO_ID;
+    }
+    report(stack, "Reflectively called Class.getGenericInterfaces on " + clazz.getName());
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassLoaderLoadClass(Stack stack, ClassLoader classLoader, String className) {
+    report(stack, "Reflectively called ClassLoader.loadClass on " + className);
+    return NO_ID;
+  }
+
+  @Override
+  public int onResourceBundleGetBundle(
+      Stack stack, String baseName, Locale locale, ClassLoader classLoader) {
+    report(stack, "Reflectively called ResourceBundle.getBundle on " + baseName);
     return NO_ID;
   }
 

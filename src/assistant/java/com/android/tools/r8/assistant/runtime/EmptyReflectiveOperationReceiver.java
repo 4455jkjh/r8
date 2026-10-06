@@ -6,6 +6,7 @@ package com.android.tools.r8.assistant.runtime;
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.lang.reflect.InvocationHandler;
+import java.util.Locale;
 
 @KeepForApi
 public class EmptyReflectiveOperationReceiver implements ReflectiveOperationReceiver {
@@ -151,6 +152,27 @@ public class EmptyReflectiveOperationReceiver implements ReflectiveOperationRece
       ClassLoader classLoader,
       Class<?>[] interfaces,
       InvocationHandler invocationHandler) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetGenericSuperclass(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetGenericInterfaces(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassLoaderLoadClass(Stack stack, ClassLoader classLoader, String className) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onResourceBundleGetBundle(
+      Stack stack, String baseName, Locale locale, ClassLoader classLoader) {
     return NO_ID;
   }
 

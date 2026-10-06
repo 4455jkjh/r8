@@ -6,6 +6,7 @@ package com.android.tools.r8.assistant.runtime;
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.lang.reflect.InvocationHandler;
+import java.util.Locale;
 
 // The onXxx callbacks are called before the reflective call and return an id for the event, or
 // NO_ID if the receiver does not track results. If the reflective call returns normally,
@@ -74,6 +75,16 @@ public interface ReflectiveOperationReceiver {
       ClassLoader classLoader,
       Class<?>[] interfaces,
       InvocationHandler invocationHandler);
+
+  int onClassGetGenericSuperclass(Stack stack, Class<?> clazz);
+
+  int onClassGetGenericInterfaces(Stack stack, Class<?> clazz);
+
+  int onClassLoaderLoadClass(Stack stack, ClassLoader classLoader, String className);
+
+  // The locale and class loader are null if the called overload does not take them.
+  int onResourceBundleGetBundle(
+      Stack stack, String baseName, Locale locale, ClassLoader classLoader);
 
   void onReflectiveOperationReturned(int id, Object result);
 
