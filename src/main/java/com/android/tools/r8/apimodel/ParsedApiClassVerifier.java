@@ -205,16 +205,15 @@ public class ParsedApiClassVerifier {
       unifier.makeSet(ClassKind.INTERFACE);
     }
 
-    public void unify(ClassReference ref1, ClassReference ref2)
-        throws ApiDatabaseGeneratorException {
+    void unify(ClassReference ref1, ClassReference ref2) throws ApiDatabaseGeneratorException {
       unionInternal(ref1, ref2);
     }
 
-    public void markAsClass(ClassReference ref) throws ApiDatabaseGeneratorException {
+    void markAsClass(ClassReference ref) throws ApiDatabaseGeneratorException {
       unionInternal(ref, ClassKind.CLASS);
     }
 
-    public void markAsInterface(ClassReference ref) throws ApiDatabaseGeneratorException {
+    void markAsInterface(ClassReference ref) throws ApiDatabaseGeneratorException {
       unionInternal(ref, ClassKind.INTERFACE);
     }
 

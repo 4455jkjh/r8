@@ -37,11 +37,11 @@ public class GenericSignatureCorrectnessHelper {
     VERIFY,
     CLEAR_IF_INVALID;
 
-    public boolean doNotVerify() {
+    boolean doNotVerify() {
       return clearIfInvalid();
     }
 
-    public boolean clearIfInvalid() {
+    boolean clearIfInvalid() {
       return this == CLEAR_IF_INVALID;
     }
   }

@@ -529,12 +529,12 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     private final List<DexProgramClass> classes;
     private BridgeSpecification bridgeSpecification;
 
-    public Group() {
+    Group() {
       this.classes = new ArrayList<>();
       this.bridgeSpecification = null;
     }
 
-    public Group(DexProgramClass clazz, BridgeSpecification bridgeSpecification) {
+    Group(DexProgramClass clazz, BridgeSpecification bridgeSpecification) {
       this.classes = ListUtils.newArrayList(clazz);
       this.bridgeSpecification = bridgeSpecification;
     }
@@ -564,7 +564,7 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
       return classes.iterator();
     }
 
-    public int size() {
+    int size() {
       return classes.size();
     }
   }

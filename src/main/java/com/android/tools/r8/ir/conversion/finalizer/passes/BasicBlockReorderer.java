@@ -145,6 +145,7 @@ public class BasicBlockReorderer extends FinalizerRewriterPass<AppInfo> {
     }
   }
 
+  @SuppressWarnings("JdkObsolete")
   private static boolean orderFallthroughChains(
       IRCode code,
       Map<BasicBlock, Chain> unplacedChains,

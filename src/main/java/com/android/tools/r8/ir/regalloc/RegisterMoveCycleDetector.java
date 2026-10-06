@@ -17,7 +17,7 @@ import java.util.TreeSet;
 
 public class RegisterMoveCycleDetector {
 
-  @SuppressWarnings("MixedMutabilityReturnType")
+  @SuppressWarnings({"MixedMutabilityReturnType", "NonApiType"})
   static List<RegisterMoveCycle> getMoveCycles(TreeSet<RegisterMove> moveSet) {
     if (moveSet.size() <= 1) {
       return Collections.emptyList();
@@ -39,6 +39,7 @@ public class RegisterMoveCycleDetector {
     return moveCycles;
   }
 
+  @SuppressWarnings("NonApiType")
   private static void dfs(
       RegisterMove move,
       Set<RegisterMove> finished,
@@ -75,6 +76,7 @@ public class RegisterMoveCycleDetector {
   }
 
   // Returns a one-to-many map from registers to the set of moves that read that register.
+  @SuppressWarnings("NonApiType")
   private static Int2ObjectMap<TreeSet<RegisterMove>> createReadByGraph(
       TreeSet<RegisterMove> moveSet) {
     Int2ObjectMap<TreeSet<RegisterMove>> readBy = new Int2ObjectOpenHashMap<>();
@@ -91,6 +93,7 @@ public class RegisterMoveCycleDetector {
     return readBy;
   }
 
+  @SuppressWarnings("NonApiType")
   private static Set<RegisterMove> getSuccessors(
       RegisterMove move, Int2ObjectMap<TreeSet<RegisterMove>> readBy) {
     TreeSet<RegisterMove> successors = readBy.get(move.dst);
@@ -106,6 +109,7 @@ public class RegisterMoveCycleDetector {
     return successors != null ? successors : Collections.emptySet();
   }
 
+  @SuppressWarnings("NonApiType")
   private static RegisterMoveCycle extractCycle(
       Deque<RegisterMove> stack,
       RegisterMove cycleEntry,
@@ -119,6 +123,7 @@ public class RegisterMoveCycleDetector {
     return new RegisterMoveCycle(cycleSet, isClosedCycle(cycleSet, readBy));
   }
 
+  @SuppressWarnings("NonApiType")
   private static boolean isClosedCycle(
       TreeSet<RegisterMove> cycle, Int2ObjectMap<TreeSet<RegisterMove>> readBy) {
     for (RegisterMove move : cycle) {

@@ -326,7 +326,6 @@ public class DeadCodeRemover {
         if (clazz.isProgramClass()
             && !appInfoWithLiveness.isInstantiatedDirectlyOrIndirectly(clazz.asProgramClass())) {
           builder.add(new CatchHandler<>(guard, target));
-          continue;
         }
       }
     }

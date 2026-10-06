@@ -21,14 +21,14 @@ public class Reporter implements DiagnosticsHandler {
     private final DiagnosticsLevel to;
     private final String diagnosticsClassName;
 
-    public DiagnosticsLevelMapping(
+    DiagnosticsLevelMapping(
         DiagnosticsLevel from, DiagnosticsLevel to, String diagnosticsClassName) {
       this.from = from;
       this.to = to;
       this.diagnosticsClassName = diagnosticsClassName;
     }
 
-    public DiagnosticsLevel map(DiagnosticsLevel level, Diagnostic diagnostic) {
+    DiagnosticsLevel map(DiagnosticsLevel level, Diagnostic diagnostic) {
       if (level != from) {
         return level;
       }

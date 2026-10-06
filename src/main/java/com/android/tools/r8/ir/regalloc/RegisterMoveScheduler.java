@@ -133,6 +133,7 @@ public class RegisterMoveScheduler {
     assert freeRegistersUntilAssigned.isEmpty();
   }
 
+  @SuppressWarnings("NonApiType")
   private void schedulePartial(
       TreeSet<RegisterMove> movesToSchedule, Deque<RegisterMove> worklist) {
     // Process the worklist generating moves. If the worklist becomes empty while the move set
@@ -233,6 +234,7 @@ public class RegisterMoveScheduler {
         });
   }
 
+  @SuppressWarnings("NonApiType")
   private void enqueueUnblockedMoves(
       Deque<RegisterMove> worklist, TreeSet<RegisterMove> movesToSchedule) {
     // Iterate and find the moves that were blocked because they need to write to one of the move
@@ -380,6 +382,7 @@ public class RegisterMoveScheduler {
     return nextTempRegister++;
   }
 
+  @SuppressWarnings("NonApiType")
   private RegisterMove pickMoveToUnblock(TreeSet<RegisterMove> moves) {
     // Pick a non-wide move to unblock if possible.
     Iterable<RegisterMove> eligible =

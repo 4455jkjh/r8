@@ -1424,7 +1424,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     final CfVersion version;
     final DexType type;
 
-    public TypeVersionPair(CfVersion version, DexType type) {
+    TypeVersionPair(CfVersion version, DexType type) {
       this.version = version;
       this.type = type;
     }

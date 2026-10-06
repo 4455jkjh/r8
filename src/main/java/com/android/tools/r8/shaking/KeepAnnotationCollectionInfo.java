@@ -206,7 +206,7 @@ public abstract class KeepAnnotationCollectionInfo {
     private static final KeepAnnotationCollectionInfo INSTANCE =
         new TopKeepAnnotationCollectionInfo();
 
-    public static KeepAnnotationCollectionInfo getInstance() {
+    static KeepAnnotationCollectionInfo getInstance() {
       return INSTANCE;
     }
 
@@ -233,7 +233,7 @@ public abstract class KeepAnnotationCollectionInfo {
     private static final KeepAnnotationCollectionInfo INSTANCE =
         new BottomKeepAnnotationCollectionInfo();
 
-    public static KeepAnnotationCollectionInfo getInstance() {
+    static KeepAnnotationCollectionInfo getInstance() {
       return INSTANCE;
     }
 
@@ -253,8 +253,7 @@ public abstract class KeepAnnotationCollectionInfo {
     }
   }
 
-  private static final class IntermediateKeepAnnotationCollectionInfo
-      extends KeepAnnotationCollectionInfo {
+  static final class IntermediateKeepAnnotationCollectionInfo extends KeepAnnotationCollectionInfo {
     private final KeepAnnotationInfo anyTypeInfo;
     private final Map<DexType, KeepAnnotationInfo> specificTypeInfo;
 

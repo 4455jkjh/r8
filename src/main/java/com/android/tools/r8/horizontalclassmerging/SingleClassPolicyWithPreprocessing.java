@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 
 public abstract class SingleClassPolicyWithPreprocessing extends SingleClassPolicy {
 
+  @SuppressWarnings("NonApiType")
   public abstract void preprocess(
       LinkedList<HorizontalMergeGroup> groups, ExecutorService executorService)
       throws ExecutionException;

@@ -77,7 +77,7 @@ public interface ThreadingModule {
           Class<?> providerClass = Class.forName(name);
           return (ThreadingModuleProvider) providerClass.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException ignored) {
-          continue;
+          // Try the next provider.
         } catch (ReflectiveOperationException e) {
           throw new CompilationError("Failure creating provider for the threading module", e);
         }

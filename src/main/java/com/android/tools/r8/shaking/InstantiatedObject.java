@@ -74,7 +74,7 @@ public abstract class InstantiatedObject implements InstantiatedSubTypeInfo {
   private static class InstantiatedLambda extends InstantiatedObject {
     final LambdaDescriptor lambdaDescriptor;
 
-    public InstantiatedLambda(LambdaDescriptor lambdaDescriptor) {
+    InstantiatedLambda(LambdaDescriptor lambdaDescriptor) {
       this.lambdaDescriptor = lambdaDescriptor;
     }
 

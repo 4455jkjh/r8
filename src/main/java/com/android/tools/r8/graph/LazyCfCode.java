@@ -103,7 +103,7 @@ import org.objectweb.asm.commons.JSRInlinerAdapter;
 public class LazyCfCode extends Code {
 
   private static class JsrEncountered extends RuntimeException {
-    public JsrEncountered(String s) {
+    JsrEncountered(String s) {
       super(s);
     }
   }

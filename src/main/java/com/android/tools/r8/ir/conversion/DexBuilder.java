@@ -1113,7 +1113,7 @@ public class DexBuilder {
   }
 
   // Dex instruction wrapper with information to compute instruction sizes and offsets for jumps.
-  private abstract static class Info {
+  abstract static class Info {
 
     private final Instruction ir;
     // Concrete final offset of the instruction.
@@ -1184,7 +1184,7 @@ public class DexBuilder {
 
     private final DexInstruction instruction;
 
-    public FixedSizeInfo(Instruction ir, DexInstruction instruction) {
+    FixedSizeInfo(Instruction ir, DexInstruction instruction) {
       super(ir);
       this.instruction = instruction;
     }
@@ -1227,7 +1227,7 @@ public class DexBuilder {
     private final DexInstruction[] instructions;
     private final int size;
 
-    public MultiFixedSizeInfo(Instruction ir, DexInstruction[] instructions) {
+    MultiFixedSizeInfo(Instruction ir, DexInstruction[] instructions) {
       super(ir);
       this.instructions = instructions;
       int size = 0;
@@ -1276,7 +1276,7 @@ public class DexBuilder {
 
   private static class FallThroughInfo extends Info {
 
-    public FallThroughInfo(Instruction ir) {
+    FallThroughInfo(Instruction ir) {
       super(ir);
     }
 
@@ -1313,7 +1313,7 @@ public class DexBuilder {
 
     private int size = -1;
 
-    public GotoInfo(Goto jump) {
+    GotoInfo(Goto jump) {
       super(jump);
     }
 
@@ -1711,10 +1711,10 @@ public class DexBuilder {
   // Return-type wrapper for try-related data.
   private static class TryInfo {
 
-    public final Try[] tries;
-    public final TryHandler[] handlers;
+    final Try[] tries;
+    final TryHandler[] handlers;
 
-    public TryInfo(Try[] tries, TryHandler[] handlers) {
+    TryInfo(Try[] tries, TryHandler[] handlers) {
       this.tries = tries;
       this.handlers = handlers;
     }
@@ -1723,11 +1723,11 @@ public class DexBuilder {
   // Helper class for coalescing ranges for try blocks.
   private static class TryItem implements Comparable<TryItem> {
 
-    public final CatchHandlers<BasicBlock> handlers;
-    public int start;
-    public int end;
+    final CatchHandlers<BasicBlock> handlers;
+    int start;
+    int end;
 
-    public TryItem(CatchHandlers<BasicBlock> handlers, int start, int end) {
+    TryItem(CatchHandlers<BasicBlock> handlers, int start, int end) {
       this.handlers = handlers;
       this.start = start;
       this.end = end;
@@ -1741,10 +1741,10 @@ public class DexBuilder {
 
   private static class SwitchPayloadInfo {
 
-    public final IntSwitch ir;
-    public final DexFormat31t dex;
+    final IntSwitch ir;
+    final DexFormat31t dex;
 
-    public SwitchPayloadInfo(IntSwitch ir, DexFormat31t dex) {
+    SwitchPayloadInfo(IntSwitch ir, DexFormat31t dex) {
       this.ir = ir;
       this.dex = dex;
     }
@@ -1752,10 +1752,10 @@ public class DexBuilder {
 
   private static class FillArrayDataInfo {
 
-    public final NewArrayFilledData ir;
-    public final DexFillArrayData dex;
+    final NewArrayFilledData ir;
+    final DexFillArrayData dex;
 
-    public FillArrayDataInfo(NewArrayFilledData ir, DexFillArrayData dex) {
+    FillArrayDataInfo(NewArrayFilledData ir, DexFillArrayData dex) {
       this.ir = ir;
       this.dex = dex;
     }

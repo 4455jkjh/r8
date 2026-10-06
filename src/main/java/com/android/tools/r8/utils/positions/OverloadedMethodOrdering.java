@@ -124,10 +124,8 @@ public class OverloadedMethodOrdering {
       return -1;
     } else if (code.isDexCode()) {
       return code.asDexCode().codeSizeInBytes();
-    } else if (code.isCfCode()) {
-      // CF code is ignored for size.
-      return -1;
     } else {
+      // CF code and other code kinds are ignored for size.
       return -1;
     }
   }

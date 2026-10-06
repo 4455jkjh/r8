@@ -283,7 +283,7 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
         return value == null;
       }
 
-      public boolean isLiteral() {
+      boolean isLiteral() {
         return value != null;
       }
     }
@@ -507,6 +507,7 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
     return instructionIterator;
   }
 
+  @SuppressWarnings("NonApiType")
   private Instruction createStringBuilderChain(
       IRCode code,
       InvokeStatic formatInvoke,

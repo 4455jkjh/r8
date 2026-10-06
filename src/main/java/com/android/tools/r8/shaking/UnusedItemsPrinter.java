@@ -135,7 +135,7 @@ class UnusedItemsPrinter {
   // Empty implementation to silently ignore printing dead code.
   private static class NopPrinter extends UnusedItemsPrinter {
 
-    public NopPrinter() {
+    NopPrinter() {
       super(null);
     }
 

@@ -403,7 +403,7 @@ public class Disassemble {
     private final Path parent;
     private final String fileEnding;
 
-    public DirectoryWriter(Path parent, String fileEnding) {
+    DirectoryWriter(Path parent, String fileEnding) {
       this.parent = parent;
       this.fileEnding = fileEnding;
     }

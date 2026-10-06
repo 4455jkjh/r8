@@ -3618,6 +3618,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
   }
 
+  @SuppressWarnings("AssignmentExpression")
   private void linkArgumentValuesAndIntervals(List<Value> arguments) {
     if (!arguments.isEmpty()) {
       Value last = firstArgumentValue = arguments.get(0);

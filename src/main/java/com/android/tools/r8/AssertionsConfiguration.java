@@ -12,7 +12,7 @@ import com.android.tools.r8.utils.internal.BooleanUtils;
 @KeepForApi
 public class AssertionsConfiguration {
 
-  private enum AssertionTransformation {
+  enum AssertionTransformation {
     ENABLE,
     DISABLE,
     PASSTHROUGH

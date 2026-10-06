@@ -150,7 +150,7 @@ public class MainDexDirectReferenceTracer {
       registerInvoke(method);
     }
 
-    protected void registerInvoke(DexMethod method) {
+    void registerInvoke(DexMethod method) {
       consumer.accept(method.holder);
       traceMethodDirectDependencies(method, consumer);
     }
@@ -175,7 +175,7 @@ public class MainDexDirectReferenceTracer {
       registerFieldAccess(field);
     }
 
-    protected void registerFieldAccess(DexField field) {
+    void registerFieldAccess(DexField field) {
       consumer.accept(field.holder);
       consumer.accept(field.type);
     }

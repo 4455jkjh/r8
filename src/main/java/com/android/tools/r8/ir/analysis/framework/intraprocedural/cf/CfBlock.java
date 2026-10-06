@@ -74,6 +74,7 @@ public class CfBlock {
     return exceptionalPredecessors;
   }
 
+  @SuppressWarnings("NonApiType")
   public LinkedHashMap<DexType, CfBlock> getExceptionalSuccessors() {
     return exceptionalSuccessors;
   }

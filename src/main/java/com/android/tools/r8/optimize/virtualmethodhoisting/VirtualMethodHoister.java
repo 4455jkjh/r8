@@ -225,7 +225,7 @@ public class VirtualMethodHoister {
       return states.computeIfAbsent(clazz, ignoreKey(TraversalState::new));
     }
 
-    public Set<DexMethod> removeAndGetHoistedMethods() {
+    Set<DexMethod> removeAndGetHoistedMethods() {
       Set<DexMethod> hoistedMethodReferences = Sets.newIdentityHashSet();
       hoistedMethods.forEach(
           (sourceClass, sourceMethods) -> {

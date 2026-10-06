@@ -426,6 +426,7 @@ public class PackageSplitPopulator {
     }
   }
 
+  @SuppressWarnings("AssignmentExpression")
   private VirtualFile getVirtualFile(VirtualFileCycler cycler) {
     VirtualFile current = null;
     while (cycler.hasNext() && isFullEnough(current = cycler.next(), options)) {}

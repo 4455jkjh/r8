@@ -124,7 +124,7 @@ public class SupportedClasses {
       return new Builder(clazz);
     }
 
-    private static class Builder {
+    static class Builder {
 
       private final DexClass clazz;
       private ClassAnnotation classAnnotation;

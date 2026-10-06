@@ -154,7 +154,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
         List<MappedRange> mappedRangesForSignature =
             ListUtils.sort(
                 partition.getMappedRanges(),
-                Comparator.comparing(range -> range.minifiedRange.from));
+                Comparator.comparingInt(range -> range.minifiedRange.from));
         Range lastRange = new Range(-1, -1);
         for (MappedRange range : mappedRangesForSignature) {
           if (range.minifiedRange.equals(lastRange)) {

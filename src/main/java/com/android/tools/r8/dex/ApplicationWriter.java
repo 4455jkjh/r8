@@ -110,7 +110,7 @@ public class ApplicationWriter {
     private final AppView<?> appView;
     private final NamingLens namingLens;
 
-    public SortAnnotations(AppView<?> appView) {
+    SortAnnotations(AppView<?> appView) {
       this.appView = appView;
       this.namingLens = appView.getNamingLens();
     }
@@ -259,7 +259,6 @@ public class ApplicationWriter {
       file.commitTransaction();
     }
   }
-
 
   protected void writeVirtualFiles(
       ExecutorService executorService,

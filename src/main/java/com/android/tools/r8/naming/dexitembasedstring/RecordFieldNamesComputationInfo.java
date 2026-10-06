@@ -128,7 +128,7 @@ public abstract class RecordFieldNamesComputationInfo extends NameComputationInf
       extends RecordFieldNamesComputationInfo
       implements StructuralItem<MatchingRecordFieldNamesComputationInfo> {
 
-    public MatchingRecordFieldNamesComputationInfo(DexField[] fields) {
+    MatchingRecordFieldNamesComputationInfo(DexField[] fields) {
       super(fields);
     }
 

@@ -15,6 +15,7 @@ import java.nio.file.Path;
 
 public class KeepRadiusContainerUtils {
 
+  @SuppressWarnings("AssignmentExpression")
   public static <OS extends OutputStream> void writeToConsumer(
       KeepRadiusContainer container, ByteArrayConsumer<OS> consumer, Reporter reporter) {
     OS outputStream;

@@ -257,7 +257,7 @@ public class AppServices {
 
       private final FeatureSplit featureSplit;
 
-      public DataResourceProviderVisitor(FeatureSplit featureSplit) {
+      DataResourceProviderVisitor(FeatureSplit featureSplit) {
         this.featureSplit = featureSplit;
       }
 

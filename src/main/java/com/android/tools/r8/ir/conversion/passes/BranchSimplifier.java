@@ -727,6 +727,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings("AssignmentExpression")
   private boolean isBlockSupportedBySimplifyKnownBooleanCondition(BasicBlock b) {
     if (b.isTrivialGoto()) {
       return true;
@@ -1060,7 +1061,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
 
     private final IntList keys = new IntArrayList();
 
-    public Interval(IntList... allKeys) {
+    Interval(IntList... allKeys) {
       assert allKeys.length > 0;
       for (IntList keys : allKeys) {
         assert keys.size() > 0;
@@ -1068,20 +1069,20 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       }
     }
 
-    public int getMin() {
+    int getMin() {
       return keys.getInt(0);
     }
 
-    public int getMax() {
+    int getMax() {
       return keys.getInt(keys.size() - 1);
     }
 
-    public void addInterval(Interval other) {
+    void addInterval(Interval other) {
       assert getMax() < other.getMin();
       keys.addAll(other.keys);
     }
 
-    public long packedSavings(InternalOutputMode mode) {
+    long packedSavings(InternalOutputMode mode) {
       long packedTargets = (long) getMax() - (long) getMin() + 1;
       if (!IntSwitch.canBePacked(mode, packedTargets)) {
         return Long.MIN_VALUE + 1;
@@ -1093,7 +1094,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       return sparseCost - packedCost;
     }
 
-    public long estimatedSize(InternalOutputMode mode) {
+    long estimatedSize(InternalOutputMode mode) {
       return IntSwitch.estimatedSize(mode, keys.toIntArray());
     }
   }

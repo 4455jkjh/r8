@@ -47,7 +47,7 @@ public class WhyAreYouKeepingConsumer extends CollectingGraphConsumer {
     final GraphNode node;
     final GraphPath path;
 
-    public GraphPath(GraphNode node, GraphPath path) {
+    GraphPath(GraphNode node, GraphPath path) {
       assert node != null;
       this.node = node;
       this.path = path;
@@ -250,7 +250,7 @@ public class WhyAreYouKeepingConsumer extends CollectingGraphConsumer {
     private final PrintStream output;
     private int indentation = -1;
 
-    public Formatter(PrintStream output) {
+    Formatter(PrintStream output) {
       this.output = output;
     }
 

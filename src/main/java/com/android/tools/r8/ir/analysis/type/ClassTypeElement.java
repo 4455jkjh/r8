@@ -473,7 +473,7 @@ public class ClassTypeElement extends ReferenceTypeElement {
       return new InterfaceMarker(OptionalBool.FALSE, OptionalBool.FALSE);
     }
 
-    public InterfaceMarker(OptionalBool left, OptionalBool right) {
+    InterfaceMarker(OptionalBool left, OptionalBool right) {
       this.left = left;
       this.right = right;
       assert !isMarkedOnBothSides();

@@ -106,7 +106,7 @@ public interface ClassInstanceFieldsMerger {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   static Map<InstanceFieldInfo, LinkedList<DexEncodedField>> getAvailableFieldsByExactInfo(
       DexProgramClass target) {
     Map<InstanceFieldInfo, LinkedList<DexEncodedField>> availableFieldsByInfo =
@@ -120,7 +120,7 @@ public interface ClassInstanceFieldsMerger {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   static Map<InstanceFieldInfo, LinkedList<DexEncodedField>> getAvailableFieldsByRelaxedInfo(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       Map<InstanceFieldInfo, LinkedList<DexEncodedField>> availableFieldsByExactInfo) {

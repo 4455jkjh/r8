@@ -82,7 +82,7 @@ public class PhiInInstructionsStrategy extends LirStrategy<Value, Integer> {
 
     private final LirSsaValueStrategy<Integer> referenceStrategy;
 
-    public StrategyInfo(LirSsaValueStrategy<Integer> referenceStrategy) {
+    StrategyInfo(LirSsaValueStrategy<Integer> referenceStrategy) {
       this.referenceStrategy = referenceStrategy;
     }
 

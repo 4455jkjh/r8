@@ -253,7 +253,7 @@ public class LoadStoreHelper {
     final Phi phi;
     final Value operand;
 
-    public PhiMove(Phi phi, Value operand) {
+    PhiMove(Phi phi, Value operand) {
       this.phi = phi;
       this.operand = operand;
     }

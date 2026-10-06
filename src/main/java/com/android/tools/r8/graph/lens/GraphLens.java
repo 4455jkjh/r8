@@ -363,7 +363,7 @@ public abstract class GraphLens {
 
   @Deprecated
   @SuppressWarnings("InlineMeSuggester")
-  /** Lookup a rebound or non-rebound field reference using the current graph lens. */
+  /* Lookup a rebound or non-rebound field reference using the current graph lens. */
   public final FieldLookupResult lookupFieldResult(DexField field) {
     // Lookup the field using the graph lens and return the lookup result.
     return lookupFieldResult(field, null);

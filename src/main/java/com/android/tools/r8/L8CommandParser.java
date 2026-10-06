@@ -56,7 +56,7 @@ public class L8CommandParser {
     final L8Command.Builder builder;
     final Origin origin;
 
-    public ParserState(L8Command.Builder builder, Origin origin) {
+    ParserState(L8Command.Builder builder, Origin origin) {
       this.builder = builder;
       this.origin = origin;
     }

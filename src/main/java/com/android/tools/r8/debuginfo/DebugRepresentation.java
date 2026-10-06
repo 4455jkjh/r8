@@ -174,7 +174,7 @@ public class DebugRepresentation {
 
   public String toString(boolean printCostSummary) {
     List<ConversionInfo> sorted = new ArrayList<>(paramToInfo.values());
-    sorted.sort(Comparator.comparing(i -> i.paramCount));
+    sorted.sort(Comparator.comparingInt(i -> i.paramCount));
     return StringUtils.join("\n", sorted, c -> c.toString(printCostSummary));
   }
 
@@ -210,7 +210,7 @@ public class DebugRepresentation {
           + getExpansionOverhead(pc, methods, cost);
     }
 
-    public PcCostInfo(int pc) {
+    PcCostInfo(int pc) {
       assert pc >= 0;
       this.pc = pc;
     }
@@ -236,7 +236,7 @@ public class DebugRepresentation {
     private final int methods;
     private final int normalCost;
 
-    public PcConversionInfo(int pc, boolean converted, int methods, int normalCost) {
+    PcConversionInfo(int pc, boolean converted, int methods, int normalCost) {
       this.pc = pc;
       this.converted = converted;
       this.methods = methods;
@@ -349,7 +349,7 @@ public class DebugRepresentation {
         }
       }
 
-      public Int2ReferenceSortedMap<PcConversionInfo> getFinalConversions() {
+      Int2ReferenceSortedMap<PcConversionInfo> getFinalConversions() {
         // If there is only a single group check it is actually a converted range.
         if (groups.size() > 1
             || (groups.size() == 1 && groups.values().iterator().next().converted)) {
@@ -447,7 +447,7 @@ public class DebugRepresentation {
       return toString(false);
     }
 
-    public String toString(boolean printCostSummaries) {
+    String toString(boolean printCostSummaries) {
       StringBuilder builder = new StringBuilder();
       builder.append("params:").append(paramCount).append('\n');
       if (conversions != null) {

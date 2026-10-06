@@ -174,11 +174,8 @@ public class CfConstNumber extends CfInstruction {
           } else if (Byte.MIN_VALUE <= value && value <= Byte.MAX_VALUE) {
             // bipush byte
             return 2;
-          } else if (Short.MIN_VALUE <= value && value <= Short.MAX_VALUE) {
-            // sipush byte1 byte2
-            return 3;
           } else {
-            // ldc or ldc_w
+            // sipush byte1 byte2, or ldc or ldc_w
             return 3;
           }
         }

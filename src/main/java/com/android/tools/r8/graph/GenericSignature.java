@@ -393,7 +393,7 @@ public class GenericSignature {
     }
   }
 
-  private static class InvalidClassSignature extends ClassSignature {
+  static class InvalidClassSignature extends ClassSignature {
 
     private final String genericSignatureString;
 
@@ -562,7 +562,7 @@ public class GenericSignature {
     public abstract FieldTypeSignature visit(GenericSignatureVisitor visitor);
   }
 
-  private static class InvalidFieldTypeSignature extends FieldTypeSignature {
+  static class InvalidFieldTypeSignature extends FieldTypeSignature {
 
     private final String genericSignature;
 
@@ -1006,7 +1006,7 @@ public class GenericSignature {
     }
   }
 
-  private static class InvalidMethodTypeSignature extends MethodTypeSignature {
+  static class InvalidMethodTypeSignature extends MethodTypeSignature {
 
     private final String genericSignature;
 

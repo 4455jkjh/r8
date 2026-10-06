@@ -476,5 +476,5 @@ public class RawMessageInfoDecoder {
     };
   }
 
-  private static class InvalidRawMessageInfoException extends Exception {}
+  static class InvalidRawMessageInfoException extends Exception {}
 }

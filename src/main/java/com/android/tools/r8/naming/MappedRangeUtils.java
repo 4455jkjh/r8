@@ -36,7 +36,7 @@ public class MappedRangeUtils {
   }
 
   // TODO(b/286781273): Remove when fixed.
-  @Deprecated()
+  @Deprecated
   static boolean isInlineMappedRangeForComposition(List<MappedRange> mappedRanges, int index) {
     // We are comparing against the next entry so we need a buffer of one.
     if (index + 1 >= mappedRanges.size()) {

@@ -1698,7 +1698,7 @@ public final class R8Command extends BaseCompilerCommand {
     private final Predicate<String> classNamePredicate;
     private StringBuilder resultBuilder = new StringBuilder();
 
-    public ResourceShrinkerMapStringConsumer(InternalOptions internal) {
+    ResourceShrinkerMapStringConsumer(InternalOptions internal) {
       this.internal = internal;
       this.classNamePredicate =
           LegacyResourceShrinker.classNamesNeededForResourceShrinkingPredicate();
@@ -1722,7 +1722,7 @@ public final class R8Command extends BaseCompilerCommand {
 
   private static class StandardOutConsumer extends StringConsumer.ForwardingConsumer {
 
-    public StandardOutConsumer(StringConsumer consumer) {
+    StandardOutConsumer(StringConsumer consumer) {
       super(consumer);
     }
 

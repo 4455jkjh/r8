@@ -49,6 +49,7 @@ public class KotlinSourceDebugExtensionParser {
       reader = new BufferedReader(new StringReader(data));
     }
 
+    @SuppressWarnings("AssignmentExpression")
     String readNextLine() throws IOException {
       return readLine = reader.readLine();
     }

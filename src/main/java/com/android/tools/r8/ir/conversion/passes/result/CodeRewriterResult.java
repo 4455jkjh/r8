@@ -10,8 +10,12 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public interface CodeRewriterResult {
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   CodeRewriterResult NO_CHANGE = new DefaultCodeRewriterResult(false);
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   CodeRewriterResult HAS_CHANGED = new DefaultCodeRewriterResult(true);
+
   CodeRewriterResult NONE = OptionalBool::unknown;
 
   static CodeRewriterResult hasChanged(boolean hasChanged) {

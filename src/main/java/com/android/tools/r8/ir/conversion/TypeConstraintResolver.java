@@ -156,6 +156,7 @@ public class TypeConstraintResolver {
     }
   }
 
+  @SuppressWarnings("NonApiType")
   private ArrayList<Value> constrainValues(boolean finished, List<Value> impreciseValues) {
     ArrayList<Value> stillImprecise = new ArrayList<>(impreciseValues.size());
     for (Value value : impreciseValues) {

@@ -94,6 +94,7 @@ public class HumanToMachineEmulatedInterfaceConverter {
         interfaceMethod, dispatchMethod, forwardingMethod, dispatchCases);
   }
 
+  @SuppressWarnings("NonApiType")
   private LinkedHashMap<DexType, DerivedMethod> getDispatchCases(
       HumanRewritingFlags rewritingFlags, DexMethod method) {
     // To properly emulate the library interface call, we need to compute the interfaces

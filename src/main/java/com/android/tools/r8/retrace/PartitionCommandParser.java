@@ -18,7 +18,7 @@ public class PartitionCommandParser {
     final Origin origin;
     boolean isProguardMapProducerSet = false;
 
-    public ParserState(PartitionCommand.Builder builder, Origin origin) {
+    ParserState(PartitionCommand.Builder builder, Origin origin) {
       this.builder = builder;
       this.origin = origin;
     }

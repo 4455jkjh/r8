@@ -372,7 +372,7 @@ public class ApplicationReader {
       this.tasks = tasks;
     }
 
-    public DexApplicationReadFlags getDexApplicationReadFlags() {
+    DexApplicationReadFlags getDexApplicationReadFlags() {
       if (options.partialSubCompilationConfiguration != null) {
         return options.partialSubCompilationConfiguration.getFlags();
       }
@@ -382,7 +382,7 @@ public class ApplicationReader {
           .build();
     }
 
-    public List<KeepDeclaration> getKeepDeclarations() {
+    List<KeepDeclaration> getKeepDeclarations() {
       return application.getKeepDeclarations();
     }
 

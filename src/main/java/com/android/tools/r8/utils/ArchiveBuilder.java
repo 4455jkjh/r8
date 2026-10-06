@@ -242,17 +242,16 @@ public class ArchiveBuilder implements OutputBuilder {
   }
 
   private static class DelayedData implements Comparable<DelayedData> {
-    public final String name;
-    public final ByteDataView content;
-    public final boolean isDirectory;
-    public final boolean storeCompressed;
+    final String name;
+    final ByteDataView content;
+    final boolean isDirectory;
+    final boolean storeCompressed;
 
-    public static DelayedData createFile(
-        String name, ByteDataView content, boolean storeCompressed) {
+    static DelayedData createFile(String name, ByteDataView content, boolean storeCompressed) {
       return new DelayedData(name, content, false, storeCompressed);
     }
 
-    public static DelayedData createDirectory(String name) {
+    static DelayedData createDirectory(String name) {
       return new DelayedData(name, null, true, true);
     }
 

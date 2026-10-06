@@ -468,7 +468,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
 
   public abstract Object asAsmEncodedObject();
 
-  private abstract static class SimpleDexValue extends DexValue {
+  abstract static class SimpleDexValue extends DexValue {
 
     @Override
     public void sort() {
@@ -792,7 +792,6 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
         assert value == 0 || value == 1;
         return new DexValueBoolean(value == 1);
       } else {
-        assert Byte.MIN_VALUE <= value;
         assert value <= Byte.MAX_VALUE;
         return new DexValueByte((byte) value);
       }
@@ -1409,7 +1408,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  private abstract static class NestedDexValue<T extends IndexedDexItem> extends DexValue {
+  abstract static class NestedDexValue<T extends IndexedDexItem> extends DexValue {
 
     public final T value;
 

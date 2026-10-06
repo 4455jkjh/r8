@@ -33,7 +33,7 @@ public abstract class HashingVisitor {
   }
 
   public final <S extends StructuralItem<S>> void visitItemCollection(Collection<S> items) {
-    visitItemIterator(items.iterator(), S::acceptHashing);
+    visitItemIterator(items.iterator(), StructuralItem::acceptHashing);
   }
 
   public abstract void visitJavaString(String string);

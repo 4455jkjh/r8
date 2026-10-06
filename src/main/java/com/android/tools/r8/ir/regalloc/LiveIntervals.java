@@ -271,6 +271,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     registerLimit = Math.min(registerLimit, constraint);
   }
 
+  @SuppressWarnings("NonApiType")
   public TreeSet<LiveIntervalsUse> getUses() {
     return uses;
   }

@@ -268,13 +268,7 @@ public class DexMethodHandle extends IndexedDexItem
 
   @Override
   public String toString() {
-    StringBuilder builder =
-        new StringBuilder("MethodHandle: {")
-            .append(type)
-            .append(", ")
-            .append(member.toSourceString())
-            .append("}");
-    return builder.toString();
+    return "MethodHandle: {" + type + ", " + member.toSourceString() + "}";
   }
 
   public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {

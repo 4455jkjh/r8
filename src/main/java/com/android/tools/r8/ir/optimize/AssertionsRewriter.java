@@ -91,23 +91,23 @@ public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
       }
     }
 
-    public boolean isCompileTimeEnabled() {
+    boolean isCompileTimeEnabled() {
       return entry.isCompileTimeEnabled();
     }
 
-    public boolean isCompileTimeDisabled() {
+    boolean isCompileTimeDisabled() {
       return entry.isCompileTimeDisabled();
     }
 
-    public boolean isPassthrough() {
+    boolean isPassthrough() {
       return entry.isPassthrough();
     }
 
-    public boolean isAssertionHandler() {
+    boolean isAssertionHandler() {
       return entry.isAssertionHandler();
     }
 
-    public MethodReference getAssertionHandler() {
+    MethodReference getAssertionHandler() {
       assert isAssertionHandler();
       return entry.getAssertionHandler();
     }

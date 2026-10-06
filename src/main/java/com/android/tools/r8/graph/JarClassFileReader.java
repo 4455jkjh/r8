@@ -261,7 +261,7 @@ public class JarClassFileReader<T extends DexClass> {
     private boolean hasReachabilitySensitiveMember = false;
     private SyntheticMarker syntheticMarker = null;
 
-    public CreateDexClassVisitor(
+    CreateDexClassVisitor(
         Origin origin,
         ClassKind<T> classKind,
         byte[] classCache,
@@ -459,7 +459,7 @@ public class JarClassFileReader<T extends DexClass> {
       return new CreateMethodVisitor(access, name, desc, signature, exceptions, this);
     }
 
-    public boolean shouldReadKeepAnnotations() {
+    boolean shouldReadKeepAnnotations() {
       // Only compilers configured to read annotations should process them.
       // In all other instances (D8, relocater, etc.) they must be pass-through.
       return application.options.testing.enableEmbeddedKeepAnnotations
@@ -649,7 +649,7 @@ public class JarClassFileReader<T extends DexClass> {
       return annotations;
     }
 
-    public boolean isInANest() {
+    boolean isInANest() {
       return !nestMembers.isEmpty() || nestHost != null;
     }
   }
@@ -679,7 +679,7 @@ public class JarClassFileReader<T extends DexClass> {
     private final FieldTypeSignature fieldSignature;
     private List<DexAnnotation> annotations = null;
 
-    public CreateFieldVisitor(
+    CreateFieldVisitor(
         CreateDexClassVisitor<?> parent,
         int access,
         String name,
@@ -837,7 +837,7 @@ public class JarClassFileReader<T extends DexClass> {
     final boolean deprecated;
     Code code = null;
 
-    public CreateMethodVisitor(
+    CreateMethodVisitor(
         int access,
         String name,
         String desc,
@@ -1091,7 +1091,7 @@ public class JarClassFileReader<T extends DexClass> {
     private List<DexString> names = null;
     private final List<DexValue> values = new ArrayList<>();
 
-    public CreateAnnotationVisitor(
+    CreateAnnotationVisitor(
         JarApplicationReader application, BiConsumer<List<DexString>, List<DexValue>> onVisitEnd) {
       super(ASM_VERSION);
       this.application = application;
@@ -1240,7 +1240,7 @@ public class JarClassFileReader<T extends DexClass> {
     private final DexField field;
     private final FieldTypeSignature componentSignature;
 
-    public CreateRecordComponentVisitor(
+    CreateRecordComponentVisitor(
         CreateDexClassVisitor<?> parent, String name, String descriptor, String signature) {
       super(ASM_VERSION);
       this.field = parent.application.getField(parent.type, name, descriptor);

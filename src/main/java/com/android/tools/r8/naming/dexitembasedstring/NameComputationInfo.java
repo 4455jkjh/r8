@@ -50,6 +50,7 @@ public abstract class NameComputationInfo<T extends DexReference> {
 
   abstract Order getOrder();
 
+  @SuppressWarnings("EnumOrdinal")
   public int acceptCompareTo(NameComputationInfo<?> other, CompareToVisitor visitor) {
     int diff = visitor.visitInt(getOrder().ordinal(), other.getOrder().ordinal());
     if (diff != 0) {
@@ -58,6 +59,7 @@ public abstract class NameComputationInfo<T extends DexReference> {
     return internalAcceptCompareTo(other, visitor);
   }
 
+  @SuppressWarnings("EnumOrdinal")
   public void acceptHashing(HashingVisitor visitor) {
     visitor.visitInt(getOrder().ordinal());
     internalAcceptHashing(visitor);

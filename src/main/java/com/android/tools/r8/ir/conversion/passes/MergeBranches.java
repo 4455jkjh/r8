@@ -206,7 +206,7 @@ public class MergeBranches extends CodeRewriterPass<AppInfo> {
     SAME,
     INVERTED;
 
-    public boolean isSame() {
+    boolean isSame() {
       return this == SAME;
     }
   }
@@ -398,27 +398,27 @@ public class MergeBranches extends CodeRewriterPass<AppInfo> {
       return null;
     }
 
-    public BasicBlock getIfBlock() {
+    BasicBlock getIfBlock() {
       return ifInstruction.getBlock();
     }
 
-    public BasicBlock getPred0() {
+    BasicBlock getPred0() {
       return pred0;
     }
 
-    public BasicBlock getPred1() {
+    BasicBlock getPred1() {
       return pred1;
     }
 
-    public BasicBlock getTarget0() {
+    BasicBlock getTarget0() {
       return target0;
     }
 
-    public BasicBlock getTarget1() {
+    BasicBlock getTarget1() {
       return target1;
     }
 
-    public BasicBlock getTargetJoinBlock() {
+    BasicBlock getTargetJoinBlock() {
       return targetJoinBlock;
     }
   }

@@ -104,7 +104,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     return new RedundantFieldLoadAndStoreEliminationOnCode(code).run();
   }
 
-  private interface ExistingOrMaterializableValue {
+  interface ExistingOrMaterializableValue {
 
     default boolean isExistingValue() {
       return false;
@@ -131,7 +131,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     TypeElement getType(AppView<?> appView, TypeElement outType);
   }
 
-  private abstract static class ArraySlot {
+  abstract static class ArraySlot {
 
     protected final Value array;
     protected final MemberType memberType;
@@ -224,7 +224,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     }
   }
 
-  private static class FieldAndObject {
+  static class FieldAndObject {
 
     private final DexField field;
     private final Value object;

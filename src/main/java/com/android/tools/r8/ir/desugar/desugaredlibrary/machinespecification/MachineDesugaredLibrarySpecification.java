@@ -252,6 +252,7 @@ public class MachineDesugaredLibrarySpecification implements DesugaredLibrarySpe
     return !getRewriteType().isEmpty() || !getRewriteDerivedTypeOnly().isEmpty();
   }
 
+  @SuppressWarnings("AssignmentExpression")
   private int getLeadingVersionNumber() {
     if (leadingVersionNumberCache != -1) {
       return leadingVersionNumberCache;

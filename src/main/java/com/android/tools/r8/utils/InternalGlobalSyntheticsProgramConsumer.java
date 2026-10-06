@@ -46,11 +46,11 @@ public abstract class InternalGlobalSyntheticsProgramConsumer
     private final Kind kind;
     private final List<Pair<String, byte[]>> content = new ArrayList<>();
 
-    public GlobalsFileBuilder(Kind kind) {
+    GlobalsFileBuilder(Kind kind) {
       this.kind = kind;
     }
 
-    public Kind getKind() {
+    Kind getKind() {
       return kind;
     }
 
@@ -62,7 +62,7 @@ public abstract class InternalGlobalSyntheticsProgramConsumer
       content.add(new Pair<>(entryName, data));
     }
 
-    public byte[] build() throws IOException {
+    byte[] build() throws IOException {
       // Add meta information.
       add(COMPILER_INFO_ENTRY_NAME, Version.getVersionString().getBytes(StandardCharsets.UTF_8));
       add(OUTPUT_KIND_ENTRY_NAME, getKind().toString().getBytes(StandardCharsets.UTF_8));
@@ -185,7 +185,7 @@ public abstract class InternalGlobalSyntheticsProgramConsumer
     }
   }
 
-  private abstract static class PerFileBase extends InternalGlobalSyntheticsProgramConsumer {
+  abstract static class PerFileBase extends InternalGlobalSyntheticsProgramConsumer {
 
     private final AppView appView;
     private final GlobalSyntheticsConsumer clientConsumer;

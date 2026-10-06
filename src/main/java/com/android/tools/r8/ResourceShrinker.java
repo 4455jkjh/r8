@@ -171,7 +171,7 @@ public final class ResourceShrinker {
       this.callback = callback;
     }
 
-    public void visit() {
+    void visit() {
       callback.startClassVisit(classDef.getClassReference());
       if (!callback.shouldProcess(classDef.type.getInternalName())) {
         return;

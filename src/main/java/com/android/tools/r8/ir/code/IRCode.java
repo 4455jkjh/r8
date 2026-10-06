@@ -84,6 +84,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
 
     public final Deque<Value> liveStackValues;
 
+    @SuppressWarnings("NonApiType")
     public LiveAtEntrySets(
         LinkedHashSet<Value> liveValues, Set<Value> liveLocalValues, Deque<Value> liveStackValues) {
       assert liveValues.containsAll(liveLocalValues);
@@ -137,6 +138,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   private final IRMetadata metadata;
   private final InternalOptions options;
 
+  @SuppressWarnings("NonApiType")
   public IRCode(
       InternalOptions options,
       ProgramMethod method,
@@ -1540,6 +1542,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     }
   }
 
+  @SuppressWarnings("NonApiType")
   @Override
   public LinkedList<BasicBlock> getBlocks() {
     return blocks;

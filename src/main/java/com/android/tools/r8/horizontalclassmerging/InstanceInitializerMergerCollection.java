@@ -115,7 +115,7 @@ public class InstanceInitializerMergerCollection {
     // Try and merge the constructors with the most arguments first, to avoid using synthetic
     // arguments if possible.
     instanceInitializerMergers.sort(
-        Comparator.comparing(InstanceInitializerMerger::getArity).reversed());
+        Comparator.comparingInt(InstanceInitializerMerger::getArity).reversed());
     return new InstanceInitializerMergerCollection(
         instanceInitializerMergers, equivalentInstanceInitializerMergers);
   }

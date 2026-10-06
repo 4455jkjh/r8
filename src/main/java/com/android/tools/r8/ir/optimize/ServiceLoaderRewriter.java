@@ -725,13 +725,13 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
   }
 
   private static class ServiceLoaderLoadResult {
-    public final InvokeStatic loadInvoke;
-    public final InvokeVirtual classLoaderInvoke;
-    public final DexType serviceType;
-    public final List<DexClass> implClasses;
-    public final InvokeVirtual iteratorInvoke;
+    final InvokeStatic loadInvoke;
+    final InvokeVirtual classLoaderInvoke;
+    final DexType serviceType;
+    final List<DexClass> implClasses;
+    final InvokeVirtual iteratorInvoke;
 
-    public ServiceLoaderLoadResult(
+    ServiceLoaderLoadResult(
         InvokeStatic loadInvoke,
         InvokeVirtual classLoaderInvoke,
         DexType serviceType,
@@ -746,11 +746,11 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
   }
 
   private static class DirectRewriteResult {
-    public final InvokeMethod priorHasNextInstr;
-    public final InvokeMethod nextInstr;
-    public final InvokeMethod subsequentHasNextInstr;
+    final InvokeMethod priorHasNextInstr;
+    final InvokeMethod nextInstr;
+    final InvokeMethod subsequentHasNextInstr;
 
-    public DirectRewriteResult(
+    DirectRewriteResult(
         InvokeMethod priorHasNextInstr,
         InvokeMethod nextInstr,
         InvokeMethod subsequentHasNextInstr) {

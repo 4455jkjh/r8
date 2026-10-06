@@ -64,8 +64,7 @@ public class SyntheticMarker {
     private final String versionHash;
     private final SyntheticNaming syntheticNaming;
 
-    public MarkerAttribute(
-        SyntheticKind kind, String versionHash, SyntheticNaming syntheticNaming) {
+    MarkerAttribute(SyntheticKind kind, String versionHash, SyntheticNaming syntheticNaming) {
       super(SYNTHETIC_MARKER_ATTRIBUTE_TYPE_NAME);
       this.kind = kind;
       this.versionHash = versionHash;

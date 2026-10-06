@@ -360,6 +360,7 @@ public class DexConstantOptimizer extends CodeRewriterPass<AppInfo> {
     return insertionPoint.getPosition();
   }
 
+  @SuppressWarnings("NonApiType")
   private void shortenLiveRangesInsideBlock(
       IRCode code,
       BasicBlock block,

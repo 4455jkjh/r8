@@ -156,7 +156,7 @@ public abstract class LirStrategy<V, EV> {
 
       private final int[] phiTable;
 
-      public StrategyInfo(int[] phiTable) {
+      StrategyInfo(int[] phiTable) {
         this.phiTable = phiTable;
       }
 

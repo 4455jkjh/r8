@@ -222,16 +222,16 @@ public class LirBuilder<V, EV> {
       for (int i = 0, l = argConstants.size(); i < l; ++i) {
         DexString a = argConstants.get(i);
         DexString b = otherArgConstants.get(i);
-        if (a == null && b == null) {
-          continue;
-        } else if (a == null) {
-          return 1;
-        } else if (b == null) {
-          return 0;
-        } else {
-          ret = visitor.visitDexString(a, b);
-          if (ret != 0) {
-            return ret;
+        if (a != null || b != null) {
+          if (a == null) {
+            return 1;
+          } else if (b == null) {
+            return 0;
+          } else {
+            ret = visitor.visitDexString(a, b);
+            if (ret != 0) {
+              return ret;
+            }
           }
         }
       }

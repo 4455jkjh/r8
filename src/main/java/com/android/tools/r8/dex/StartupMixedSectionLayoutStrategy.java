@@ -220,7 +220,7 @@ public class StartupMixedSectionLayoutStrategy extends DefaultMixedSectionLayout
       return true;
     }
 
-    public boolean addCode(ProgramMethod method) {
+    boolean addCode(ProgramMethod method) {
       if (method.getDefinition().hasCode()) {
         codeLayout.add(method);
         return true;

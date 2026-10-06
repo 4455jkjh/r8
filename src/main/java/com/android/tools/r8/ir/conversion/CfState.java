@@ -11,7 +11,7 @@ import com.android.tools.r8.ir.code.ValueType;
 
 public class CfState {
 
-  private abstract static class SlotType {
+  abstract static class SlotType {
 
     public abstract DexType getPrecise();
 
@@ -330,7 +330,7 @@ public class CfState {
     }
   }
 
-  private static class BaseSnapshot extends Snapshot {
+  static class BaseSnapshot extends Snapshot {
     final SlotType[] locals;
     final SlotType[] stack;
 

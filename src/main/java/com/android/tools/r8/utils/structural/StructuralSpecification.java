@@ -156,7 +156,8 @@ public abstract class StructuralSpecification<T, V extends StructuralSpecificati
 
   public final <S extends StructuralItem<S>> V withInt2ItemMap(
       Function<T, Int2ReferenceMap<S>> getter) {
-    return withInt2CustomItemMap(getter, S::acceptCompareTo, S::acceptHashing);
+    return withInt2CustomItemMap(
+        getter, StructuralItem::acceptCompareTo, StructuralItem::acceptHashing);
   }
 
   /**

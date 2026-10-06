@@ -101,6 +101,7 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
     }
   }
 
+  @SuppressWarnings("NonApiType")
   public LinkedList<DexProgramClass> getClasses() {
     return classes;
   }

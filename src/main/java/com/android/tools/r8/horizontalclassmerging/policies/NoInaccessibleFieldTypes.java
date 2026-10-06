@@ -38,6 +38,7 @@ public class NoInaccessibleFieldTypes extends SingleClassPolicyWithPreprocessing
     return !pinnedClasses.contains(program);
   }
 
+  @SuppressWarnings("NonApiType")
   @Override
   public void preprocess(LinkedList<HorizontalMergeGroup> groups, ExecutorService executorService)
       throws ExecutionException {

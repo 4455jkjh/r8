@@ -175,7 +175,7 @@ public class UndoConstructorInlining {
       this.stronglyConnectedComponents = stronglyConnectedComponents;
     }
 
-    public void run(ExecutorService executorService) throws ExecutionException {
+    void run(ExecutorService executorService) throws ExecutionException {
       ThreadUtils.processItems(
           appView.appInfo().classes(),
           this::processClass,
@@ -455,11 +455,11 @@ public class UndoConstructorInlining {
       return invokedMethod;
     }
 
-    public int getFirstValue() {
+    int getFirstValue() {
       return firstValue;
     }
 
-    public DexProgramClass getProgramClass() {
+    DexProgramClass getProgramClass() {
       return programClass;
     }
   }
@@ -475,7 +475,7 @@ public class UndoConstructorInlining {
     // class and the target holder.
     //
     // Synchronized to ensure thread safety.
-    public synchronized ProgramMethod getOrCreateConstructor(
+    synchronized ProgramMethod getOrCreateConstructor(
         DexProgramClass clazz,
         DexMethod target,
         Map<DexType, DexProgramClass> ensureConstructorsOnClasses,
@@ -600,7 +600,7 @@ public class UndoConstructorInlining {
       return lirBuilder.build();
     }
 
-    public void commitPendingConstructors() {
+    void commitPendingConstructors() {
       constructorCache.forEach(
           (clazz, constructors) -> {
             List<DexEncodedMethod> methods =

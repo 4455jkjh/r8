@@ -32,7 +32,7 @@ public class TimingImpl extends TimingImplBase {
     stack.push(top);
   }
 
-  private static class MemInfo {
+  static class MemInfo {
     final long used;
 
     MemInfo(long used) {
@@ -230,7 +230,7 @@ public class TimingImpl extends TimingImplBase {
       final Node mergeTarget;
       final Node mergeSource;
 
-      public Item(Node mergeTarget, Node mergeSource) {
+      Item(Node mergeTarget, Node mergeSource) {
         this.mergeTarget = mergeTarget;
         this.mergeSource = mergeSource;
       }

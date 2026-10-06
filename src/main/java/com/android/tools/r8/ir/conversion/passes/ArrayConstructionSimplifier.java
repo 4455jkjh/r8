@@ -111,6 +111,7 @@ public class ArrayConstructionSimplifier extends CodeRewriterPass<AppInfo> {
     return code.metadata().mayHaveNewArrayEmpty();
   }
 
+  @SuppressWarnings("NonApiType")
   private ArrayList<ArrayValues> findOptimizableArrays(IRCode code) {
     ArrayList<ArrayValues> candidates = new ArrayList<>();
     for (Instruction instruction : code.instructions()) {

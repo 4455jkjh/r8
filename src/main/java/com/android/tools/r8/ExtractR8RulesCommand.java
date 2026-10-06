@@ -18,7 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @KeepForApi
-/** Experimental API to extract embedded rules from libraries. */
+/* Experimental API to extract embedded rules from libraries. */
 public class ExtractR8RulesCommand extends BaseCommand {
 
   private final StringConsumer rulesConsumer;

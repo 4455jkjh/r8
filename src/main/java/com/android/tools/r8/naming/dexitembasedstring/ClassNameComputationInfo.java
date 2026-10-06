@@ -109,6 +109,7 @@ public class ClassNameComputationInfo extends NameComputationInfo<DexType>
   private final int arrayDepth;
   private final ClassNameMapping mapping;
 
+  @SuppressWarnings("EnumOrdinal")
   public static void specify(StructuralSpecification<ClassNameComputationInfo, ?> spec) {
     spec.withInt(s -> s.arrayDepth).withInt(s -> s.mapping.ordinal());
   }
@@ -219,6 +220,7 @@ public class ClassNameComputationInfo extends NameComputationInfo<DexType>
     return this.arrayDepth == otherInfo.arrayDepth && this.mapping == otherInfo.mapping;
   }
 
+  @SuppressWarnings("EnumOrdinal")
   @Override
   public int hashCode() {
     return mapping.ordinal() * 31 + arrayDepth;

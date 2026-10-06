@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 
 /** Android API level description */
+@SuppressWarnings("AssignmentExpression")
 public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   private static final List<AndroidApiLevel> valuesSorted;
 

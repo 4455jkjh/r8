@@ -13,11 +13,13 @@ class RegisterMoveCycle {
   // present in this cycle.
   private final boolean closed;
 
+  @SuppressWarnings("NonApiType")
   RegisterMoveCycle(TreeSet<RegisterMove> cycle, boolean closed) {
     this.moves = cycle;
     this.closed = closed;
   }
 
+  @SuppressWarnings("NonApiType")
   public TreeSet<RegisterMove> getMoves() {
     return moves;
   }

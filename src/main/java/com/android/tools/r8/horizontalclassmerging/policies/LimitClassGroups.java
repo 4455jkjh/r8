@@ -51,6 +51,7 @@ public class LimitClassGroups extends MultiClassPolicy {
     return newGroups;
   }
 
+  @SuppressWarnings("NonApiType")
   private HorizontalMergeGroup createNewGroup(LinkedList<HorizontalMergeGroup> newGroups) {
     HorizontalMergeGroup newGroup = new HorizontalMergeGroup();
     newGroups.add(newGroup);

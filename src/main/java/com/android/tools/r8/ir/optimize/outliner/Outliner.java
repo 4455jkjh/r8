@@ -142,7 +142,7 @@ public class Outliner implements ReprocessingOptimization {
   private final DexItemFactory dexItemFactory;
   private final InliningConstraints inliningConstraints;
 
-  private abstract static class OutlineInstruction implements Comparable<OutlineInstruction> {
+  abstract static class OutlineInstruction implements Comparable<OutlineInstruction> {
 
     // Value signaling that this is the one allowed temporary register for an outline.
     private static final int OUTLINE_TEMP = -1;
@@ -818,7 +818,7 @@ public class Outliner implements ReprocessingOptimization {
       reset(0);
     }
 
-    protected void process() {
+    void process() {
       while (index < currentCandidateInstructions.size()) {
         processInstruction(currentCandidateInstructions.get(index));
       }
@@ -829,7 +829,7 @@ public class Outliner implements ReprocessingOptimization {
 
     // Get int in-values for an instruction. For commutative binary operations using the current
     // return value (active out-value) make sure that that value is the left value.
-    protected List<Value> orderedInValues(Instruction instruction, Value returnValue) {
+    List<Value> orderedInValues(Instruction instruction, Value returnValue) {
       List<Value> inValues = instruction.inValues();
       if (instruction.isBinop() && instruction.asBinop().isCommutative()) {
         if (inValues.get(1) == returnValue) {
@@ -1144,7 +1144,7 @@ public class Outliner implements ReprocessingOptimization {
       }
     }
 
-    protected abstract void handle(int start, int end, Outline outline);
+    abstract void handle(int start, int end, Outline outline);
 
     private void candidate(int start, int index) {
       assert !currentCandidateInstructions.get(start).isConstInstruction();

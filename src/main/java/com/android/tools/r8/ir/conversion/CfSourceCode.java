@@ -61,7 +61,7 @@ import java.util.stream.Collectors;
 
 public class CfSourceCode implements SourceCode {
 
-  private enum GeneratedMethodSynchronizationBlock {
+  enum GeneratedMethodSynchronizationBlock {
     METHOD_ENTER,
     METHOD_EXIT,
     EXCEPTIONAL_MONITOR_EXIT,
@@ -86,10 +86,10 @@ public class CfSourceCode implements SourceCode {
 
   private static class TryHandlerList {
 
-    public final int startOffset;
-    public final int endOffset;
-    public final List<DexType> guards;
-    public final IntList offsets;
+    final int startOffset;
+    final int endOffset;
+    final List<DexType> guards;
+    final IntList offsets;
 
     TryHandlerList(int startOffset, int endOffset, List<DexType> guards, IntList offsets) {
       this.startOffset = startOffset;
@@ -155,11 +155,11 @@ public class CfSourceCode implements SourceCode {
   private static class LocalVariableList {
 
     @SuppressWarnings("UnusedVariable")
-    public static final LocalVariableList EMPTY = new LocalVariableList(0, 0, emptyMap());
+    static final LocalVariableList EMPTY = new LocalVariableList(0, 0, emptyMap());
 
-    public final int startOffset;
-    public final int endOffset;
-    public final Int2ReferenceMap<DebugLocalInfo> locals;
+    final int startOffset;
+    final int endOffset;
+    final Int2ReferenceMap<DebugLocalInfo> locals;
 
     private LocalVariableList(
         int startOffset, int endOffset, Int2ReferenceMap<DebugLocalInfo> locals) {

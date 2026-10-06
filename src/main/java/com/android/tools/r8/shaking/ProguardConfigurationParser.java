@@ -1345,6 +1345,7 @@ public class ProguardConfigurationParser {
       return ruleBuilder.isValid() ? ruleBuilder.build() : null;
     }
 
+    @SuppressWarnings("AssignmentExpression")
     private void parseMemberAccessFlags(ProguardMemberRule.Builder ruleBuilder) {
       boolean found = true;
       while (found && !eof()) {

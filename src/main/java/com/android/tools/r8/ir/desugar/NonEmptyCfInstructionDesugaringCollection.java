@@ -79,6 +79,7 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
     this(appView, appView.apiLevelCompute());
   }
 
+  @SuppressWarnings("AssignmentExpression")
   NonEmptyCfInstructionDesugaringCollection(
       AppView<?> appView, AndroidApiLevelCompute apiLevelCompute) {
     this.appView = appView;

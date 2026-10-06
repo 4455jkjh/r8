@@ -47,11 +47,11 @@ public class Bisect {
     private final InputStream stream;
     private String result;
 
-    public StreamReader(InputStream stream) {
+    StreamReader(InputStream stream) {
       this.stream = stream;
     }
 
-    public String getResult() {
+    String getResult() {
       return result;
     }
 

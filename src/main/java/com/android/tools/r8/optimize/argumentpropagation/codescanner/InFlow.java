@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 public interface InFlow {
 
+  @SuppressWarnings("EnumOrdinal")
   default int compareTo(InFlow inFlow, InFlowComparator comparator) {
     if (getKind() == inFlow.getKind()) {
       return internalCompareToSameKind(inFlow, comparator);

@@ -45,7 +45,7 @@ public class ExtractMarker {
 
     private final PrintStream stream;
 
-    public MarkerInfoPrintConsumer(PrintStream stream) {
+    MarkerInfoPrintConsumer(PrintStream stream) {
       this.stream = stream;
     }
 

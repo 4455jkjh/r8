@@ -75,7 +75,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
     private boolean mayHaveRedundantBlocks = false;
     private Set<Instruction> toRemove = NOTHING;
 
-    public CodeRewriterResult rewriteCode(IRCode code) {
+    CodeRewriterResult rewriteCode(IRCode code) {
       assert !mayHaveRedundantBlocks;
       assert toRemove == NOTHING;
       CodeRewriterResult result = noChange();
@@ -155,7 +155,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       return isNewArrayFilledOfConstants(value.definition.asNewArrayFilled());
     }
 
-    public NewArrayFilled copyConstantsNewArrayFilled(IRCode code, NewArrayFilled original) {
+    NewArrayFilled copyConstantsNewArrayFilled(IRCode code, NewArrayFilled original) {
       assert isNewArrayFilledOfConstants(original);
       Value newValue = code.createValue(original.getOutType(), original.getLocalInfo());
       List<Value> newArguments = new ArrayList<>(original.inValues().size());

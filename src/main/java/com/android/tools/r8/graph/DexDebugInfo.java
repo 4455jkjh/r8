@@ -30,7 +30,7 @@ import java.util.List;
 public abstract class DexDebugInfo extends CachedHashValueDexItem
     implements StructuralItem<DexDebugInfo> {
 
-  private enum DebugInfoKind {
+  enum DebugInfoKind {
     EVENT_BASED,
     PC_BASED,
     NATIVE_PC_BASED
@@ -86,6 +86,7 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
   @Override
   public abstract void acceptHashing(HashingVisitor visitor);
 
+  @SuppressWarnings("EnumOrdinal")
   @Override
   public int acceptCompareTo(DexDebugInfo other, CompareToVisitor visitor) {
     int diff = visitor.visitInt(getKind().ordinal(), other.getKind().ordinal());

@@ -142,15 +142,15 @@ public class LensCodeRewriter {
       this.method = method;
     }
 
-    public NonIdentityGraphLens getGraphLens() {
+    NonIdentityGraphLens getGraphLens() {
       return graphLens;
     }
 
-    public GraphLens getCodeLens() {
+    GraphLens getCodeLens() {
       return codeLens;
     }
 
-    public DexMethod getMethod() {
+    DexMethod getMethod() {
       return method;
     }
   }

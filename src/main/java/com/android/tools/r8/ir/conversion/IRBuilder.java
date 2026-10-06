@@ -228,7 +228,7 @@ public class IRBuilder {
     private final int targetOffset;
     private final Position position;
 
-    public SplitBlockWorklistItem(
+    SplitBlockWorklistItem(
         int firstInstructionIndex,
         BasicBlock block,
         Position position,
@@ -250,7 +250,7 @@ public class IRBuilder {
     private final List<Value> values = new ArrayList<>();
 
     /** Creates a ValueList of all the operands at the given index in the list of phis. */
-    public static ValueList fromPhis(List<Phi> phis, int index) {
+    static ValueList fromPhis(List<Phi> phis, int index) {
       ValueList result = new ValueList();
       for (Phi phi : phis) {
         result.values.add(phi.getOperand(index));

@@ -85,7 +85,7 @@ public abstract class BaseCommand {
 
   private static class ProgramInputOrigin extends InputFileOrigin {
 
-    public ProgramInputOrigin(Path file) {
+    ProgramInputOrigin(Path file) {
       super("program input", file);
     }
   }

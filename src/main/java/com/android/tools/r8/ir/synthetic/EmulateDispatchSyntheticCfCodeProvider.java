@@ -45,6 +45,7 @@ public class EmulateDispatchSyntheticCfCodeProvider extends SyntheticCfCodeProvi
   private final EmulateDispatchType dispatchType;
   private final LinkedHashMap<DexType, DexMethod> extraDispatchCases;
 
+  @SuppressWarnings("NonApiType")
   public EmulateDispatchSyntheticCfCodeProvider(
       DexType holder,
       DexMethod forwardingMethod,

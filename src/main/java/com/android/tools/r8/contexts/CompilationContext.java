@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 public class CompilationContext {
 
   // Internal contract to compute a unique suffix for synthetics.
-  private abstract static class ContextDescriptorProvider {
+  abstract static class ContextDescriptorProvider {
 
     // Method to construct a fully qualified description of the context.
     // This is used to ensure that all contexts are unique during compilation.

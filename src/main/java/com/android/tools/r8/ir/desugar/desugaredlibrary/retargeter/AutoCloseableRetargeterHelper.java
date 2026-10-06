@@ -124,6 +124,7 @@ public class AutoCloseableRetargeterHelper {
   // This includes all library types which implements directly AutoCloseable#close() including
   // android.media.MediaDrm, however, android.media.MediaDrm is final and rewritten if called
   // directly by the backported method rewriter.
+  @SuppressWarnings("NonApiType")
   private LinkedHashMap<DexType, DexMethod> synthesizeDispatchCases(
       AppView<?> appView,
       ProgramMethod context,

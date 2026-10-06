@@ -236,8 +236,8 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
   }
 
   private static class InstructionAndOptionalAssume {
-    public final Instruction instruction;
-    public final Assume assume;
+    final Instruction instruction;
+    final Assume assume;
 
     InstructionAndOptionalAssume(Instruction instruction, Assume assume) {
       this.instruction = instruction;
@@ -494,14 +494,14 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
 
   private static class AnalysisResult {
 
-    public final InvokeMethodWithReceiver iteratorInstr;
-    public final InvokeMethodWithReceiver hasNextInstr;
-    public final If ifInstr;
-    public final InvokeMethodWithReceiver nextInstr;
+    final InvokeMethodWithReceiver iteratorInstr;
+    final InvokeMethodWithReceiver hasNextInstr;
+    final If ifInstr;
+    final InvokeMethodWithReceiver nextInstr;
     private final Assume listAssumeInstr;
     private final Assume iteratorAssumeInstr;
 
-    public AnalysisResult(
+    AnalysisResult(
         InvokeMethodWithReceiver iteratorInstr,
         InvokeMethodWithReceiver hasNextInstr,
         If ifInstr,

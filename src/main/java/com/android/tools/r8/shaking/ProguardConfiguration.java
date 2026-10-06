@@ -44,6 +44,7 @@ public class ProguardConfiguration {
       return this == REMOVE;
     }
 
+    @SuppressWarnings("EnumOrdinal")
     public ProcessKotlinNullChecks meet(ProcessKotlinNullChecks other) {
       assert other != DEFAULT;
       return other.ordinal() > ordinal() ? other : this;

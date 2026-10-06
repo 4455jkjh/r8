@@ -10,41 +10,102 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.google.common.collect.ImmutableList;
 
 public abstract class Reason {
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason ELIGIBLE = new StringReason("ELIGIBLE");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason ANNOTATION = new StringReason("ANNOTATION");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason PINNED = new StringReason("PINNED");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason DOWN_CAST = new StringReason("DOWN_CAST");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INSTANCE_OF = new StringReason("INSTANCE_OF");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason SUBENUM_SUBTYPES = new StringReason("SUBENUM_SUBTYPES");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason SUBENUM_INVALID_HIERARCHY =
       new StringReason("SUBENUM_INVALID_HIERARCHY");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason SUBENUM_INSTANCE_FIELDS = new StringReason("SUBENUM_INSTANCE_FIELDS");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason MANY_INSTANCE_FIELDS = new StringReason("MANY_INSTANCE_FIELDS");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason DEFAULT_METHOD_INVOKE = new StringReason("DEFAULT_METHOD_INVOKE");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UNRESOLVABLE_FIELD = new StringReason("UNRESOLVABLE_FIELD");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason CONST_CLASS = new StringReason("CONST_CLASS");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_PHI = new StringReason("INVALID_PHI");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason NO_INIT = new StringReason("NO_INIT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_INIT = new StringReason("INVALID_INIT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_CLINIT = new StringReason("INVALID_CLINIT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_SUBTYPE_INIT = new StringReason("INVALID_SUBTYPE_INIT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason SUBTYPE_CLINIT = new StringReason("SUBTYPE_CLINIT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_INVOKE = new StringReason("INVALID_INVOKE");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_INVOKE_CLASSPATH =
       new StringReason("INVALID_INVOKE_CLASSPATH");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_INVOKE_CUSTOM = new StringReason("INVALID_INVOKE_CUSTOM");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_INVOKE_ON_ARRAY = new StringReason("INVALID_INVOKE_ON_ARRAY");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason IMPLICIT_UP_CAST_IN_RETURN =
       new StringReason("IMPLICIT_UP_CAST_IN_RETURN");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_FIELD_PUT = new StringReason("INVALID_FIELD_PUT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_ARRAY_PUT = new StringReason("INVALID_ARRAY_PUT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_INVOKE_NEW_ARRAY =
       new StringReason("INVALID_INVOKE_NEW_ARRAY");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason TYPE_MISMATCH_FIELD_PUT = new StringReason("TYPE_MISMATCH_FIELD_PUT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason INVALID_IF_TYPES = new StringReason("INVALID_IF_TYPES");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason ASSIGNMENT_OUTSIDE_INIT = new StringReason("ASSIGNMENT_OUTSIDE_INIT");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason ENUM_METHOD_CALLED_WITH_NULL_RECEIVER =
       new StringReason("ENUM_METHOD_CALLED_WITH_NULL_RECEIVER");
+
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason OTHER_UNSUPPORTED_INSTRUCTION =
       new StringReason("OTHER_UNSUPPORTED_INSTRUCTION");
 

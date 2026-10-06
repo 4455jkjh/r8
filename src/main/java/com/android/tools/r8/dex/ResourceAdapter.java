@@ -201,7 +201,7 @@ public class ResourceAdapter {
 
   private abstract class StringAdapter {
 
-    protected final String contents;
+    final String contents;
     private final StringBuilder result = new StringBuilder();
 
     // If any type names in `contents` have been updated. If this flag is unchanged in the end,
@@ -216,12 +216,12 @@ public class ResourceAdapter {
     // valid, but shorter Java type name.
     private final IntStack prefixEndPositionsExclusive;
 
-    public StringAdapter(String contents) {
+    StringAdapter(String contents) {
       this.contents = contents;
       this.prefixEndPositionsExclusive = allowRenamingOfPrefixes() ? new IntArrayList() : null;
     }
 
-    public boolean run() {
+    boolean run() {
       do {
         handleMisc();
         handleJavaType();
@@ -239,7 +239,7 @@ public class ResourceAdapter {
       return changed;
     }
 
-    public String getResult() {
+    String getResult() {
       assert changed;
       return result.toString();
     }
@@ -329,7 +329,7 @@ public class ResourceAdapter {
      * <p>Returns false if no type exists, allowing backtracking to shorter prefixes (e.g.
      * packages).
      */
-    protected boolean renameJavaTypeInRange(int from, int toExclusive) {
+    boolean renameJavaTypeInRange(int from, int toExclusive) {
       String javaType = contents.substring(from, toExclusive);
       if (getClassNameSeparator() != '.') {
         javaType = javaType.replace(getClassNameSeparator(), '.');
@@ -359,7 +359,7 @@ public class ResourceAdapter {
     }
 
     // Returns true if the Java package in the range [from; toExclusive[ was renamed.
-    protected boolean renameJavaPackageInRange(int from, int toExclusive) {
+    boolean renameJavaPackageInRange(int from, int toExclusive) {
       String javaPackage = contents.substring(from, toExclusive);
       if (getClassNameSeparator() != '/') {
         javaPackage = javaPackage.replace(getClassNameSeparator(), '/');
@@ -383,15 +383,15 @@ public class ResourceAdapter {
       return false;
     }
 
-    protected abstract char getClassNameSeparator();
+    abstract char getClassNameSeparator();
 
-    protected abstract boolean allowRenamingOfPrefixes();
+    abstract boolean allowRenamingOfPrefixes();
 
-    protected abstract boolean shouldRecordPrefix(char c);
+    abstract boolean shouldRecordPrefix(char c);
 
-    protected abstract boolean handlePrefix(int from, int toExclusive);
+    abstract boolean handlePrefix(int from, int toExclusive);
 
-    protected abstract boolean isRenamingCandidate(int from, int toExclusive);
+    abstract boolean isRenamingCandidate(int from, int toExclusive);
 
     private void outputRangeFromInput(int from, int toExclusive) {
       if (from < toExclusive) {
@@ -403,18 +403,18 @@ public class ResourceAdapter {
       result.append(s);
     }
 
-    protected boolean eof() {
+    boolean eof() {
       return eof(position);
     }
 
-    protected boolean eof(int position) {
+    boolean eof(int position) {
       return position == contents.length();
     }
   }
 
   private class FileContentsAdapter extends StringAdapter {
 
-    public FileContentsAdapter(String fileContents) {
+    FileContentsAdapter(String fileContents) {
       super(fileContents);
     }
 
@@ -451,7 +451,7 @@ public class ResourceAdapter {
   }
 
   private abstract class FileNameAdapter extends StringAdapter {
-    public FileNameAdapter(String filename) {
+    FileNameAdapter(String filename) {
       super(filename);
     }
 
@@ -480,7 +480,7 @@ public class ResourceAdapter {
   }
 
   private class DefaultFileNameAdapter extends FileNameAdapter {
-    public DefaultFileNameAdapter(String filename) {
+    DefaultFileNameAdapter(String filename) {
       super(filename);
     }
 
@@ -493,7 +493,7 @@ public class ResourceAdapter {
   }
 
   private class ServiceFileNameAdapter extends FileNameAdapter {
-    public ServiceFileNameAdapter(String filename) {
+    ServiceFileNameAdapter(String filename) {
       super(filename);
     }
 
@@ -514,7 +514,7 @@ public class ResourceAdapter {
   }
 
   private class DirectoryNameAdapter extends FileNameAdapter {
-    public DirectoryNameAdapter(String filename) {
+    DirectoryNameAdapter(String filename) {
       super(filename);
     }
 

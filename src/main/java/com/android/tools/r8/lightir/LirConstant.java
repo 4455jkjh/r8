@@ -40,6 +40,7 @@ public interface LirConstant {
       return INSTANCE;
     }
 
+    @SuppressWarnings("EnumOrdinal")
     @Override
     public int acceptCompareTo(LirConstant item1, LirConstant item2, CompareToVisitor visitor) {
       int diff =
@@ -51,6 +52,7 @@ public interface LirConstant {
       return item1.internalLirConstantAcceptCompareTo(item2, visitor);
     }
 
+    @SuppressWarnings("EnumOrdinal")
     @Override
     public void acceptHashing(LirConstant item, HashingVisitor visitor) {
       visitor.visitInt(item.getLirConstantOrder().ordinal());

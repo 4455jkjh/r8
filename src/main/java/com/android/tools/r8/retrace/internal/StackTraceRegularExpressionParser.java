@@ -138,7 +138,7 @@ public class StackTraceRegularExpressionParser
     }
   }
 
-  private interface RegularExpressionGroupHandler {
+  interface RegularExpressionGroupHandler {
 
     boolean matchHandler(StackTraceElementStringProxyBuilder builder, Matcher matcher);
 
@@ -147,7 +147,7 @@ public class StackTraceRegularExpressionParser
     }
   }
 
-  private abstract static class RegularExpressionGroup {
+  abstract static class RegularExpressionGroup {
 
     abstract String subExpression();
 

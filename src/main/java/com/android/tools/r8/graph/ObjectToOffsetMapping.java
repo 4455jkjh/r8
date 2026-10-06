@@ -291,6 +291,7 @@ public class ObjectToOffsetMapping implements StringOffsetProvider {
     return sortedClasses.toArray(DexProgramClass.EMPTY_ARRAY);
   }
 
+  @SuppressWarnings("NonApiType")
   private void addClassesFromStartupProfile(
       Set<DexProgramClass> classes,
       LinkedHashSet<DexProgramClass> sortedClasses,
@@ -311,6 +312,7 @@ public class ObjectToOffsetMapping implements StringOffsetProvider {
         });
   }
 
+  @SuppressWarnings("NonApiType")
   private void addRemainingClassesInSortedOrder(
       Set<DexProgramClass> classes,
       LinkedHashSet<DexProgramClass> sortedClasses,
@@ -325,6 +327,7 @@ public class ObjectToOffsetMapping implements StringOffsetProvider {
     remainingClasses.forEach(clazz -> addClassAfterParentClasses(classes, sortedClasses, clazz));
   }
 
+  @SuppressWarnings("NonApiType")
   private void addClassAfterParentClasses(
       Set<DexProgramClass> classes,
       LinkedHashSet<DexProgramClass> sortedClasses,

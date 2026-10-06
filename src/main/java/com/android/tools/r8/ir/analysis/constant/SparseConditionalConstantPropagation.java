@@ -98,7 +98,7 @@ public class SparseConditionalConstantPropagation extends CodeRewriterPass<AppIn
       visitedBlocks = new BitSet(maxBlockNumber);
     }
 
-    public SparseConditionalConstantPropagationOnCode analyze() {
+    SparseConditionalConstantPropagationOnCode analyze() {
       BasicBlock firstBlock = code.entryBlock();
       visitInstructions(firstBlock);
 
@@ -128,7 +128,7 @@ public class SparseConditionalConstantPropagation extends CodeRewriterPass<AppIn
       return this;
     }
 
-    protected CodeRewriterResult run() {
+    CodeRewriterResult run() {
       boolean hasChanged = rewriteConstants();
       return CodeRewriterResult.hasChanged(hasChanged);
     }

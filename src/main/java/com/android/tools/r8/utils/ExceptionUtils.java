@@ -265,7 +265,7 @@ public abstract class ExceptionUtils {
     final Origin origin;
     final Position position;
 
-    public static RuntimeException wrap(RuntimeException e, Origin origin, Position position) {
+    static RuntimeException wrap(RuntimeException e, Origin origin, Position position) {
       return needsAttachment(e, origin, position)
           ? new OriginAttachmentException(e, origin, position)
           : e;

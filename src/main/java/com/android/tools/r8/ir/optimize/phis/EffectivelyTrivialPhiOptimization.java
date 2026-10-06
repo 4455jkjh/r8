@@ -162,17 +162,16 @@ public class EffectivelyTrivialPhiOptimization {
             assert representativeOperandAbstractValue == null;
             representativeOperand = operand;
             representativeOperandAbstractValue = operand.getAbstractValue(appView, code.context());
-          } else if (operand == representativeOperand) {
-            continue;
-          } else if (representativeOperandAbstractValue.isSingleValue()
-              && operand
-                  .getAbstractValue(appView, code.context())
-                  .equals(representativeOperandAbstractValue)) {
-            foundDifferentOperandValuesWithSameAbstractValue = true;
-            continue;
-          } else {
-            // Not effectively trivial.
-            return null;
+          } else if (operand != representativeOperand) {
+            if (representativeOperandAbstractValue.isSingleValue()
+                && operand
+                    .getAbstractValue(appView, code.context())
+                    .equals(representativeOperandAbstractValue)) {
+              foundDifferentOperandValuesWithSameAbstractValue = true;
+            } else {
+              // Not effectively trivial.
+              return null;
+            }
           }
         }
       }

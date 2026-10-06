@@ -238,6 +238,7 @@ public class Inliner {
    * what reason for inlining it might have. Also, it does not take the visibility of the method
    * itself into account.
    */
+  @SuppressWarnings("EnumOrdinal")
   public enum Constraint {
     // The ordinal values are important so please do not reorder.
     // Each constraint includes all constraints <= to it.
@@ -270,6 +271,7 @@ public class Inliner {
       assert SUBCLASS.ordinal() < ALWAYS.ordinal();
     }
 
+    @SuppressWarnings("EnumOrdinal")
     public Constraint meet(Constraint otherConstraint) {
       if (this.ordinal() < otherConstraint.ordinal()) {
         return this;
@@ -335,6 +337,7 @@ public class Inliner {
       return constraint.isNever();
     }
 
+    @SuppressWarnings("EnumOrdinal")
     @Override
     public int hashCode() {
       if (targetHolder == null) {
@@ -344,7 +347,7 @@ public class Inliner {
     }
 
     @Override
-    @SuppressWarnings("ReferenceEquality")
+    @SuppressWarnings({"ReferenceEquality", "EnumOrdinal"})
     public boolean equals(Object other) {
       if (!(other instanceof ConstraintWithTarget)) {
         return false;
@@ -400,7 +403,7 @@ public class Inliner {
           : deriveConstraint(context, clazz, definition.accessFlags, appView);
     }
 
-    @SuppressWarnings("ReferenceEquality")
+    @SuppressWarnings({"ReferenceEquality", "EnumOrdinal"})
     public static ConstraintWithTarget meet(
         ConstraintWithTarget one, ConstraintWithTarget other, AppView<?> appView) {
       if (one.equals(other)) {

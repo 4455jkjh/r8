@@ -3906,6 +3906,7 @@ public class Enqueuer {
     return builder.build(previousMainDexInfo);
   }
 
+  @SuppressWarnings("StringCaseLocaleUsage")
   public EnqueuerResult traceApplication(
       RootSet rootSet, ExecutorService executorService, Timing timing) throws ExecutionException {
     this.rootSet = rootSet;

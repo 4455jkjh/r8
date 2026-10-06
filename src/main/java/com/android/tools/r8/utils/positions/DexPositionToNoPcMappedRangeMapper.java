@@ -49,7 +49,7 @@ public class DexPositionToNoPcMappedRangeMapper {
       this.processedEvents = processedEvents;
     }
 
-    public boolean didEmitLineEvents() {
+    boolean didEmitLineEvents() {
       return startLine != -1;
     }
 
@@ -93,12 +93,11 @@ public class DexPositionToNoPcMappedRangeMapper {
 
     private boolean inlinedOriginalPosition;
 
-    public DexDebugPositionStateVisitor(
+    DexDebugPositionStateVisitor(
         PositionEventEmitter positionEventEmitter,
         List<MappedPosition> mappedPositions,
         MethodPositionRemapper positionRemapper,
         List<DexDebugEvent> processedEvents,
-        DexItemFactory factory,
         int startLine,
         DexMethod method,
         boolean isD8R8Synthesized) {
@@ -202,7 +201,6 @@ public class DexPositionToNoPcMappedRangeMapper {
             mappedPositions,
             positionRemapper,
             processedEvents,
-            appView.dexItemFactory(),
             debugInfo.startLine,
             method.getReference(),
             method.getDefinition().isD8R8Synthesized());

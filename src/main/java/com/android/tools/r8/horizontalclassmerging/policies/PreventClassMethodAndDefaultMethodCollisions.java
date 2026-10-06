@@ -68,7 +68,7 @@ public class PreventClassMethodAndDefaultMethodCollisions extends MultiClassPoli
   private abstract static class SignaturesCache<C extends DexClass> {
     private final Map<DexClass, DexMethodSignatureSet> memoizedSignatures = new IdentityHashMap<>();
 
-    public DexMethodSignatureSet getOrComputeSignatures(C clazz) {
+    DexMethodSignatureSet getOrComputeSignatures(C clazz) {
       return memoizedSignatures.computeIfAbsent(
           clazz,
           ignore -> {

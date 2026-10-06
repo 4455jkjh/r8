@@ -631,13 +631,13 @@ public class AtomicFieldUpdaterInstrumentor {
   // (Either Void or DexField).
   private abstract static class UpdaterFieldInfo<OffsetField> {
 
-    public final DexField field;
-    public final Value holderValue;
-    public final Value fieldName;
-    public final Position position;
-    public final OffsetField offsetField;
+    final DexField field;
+    final Value holderValue;
+    final Value fieldName;
+    final Position position;
+    final OffsetField offsetField;
 
-    protected UpdaterFieldInfo(
+    UpdaterFieldInfo(
         DexField field,
         Value holderValue,
         Value reflectedFieldName,
@@ -650,17 +650,17 @@ public class AtomicFieldUpdaterInstrumentor {
       this.offsetField = offsetField;
     }
 
-    public static IntUpdaterFieldInfo<Void> createInt(
+    static IntUpdaterFieldInfo<Void> createInt(
         DexField field, Value holdingClass, Value reflectedFieldName, Position position) {
       return new IntUpdaterFieldInfo<>(field, holdingClass, reflectedFieldName, position, null);
     }
 
-    public static LongUpdaterFieldInfo<Void> createLong(
+    static LongUpdaterFieldInfo<Void> createLong(
         DexField field, Value holdingClass, Value reflectedFieldName, Position position) {
       return new LongUpdaterFieldInfo<>(field, holdingClass, reflectedFieldName, position, null);
     }
 
-    public static ReferenceUpdaterFieldInfo<Void> createReference(
+    static ReferenceUpdaterFieldInfo<Void> createReference(
         DexField field,
         DexType reflectedFieldType,
         Value holdingClass,
@@ -670,9 +670,9 @@ public class AtomicFieldUpdaterInstrumentor {
           field, reflectedFieldType, holdingClass, reflectedFieldName, position, null);
     }
 
-    public abstract <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField);
+    abstract <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField);
 
-    public abstract DexType fieldType(DexItemFactory factory);
+    abstract DexType fieldType(DexItemFactory factory);
   }
 
   private static class IntUpdaterFieldInfo<OffsetField> extends UpdaterFieldInfo<OffsetField> {
@@ -722,7 +722,7 @@ public class AtomicFieldUpdaterInstrumentor {
   private static class ReferenceUpdaterFieldInfo<OffsetField>
       extends UpdaterFieldInfo<OffsetField> {
 
-    public final DexType reflectedFieldType;
+    final DexType reflectedFieldType;
 
     private ReferenceUpdaterFieldInfo(
         DexField field,
@@ -749,8 +749,8 @@ public class AtomicFieldUpdaterInstrumentor {
 
   private static class ClassWithAtomicsInfo {
 
-    public final IRCode code;
-    public final Collection<UpdaterFieldInfo<Void>> fields;
+    final IRCode code;
+    final Collection<UpdaterFieldInfo<Void>> fields;
 
     private ClassWithAtomicsInfo(IRCode code, Collection<UpdaterFieldInfo<Void>> fields) {
       this.code = code;

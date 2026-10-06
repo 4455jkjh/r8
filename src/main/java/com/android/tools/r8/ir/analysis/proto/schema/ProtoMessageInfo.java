@@ -202,6 +202,7 @@ public class ProtoMessageInfo {
   private final LinkedList<ProtoFieldObject> hasBitsObjects;
   private final LinkedList<ProtoOneOfObjectPair> oneOfObjects;
 
+  @SuppressWarnings("NonApiType")
   private ProtoMessageInfo(
       ProgramMethod dynamicMethod,
       int flags,

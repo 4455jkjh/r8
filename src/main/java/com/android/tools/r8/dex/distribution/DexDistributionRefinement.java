@@ -382,7 +382,7 @@ public class DexDistributionRefinement {
       return items.add(methodHandle);
     }
 
-    public Set<DexItem> getItems() {
+    Set<DexItem> getItems() {
       return items;
     }
   }

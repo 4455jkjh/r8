@@ -45,12 +45,14 @@ public class SetUtils {
     return ConcurrentHashMap.newKeySet(capacity);
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T> HashSet<T> newHashSet(T element) {
     HashSet<T> result = new HashSet<>(1);
     result.add(element);
     return result;
   }
 
+  @SuppressWarnings("NonApiType")
   @SafeVarargs
   public static <T> HashSet<T> newHashSet(T... elements) {
     HashSet<T> result = new HashSet<>(elements.length);
@@ -131,6 +133,7 @@ public class SetUtils {
     return builder.build();
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T extends Comparable<T>> TreeSet<T> newTreeSet(T element) {
     TreeSet<T> result = new TreeSet<>();
     result.add(element);

@@ -274,6 +274,7 @@ public final class InterfaceProcessor {
     }
   }
 
+  @SuppressWarnings("NonApiType")
   private LinkedHashMap<DexType, DexMethod> computeNonCompanionDispatchCases(DexMethod reference) {
     EmulatedDispatchMethodDescriptor descriptor =
         appView

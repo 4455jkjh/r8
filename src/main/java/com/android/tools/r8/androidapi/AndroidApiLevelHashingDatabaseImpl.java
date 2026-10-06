@@ -35,6 +35,7 @@ public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDataba
   private final DiagnosticsHandler diagnosticsHandler;
   private static volatile AndroidApiDataAccess dataAccess;
 
+  @SuppressWarnings("LockOnNonEnclosingClassLiteral")
   private static AndroidApiDataAccess getDataAccess(
       InternalOptions options, DiagnosticsHandler diagnosticsHandler) {
     if (dataAccess == null) {

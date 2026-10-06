@@ -172,7 +172,7 @@ public class Repackaging {
     private final Builder lensBuilder;
 
     @SuppressWarnings("BadImport")
-    public RepackagingTreeFixer(
+    RepackagingTreeFixer(
         AppView<AppInfoWithLiveness> appView,
         BiMap<DexType, DexType> mappings,
         Builder lensBuilder) {

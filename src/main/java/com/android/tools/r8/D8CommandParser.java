@@ -137,7 +137,7 @@ public class D8CommandParser {
     private final D8Command.Builder builder;
     private final Origin origin;
 
-    public ParserState(D8Command.Builder builder, Origin origin) {
+    ParserState(D8Command.Builder builder, Origin origin) {
       this.builder = builder;
       this.origin = origin;
     }

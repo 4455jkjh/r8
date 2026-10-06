@@ -1203,10 +1203,10 @@ public class DexParser<T extends DexClass> {
         boolean isValidOrder = stringIndex > prevStringIndex;
         assert isValidOrder
             : String.format(
+                "%s type ids (type #%s: `%s` string #%s, type #%s: `%s` string #%s)",
                 (indexedItems.getString(prevStringIndex).equals(indexedItems.getString(stringIndex))
-                        ? "Duplicate"
-                        : "Out-of-order")
-                    + " type ids (type #%s: `%s` string #%s, type #%s: `%s` string #%s)",
+                    ? "Duplicate"
+                    : "Out-of-order"),
                 index - 1,
                 indexedItems.getString(prevStringIndex),
                 prevStringIndex,
@@ -1516,10 +1516,10 @@ public class DexParser<T extends DexClass> {
             new DexMethodAnnotation[0],
             NO_PARAMETER_ANNOTATIONS);
 
-    public final DexAnnotationSet clazz;
-    public final DexFieldAnnotation[] fields;
-    public final DexMethodAnnotation[] methods;
-    public final DexParameterAnnotation[] parameters;
+    final DexAnnotationSet clazz;
+    final DexFieldAnnotation[] fields;
+    final DexMethodAnnotation[] methods;
+    final DexParameterAnnotation[] parameters;
 
     AnnotationsDirectory(
         DexAnnotationSet clazz,
@@ -1532,7 +1532,7 @@ public class DexParser<T extends DexClass> {
       this.parameters = parameters == null ? NO_PARAMETER_ANNOTATIONS : parameters;
     }
 
-    public static AnnotationsDirectory empty() {
+    static AnnotationsDirectory empty() {
       return THE_EMPTY_ANNOTATIONS_DIRECTORY;
     }
   }
@@ -1549,7 +1549,7 @@ public class DexParser<T extends DexClass> {
     private List<PermittedSubclassAttribute> permittedSubclassesAttribute = Collections.emptyList();
     private List<RecordComponentInfo> recordComponents = Collections.emptyList();
 
-    public DexAnnotationSet getAnnotations() {
+    DexAnnotationSet getAnnotations() {
       if (lazyAnnotations != null) {
         int size = lazyAnnotations.size();
         return size == 0
@@ -1559,16 +1559,16 @@ public class DexParser<T extends DexClass> {
       return originalAnnotations;
     }
 
-    public List<InnerClassAttribute> getInnerClasses() {
+    List<InnerClassAttribute> getInnerClasses() {
       return innerClasses == null ? Collections.emptyList() : innerClasses;
     }
 
-    public EnclosingMethodAttribute getEnclosingMethodAttribute() {
+    EnclosingMethodAttribute getEnclosingMethodAttribute() {
       return enclosingMethodAttribute;
     }
 
     @SuppressWarnings("ReferenceEquality")
-    public AttributesAndAnnotations(
+    AttributesAndAnnotations(
         DexType type, Origin origin, DexAnnotationSet annotations, InternalOptions options) {
       this.originalAnnotations = annotations;
       DexType enclosingClass = null;

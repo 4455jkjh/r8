@@ -131,7 +131,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
           }
           // Strength reduction is done at the end to prioritize code size saving optimizations.
           // i.e., x * 3 * 2 => x * 6, not (x * 3) << 1.
-          hasChanged |= strengthReduction(iterator, binop, binopDescriptor, code);
+          hasChanged |= strengthReduction(iterator, binop, code);
         }
       } else if (next.isInvokeStatic()) {
         InvokeStatic invokeStatic = next.asInvokeStatic();
@@ -708,8 +708,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
-  private boolean strengthReduction(
-      InstructionListIterator iterator, Binop binop, BinopDescriptor binopDescriptor, IRCode code) {
+  private boolean strengthReduction(InstructionListIterator iterator, Binop binop, IRCode code) {
     ConstNumber constNumber = getConstNumber(binop.leftValue());
     if (constNumber != null) {
       if (binop.isMul()) {

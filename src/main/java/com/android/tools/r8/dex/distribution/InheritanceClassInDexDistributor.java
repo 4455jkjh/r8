@@ -50,22 +50,22 @@ public class InheritanceClassInDexDistributor {
   /** Group of classes. */
   private class ClassGroup implements Comparable<ClassGroup> {
 
-    public final Set<DexProgramClass> members;
-    public int numberOfFieldIds = -1;
-    public int numberOfMethodIds = -1;
-    public int numberOfTypeIds = -1;
-    public boolean dependsOnMainDexClasses = false;
+    final Set<DexProgramClass> members;
+    int numberOfFieldIds = -1;
+    int numberOfMethodIds = -1;
+    int numberOfTypeIds = -1;
+    boolean dependsOnMainDexClasses = false;
 
-    public ClassGroup() {
+    ClassGroup() {
       members = new HashSet<>();
     }
 
-    public ClassGroup(Set<DexProgramClass> members) {
+    ClassGroup(Set<DexProgramClass> members) {
       this.members = members;
       updateNumbersOfIds();
     }
 
-    public void updateNumbersOfIds() {
+    void updateNumbersOfIds() {
       // Use a temporary VirtualFile to evaluate the number of ids in the group.
       VirtualFile virtualFile = new VirtualFile(0, appView);
       // Note: sort not needed.
@@ -77,7 +77,7 @@ public class InheritanceClassInDexDistributor {
       numberOfTypeIds = virtualFile.getNumberOfTypes();
     }
 
-    public boolean canFitInOneDex() {
+    boolean canFitInOneDex() {
       return numberOfFieldIds < VirtualFile.getMaxNumberOfFields(appView.options())
           && numberOfMethodIds < VirtualFile.MAX_ENTRIES
           && numberOfTypeIds < VirtualFile.getMaxNumberOfTypes(appView.options());
@@ -135,7 +135,7 @@ public class InheritanceClassInDexDistributor {
 
       int totalClassNumber = group.members.size();
 
-      /** Category 2 + category 3 elements. Used during construction only. */
+      /* Category 2 + category 3 elements. Used during construction only. */
       Set<DexProgramClass> mainDexDependents = new HashSet<>();
       // split group members between mainDexIndependents and mainDexDependents
       // Note: sort not needed.

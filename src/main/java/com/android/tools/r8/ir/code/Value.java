@@ -326,6 +326,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return true;
   }
 
+  @SuppressWarnings("AssignmentExpression")
   public Set<Instruction> uniqueUsers() {
     if (uniqueUsers != null) {
       return uniqueUsers;
@@ -422,6 +423,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return phiUsers.getFirst();
   }
 
+  @SuppressWarnings("AssignmentExpression")
   public Set<Phi> uniquePhiUsers() {
     if (uniquePhiUsers != null) {
       return uniquePhiUsers;

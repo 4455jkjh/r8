@@ -71,7 +71,7 @@ public class SimpleDominatingEffectAnalysis {
    * <p>PARTIAL results occur when have control flow where one or more branches are SATISFIED and
    * one or more branches are NOT_SATISFIED.
    */
-  private enum ResultState {
+  enum ResultState {
     PARTIAL,
     SATISFIED,
     NOT_SATISFIED,
@@ -117,7 +117,7 @@ public class SimpleDominatingEffectAnalysis {
       this.failingBlocks = failingBlocks;
     }
 
-    public ResultStateWithPartialBlocks joinChildren(
+    ResultStateWithPartialBlocks joinChildren(
         List<DFSNodeWithState<BasicBlock, ResultStateWithPartialBlocks>> childNodes) {
       assert state.isNotComputed();
       ResultState newState =
@@ -209,7 +209,7 @@ public class SimpleDominatingEffectAnalysis {
     }
   }
 
-  private static class SimpleEffectAnalysisResultBuilder {
+  static class SimpleEffectAnalysisResultBuilder {
 
     List<Instruction> satisfyingInstructions = new ArrayList<>();
     List<BasicBlock> failingBlocksForPartialResults = ImmutableList.of();

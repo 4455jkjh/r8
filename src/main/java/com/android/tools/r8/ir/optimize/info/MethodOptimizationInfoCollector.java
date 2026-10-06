@@ -619,7 +619,6 @@ public class MethodOptimizationInfoCollector {
         } else if (result == InstructionEffect.DESIRED_EFFECT) {
           // The current path is causing the expected effect. No need to go deeper in this path,
           // go to the next block in the work list.
-          continue;
         } else if (result == InstructionEffect.CONDITIONAL_EFFECT) {
           assert !currentBlock.getNormalSuccessors().isEmpty();
           Instruction lastInstruction = currentBlock.getInstructions().getLast();

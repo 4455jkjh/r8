@@ -12,56 +12,75 @@ public abstract class Reason {
   @Override
   public abstract String toString();
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason NOT_SUPPORTED = new GenericReason("not supported");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_NOT_INSTRUMENTED =
       new GenericReason("uses un-instrumented updater field");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason WRITTEN_OUTSIDE_CLASS_INITIALIZER =
       new GenericReason("written outside class initializer");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason EXISTS_IN_KEEP_RULE = new GenericReason("disallowed by keep rules");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason MULTIPLE_WRITES = new GenericReason("multiple writes");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UNDER_CATCH_HANDLER = new GenericReason("inside try-catch");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_INITIALIZED_BY_PHI =
       new GenericReason("updater initialized by phi function");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_HOLDER_INITIALIZED_BY_PHI =
       new GenericReason("holder initialized by phi function");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_FIELD_TYPE_INITIALIZED_BY_PHI =
       new GenericReason("field type initialized by phi function");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_VALUE_INITIALIZED_BY_PHI =
       new GenericReason("value initialized by phi function");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_HOLDER_NOT_CONSTANT_CLASS =
       new GenericReason("holder is not a constant class");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_FIELD_TYPE_NOT_CONSTANT_CLASS =
       new GenericReason("field type is not a constant class");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_HOLDER_IS_OUTSIDE_CLASS =
       new GenericReason("holder refers to another class");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_NOT_INITIALIZED_BY_INVOKE_STATIC =
       new GenericReason("not initialized by static call");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_NOT_INITIALIZED_BY_NEW_UPDATER =
       new GenericReason("updater not initialized by newUpdater");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_FIELD_NOT_CONSTANT_STRING =
       new GenericReason("field name is not a constant string");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason NEW_UPDATER_INVALID_FIELD =
       new GenericReason("newUpdater does not resolve to a field");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason UPDATER_REFLECTS_NON_VOLATILE_FIELD =
       new GenericReason("reflected field is not volatile");
 
+  @SuppressWarnings("ClassInitializationDeadlock")
   public static final Reason NOT_UNUSED = new GenericReason("not unused");
 
   public static final Reason NO_REASON =

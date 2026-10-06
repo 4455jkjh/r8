@@ -1033,11 +1033,11 @@ public class SyntheticFinalization {
       this.pinned = pinned;
     }
 
-    public Iterable<T> getRepresentativeAndMembers() {
+    Iterable<T> getRepresentativeAndMembers() {
       return IterableUtils.append(members, representative);
     }
 
-    public boolean isPinned(AppView<?> appView) {
+    boolean isPinned(AppView<?> appView) {
       if (pinned.isTrue()) {
         return true;
       }
@@ -1047,12 +1047,12 @@ public class SyntheticFinalization {
       return SyntheticFinalization.isPinned(appView, representative);
     }
 
-    public void forEach(Consumer<T> consumer) {
+    void forEach(Consumer<T> consumer) {
       consumer.accept(getRepresentative());
       members.forEach(consumer);
     }
 
-    public void forEachNonRepresentativeMember(Consumer<T> consumer) {
+    void forEachNonRepresentativeMember(Consumer<T> consumer) {
       members.forEach(consumer);
     }
 

@@ -363,7 +363,7 @@ public class SyntheticNaming {
     // TODO(b/214901256): Remove once fixed.
     private final boolean sharable;
 
-    public SyntheticClassKind(int id, String descriptor, boolean sharable) {
+    SyntheticClassKind(int id, String descriptor, boolean sharable) {
       super(id, descriptor);
       this.sharable = sharable;
     }
