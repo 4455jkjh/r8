@@ -37,7 +37,7 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
               + ".Outer.Inner.<init>(kotlin.Int): "
               + PKG_NESTED_REFLECT
               + ".Outer.Inner");
-  private static final String EXPECTED_DEV =
+  private static final String EXPECTED_2_4_20 =
       StringUtils.lines(
           "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".Outer.Nested",
           "fun "
@@ -55,7 +55,7 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
           "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.b",
           "fun " + PKG_NESTED_REFLECT + ".a.a.<init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.a");
 
-  private static final String EXPECTED_ALL_RENAMED_DEV =
+  private static final String EXPECTED_ALL_RENAMED_2_4_20 =
       StringUtils.lines(
           "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.b",
           "fun " + PKG_NESTED_REFLECT + ".a.<init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.a");
@@ -69,7 +69,7 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
               + PKG_NESTED_REFLECT
               + ".Outer.Inner");
 
-  private static final String EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION_DEV =
+  private static final String EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION_2_4_20 =
       StringUtils.lines(
           "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".Outer.Nested",
           "fun "
@@ -87,13 +87,15 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
 
   private String getExpected() {
     return replaceInitNameInExpectedBasedOnKotlinVersion(
-        kotlinParameters.isKotlinDev() ? EXPECTED_DEV : EXPECTED);
+        kotlinParameters.isNewerThanOrEqualTo(KotlinCompilerVersion.KOTLINC_2_4_20)
+            ? EXPECTED_2_4_20
+            : EXPECTED);
   }
 
   private String getExpectedAllRenamed() {
     return replaceInitNameInExpectedBasedOnKotlinVersion(
-        kotlinParameters.isKotlinDev()
-            ? EXPECTED_ALL_RENAMED_DEV
+        kotlinParameters.isNewerThanOrEqualTo(KotlinCompilerVersion.KOTLINC_2_4_20)
+            ? EXPECTED_ALL_RENAMED_2_4_20
             : (kotlinParameters.isOlderThanOrEqualTo(KotlinCompilerVersion.KOTLINC_1_7_0)
                 ? EXPECTED_ALL_RENAMED_UNTIL_1_7
                 : EXPECTED_ALL_RENAMED));
@@ -101,8 +103,8 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
 
   private String getExpectedOuterKeepAllowObfuscation() {
     return replaceInitNameInExpectedBasedOnKotlinVersion(
-        kotlinParameters.isKotlinDev()
-            ? EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION_DEV
+        kotlinParameters.isNewerThanOrEqualTo(KotlinCompilerVersion.KOTLINC_2_4_20)
+            ? EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION_2_4_20
             : EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION);
   }
 
@@ -208,7 +210,7 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
             .compile()
             .inspect(inspector -> inspectPruned(inspector, true))
             .writeToZip();
-    if (kotlinParameters.isKotlinDev()) {
+    if (kotlinParameters.isNewerThanOrEqualTo(KotlinCompilerVersion.KOTLINC_2_4_20)) {
       // NullPointerException inside kotlin-reflect, as it started using getDeclaringClass on the
       // inner class which returns null as the InnerClasses attributes is not kept. The exception
       // message is "getDeclaringClass(...) must not be null"));
