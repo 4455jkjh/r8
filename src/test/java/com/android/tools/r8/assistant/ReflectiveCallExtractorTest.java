@@ -10,13 +10,11 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.dump.CompilerDump;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -56,15 +54,9 @@ public class ReflectiveCallExtractorTest extends TestBase {
 
   @Test
   public void testNowInAndroid() throws Exception {
-    Path zip =
-        Paths.get(
-            ToolHelper.THIRD_PARTY_DIR,
-            "opensource-apps",
-            "android",
-            "nowinandroid",
-            "dump_app.zip");
     Path programArchive =
-        CompilerDump.fromArchive(zip, temp.newFolder().toPath()).getProgramArchive();
+        CompilerDump.fromArchive(TestDeps.getNowInAndroidDumpAppZip(), temp.newFolder().toPath())
+            .getProgramArchive();
     test(programArchive, 35, 18);
   }
 

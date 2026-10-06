@@ -28,13 +28,15 @@ val testngConfig by configurations.resolvable("testngConfig") { extendsFrom(test
 
 dependencies {
   testngScope(libs.testng)
+  runtimeOnlyData(project(":tests_java_8:desugar", "javaBaseExtension"))
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
   runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
   runtimeOnlyData(project(":third_party", "gson"))
   runtimeOnlyData(project(":third_party", "guavaJre"))
   runtimeOnlyData(project(":third_party", "jacoco"))
-  runtimeOnlyData(project(":tests_java_8:desugar", "javaBaseExtension"))
+  runtimeOnlyData(project(":third_party", "jdk11Test"))
   runtimeOnlyData(project(":third_party", "multidex"))
+  runtimeOnlyData(project(":third_party", "r8v2_0_74"))
 }
 
 val compileJavaBaseExtension =

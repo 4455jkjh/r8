@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class AppDumpBenchmarkBuilder {
 
@@ -139,11 +140,11 @@ public class AppDumpBenchmarkBuilder {
   }
 
   public AppDumpBenchmarkBuilder setDumpDependencyPath(Path dumpDependencyPath) {
-    return setDumpDependency(
-        new BenchmarkDependency(
-            "appdump",
-            dumpDependencyPath.getFileName().toString(),
-            dumpDependencyPath.getParent()));
+    return setDumpDependencyPath(() -> dumpDependencyPath);
+  }
+
+  public AppDumpBenchmarkBuilder setDumpDependencyPath(Supplier<Path> dumpDependencyPath) {
+    return setDumpDependency(new BenchmarkDependency("appdump", dumpDependencyPath));
   }
 
   public AppDumpBenchmarkBuilder setDumpDependency(BenchmarkDependency dependency) {

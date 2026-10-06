@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.relocator;
 
-import static com.android.tools.r8.ToolHelper.CHECKED_IN_R8_17_WITH_DEPS;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -13,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.RelocatorTestBuilder;
 import com.android.tools.r8.RelocatorTestCompileResult;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
@@ -70,18 +70,18 @@ public class RelocatorTest extends TestBase {
   @Test
   public void testRelocatorIdentity() throws Exception {
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .run()
-        .inspectAllClassesRelocated(CHECKED_IN_R8_17_WITH_DEPS, "", "");
+        .inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), "", "");
   }
 
   @Test
   public void testRelocatorIdentityPackage() throws Exception {
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageMapping("com.android.tools.r8", "com.android.tools.r8")
         .run()
-        .inspectAllClassesRelocated(CHECKED_IN_R8_17_WITH_DEPS, "", "");
+        .inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), "", "");
   }
 
   @Test
@@ -95,16 +95,16 @@ public class RelocatorTest extends TestBase {
             Reference.classFromClass(String.class), Reference.classFromClass(String.class))
         .addPackageAndAllSubPackagesMapping(
             Reference.packageFromString(originalPrefix), Reference.packageFromString(newPrefix))
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .run()
-        .inspectAllClassesRelocated(CHECKED_IN_R8_17_WITH_DEPS, originalPrefix, newPrefix + ".");
+        .inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), originalPrefix, newPrefix + ".");
   }
 
   @Test
   public void testRelocatorSomethingToEmpty() throws Exception {
     String originalPrefix = "com.android.tools.r8";
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageAndAllSubPackagesMapping(
             Reference.packageFromString(originalPrefix), Reference.packageFromString(""))
         .run()
@@ -115,13 +115,13 @@ public class RelocatorTest extends TestBase {
   public void testRelocateKeepsDebugInfo() throws Exception {
     PackageReference pkg = Reference.packageFromString("com.android.tools.r8");
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageAndAllSubPackagesMapping(pkg, pkg)
         .run()
         .inspect(
             inspector -> {
               // Assert that all classes are the same, have the same methods and debug info:
-              CodeInspector originalInspector = new CodeInspector(CHECKED_IN_R8_17_WITH_DEPS);
+              CodeInspector originalInspector = new CodeInspector(TestDeps.getR8WithDeps17Jar());
               for (FoundClassSubject clazz : originalInspector.allClasses()) {
                 ClassSubject relocatedClass = inspector.clazz(clazz.getFinalName());
                 assertThat(relocatedClass, isPresent());
@@ -167,31 +167,30 @@ public class RelocatorTest extends TestBase {
     String originalPrefix = "com.android.tools.r8";
     String newPrefix = "foo.bar.baz";
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageAndAllSubPackagesMapping(
             Reference.packageFromString(originalPrefix), Reference.packageFromString(newPrefix))
         .addPackageAndAllSubPackagesMapping("some.package.that.does.not.exist", "foo")
         .run()
-        .inspectAllClassesRelocated(CHECKED_IN_R8_17_WITH_DEPS, originalPrefix, newPrefix);
+        .inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), originalPrefix, newPrefix);
   }
 
   @Test
   public void testOrderingOfPrefixes() throws Exception {
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageAndAllSubPackagesMapping("com.android", "foo.bar.baz")
         .addPackageAndAllSubPackagesMapping("com.android.tools.r8", "qux")
         .run()
         // Because we see "com.android.tools.r8" before seeing "com.android" we always choose qux.
-        .inspectAllClassesRelocated(
-            ToolHelper.CHECKED_IN_R8_17_WITH_DEPS, "com.android.tools.r8", "qux")
+        .inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), "com.android.tools.r8", "qux")
         .inspectAllSignaturesNotContainingString("foo.bar.baz");
   }
 
   @Test
   public void testNoReEntry() throws Exception {
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageAndAllSubPackagesMapping("com.android", "foo.bar.baz")
         .addPackageAndAllSubPackagesMapping("foo.bar.baz", "qux")
         .run()
@@ -207,10 +206,10 @@ public class RelocatorTest extends TestBase {
   @Test
   public void testMultiplePackages() throws Exception {
     RelocatorTestBuilder testBuilder =
-        testForRelocator(external).addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS);
+        testForRelocator(external).addProgramFiles(TestDeps.getR8WithDeps17Jar());
     Set<String> seenPackages = new HashSet<>();
     List<Pair<String, String>> packageMappings = new ArrayList<>();
-    CodeInspector inspector = new CodeInspector(CHECKED_IN_R8_17_WITH_DEPS);
+    CodeInspector inspector = new CodeInspector(TestDeps.getR8WithDeps17Jar());
     int packageNameCounter = 0;
     // Generate a mapping for each package name directly below com.android.tools.r8.
     for (FoundClassSubject clazz : inspector.allClasses()) {
@@ -233,7 +232,7 @@ public class RelocatorTest extends TestBase {
     RelocatorTestCompileResult result = testBuilder.run();
     for (Pair<String, String> packageMapping : packageMappings) {
       result.inspectAllClassesRelocated(
-          CHECKED_IN_R8_17_WITH_DEPS, packageMapping.getFirst(), packageMapping.getSecond());
+          TestDeps.getR8WithDeps17Jar(), packageMapping.getFirst(), packageMapping.getSecond());
     }
   }
 
@@ -241,10 +240,10 @@ public class RelocatorTest extends TestBase {
   public void testPartialPrefix() throws Exception {
     String originalPrefix = "com.android.tools.r";
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageAndAllSubPackagesMapping(originalPrefix, "i_cannot_w")
         .run()
-        .inspectAllClassesRelocated(CHECKED_IN_R8_17_WITH_DEPS, originalPrefix, originalPrefix);
+        .inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), originalPrefix, originalPrefix);
   }
 
   @Test
@@ -253,11 +252,11 @@ public class RelocatorTest extends TestBase {
     String newPrefix = "relocated_r8";
     RelocatorTestCompileResult result =
         testForRelocator(external)
-            .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+            .addProgramFiles(TestDeps.getR8WithDeps17Jar())
             .addPackageAndAllSubPackagesMapping(originalPrefix, newPrefix)
             .run();
     // Check that all classes has been remapped.
-    result.inspectAllClassesRelocated(CHECKED_IN_R8_17_WITH_DEPS, originalPrefix, newPrefix);
+    result.inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), originalPrefix, newPrefix);
     result.inspectAllSignaturesNotContainingString(originalPrefix);
     // We should be able to call the relocated relocator.
     Path bootstrapOutput = temp.newFile("bootstrap.jar").toPath();
@@ -281,17 +280,17 @@ public class RelocatorTest extends TestBase {
     bootstrapResult.inspectAllClassesRelocated(result.getOutput(), newPrefix, originalPrefix);
     bootstrapResult.inspectAllSignaturesNotContainingString(newPrefix);
     // Assert that this is in fact an identity transformation.
-    bootstrapResult.inspectAllClassesRelocated(CHECKED_IN_R8_17_WITH_DEPS, "", "");
+    bootstrapResult.inspectAllClassesRelocated(TestDeps.getR8WithDeps17Jar(), "", "");
   }
 
   @Test
   public void testNest() throws Exception {
     String originalPrefix = "com.android.tools.r8";
     String newPrefix = "com.android.tools.r8";
-    CodeInspector originalInspector = new CodeInspector(CHECKED_IN_R8_17_WITH_DEPS);
+    CodeInspector originalInspector = new CodeInspector(TestDeps.getR8WithDeps17Jar());
     // Assert that all classes are the same, have the same methods and nest info.
     testForRelocator(external)
-        .addProgramFiles(CHECKED_IN_R8_17_WITH_DEPS)
+        .addProgramFiles(TestDeps.getR8WithDeps17Jar())
         .addPackageAndAllSubPackagesMapping(originalPrefix, newPrefix)
         .run()
         .inspect(

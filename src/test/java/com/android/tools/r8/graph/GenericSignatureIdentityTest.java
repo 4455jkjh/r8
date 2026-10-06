@@ -5,9 +5,9 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,6 +27,6 @@ public class GenericSignatureIdentityTest extends TestBase {
 
   @Test
   public void testAllClassSignature() throws Exception {
-    testParseSignaturesInJar(ToolHelper.CHECKED_IN_R8_17_WITH_DEPS);
+    testParseSignaturesInJar(TestDeps.getR8WithDeps17Jar());
   }
 }

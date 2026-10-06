@@ -16,6 +16,7 @@ import com.android.tools.r8.StringConsumer.FileConsumer;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -50,11 +51,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class PartialCompilationDemoTest extends TestBase {
 
-  private static final Path TIVI_DUMP_PATH =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps", "tivi", "dump_app.zip");
-  private static final Path NOWINANDROID_DUMP_PATH =
-      Paths.get(
-          ToolHelper.THIRD_PARTY_DIR, "opensource-apps", "android", "nowinandroid", "dump_app.zip");
   // When using with the desugar_jdk_libs.jar in third_party (DESUGARED_JDK_11_LIB_JAR) for L8
   // compilation then the configuration from the dump cannot be used for L8, as the configuration
   // in the dump is the "machine specification" which only works with the specific version it was
@@ -97,7 +93,8 @@ public class PartialCompilationDemoTest extends TestBase {
   public void testD8() throws Exception {
     Path tempDir = temp.newFolder().toPath();
 
-    CompilerDump dump = CompilerDump.fromArchive(TIVI_DUMP_PATH, temp.newFolder().toPath());
+    CompilerDump dump =
+        CompilerDump.fromArchive(TestDeps.getTiviDumpAppZip(), temp.newFolder().toPath());
     Path output = tempDir.resolve("tivid8.zip");
     testForD8(parameters.getBackend())
         .setMinApi(parameters)
@@ -118,7 +115,8 @@ public class PartialCompilationDemoTest extends TestBase {
   public void testR8() throws Exception {
     Path tempDir = temp.newFolder().toPath();
 
-    CompilerDump dump = CompilerDump.fromArchive(TIVI_DUMP_PATH, temp.newFolder().toPath());
+    CompilerDump dump =
+        CompilerDump.fromArchive(TestDeps.getTiviDumpAppZip(), temp.newFolder().toPath());
     Path output = tempDir.resolve("tivir8.zip");
     testForR8(parameters.getBackend())
         .setMinApi(parameters)
@@ -196,7 +194,7 @@ public class PartialCompilationDemoTest extends TestBase {
   public void testTivi() throws Exception {
     Path tempDir = temp.newFolder().toPath();
     Path dumpDir = tempDir.resolve("dump");
-    testDump(CompilerDump.fromArchive(TIVI_DUMP_PATH, dumpDir), "app.tivi");
+    testDump(CompilerDump.fromArchive(TestDeps.getTiviDumpAppZip(), dumpDir), "app.tivi");
   }
 
   @Test
@@ -205,7 +203,7 @@ public class PartialCompilationDemoTest extends TestBase {
     Path tempDir = temp.newFolder().toPath();
     Path dumpDir = tempDir.resolve("dump");
     testDump(
-        CompilerDump.fromArchive(NOWINANDROID_DUMP_PATH, dumpDir),
+        CompilerDump.fromArchive(TestDeps.getNowInAndroidDumpAppZip(), dumpDir),
         "com.google.samples.apps.nowinandroid");
   }
 

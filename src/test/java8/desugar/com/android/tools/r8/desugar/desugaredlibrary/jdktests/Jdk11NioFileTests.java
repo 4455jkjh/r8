@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
@@ -36,7 +37,6 @@ import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -56,8 +56,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
 
-  private static final Path JDK_11_NIO_TEST_FILES_DIR =
-      Paths.get(ToolHelper.JDK_11_TESTS_DIR).resolve("java/nio/file");
   private static Path TEST_UTIL_JAR;
   private static List<byte[]> TEST_PROGRAM_CLASS_DATA;
 
@@ -206,7 +204,7 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
   @NotNull
   private static Map<String, List<Path>> getSourceFileBuckets() throws IOException {
     Map<String, List<Path>> nioTestFileBuckets =
-        Files.walk(JDK_11_NIO_TEST_FILES_DIR)
+        Files.walk(TestDeps.getJdk11TestPath("java", "nio", "file"))
             .filter(path -> path.toString().endsWith(JAVA_EXTENSION))
             .filter(
                 path ->

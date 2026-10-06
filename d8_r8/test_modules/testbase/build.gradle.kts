@@ -41,6 +41,7 @@ dependencies {
   sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
   // Declare local runtime dependencies.
   runtimeOnlyData(project(":third_party", "aapt2"))
+  runtimeOnlyData(project(":third_party", "chromeHeadless"))
   runtimeOnlyData(project(":third_party", "dependenciesBucket"))
   runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
   runtimeOnlyData(project(":third_party", "googleJavaFormat"))

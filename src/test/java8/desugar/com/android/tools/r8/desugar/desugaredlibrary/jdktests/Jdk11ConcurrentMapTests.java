@@ -12,9 +12,9 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -24,7 +24,6 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.MethodTransformer;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.BeforeClass;
@@ -36,24 +35,6 @@ import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
 public class Jdk11ConcurrentMapTests extends DesugaredLibraryTestBase {
-
-  private static final Path CONCURRENT_TESTS_FOLDER =
-      Paths.get(ToolHelper.JDK_11_TESTS_DIR + "java/util/concurrent/ConcurrentMap/");
-  private static final Path CONCURRENT_HASH_TESTS_FOLDER =
-      Paths.get(ToolHelper.JDK_11_TESTS_DIR + "java/util/concurrent/ConcurrentHashMap/");
-
-  // The OpenJDK tests are all main based tests. The following are not run:
-  //  - ConcurrentMap/ConcurrentRemoveIf, ConcurrentHashMap/ConcurrentAssociateTest,
-  //    ConcurrentHashMap/ConcurrentContainsKeyTest and ConcurrentHashMap/ToArray due to the non
-  //    desugared class CompletableFuture (TODO(b/134732760): Support Java 9+ libraries).
-  //  - ConcurrentHashMap/MapLoops due to the non desugared class SplittableRandom.
-  //  - ConcurrentHashMap/WhiteBox due to method handles.
-  private static final Path[] TESTS_TO_COMPILE =
-      new Path[] {
-        CONCURRENT_TESTS_FOLDER.resolve("ConcurrentModification.java"),
-        CONCURRENT_HASH_TESTS_FOLDER.resolve("MapCheck.java"),
-        CONCURRENT_HASH_TESTS_FOLDER.resolve("DistinctEntrySetElements.java")
-      };
 
   private static Path[] COMPILED_TESTS_FILES;
   private static byte[] MAP_CHECK_WITH_SINGLE_TRIAL;
@@ -85,11 +66,23 @@ public class Jdk11ConcurrentMapTests extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
+  // The OpenJDK tests are all main based tests. The following are not run:
+  //  - ConcurrentMap/ConcurrentRemoveIf, ConcurrentHashMap/ConcurrentAssociateTest,
+  //    ConcurrentHashMap/ConcurrentContainsKeyTest and ConcurrentHashMap/ToArray due to the non
+  //    desugared class CompletableFuture (TODO(b/134732760): Support Java 9+ libraries).
+  //  - ConcurrentHashMap/MapLoops due to the non desugared class SplittableRandom.
+  //  - ConcurrentHashMap/WhiteBox due to method handles.
   @BeforeClass
   public static void compileConcurrentClasses() throws Exception {
+    Path concurrentHashTestsFolder =
+        TestDeps.getJdk11TestPath("java", "util", "concurrent", "ConcurrentHashMap");
     Path compiledTestsFolder = getStaticTemp().newFolder("concurrentmap").toPath();
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
-        .addSourceFiles(TESTS_TO_COMPILE)
+        .addSourceFiles(
+            TestDeps.getJdk11TestPath(
+                "java", "util", "concurrent", "ConcurrentMap", "ConcurrentModification.java"),
+            concurrentHashTestsFolder.resolve("MapCheck.java"),
+            concurrentHashTestsFolder.resolve("DistinctEntrySetElements.java"))
         .setOutputPath(compiledTestsFolder)
         .compile();
     Path mapCheckClassFile = compiledTestsFolder.resolve("MapCheck.class");

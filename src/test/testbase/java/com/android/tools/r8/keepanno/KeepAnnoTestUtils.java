@@ -27,7 +27,6 @@ import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -40,10 +39,6 @@ public class KeepAnnoTestUtils {
   public static final String DESCRIPTOR_PREFIX = "Landroidx/annotation/keep/";
   public static final String DESCRIPTOR_LEGACY_PREFIX =
       "Lcom/android/tools/r8/keepanno/annotations/";
-
-  // Track support for R8 version 8.0.46 which is included in AGP 8.0.2
-  public static Path R8_LIB =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "r8-releases", "8.0.46", "r8lib.jar");
 
   public static Path getKeepAnnoLib(
       TemporaryFolder temp, KeepAnnotationLibrary keepAnnotationLibrary) throws IOException {

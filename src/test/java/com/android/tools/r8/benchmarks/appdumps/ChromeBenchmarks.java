@@ -6,16 +6,14 @@ package com.android.tools.r8.benchmarks.appdumps;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
 import com.android.tools.r8.R8PartialTestCompileResult;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.utils.LibraryProvidedProguardRulesTestUtils;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -23,8 +21,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public abstract class ChromeBenchmarks extends BenchmarkBase {
-
-  private static final Path dir = Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps/chrome");
 
   protected ChromeBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
@@ -88,7 +84,7 @@ public abstract class ChromeBenchmarks extends BenchmarkBase {
   protected static AppDumpBenchmarkBuilder builder(String name) {
     return AppDumpBenchmarkBuilder.builder()
         .setName(name)
-        .setDumpDependencyPath(dir)
+        .setDumpDependencyPath(TestDeps::getChromeBenchmarkDir)
         .setFromRevision(16457);
   }
 

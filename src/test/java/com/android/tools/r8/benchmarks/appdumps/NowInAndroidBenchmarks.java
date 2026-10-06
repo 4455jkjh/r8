@@ -4,13 +4,11 @@
 package com.android.tools.r8.benchmarks.appdumps;
 
 import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,9 +16,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public abstract class NowInAndroidBenchmarks extends BenchmarkBase {
-
-  private static final Path dump =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps", "android", "nowinandroid");
 
   protected NowInAndroidBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
@@ -42,7 +37,7 @@ public abstract class NowInAndroidBenchmarks extends BenchmarkBase {
   protected static AppDumpBenchmarkBuilder builder(String name) {
     return AppDumpBenchmarkBuilder.builder()
         .setName(name)
-        .setDumpDependencyPath(dump)
+        .setDumpDependencyPath(TestDeps::getNowInAndroidDir)
         .setFromRevision(16017);
   }
 

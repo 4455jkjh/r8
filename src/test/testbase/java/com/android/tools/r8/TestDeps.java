@@ -39,12 +39,23 @@ public class TestDeps {
   private static final Map<String, Path> dependencies;
 
   static {
-    // This list is serves as a list of required properties to match in Gradle.
+    // This list serves as a list of required properties to match in Gradle.
     dependencies = new HashMap<>();
     dependencies.put("AAPT2", null);
+    dependencies.put("API_DATABASE", null);
     dependencies.put("BUNDLETOOL", null);
+    dependencies.put("CHROME_BENCHMARK", null);
+    dependencies.put("CHROME_HEADLESS", null);
     dependencies.put("COMPILER_API", null);
     dependencies.put("COMPOSE_EXAMPLES_CHANGED_BITWISE_VALUE_PROPAGATION", null);
+    dependencies.put("COMPOSE_SAMPLES_CRANE", null);
+    dependencies.put("COMPOSE_SAMPLES_JETCASTER", null);
+    dependencies.put("COMPOSE_SAMPLES_JETCHAT", null);
+    dependencies.put("COMPOSE_SAMPLES_JETLAGGED", null);
+    dependencies.put("COMPOSE_SAMPLES_JETNEWS", null);
+    dependencies.put("COMPOSE_SAMPLES_JETSNACK", null);
+    dependencies.put("COMPOSE_SAMPLES_OWL", null);
+    dependencies.put("COMPOSE_SAMPLES_REPLY", null);
     dependencies.put("CORE_LAMBDA_STUBS", null);
     dependencies.put("DAGGER", null);
     dependencies.put("DEPENDENCIES", null);
@@ -55,19 +66,27 @@ public class TestDeps {
     dependencies.put("GUAVA_JRE", null);
     dependencies.put("JACOCO", null);
     dependencies.put("JAVA_BASE_EXTENSION", null);
+    dependencies.put("JDK11_TEST", null);
     dependencies.put("JDK21_FLOAT16_TEST", null);
     dependencies.put("JDWP_TESTS", null);
     dependencies.put("JSR223", null);
     dependencies.put("KOTLIN_R8_TEST_RESOURCES", null);
     dependencies.put("KOTLINX_COROUTINES", null);
     dependencies.put("MULTIDEX", null);
+    dependencies.put("NOWINANDROID", null);
     dependencies.put("PROCESS_KEEP_RULES_BINARY_COMPATIBILITY", null);
+    dependencies.put("R8", null);
     dependencies.put("R8_MAPPINGS", null);
+    dependencies.put("R8_V2_0_74", null);
+    dependencies.put("R8_V3_2_54", null);
+    dependencies.put("R8_V8_0_46", null);
+    dependencies.put("RETRACE_BENCHMARK", null);
     dependencies.put("RETRACE_BINARY_COMPATIBILITY", null);
     dependencies.put("RETRACE_PARTITION_FORMATS", null);
     dependencies.put("RHINO", null);
     dependencies.put("RHINO_ANDROID", null);
     dependencies.put("SMALI", null);
+    dependencies.put("TIVI", null);
   }
 
   private static Path getDependency(String key) {
@@ -78,8 +97,20 @@ public class TestDeps {
     return getDependencyPath("AAPT2", "aapt2");
   }
 
+  public static Path getApiDatabasePath() {
+    return getDependencyPath("API_DATABASE", "resources", "api_database.ser");
+  }
+
   public static Path getBundleToolJar() {
     return getDependencyPath("BUNDLETOOL", "bundletool-all-1.11.0.jar");
+  }
+
+  public static Path getChromeBenchmarkDir() {
+    return getDependency("CHROME_BENCHMARK");
+  }
+
+  public static Path getChromeHeadlessDir() {
+    return getDependency("CHROME_HEADLESS");
   }
 
   public static Path getCompilerApiBinaryCompatibilityJar() {
@@ -88,6 +119,38 @@ public class TestDeps {
 
   public static Path getComposeExamplesChangedBitwiseValuePropagationDumpZip() {
     return getDependencyPath("COMPOSE_EXAMPLES_CHANGED_BITWISE_VALUE_PROPAGATION", "dump.zip");
+  }
+
+  public static Path getComposeSamplesCraneDir() {
+    return getDependency("COMPOSE_SAMPLES_CRANE");
+  }
+
+  public static Path getComposeSamplesJetCasterDir() {
+    return getDependency("COMPOSE_SAMPLES_JETCASTER");
+  }
+
+  public static Path getComposeSamplesJetChatDir() {
+    return getDependency("COMPOSE_SAMPLES_JETCHAT");
+  }
+
+  public static Path getComposeSamplesJetLaggedDir() {
+    return getDependency("COMPOSE_SAMPLES_JETLAGGED");
+  }
+
+  public static Path getComposeSamplesJetNewsDir() {
+    return getDependency("COMPOSE_SAMPLES_JETNEWS");
+  }
+
+  public static Path getComposeSamplesJetSnackDir() {
+    return getDependency("COMPOSE_SAMPLES_JETSNACK");
+  }
+
+  public static Path getComposeSamplesOwlDir() {
+    return getDependency("COMPOSE_SAMPLES_OWL");
+  }
+
+  public static Path getComposeSamplesReplyDir() {
+    return getDependency("COMPOSE_SAMPLES_REPLY");
   }
 
   public static Path getCoreLambdaStubsJar() {
@@ -138,6 +201,10 @@ public class TestDeps {
     return getDependency("JAVA_BASE_EXTENSION");
   }
 
+  public static Path getJdk11TestPath(String... path) {
+    return getDependencyPath("JDK11_TEST", path);
+  }
+
   public static Path getJdk21Float16TestPath(String... path) {
     return getDependencyPath("JDK21_FLOAT16_TEST", path);
   }
@@ -170,16 +237,44 @@ public class TestDeps {
     return getDependencyPath("MULTIDEX", "multidex-instrumentation-2.0.0.jar");
   }
 
+  public static Path getNowInAndroidDir() {
+    return getDependency("NOWINANDROID");
+  }
+
+  public static Path getNowInAndroidDumpAppZip() {
+    return getDependencyPath("NOWINANDROID", "dump_app.zip");
+  }
+
   public static Path getProcessKeepRulesBinaryCompatibilityJar() {
     return getDependencyPath("PROCESS_KEEP_RULES_BINARY_COMPATIBILITY", "tests.jar");
   }
 
-  public static Path getR8MappingsDir() {
-    return getDependency("R8_MAPPINGS");
+  public static Path getR8Jar() {
+    return getDependencyPath("R8", "r8.jar");
+  }
+
+  public static Path getR8WithDeps17Jar() {
+    return getDependencyPath("R8", "r8_with_deps_17.jar");
   }
 
   public static Path getR8MappingsPath(String... path) {
     return getDependencyPath("R8_MAPPINGS", path);
+  }
+
+  public static Path getR8V2_0_74LibJar() {
+    return getDependencyPath("R8_V2_0_74", "r8lib.jar");
+  }
+
+  public static Path getR8V3_2_54Jar() {
+    return getDependencyPath("R8_V3_2_54", "r8.jar");
+  }
+
+  public static Path getR8V8_0_46LibJar() {
+    return getDependencyPath("R8_V8_0_46", "r8lib.jar");
+  }
+
+  public static Path getRetraceBenchmarkDir() {
+    return getDependency("RETRACE_BENCHMARK");
   }
 
   public static Path getRetraceBinaryCompatibilityJar() {
@@ -200,6 +295,14 @@ public class TestDeps {
 
   public static Path getSmaliPath(String... path) {
     return getDependencyPath("SMALI", path);
+  }
+
+  public static Path getTiviDir() {
+    return getDependency("TIVI");
+  }
+
+  public static Path getTiviDumpAppZip() {
+    return getDependencyPath("TIVI", "dump_app.zip");
   }
 
   public static Path getJunitJar() {

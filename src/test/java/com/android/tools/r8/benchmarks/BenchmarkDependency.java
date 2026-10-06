@@ -7,6 +7,7 @@ import com.android.tools.r8.ToolHelper;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 public class BenchmarkDependency {
 
@@ -23,16 +24,16 @@ public class BenchmarkDependency {
   // Nice name of the dependency. Must be a valid dart identifier.
   private final String name;
 
-  // Directory name of the dependency.
-  private final String directoryName;
-
-  // Location in the R8 source tree.
-  private final Path location;
+  // Directory of the dependency in the R8 source tree.
+  private final Supplier<Path> directorySupplier;
 
   public BenchmarkDependency(String name, String directoryName, Path location) {
+    this(name, () -> location.resolve(directoryName));
+  }
+
+  public BenchmarkDependency(String name, Supplier<Path> directorySupplier) {
     this.name = name;
-    this.directoryName = directoryName;
-    this.location = location;
+    this.directorySupplier = directorySupplier;
     String firstChar = name.substring(0, 1);
     if (!firstChar.equals(firstChar.toLowerCase(Locale.ROOT)) || name.contains("_")) {
       throw new BenchmarkConfigError("Benchmark name should use lowerCamelCase, found: " + name);
@@ -44,14 +45,16 @@ public class BenchmarkDependency {
   }
 
   public Path getTarball() {
-    return location.resolve(directoryName + ".tar.gz");
+    Path directory = directorySupplier.get();
+    return directory.getParent().resolve(directory.getFileName() + ".tar.gz");
   }
 
   public Path getSha1() {
-    return location.resolve(directoryName + ".tar.gz.sha1");
+    Path directory = directorySupplier.get();
+    return directory.getParent().resolve(directory.getFileName() + ".tar.gz.sha1");
   }
 
   public Path getRoot(BenchmarkEnvironment environment) {
-    return location.resolve(directoryName);
+    return directorySupplier.get();
   }
 }

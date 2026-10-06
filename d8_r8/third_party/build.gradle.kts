@@ -59,7 +59,13 @@ registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencie
 
 registerTestDep("aapt2", ThirdPartyDeps.aapt2, "AAPT2")
 
+registerTestDep("apiDatabase", ThirdPartyDeps.apiDatabase, "API_DATABASE")
+
 registerTestDep("bundletool", ThirdPartyDeps.bundletool, "BUNDLETOOL")
+
+registerTestDep("chromeBenchmark", ThirdPartyDeps.chromeBenchmark, "CHROME_BENCHMARK")
+
+registerTestDep("chromeHeadless", ThirdPartyDeps.chromeHeadless, "CHROME_HEADLESS")
 
 registerTestDep("compilerApi", ThirdPartyDeps.compilerApi, "COMPILER_API")
 
@@ -68,6 +74,42 @@ registerTestDep(
   ThirdPartyDeps.composeExamplesChangedBitwiseValuePropagation,
   "COMPOSE_EXAMPLES_CHANGED_BITWISE_VALUE_PROPAGATION",
 )
+
+registerTestDep("composeSamplesCrane", ThirdPartyDeps.composeSamplesCrane, "COMPOSE_SAMPLES_CRANE")
+
+registerTestDep(
+  "composeSamplesJetCaster",
+  ThirdPartyDeps.composeSamplesJetCaster,
+  "COMPOSE_SAMPLES_JETCASTER",
+)
+
+registerTestDep(
+  "composeSamplesJetChat",
+  ThirdPartyDeps.composeSamplesJetChat,
+  "COMPOSE_SAMPLES_JETCHAT",
+)
+
+registerTestDep(
+  "composeSamplesJetLagged",
+  ThirdPartyDeps.composeSamplesJetLagged,
+  "COMPOSE_SAMPLES_JETLAGGED",
+)
+
+registerTestDep(
+  "composeSamplesJetNews",
+  ThirdPartyDeps.composeSamplesJetNews,
+  "COMPOSE_SAMPLES_JETNEWS",
+)
+
+registerTestDep(
+  "composeSamplesJetSnack",
+  ThirdPartyDeps.composeSamplesJetSnack,
+  "COMPOSE_SAMPLES_JETSNACK",
+)
+
+registerTestDep("composeSamplesOwl", ThirdPartyDeps.composeSamplesOwl, "COMPOSE_SAMPLES_OWL")
+
+registerTestDep("composeSamplesReply", ThirdPartyDeps.composeSamplesReply, "COMPOSE_SAMPLES_REPLY")
 
 registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
 
@@ -89,6 +131,8 @@ registerTestDep("guavaJre", ThirdPartyDeps.guavaJre, "GUAVA_JRE")
 
 registerTestDep("jacoco", ThirdPartyDeps.jacoco, "JACOCO")
 
+registerTestDep("jdk11Test", ThirdPartyDeps.jdk11Test, "JDK11_TEST")
+
 registerTestDep("jdk21Float16Test", ThirdPartyDeps.jdk21Float16Test, "JDK21_FLOAT16_TEST")
 
 registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
@@ -105,13 +149,25 @@ registerTestDep("kotlinxCoroutines", ThirdPartyDeps.kotlinxCoroutines, "KOTLINX_
 
 registerTestDep("multidex", ThirdPartyDeps.multidex, "MULTIDEX")
 
+registerTestDep("nowinandroid", ThirdPartyDeps.nowinandroid, "NOWINANDROID")
+
 registerTestDep(
   "processKeepRulesBinaryCompatibility",
   ThirdPartyDeps.processKeepRulesBinaryCompatibility,
   "PROCESS_KEEP_RULES_BINARY_COMPATIBILITY",
 )
 
+registerTestDep("r8", ThirdPartyDeps.r8, "R8")
+
 registerTestDep("r8Mappings", ThirdPartyDeps.r8Mappings, "R8_MAPPINGS")
+
+registerTestDep("r8v2_0_74", ThirdPartyDeps.r8v2_0_74, "R8_V2_0_74")
+
+registerTestDep("r8v3_2_54", ThirdPartyDeps.r8v3_2_54, "R8_V3_2_54")
+
+registerTestDep("r8v8_0_46", ThirdPartyDeps.r8v8_0_46, "R8_V8_0_46")
+
+registerTestDep("retraceBenchmark", ThirdPartyDeps.retraceBenchmark, "RETRACE_BENCHMARK")
 
 registerTestDep(
   "retraceBinaryCompatibility",
@@ -130,6 +186,8 @@ registerTestDep("rhino", ThirdPartyDeps.rhino, "RHINO")
 registerTestDep("rhinoAndroid", ThirdPartyDeps.rhinoAndroid, "RHINO_ANDROID")
 
 registerTestDep("smali", ThirdPartyDeps.smali, "SMALI")
+
+registerTestDep("tivi", ThirdPartyDeps.tivi, "TIVI")
 
 val internalTasks =
   if (!providers.gradleProperty("no_internal").isPresent) {

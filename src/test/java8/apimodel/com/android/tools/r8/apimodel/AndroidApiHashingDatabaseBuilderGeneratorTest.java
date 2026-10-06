@@ -20,6 +20,7 @@ import com.android.tools.r8.ApiDatabaseGeneratorCommand;
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.ApiDatabaseGeneratorTestHelper;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -79,10 +80,6 @@ import org.junit.runners.Parameterized.Parameters;
 public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   protected final TestParameters parameters;
-  private static final Path API_DATABASE_FOLDER =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "api_database");
-  private static final Path API_DATABASE =
-      API_DATABASE_FOLDER.resolve("api_database").resolve("resources").resolve("api_database.ser");
 
   // Update the API_LEVEL below to have the database generated for a new api level.
   private static final AndroidApiLevel API_LEVEL = AndroidApiLevel.API_DATABASE_LEVEL;
@@ -328,7 +325,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             .setOutputPath(apiLevels)
             .build();
     ApiDatabaseGenerator.run(command);
-    assertTrue(TestBase.filesAreEqual(apiLevels, API_DATABASE));
+    assertTrue(TestBase.filesAreEqual(apiLevels, TestDeps.getApiDatabasePath()));
   }
 
   @Test
@@ -606,16 +603,21 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             .setOutputPath(apiLevels)
             .build();
     ApiDatabaseGenerator.run(command);
-    API_DATABASE.getParent().toFile().mkdirs();
-    Files.move(apiLevels, API_DATABASE, REPLACE_EXISTING);
+    Path apiDatabase = TestDeps.getApiDatabasePath();
+    assertTrue(
+        apiDatabase.endsWith(
+            Paths.get("api_database", "api_database", "resources", "api_database.ser")));
+    apiDatabase.getParent().toFile().mkdirs();
+    Files.move(apiLevels, apiDatabase, REPLACE_EXISTING);
+    Path apiDatabaseFolder = apiDatabase.getParent().getParent().getParent();
     System.out.println(
         "Updated file in: "
-            + API_DATABASE
+            + apiDatabase
             + "\nRemember to upload to cloud storage:"
             + "\n(cd "
-            + API_DATABASE_FOLDER
+            + apiDatabaseFolder
             + " && upload_to_google_storage.py -a --bucket r8-deps "
-            + API_DATABASE_FOLDER.getFileName()
+            + apiDatabaseFolder.getFileName()
             + ")");
   }
 

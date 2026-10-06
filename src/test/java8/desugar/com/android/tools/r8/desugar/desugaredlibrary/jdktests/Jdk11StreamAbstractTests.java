@@ -19,6 +19,7 @@ import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
@@ -32,7 +33,6 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -92,8 +92,6 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
   }
 
   private static Path JDK_11_STREAM_TEST_CLASSES_DIR;
-  private static final Path JDK_11_STREAM_TEST_FILES_DIR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR + "openjdk/jdk-11-test/java/util/stream/test");
   private static Path[] JDK_11_STREAM_TEST_COMPILED_FILES;
   private static final Map<String, Path> TESTNG_SUPPORT_DEX_CACHE = new HashMap<>();
 
@@ -103,10 +101,9 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
     runnableRelativePaths.addAll(Arrays.asList(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_AND_V7));
     runnableRelativePaths.addAll(Arrays.asList(SUCCESSFUL_RUNNABLE_TESTS_ON_JDK11_ONLY));
     runnableRelativePaths.addAll(Arrays.asList(SUCCESSFUL_RUNNABLE_TESTS));
+    Path jdk11StreamTestFilesDir = TestDeps.getJdk11TestPath("java", "util", "stream", "test");
     Path[] files =
-        runnableRelativePaths.stream()
-            .map(JDK_11_STREAM_TEST_FILES_DIR::resolve)
-            .toArray(Path[]::new);
+        runnableRelativePaths.stream().map(jdk11StreamTestFilesDir::resolve).toArray(Path[]::new);
     assert files.length > 0;
     return files;
   }

@@ -215,9 +215,6 @@ public class ToolHelper {
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";
   public static final String KEEP_RADIUS_WEB_DIR = getProjectRoot() + "src/keepradius/web/";
 
-  public static final Path CHECKED_IN_R8_17_WITH_DEPS =
-      Paths.get(THIRD_PARTY_DIR).resolve("r8").resolve("r8_with_deps_17.jar");
-
   public static final String R8_TEST_BUCKET = "r8-test-results";
 
   public static final String LINE_SEPARATOR = StringUtils.LINE_SEPARATOR;
@@ -235,8 +232,6 @@ public class ToolHelper {
 
   public static final String OPEN_JDK_DIR = THIRD_PARTY_DIR + "openjdk/";
   public static final String JAVA_8_RUNTIME = OPEN_JDK_DIR + "openjdk-rt-1.8/rt.jar";
-  public static final String JDK_11_TESTS_DIR = OPEN_JDK_DIR + "jdk-11-test/";
-  public static final String JDK_11_TIME_TESTS_DIR = JDK_11_TESTS_DIR + "java/time/";
 
   public static final String PROGUARD_SETTINGS_FOR_INTERNAL_APPS =
       THIRD_PARTY_DIR + "proguardsettings/";

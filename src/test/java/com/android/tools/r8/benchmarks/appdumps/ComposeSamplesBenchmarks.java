@@ -5,24 +5,21 @@ package com.android.tools.r8.benchmarks.appdumps;
 
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Supplier;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
-
-  private static final Path dir =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps/android/compose-samples");
 
   protected ComposeSamplesBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
@@ -115,16 +112,16 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
             options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces());
   }
 
-  protected static AppDumpBenchmarkBuilder builder(String name, String app) {
+  protected static AppDumpBenchmarkBuilder builder(String name, Supplier<Path> app) {
     return builder(name, app, true);
   }
 
   protected static AppDumpBenchmarkBuilder builder(
-      String name, String app, boolean enableResourceShrinking) {
+      String name, Supplier<Path> app, boolean enableResourceShrinking) {
     AppDumpBenchmarkBuilder builder =
         AppDumpBenchmarkBuilder.builder()
             .setName(name)
-            .setDumpDependencyPath(dir.resolve(app))
+            .setDumpDependencyPath(app)
             .setFromRevision(16457);
     if (enableResourceShrinking) {
       builder.setEnableResourceShrinking(true).setResourcesProvidedInFeature();
@@ -140,7 +137,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("CraneApp", "crane", false).buildR8();
+      return builder("CraneApp", TestDeps::getComposeSamplesCraneDir, false).buildR8();
     }
 
     public CraneApp(BenchmarkConfig config, TestParameters parameters) {
@@ -156,7 +153,8 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("CraneAppPartial", "crane", false).buildR8WithPartialShrinking();
+      return builder("CraneAppPartial", TestDeps::getComposeSamplesCraneDir, false)
+          .buildR8WithPartialShrinking();
     }
 
     public CraneAppPartial(BenchmarkConfig config, TestParameters parameters) {
@@ -172,7 +170,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetLaggedApp", "jetlagged")
+      return builder("JetLaggedApp", TestDeps::getComposeSamplesJetLaggedDir)
           .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
     }
 
@@ -189,7 +187,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetLaggedAppPartial", "jetlagged")
+      return builder("JetLaggedAppPartial", TestDeps::getComposeSamplesJetLaggedDir)
           .buildR8WithPartialShrinking(
               ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
     }
@@ -207,7 +205,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetNewsApp", "jetnews")
+      return builder("JetNewsApp", TestDeps::getComposeSamplesJetNewsDir)
           .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
     }
 
@@ -224,7 +222,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetNewsAppPartial", "jetnews")
+      return builder("JetNewsAppPartial", TestDeps::getComposeSamplesJetNewsDir)
           .buildR8WithPartialShrinking(
               ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
     }
@@ -242,7 +240,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetCasterApp", "jetcaster")
+      return builder("JetCasterApp", TestDeps::getComposeSamplesJetCasterDir)
           .buildR8(ComposeSamplesBenchmarks::configureJetCasterApp);
     }
 
@@ -259,7 +257,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetCasterAppPartial", "jetcaster")
+      return builder("JetCasterAppPartial", TestDeps::getComposeSamplesJetCasterDir)
           .buildR8WithPartialShrinking(ComposeSamplesBenchmarks::configureJetCasterAppPartial);
     }
 
@@ -276,7 +274,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetChatApp", "jetchat")
+      return builder("JetChatApp", TestDeps::getComposeSamplesJetChatDir)
           .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
     }
 
@@ -293,7 +291,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetChatAppPartial", "jetchat")
+      return builder("JetChatAppPartial", TestDeps::getComposeSamplesJetChatDir)
           .buildR8WithPartialShrinking(
               ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
     }
@@ -311,7 +309,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetSnackApp", "jetsnack")
+      return builder("JetSnackApp", TestDeps::getComposeSamplesJetSnackDir)
           .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
     }
 
@@ -328,7 +326,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("JetSnackAppPartial", "jetsnack")
+      return builder("JetSnackAppPartial", TestDeps::getComposeSamplesJetSnackDir)
           .buildR8WithPartialShrinking(
               ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
     }
@@ -346,7 +344,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("OwlApp", "owl", false).buildR8();
+      return builder("OwlApp", TestDeps::getComposeSamplesOwlDir, false).buildR8();
     }
 
     public OwlApp(BenchmarkConfig config, TestParameters parameters) {
@@ -362,7 +360,8 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("OwlAppPartial", "owl", false).buildR8WithPartialShrinking();
+      return builder("OwlAppPartial", TestDeps::getComposeSamplesOwlDir, false)
+          .buildR8WithPartialShrinking();
     }
 
     public OwlAppPartial(BenchmarkConfig config, TestParameters parameters) {
@@ -378,7 +377,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("ReplyApp", "reply")
+      return builder("ReplyApp", TestDeps::getComposeSamplesReplyDir)
           .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression);
     }
 
@@ -395,7 +394,7 @@ public abstract class ComposeSamplesBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("ReplyAppPartial", "reply")
+      return builder("ReplyAppPartial", TestDeps::getComposeSamplesReplyDir)
           .buildR8WithPartialShrinking(
               ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial);
     }
