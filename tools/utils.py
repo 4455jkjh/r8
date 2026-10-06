@@ -52,6 +52,7 @@ GRADLE_TASK_KEEP_ANNO_DOC = ':keepanno:keepAnnoAnnotationsDoc'
 GRADLE_TASK_MAIN_COMPILE = ':main:compileJava'
 GRADLE_TASK_PROCESS_KEEP_RULES_LIB_JAR = ':dist:processKeepRulesLibWithRelocatedDeps'
 GRADLE_TASK_R8 = ':dist:r8WithRelocatedDeps'
+GRADLE_TASK_R8_ASSISTANT = ':dist:r8AssistantLib'
 GRADLE_TASK_R8LIB = ':test:assembleR8LibWithRelocatedDeps'
 GRADLE_TASK_R8LIB_NO_DEPS = ':test:assembleR8LibNoDeps'
 GRADLE_TASK_THREADING_MODULE_BLOCKING = ':dist:threadingModuleBlockingJar'
@@ -76,6 +77,7 @@ R8LIB = 'r8lib'
 ALL_DEPS_JAR = os.path.join(LIBS, 'deps_all.jar')
 PROCESS_KEEP_RULES_LIB_JAR = os.path.join(LIBS, 'processkeepruleslib.jar')
 R8_JAR = os.path.join(LIBS, 'r8.jar')
+R8_ASSISTANT_LIB_JAR = os.path.join(LIBS, 'r8-assistantlib.jar')
 TOOLS_JAR = os.path.join(REPO_ROOT, 'd8_r8', 'tools', 'build', 'libs',
                          'tools.jar')
 R8LIB_JAR = os.path.join(LIBS, 'r8lib.jar')

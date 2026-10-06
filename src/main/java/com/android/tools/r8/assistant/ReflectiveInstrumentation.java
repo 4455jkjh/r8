@@ -35,17 +35,22 @@ public class ReflectiveInstrumentation {
   private final DexItemFactory dexItemFactory;
   private final Timing timing;
   private final ReflectiveReferences reflectiveReferences;
+  private final String customReflectiveReceiverDescriptor;
 
   public ReflectiveInstrumentation(
-      AppView<AppInfo> appView, PrimaryD8L8IRConverter converter, Timing timing) {
+      AppView<AppInfo> appView,
+      PrimaryD8L8IRConverter converter,
+      Timing timing,
+      String customReflectiveReceiverDescriptor) {
     this.appView = appView;
     this.dexItemFactory = appView.dexItemFactory();
     this.reflectiveReferences = new ReflectiveReferences(dexItemFactory);
     this.converter = converter;
     this.timing = timing;
+    this.customReflectiveReceiverDescriptor = customReflectiveReceiverDescriptor;
   }
 
-  public void updateReflectiveReceiver(String customReflectiveReceiverDescriptor) {
+  public void updateReflectiveReceiver() {
     ProgramMethod getReceiver =
         appView.definitionFor(reflectiveReferences.getReceiverMethod).asProgramMethod();
     IRCode code = getReceiver.buildIR(appView);
@@ -77,8 +82,13 @@ public class ReflectiveInstrumentation {
         new InstrumentedReflectiveMethodList(dexItemFactory).getInstrumentedMethodsAndTargets();
     DexString runtimePrefix =
         dexItemFactory.createString("Lcom/android/tools/r8/assistant/runtime/");
+    DexType receiverType =
+        customReflectiveReceiverDescriptor != null
+            ? dexItemFactory.createType(customReflectiveReceiverDescriptor)
+            : null;
     for (DexProgramClass clazz : appView.appInfo().classes()) {
-      if (clazz.getType().getDescriptor().startsWith(runtimePrefix)) {
+      if (clazz.getType().getDescriptor().startsWith(runtimePrefix)
+          || clazz.getType().isIdenticalTo(receiverType)) {
         continue;
       }
       clazz.forEachProgramMethodMatching(

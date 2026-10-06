@@ -12,7 +12,10 @@ dependencies { compileOnly(project(":keepanno", "keepannoClasses")) }
 
 val srcDir = getRoot().resolveAll("src", "assistant", "java")
 
-java { sourceSets.main.configure { java.srcDir(srcDir) } }
+java {
+  sourceSets.main.configure { java.srcDir(srcDir) }
+  tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
+}
 
 val jarTask =
   tasks.named<Jar>("jar") {

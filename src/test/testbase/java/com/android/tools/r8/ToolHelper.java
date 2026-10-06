@@ -225,6 +225,8 @@ public class ToolHelper {
   public static final Path R8_WITH_RELOCATED_DEPS_17_JAR =
       Paths.get(LIBS_DIR, "r8_with_relocated_deps_17.jar");
   public static final Path ASSISTANT_JAR = Paths.get(LIBS_DIR, "assistant.jar");
+  public static final Path ASSISTANT_RUNTIME_DEX = Paths.get(LIBS_DIR, "assistant-runtime.dex");
+  public static final Path R8_ASSISTANT_LIB_JAR = Paths.get(LIBS_DIR, "r8-assistantlib.jar");
   public static final Path PROCESS_KEEP_RULES_JAR = Paths.get(LIBS_DIR, "processkeepruleslib.jar");
   public static final Path PROCESS_KEEP_RULES_MAP =
       Paths.get(LIBS_DIR, "processkeepruleslib.jar.map");
@@ -2151,6 +2153,21 @@ public class ToolHelper {
 
   private static ProcessResult forkJava(Path dir, Class clazz, String... args) throws IOException {
     return forkJava(dir, clazz, Arrays.asList(args));
+  }
+
+  public static ProcessResult forkJavaWithJar(Path dir, Path jarPath, List<String> args)
+      throws IOException {
+    return forkJavaWithJar(dir, jarPath.toString(), args);
+  }
+
+  public static ProcessResult runR8Assistant(
+      Path inputApk, Path outputApk, String... additionalArgs) throws IOException {
+    List<String> args = new ArrayList<>();
+    args.add(inputApk.toString());
+    args.add("--output");
+    args.add(outputApk.toString());
+    args.addAll(Arrays.asList(additionalArgs));
+    return forkJavaWithJar(Paths.get("."), R8_ASSISTANT_LIB_JAR, args);
   }
 
   private static ProcessResult forkJavaWithJar(Path dir, String jarPath, List<String> args)

@@ -7,7 +7,6 @@ import static com.android.tools.r8.features.ClassToFeatureSplitMap.createInitial
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
-import com.android.tools.r8.assistant.AssistantInstrumentation;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.ApplicationWriter;
@@ -261,8 +260,6 @@ public final class D8 {
       timing.end();
       new PrimaryD8L8IRConverter(appView, timing).convert(appView, executor);
       timing.begin("Post conversion");
-
-      AssistantInstrumentation.instrumentClasses(timing, appView);
 
       // Close any internal archive providers now the application is fully processed.
       inputApp.closeInternalArchiveProviders();

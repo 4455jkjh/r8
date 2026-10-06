@@ -238,6 +238,7 @@ fun Test.setupTestTask() {
   )
   dependsOn(distDepsFiles)
   dependsOn(sharedDepsConfig)
+  dependsOn(project(":dist").tasks.named("r8AssistantLib"))
   systemProperty(
     "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
     extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),

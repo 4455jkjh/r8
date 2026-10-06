@@ -36,6 +36,7 @@ dependencies {
 
 tasks {
   withType<Test> {
+    dependsOn(project(":dist").tasks.named("compileAssistantRuntimeDex"))
     javaLauncher = getJavaLauncher(Jdk.JDK_21)
     systemProperty(
       "BUILD_PROP_R8_RUNTIME_PATH",

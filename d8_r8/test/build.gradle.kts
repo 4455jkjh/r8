@@ -21,6 +21,7 @@ val r8LibPartitionMapName = "r8lib.jar_map.zip"
 val r8LibNoDepsPartitionMapName = "r8lib-exclude-deps.jar_map.zip"
 val r8WithRelocatedDepsArtifactName = "r8.jar"
 val processKeepRulesArtifactName = "processkeepruleslib.jar"
+val r8AssistantLibArtifactName = "r8-assistantlib.jar"
 val swissArmyKnifeArtifactName = "r8-full-exclude-deps.jar"
 val packageTestDepsArtifactName = "test_deps_all.jar"
 val rewrittenTestBaseArtifactName = "r8libtestbase-cf.jar"
@@ -127,6 +128,7 @@ val mainDepsJarTask = project(":dist").tasks.named<Zip>("depsJar")
 val swissArmyKnifeTask = project(":swissarmyknife").tasks.named<Jar>("jar")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.named<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps")
+val r8AssistantLibTask = project(":dist").tasks.named<CreateR8LibraryTask>("r8AssistantLib")
 val r8WithRelocatedDepsTask =
   project(":dist").tasks.named<SwissArmyKnifeTask>("r8WithRelocatedDeps")
 val keepAnnoToolsWithRelocatedDepsTask =
@@ -499,6 +501,7 @@ tasks {
         )
       val r8WithRelocatedDepsJar = libsDir.resolve(r8WithRelocatedDepsArtifactName)
       val processKeepRulesJar = libsDir.resolve(processKeepRulesArtifactName)
+      val r8AssistantJar = libsDir.resolve(r8AssistantLibArtifactName)
       val swissArmyKnifeJar = libsDir.resolve(swissArmyKnifeArtifactName)
       val packageTestDepsJar = libsDir.resolve(packageTestDepsArtifactName)
       val rewrittenTestBaseJar = libsDir.resolve(rewrittenTestBaseArtifactName)
@@ -522,6 +525,7 @@ tasks {
             rewrittenTestBaseJar,
             r8WithRelocatedDepsJar,
             processKeepRulesJar,
+            r8AssistantJar,
             swissArmyKnifeJar,
           )
         if (!excludingDepsVariant) {
@@ -563,6 +567,7 @@ tasks {
         r8Lib,
         r8WithRelocatedDepsTask,
         assembleR8LibNoDeps,
+        r8AssistantLibTask,
         rewriteTestBaseForR8LibWithRelocatedDeps,
         unzipRewrittenTests,
         unzipTests,
@@ -627,6 +632,7 @@ tasks {
         unzipTestBase,
         packageTestDeps,
         processKeepRulesLibWithRelocatedDepsTask,
+        r8AssistantLibTask,
         swissArmyKnifeTask,
       )
     }
@@ -644,6 +650,7 @@ tasks {
         unzipTestBase,
         packageTestDeps,
         processKeepRulesLibWithRelocatedDepsTask,
+        r8AssistantLibTask,
         swissArmyKnifeTask,
       )
     }
@@ -711,6 +718,7 @@ tasks {
       if (project.hasProperty("only_internal")) {
         dependsOn(processKeepRulesLibWithRelocatedDepsTask)
       }
+      dependsOn(r8AssistantLibTask)
     }
     if (project.hasProperty("r8lib")) {
       dependsOn(testR8LibWithRelocatedDeps)
