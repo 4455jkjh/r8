@@ -793,6 +793,15 @@ public class LensCodeRewriter {
                         appView,
                         method);
                 assume.setPosition(replacement.getPosition(), options);
+                if (replacement.getBlock().hasCatchHandlers()) {
+                  // Split the block to ensure no instructions after throwing instructions.
+                  BasicBlock splitBlock =
+                      iterator.splitCopyCatchHandlers(code, blocks, appView.options());
+                  BasicBlock previousBlock = blocks.previousUntil(splitBlock);
+                  assert previousBlock == splitBlock;
+                  blocks.next();
+                  iterator = splitBlock.listIterator();
+                }
                 iterator.add(assume);
               }
             }

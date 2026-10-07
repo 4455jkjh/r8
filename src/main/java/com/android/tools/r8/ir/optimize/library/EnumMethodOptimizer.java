@@ -62,10 +62,6 @@ public class EnumMethodOptimizer extends StatelessLibraryMethodModelCollection {
       InstructionListIterator instructionIterator,
       InvokeMethod invoke,
       Set<Value> affectedValues) {
-    // TODO(b/152516470): Support unboxing enums with Enum#valueOf in try-catch.
-    if (invoke.getBlock().hasCatchHandlers()) {
-      return;
-    }
     DexType enumType = invoke.inValues().get(0).getConstInstruction().asConstClass().getType();
     DexProgramClass enumClass = appView.definitionForProgramType(enumType);
     if (enumClass == null
@@ -77,6 +73,18 @@ public class EnumMethodOptimizer extends StatelessLibraryMethodModelCollection {
     if (outValue == null) {
       return;
     }
+    // If the invoke is covered by catch handlers, no instructions can be inserted after it in its
+    // block. Instead, insert the AssumeDynamicType instruction at the beginning of the normal
+    // successor, which is only reached when the invoke does not throw.
+    BasicBlock insertionBlock = null;
+    if (invoke.getBlock().hasCatchHandlers()) {
+      if (invoke.getBlock().hasUniqueNormalSuccessorWithUniquePredecessor()) {
+        insertionBlock = invoke.getBlock().getUniqueNormalSuccessor();
+      } else {
+        return;
+      }
+    }
+
     // Replace usages of out-value by the out-value of the AssumeDynamicType instruction.
     Value specializedOutValue =
         code.createValue(
@@ -88,6 +96,10 @@ public class EnumMethodOptimizer extends StatelessLibraryMethodModelCollection {
     Assume assumeInstruction =
         Assume.create(dynamicType, specializedOutValue, outValue, invoke, appView, code.context());
     assumeInstruction.setPosition(appView.options().debug ? invoke.getPosition() : Position.none());
-    instructionIterator.add(assumeInstruction);
+    if (insertionBlock == null) {
+      instructionIterator.add(assumeInstruction);
+    } else {
+      insertionBlock.listIterator().add(assumeInstruction);
+    }
   }
 }
