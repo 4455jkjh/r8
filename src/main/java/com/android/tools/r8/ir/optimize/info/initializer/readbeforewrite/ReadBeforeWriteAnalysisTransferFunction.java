@@ -274,10 +274,18 @@ public class ReadBeforeWriteAnalysisTransferFunction
               return preserveWrittenBeforeReadSetOrFail(state);
             }
             if (singleTarget.isLibraryMethod()) {
-              // In principle this library constructor could call into the app and the app could
-              // read a field on a subclass of `this` before the field has been assigned in the
-              // subclass. This is a contrived example so we assume this does not happen by
-              // modeling the (currently empty) set of library classes where this does not hold.
+              // A library constructor that is not modeled may call a virtual method on `this` that
+              // the program overrides, as android.view.ViewGroup.<init> does with requestLayout().
+              // The override may then read fields that have not been written yet.
+              AbstractFieldSet libraryReadBeforeWriteSet =
+                  singleTarget
+                      .getOptimizationInfo()
+                      .getInstanceInitializerInfo(invoke.asInvokeDirect())
+                      .readBeforeWriteSet();
+              assert libraryReadBeforeWriteSet.isTop() || libraryReadBeforeWriteSet.isEmpty();
+              if (libraryReadBeforeWriteSet.isTop()) {
+                return preserveWrittenBeforeReadSetOrFail(state);
+              }
               return state.withInitializedThis(stateFactory);
             }
             InstanceInitializerInfo instanceInitializerInfo =
