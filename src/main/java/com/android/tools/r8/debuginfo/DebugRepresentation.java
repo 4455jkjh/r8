@@ -261,7 +261,7 @@ public class DebugRepresentation {
   }
 
   // A pc2pc stream is approximately one event more than the pc.
-  private static int pcEventCount(int pc) {
+  static int pcEventCount(int pc) {
     return pc + 1;
   }
 
@@ -277,7 +277,7 @@ public class DebugRepresentation {
     return cost > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) cost;
   }
 
-  private static boolean isWithinExpansionThreshold(
+  static boolean isWithinExpansionThreshold(
       int threshold, int currentPc, int methodCount, int normalCost) {
     // A negative threshold denotes unbounded.
     if (threshold < 0) {

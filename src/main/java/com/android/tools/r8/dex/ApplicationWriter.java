@@ -17,6 +17,7 @@ import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.debuginfo.DebugRepresentation.DebugRepresentationPredicate;
+import com.android.tools.r8.debuginfo.PcBasedDebugInfoConsolidator;
 import com.android.tools.r8.dex.FileWriter.ByteBufferResult;
 import com.android.tools.r8.dex.distribution.Distributor;
 import com.android.tools.r8.dex.distribution.FilePerInputClassDistributor;
@@ -343,8 +344,11 @@ public class ApplicationWriter {
             DebugRepresentation.fromFiles(virtualFiles, options);
         mapSupplierResult =
             runAndWriteMap(appView, executorService, timing, originalSourceFiles, representation);
-      } else if (options.convertPcBasedDebugInfoToNative) {
-        convertPcBasedDebugInfoToNative(appView, executorService, timing);
+      } else {
+        if (options.convertPcBasedDebugInfoToNative) {
+          convertPcBasedDebugInfoToNative(appView, executorService, timing);
+        }
+        PcBasedDebugInfoConsolidator.run(appView, virtualFiles, executorService, timing);
       }
 
       // With the mapping id/hash known, it is safe to compute the remaining dex strings.
