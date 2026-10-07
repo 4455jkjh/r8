@@ -18,6 +18,7 @@ src/*/out
 d8_r8/*/out
 gradle-app.setting
 gradle/*
+!gradle/gradle-daemon-jvm.properties
 !gradle/libs.versions.toml
 gradlew
 gradlew.bat
