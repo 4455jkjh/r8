@@ -382,9 +382,7 @@ public class MethodOptimizationInfoCollector {
               }
               Value object =
                   instancePut.object().getAliasedValue(aliasesThroughAssumeAndCheckCasts);
-              if (object != receiver
-                  || instancePut.instructionInstanceCanThrow(appView, context)
-                  || field.isVolatile()) {
+              if (object != receiver || instancePut.instructionInstanceCanThrow(appView, context)) {
                 builder.setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
               }
 

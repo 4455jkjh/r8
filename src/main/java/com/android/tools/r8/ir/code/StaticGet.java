@@ -20,7 +20,6 @@ import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.ir.analysis.ClassInitializationAnalysis;
@@ -157,28 +156,15 @@ public class StaticGet extends FieldInstruction implements FieldGet, StaticField
   }
 
   @Override
-  public boolean instructionMayHaveSideEffects(
+  public boolean instructionInstanceCanThrow(
       AppView<?> appView,
       ProgramMethod context,
       AbstractValueSupplier abstractValueSupplier,
       SideEffectAssumption assumption) {
-    FieldResolutionResult resolutionResult = appView.appInfo().resolveField(getField(), context);
-    return internalInstructionInstanceCanThrow(appView, context, assumption, resolutionResult)
-        || (resolutionResult.isSingleFieldResolutionResult()
-            && resolutionResult.getResolvedField().isVolatile());
-  }
-
-  @Override
-  boolean internalInstructionInstanceCanThrow(
-      AppView<?> appView,
-      ProgramMethod context,
-      SideEffectAssumption assumption,
-      FieldResolutionResult resolutionResult) {
     if (appView.getAssumeInfoCollection().isSideEffectFree(getField())) {
       return false;
     }
-    return super.internalInstructionInstanceCanThrow(
-        appView, context, assumption, resolutionResult);
+    return super.instructionInstanceCanThrow(appView, context, abstractValueSupplier, assumption);
   }
 
   @Override

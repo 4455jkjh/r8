@@ -226,16 +226,14 @@ public final class TrivialFieldAccessReprocessor {
         return FieldClassification.UNKNOWN;
       }
       if (singleValue.isSingleConstValue()) {
-        return field.isVolatile() ? FieldClassification.NON_CONSTANT : FieldClassification.CONSTANT;
+        return FieldClassification.CONSTANT;
       }
       if (singleValue.isSingleFieldValue()) {
         SingleFieldValue singleFieldValue = singleValue.asSingleFieldValue();
         DexField singleField = singleFieldValue.getField();
         if (singleField.isNotIdenticalTo(field.getReference())
             && !singleFieldValue.mayHaveFinalizeMethodDirectlyOrIndirectly(appView)) {
-          return field.isVolatile()
-              ? FieldClassification.NON_CONSTANT
-              : FieldClassification.CONSTANT;
+          return FieldClassification.CONSTANT;
         }
         if (singleFieldValue.hasKnownArrayLength()) {
           return FieldClassification.NON_CONSTANT;
@@ -305,8 +303,7 @@ public final class TrivialFieldAccessReprocessor {
       return false;
     }
 
-    if (field.isVolatile()
-        || fieldAccessInfo.hasReflectiveAccess()
+    if (fieldAccessInfo.hasReflectiveAccess()
         || fieldAccessInfo.isAccessedFromMethodHandle()
         || fieldAccessInfo.isReadFromRecordInvokeDynamic()
         || fieldAccessInfo.isReadFromAnnotation()) {
