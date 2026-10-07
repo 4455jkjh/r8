@@ -26,12 +26,17 @@ import com.android.tools.r8.ir.code.Value;
  *   <li>Parcel.readSerializable()
  *   <li>Bundle.getSerializable()
  *   <li>Intent.getSerializableExtra()
+ *   <li>Intent.putExtra(String, Serializable)
  * </ul>
+ *
+ * <p>It is not necessary to keep enum values[] when serializing, but Intent.putExtra() is checked
+ * because IntentCompat makes it likely to miss calls to getSerializableExtra().
  *
  * <p>Similar to non-enum reflection calls, tracing is best-effort. E.g.:
  *
  * <ul>
  *   <li>For the overloads that accept a Class, it must be a const-class
+ *   <li>For Intent.putExtra(), an instance of the Enum subclass must be used
  *   <li>For others, the return value must be directly used by a checked-cast of the Enum type.
  * </ul>
  */
@@ -40,6 +45,7 @@ public class EnqueuerEnumReflectionAnalysisAndroid extends EnqueuerEnumReflectio
   private final DexType androidOsParcelType;
   private final DexMethod intentGetSerializableExtra1;
   private final DexMethod intentGetSerializableExtra2;
+  private final DexMethod intentPutExtra;
   private final DexMethod bundleGetSerializable1;
   private final DexMethod bundleGetSerializable2;
   private final DexMethod parcelReadSerializable1;
@@ -65,6 +71,16 @@ public class EnqueuerEnumReflectionAnalysisAndroid extends EnqueuerEnumReflectio
                 dexItemFactory.stringType,
                 dexItemFactory.classType),
             "getSerializableExtra");
+    // It is not necessary to keep enum values[] when serializing, but IntentCompat makes it likely
+    // to miss calls to getSerializableExtra().
+    intentPutExtra =
+        dexItemFactory.createMethod(
+            androidContentIntentType,
+            dexItemFactory.createProto(
+                androidContentIntentType,
+                dexItemFactory.stringType,
+                dexItemFactory.serializableType),
+            "putExtra");
     bundleGetSerializable1 =
         dexItemFactory.createMethod(
             dexItemFactory.androidOsBundleType,
@@ -101,7 +117,8 @@ public class EnqueuerEnumReflectionAnalysisAndroid extends EnqueuerEnumReflectio
         || invokedMethod.isIdenticalTo(parcelReadSerializable1)
         || invokedMethod.isIdenticalTo(parcelReadSerializable2)
         || invokedMethod.isIdenticalTo(intentGetSerializableExtra1)
-        || invokedMethod.isIdenticalTo(intentGetSerializableExtra2)) {
+        || invokedMethod.isIdenticalTo(intentGetSerializableExtra2)
+        || invokedMethod.isIdenticalTo(intentPutExtra)) {
       enqueuer.getReflectiveIdentification().enqueue(context);
     }
   }
@@ -111,7 +128,8 @@ public class EnqueuerEnumReflectionAnalysisAndroid extends EnqueuerEnumReflectio
     DexMethod invokedMethod = invoke.getInvokedMethod();
     if (invokedMethod.isIdenticalTo(bundleGetSerializable2)
         || invokedMethod.isIdenticalTo(parcelReadSerializable2)
-        || invokedMethod.isIdenticalTo(intentGetSerializableExtra2)) {
+        || invokedMethod.isIdenticalTo(intentGetSerializableExtra2)
+        || invokedMethod.isIdenticalTo(intentPutExtra)) {
       handleReflectiveEnumInvoke(method, invoke, 1);
       return true;
     }

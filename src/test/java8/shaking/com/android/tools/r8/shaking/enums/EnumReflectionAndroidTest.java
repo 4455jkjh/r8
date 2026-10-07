@@ -16,6 +16,8 @@ import com.android.tools.r8.shaking.enums.EnumReflectionAndroidTest.Helpers.Enum
 import com.android.tools.r8.shaking.enums.EnumReflectionAndroidTest.Helpers.EnumF;
 import com.android.tools.r8.shaking.enums.EnumReflectionAndroidTest.Helpers.EnumG;
 import com.android.tools.r8.shaking.enums.EnumReflectionAndroidTest.Helpers.EnumH;
+import com.android.tools.r8.shaking.enums.EnumReflectionAndroidTest.Helpers.EnumI;
+import com.android.tools.r8.shaking.enums.EnumReflectionAndroidTest.Helpers.EnumJ;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -123,6 +125,11 @@ public class EnumReflectionAndroidTest extends TestBase {
       return ret;
     }
 
+    public FakeIntent putExtra(String key, Serializable value) {
+      parcel = FakeParcel.createWithSingleSerializable(value);
+      return this;
+    }
+
     public <T extends Serializable> T getSerializableExtra(String key, Class<T> clazz) {
       return clazz.cast(getSerializableExtra(key));
     }
@@ -140,8 +147,10 @@ public class EnumReflectionAndroidTest extends TestBase {
           "parcel: D",
           "intent: E",
           "intent: F",
+          "intent: I",
           "array: [G]",
-          "array: [H]");
+          "array: [H]",
+          "array: [J]");
 
   public static class Helpers {
 
@@ -183,6 +192,16 @@ public class EnumReflectionAndroidTest extends TestBase {
     public enum EnumH {
       H,
       I,
+    }
+
+    public enum EnumI {
+      I {},
+      J,
+    }
+
+    public enum EnumJ {
+      J,
+      K,
     }
   }
 
@@ -228,6 +247,14 @@ public class EnumReflectionAndroidTest extends TestBase {
     }
 
     @NeverInline
+    private static void androidIntent3() {
+      FakeIntent i = new FakeIntent().putExtra("", EnumI.I);
+      // Do not cast to EnumI so that getSerializableExtra() does not detect the type.
+      Object result = i.getSerializableExtra("");
+      System.out.println("intent: " + result);
+    }
+
+    @NeverInline
     private static void array1() {
       FakeParcel p = FakeParcel.createWithSingleSerializable(new EnumG[] {EnumG.G});
       EnumG[] result = (EnumG[]) p.readSerializable();
@@ -240,6 +267,15 @@ public class EnumReflectionAndroidTest extends TestBase {
       System.out.println("array: " + Arrays.toString(p.readSerializable(null, EnumH[].class)));
     }
 
+    @NeverInline
+    private static void array3() {
+      FakeIntent i = new FakeIntent().putExtra("", new EnumJ[] {EnumJ.J});
+      // Cast to Object[] rather than EnumJ[] so that getSerializableExtra() does not detect the
+      // type.
+      Object[] result = (Object[]) i.getSerializableExtra("");
+      System.out.println("array: " + Arrays.toString(result));
+    }
+
     public static void main(String[] args) {
       // Use different methods to ensure Enqueuer.traceInvokeStatic() triggers for each one.
       androidBundle1();
@@ -248,15 +284,17 @@ public class EnumReflectionAndroidTest extends TestBase {
       androidParcel2();
       androidIntent1();
       androidIntent2();
+      androidIntent3();
       array1();
       array2();
+      array3();
     }
   }
 
   private static final String PARCEL_DESCRIPTOR = "Landroid/os/Parcel;";
   private static final String BUNDLE_DESCRIPTOR = "Landroid/os/Bundle;";
   private static final String INTENT_DESCRIPTOR = "Landroid/content/Intent;";
-  // EnumE.E and EnumG.G references this class in its constructor.
+  // EnumE.E, EnumG.G, and EnumI.I reference this class in their constructors.
   private static final String ENUM_SUBTYPE_BRIDGE_CLASS_NAME =
       EnumReflectionAndroidTest.class.getName() + "$1";
 
