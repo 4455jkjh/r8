@@ -31,6 +31,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final DeadCodeRemover deadCodeRemover;
   private final InternalOptions options;
   private final ReturnBlockCanonicalizerRewriter returnBlockCanonicalizerRewriter;
+  private final LoopBackEdgeCanonicalizer loopBackEdgeCanonicalizer;
   private final TrivialGotosCollapser trivialGotosCollapser;
   private final IdenticalBlockRemover identicalBlockRemover;
   private final RedundantInstructionsRemover redundantInstructionsRemover;
@@ -46,6 +47,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     this.deadCodeRemover = deadCodeRemover;
     this.options = appView.options();
     this.returnBlockCanonicalizerRewriter = new ReturnBlockCanonicalizerRewriter(appView);
+    this.loopBackEdgeCanonicalizer = new LoopBackEdgeCanonicalizer(appView);
     this.trivialGotosCollapser = new TrivialGotosCollapser(this.appView);
     identicalBlockRemover = new IdenticalBlockRemover(appView);
     redundantInstructionsRemover = new RedundantInstructionsRemover(appView);
@@ -69,6 +71,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     DexEncodedMethod method = code.method();
     returnBlockCanonicalizerRewriter.run(code, timing);
     workaroundBugs(code, timing);
+    loopBackEdgeCanonicalizer.run(code, timing);
     code.traceBlocks();
     // Perform register allocation.
     LinearScanRegisterAllocator registerAllocator = performRegisterAllocation(code, method, timing);

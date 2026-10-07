@@ -1067,6 +1067,14 @@ public abstract class Instruction
     return null;
   }
 
+  public boolean isBackTo() {
+    return false;
+  }
+
+  public BackTo asBackTo() {
+    return null;
+  }
+
   public boolean isIf() {
     return false;
   }

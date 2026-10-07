@@ -2633,6 +2633,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableBasicBlockReorderer =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.basicblockreorderer", false);
+    public boolean enableLoopBackEdgeCanonicalizer =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.loopbackedgecanonicalizer", true);
     public boolean enableVerticalClassMergerLensAssertion = false;
     public boolean forceRedundantConstNumberRemoval = false;
     public boolean forceSplitReturnRewriter = false;

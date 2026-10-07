@@ -284,6 +284,11 @@ public class RuntimeWorkaroundCodeRewriter {
           //   suffixes of the predecessors of the loop header have been shared into a new block
           //   that becomes the join point and jumps to the block holding the loop condition.
           BasicBlock target = handler.endOfGotoChain();
+          // A loop latch that only holds the BackTo of the loop is not materializing, so look
+          // through it to the loop header.
+          if (target != null && target.getInstructions().size() == 1 && target.exit().isBackTo()) {
+            target = target.exit().asGoto().getTarget();
+          }
           if (target != null
               && target.getPredecessors().size() > 1
               && (target.getNormalPredecessors().size() > 1

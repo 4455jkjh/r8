@@ -69,6 +69,7 @@ import com.android.tools.r8.ir.code.NewArrayFilledData;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.finalizer.LoopBackEdgeCanonicalizer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.regalloc.LinearScanRegisterAllocator;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
@@ -892,6 +893,21 @@ public class DexBuilder {
     return getTargetInfo(instruction.asGoto().getTarget());
   }
 
+  // When the loop back edges are canonicalized, the BackTo instructions are the only backward
+  // branches.
+  private boolean verifyBranchDirection(JumpInstruction branch, int relativeOffset) {
+    if (LoopBackEdgeCanonicalizer.isEnabled(options, ir)) {
+      assert branch.isBackTo() ? relativeOffset <= 0 : relativeOffset > 0
+          : "Unexpected branch offset "
+              + relativeOffset
+              + " for "
+              + branch
+              + " in "
+              + ir.context().toSourceString();
+    }
+    return true;
+  }
+
   // Helper for computing switch payloads.
   private DexNop createSwitchPayload(SwitchPayloadInfo info, int offset) {
     IntSwitch ir = info.ir;
@@ -906,6 +922,7 @@ public class DexBuilder {
       BasicBlock targetBlock = ir.targetBlock(i);
       Instruction targetInstruction = targetBlock.entry();
       targets[i] = getInfo(targetInstruction).getOffset() - getInfo(ir).getOffset();
+      assert verifyBranchDirection(ir, targets[i]);
     }
     BasicBlock fallthroughBlock = ir.fallthroughBlock();
     Instruction fallthroughTargetInstruction = fallthroughBlock.entry();
@@ -1430,6 +1447,7 @@ public class DexBuilder {
           instructions.add(dex);
         }
       } else {
+        assert builder.verifyBranchDirection(jump, relativeOffset);
         DexInstruction dex;
         switch (size) {
           case 1:
@@ -1520,6 +1538,7 @@ public class DexBuilder {
       if (relativeOffset < 0) {
         builder.hasBackwardsBranch = true;
       }
+      assert builder.verifyBranchDirection(branch, relativeOffset);
 
       if (size == 3) {
         assert branchesToSelf(builder);
