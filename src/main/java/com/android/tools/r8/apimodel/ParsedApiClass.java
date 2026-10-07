@@ -11,92 +11,92 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public class ParsedApiClass {
+public class ParsedApiClass<D> {
 
-  private final ClassReference apiClassReference;
-  private final ApiRange apiRange;
-  private final Map<ClassReference, ApiRange> supertypes = new LinkedHashMap<>();
-  private final Map<ClassReference, ApiRange> interfaces = new LinkedHashMap<>();
-  private final Map<MethodReference, ApiRange> methods = new LinkedHashMap<>();
-  private final Map<FieldTypelessReference, ApiRange> fields = new LinkedHashMap<>();
+  private final ClassReference classReference;
+  private final D data;
+  private final Map<ClassReference, D> supertypes = new LinkedHashMap<>();
+  private final Map<ClassReference, D> interfaces = new LinkedHashMap<>();
+  private final Map<MethodReference, D> methods = new LinkedHashMap<>();
+  private final Map<FieldTypelessReference, D> fields = new LinkedHashMap<>();
 
-  public ParsedApiClass(ClassReference apiClassReference, ApiRange apiRange) {
-    assert apiClassReference != null;
-    assert apiRange != null : "null api range for " + apiClassReference;
-    this.apiClassReference = apiClassReference;
-    this.apiRange = apiRange;
+  public ParsedApiClass(ClassReference classReference, D data) {
+    assert classReference != null;
+    assert data != null : "null data for " + classReference;
+    this.classReference = classReference;
+    this.data = data;
   }
 
   public ClassReference getClassReference() {
-    return apiClassReference;
+    return classReference;
   }
 
-  public ApiRange getRange() {
-    return apiRange;
+  public D getData() {
+    return data;
   }
 
-  public void registerSupertype(ClassReference reference, ApiRange apiRange) {
+  public void registerSupertype(ClassReference reference, D data) {
     assert !supertypes.containsKey(reference) : reference + " is already registered";
-    supertypes.put(reference, apiRange);
+    supertypes.put(reference, data);
   }
 
   public boolean hasSupertype(ClassReference reference) {
     return supertypes.containsKey(reference);
   }
 
-  public ApiRange getSupertypeRange(ClassReference reference) {
+  public D getSupertypeData(ClassReference reference) {
     return supertypes.get(reference);
   }
 
   /** Visited in insertion order */
-  public void forEachSupertype(BiConsumer<ClassReference, ApiRange> consumer) {
+  public void forEachSupertype(BiConsumer<ClassReference, D> consumer) {
     supertypes.forEach(consumer);
   }
 
   /** Visited in insertion order. */
   public <E extends Throwable> void forEachSupertypeThrowing(
-      ThrowingBiConsumer<ClassReference, ApiRange, E> consumer) throws E {
-    for (Map.Entry<ClassReference, ApiRange> entry : supertypes.entrySet()) {
+      ThrowingBiConsumer<ClassReference, D, E> consumer) throws E {
+    for (Map.Entry<ClassReference, D> entry : supertypes.entrySet()) {
       consumer.accept(entry.getKey(), entry.getValue());
     }
   }
 
-  public void registerInterface(ClassReference reference, ApiRange apiRange) {
+  public void registerInterface(ClassReference reference, D data) {
     assert !interfaces.containsKey(reference) : reference + " is already registered";
-    interfaces.put(reference, apiRange);
+    interfaces.put(reference, data);
   }
 
   public boolean hasInterface(ClassReference reference) {
     return interfaces.containsKey(reference);
   }
 
-  public ApiRange getInterfaceRange(ClassReference reference) {
+  public D getInterfaceData(ClassReference reference) {
     return interfaces.get(reference);
   }
 
   /** Visited in insertion order. */
-  public void forEachInterface(BiConsumer<ClassReference, ApiRange> consumer) {
+  public void forEachInterface(BiConsumer<ClassReference, D> consumer) {
     interfaces.forEach(consumer);
   }
 
   /** Visited in insertion order. */
   public <E extends Throwable> void forEachInterfaceThrowing(
-      ThrowingBiConsumer<ClassReference, ApiRange, E> consumer) throws E {
-    for (Map.Entry<ClassReference, ApiRange> entry : interfaces.entrySet()) {
+      ThrowingBiConsumer<ClassReference, D, E> consumer) throws E {
+    for (Map.Entry<ClassReference, D> entry : interfaces.entrySet()) {
       consumer.accept(entry.getKey(), entry.getValue());
     }
   }
 
-  public void registerMethod(MethodReference reference, ApiRange apiRange) {
+  public void registerMethod(MethodReference reference, D data) {
     assert !methods.containsKey(reference) : reference + " is already registered";
-    methods.put(reference, apiRange);
+    methods.put(reference, data);
   }
 
   public boolean hasMethod(MethodReference reference) {
     return methods.containsKey(reference);
   }
 
-  public ApiRange getMethodRange(MethodReference reference) {
+  public D getMethodData(MethodReference reference) {
     return methods.get(reference);
   }
 
@@ -105,14 +105,14 @@ public class ParsedApiClass {
   }
 
   /** Visited in insertion order. */
-  public void forEachMethod(BiConsumer<MethodReference, ApiRange> consumer) {
+  public void forEachMethod(BiConsumer<MethodReference, D> consumer) {
     methods.forEach(consumer);
   }
 
   /** Visited in insertion order. */
   public <E extends Throwable> void forEachMethodThrowing(
-      ThrowingBiConsumer<MethodReference, ApiRange, E> consumer) throws E {
-    for (Map.Entry<MethodReference, ApiRange> entry : methods.entrySet()) {
+      ThrowingBiConsumer<MethodReference, D, E> consumer) throws E {
+    for (Map.Entry<MethodReference, D> entry : methods.entrySet()) {
       consumer.accept(entry.getKey(), entry.getValue());
     }
   }
@@ -126,16 +126,16 @@ public class ParsedApiClass {
     return false;
   }
 
-  public void registerField(FieldTypelessReference reference, ApiRange apiRange) {
+  public void registerField(FieldTypelessReference reference, D data) {
     assert !fields.containsKey(reference) : reference + " is already registered";
-    fields.put(reference, apiRange);
+    fields.put(reference, data);
   }
 
   public boolean hasField(FieldTypelessReference reference) {
     return fields.containsKey(reference);
   }
 
-  public ApiRange getFieldRange(FieldTypelessReference reference) {
+  public D getFieldData(FieldTypelessReference reference) {
     return fields.get(reference);
   }
 
@@ -144,14 +144,14 @@ public class ParsedApiClass {
   }
 
   /** Visited in insertion order. */
-  public void forEachField(BiConsumer<FieldTypelessReference, ApiRange> consumer) {
+  public void forEachField(BiConsumer<FieldTypelessReference, D> consumer) {
     fields.forEach(consumer);
   }
 
   /** Visited in insertion order. */
   public <E extends Throwable> void forEachFieldThrowing(
-      ThrowingBiConsumer<FieldTypelessReference, ApiRange, E> consumer) throws E {
-    for (Map.Entry<FieldTypelessReference, ApiRange> entry : fields.entrySet()) {
+      ThrowingBiConsumer<FieldTypelessReference, D, E> consumer) throws E {
+    for (Map.Entry<FieldTypelessReference, D> entry : fields.entrySet()) {
       consumer.accept(entry.getKey(), entry.getValue());
     }
   }

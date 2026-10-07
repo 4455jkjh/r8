@@ -16,10 +16,29 @@ import java.util.Map;
 
 public class ParsedApiClassVerifier {
 
-  public static void verify(Collection<ParsedApiClass> classes)
+  public interface SetOperations<D> {
+    boolean isSubsetOf(D a, D b);
+
+    boolean isDisjointWith(D a, D b);
+  }
+
+  public static class ApiRangeSetOperations implements SetOperations<ApiRange> {
+    @Override
+    public boolean isSubsetOf(ApiRange a, ApiRange b) {
+      return a.isWithin(b);
+    }
+
+    @Override
+    public boolean isDisjointWith(ApiRange a, ApiRange b) {
+      return !a.isOverlappingWith(b);
+    }
+  }
+
+  public static <D> void verify(
+      Collection<ParsedApiClass<D>> classes, SetOperations<D> setOperations)
       throws ApiDatabaseGeneratorException {
-    Map<ClassReference, ParsedApiClass> classMap = new HashMap<>();
-    for (ParsedApiClass clazz : classes) {
+    Map<ClassReference, ParsedApiClass<D>> classMap = new HashMap<>();
+    for (ParsedApiClass<D> clazz : classes) {
       ClassReference classReference = clazz.getClassReference();
       if (classMap.containsKey(classReference)) {
         throw new ApiDatabaseGeneratorException("Duplicate API classes for: " + classReference);
@@ -27,19 +46,20 @@ public class ParsedApiClassVerifier {
       classMap.put(classReference, clazz);
     }
 
-    verify(classMap);
+    verify(classMap, setOperations);
   }
 
-  private static void verify(Map<ClassReference, ParsedApiClass> classMap)
+  private static <D> void verify(
+      Map<ClassReference, ParsedApiClass<D>> classMap, SetOperations<D> setOperations)
       throws ApiDatabaseGeneratorException {
     verifyClassHierarchy(classMap);
-    verifyApiRanges(classMap);
-    verifyClassOrInterface(classMap);
+    verifyApiRanges(classMap, setOperations);
+    verifyClassOrInterface(classMap, setOperations);
   }
 
-  private static void verifyClassHierarchy(Map<ClassReference, ParsedApiClass> classMap)
+  private static <D> void verifyClassHierarchy(Map<ClassReference, ParsedApiClass<D>> classMap)
       throws ApiDatabaseGeneratorException {
-    for (ParsedApiClass clazz : classMap.values()) {
+    for (ParsedApiClass<D> clazz : classMap.values()) {
       clazz.forEachSupertypeThrowing(
           (supertype, range) -> {
             if (!classMap.containsKey(supertype)) {
@@ -57,31 +77,32 @@ public class ParsedApiClassVerifier {
     }
   }
 
-  private static void verifyApiRanges(Map<ClassReference, ParsedApiClass> classMap)
+  private static <D> void verifyApiRanges(
+      Map<ClassReference, ParsedApiClass<D>> classMap, SetOperations<D> setOperations)
       throws ApiDatabaseGeneratorException {
-    for (ParsedApiClass clazz : classMap.values()) {
+    for (ParsedApiClass<D> clazz : classMap.values()) {
       clazz.forEachSupertypeThrowing(
           (supertype, relationRange) -> {
-            if (!relationRange.isWithin(clazz.getRange())) {
+            if (!setOperations.isSubsetOf(relationRange, clazz.getData())) {
               throw new ApiDatabaseGeneratorException(
                   "Supertype relation range "
                       + relationRange
                       + " for "
                       + supertype
                       + " is not within class range "
-                      + clazz.getRange()
+                      + clazz.getData()
                       + " of "
                       + clazz.getClassReference());
             }
-            ParsedApiClass superclass = classMap.get(supertype);
-            if (!relationRange.isWithin(superclass.getRange())) {
+            ParsedApiClass<D> superclass = classMap.get(supertype);
+            if (!setOperations.isSubsetOf(relationRange, superclass.getData())) {
               throw new ApiDatabaseGeneratorException(
                   "Supertype relation range "
                       + relationRange
                       + " for "
                       + supertype
                       + " is not within superclass range "
-                      + superclass.getRange()
+                      + superclass.getData()
                       + " of "
                       + supertype);
             }
@@ -89,26 +110,26 @@ public class ParsedApiClassVerifier {
 
       clazz.forEachInterfaceThrowing(
           (iface, relationRange) -> {
-            if (!relationRange.isWithin(clazz.getRange())) {
+            if (!setOperations.isSubsetOf(relationRange, clazz.getData())) {
               throw new ApiDatabaseGeneratorException(
                   "Interface relation range "
                       + relationRange
                       + " for "
                       + iface
                       + " is not within class range "
-                      + clazz.getRange()
+                      + clazz.getData()
                       + " of "
                       + clazz.getClassReference());
             }
-            ParsedApiClass interfaceClass = classMap.get(iface);
-            if (!relationRange.isWithin(interfaceClass.getRange())) {
+            ParsedApiClass<D> interfaceClass = classMap.get(iface);
+            if (!setOperations.isSubsetOf(relationRange, interfaceClass.getData())) {
               throw new ApiDatabaseGeneratorException(
                   "Interface relation range "
                       + relationRange
                       + " for "
                       + iface
                       + " is not within interface range "
-                      + interfaceClass.getRange()
+                      + interfaceClass.getData()
                       + " of "
                       + iface);
             }
@@ -116,14 +137,14 @@ public class ParsedApiClassVerifier {
 
       clazz.forEachMethodThrowing(
           (method, methodRange) -> {
-            if (!methodRange.isWithin(clazz.getRange())) {
+            if (!setOperations.isSubsetOf(methodRange, clazz.getData())) {
               throw new ApiDatabaseGeneratorException(
                   "Method range "
                       + methodRange
                       + " for "
                       + method
                       + " is not within class range "
-                      + clazz.getRange()
+                      + clazz.getData()
                       + " of "
                       + clazz.getClassReference());
             }
@@ -131,14 +152,14 @@ public class ParsedApiClassVerifier {
 
       clazz.forEachFieldThrowing(
           (field, fieldRange) -> {
-            if (!fieldRange.isWithin(clazz.getRange())) {
+            if (!setOperations.isSubsetOf(fieldRange, clazz.getData())) {
               throw new ApiDatabaseGeneratorException(
                   "Field range "
                       + fieldRange
                       + " for "
                       + field
                       + " is not within class range "
-                      + clazz.getRange()
+                      + clazz.getData()
                       + " of "
                       + clazz.getClassReference());
             }
@@ -146,22 +167,23 @@ public class ParsedApiClassVerifier {
     }
   }
 
-  private static void verifyClassOrInterface(Map<ClassReference, ParsedApiClass> classMap)
+  private static <D> void verifyClassOrInterface(
+      Map<ClassReference, ParsedApiClass<D>> classMap, SetOperations<D> setOperations)
       throws ApiDatabaseGeneratorException {
     ClassInterfaceUnification unifier = new ClassInterfaceUnification();
     var classes = classMap.values();
 
-    for (ParsedApiClass clazz : classes) {
+    for (ParsedApiClass<D> clazz : classes) {
       if (clazz.hasConstructor()) {
         unifier.markAsClass(clazz.getClassReference());
       }
     }
 
-    for (ParsedApiClass clazz : classes) {
+    for (ParsedApiClass<D> clazz : classes) {
       clazz.forEachInterfaceThrowing((iface, range) -> unifier.markAsInterface(iface));
     }
 
-    for (ParsedApiClass clazz : classes) {
+    for (ParsedApiClass<D> clazz : classes) {
       clazz.forEachSupertypeThrowing(
           (supertype, range) -> {
             if (supertype.getDescriptor().equals("Ljava/lang/Object;")) {
@@ -172,8 +194,8 @@ public class ParsedApiClassVerifier {
           });
     }
 
-    for (ParsedApiClass clazz : classes) {
-      List<Pair<ClassReference, ApiRange>> supertypes = new ArrayList<>();
+    for (ParsedApiClass<D> clazz : classes) {
+      List<Pair<ClassReference, D>> supertypes = new ArrayList<>();
       clazz.forEachSupertype(
           (supertype, range) -> {
             if (!supertype.getDescriptor().equals("Ljava/lang/Object;")) {
@@ -183,7 +205,8 @@ public class ParsedApiClassVerifier {
 
       for (int i = 0; i < supertypes.size(); i++) {
         for (int j = i + 1; j < supertypes.size(); j++) {
-          if (supertypes.get(i).getSecond().isOverlappingWith(supertypes.get(j).getSecond())) {
+          if (!setOperations.isDisjointWith(
+              supertypes.get(i).getSecond(), supertypes.get(j).getSecond())) {
             unifier.markAsInterface(clazz.getClassReference());
           }
         }

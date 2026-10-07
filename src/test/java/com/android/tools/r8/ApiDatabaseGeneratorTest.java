@@ -7,10 +7,15 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.android.tools.r8.androidapi.ApiDatabaseEntry;
+import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator;
 import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
@@ -18,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.Test;
@@ -68,6 +74,62 @@ public class ApiDatabaseGeneratorTest extends TestBase {
 
     assertTrue(Files.exists(outputDb));
     assertTrue(Files.size(outputDb) > 0);
+  }
+
+  @Test
+  public void testNonConsecutiveRanges() throws Exception {
+    Path apiVersionsXml =
+        writeApiXmlWithObject(
+            "api-versions.xml",
+            "  <class name=\"android/GrandSuper\" since=\"1\">",
+            "    <extends name=\"java/lang/Object\"/>",
+            "    <method name=\"bar()V\" since=\"1\" removed=\"3\"/>",
+            "  </class>",
+            "  <class name=\"android/Super\" since=\"1\">",
+            "    <extends name=\"android/GrandSuper\"/>",
+            "    <method name=\"bar()V\" since=\"4\"/>",
+            "  </class>",
+            "  <class name=\"android/Sub\" since=\"1\">",
+            "    <extends name=\"android/Super\"/>",
+            "    <method name=\"bar()V\" since=\"3\" removed=\"4\"/>",
+            "  </class>");
+    Path dummyJar =
+        writeJar(
+            "dummy.jar",
+            new JarClassBuilder("android/GrandSuper", "java/lang/Object"),
+            new JarClassBuilder("android/Super", "android/GrandSuper").addMethod("bar()V"),
+            new JarClassBuilder("android/Sub", "android/Super").addMethod("bar()V"));
+
+    Path outputDb = temp.newFile("api_database.ser").toPath();
+
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder()
+            .addXmlPath(apiVersionsXml)
+            .addJarPath(dummyJar)
+            .setOutputPath(outputDb)
+            .setAmend(false)
+            .build();
+
+    ApiDatabaseGenerator.run(command);
+
+    assertTrue(Files.exists(outputDb));
+    assertTrue(Files.size(outputDb) > 0);
+
+    Map<ApiDatabaseEntry, AndroidApiLevel> entries =
+        AndroidApiHashingDatabaseBuilderGenerator.generateEntries(
+            ApiDatabaseGenerator.generateClasses(command, trimmer -> trimmer));
+    assertNull(
+        entries.get(
+            ApiDatabaseEntry.of(
+                Reference.methodFromDescriptor("Landroid/GrandSuper;", "bar", "()V"))));
+    assertEquals(
+        AndroidApiLevel.D,
+        entries.get(
+            ApiDatabaseEntry.of(Reference.methodFromDescriptor("Landroid/Super;", "bar", "()V"))));
+    assertEquals(
+        AndroidApiLevel.B,
+        entries.get(
+            ApiDatabaseEntry.of(Reference.methodFromDescriptor("Landroid/Sub;", "bar", "()V"))));
   }
 
   @Test
@@ -430,7 +492,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
       return this;
     }
 
-    void write(ZipOutputStream out) throws IOException {
+    public void write(ZipOutputStream out) throws IOException {
       ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
       cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, name, null, superName, null);
 

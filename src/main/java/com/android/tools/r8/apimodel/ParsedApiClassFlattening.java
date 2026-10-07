@@ -26,23 +26,24 @@ public class ParsedApiClassFlattening {
    * <p>Note that since {@link ParsedApiClass} does not inform whether methods are static or not,
    * this is a superset of the actual members present.
    */
-  public static Collection<ParsedApiClass> flatten(Collection<ParsedApiClass> parsedApiClasses)
-      throws ApiDatabaseGeneratorException {
+  public static Collection<ParsedApiClass<ApiVersionSet>> flatten(
+      Collection<ParsedApiClass<ApiRange>> parsedApiClasses) throws ApiDatabaseGeneratorException {
     return new ParsedApiClassFlattening(parsedApiClasses).flatten();
   }
 
-  private final Map<ClassReference, ParsedApiClass> classMap = new LinkedHashMap<>();
-  private final Map<ClassReference, ParsedApiClass> flattenedCache = new LinkedHashMap<>();
+  private final Map<ClassReference, ParsedApiClass<ApiRange>> classMap = new LinkedHashMap<>();
+  private final Map<ClassReference, ParsedApiClass<ApiVersionSet>> flattenedCache =
+      new LinkedHashMap<>();
   private final Set<ClassReference> visited = new HashSet<>();
 
-  private ParsedApiClassFlattening(Collection<ParsedApiClass> parsedApiClasses) {
-    for (ParsedApiClass clazz : parsedApiClasses) {
+  private ParsedApiClassFlattening(Collection<ParsedApiClass<ApiRange>> parsedApiClasses) {
+    for (ParsedApiClass<ApiRange> clazz : parsedApiClasses) {
       classMap.put(clazz.getClassReference(), clazz);
     }
   }
 
   /** Returns flattened classes with all inherited members except from Object. */
-  private Collection<ParsedApiClass> flatten() throws ApiDatabaseGeneratorException {
+  private Collection<ParsedApiClass<ApiVersionSet>> flatten() throws ApiDatabaseGeneratorException {
     for (ClassReference ref : classMap.keySet()) {
       flattenClass(ref);
     }
@@ -50,7 +51,8 @@ public class ParsedApiClassFlattening {
   }
 
   /** Returns a flattened class of {@code ref} with all inherited members except from Object. */
-  private ParsedApiClass flattenClass(ClassReference ref) throws ApiDatabaseGeneratorException {
+  private ParsedApiClass<ApiVersionSet> flattenClass(ClassReference ref)
+      throws ApiDatabaseGeneratorException {
     if (flattenedCache.containsKey(ref)) {
       return flattenedCache.get(ref);
     }
@@ -58,20 +60,20 @@ public class ParsedApiClassFlattening {
     if (!classMap.containsKey(ref)) {
       throw new ApiDatabaseGeneratorException("Missing class: " + ref);
     }
-    ParsedApiClass original = classMap.get(ref);
+    ParsedApiClass<ApiRange> original = classMap.get(ref);
 
     if (visited.contains(ref)) {
       throw new ApiDatabaseGeneratorException("Class hierarchy cycle found that includes " + ref);
     }
     visited.add(ref);
 
-    ParsedApiClass flattened =
-        new ParsedApiClass(original.getClassReference(), original.getRange());
+    ParsedApiClass<ApiVersionSet> flattened =
+        new ParsedApiClass<>(original.getClassReference(), original.getData());
     original.forEachSupertype(flattened::registerSupertype);
     original.forEachInterface(flattened::registerInterface);
 
-    Map<MethodReference, ApiRange> flattenedMethods = new LinkedHashMap<>();
-    Map<FieldTypelessReference, ApiRange> flattenedFields = new LinkedHashMap<>();
+    Map<MethodReference, ApiVersionSet> flattenedMethods = new LinkedHashMap<>();
+    Map<FieldTypelessReference, ApiVersionSet> flattenedFields = new LinkedHashMap<>();
 
     // Original members.
     original.forEachMethod(flattenedMethods::put);
@@ -108,26 +110,25 @@ public class ParsedApiClassFlattening {
 
   private static void inheritMembers(
       ClassReference child,
-      ParsedApiClass parent,
-      ApiRange inheritanceRange,
-      Map<MethodReference, ApiRange> childMethods,
-      Map<FieldTypelessReference, ApiRange> childFields)
-      throws ApiDatabaseGeneratorException {
-    parent.forEachMethodThrowing(
+      ParsedApiClass<ApiVersionSet> parent,
+      ApiVersionSet inheritanceRange,
+      Map<MethodReference, ApiVersionSet> childMethods,
+      Map<FieldTypelessReference, ApiVersionSet> childFields) {
+    parent.forEachMethod(
         (methodRef, methodRange) -> {
           if (methodRef.getMethodName().equals("<init>")) {
             return;
           }
-          ApiRange inheritedRange = inheritanceRange.intersect(methodRange);
+          ApiVersionSet inheritedRange = inheritanceRange.intersect(methodRange);
           if (inheritedRange == null) {
             return;
           }
           mergeMethod(childMethods, methodWithNewHolder(child, methodRef), inheritedRange);
         });
 
-    parent.forEachFieldThrowing(
+    parent.forEachField(
         (fieldRef, fieldRange) -> {
-          ApiRange inheritedRange = inheritanceRange.intersect(fieldRange);
+          ApiVersionSet inheritedRange = inheritanceRange.intersect(fieldRange);
           if (inheritedRange == null) {
             return;
           }
@@ -147,33 +148,24 @@ public class ParsedApiClassFlattening {
   }
 
   private static void mergeMethod(
-      Map<MethodReference, ApiRange> methods, MethodReference newMethod, ApiRange range)
-      throws ApiDatabaseGeneratorException {
-    ApiRange existingMethod = methods.get(newMethod);
+      Map<MethodReference, ApiVersionSet> methods, MethodReference newMethod, ApiVersionSet range) {
+    ApiVersionSet existingMethod = methods.get(newMethod);
     if (existingMethod != null) {
-      methods.put(newMethod, union(existingMethod, range));
+      methods.put(newMethod, existingMethod.union(range));
     } else {
       methods.put(newMethod, range);
     }
   }
 
   private static void mergeField(
-      Map<FieldTypelessReference, ApiRange> fields, FieldTypelessReference newField, ApiRange range)
-      throws ApiDatabaseGeneratorException {
-    ApiRange existingField = fields.get(newField);
+      Map<FieldTypelessReference, ApiVersionSet> fields,
+      FieldTypelessReference newField,
+      ApiVersionSet range) {
+    ApiVersionSet existingField = fields.get(newField);
     if (existingField != null) {
-      fields.put(newField, union(existingField, range));
+      fields.put(newField, existingField.union(range));
     } else {
       fields.put(newField, range);
     }
-  }
-
-  private static ApiRange union(ApiRange a, ApiRange b) throws ApiDatabaseGeneratorException {
-    var result = a.union(b);
-    if (result == null) {
-      throw new ApiDatabaseGeneratorException(
-          "Disjoint API ranges cannot be unioned: " + a + " and " + b);
-    }
-    return result;
   }
 }

@@ -94,16 +94,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   }
 
   private static Map<ApiDatabaseEntry, AndroidApiLevel> computeEntries(
-      Collection<ParsedApiClass> apiClasses) throws Exception {
+      Collection<ParsedApiClass<ApiRange>> apiClasses) throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
         AndroidApiHashingDatabaseBuilderGenerator.generateEntries(apiClasses);
     verifyAgainstJar(apiClasses, databaseEntries, API_LEVEL);
     return databaseEntries;
   }
 
-  private static Collection<ParsedApiClass> cachedParsedApiClasses = null;
+  private static Collection<ParsedApiClass<ApiRange>> cachedParsedApiClasses = null;
 
-  private static Collection<ParsedApiClass> loadParsedApiClasses() throws Exception {
+  private static Collection<ParsedApiClass<ApiRange>> loadParsedApiClasses() throws Exception {
     if (cachedParsedApiClasses == null) {
       ApiDatabaseGeneratorCommand command =
           ApiDatabaseGeneratorCommand.builder()
@@ -195,7 +195,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   @SuppressWarnings("SameParameterValue")
   private static void verifyAgainstJar(
-      Collection<ParsedApiClass> apiClasses,
+      Collection<ParsedApiClass<ApiRange>> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
       AndroidApiLevel androidJarApiLevel)
       throws Exception {
@@ -214,16 +214,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   private static void ensureAllPublicMethodsAreMapped(
       AppView<AppInfoWithClassHierarchy> appView,
-      Collection<ParsedApiClass> apiClasses,
+      Collection<ParsedApiClass<ApiRange>> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
       AndroidApiLevel apiLevel,
       Path androidJar) {
-    Map<ClassReference, ParsedApiClass> lookupMap = new HashMap<>();
+    Map<ClassReference, ParsedApiClass<ApiRange>> lookupMap = new HashMap<>();
     Map<ClassReference, Map<DexMethod, AndroidApiLevel>> methodMap = new HashMap<>();
     Map<ClassReference, Map<FieldTypelessReference, AndroidApiLevel>> fieldMap = new HashMap<>();
     DexItemFactory factory = appView.dexItemFactory();
 
-    for (ParsedApiClass apiClass : apiClasses) {
+    for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
       lookupMap.put(apiClass.getClassReference(), apiClass);
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
       apiClass.forEachMethod(
@@ -239,7 +239,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
     Map<DexType, String> missingMemberInformation = new IdentityHashMap<>();
     for (DexLibraryClass clazz : appView.app().asDirect().libraryClasses()) {
-      ParsedApiClass parsedApiClass = lookupMap.get(clazz.getClassReference());
+      ParsedApiClass<ApiRange> parsedApiClass = lookupMap.get(clazz.getClassReference());
       if (parsedApiClass == null) {
         if (clazz.isPublic()) {
           missingMemberInformation.put(clazz.getType(), "Could not be found in " + androidJar);
@@ -541,7 +541,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     Set<String> knownMissingClasses = getKnownMissingClasses();
     Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
     CodeInspector inspector = new CodeInspector(androidJar);
-    Collection<ParsedApiClass> parsedApiClasses = loadParsedApiClasses();
+    Collection<ParsedApiClass<ApiRange>> parsedApiClasses = loadParsedApiClasses();
     DexItemFactory factory = inspector.getFactory();
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     AndroidApiLevelHashingDatabaseImpl androidApiLevelDatabase =
@@ -559,7 +559,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           }
           DexType type = factory.createType(classReference.getDescriptor());
           AndroidApiLevel apiLevel = androidApiLevelDatabase.getTypeApiLevel(type);
-          assertEquals(parsedApiClass.getRange().intro, apiLevel);
+          assertEquals(parsedApiClass.getData().intro, apiLevel);
         });
 
     assertThat(missingClasses, matchesItemsOneToOne(knownMissingClasses));

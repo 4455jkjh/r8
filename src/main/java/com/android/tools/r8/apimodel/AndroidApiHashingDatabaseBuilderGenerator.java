@@ -64,22 +64,23 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
 
   /** The returned map has hash-independent iteration. */
   public static Map<ApiDatabaseEntry, AndroidApiLevel> generateEntries(
-      Collection<ParsedApiClass> apiClasses) throws GenerationException {
+      Collection<ParsedApiClass<ApiRange>> apiClasses) throws GenerationException {
     return new EntryBuilder().addEntriesFor(apiClasses).build();
   }
 
   private static class EntryBuilder {
     final Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = new LinkedHashMap<>();
 
-    EntryBuilder addEntriesFor(Collection<ParsedApiClass> apiClasses) throws GenerationException {
-      for (ParsedApiClass apiClass : apiClasses) {
+    EntryBuilder addEntriesFor(Collection<ParsedApiClass<ApiRange>> apiClasses)
+        throws GenerationException {
+      for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
         addEntriesFor(apiClass);
       }
       return this;
     }
 
-    void addEntriesFor(ParsedApiClass apiClass) throws GenerationException {
-      addEntry(apiClass.getClassReference(), apiClass.getRange());
+    void addEntriesFor(ParsedApiClass<ApiRange> apiClass) throws GenerationException {
+      addEntry(apiClass.getClassReference(), apiClass.getData());
       apiClass.forEachMethodThrowing(this::addEntry);
       apiClass.forEachFieldThrowing(this::addEntry);
     }

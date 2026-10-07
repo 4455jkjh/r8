@@ -29,21 +29,21 @@ public class AndroidApiVersionsXmlParser {
    *
    * @param xmlPath the XML file to parse.
    */
-  public static List<ParsedApiClass> parse(Path xmlPath) throws ParsingException {
+  public static List<ParsedApiClass<ApiRange>> parse(Path xmlPath) throws ParsingException {
     return new AndroidApiVersionsXmlParser(xmlPath).parse();
   }
 
   private static final AndroidApiLevel FIRST_API_LEVEL = AndroidApiLevel.B;
 
   private final Path xmlPath;
-  private final Map<ClassReference, ParsedApiClass> parsedClasses = new LinkedHashMap<>();
+  private final Map<ClassReference, ParsedApiClass<ApiRange>> parsedClasses = new LinkedHashMap<>();
 
   private AndroidApiVersionsXmlParser(Path xmlPath) {
     assert xmlPath != null;
     this.xmlPath = xmlPath;
   }
 
-  private List<ParsedApiClass> parse() throws ParsingException {
+  private List<ParsedApiClass<ApiRange>> parse() throws ParsingException {
     Document xml = readXml();
     int versionsVersion = parseVersion(xml);
     var classes = xml.getElementsByTagName("class");
@@ -66,7 +66,7 @@ public class AndroidApiVersionsXmlParser {
     }
   }
 
-  private void parseClassEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
+  private void parseClassEntry(Node node, int versionsVersion, ParsedApiClass<ApiRange> apiClass)
       throws ParsingException {
     switch (node.getNodeName()) {
       case "extends":
@@ -90,7 +90,7 @@ public class AndroidApiVersionsXmlParser {
     }
   }
 
-  private void parseExtendsEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
+  private void parseExtendsEntry(Node node, int versionsVersion, ParsedApiClass<ApiRange> apiClass)
       throws ParsingException {
     ClassReference classReference = Reference.classFromBinaryName(parseNameAttribute(node));
     if (apiClass.hasSupertype(classReference)) {
@@ -101,13 +101,12 @@ public class AndroidApiVersionsXmlParser {
               + apiClass.getClassReference());
     }
     ApiRange apiRange =
-        parseApiRange(
-            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
+        parseApiRange(node, versionsVersion, apiClass.getData().intro, apiClass.getData().removed);
     apiClass.registerSupertype(classReference, apiRange);
   }
 
-  private void parseImplementsEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
-      throws ParsingException {
+  private void parseImplementsEntry(
+      Node node, int versionsVersion, ParsedApiClass<ApiRange> apiClass) throws ParsingException {
     ClassReference interfaceReference = Reference.classFromBinaryName(parseNameAttribute(node));
     if (apiClass.hasInterface(interfaceReference)) {
       throw new ParsingException(
@@ -117,31 +116,28 @@ public class AndroidApiVersionsXmlParser {
               + apiClass.getClassReference());
     }
     ApiRange apiRange =
-        parseApiRange(
-            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
+        parseApiRange(node, versionsVersion, apiClass.getData().intro, apiClass.getData().removed);
     apiClass.registerInterface(interfaceReference, apiRange);
   }
 
-  private void parseMethodEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
+  private void parseMethodEntry(Node node, int versionsVersion, ParsedApiClass<ApiRange> apiClass)
       throws ParsingException {
     MethodReference methodReference =
         parseMethodReference(apiClass.getClassReference(), parseNameAttribute(node));
     ApiRange apiRange =
-        parseApiRange(
-            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
+        parseApiRange(node, versionsVersion, apiClass.getData().intro, apiClass.getData().removed);
     if (apiClass.hasMethod(methodReference)) {
       throw new ParsingException("Duplicate entries for " + methodReference);
     }
     apiClass.registerMethod(methodReference, apiRange);
   }
 
-  private void parseFieldEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
+  private void parseFieldEntry(Node node, int versionsVersion, ParsedApiClass<ApiRange> apiClass)
       throws ParsingException {
     FieldTypelessReference fieldReference =
         parseFieldReference(apiClass.getClassReference(), parseNameAttribute(node));
     ApiRange apiRange =
-        parseApiRange(
-            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
+        parseApiRange(node, versionsVersion, apiClass.getData().intro, apiClass.getData().removed);
     if (apiClass.hasField(fieldReference)) {
       throw new ParsingException("Duplicate entries for " + fieldReference);
     }
@@ -169,12 +165,12 @@ public class AndroidApiVersionsXmlParser {
     return new FieldTypelessReference(holder, fieldReference);
   }
 
-  private ParsedApiClass register(ClassReference classReference, ApiRange apiRange)
+  private ParsedApiClass<ApiRange> register(ClassReference classReference, ApiRange apiRange)
       throws ParsingException {
     if (parsedClasses.containsKey(classReference)) {
       throw new ParsingException("Duplicate class entry found for " + classReference);
     }
-    ParsedApiClass apiClass = new ParsedApiClass(classReference, apiRange);
+    ParsedApiClass<ApiRange> apiClass = new ParsedApiClass<>(classReference, apiRange);
     parsedClasses.put(classReference, apiClass);
     return apiClass;
   }
