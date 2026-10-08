@@ -30,7 +30,7 @@ public interface NextUntilIterator<T> extends Iterator<T> {
    *
    * @returns item if it was found, null otherwise.
    */
-  @SuppressWarnings({"TypeParameterUnusedInFormals", "unchecked"})
+  @SuppressWarnings({"TypeParameterUnusedInFormals", "unchecked", "ReferenceEquality"})
   default <S extends T> S nextUntil(T item) {
     while (hasNext()) {
       if (next() == item) {

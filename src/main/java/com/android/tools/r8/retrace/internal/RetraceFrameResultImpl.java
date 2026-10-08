@@ -440,7 +440,7 @@ class RetraceFrameResultImpl implements RetraceFrameResult {
     }
   }
 
-  private static class MappedRangeForFrame {
+  static class MappedRangeForFrame {
 
     private final MappedRange mappedRange;
     private final OptionalInt position;

@@ -78,6 +78,7 @@ public class DexDebugEventBuilder {
   }
 
   /** Add events at pc for instruction. */
+  @SuppressWarnings("ReferenceEquality")
   public void add(int pc, int postPc, Instruction instruction) {
     boolean isBlockEntry = instruction.getBlock().entry() == instruction;
     boolean isBlockExit = instruction.getBlock().exit() == instruction;

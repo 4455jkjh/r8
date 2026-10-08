@@ -278,7 +278,7 @@ public class InvalidTypesTest extends JasminTestBase {
               .addProgramFiles(inputJar)
               .addKeepMainRule(mainClass.name)
               .addKeepRules("-keep class TestClass { public static I g; }")
-              .run(mainClass.name);
+              .run(parameters.getRuntime(), mainClass.name);
       checkTestRunResult(proguardResult, Compiler.PROGUARD);
     } else {
       assert parameters.isDexRuntime();

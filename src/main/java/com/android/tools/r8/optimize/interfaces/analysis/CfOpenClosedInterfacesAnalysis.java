@@ -304,7 +304,7 @@ public class CfOpenClosedInterfacesAnalysis
     private final CfInstruction instruction;
     private final ErroneousCfFrameState errorState;
 
-    public FailedCfAnalysisResult(CfInstruction instruction, ErroneousCfFrameState errorState) {
+    FailedCfAnalysisResult(CfInstruction instruction, ErroneousCfFrameState errorState) {
       this.instruction = instruction;
       this.errorState = errorState;
     }

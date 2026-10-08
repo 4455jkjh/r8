@@ -12,6 +12,8 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
@@ -20,8 +22,21 @@ import com.android.tools.r8.regress.b111080693.b.RecyclerView;
 import com.android.tools.r8.utils.AndroidApp;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class B111080693 extends TestBase {
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Test
   public void test() throws Exception {
     R8Command.Builder builder = R8Command.builder();
@@ -40,14 +55,14 @@ public class B111080693 extends TestBase {
             ToolHelper.getClassFileForTestClassFromResources(TestMain.class),
             ToolHelper.getClassFileForTestClassFromResources(TestMain.TestAdapter.class)));
     builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
-    builder.setMinApiLevel(ToolHelper.getMinApiLevelForDexVm().getMajor());
+    builder.setMinApiLevel(parameters.asDexRuntime().getMinApiLevel().getMajor());
     String config = keepMainProguardConfiguration(TestMain.class);
     builder.addProguardConfiguration(
         ImmutableList.of(config,
             "-keepattributes Signature, InnerClasses, EnclosingMethod, *Annotation*"),
         Origin.unknown());
     AndroidApp app = ToolHelper.runR8(builder.build());
-    ProcessResult result = runOnArtRaw(app, TestMain.class);
+    ProcessResult result = runOnArtRaw(app, TestMain.class, parameters.getDexVm());
     assertEquals(0, result.exitCode);
     assertThat(result.stderr, not(containsString("IllegalAccessError")));
   }

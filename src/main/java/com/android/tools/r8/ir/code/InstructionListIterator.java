@@ -79,12 +79,14 @@ public interface InstructionListIterator
         code, blockIterator, Collections.singleton(instructionToAdd), options);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   default void addAndPositionBeforeNewInstruction(Instruction instruction) {
     add(instruction);
     Instruction previous = previous();
     assert previous == instruction;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   default void addBeforeAndPositionBeforeNewInstruction(Instruction instruction) {
     previous();
     add(instruction);
@@ -172,6 +174,7 @@ public interface InstructionListIterator
       Value value,
       Position position);
 
+  @SuppressWarnings("ReferenceEquality")
   default Instruction positionAfterPreviousInstruction(Instruction previousInstruction) {
     return positionAfterPreviousInstruction(
         currentInstruction -> currentInstruction == previousInstruction);
@@ -182,6 +185,7 @@ public interface InstructionListIterator
     return next();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   default Instruction positionBeforeNextInstruction(Instruction instruction) {
     return positionBeforeNextInstructionThatMatches(i -> i == instruction);
   }

@@ -53,6 +53,7 @@ public class And extends LogicalBinop {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public And asAnd(Value leftValue, Value rightValue) {
     return leftValue == leftValue() && rightValue == rightValue() ? this : null;

@@ -61,6 +61,7 @@ class SpillMoveSet {
    * @param to interval representing the destination for the move
    * @param from interval representating the source for the move
    */
+  @SuppressWarnings("ReferenceEquality")
   public void addSpillOrRestoreMove(int i, LiveIntervals to, LiveIntervals from) {
     assert i % 2 == 1;
     assert to.getSplitParent() == from.getSplitParent();
@@ -78,11 +79,13 @@ class SpillMoveSet {
    * @param to interval representing the destination for the move
    * @param from interval representing the source for the move
    */
+  @SuppressWarnings("ReferenceEquality")
   public void addInResolutionMove(int i, LiveIntervals to, LiveIntervals from) {
     assert to.getSplitParent() == from.getSplitParent();
     addInMove(i, to, from);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addOutResolutionMove(int i, LiveIntervals to, LiveIntervals from) {
     assert to.getSplitParent() == from.getSplitParent();
     addOutMove(i, to, from);
@@ -125,6 +128,7 @@ class SpillMoveSet {
    * @param tempRegister the first temporary register to use
    * @return the number of temporary registers used
    */
+  @SuppressWarnings("ReferenceEquality")
   public int scheduleAndInsertMoves(int tempRegister) {
     for (BasicBlock block : code.blocks) {
       InstructionListIterator insertAt = block.listIterator();
@@ -176,6 +180,7 @@ class SpillMoveSet {
         || instructionToPhiMoves.containsKey(i - 1);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private SpillMove getMoveWithSource(LiveIntervals src, Collection<SpillMove> moves) {
     for (SpillMove move : moves) {
       if (move.from == src) {

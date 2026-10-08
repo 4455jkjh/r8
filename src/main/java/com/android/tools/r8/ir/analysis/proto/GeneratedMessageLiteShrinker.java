@@ -157,6 +157,7 @@ public class GeneratedMessageLiteShrinker {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void optimizeNewMutableInstance(AppView<AppInfoWithLiveness> appView, IRCode code) {
     AffectedValues affectedValues = new AffectedValues();
     BasicBlockIterator blockIterator = code.listIterator();
@@ -336,6 +337,7 @@ public class GeneratedMessageLiteShrinker {
         new ConstString(code.createValue(stringType), encoder.encodeInfo(protoMessageInfo)));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewriteObjectsArgumentToNewMessageInfo(
       IRCode code, InvokeMethod newMessageInfoInvoke, ProtoMessageInfo protoMessageInfo) {
     // Position iterator immediately before the call to newMessageInfo().

@@ -213,6 +213,7 @@ public interface ComputedApiLevel extends Equatable<ComputedApiLevel> {
       return apiLevel.toString();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object o) {
       if (this == o) {

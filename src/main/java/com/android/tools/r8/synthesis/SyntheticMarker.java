@@ -64,8 +64,7 @@ public class SyntheticMarker {
     private final String versionHash;
     private final SyntheticNaming syntheticNaming;
 
-    public MarkerAttribute(
-        SyntheticKind kind, String versionHash, SyntheticNaming syntheticNaming) {
+    MarkerAttribute(SyntheticKind kind, String versionHash, SyntheticNaming syntheticNaming) {
       super(SYNTHETIC_MARKER_ATTRIBUTE_TYPE_NAME);
       this.kind = kind;
       this.versionHash = versionHash;
@@ -123,6 +122,7 @@ public class SyntheticMarker {
                         appView.apiLevelCompute(), clazz))));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static SyntheticMarker stripMarkerFromClass(DexProgramClass clazz, AppView<?> appView) {
     if (clazz.originatesFromClassResource()) {
       SyntheticMarker marker = clazz.stripSyntheticInputMarker();
@@ -206,6 +206,7 @@ public class SyntheticMarker {
     this.context = context;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isValidMarker() {
     assert getContext() != null || this == NO_MARKER;
     return getContext() != null;

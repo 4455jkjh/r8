@@ -18,6 +18,7 @@ import java.util.Set;
 
 public class IRCodeUtils {
 
+  @SuppressWarnings("ReferenceEquality")
   public static InvokeDirect getUniqueConstructorInvoke(
       Value value, DexItemFactory dexItemFactory) {
     InvokeDirect result = null;
@@ -113,6 +114,7 @@ public class IRCodeUtils {
     internalRemoveInstructionAndTransitiveInputsIfNotUsed(DequeUtils.newArrayDeque(instruction));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void internalRemoveInstructionAndTransitiveInputsIfNotUsed(
       Deque<InstructionOrPhi> worklist) {
     Set<InstructionOrPhi> removed = Sets.newIdentityHashSet();

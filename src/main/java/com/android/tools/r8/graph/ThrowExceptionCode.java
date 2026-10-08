@@ -100,6 +100,7 @@ public class ThrowExceptionCode extends Code implements DexWritableCode {
     return ObjectUtils.hashLL(DexWritableCodeKind.THROW_EXCEPTION, exceptionType);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected boolean computeEquals(Object other) {
     if (this == other) {

@@ -136,6 +136,7 @@ public abstract class GraphLens {
         method, appliedLens, NonIdentityGraphLens::getPreviousMethodSignatureForMapping);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private <T extends DexReference> T getOriginalReference(
       T reference, GraphLens appliedLens, BiFunction<NonIdentityGraphLens, T, T> previousFn) {
     GraphLens current = this;
@@ -189,6 +190,7 @@ public abstract class GraphLens {
     return getRenamedReference(reference, appliedLens, nextFn, alwaysFalse());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private <T extends DexReference> T getRenamedReference(
       T reference,
       GraphLens appliedLens,
@@ -363,7 +365,7 @@ public abstract class GraphLens {
 
   @Deprecated
   @SuppressWarnings("InlineMeSuggester")
-  /** Lookup a rebound or non-rebound field reference using the current graph lens. */
+  /* Lookup a rebound or non-rebound field reference using the current graph lens. */
   public final FieldLookupResult lookupFieldResult(DexField field) {
     // Lookup the field using the graph lens and return the lookup result.
     return lookupFieldResult(field, null);

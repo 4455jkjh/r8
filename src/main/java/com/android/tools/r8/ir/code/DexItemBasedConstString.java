@@ -51,6 +51,7 @@ public class DexItemBasedConstString extends ConstInstruction {
     return copyOf(newValue, original);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static DexItemBasedConstString copyOf(Value newValue, DexItemBasedConstString original) {
     assert newValue != original.outValue();
     return new DexItemBasedConstString(newValue, original.getItem(), original.nameComputationInfo);

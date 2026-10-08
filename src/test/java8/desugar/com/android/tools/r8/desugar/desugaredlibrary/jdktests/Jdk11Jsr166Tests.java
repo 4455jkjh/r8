@@ -14,6 +14,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
@@ -85,10 +86,7 @@ public class Jdk11Jsr166Tests extends DesugaredLibraryTestBase {
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
         .addClasspathFiles(Paths.get(ToolHelper.THIRD_PARTY_DIR + "junit/junit-4.13-beta-2.jar"))
         .addSourceFiles(
-            Files.walk(
-                    Paths.get(
-                        ToolHelper.THIRD_PARTY_DIR
-                            + "openjdk/jdk-11-test/java/util/concurrent/tck"))
+            Files.walk(TestDeps.getJdk11TestPath("java", "util", "concurrent", "tck"))
                 .filter(path -> path.getFileName().toString().endsWith(".java"))
                 .collect(Collectors.toList()))
         .setOutputPath(jsr166SuiteClasses)

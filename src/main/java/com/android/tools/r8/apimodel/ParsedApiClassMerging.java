@@ -13,31 +13,31 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class ParsedApiClassMerging {
+public class ParsedApiClassMerging<D> {
 
   private final DiagnosticsHandler diagnosticsHandler;
-  private final Map<ClassReference, ParsedApiClass> merged = new LinkedHashMap<>();
+  private final Map<ClassReference, ParsedApiClass<D>> merged = new LinkedHashMap<>();
 
   private ParsedApiClassMerging(DiagnosticsHandler diagnosticsHandler) {
     this.diagnosticsHandler = diagnosticsHandler;
   }
 
   /** The returned collection has hash-independent iteration. */
-  public static Collection<ParsedApiClass> merge(
-      Iterable<ParsedApiClass> parsedClasses, DiagnosticsHandler diagnosticsHandler)
+  public static <D> Collection<ParsedApiClass<D>> merge(
+      Iterable<ParsedApiClass<D>> parsedClasses, DiagnosticsHandler diagnosticsHandler)
       throws ApiDatabaseGeneratorException {
-    ParsedApiClassMerging merger = new ParsedApiClassMerging(diagnosticsHandler);
+    ParsedApiClassMerging<D> merger = new ParsedApiClassMerging<>(diagnosticsHandler);
     merger.merge(parsedClasses);
     return new ArrayList<>(merger.merged.values());
   }
 
-  private void merge(Iterable<ParsedApiClass> classes) throws ApiDatabaseGeneratorException {
-    for (ParsedApiClass apiClass : classes) {
+  private void merge(Iterable<ParsedApiClass<D>> classes) throws ApiDatabaseGeneratorException {
+    for (ParsedApiClass<D> apiClass : classes) {
       merge(apiClass);
     }
   }
 
-  private void merge(ParsedApiClass apiClass) throws ApiDatabaseGeneratorException {
+  private void merge(ParsedApiClass<D> apiClass) throws ApiDatabaseGeneratorException {
     ClassReference ref = apiClass.getClassReference();
     if (!merged.containsKey(ref)) {
       merged.put(ref, apiClass);
@@ -46,21 +46,21 @@ public class ParsedApiClassMerging {
     }
   }
 
-  private ParsedApiClass merge(ParsedApiClass a, ParsedApiClass b)
+  private ParsedApiClass<D> merge(ParsedApiClass<D> a, ParsedApiClass<D> b)
       throws ApiDatabaseGeneratorException {
     assert a.getClassReference().equals(b.getClassReference());
     diagnosticsHandler.error(duplicateClassError(a));
 
-    if (!a.getRange().equals(b.getRange())) {
+    if (!a.getData().equals(b.getData())) {
       throw new ApiDatabaseGeneratorException(
           "Trying to merge "
               + a.getClassReference()
               + " with incompatible ranges "
-              + a.getRange()
+              + a.getData()
               + " and "
-              + b.getRange());
+              + b.getData());
     }
-    ParsedApiClass mergedClass = new ParsedApiClass(a.getClassReference(), a.getRange());
+    ParsedApiClass<D> mergedClass = new ParsedApiClass<>(a.getClassReference(), a.getData());
 
     a.forEachSupertype(mergedClass::registerSupertype);
     b.forEachSupertypeThrowing(
@@ -68,7 +68,7 @@ public class ParsedApiClassMerging {
           if (!mergedClass.hasSupertype(classReference)) {
             mergedClass.registerSupertype(classReference, apiRange);
           } else {
-            ApiRange mergedRange = mergedClass.getSupertypeRange(classReference);
+            D mergedRange = mergedClass.getSupertypeData(classReference);
             if (!mergedRange.equals(apiRange)) {
               throw new ApiDatabaseGeneratorException(
                   "Cannot merge incompatible ranges for extends "
@@ -89,7 +89,7 @@ public class ParsedApiClassMerging {
           if (!mergedClass.hasInterface(classReference)) {
             mergedClass.registerInterface(classReference, apiRange);
           } else {
-            ApiRange mergedRange = mergedClass.getInterfaceRange(classReference);
+            D mergedRange = mergedClass.getInterfaceData(classReference);
             if (!mergedRange.equals(apiRange)) {
               throw new ApiDatabaseGeneratorException(
                   "Cannot merge incompatible ranges for implements "
@@ -109,7 +109,7 @@ public class ParsedApiClassMerging {
           if (!mergedClass.hasMethod(methodReference)) {
             mergedClass.registerMethod(methodReference, apiRange);
           } else {
-            ApiRange mergedRange = mergedClass.getMethodRange(methodReference);
+            D mergedRange = mergedClass.getMethodData(methodReference);
             if (!mergedRange.equals(apiRange)) {
               throw new ApiDatabaseGeneratorException(
                   "Cannot merge incompatible ranges for "
@@ -127,7 +127,7 @@ public class ParsedApiClassMerging {
           if (!mergedClass.hasField(fieldReference)) {
             mergedClass.registerField(fieldReference, apiRange);
           } else {
-            ApiRange mergedRange = mergedClass.getFieldRange(fieldReference);
+            D mergedRange = mergedClass.getFieldData(fieldReference);
             if (!mergedRange.equals(apiRange)) {
               throw new ApiDatabaseGeneratorException(
                   "Cannot merge incompatible ranges for "
@@ -144,7 +144,7 @@ public class ParsedApiClassMerging {
   }
 
   private static DuplicateApiDatabaseEntryDiagnostic duplicateClassError(
-      ParsedApiClass duplicateClass) {
+      ParsedApiClass<?> duplicateClass) {
     String key = duplicateClass.getClassReference().getTypeName();
     String message = "Duplicate class " + key + " found when merging .xml files.";
     return new DuplicateApiDatabaseEntryDiagnostic(message);

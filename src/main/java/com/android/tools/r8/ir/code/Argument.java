@@ -60,6 +60,7 @@ public class Argument extends Instruction {
     return index;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean verifyIndex() {
     int index = 0;
     InstructionIterator instructionIterator = getBlock().iterator();

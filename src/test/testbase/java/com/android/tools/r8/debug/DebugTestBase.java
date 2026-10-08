@@ -4,8 +4,10 @@
 package com.android.tools.r8.debug;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestRuntime;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -135,6 +137,22 @@ public abstract class DebugTestBase extends TestBase {
 
   public static DebugTestParameters parameters() {
     return new DebugTestParameters();
+  }
+
+  // Returns parameters of the form: parameters * name * config, with the CF config on the default
+  // CF runtime and a D8 config for each DEX runtime.
+  static List<Object[]> buildCfAndD8Parameters(
+      DelayedDebugTestConfig cfConfig, Function<DexRuntime, DelayedDebugTestConfig> d8Config) {
+    List<Object[]> result = new ArrayList<>();
+    for (TestParameters parameters :
+        getTestParameters().withDefaultCfRuntime().withDexRuntimes().build()) {
+      if (parameters.isCfRuntime()) {
+        result.add(new Object[] {parameters, "CF", cfConfig});
+      } else {
+        result.add(new Object[] {parameters, "D8", d8Config.apply(parameters.asDexRuntime())});
+      }
+    }
+    return result;
   }
 
   @Rule

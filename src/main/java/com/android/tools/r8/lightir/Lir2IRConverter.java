@@ -214,7 +214,7 @@ public class Lir2IRConverter {
 
     private final boolean buildForInlining;
 
-    public Parser(
+    Parser(
         LirCode<EV> code,
         DexMethod method,
         boolean isD8R8Synthesized,
@@ -289,7 +289,7 @@ public class Lir2IRConverter {
     }
 
     @SuppressWarnings("ReferenceEquality")
-    public void parseArguments(ProgramMethod method) {
+    void parseArguments(ProgramMethod method) {
       ArgumentInfoCollection argumentsInfo = protoChanges.getArgumentInfoCollection();
       currentBlock = getBasicBlock(ENTRY_BLOCK_INDEX);
       boolean hasReceiverArgument = !method.getDefinition().isStatic();
@@ -341,7 +341,7 @@ public class Lir2IRConverter {
     }
 
     @SuppressWarnings("ReferenceEquality")
-    public void ensureDebugInfo() {
+    void ensureDebugInfo() {
       if (code.getDebugLocalInfoTable() == null) {
         return;
       }
@@ -358,8 +358,7 @@ public class Lir2IRConverter {
 
     // TODO(b/270398965): Replace LinkedList.
     @SuppressWarnings("JdkObsolete")
-    public IRCode getIRCode(
-        ProgramMethod method, MutableMethodConversionOptions conversionOptions) {
+    IRCode getIRCode(ProgramMethod method, MutableMethodConversionOptions conversionOptions) {
       LinkedList<BasicBlock> blockList = new LinkedList<>();
       IntList blockIndices = new IntArrayList(blocks.keySet());
       blockIndices.sort(Integer::compare);
@@ -387,7 +386,7 @@ public class Lir2IRConverter {
           conversionOptions);
     }
 
-    public BasicBlock getBasicBlock(int instructionIndex) {
+    BasicBlock getBasicBlock(int instructionIndex) {
       return blocks.computeIfAbsent(
           instructionIndex,
           k -> {
@@ -397,11 +396,11 @@ public class Lir2IRConverter {
           });
     }
 
-    public Value getValue(EV encodedValue) {
+    Value getValue(EV encodedValue) {
       return strategy.getValue(encodedValue, code.getStrategyInfo());
     }
 
-    public List<Value> getValues(List<EV> indices) {
+    List<Value> getValues(List<EV> indices) {
       List<Value> arguments = new ArrayList<>(indices.size());
       for (int i = 0; i < indices.size(); i++) {
         arguments.add(getValue(indices.get(i)));
@@ -409,21 +408,21 @@ public class Lir2IRConverter {
       return arguments;
     }
 
-    public int toInstructionIndexInIR(int lirIndex) {
+    int toInstructionIndexInIR(int lirIndex) {
       return lirIndex + code.getArgumentCount();
     }
 
-    public int peekNextInstructionIndex() {
+    int peekNextInstructionIndex() {
       return nextInstructionIndex;
     }
 
-    public Value getOutValueForNextInstruction(TypeElement type) {
+    Value getOutValueForNextInstruction(TypeElement type) {
       int valueIndex = toInstructionIndexInIR(peekNextInstructionIndex());
       return strategy.getValueDefinitionForInstructionIndex(
           valueIndex, type, code::getDebugLocalInfo);
     }
 
-    public Phi getPhiForNextInstructionAndAdvanceState(TypeElement type) {
+    Phi getPhiForNextInstructionAndAdvanceState(TypeElement type) {
       int instructionIndex = peekNextInstructionIndex();
       int valueIndex = toInstructionIndexInIR(instructionIndex);
       Phi phi =

@@ -57,6 +57,7 @@ public class HumanToMachineWrapperConverter {
         invalidMethods);
   }
 
+  @SuppressWarnings("NonApiType")
   private void clearIncompleteSubwrappers(
       LinkedHashMap<DexType, WrapperDescriptorBuilder> orderedDescriptors,
       Map<DexType, Set<DexMethod>> wrapperConversions) {
@@ -78,32 +79,32 @@ public class HumanToMachineWrapperConverter {
     private final List<DexType> subwrappers = new ArrayList<>();
     private boolean nonPublicAccess = false;
 
-    public WrapperDescriptorBuilder() {}
+    WrapperDescriptorBuilder() {}
 
-    public List<DexMethod> getMethods() {
+    List<DexMethod> getMethods() {
       return methods;
     }
 
-    public List<DexType> getSubwrappers() {
+    List<DexType> getSubwrappers() {
       return subwrappers;
     }
 
-    public void addSubwrapper(DexType type) {
+    void addSubwrapper(DexType type) {
       subwrappers.add(type);
     }
 
-    public void setNonPublicAccess() {
+    void setNonPublicAccess() {
       nonPublicAccess = true;
     }
 
-    public WrapperDescriptor toWrapperDescriptor() {
+    WrapperDescriptor toWrapperDescriptor() {
       methods.sort(DexMethod::compareTo);
       subwrappers.sort(DexType::compareTo);
       return new WrapperDescriptor(
           ImmutableList.copyOf(methods), ImmutableList.copyOf(subwrappers), nonPublicAccess);
     }
 
-    public void removeSubwrappers(List<DexType> toRemove) {
+    void removeSubwrappers(List<DexType> toRemove) {
       if (!toRemove.isEmpty()) {
         subwrappers.removeAll(toRemove);
       }
@@ -137,7 +138,7 @@ public class HumanToMachineWrapperConverter {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   private LinkedHashMap<DexType, WrapperDescriptorBuilder> orderDescriptors(
       Map<DexType, WrapperDescriptorBuilder> descriptors) {
     LinkedHashMap<DexType, WrapperDescriptorBuilder> orderedDescriptors = new LinkedHashMap<>();
@@ -158,7 +159,7 @@ public class HumanToMachineWrapperConverter {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   private void finalizeWrapperDescriptors(
       LinkedHashMap<DexType, WrapperDescriptorBuilder> descriptors,
       MachineRewritingFlags.Builder builder) {

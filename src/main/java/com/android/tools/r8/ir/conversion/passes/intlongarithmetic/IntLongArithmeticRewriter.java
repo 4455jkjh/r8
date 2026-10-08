@@ -131,7 +131,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
           }
           // Strength reduction is done at the end to prioritize code size saving optimizations.
           // i.e., x * 3 * 2 => x * 6, not (x * 3) << 1.
-          hasChanged |= strengthReduction(iterator, binop, binopDescriptor, code);
+          hasChanged |= strengthReduction(iterator, binop, code);
         }
       } else if (next.isInvokeStatic()) {
         InvokeStatic invokeStatic = next.asInvokeStatic();
@@ -283,6 +283,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean andOrOnCommonInputSimplification(
       InstructionListIterator iterator,
       Instruction binop,
@@ -326,6 +327,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean shiftOnCommonValueSharing(
       InstructionListIterator iterator,
       Instruction binop,
@@ -571,6 +573,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean optimizeMinMax(
       InstructionListIterator iterator,
       InvokeStatic invokeStatic,
@@ -654,6 +657,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean binopSimplification(
       InstructionListIterator iterator, Binop binop, BinopDescriptor binopDescriptor, IRCode code) {
     ConstNumber constNumber = getConstNumber(binop.leftValue());
@@ -708,8 +712,8 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
-  private boolean strengthReduction(
-      InstructionListIterator iterator, Binop binop, BinopDescriptor binopDescriptor, IRCode code) {
+  @SuppressWarnings("ReferenceEquality")
+  private boolean strengthReduction(InstructionListIterator iterator, Binop binop, IRCode code) {
     ConstNumber constNumber = getConstNumber(binop.leftValue());
     if (constNumber != null) {
       if (binop.isMul()) {

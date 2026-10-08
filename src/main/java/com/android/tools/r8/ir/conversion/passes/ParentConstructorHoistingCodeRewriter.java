@@ -57,6 +57,7 @@ public class ParentConstructorHoistingCodeRewriter
     return CodeRewriterResult.NONE;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void hoistSideEffectFreeConstructorCall(InvokeDirect invoke) {
     Deque<Instruction> constants = new ArrayDeque<>();
     // TODO(b/281975599): This loop would not be needed if we did not have any trivial gotos.
@@ -106,6 +107,7 @@ public class ParentConstructorHoistingCodeRewriter
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean hoistSideEffectFreeConstructorCallIntoPredecessorBlock(
       InvokeDirect invoke, Deque<Instruction> constants) {
     BasicBlock block = invoke.getBlock();
@@ -155,6 +157,7 @@ public class ParentConstructorHoistingCodeRewriter
         && hoistingMayRemoveInstancePutToUninitializedThis(code);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean hoistingMayRemoveInstancePutToUninitializedThis(IRCode code) {
     if (!code.metadata().mayHaveInstancePut()) {
       return false;
@@ -195,6 +198,7 @@ public class ParentConstructorHoistingCodeRewriter
     return sideEffectFreeConstructorCalls;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private List<InvokeDirect> computeSideEffectFreeConstructorCalls(IRCode code) {
     Value thisValue = code.getThis();
     return ListUtils.filter(
@@ -213,6 +217,7 @@ public class ParentConstructorHoistingCodeRewriter
         });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isInstancePutToUninitializedThis(
       Instruction instruction, Value thisValue) {
     return instruction.isInstancePut() && instruction.asInstancePut().object() == thisValue;

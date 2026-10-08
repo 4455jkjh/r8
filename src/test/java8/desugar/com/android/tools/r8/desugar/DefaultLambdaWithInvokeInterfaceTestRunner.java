@@ -63,7 +63,7 @@ public class DefaultLambdaWithInvokeInterfaceTestRunner extends DebugTestBase {
         .run(parameters.getRuntime(), CLASS)
         .assertSuccessWithOutput(EXPECTED)
         .inspect(inspector -> assertThat(inspector.clazz(CLASS), isPresent()));
-    runDebugger(compileResult.debugConfig());
+    runDebugger(compileResult.debugConfig(parameters.getRuntime()));
   }
 
   @Test
@@ -76,7 +76,7 @@ public class DefaultLambdaWithInvokeInterfaceTestRunner extends DebugTestBase {
         .run(parameters.getRuntime(), CLASS)
         .assertSuccessWithOutput(EXPECTED)
         .inspect(inspector -> assertThat(inspector.clazz(CLASS), isPresent()));
-    runDebugger(compileResult.debugConfig());
+    runDebugger(compileResult.debugConfig(parameters.getRuntime()));
   }
 
   private void runDebugger(DebugTestConfig config) throws Throwable {

@@ -39,6 +39,7 @@ import com.android.tools.r8.ir.code.Return;
  */
 public abstract class InterfaceTypeToClassTypeLensCodeRewriterHelper {
 
+  @SuppressWarnings("ReferenceEquality")
   public static InterfaceTypeToClassTypeLensCodeRewriterHelper create(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       IRCode code,

@@ -3,38 +3,47 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import java.util.Collections;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class ArraySimplificationLineNumberTestRunner extends DebugTestBase {
 
   private static final Class CLASS = ArraySimplificationLineNumberTest.class;
   private static final String FILE = CLASS.getSimpleName() + ".java";
   private static final String NAME = CLASS.getCanonicalName();
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimesStartingFromIncluding(Version.V6_0_1).build();
+  }
+
   @Test
-  @IgnoreIfVmOlderThan(Version.V6_0_1)
   public void testHitOnEntryOnly() throws Throwable {
     // TODO(b/199700280): Reenable on 12.0.0 when we have the libjdwp.so file include and the flags
     // fixed.
     Assume.assumeTrue(
         "Skipping test " + testName.getMethodName() + " because debugging not enabled in 12.0.0",
-        !ToolHelper.getDexVm().isNewerThanOrEqual(DexVm.ART_12_0_0_HOST));
+        !parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V12_0_0));
     DebugTestConfig cf = new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
     DebugTestConfig d8 =
-        new D8DebugTestConfig()
+        new D8DebugTestConfig(parameters.asDexRuntime())
             .compileAndAdd(
                 temp, Collections.singletonList(ToolHelper.getClassFileForTestClass(CLASS)));
     DebugTestConfig d8NoLocals =
-        new D8DebugTestConfig()
+        new D8DebugTestConfig(parameters.asDexRuntime())
             .compileAndAdd(
                 temp,
                 Collections.singletonList(ToolHelper.getClassFileForTestClass(CLASS)),

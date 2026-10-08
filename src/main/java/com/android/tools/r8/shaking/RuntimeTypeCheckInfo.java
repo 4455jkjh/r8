@@ -82,6 +82,7 @@ public class RuntimeTypeCheckInfo {
       this.appliedGraphLens = appView.graphLens();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public RuntimeTypeCheckInfo build(GraphLens graphLens) {
       RuntimeTypeCheckInfo runtimeTypeCheckInfo =
           new RuntimeTypeCheckInfo(instanceOfTypes, checkCastTypes, exceptionGuardTypes);

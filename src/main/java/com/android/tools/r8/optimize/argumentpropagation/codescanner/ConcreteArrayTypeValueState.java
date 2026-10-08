@@ -151,6 +151,7 @@ public class ConcreteArrayTypeValueState extends ConcreteReferenceTypeValueState
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean mutableJoinNullability(Nullability otherNullability) {
     Nullability oldNullability = nullability;
     nullability = nullability.join(otherNullability);

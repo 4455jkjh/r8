@@ -77,6 +77,7 @@ public class SimplifyDebugLocal extends CodeRewriterPass<AppInfo> {
   }
 
   // TODO(mikaelpeltier) Manage that from and to instruction do not belong to the same block.
+  @SuppressWarnings("ReferenceEquality")
   private static boolean hasLocalOrLineChangeBetween(
       Instruction from, Instruction to, DexString localVar) {
     if (from.getBlock() != to.getBlock()) {

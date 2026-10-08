@@ -58,6 +58,7 @@ public class KotlinDeclarationContainerInfo implements EnqueuerMetadataTraceable
     this.propertiesWithNoBacking = propertiesWithNoBacking;
   }
 
+  @SuppressWarnings("DuplicateBranches")
   public static KotlinDeclarationContainerInfo create(
       KmDeclarationContainer container,
       Map<String, DexEncodedMethod> methodSignatureMap,

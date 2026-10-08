@@ -3,10 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.determinism;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,6 +18,6 @@ public class TiviDeterminismTest extends DumpDeterminismTestBase {
 
   @Override
   Path getDumpFile() {
-    return Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps/tivi/dump_app.zip");
+    return TestDeps.getTiviDumpAppZip();
   }
 }

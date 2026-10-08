@@ -29,6 +29,7 @@ public class MachineRewritingFlags {
     return new Builder();
   }
 
+  @SuppressWarnings("NonApiType")
   MachineRewritingFlags(
       Map<DexType, DexType> rewriteType,
       Set<DexType> maintainType,
@@ -165,6 +166,7 @@ public class MachineRewritingFlags {
     return emulatedInterfaces;
   }
 
+  @SuppressWarnings("NonApiType")
   public LinkedHashMap<DexType, WrapperDescriptor> getWrappers() {
     return wrappers;
   }

@@ -215,9 +215,6 @@ public class ToolHelper {
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";
   public static final String KEEP_RADIUS_WEB_DIR = getProjectRoot() + "src/keepradius/web/";
 
-  public static final Path CHECKED_IN_R8_17_WITH_DEPS =
-      Paths.get(THIRD_PARTY_DIR).resolve("r8").resolve("r8_with_deps_17.jar");
-
   public static final String R8_TEST_BUCKET = "r8-test-results";
 
   public static final String LINE_SEPARATOR = StringUtils.LINE_SEPARATOR;
@@ -235,8 +232,6 @@ public class ToolHelper {
 
   public static final String OPEN_JDK_DIR = THIRD_PARTY_DIR + "openjdk/";
   public static final String JAVA_8_RUNTIME = OPEN_JDK_DIR + "openjdk-rt-1.8/rt.jar";
-  public static final String JDK_11_TESTS_DIR = OPEN_JDK_DIR + "jdk-11-test/";
-  public static final String JDK_11_TIME_TESTS_DIR = JDK_11_TESTS_DIR + "java/time/";
 
   public static final String PROGUARD_SETTINGS_FOR_INTERNAL_APPS =
       THIRD_PARTY_DIR + "proguardsettings/";
@@ -377,7 +372,7 @@ public class ToolHelper {
       // TODO(b/204855476): Rename to DEFAULT alias once the checked in VM is removed.
       public static final Version NEW_DEFAULT = DEFAULT;
 
-      public static final Version LATEST_DEX2OAT = V12_0_0;
+      public static final Version LATEST_DEX2OAT = V16_0_0;
 
       Version(String shortName) {
         this.shortName = shortName;
@@ -626,10 +621,6 @@ public class ToolHelper {
     private CacheLookupKey artResultCacheLookupKey;
     private boolean noCaching = false;
 
-    public ArtCommandBuilder() {
-      this.version = getDexVm();
-    }
-
     public ArtCommandBuilder(DexVm version) {
       if (version.getKind() == Kind.HOST) {
         assert ART_BINARY_VERSIONS.containsKey(version);
@@ -654,7 +645,7 @@ public class ToolHelper {
         executionDirectory = getArtDir(version);
         return getRawArtBinary(version);
       }
-      return version != null ? getArtBinary(version) : getArtBinary();
+      return getArtBinary(version);
     }
 
     public boolean isForDevice() {
@@ -1186,14 +1177,14 @@ public class ToolHelper {
       case DEFAULT:
       case V9_0_0:
       case V10_0_0:
-        return "arm64";
-      case V12_0_0:
       case V13_0_0:
       case V14_0_0:
       case V15_0_0:
-      case V17_0_0:
       case V16_0_0:
+      case V17_0_0:
       case MASTER:
+        return "arm64";
+      case V12_0_0:
         return "x86_64";
       default:
         throw new Unimplemented();
@@ -1231,13 +1222,6 @@ public class ToolHelper {
     }
     fail("Unsupported platform, we currently only support mac and linux: " + getPlatform());
     return ""; //never here
-  }
-
-  public static Backend[] getBackends() {
-    if (getDexVm() == DexVm.ART_DEFAULT) {
-      return Backend.values();
-    }
-    return new Backend[]{Backend.DEX};
   }
 
   public static String getArtBinary(DexVm version) {
@@ -1285,7 +1269,7 @@ public class ToolHelper {
   }
 
   private static String formatApiLevel(AndroidApiLevel apiLevel) {
-    return apiLevel.getMajor() + (apiLevel.getMinor() == 0 ? "" : "." + apiLevel.getMinor());
+    return apiLevel.getNumericString();
   }
 
   public static Path getApiVersionsXmlFile(AndroidApiLevel apiLevel) {
@@ -1397,14 +1381,10 @@ public class ToolHelper {
     }
   }
 
-  public static String getArtBinary() {
-    return getArtBinary(getDexVm());
-  }
-
   public static Set<DexVm> getArtVersions() {
     String artVersion = System.getProperty("dex_vm");
     if (artVersion != null) {
-      DexVm artVersionEnum = getDexVm();
+      DexVm artVersionEnum = getDexVmFromProperty();
       if (artVersionEnum.getKind() == Kind.HOST
           && !ART_BINARY_VERSIONS.containsKey(artVersionEnum)) {
         throw new RuntimeException("Unsupported Art version " + artVersion);
@@ -1433,8 +1413,7 @@ public class ToolHelper {
     return dexVm == DexVm.ART_DEFAULT;
   }
 
-  @Deprecated
-  public static DexVm getDexVm() {
+  private static DexVm getDexVmFromProperty() {
     String artVersion = System.getProperty("dex_vm");
     if (artVersion == null) {
       return DexVm.ART_DEFAULT;
@@ -1452,15 +1431,6 @@ public class ToolHelper {
         return artVersionEnum;
       }
     }
-  }
-
-  public static AndroidApiLevel getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel threshold) {
-    AndroidApiLevel minApiLevelForDexVm = getMinApiLevelForDexVm();
-    return minApiLevelForDexVm.getMajor() < threshold.getMajor() ? minApiLevelForDexVm : threshold;
-  }
-
-  public static AndroidApiLevel getMinApiLevelForDexVm() {
-    return getMinApiLevelForDexVm(ToolHelper.getDexVm());
   }
 
   public static AndroidApiLevel getMinApiLevelForDexVm(DexVm dexVm) {
@@ -1528,7 +1498,7 @@ public class ToolHelper {
     if (version != null) {
       return version;
     }
-    throw new Unreachable("No Android VM for API level " + apiLevel.getMajor());
+    throw new Unreachable("No Android VM for API level " + apiLevel.getNumericString());
   }
 
   public static DexVersion getDexFileVersionForVm(DexVm vm) {
@@ -1569,7 +1539,7 @@ public class ToolHelper {
           "Art does not work on on your platform.");
       return false;
     }
-    if (isWindows() && getDexVm().getKind() == Kind.HOST) {
+    if (isWindows() && getDexVmFromProperty().getKind() == Kind.HOST) {
       System.err.println("Testing on host is not supported on Windows.");
       return false;
     }
@@ -2227,20 +2197,9 @@ public class ToolHelper {
     return runArtProcessRaw(builder);
   }
 
-  public static ProcessResult runArtRaw(String file, String mainClass)
+  public static ProcessResult runArtRaw(String file, String mainClass, DexVm version)
       throws IOException {
-    return runArtRaw(Collections.singletonList(file), mainClass, null);
-  }
-
-  public static ProcessResult runArtRaw(
-      String file, String mainClass, Consumer<ArtCommandBuilder> extras) throws IOException {
-    return runArtRaw(Collections.singletonList(file), mainClass, extras);
-  }
-
-  public static ProcessResult runArtRaw(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras)
-      throws IOException {
-    return runArtRaw(files, mainClass, extras, null, false);
+    return runArtRaw(Collections.singletonList(file), mainClass, null, version, false);
   }
 
   // Index used to name directory aimed at storing dex files and process result
@@ -2256,8 +2215,7 @@ public class ToolHelper {
       boolean withArtFrameworks,
       String... args)
       throws IOException {
-    ArtCommandBuilder builder =
-        version != null ? new ArtCommandBuilder(version) : new ArtCommandBuilder();
+    ArtCommandBuilder builder = new ArtCommandBuilder(version);
     builder.withArtFrameworks = withArtFrameworks;
     files.forEach(builder::appendClasspath);
     builder.setMainClass(mainClass);
@@ -2478,15 +2436,9 @@ public class ToolHelper {
     return System.getProperty("generate_golden_files_to") != null;
   }
 
-  public static ProcessResult runArtNoVerificationErrorsRaw(String file, String mainClass)
-      throws IOException {
-    return runArtNoVerificationErrorsRaw(Collections.singletonList(file), mainClass, null);
-  }
-
-  public static ProcessResult runArtNoVerificationErrorsRaw(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras)
-      throws IOException {
-    return runArtNoVerificationErrorsRaw(files, mainClass, extras, null);
+  public static ProcessResult runArtNoVerificationErrorsRaw(
+      String file, String mainClass, DexVm version) throws IOException {
+    return runArtNoVerificationErrorsRaw(Collections.singletonList(file), mainClass, null, version);
   }
 
   public static ProcessResult runArtNoVerificationErrorsRaw(List<String> files, String mainClass,
@@ -2499,15 +2451,9 @@ public class ToolHelper {
     return result;
   }
 
-  public static String runArtNoVerificationErrors(String file, String mainClass)
+  public static String runArtNoVerificationErrors(String file, String mainClass, DexVm version)
       throws IOException {
-    return runArtNoVerificationErrorsRaw(file, mainClass).stdout;
-  }
-
-  public static String runArtNoVerificationErrors(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras)
-      throws IOException {
-    return runArtNoVerificationErrors(files, mainClass, extras, null);
+    return runArtNoVerificationErrorsRaw(file, mainClass, version).stdout;
   }
 
   public static String runArtNoVerificationErrors(List<String> files, String mainClass,
@@ -2597,10 +2543,6 @@ public class ToolHelper {
       }
     }
     return output;
-  }
-
-  public static void runDex2Oat(Path dexFile, Path oatFile, Path temp) throws IOException {
-    runDex2Oat(dexFile, oatFile, temp, getDexVm());
   }
 
   public static void runDex2Oat(Path dexFile, Path oatFile, Path temp, DexVm vm)
@@ -2749,7 +2691,7 @@ public class ToolHelper {
     if (!versionString.equals("33.10")) {
       command.add("--force-allow-oj-inlines");
     }
-    command.add("--instruction-set=x86_64");
+    command.add("--instruction-set=" + getArchString(vm));
 
     ProcessBuilder builder = new ProcessBuilder(command);
     return runProcess(builder);

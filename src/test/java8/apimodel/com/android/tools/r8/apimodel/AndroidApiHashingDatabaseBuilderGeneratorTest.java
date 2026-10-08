@@ -20,6 +20,7 @@ import com.android.tools.r8.ApiDatabaseGeneratorCommand;
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.ApiDatabaseGeneratorTestHelper;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -79,10 +80,6 @@ import org.junit.runners.Parameterized.Parameters;
 public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   protected final TestParameters parameters;
-  private static final Path API_DATABASE_FOLDER =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "api_database");
-  private static final Path API_DATABASE =
-      API_DATABASE_FOLDER.resolve("api_database").resolve("resources").resolve("api_database.ser");
 
   // Update the API_LEVEL below to have the database generated for a new api level.
   private static final AndroidApiLevel API_LEVEL = AndroidApiLevel.API_DATABASE_LEVEL;
@@ -97,16 +94,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   }
 
   private static Map<ApiDatabaseEntry, AndroidApiLevel> computeEntries(
-      Collection<ParsedApiClass> apiClasses) throws Exception {
+      Collection<ParsedApiClass<ApiRange>> apiClasses) throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
         AndroidApiHashingDatabaseBuilderGenerator.generateEntries(apiClasses);
     verifyAgainstJar(apiClasses, databaseEntries, API_LEVEL);
     return databaseEntries;
   }
 
-  private static Collection<ParsedApiClass> cachedParsedApiClasses = null;
+  private static Collection<ParsedApiClass<ApiRange>> cachedParsedApiClasses = null;
 
-  private static Collection<ParsedApiClass> loadParsedApiClasses() throws Exception {
+  private static Collection<ParsedApiClass<ApiRange>> loadParsedApiClasses() throws Exception {
     if (cachedParsedApiClasses == null) {
       ApiDatabaseGeneratorCommand command =
           ApiDatabaseGeneratorCommand.builder()
@@ -198,7 +195,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   @SuppressWarnings("SameParameterValue")
   private static void verifyAgainstJar(
-      Collection<ParsedApiClass> apiClasses,
+      Collection<ParsedApiClass<ApiRange>> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
       AndroidApiLevel androidJarApiLevel)
       throws Exception {
@@ -217,16 +214,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   private static void ensureAllPublicMethodsAreMapped(
       AppView<AppInfoWithClassHierarchy> appView,
-      Collection<ParsedApiClass> apiClasses,
+      Collection<ParsedApiClass<ApiRange>> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
       AndroidApiLevel apiLevel,
       Path androidJar) {
-    Map<ClassReference, ParsedApiClass> lookupMap = new HashMap<>();
+    Map<ClassReference, ParsedApiClass<ApiRange>> lookupMap = new HashMap<>();
     Map<ClassReference, Map<DexMethod, AndroidApiLevel>> methodMap = new HashMap<>();
     Map<ClassReference, Map<FieldTypelessReference, AndroidApiLevel>> fieldMap = new HashMap<>();
     DexItemFactory factory = appView.dexItemFactory();
 
-    for (ParsedApiClass apiClass : apiClasses) {
+    for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
       lookupMap.put(apiClass.getClassReference(), apiClass);
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
       apiClass.forEachMethod(
@@ -242,7 +239,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
     Map<DexType, String> missingMemberInformation = new IdentityHashMap<>();
     for (DexLibraryClass clazz : appView.app().asDirect().libraryClasses()) {
-      ParsedApiClass parsedApiClass = lookupMap.get(clazz.getClassReference());
+      ParsedApiClass<ApiRange> parsedApiClass = lookupMap.get(clazz.getClassReference());
       if (parsedApiClass == null) {
         if (clazz.isPublic()) {
           missingMemberInformation.put(clazz.getType(), "Could not be found in " + androidJar);
@@ -328,7 +325,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             .setOutputPath(apiLevels)
             .build();
     ApiDatabaseGenerator.run(command);
-    assertTrue(TestBase.filesAreEqual(apiLevels, API_DATABASE));
+    assertTrue(TestBase.filesAreEqual(apiLevels, TestDeps.getApiDatabasePath()));
   }
 
   @Test
@@ -544,7 +541,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     Set<String> knownMissingClasses = getKnownMissingClasses();
     Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
     CodeInspector inspector = new CodeInspector(androidJar);
-    Collection<ParsedApiClass> parsedApiClasses = loadParsedApiClasses();
+    Collection<ParsedApiClass<ApiRange>> parsedApiClasses = loadParsedApiClasses();
     DexItemFactory factory = inspector.getFactory();
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     AndroidApiLevelHashingDatabaseImpl androidApiLevelDatabase =
@@ -562,7 +559,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           }
           DexType type = factory.createType(classReference.getDescriptor());
           AndroidApiLevel apiLevel = androidApiLevelDatabase.getTypeApiLevel(type);
-          assertEquals(parsedApiClass.getRange().intro, apiLevel);
+          assertEquals(parsedApiClass.getData().intro, apiLevel);
         });
 
     assertThat(missingClasses, matchesItemsOneToOne(knownMissingClasses));
@@ -606,16 +603,21 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             .setOutputPath(apiLevels)
             .build();
     ApiDatabaseGenerator.run(command);
-    API_DATABASE.getParent().toFile().mkdirs();
-    Files.move(apiLevels, API_DATABASE, REPLACE_EXISTING);
+    Path apiDatabase = TestDeps.getApiDatabasePath();
+    assertTrue(
+        apiDatabase.endsWith(
+            Paths.get("api_database", "api_database", "resources", "api_database.ser")));
+    apiDatabase.getParent().toFile().mkdirs();
+    Files.move(apiLevels, apiDatabase, REPLACE_EXISTING);
+    Path apiDatabaseFolder = apiDatabase.getParent().getParent().getParent();
     System.out.println(
         "Updated file in: "
-            + API_DATABASE
+            + apiDatabase
             + "\nRemember to upload to cloud storage:"
             + "\n(cd "
-            + API_DATABASE_FOLDER
+            + apiDatabaseFolder
             + " && upload_to_google_storage.py -a --bucket r8-deps "
-            + API_DATABASE_FOLDER.getFileName()
+            + apiDatabaseFolder.getFileName()
             + ")");
   }
 

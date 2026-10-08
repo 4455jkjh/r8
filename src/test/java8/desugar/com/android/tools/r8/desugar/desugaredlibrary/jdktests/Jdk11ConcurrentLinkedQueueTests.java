@@ -20,10 +20,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -40,7 +40,6 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -56,12 +55,6 @@ public class Jdk11ConcurrentLinkedQueueTests extends DesugaredLibraryTestBase {
   private static final String WHITEBOX = "WhiteBox";
 
   private static Path[] JDK_11_CONCURRENT_LINKED_QUEUE_TEST_CLASS_FILES;
-
-  // JDK 11 test constants.
-  private static final Path JDK_11_CONCURRENT_LINKED_QUEUE_JAVA_DIR =
-      Paths.get(ToolHelper.JDK_11_TESTS_DIR + "java/util/concurrent/ConcurrentLinkedQueue");
-  private static final Path[] JDK_11_CONCURRENT_LINKED_QUEUE_JAVA_FILES =
-      new Path[] {JDK_11_CONCURRENT_LINKED_QUEUE_JAVA_DIR.resolve(WHITEBOX + JAVA_EXTENSION)};
 
   @Parameter(0)
   public static TestParameters parameters;
@@ -94,7 +87,9 @@ public class Jdk11ConcurrentLinkedQueueTests extends DesugaredLibraryTestBase {
         getStaticTemp().newFolder("ConcurrentLinkedQueue").toPath();
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
         .addClasspathFiles(testNGPath())
-        .addSourceFiles(JDK_11_CONCURRENT_LINKED_QUEUE_JAVA_FILES)
+        .addSourceFiles(
+            TestDeps.getJdk11TestPath(
+                "java", "util", "concurrent", "ConcurrentLinkedQueue", WHITEBOX + JAVA_EXTENSION))
         .setOutputPath(jdk11ConcurrentLinkedQueueTestsDir)
         .compile();
     JDK_11_CONCURRENT_LINKED_QUEUE_TEST_CLASS_FILES =

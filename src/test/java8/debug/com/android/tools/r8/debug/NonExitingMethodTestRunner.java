@@ -7,23 +7,33 @@ import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.origin.Origin;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class NonExitingMethodTestRunner extends DebugTestBase {
 
   public static final Class CLASS = NonExitingMethodTest.class;
   public static final String FILE = CLASS.getSimpleName() + ".java";
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimesStartingFromIncluding(Version.V6_0_1).build();
+  }
 
   private static Path getClassFilePath() {
     return ToolHelper.getClassFileForTestClass(CLASS);
@@ -34,7 +44,7 @@ public class NonExitingMethodTestRunner extends DebugTestBase {
   }
 
   public DebugTestConfig d8Config() {
-    return new D8DebugTestConfig().compileAndAdd(temp, getClassFilePath());
+    return new D8DebugTestConfig(parameters.asDexRuntime()).compileAndAdd(temp, getClassFilePath());
   }
 
   public DebugTestConfig r8CfConfig() throws CompilationFailedException {
@@ -54,13 +64,12 @@ public class NonExitingMethodTestRunner extends DebugTestBase {
   }
 
   @Test
-  @IgnoreIfVmOlderThan(Version.V6_0_1)
   public void test() throws Exception {
     // TODO(b/199700280): Reenable on 12.0.0 when we have the libjdwp.so file include and the flags
     // fixed.
     Assume.assumeTrue(
         "Skipping test " + testName.getMethodName() + " because debugging not enabled in 12.0.0",
-        !ToolHelper.getDexVm().isNewerThanOrEqual(DexVm.ART_12_0_0_HOST));
+        !parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V12_0_0));
     Assume.assumeTrue(
         "Skipping test "
             + testName.getMethodName()

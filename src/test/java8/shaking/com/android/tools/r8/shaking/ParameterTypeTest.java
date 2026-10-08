@@ -15,6 +15,7 @@ import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -169,6 +170,7 @@ public class ParameterTypeTest extends TestBase {
 
   @Test
   public void test_brokenTypeHierarchy_singleInterface() throws Exception {
+    parameters.assumeDexRuntime();
     JasminBuilder jasminBuilder = new JasminBuilder();
     // interface SuperInterface {
     //   void foo();
@@ -244,10 +246,12 @@ public class ParameterTypeTest extends TestBase {
             });
 
     // Run processed (output) program on ART
-    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName);
-    assertEquals(0, artResult.exitCode);
-    assertThat(artResult.stdout, containsString(bar.name));
-    assertEquals(-1, artResult.stderr.indexOf("ClassNotFoundException"));
+    for (DexRuntime runtime : parameters.getRuntime().asDexRuntimes()) {
+      ProcessResult artResult = runOnArtRaw(processedApp, mainClassName, runtime.getVm());
+      assertEquals(0, artResult.exitCode);
+      assertThat(artResult.stdout, containsString(bar.name));
+      assertEquals(-1, artResult.stderr.indexOf("ClassNotFoundException"));
+    }
 
     CodeInspector inspector = new CodeInspector(processedApp);
     ClassSubject subSubject = inspector.clazz(sub.name);
@@ -358,6 +362,7 @@ public class ParameterTypeTest extends TestBase {
 
   @Test
   public void test_brokenTypeHierarchy_doubleInterfaces() throws Exception {
+    parameters.assumeDexRuntime();
     JasminBuilder jasminBuilder = new JasminBuilder();
     // interface SuperInterface1 {
     //   void foo();
@@ -449,11 +454,13 @@ public class ParameterTypeTest extends TestBase {
             });
 
     // Run processed (output) program on ART
-    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName);
-    assertEquals(0, artResult.exitCode);
-    assertThat(artResult.stdout, containsString(baz.name));
-    assertEquals(javaResult.stdout, artResult.stdout);
-    assertEquals(-1, artResult.stderr.indexOf("ClassNotFoundException"));
+    for (DexRuntime runtime : parameters.getRuntime().asDexRuntimes()) {
+      ProcessResult artResult = runOnArtRaw(processedApp, mainClassName, runtime.getVm());
+      assertEquals(0, artResult.exitCode);
+      assertThat(artResult.stdout, containsString(baz.name));
+      assertEquals(javaResult.stdout, artResult.stdout);
+      assertEquals(-1, artResult.stderr.indexOf("ClassNotFoundException"));
+    }
 
     CodeInspector inspector = new CodeInspector(processedApp);
     ClassSubject subSubject = inspector.clazz(sub.name);

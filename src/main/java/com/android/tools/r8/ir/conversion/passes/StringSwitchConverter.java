@@ -482,6 +482,7 @@ public class StringSwitchConverter extends CodeRewriterPass<AppInfo> {
         return extend(toBeExtended, predecessor);
       }
 
+      @SuppressWarnings("ReferenceEquality")
       private StringToIdMapping extendWithIf(StringToIdMapping toBeExtended, If theIf) {
         if (theIf.getType() != IfType.EQ && theIf.getType() != IfType.NE) {
           // Not an extension of `toBeExtended`.
@@ -644,6 +645,7 @@ public class StringSwitchConverter extends CodeRewriterPass<AppInfo> {
         return false;
       }
 
+      @SuppressWarnings("ReferenceEquality")
       private boolean addMappingForString(
           BasicBlock block, DexString string, Reference2IntMap<DexString> extension) {
         InstructionIterator instructionIterator = block.iterator();
@@ -763,6 +765,7 @@ public class StringSwitchConverter extends CodeRewriterPass<AppInfo> {
         return setFallthroughBlock(toBeExtended, block);
       }
 
+      @SuppressWarnings("ReferenceEquality")
       private IdToTargetMapping extendWithIf(
           IdToTargetMapping toBeExtended, If theIf, BasicBlock fallthroughBlock) {
         IfType type = theIf.getType();
@@ -816,6 +819,7 @@ public class StringSwitchConverter extends CodeRewriterPass<AppInfo> {
         return extend(toBeExtended, Utils.fallthroughBlock(theIf));
       }
 
+      @SuppressWarnings("ReferenceEquality")
       private IdToTargetMapping extendWithSwitch(
           IdToTargetMapping toBeExtended, IntSwitch theSwitch, BasicBlock fallthroughBlock) {
         Value switchValue = theSwitch.value();
@@ -912,6 +916,7 @@ public class StringSwitchConverter extends CodeRewriterPass<AppInfo> {
       return getStringHashValueFromJump(instruction, dexItemFactory) != null;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     static boolean isSameStringHashValue(Value value, Value other) {
       return value == other
           || value.definition.asInvokeVirtual().getReceiver()

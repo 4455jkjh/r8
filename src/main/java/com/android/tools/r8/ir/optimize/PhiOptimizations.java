@@ -23,6 +23,7 @@ public class PhiOptimizations {
     return tryMovePhisToStack(code);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean predecessorsHaveNormalFlow(BasicBlock block) {
     for (BasicBlock predecessor : block.getPredecessors()) {
       if (!predecessor.exit().isGoto() || predecessor.exit().asGoto().getTarget() != block) {
@@ -51,6 +52,7 @@ public class PhiOptimizations {
    * @param instruction instruction to search for
    * @return the stack height if the instruction was found, otherwise Integer.MIN_VALUE
    */
+  @SuppressWarnings("ReferenceEquality")
   private static int getRelativeStackHeightForInstruction(
       BasicBlock block, Instruction instruction) {
     int stackHeight = 0;
@@ -82,6 +84,7 @@ public class PhiOptimizations {
    * @param instruction instruction to search for
    * @return the stack height if the instruction was found, otherwise Integer.MIN_VALUE
    */
+  @SuppressWarnings("ReferenceEquality")
   private static int getStackHeightAtInstructionBackwards(Instruction instruction) {
     int stackHeight = 0;
     BasicBlock block = instruction.getBlock();

@@ -24,6 +24,7 @@ public class FeatureSplitConfiguration {
       featureSplits;
   private final boolean isolatedSplits;
 
+  @SuppressWarnings("NonApiType")
   public FeatureSplitConfiguration(
       LinkedHashMap<FeatureSplit, List<FeatureSplitProgramResourceProvider>> featureSplits,
       boolean isolatedSplits) {

@@ -13,11 +13,13 @@ import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,14 +31,16 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ReservedFieldNameInSuperClassTest extends TestBase {
 
+  private final TestParameters parameters;
   private final boolean reserveName;
 
-  @Parameterized.Parameters(name = "Reserve name: {0}")
-  public static Boolean[] data() {
-    return BooleanUtils.values();
+  @Parameterized.Parameters(name = "{0}, reserve name: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(getTestParameters().withDexRuntimes().build(), BooleanUtils.values());
   }
 
-  public ReservedFieldNameInSuperClassTest(boolean reserveName) {
+  public ReservedFieldNameInSuperClassTest(TestParameters parameters, boolean reserveName) {
+    this.parameters = parameters;
     this.reserveName = reserveName;
   }
 
@@ -52,7 +56,7 @@ public class ReservedFieldNameInSuperClassTest extends TestBase {
                     ? "-keepclassmembernames class " + A.class.getTypeName() + "{ <fields>; }"
                     : "")
             .enableNoHorizontalClassMergingAnnotations()
-            .run(TestClass.class)
+            .run(parameters.getRuntime(), TestClass.class)
             .assertSuccessWithOutput(expectedOutput)
             .inspector();
 
@@ -83,7 +87,7 @@ public class ReservedFieldNameInSuperClassTest extends TestBase {
         .enableNoHorizontalClassMergingAnnotations()
         .compile()
         .addRunClasspathFiles(testForD8().addProgramClasses(A.class).compile().writeToZip())
-        .run(TestClass.class)
+        .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(expectedOutput)
         .inspect(this::inspect);
   }

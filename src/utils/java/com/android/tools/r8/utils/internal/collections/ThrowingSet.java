@@ -20,6 +20,7 @@ public class ThrowingSet<T> implements Set<T> {
     return (ThrowingSet<T>) INSTANCE;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean isThrowingSet(Set<?> set) {
     return set == get();
   }

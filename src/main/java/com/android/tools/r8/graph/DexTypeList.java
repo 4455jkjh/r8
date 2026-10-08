@@ -69,6 +69,7 @@ public class DexTypeList extends DexItem implements Iterable<DexType>, Structura
     return values;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexTypeList keepIf(Predicate<DexType> predicate) {
     DexType[] filtered = ArrayUtils.filter(values, predicate, DexType.EMPTY_ARRAY);
     if (filtered != values) {
@@ -77,6 +78,7 @@ public class DexTypeList extends DexItem implements Iterable<DexType>, Structura
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexTypeList map(Function<DexType, DexType> fn) {
     if (isEmpty()) {
       return DexTypeList.empty();

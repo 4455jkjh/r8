@@ -31,6 +31,7 @@ import java.util.Map;
 
 public abstract class NullCheckInserter {
 
+  @SuppressWarnings("ReferenceEquality")
   public static NullCheckInserter create(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       IRCode code,
@@ -95,6 +96,7 @@ public abstract class NullCheckInserter {
       worklist.put(rewrittenInvoke.asInvokeStatic(), receiver);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void processWorklist() {
       if (worklist.isEmpty()) {

@@ -37,7 +37,7 @@ public class KotlinMetadataUtils {
   private static final NoKotlinInfo NO_KOTLIN_INFO = new NoKotlinInfo("NO_KOTLIN_INFO");
   private static final NoKotlinInfo INVALID_KOTLIN_INFO = new NoKotlinInfo("INVALID_KOTLIN_INFO");
 
-  private static class NoKotlinInfo
+  static class NoKotlinInfo
       implements KotlinClassLevelInfo, KotlinFieldLevelInfo, KotlinMethodLevelInfo {
 
     private final String name;

@@ -186,7 +186,7 @@ public abstract class ClassProvider<T extends DexClass> {
   }
 
   /** Class provider which ignores a list of filtered classes */
-  private static class FilteringClassProvider<T extends DexClass> extends ClassProvider<T> {
+  static class FilteringClassProvider<T extends DexClass> extends ClassProvider<T> {
     private final ClassProvider<T> provider;
     private final Set<DexType> filteredOut;
 

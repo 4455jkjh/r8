@@ -151,6 +151,7 @@ public class VirtualRootMethodsAnalysisBase extends DepthFirstTopDownClassHierar
     virtualRootMethodsPerClass.put(clazz, state);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexMethodSignatureMap<VirtualRootMethod> computeVirtualRootMethodsState(
       DexProgramClass clazz) {
     DexMethodSignatureMap<VirtualRootMethod> virtualRootMethodsForClass =
@@ -266,6 +267,7 @@ public class VirtualRootMethodsAnalysisBase extends DepthFirstTopDownClassHierar
         });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void setRootMethod(
       VirtualRootMethod method, VirtualRootMethod currentRoot, VirtualRootMethod root) {
     // Since the same method can have multiple roots due to interface methods, we only allow

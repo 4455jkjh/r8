@@ -57,6 +57,7 @@ public class SwitchHelperGenerator {
   private final AppView<?> appView;
   private final DexItemFactory factory;
   private final DexCallSite dexCallSite;
+  private final boolean isRestartable;
   private DexMethod dispatchMethod;
   private DexMethod intEq;
   private DexField enumCacheField;
@@ -64,10 +65,11 @@ public class SwitchHelperGenerator {
   private int enumCases = 0;
   private final Map<DexType, DexMethod> enumEqMethods = new IdentityHashMap<>();
 
-  SwitchHelperGenerator(AppView<?> appView, DexCallSite dexCallSite) {
+  SwitchHelperGenerator(AppView<?> appView, DexCallSite dexCallSite, boolean isRestartable) {
     this.appView = appView;
     this.factory = appView.dexItemFactory();
     this.dexCallSite = dexCallSite;
+    this.isRestartable = isRestartable;
   }
 
   public void build(
@@ -83,9 +85,14 @@ public class SwitchHelperGenerator {
     if (enumCases > 0) {
       clinitMethod = setUpEnumCases(builder, context, eventConsumer, methodProcessingContext);
     }
+    DexProto dispatchProto =
+        isRestartable
+            ? dexCallSite.methodProto
+            : factory.createProto(
+                dexCallSite.methodProto.getReturnType(), dexCallSite.methodProto.getParameter(0));
     dispatchMethod =
         factory.createMethod(
-            builder.getType(), dexCallSite.methodProto, factory.createString("switchDispatch"));
+            builder.getType(), dispatchProto, factory.createString("switchDispatch"));
     DexEncodedMethod dispatchMethod =
         synthesizeDispatchMethod(builder, dispatcher, dexCallSite, appView);
     List<DexEncodedMethod> directMethods = new ArrayList<>();
@@ -359,6 +366,7 @@ public class SwitchHelperGenerator {
                     builder.getType(),
                     dexCallSite.methodProto.getParameter(0),
                     dexCallSite.bootstrapArgs,
+                    isRestartable,
                     dispatcher,
                     intEq,
                     enumEqMethods,

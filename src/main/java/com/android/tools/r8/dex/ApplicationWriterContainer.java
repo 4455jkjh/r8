@@ -158,6 +158,7 @@ class ApplicationWriterContainer extends ApplicationWriter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void updateStringIdsSizeAndOffset(
       DexOutputBuffer dexOutputBuffer, List<DexContainerSection> sections) {
     // The last section has the shared string_ids table. Now it is written the final size and

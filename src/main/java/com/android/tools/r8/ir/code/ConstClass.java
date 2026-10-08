@@ -68,6 +68,7 @@ public class ConstClass extends ConstInstruction implements TypeInstruction {
     return copyOf(newValue, original);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static ConstClass copyOf(Value newValue, ConstClass original) {
     assert newValue != original.outValue();
     return new ConstClass(newValue, original.getType());

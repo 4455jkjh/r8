@@ -236,7 +236,7 @@ public class EnumSwitchMapRewriter extends CodeRewriterPass<AppInfoWithLiveness>
     final DexType enumClass;
     final Instruction ordinalInvoke;
     final Instruction arrayGet;
-    public final Instruction staticGet;
+    final Instruction staticGet;
     final Int2ReferenceMap<DexField> indexMap;
 
     private EnumSwitchInfo(

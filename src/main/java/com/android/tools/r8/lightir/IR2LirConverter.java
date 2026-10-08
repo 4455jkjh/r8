@@ -75,6 +75,7 @@ public class IR2LirConverter<EV> {
     return builder.build();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void computeInstructions() {
     // The IR instruction index corresponds to the LIR value index which includes arguments and
     // all instructions.
@@ -199,6 +200,7 @@ public class IR2LirConverter<EV> {
     return permutation;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean verifySameBlock(List<BasicBlock> predecessors, int startIndex, int size) {
     if (size == 1) {
       return true;

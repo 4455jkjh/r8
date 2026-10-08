@@ -92,6 +92,7 @@ public class NumberUnboxerRewriter implements CustomLensCodeRewriter {
     return affectedPhis;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void unboxInvokeValues(
       IRCode code,
       BasicBlockIterator blocks,

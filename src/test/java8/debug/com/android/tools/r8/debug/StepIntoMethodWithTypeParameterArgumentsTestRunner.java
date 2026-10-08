@@ -11,14 +11,21 @@ import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /** Tests debugging behavior with regards to exception handling */
+@RunWith(Parameterized.class)
 public class StepIntoMethodWithTypeParameterArgumentsTestRunner extends DebugTestBase {
 
   private static final Class CLASS = StepIntoMethodWithTypeParameterArgumentsTest.class;
@@ -26,8 +33,17 @@ public class StepIntoMethodWithTypeParameterArgumentsTestRunner extends DebugTes
   private static final String DESC = DescriptorUtils.javaTypeToDescriptor(NAME);
   private static final String FILE = CLASS.getSimpleName() + ".java";
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
+
   @Test
   public void testCf() throws Throwable {
+    parameters.assumeCfRuntime();
     byte[] bytes = StepIntoMethodWithTypeParameterArgumentsTestDump.dump(true);
     assertEquals(NAME, extractClassName(bytes));
     // Java jumps to first instruction of the catch handler, matching the source code.
@@ -40,6 +56,7 @@ public class StepIntoMethodWithTypeParameterArgumentsTestRunner extends DebugTes
 
   @Test
   public void testD8() throws Throwable {
+    parameters.assumeDexRuntime();
     Path out = temp.getRoot().toPath().resolve("out.jar");
     D8.run(
         D8Command.builder()
@@ -47,7 +64,7 @@ public class StepIntoMethodWithTypeParameterArgumentsTestRunner extends DebugTes
                 StepIntoMethodWithTypeParameterArgumentsTestDump.dump(true), Origin.unknown())
             .setOutput(out, OutputMode.DexIndexed)
             .build());
-    run(new DexDebugTestConfig().addPaths(out));
+    run(new DexDebugTestConfig(parameters.asDexRuntime()).addPaths(out));
   }
 
   private void run(DebugTestConfig config) throws Throwable {

@@ -175,6 +175,7 @@ public class ArgumentPropagator implements ReprocessingOptimization {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void notifyMethodSingleCallerInlined(
       ProgramMethod method, ProgramMethod caller, MethodProcessor methodProcessor) {
     assert methodProcessor.isPrimaryMethodProcessor();

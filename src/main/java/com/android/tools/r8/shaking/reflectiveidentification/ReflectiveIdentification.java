@@ -306,6 +306,7 @@ public class ReflectiveIdentification {
   }
 
   /** Handles reflective uses of {@link java.lang.reflect.Constructor#newInstance(Object...)}. */
+  @SuppressWarnings("ReferenceEquality")
   private void handleJavaLangReflectConstructorNewInstance(
       ProgramMethod method, InvokeMethod invoke) {
     if (!invoke.isInvokeVirtual()) {

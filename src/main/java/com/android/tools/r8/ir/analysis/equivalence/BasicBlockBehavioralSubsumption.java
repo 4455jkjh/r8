@@ -50,6 +50,7 @@ public class BasicBlockBehavioralSubsumption {
         conditionValue, conditionPosition, block.iterator(), other.iterator(), null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean dependsOnConditionValue(Value conditionValue, Instruction instruction) {
     if (instruction.isAssume()) {
       // Assume instructions are just virtual alias instructions so they are not materializing uses.
@@ -101,6 +102,7 @@ public class BasicBlockBehavioralSubsumption {
                     || dependsOnConditionValue(conditionValue, i)));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isSubsumedBy(
       Value conditionValue,
       Position conditionPosition,
@@ -242,6 +244,7 @@ public class BasicBlockBehavioralSubsumption {
     return !definesValueWithNonLocalUsages(instruction);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean definesValueWithNonLocalUsages(Instruction instruction) {
     if (instruction.hasOutValue()) {
       Value outValue = instruction.outValue();
@@ -262,6 +265,7 @@ public class BasicBlockBehavioralSubsumption {
         || instruction.instructionMayHaveSideEffects(appView, context);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean valuesAreIdentical(Value value, Value other) {
     if (value == other) {
       return true;
@@ -322,6 +326,7 @@ public class BasicBlockBehavioralSubsumption {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean passesIdenticalValuesForPhis(
       BasicBlock block, BasicBlock other, BasicBlock blockWithPhis) {
     if (block == other) {

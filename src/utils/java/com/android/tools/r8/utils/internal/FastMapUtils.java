@@ -25,6 +25,7 @@ public class FastMapUtils {
     return map;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <V> Int2ReferenceMap<V> mapInt2ReferenceOpenHashMapOrElse(
       Int2ReferenceMap<V> map,
       IntObjToObjFunction<V, V> valueMapper,

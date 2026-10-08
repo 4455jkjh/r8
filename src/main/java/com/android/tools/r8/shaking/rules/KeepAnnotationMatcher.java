@@ -460,7 +460,7 @@ public class KeepAnnotationMatcher {
     int preconditionClassesCount = -1;
     int preconditionMembersCount = -1;
 
-    public NormalizedSchema(KeepDeclaration declaration) {
+    NormalizedSchema(KeepDeclaration declaration) {
       this.declaration = declaration;
       declaration.match(
           edge -> {
@@ -481,11 +481,11 @@ public class KeepAnnotationMatcher {
       return bindings.get(symbol).getItem();
     }
 
-    public boolean isOptionalClass(int classIndex) {
+    boolean isOptionalClass(int classIndex) {
       return classIndex >= preconditionClassesCount;
     }
 
-    public static boolean isClassKeyReference(int keyRef) {
+    static boolean isClassKeyReference(int keyRef) {
       return keyRef >= 0;
     }
 
@@ -494,7 +494,7 @@ public class KeepAnnotationMatcher {
       return key;
     }
 
-    public static int decodeClassKeyReference(int key) {
+    static int decodeClassKeyReference(int key) {
       assert isClassKeyReference(key);
       return key;
     }
@@ -504,7 +504,7 @@ public class KeepAnnotationMatcher {
       return -(key + 1);
     }
 
-    public static int decodeMemberKeyReference(int key) {
+    static int decodeMemberKeyReference(int key) {
       assert !isClassKeyReference(key);
       assert key < 0;
       return -(key + 1);
@@ -536,7 +536,7 @@ public class KeepAnnotationMatcher {
       }
     }
 
-    public void addPrecondition(KeepCondition condition) {
+    void addPrecondition(KeepCondition condition) {
       preconditions.add(defineBindingReference(condition.getItem()));
     }
 
@@ -583,7 +583,7 @@ public class KeepAnnotationMatcher {
       members.set(index, null);
     }
 
-    public MatchResult createMatch(NormalizedSchema schema) {
+    MatchResult createMatch(NormalizedSchema schema) {
       return new MatchResult(
           schema.declaration,
           schema.preconditions.isEmpty()

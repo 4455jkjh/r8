@@ -235,6 +235,7 @@ public class NestedGraphLens extends DefaultNonIdentityGraphLens {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public RewrittenPrototypeDescription lookupPrototypeChangesForMethodDefinition(
       DexMethod method, GraphLens codeLens) {
@@ -313,6 +314,7 @@ public class NestedGraphLens extends DefaultNonIdentityGraphLens {
     return type;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean verifyIsContextFreeForMethod(DexMethod method, GraphLens codeLens) {
     assert codeLens == this

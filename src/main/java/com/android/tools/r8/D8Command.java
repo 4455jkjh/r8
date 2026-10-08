@@ -159,7 +159,7 @@ public final class D8Command extends BaseCompilerCommand {
      * Set input proguard map used for distribution of classes in multi-dex. Use {@link
      * #setProguardMapInputFile}
      */
-    @Deprecated()
+    @Deprecated
     public Builder setProguardInputMapFile(Path proguardInputMap) {
       getAppBuilder().setProguardMapInputData(proguardInputMap);
       return self();

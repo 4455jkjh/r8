@@ -24,6 +24,7 @@ public class NonTrivialInstanceFieldInitializationInfoCollection
 
   private final TreeMap<DexField, InstanceFieldInitializationInfo> infos;
 
+  @SuppressWarnings("NonApiType")
   NonTrivialInstanceFieldInitializationInfoCollection(
       TreeMap<DexField, InstanceFieldInitializationInfo> infos) {
     assert !infos.isEmpty();

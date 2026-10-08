@@ -20,11 +20,11 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.L8TestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestState;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -37,7 +37,6 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,8 +60,6 @@ import org.objectweb.asm.Opcodes;
 public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
 
   private static final int SPLIT = 2;
-  private static final Path JDK_11_TIME_TESTS_ROOT_DIR =
-      Paths.get(ToolHelper.JDK_11_TIME_TESTS_DIR);
   private static Path JDK_11_TIME_TEST_CLASSES_DIR;
   private static Path[] JDK_11_TIME_TEST_COMPILED_FILES;
   private static final Map<String, Path> TESTNG_SUPPORT_DEX_CACHE = new HashMap<>();
@@ -128,10 +125,10 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
     Collections.addAll(classNames, FORMAT_CHRONO_ISO_TESTS);
     Collections.addAll(classNames, FORMAT_CHRONO_SUCCESSES);
     Collections.addAll(classNames, FORMAT_CHRONO_SUCCESSES_UP_TO_11);
+    Path jdk11TimeTestsRootDir = TestDeps.getJdk11TestPath("java", "time");
     List<Path> files =
         classNames.stream()
-            .map(
-                name -> JDK_11_TIME_TESTS_ROOT_DIR.resolve(name.replace('.', '/') + JAVA_EXTENSION))
+            .map(name -> jdk11TimeTestsRootDir.resolve(name.replace('.', '/') + JAVA_EXTENSION))
             .collect(Collectors.toList());
     assert !files.isEmpty();
     return files;

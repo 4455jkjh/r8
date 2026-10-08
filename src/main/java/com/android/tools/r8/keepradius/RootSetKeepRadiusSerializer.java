@@ -398,7 +398,7 @@ public class RootSetKeepRadiusSerializer {
 
     private static final KeepConstraintsEquivalence INSTANCE = new KeepConstraintsEquivalence();
 
-    public static Wrapper<KeepConstraints> doWrap(KeepConstraints constraints) {
+    static Wrapper<KeepConstraints> doWrap(KeepConstraints constraints) {
       return INSTANCE.wrap(constraints);
     }
 

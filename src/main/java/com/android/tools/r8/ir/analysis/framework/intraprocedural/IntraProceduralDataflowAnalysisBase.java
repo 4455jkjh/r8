@@ -139,6 +139,7 @@ public class IntraProceduralDataflowAnalysisBase<
     return new SuccessfulDataflowAnalysisResult<>(blockExitStates);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public StateType computeBlockEntryState(Block block) {
     if (block == cfg.getEntryBlock()) {
       return transfer
@@ -214,6 +215,7 @@ public class IntraProceduralDataflowAnalysisBase<
     states.put(block, previous.join(appView, edgeState));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isIntermediateBlock(Block block) {
     return options.isCollapsingOfTrivialEdgesEnabled()
         && cfg.hasUniquePredecessorWithUniqueSuccessor(block)

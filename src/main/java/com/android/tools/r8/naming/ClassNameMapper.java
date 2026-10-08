@@ -234,6 +234,7 @@ public class ClassNameMapper implements ProguardMap {
   private final Map<String, String> originalSourceFiles;
   private List<String> preamble;
 
+  @SuppressWarnings("NonApiType")
   private ClassNameMapper(
       ImmutableMap<String, ClassNamingForNameMapper> classNameMappings,
       LinkedHashSet<MapVersionMappingInformation> mapVersions,

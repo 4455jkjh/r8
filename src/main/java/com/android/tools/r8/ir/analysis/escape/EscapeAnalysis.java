@@ -116,6 +116,7 @@ public class EscapeAnalysis {
     valuesToTrack.clear();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean processValue(
       Value root,
       Value alias,

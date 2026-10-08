@@ -46,6 +46,7 @@ public class DesugarDescription {
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static DesugarDescription nothing() {
     assert NOTHING == builder().build();
     return NOTHING;

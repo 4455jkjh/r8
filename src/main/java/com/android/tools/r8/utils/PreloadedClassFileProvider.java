@@ -20,7 +20,7 @@ public final class PreloadedClassFileProvider implements ClassFileResourceProvid
   private static class ClassDescriptorOrigin extends Origin {
     private final String descriptor;
 
-    public ClassDescriptorOrigin(String descriptor) {
+    ClassDescriptorOrigin(String descriptor) {
       super(Origin.unknown());
       this.descriptor = descriptor;
     }

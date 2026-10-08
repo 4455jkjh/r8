@@ -3,20 +3,36 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class JasminDebugTest extends DebugTestBase {
 
   final String className = "UselessCheckCast";
   final String sourcefile = className + ".j";
   final String methodName = "test";
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
+
   @Test
   public void testUselessCheckcastCF() throws Throwable {
+    parameters.assumeCfRuntime();
     JasminBuilder builder = getBuilderForUselessCheckcast(className, methodName);
     Path outdir = temp.newFolder().toPath();
     builder.writeClassFiles(outdir);
@@ -27,9 +43,11 @@ public class JasminDebugTest extends DebugTestBase {
 
   @Test
   public void testUselessCheckcastD8() throws Throwable {
+    parameters.assumeDexRuntime();
     JasminBuilder builder = getBuilderForUselessCheckcast(className, methodName);
     List<Path> outputs = builder.writeClassFiles(temp.newFolder().toPath());
-    runUselessCheckcast(new D8DebugTestConfig().compileAndAdd(temp, outputs));
+    runUselessCheckcast(
+        new D8DebugTestConfig(parameters.asDexRuntime()).compileAndAdd(temp, outputs));
   }
 
   private void runUselessCheckcast(DebugTestConfig config) throws Throwable {

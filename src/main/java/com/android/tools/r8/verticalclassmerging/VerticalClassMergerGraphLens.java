@@ -182,6 +182,7 @@ public class VerticalClassMergerGraphLens extends ClassMergerGraphLens {
     return Iterables.concat(currentType, originalTypes);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected MethodLookupResult internalLookupMethod(
       DexMethod reference,
@@ -365,6 +366,7 @@ public class VerticalClassMergerGraphLens extends ClassMergerGraphLens {
     return type;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean isContextFreeForMethods(GraphLens codeLens) {
     if (codeLens == this) {
@@ -374,6 +376,7 @@ public class VerticalClassMergerGraphLens extends ClassMergerGraphLens {
         && getPrevious().isContextFreeForMethods(codeLens);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean verifyIsContextFreeForMethod(DexMethod method, GraphLens codeLens) {
     if (codeLens == this) {

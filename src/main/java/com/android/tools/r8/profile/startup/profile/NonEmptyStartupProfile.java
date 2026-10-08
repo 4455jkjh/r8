@@ -26,6 +26,7 @@ public class NonEmptyStartupProfile extends StartupProfile {
   private final Set<DexType> startupClasses;
   private final Map<DexReference, StartupProfileRule> startupRules;
 
+  @SuppressWarnings("NonApiType")
   public NonEmptyStartupProfile(LinkedHashMap<DexReference, StartupProfileRule> startupRules) {
     assert !startupRules.isEmpty();
     this.startupClasses =

@@ -42,6 +42,7 @@ public class ArgumentInfoCollection {
     this.isConvertedToStaticMethod = false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private ArgumentInfoCollection(
       Int2ObjectSortedMap<ArgumentInfo> argumentInfos,
       int argumentInfosSize,

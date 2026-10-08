@@ -130,6 +130,7 @@ public class StringRetrace extends Retrace<String, StackTraceElementStringProxy>
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private List<String> joinAmbiguousLines(
       List<RetraceStackFrameAmbiguousResult<String>> retracedResult) {
     List<String> result = new ArrayList<>();

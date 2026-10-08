@@ -466,11 +466,11 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       return rewritableMethods.isEmpty() && rewritableFields.isEmpty();
     }
 
-    public void visit(Consumer<DexMethod> consumer) {
+    void visit(Consumer<DexMethod> consumer) {
       rewritableMethods.keySet().forEach(consumer);
     }
 
-    public void visitFields(Consumer<DexField> consumer) {
+    void visitFields(Consumer<DexField> consumer) {
       rewritableFields.keySet().forEach(consumer);
     }
 
@@ -2635,7 +2635,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       this.factory = factory;
     }
 
-    protected SyntheticKind getSyntheticKind(SyntheticNaming naming) {
+    SyntheticKind getSyntheticKind(SyntheticNaming naming) {
       return naming.BACKPORT;
     }
 
@@ -2676,7 +2676,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       return ImmutableList.of(new CfInvoke(Opcodes.INVOKESTATIC, method.getReference(), false));
     }
 
-    protected ProgramMethod getSyntheticMethod(
+    ProgramMethod getSyntheticMethod(
         AppView<?> appView,
         BackportedMethodDesugaringEventConsumer eventConsumer,
         MethodProcessingContext methodProcessingContext,
@@ -2703,11 +2703,11 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
                           }));
     }
 
-    public DexProto getProto(DexItemFactory itemFactory) {
+    DexProto getProto(DexItemFactory itemFactory) {
       return member.getProto();
     }
 
-    public Code generateTemplateMethod(DexItemFactory dexItemFactory, DexMethod method) {
+    Code generateTemplateMethod(DexItemFactory dexItemFactory, DexMethod method) {
       return factory.create(dexItemFactory, method);
     }
   }
@@ -2807,6 +2807,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
 
     private final DexType receiverType;
 
+    @SuppressWarnings("UnusedVariable")
     StatifyingMethodGenerator(
         DexMethod method, TemplateMethodFactory factory, String methodName, DexType receiverType) {
       super(method, factory);
@@ -3067,7 +3068,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       return ImmutableList.of(new CfInvoke(Opcodes.INVOKESTATIC, method.getReference(), false));
     }
 
-    protected SyntheticKind getSyntheticKind(SyntheticNaming naming) {
+    SyntheticKind getSyntheticKind(SyntheticNaming naming) {
       return naming.BACKPORT_WITH_FORWARDING;
     }
 
@@ -3092,12 +3093,12 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
                               generateTemplateMethod(appView.dexItemFactory(), methodSig)));
     }
 
-    public DexProto getProto(DexItemFactory itemFactory) {
+    DexProto getProto(DexItemFactory itemFactory) {
       // Proto for the method replacing the field read.
       return itemFactory.createProto(member.getType());
     }
 
-    public Code generateTemplateMethod(DexItemFactory dexItemFactory, DexMethod method) {
+    Code generateTemplateMethod(DexItemFactory dexItemFactory, DexMethod method) {
       return factory.create(dexItemFactory, method);
     }
   }

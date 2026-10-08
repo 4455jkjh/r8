@@ -361,6 +361,7 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
         && parameterAnnotationsInfo.isEqualTo(other.internalParameterAnnotationsInfo());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean equalsNoAnnotations(KeepMethodInfo other) {
     assert parameterAnnotationsInfo.isTopOrBottom();
@@ -476,6 +477,7 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
     return new KeepMethodInfo(builder);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public List<String> lines() {
     List<String> lines = linesDifferentFromBase(bottom());

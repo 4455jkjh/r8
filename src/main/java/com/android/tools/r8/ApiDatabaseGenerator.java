@@ -8,8 +8,12 @@ import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator;
 import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator.GenerationException;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingException;
+import com.android.tools.r8.apimodel.ApiRange;
+import com.android.tools.r8.apimodel.ApiVersionSet;
 import com.android.tools.r8.apimodel.ParsedApiClass;
 import com.android.tools.r8.apimodel.ParsedApiClassFlattening;
+import com.android.tools.r8.apimodel.ParsedApiClassMapping;
+import com.android.tools.r8.apimodel.ParsedApiClassMapping.GreatestEndingRangeMapper;
 import com.android.tools.r8.apimodel.ParsedApiClassMerging;
 import com.android.tools.r8.apimodel.ParsedApiClassSorting;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming;
@@ -17,6 +21,7 @@ import com.android.tools.r8.apimodel.ParsedApiClassTrimming.JarTrimmer;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.RemovedTrimmer;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.Trimmer;
 import com.android.tools.r8.apimodel.ParsedApiClassVerifier;
+import com.android.tools.r8.apimodel.ParsedApiClassVerifier.ApiRangeSetOperations;
 import com.android.tools.r8.apimodel.jar.ApiJarInfo;
 import com.android.tools.r8.apimodel.jar.ApiJarMerging;
 import com.android.tools.r8.apimodel.jar.ApiJarReader;
@@ -59,11 +64,11 @@ public class ApiDatabaseGenerator {
     }
   }
 
-  static <E extends Throwable> Collection<ParsedApiClass> generateClasses(
+  static <E extends Throwable> Collection<ParsedApiClass<ApiRange>> generateClasses(
       ApiDatabaseGeneratorCommand command, Function<JarTrimmer, Trimmer<E>> jarTrimmerWrapper)
       throws ApiDatabaseGeneratorException, E {
     try {
-      Collection<ParsedApiClass> classes = extractClasses(command);
+      Collection<ParsedApiClass<ApiRange>> classes = extractClasses(command);
       classes = ParsedApiClassMerging.merge(classes, command.getDiagnosticsHandler());
 
       List<ApiJarInfo> jarInfos = extractJars(command);
@@ -72,20 +77,21 @@ public class ApiDatabaseGenerator {
       if (command.shouldAmend()) {
         amendApiData(classes, jarInfo);
       }
-      classes = flattenHierarchy(classes);
+      Collection<ParsedApiClass<ApiVersionSet>> flattenedClasses = flattenHierarchy(classes);
+      classes = ParsedApiClassMapping.map(flattenedClasses, new GreatestEndingRangeMapper());
       classes = ParsedApiClassTrimming.trim(classes, new RemovedTrimmer());
       Trimmer<E> jarTrimmer = jarTrimmerWrapper.apply(new JarTrimmer(jarInfo));
       classes = ParsedApiClassTrimming.trim(classes, jarTrimmer);
       classes = ParsedApiClassSorting.sorted(classes);
-      ParsedApiClassVerifier.verify(classes);
+      ParsedApiClassVerifier.verify(classes, new ApiRangeSetOperations());
       return classes;
     } catch (ParsingException | IOException e) {
       throw new ApiDatabaseGeneratorException("Failed to generate API classes", e);
     }
   }
 
-  private static Collection<ParsedApiClass> flattenHierarchy(Collection<ParsedApiClass> classes)
-      throws ApiDatabaseGeneratorException {
+  private static Collection<ParsedApiClass<ApiVersionSet>> flattenHierarchy(
+      Collection<ParsedApiClass<ApiRange>> classes) throws ApiDatabaseGeneratorException {
     try {
       return ParsedApiClassFlattening.flatten(classes);
     } catch (ApiDatabaseGeneratorException e) {
@@ -93,7 +99,7 @@ public class ApiDatabaseGenerator {
     }
   }
 
-  private static void amendApiData(Collection<ParsedApiClass> classes, ApiJarInfo jarInfo)
+  private static void amendApiData(Collection<ParsedApiClass<ApiRange>> classes, ApiJarInfo jarInfo)
       throws ApiDatabaseGeneratorException, IOException {
     try {
       AmendApiFromResources.applyAmendments(classes, jarInfo);
@@ -104,11 +110,11 @@ public class ApiDatabaseGenerator {
     }
   }
 
-  private static List<ParsedApiClass> extractClasses(ApiDatabaseGeneratorCommand command)
+  private static List<ParsedApiClass<ApiRange>> extractClasses(ApiDatabaseGeneratorCommand command)
       throws ParsingException {
-    List<ParsedApiClass> allParsed = new ArrayList<>();
+    List<ParsedApiClass<ApiRange>> allParsed = new ArrayList<>();
     for (Path xmlPath : command.getXmlPaths()) {
-      List<ParsedApiClass> parsed = AndroidApiVersionsXmlParser.parse(xmlPath);
+      List<ParsedApiClass<ApiRange>> parsed = AndroidApiVersionsXmlParser.parse(xmlPath);
       allParsed.addAll(parsed);
     }
     return allParsed;

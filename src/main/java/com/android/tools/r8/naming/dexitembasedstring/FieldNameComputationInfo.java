@@ -36,6 +36,7 @@ public class FieldNameComputationInfo extends NameComputationInfo<DexField> {
     return Order.FIELDNAME;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   int internalAcceptCompareTo(NameComputationInfo<?> other, CompareToVisitor visitor) {
     assert this == other;

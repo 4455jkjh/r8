@@ -16,10 +16,11 @@ import java.util.Map;
 
 public class ParsedApiClassAmending {
 
-  public static void amendApi(Collection<ParsedApiClass> apiClasses, ApiAmendments amendments)
+  public static void amendApi(
+      Collection<ParsedApiClass<ApiRange>> apiClasses, ApiAmendments amendments)
       throws ApiDatabaseGeneratorException {
-    Map<ClassReference, ParsedApiClass> classMap = new HashMap<>();
-    for (ParsedApiClass apiClass : apiClasses) {
+    Map<ClassReference, ParsedApiClass<ApiRange>> classMap = new HashMap<>();
+    for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
       classMap.put(apiClass.getClassReference(), apiClass);
     }
 
@@ -35,10 +36,10 @@ public class ParsedApiClassAmending {
   }
 
   private static void amendApiField(
-      FieldAmendment fieldAmendment, Map<ClassReference, ParsedApiClass> classMap)
+      FieldAmendment fieldAmendment, Map<ClassReference, ParsedApiClass<ApiRange>> classMap)
       throws ApiDatabaseGeneratorException {
     FieldTypelessReference fieldRef = fieldAmendment.getFieldReference();
-    ParsedApiClass holder = classMap.get(fieldRef.getHolderClass());
+    ParsedApiClass<ApiRange> holder = classMap.get(fieldRef.getHolderClass());
     if (holder == null) {
       throw new ApiDatabaseGeneratorException(
           "Holder class "
@@ -55,10 +56,10 @@ public class ParsedApiClassAmending {
   }
 
   private static void amendApiMethod(
-      MethodAmendment methodAmendment, Map<ClassReference, ParsedApiClass> classMap)
+      MethodAmendment methodAmendment, Map<ClassReference, ParsedApiClass<ApiRange>> classMap)
       throws ApiDatabaseGeneratorException {
     MethodReference methodRef = methodAmendment.getMethodReference();
-    ParsedApiClass holder = classMap.get(methodRef.getHolderClass());
+    ParsedApiClass<ApiRange> holder = classMap.get(methodRef.getHolderClass());
     if (holder == null) {
       throw new ApiDatabaseGeneratorException(
           "Holder class "
@@ -75,16 +76,16 @@ public class ParsedApiClassAmending {
   }
 
   private static void amendApiClass(
-      Collection<ParsedApiClass> apiClasses,
+      Collection<ParsedApiClass<ApiRange>> apiClasses,
       ClassAmendment classAmendment,
-      Map<ClassReference, ParsedApiClass> classMap)
+      Map<ClassReference, ParsedApiClass<ApiRange>> classMap)
       throws ApiDatabaseGeneratorException {
     ClassReference classRef = classAmendment.getClassReference();
     if (classMap.containsKey(classRef)) {
       throw new ApiDatabaseGeneratorException("Class " + classRef + " already exists");
     } else {
-      ParsedApiClass newClass =
-          new ParsedApiClass(classRef, new ApiRange(classAmendment.getApiLevel()));
+      ParsedApiClass<ApiRange> newClass =
+          new ParsedApiClass<>(classRef, new ApiRange(classAmendment.getApiLevel()));
       apiClasses.add(newClass);
       classMap.put(classRef, newClass);
     }

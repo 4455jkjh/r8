@@ -629,6 +629,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     return unsafeInstance;
   }
 
+  @SuppressWarnings("NonApiType")
   private void insertInstructionsBeforeCurrentInstruction(
       IRCodeInstructionListIterator it, ArrayList<Instruction> instructions) {
     it.previous();
@@ -678,7 +679,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     final IRCodeInstructionListIterator it;
     final Map<DexField, AtomicFieldUpdaterInfo> instrumentations;
 
-    public OptimizationContext(
+    OptimizationContext(
         MethodProcessor methodProcessor,
         MethodProcessingContext methodProcessingContext,
         IRCode code,

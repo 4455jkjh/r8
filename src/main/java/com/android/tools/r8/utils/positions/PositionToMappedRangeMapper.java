@@ -92,7 +92,7 @@ public interface PositionToMappedRangeMapper {
       final int paramCount;
       final int maxEncodingPc;
 
-      public UpdateInfo(DexCode code, int paramCount, int maxEncodingPc) {
+      UpdateInfo(DexCode code, int paramCount, int maxEncodingPc) {
         this.code = code;
         this.paramCount = paramCount;
         this.maxEncodingPc = maxEncodingPc;

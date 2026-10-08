@@ -165,7 +165,7 @@ public abstract class ApiDatabaseEntry {
   private static class TypeEntry extends ApiDatabaseEntry {
     private final byte[] type;
 
-    public TypeEntry(byte[] type) {
+    TypeEntry(byte[] type) {
       this.type = type;
     }
 
@@ -204,7 +204,7 @@ public abstract class ApiDatabaseEntry {
     private final byte[][] parameters;
     private final byte[] returnType;
 
-    public MethodEntry(byte[] holder, byte[] name, byte[][] parameters, byte[] returnType) {
+    MethodEntry(byte[] holder, byte[] name, byte[][] parameters, byte[] returnType) {
       this.holder = holder;
       this.name = name;
       this.parameters = parameters;
@@ -282,7 +282,7 @@ public abstract class ApiDatabaseEntry {
     private final byte[] holder;
     private final byte[] name;
 
-    public FieldEntry(byte[] holder, byte[] name) {
+    FieldEntry(byte[] holder, byte[] name) {
       this.holder = holder;
       this.name = name;
     }

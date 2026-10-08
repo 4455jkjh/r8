@@ -85,6 +85,7 @@ class EffectivelyUnusedArgumentsGraph {
     return graph;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void addConstraintEdge(
       EffectivelyUnusedArgumentsGraphNode node,
       MethodParameter constraint,
@@ -146,6 +147,7 @@ class EffectivelyUnusedArgumentsGraph {
         parameter, p -> new EffectivelyUnusedArgumentsGraphNode(method, p.getIndex()));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void remove(EffectivelyUnusedArgumentsGraphNode node) {
     assert node.getSuccessors().isEmpty();
     assert node.getPredecessors().isEmpty();

@@ -100,6 +100,7 @@ public class CfToCfInterfaceMethodRewriter extends InterfaceMethodRewriter
     return DesugarDescription.nothing();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DesugarDescription compute(
       DexMethod invokedMethod, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
     RetargetMethodSupplier retargetMethodSupplier =

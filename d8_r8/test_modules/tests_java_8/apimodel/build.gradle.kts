@@ -7,3 +7,5 @@ java {
     java.srcDir(getRoot().resolveAll("src", "test", "java8", "apimodel"))
   }
 }
+
+dependencies { runtimeOnlyData(project(":third_party", "apiDatabase")) }

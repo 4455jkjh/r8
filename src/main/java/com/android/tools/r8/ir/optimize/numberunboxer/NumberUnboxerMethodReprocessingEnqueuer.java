@@ -34,6 +34,7 @@ public class NumberUnboxerMethodReprocessingEnqueuer {
     this.numberUnboxerLens = numberUnboxerLens;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void enqueueMethodsForReprocessing(
       PostMethodProcessor.Builder postMethodProcessorBuilder,
       ExecutorService executorService,

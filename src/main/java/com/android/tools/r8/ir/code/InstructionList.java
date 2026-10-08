@@ -93,6 +93,7 @@ public class InstructionList implements Iterable<Instruction> {
    * Inserts newInstruction before existingInstruction. If existingInstruction is null, adds at the
    * end.
    */
+  @SuppressWarnings("ReferenceEquality")
   public void addBefore(Instruction newInstruction, Instruction existingInstruction) {
     if (size == 0) {
       assert existingInstruction == null;
@@ -122,6 +123,7 @@ public class InstructionList implements Iterable<Instruction> {
   }
 
   /** Adopt all instructions from another list (use this to split blocks). */
+  @SuppressWarnings("ReferenceEquality")
   public void severFrom(Instruction firstInstructionToMove) {
     assert isEmpty();
     BasicBlock sourceBlock = firstInstructionToMove.block;
@@ -212,6 +214,7 @@ public class InstructionList implements Iterable<Instruction> {
   }
 
   /** Removes without doing any validation of in / out values. */
+  @SuppressWarnings("ReferenceEquality")
   public void removeIgnoreValues(Instruction target) {
     target.block = null;
     Instruction prev = target.prev;

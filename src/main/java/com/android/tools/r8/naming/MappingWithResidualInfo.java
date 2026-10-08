@@ -18,7 +18,7 @@ public interface MappingWithResidualInfo {
   Signature getResidualSignature();
 
   /** Should be removed when R8 emits residual information for alpha renamed signatures. */
-  @Deprecated()
+  @Deprecated
   default Signature computeResidualSignature(Function<String, String> typeNameMapper) {
     if (hasResidualSignatureMappingInformation()) {
       return getResidualSignature();

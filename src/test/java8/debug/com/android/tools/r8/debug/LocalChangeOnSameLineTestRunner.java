@@ -3,10 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
-import com.google.common.collect.ImmutableList;
 import java.util.Collection;
+import java.util.function.Function;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,16 +24,17 @@ public class LocalChangeOnSameLineTestRunner extends DebugTestBase {
   private final String name;
   private final DebugTestConfig config;
 
-  @Parameterized.Parameters(name = "{0}")
+  @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
     DelayedDebugTestConfig cf =
             temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
-    DelayedDebugTestConfig d8 =
-            temp -> new D8DebugTestConfig().compileAndAddClasses(temp, CLASS);
-    return ImmutableList.of(new Object[]{"CF", cf}, new Object[]{"D8", d8});
+    Function<DexRuntime, DelayedDebugTestConfig> d8 =
+        dexRuntime -> temp -> new D8DebugTestConfig(dexRuntime).compileAndAddClasses(temp, CLASS);
+    return buildCfAndD8Parameters(cf, d8);
   }
 
-  public LocalChangeOnSameLineTestRunner(String name, DelayedDebugTestConfig config) {
+  public LocalChangeOnSameLineTestRunner(
+      TestParameters parameters, String name, DelayedDebugTestConfig config) {
     this.name = name;
     this.config = config.getConfig(getStaticTemp());
   }
@@ -39,8 +42,9 @@ public class LocalChangeOnSameLineTestRunner extends DebugTestBase {
   /** Test that only hit the break point at line 15 once. */
   @Test
   public void testHitBreakpointOnce() throws Throwable {
-    Assume.assumeFalse("b/73803266",
-        name.equals("D8") && ToolHelper.getDexVm() == DexVm.ART_6_0_1_HOST);
+    Assume.assumeFalse(
+        "b/73803266",
+        name.equals("D8") && config.getRuntime().asDex().getVm() == DexVm.ART_6_0_1_HOST);
     runDebugTest(
         config,
         NAME,

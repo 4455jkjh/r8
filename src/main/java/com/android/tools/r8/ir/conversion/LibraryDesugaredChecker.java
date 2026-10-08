@@ -42,18 +42,18 @@ public class LibraryDesugaredChecker {
     private final DexProgramClass clazz;
     private boolean isLibraryDesugared = false;
 
-    public IsLibraryDesugaredTracer(
+    IsLibraryDesugaredTracer(
         AppView<?> appView, DexString jDollarDescriptorPrefix, DexProgramClass clazz) {
       this.jDollarDescriptorPrefix = jDollarDescriptorPrefix;
       this.appView = appView;
       this.clazz = clazz;
     }
 
-    public void run() {
+    void run() {
       registerClass(clazz);
     }
 
-    public boolean isLibraryDesugared() {
+    boolean isLibraryDesugared() {
       return isLibraryDesugared;
     }
 
@@ -119,7 +119,7 @@ public class LibraryDesugaredChecker {
     private class IsLibraryDesugaredUseRegistry
         extends UseRegistryWithResult<Boolean, ProgramMethod> {
 
-      public IsLibraryDesugaredUseRegistry(AppView<?> appView, ProgramMethod context) {
+      IsLibraryDesugaredUseRegistry(AppView<?> appView, ProgramMethod context) {
         super(appView, context, false);
       }
 

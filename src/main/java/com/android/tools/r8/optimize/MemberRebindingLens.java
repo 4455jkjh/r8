@@ -64,6 +64,7 @@ public class MemberRebindingLens extends DefaultNonIdentityGraphLens {
         .build();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean isIdentityLensForFields(GraphLens codeLens) {
     if (this == codeLens) {

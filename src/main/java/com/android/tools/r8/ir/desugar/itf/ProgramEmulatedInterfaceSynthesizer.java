@@ -118,6 +118,7 @@ public final class ProgramEmulatedInterfaceSynthesizer implements CfClassSynthes
                     .generateCfCode());
   }
 
+  @SuppressWarnings("NonApiType")
   private LinkedHashMap<DexType, DexMethod> resolveDispatchCases(
       EmulatedDispatchMethodDescriptor descriptor,
       L8ProgramEmulatedInterfaceSynthesizerEventConsumer eventConsumer) {

@@ -6,9 +6,16 @@ package com.android.tools.r8.debuginfo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApp;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class LocalsWithTypeParamsRunner extends DebugInfoTestBase {
 
   static final Class clazzMain = LocalsWithTypeParamsTest.class;
@@ -19,13 +26,21 @@ public class LocalsWithTypeParamsRunner extends DebugInfoTestBase {
   static final String nameA = clazzA.getCanonicalName();
   static final String nameB = clazzB.getCanonicalName();
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Test
   public void testLocalsWithTypeParams() throws Exception {
     AndroidApp d8App = compileWithD8(clazzMain, clazzA, clazzB);
 
     String expected = "42";
     assertEquals(expected, runOnJava(clazzMain));
-    assertEquals(expected, runOnArt(d8App, nameMain));
+    assertEquals(expected, runOnArt(d8App, nameMain, parameters.getDexVm()));
 
     checkSyncInstance(inspectMethod(d8App, clazzA, "int", "foo", nameB));
   }

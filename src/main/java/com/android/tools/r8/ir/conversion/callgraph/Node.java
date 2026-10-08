@@ -36,6 +36,7 @@ public class Node extends NodeBase<Node> implements Comparable<Node>, CycleElimi
     addCallerConcurrently(caller, false);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void addCallerConcurrently(Node caller, boolean likelySpuriousCallEdge) {
     if (caller != this && !likelySpuriousCallEdge) {
@@ -58,6 +59,7 @@ public class Node extends NodeBase<Node> implements Comparable<Node>, CycleElimi
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void addReaderConcurrently(Node reader) {
     if (reader != this) {

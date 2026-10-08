@@ -1424,7 +1424,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     final CfVersion version;
     final DexType type;
 
-    public TypeVersionPair(CfVersion version, DexType type) {
+    TypeVersionPair(CfVersion version, DexType type) {
       this.version = version;
       this.type = type;
     }
@@ -1620,6 +1620,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void warningMissingInterfaceForDesugar(
       DexClass classToDesugar, DexClass implementing, DexType missing) {
     if (reportedMissingForDesugaring.add(missing)) {
@@ -2357,6 +2358,30 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementInDebug", false);
 
+    // TODO(b/569861570): Remove this flag when optimization has been enabled in Android Platform.
+    public boolean enableAndWithDefiniteBitsOptimization =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableAndWithDefiniteBitsOptimization", true);
+    // TODO(b/569874076): Remove this flag when optimization has been enabled in Android Platform.
+    public boolean enableSimplifyNonBooleanCondition =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableSimplifyNonBooleanCondition", true);
+    public boolean enableFreeExpiredRegistersBeforeInvokeRangeAllocation =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableFreeExpiredRegistersBeforeInvokeRangeAllocation", true);
+    public boolean enableKnownBooleanShiftDiamondSimplification =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableKnownBooleanShiftDiamondSimplification", true);
+    public boolean enableDeduplicateAllIdenticalBlocks =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableDeduplicateAllIdenticalBlocks", true);
+    public boolean enableBranchDiamondInverter =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableBranchDiamondInverter", true);
+    public boolean enable2AddrHintsForLogicalBinop =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enable2AddrHintsForLogicalBinop", true);
+
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
         return false;
@@ -2613,6 +2638,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableAtomicFieldUpdaterLogs =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableAtomicFieldUpdaterExtenderLogs", false);
+    public boolean enableBasicBlockReorderer =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.basicblockreorderer", false);
     public boolean enableVerticalClassMergerLensAssertion = false;
     public boolean forceRedundantConstNumberRemoval = false;
     public boolean forceSplitReturnRewriter = false;

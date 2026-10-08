@@ -147,7 +147,7 @@ public class DeterminismChecker {
 
     private final BufferedReader reader;
 
-    public LineCallbackChecker(BufferedReader reader) {
+    LineCallbackChecker(BufferedReader reader) {
       this.reader = reader;
     }
 
@@ -178,7 +178,7 @@ public class DeterminismChecker {
 
     private final Writer writer;
 
-    public LineCallbackWriter(Writer writer) {
+    LineCallbackWriter(Writer writer) {
       this.writer = writer;
     }
 

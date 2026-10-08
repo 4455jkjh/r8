@@ -6,6 +6,8 @@ package com.android.tools.r8.debug;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.debuginfo.DebugInfoInspector;
 import com.android.tools.r8.dex.code.DexIfEqz;
@@ -20,11 +22,24 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.harmony.jpda.tests.framework.jdwp.Value;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class SmaliDebugTest extends DebugTestBase {
 
   static final String FILE = "SmaliDebugTestDebuggee.smali";
   static final String CLASS = "SmaliDebugTestDebuggee";
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   /**
    * Simple test to check setup works for the Java source, ala:
@@ -41,7 +56,7 @@ public class SmaliDebugTest extends DebugTestBase {
   public void testSimpleIf() throws Throwable {
     String methodName = "simpleIf";
     runDebugTest(
-        new DexDebugTestConfig(buildSimpleIf(methodName)),
+        new DexDebugTestConfig(parameters.asDexRuntime(), buildSimpleIf(methodName)),
         CLASS,
         breakpoint(CLASS, methodName),
         run(),
@@ -127,7 +142,7 @@ public class SmaliDebugTest extends DebugTestBase {
 
     // Run debugger to verify that we step to line 4 and the values of v0 and v1 are unchanged.
     runDebugTest(
-        new DexDebugTestConfig(outs),
+        new DexDebugTestConfig(parameters.asDexRuntime(), outs),
         CLASS,
         breakpoint(CLASS, methodName),
         run(),
@@ -200,7 +215,7 @@ public class SmaliDebugTest extends DebugTestBase {
     byte[] bytes = builder.compile();
     Path out = temp.newFolder().toPath().resolve("classes.dex");
     Files.write(out, bytes);
-    ToolHelper.runArtNoVerificationErrors(out.toString(), CLASS);
+    ToolHelper.runArtNoVerificationErrors(out.toString(), CLASS, parameters.getDexVm());
     return Collections.singletonList(out);
   }
 }

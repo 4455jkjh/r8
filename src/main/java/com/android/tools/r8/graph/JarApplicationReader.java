@@ -158,6 +158,7 @@ public class JarApplicationReader {
     return getAsmType(DescriptorUtils.getReturnTypeDescriptor(methodDescriptor));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addRecordWitness(DexType witness, ClassKind<?> classKind) {
     if (classKind == ClassKind.PROGRAM) {
       readFlagsBuilder.addRecordWitness(witness);
@@ -178,6 +179,7 @@ public class JarApplicationReader {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addVarHandleWitness(DexType witness, ClassKind<?> classKind) {
     if (classKind == ClassKind.PROGRAM) {
       readFlagsBuilder.addVarHandleWitness(witness);
@@ -198,6 +200,7 @@ public class JarApplicationReader {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addMethodHandlesLookupWitness(DexType witness, ClassKind<?> classKind) {
     if (classKind == ClassKind.PROGRAM) {
       readFlagsBuilder.addMethodHandlesLookupWitness(witness);

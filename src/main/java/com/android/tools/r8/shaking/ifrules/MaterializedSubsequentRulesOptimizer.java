@@ -40,6 +40,7 @@ public class MaterializedSubsequentRulesOptimizer {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static List<Pair<ProguardIfRulePreconditionMatch, ProguardKeepRule>>
       optimizeMaterializedSubsequentRulesWithSingleBackReference(
           ProguardIfRule ifRule,
@@ -131,6 +132,7 @@ public class MaterializedSubsequentRulesOptimizer {
     return ImmutableList.of(new Pair<>(replacementIfRulePreconditionMatch, replacementKeepRule));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static ProguardMemberRule optimizeMaterializedMemberRulesWithSingleBackReference(
       ProguardMemberRule memberRule, ProguardMemberRule other) {
     assert ObjectUtils.identical(memberRule.getAccessFlags(), other.getAccessFlags());

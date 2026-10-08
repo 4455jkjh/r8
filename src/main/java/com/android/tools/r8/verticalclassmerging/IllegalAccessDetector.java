@@ -49,6 +49,7 @@ public class IllegalAccessDetector extends UseRegistryWithResult<Boolean, Progra
         appViewWithClassHierarchy.graphLens().lookupField(field, codeLens));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean checkRewrittenFieldReference(DexField field) {
     assert field.getHolderType().isClassType();
     DexType fieldHolder = field.getHolderType();
@@ -76,6 +77,7 @@ public class IllegalAccessDetector extends UseRegistryWithResult<Boolean, Progra
     return continueSearchForPackagePrivateAccess();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean checkRewrittenMethodReference(
       DexMethod rewrittenMethod, OptionalBool isInterface) {
     DexType baseType = rewrittenMethod.getHolderType().getBaseType();

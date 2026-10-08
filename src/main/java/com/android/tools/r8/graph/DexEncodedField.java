@@ -134,6 +134,7 @@ public class DexEncodedField extends DexEncodedMember<DexEncodedField, DexField>
     return accessFlags;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void setKotlinMemberInfo(KotlinFieldLevelInfo kotlinMemberInfo) {
     assert this.kotlinMemberInfo == getNoKotlinInfo();
     this.kotlinMemberInfo = kotlinMemberInfo;

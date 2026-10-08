@@ -180,6 +180,7 @@ public class ValueUtils {
    *  * An array-put exists that does not dominate the array-put of the highest index.
    * </pre>
    */
+  @SuppressWarnings("ReferenceEquality")
   public static ArrayValues computeInitialArrayValues(NewArrayEmpty newArrayEmpty) {
     int arraySize = newArrayEmpty.sizeIfConst();
     if (arraySize < 0 || arraySize > MAX_ARRAY_SIZE) {
@@ -219,6 +220,7 @@ public class ValueUtils {
     return ret;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static ArrayValues computeArrayValuesInternal(
       NewArrayEmpty newArrayEmpty, int arraySize, Instruction firstUser, boolean allowOtherUsers) {
     ArrayPut[] arrayPutsByIndex = new ArrayPut[arraySize];
@@ -332,6 +334,7 @@ public class ValueUtils {
   }
 
   /** Must have already removed the current user from value. */
+  @SuppressWarnings("ReferenceEquality")
   public static void removeAliasChain(Value value, Value aliasedValue) {
     while (value != aliasedValue && !value.hasAnyUsers()) {
       Assume definition = value.getDefinition().asAssume();

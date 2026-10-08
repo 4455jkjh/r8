@@ -10,6 +10,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -117,12 +119,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     Path input = Paths.get(EXAMPLES_BUILD_DIR + "/arithmetic.jar").toAbsolutePath();
     Path output = working.resolve("output.zip");
     FileUtils.writeTextFile(
-        flagsFile,
-        "--output",
-        "output.zip",
-        "--min-api",
-        "24",
-        input.toString());
+        flagsFile, "--output", "output.zip", "--min-api", "24", input.toString());
     assertEquals(0, ToolHelper.forkD8(working, "@flags.txt").exitCode);
     assertTrue(Files.exists(output));
     Collection<Marker> markers = ExtractMarkerUtils.extractMarkersFromFile(output);
@@ -132,7 +129,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     assertEquals(Tool.D8, marker.getTool());
   }
 
-  @Test(expected=CompilationFailedException.class)
+  @Test(expected = CompilationFailedException.class)
   public void nonExistingFlagsFile() throws Throwable {
     Path working = temp.getRoot().toPath();
     Path flags = working.resolve("flags.txt").toAbsolutePath();
@@ -192,6 +189,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             "  --globals-output <file> # Output global synthetics in <file>. <file> must be an"
                 + " existing directory or",
             "                          # a non-existent zip archive.",
+            "  --ignore-globals        # Ignore global synthetics.",
             "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
             "  --classpath <file>      # Add <file> as a classpath resource.",
             "  --min-api <number>[.<number>]",
@@ -317,18 +315,20 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
   @Test
   public void existingOutputDirWithDexFiles() throws Throwable {
     Path existingDir = temp.newFolder().toPath();
-    List<Path> classesFiles = ImmutableList.of(
-        existingDir.resolve("classes.dex"),
-        existingDir.resolve("classes2.dex"),
-        existingDir.resolve("Classes3.dex"), // ignore case.
-        existingDir.resolve("classes10.dex"),
-        existingDir.resolve("classes999.dex"));
-    List<Path> otherFiles = ImmutableList.of(
-        existingDir.resolve("classes0.dex"),
-        existingDir.resolve("classes1.dex"),
-        existingDir.resolve("classes010.dex"),
-        existingDir.resolve("classesN.dex"),
-        existingDir.resolve("other.dex"));
+    List<Path> classesFiles =
+        ImmutableList.of(
+            existingDir.resolve("classes.dex"),
+            existingDir.resolve("classes2.dex"),
+            existingDir.resolve("Classes3.dex"), // ignore case.
+            existingDir.resolve("classes10.dex"),
+            existingDir.resolve("classes999.dex"));
+    List<Path> otherFiles =
+        ImmutableList.of(
+            existingDir.resolve("classes0.dex"),
+            existingDir.resolve("classes1.dex"),
+            existingDir.resolve("classes010.dex"),
+            existingDir.resolve("classesN.dex"),
+            existingDir.resolve("other.dex"));
     for (Path file : classesFiles) {
       Files.createFile(file);
       assertTrue(Files.exists(file));
@@ -398,8 +398,9 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     D8Command command = parse("--main-dex-list", mainDexList1.toString());
     assertTrue(ToolHelper.getApp(command).hasMainDexListResources());
 
-    command = parse(
-        "--main-dex-list", mainDexList1.toString(), "--main-dex-list", mainDexList2.toString());
+    command =
+        parse(
+            "--main-dex-list", mainDexList1.toString(), "--main-dex-list", mainDexList2.toString());
     assertTrue(ToolHelper.getApp(command).hasMainDexListResources());
   }
 
@@ -477,18 +478,23 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
         Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR, "interfacemethods" + JAR_EXTENSION);
     Path tmpClassesDir = temp.newFolder().toPath();
     ZipUtils.unzip(inputFile.toString(), tmpClassesDir.toFile());
-    D8Command command = parse("--lib", tmpClassesDir.toString(), "--classpath",
-        tmpClassesDir.toString());
+    D8Command command =
+        parse("--lib", tmpClassesDir.toString(), "--classpath", tmpClassesDir.toString());
     AndroidApp inputApp = ToolHelper.getApp(command);
     assertEquals(1, inputApp.getClasspathResourceProviders().size());
     OrderedClassFileResourceProvider classpathProvider =
         (OrderedClassFileResourceProvider) inputApp.getClasspathResourceProviders().get(0);
     assertEquals(1, classpathProvider.providers.size());
-    assertTrue(Files.isSameFile(tmpClassesDir,
-        ((DirectoryClassFileProvider) classpathProvider.providers.get(0)).getRoot()));
+    assertTrue(
+        Files.isSameFile(
+            tmpClassesDir,
+            ((DirectoryClassFileProvider) classpathProvider.providers.get(0)).getRoot()));
     assertEquals(1, inputApp.getLibraryResourceProviders().size());
-    assertTrue(Files.isSameFile(tmpClassesDir,
-        ((DirectoryClassFileProvider) inputApp.getLibraryResourceProviders().get(0)).getRoot()));
+    assertTrue(
+        Files.isSameFile(
+            tmpClassesDir,
+            ((DirectoryClassFileProvider) inputApp.getLibraryResourceProviders().get(0))
+                .getRoot()));
   }
 
   @Test
@@ -499,17 +505,21 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     Path tmpClassesDir2 = temp.newFolder().toPath();
     ZipUtils.unzip(inputFile.toString(), tmpClassesDir1.toFile());
     ZipUtils.unzip(inputFile.toString(), tmpClassesDir2.toFile());
-    D8Command command = parse("--classpath", tmpClassesDir1.toString(), "--classpath",
-        tmpClassesDir2.toString());
+    D8Command command =
+        parse("--classpath", tmpClassesDir1.toString(), "--classpath", tmpClassesDir2.toString());
     AndroidApp inputApp = ToolHelper.getApp(command);
     assertEquals(1, inputApp.getClasspathResourceProviders().size());
     OrderedClassFileResourceProvider classpathProvider =
         (OrderedClassFileResourceProvider) inputApp.getClasspathResourceProviders().get(0);
     assertEquals(2, classpathProvider.providers.size());
-    assertTrue(Files.isSameFile(tmpClassesDir1,
-        ((DirectoryClassFileProvider) classpathProvider.providers.get(0)).getRoot()));
-    assertTrue(Files.isSameFile(tmpClassesDir2,
-        ((DirectoryClassFileProvider) classpathProvider.providers.get(1)).getRoot()));
+    assertTrue(
+        Files.isSameFile(
+            tmpClassesDir1,
+            ((DirectoryClassFileProvider) classpathProvider.providers.get(0)).getRoot()));
+    assertTrue(
+        Files.isSameFile(
+            tmpClassesDir2,
+            ((DirectoryClassFileProvider) classpathProvider.providers.get(1)).getRoot()));
   }
 
   @Test(expected = CompilationFailedException.class)
@@ -596,9 +606,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
           int fileIndex, ByteDataView data, Set<String> descriptors, DiagnosticsHandler handler) {}
 
       @Override
-      public void finished(DiagnosticsHandler handler) {
-
-      }
+      public void finished(DiagnosticsHandler handler) {}
     }
 
     D8Command.builder().setProgramConsumer(new MultiTypeConsumer()).build();
@@ -635,10 +643,11 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
 
   @Test
   public void disableDesugaringApi() throws CompilationFailedException {
-    BaseCompilerCommandTest.assertDesugaringDisabled(D8Command.builder()
-        .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-        .setDisableDesugaring(true)
-        .build());
+    BaseCompilerCommandTest.assertDesugaringDisabled(
+        D8Command.builder()
+            .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+            .setDisableDesugaring(true)
+            .build());
   }
 
   @Test(expected = CompilationFailedException.class)
@@ -700,10 +709,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
   @Test
   public void noInputOutputsEmptyZip() throws CompilationFailedException, IOException {
     Path emptyZip = temp.getRoot().toPath().resolve("empty.zip");
-    D8.run(
-        D8Command.builder()
-            .setOutput(emptyZip, OutputMode.DexIndexed)
-            .build());
+    D8.run(D8Command.builder().setOutput(emptyZip, OutputMode.DexIndexed).build());
     assertTrue(Files.exists(emptyZip));
     assertEquals(0, new ZipFile(emptyZip.toFile(), StandardCharsets.UTF_8).size());
   }
@@ -970,6 +976,38 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
           .assertErrorsCount(1)
           .assertErrorMessageThatMatches(
               containsString("Cannot set multiple --api-database options"));
+    }
+  }
+
+  @Test
+  public void ignoreGlobalsFlag() throws Exception {
+    assertNull(parse("--ignore-globals").getInternalOptions().getGlobalSyntheticsConsumer());
+    assertSame(
+        GlobalSyntheticsConsumer.emptyConsumer(),
+        parse("--intermediate", "--ignore-globals")
+            .getInternalOptions()
+            .getGlobalSyntheticsConsumer());
+  }
+
+  @Test
+  public void ignoreGlobalsWithGlobalsOutputError() throws Exception {
+    Path globalsOutput = temp.getRoot().toPath().resolve("globals.zip");
+    for (String[] args :
+        new String[][] {
+          new String[] {"--globals-output", globalsOutput.toString(), "--ignore-globals"},
+          new String[] {"--ignore-globals", "--globals-output", globalsOutput.toString()}
+        }) {
+      TestDiagnosticMessagesImpl handler = new TestDiagnosticMessagesImpl();
+      try {
+        parse(handler, args);
+        fail("Expected failure");
+      } catch (CompilationFailedException e) {
+        handler
+            .assertOnlyErrors()
+            .assertErrorsCount(1)
+            .assertErrorMessageThatMatches(
+                containsString("Cannot use both --globals-output and --ignore-globals"));
+      }
     }
   }
 

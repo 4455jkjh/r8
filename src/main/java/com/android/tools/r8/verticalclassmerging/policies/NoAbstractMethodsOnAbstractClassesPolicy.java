@@ -18,6 +18,7 @@ public class NoAbstractMethodsOnAbstractClassesPolicy extends VerticalClassMerge
     this.appView = appView;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean canMerge(VerticalMergeGroup group) {
     if (!group.getSource().isAbstract() || group.getTarget().isAbstract()) {

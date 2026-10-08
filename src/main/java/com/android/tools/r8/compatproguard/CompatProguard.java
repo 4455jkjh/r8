@@ -99,7 +99,7 @@ public class CompatProguard {
       // and "b" and an output flag "--output tmp/".
       List<String> proguardInputs = new ArrayList<>();
 
-      public ParserState(DiagnosticsHandler handler) {
+      ParserState(DiagnosticsHandler handler) {
         this.handler = handler;
       }
     }

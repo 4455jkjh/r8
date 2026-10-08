@@ -36,6 +36,7 @@ public class LoadLoadDupPeephole implements BasicBlockPeephole {
   // This searches backwards thus the pattern is built from the bottom.
   private final PeepholeLayout layout = PeepholeLayout.lookBackward(lastLoadExp, firstLoadExp);
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean match(InstructionListIterator it) {
     Match match = layout.test(it);

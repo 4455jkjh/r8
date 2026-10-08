@@ -20,7 +20,7 @@ public class FlagFile {
   private static class FlagFileOrigin extends Origin {
     private final Path path;
 
-    protected FlagFileOrigin(Path path) {
+    FlagFileOrigin(Path path) {
       super(Origin.root());
       this.path = path;
     }

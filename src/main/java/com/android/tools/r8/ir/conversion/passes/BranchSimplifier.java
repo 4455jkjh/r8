@@ -42,6 +42,7 @@ import com.android.tools.r8.ir.code.Ushr;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.code.Xor;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AffectedValues;
@@ -161,6 +162,9 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       }
     }
     if (simplified) {
+      if (code.getConversionOptions().isBranchSimplificationRequired()) {
+        code.mutateConversionOptions(MutableMethodConversionOptions::setSeenBranchSimplification);
+      }
       AffectedValues affectedValues = code.removeUnreachableBlocks();
       code.removeAllDeadAndTrivialPhis(null, affectedValues);
       affectedValues.narrowingWithAssumeRemoval(appView, code);
@@ -261,7 +265,8 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
           return true;
         }
       }
-      if (lhsRoot.isDefinedByInstructionSatisfying(Instruction::isUshr)) {
+      if (options.getTestingOptions().enableKnownBooleanShiftDiamondSimplification
+          && lhsRoot.isDefinedByInstructionSatisfying(Instruction::isUshr)) {
         Ushr ushr = lhsRoot.getDefinition().asUshr();
         if (ushr.getNumericType() == NumericType.INT
             && ushr.rightValue().isConstInt()
@@ -504,6 +509,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     return new LongInterval(min, max);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void simplifyIfWithKnownCondition(BasicBlock block, If theIf, BasicBlock target) {
     BasicBlock deadTarget =
         target == theIf.getTrueTarget() ? theIf.fallthroughBlock() : theIf.getTrueTarget();
@@ -548,13 +554,15 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
    * (c0 >>> 1) == c1, or (c0 >> 1) == c1, the diamond can be replaced by a
    * fallthrough and a shift of c0 by booleanValue.
    */
+  @SuppressWarnings("ReferenceEquality")
   private boolean simplifyKnownBooleanCondition(IRCode code, BasicBlock block) {
     If theIf = block.exit().asIf();
     Value lhs = theIf.lhs();
     if (theIf.isZeroTest()
         && theIf.getType().isEqualsOrNotEquals()
         && (lhs.knownToBeBoolean()
-            || (!options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
+            || (options.getTestingOptions().enableKnownBooleanShiftDiamondSimplification
+                && !options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
                 && lhs.getAbstractValue(appView, code.context()).isBoolean()))) {
       BasicBlock trueBlock = theIf.getTrueTarget();
       BasicBlock falseBlock = theIf.fallthroughBlock();
@@ -582,7 +590,8 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
                 phi.replaceUsers(lhs);
                 deadPhis++;
               } else if ((zeroInt == 1 && oneInt == 0)
-                  || (!options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
+                  || (options.getTestingOptions().enableKnownBooleanShiftDiamondSimplification
+                      && !options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
                       && zeroInt != oneInt
                       && ((zeroInt << 1) == oneInt
                           || (zeroInt >>> 1) == oneInt
@@ -636,8 +645,12 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
    * Rewrites simple `if` diamonds that materialize `0`/`1` (or `1`/`0`) into branchless bit
    * operations when doing so produces strictly smaller code.
    */
+  @SuppressWarnings("ReferenceEquality")
   private boolean simplifyNonBooleanCondition(IRCode code, BasicBlock block) {
     if (options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()) {
+      return false;
+    }
+    if (!options.getTestingOptions().enableSimplifyNonBooleanCondition) {
       return false;
     }
     If theIf = block.exit().asIf();
@@ -720,6 +733,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings({"AssignmentExpression", "ReferenceEquality"})
   private boolean isBlockSupportedBySimplifyKnownBooleanCondition(BasicBlock b) {
     if (b.isTrivialGoto()) {
       return true;
@@ -754,6 +768,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewriteIfToGoto(
       BasicBlock block, If theIf, BasicBlock target, BasicBlock deadTarget) {
     deadTarget.unlinkSinglePredecessorSiblingsAllowed();
@@ -763,6 +778,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     assert block.exit().asGoto().getTarget() == target;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean rewriteIfWithConstZero(BasicBlock block) {
     If theIf = block.exit().asIf();
     if (theIf.isZeroTest()) {
@@ -813,6 +829,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean flipIfBranchesIfNeeded(BasicBlock block) {
     If theIf = block.exit().asIf();
     BasicBlock trueTarget = theIf.getTrueTarget();
@@ -890,6 +907,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     return create(affectedValues.hasNext(), anySimplifications);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void rewriteSingleKeySwitchToIf(IRCode code, BasicBlock block, IntSwitch theSwitch) {
     // Rewrite the switch to an if.
     int fallthroughBlockIndex = theSwitch.getFallthroughBlockIndex();
@@ -912,6 +930,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     block.exit().replace(replacement);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean rewriteIntSwitch(
       IRCode code, ListIterator<BasicBlock> blockIterator, BasicBlock block, IntSwitch theSwitch) {
     if (theSwitch.numberOfKeys() == 1) {
@@ -1053,7 +1072,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
 
     private final IntList keys = new IntArrayList();
 
-    public Interval(IntList... allKeys) {
+    Interval(IntList... allKeys) {
       assert allKeys.length > 0;
       for (IntList keys : allKeys) {
         assert keys.size() > 0;
@@ -1061,20 +1080,20 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       }
     }
 
-    public int getMin() {
+    int getMin() {
       return keys.getInt(0);
     }
 
-    public int getMax() {
+    int getMax() {
       return keys.getInt(keys.size() - 1);
     }
 
-    public void addInterval(Interval other) {
+    void addInterval(Interval other) {
       assert getMax() < other.getMin();
       keys.addAll(other.keys);
     }
 
-    public long packedSavings(InternalOutputMode mode) {
+    long packedSavings(InternalOutputMode mode) {
       long packedTargets = (long) getMax() - (long) getMin() + 1;
       if (!IntSwitch.canBePacked(mode, packedTargets)) {
         return Long.MIN_VALUE + 1;
@@ -1086,7 +1105,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       return sparseCost - packedCost;
     }
 
-    public long estimatedSize(InternalOutputMode mode) {
+    long estimatedSize(InternalOutputMode mode) {
       return IntSwitch.estimatedSize(mode, keys.toIntArray());
     }
   }
@@ -1250,7 +1269,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
    * keys, followed by a new switch with the remaining keys.
    */
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "ReferenceEquality"})
   public void convertSwitchToSwitchAndIfs(
       IRCode code,
       ListIterator<BasicBlock> blocksIterator,

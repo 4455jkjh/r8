@@ -248,6 +248,7 @@ public class ProguardMemberRuleValue {
         : DynamicType.unknown();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean test(AppView<?> appView, Value value) {
     switch (type) {
       case BOOLEAN:
@@ -324,6 +325,7 @@ public class ProguardMemberRuleValue {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {

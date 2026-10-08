@@ -53,6 +53,7 @@ public class ConstString extends ConstInstruction {
     return copyOf(newValue, original);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static ConstString copyOf(Value newValue, ConstString original) {
     assert newValue != original.outValue();
     return new ConstString(newValue, original.getValue());

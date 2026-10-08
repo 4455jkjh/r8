@@ -278,7 +278,7 @@ public class TestParameters {
   public String toString() {
     StringBuilder builder = new StringBuilder(runtime.toString());
     if (apiLevel != null) {
-      builder.append(", api:").append(apiLevel.getMajor());
+      builder.append(", api:").append(apiLevel.getNumericString());
     }
     if (partialCompilationTestParameters.isSome()) {
       builder.append(", partial:").append(partialCompilationTestParameters);
@@ -381,6 +381,11 @@ public class TestParameters {
         apiLevel == null);
     assumeTrue(isDexRuntime() || representativeApiLevelForRuntime);
     return this;
+  }
+
+  public DexVm getDexVm() {
+    assertTrue(isDexRuntime());
+    return getRuntime().asDex().getVm();
   }
 
   public DexVm.Version getDexRuntimeVersion() {

@@ -160,6 +160,7 @@ public class ListUtils {
    * Rewrites the input list based on the given function. Returns the mapped list if any elements
    * were rewritten, otherwise returns defaultValue.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static <T> List<T> mapOrElse(
       List<T> list, IntObjToObjFunction<T, T> fn, List<T> defaultValue) {
     ArrayList<T> result = null;
@@ -193,6 +194,7 @@ public class ListUtils {
     return mapOrElse(list, fn, list);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <T> void map(List<T> list, Function<T, T> fn, Consumer<List<T>> onChangedConsumer) {
     List<T> result = mapOrElse(list, fn);
     if (result != list) {
@@ -208,12 +210,14 @@ public class ListUtils {
     return mapOrElse(list, element -> predicate.test(element) ? element : null, list);
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T> ArrayList<T> newArrayList(T element) {
     ArrayList<T> list = new ArrayList<>(1);
     list.add(element);
     return list;
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T> ArrayList<T> newArrayList(T element, T other) {
     ArrayList<T> list = new ArrayList<>(2);
     list.add(element);
@@ -221,6 +225,7 @@ public class ListUtils {
     return list;
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T> ArrayList<T> newArrayList(ForEachable<T> forEachable) {
     ArrayList<T> list = new ArrayList<>();
     forEachable.forEach(list::add);
@@ -267,6 +272,7 @@ public class ListUtils {
     return result;
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T> ArrayList<T> newInitializedArrayList(int size, T element) {
     ArrayList<T> list = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
@@ -275,6 +281,7 @@ public class ListUtils {
     return list;
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T> ArrayList<T> newInitializedArrayList(int size, IntFunction<T> fn) {
     ArrayList<T> list = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
@@ -290,7 +297,7 @@ public class ListUtils {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   public static <T> LinkedList<T> newLinkedList(T element) {
     LinkedList<T> list = new LinkedList<>();
     list.add(element);
@@ -298,7 +305,7 @@ public class ListUtils {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   public static <T> LinkedList<T> newLinkedList(ForEachable<T> forEachable) {
     LinkedList<T> list = new LinkedList<>();
     forEachable.forEach(list::add);
@@ -359,6 +366,7 @@ public class ListUtils {
     return sorted;
   }
 
+  @SuppressWarnings("NonApiType")
   public static <T> ArrayList<T> sort(Collection<T> items, Comparator<T> comparator) {
     ArrayList<T> sorted = new ArrayList<>(items);
     sorted.sort(comparator);

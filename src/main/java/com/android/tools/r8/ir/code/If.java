@@ -48,6 +48,7 @@ public class If extends JumpInstruction {
     return visitor.visit(this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInstanceOfTest() {
     return isZeroTest()
         && lhs().getAliasedValue().isDefinedByInstructionSatisfying(Instruction::isInstanceOf)
@@ -88,6 +89,7 @@ public class If extends JumpInstruction {
     type = type.inverted();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public BasicBlock getTrueTarget() {
     assert getBlock().exit() == this;
     List<BasicBlock> successors = getBlock().getSuccessors();
@@ -95,6 +97,7 @@ public class If extends JumpInstruction {
     return successors.get(successors.size() - 2);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void setTrueTarget(BasicBlock block) {
     assert getBlock().exit() == this;
     List<BasicBlock> successors = getBlock().getMutableSuccessors();
@@ -102,6 +105,7 @@ public class If extends JumpInstruction {
     successors.set(successors.size() - 2, block);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public BasicBlock fallthroughBlock() {
     assert getBlock().exit() == this;
@@ -131,6 +135,7 @@ public class If extends JumpInstruction {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public String toString() {
     StringBuilder builder =
@@ -162,6 +167,7 @@ public class If extends JumpInstruction {
     return 0;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean identicalNonValueNonPositionParts(Instruction other) {
     if (!other.isIf()) {

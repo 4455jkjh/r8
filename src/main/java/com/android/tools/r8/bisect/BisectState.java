@@ -31,34 +31,34 @@ public class BisectState {
     final int start;
     final int end;
 
-    public Range(int start, int end) {
+    Range(int start, int end) {
       this.start = start;
       this.end = end;
       assert verify();
     }
 
-    public Range(String range) {
+    Range(String range) {
       int sep = range.indexOf(' ');
       start = Integer.parseInt(range.substring(0, sep).trim());
       end = Integer.parseInt(range.substring(sep + 1).trim());
       assert verify();
     }
 
-    public void write(Writer writer) throws IOException {
+    void write(Writer writer) throws IOException {
       writer.write("" + start);
       writer.write(" ");
       writer.write("" + end);
     }
 
-    public boolean isEmpty() {
+    boolean isEmpty() {
       return start == end;
     }
 
-    public int size() {
+    int size() {
       return end - start;
     }
 
-    public Range add(Range other) {
+    Range add(Range other) {
       if (isEmpty()) {
         return other;
       }
@@ -69,7 +69,7 @@ public class BisectState {
       return new Range(Integer.min(start, other.start), Integer.max(end, other.end));
     }
 
-    public Range sub(Range other) {
+    Range sub(Range other) {
       if (other.isEmpty()) {
         return this;
       }
@@ -81,12 +81,12 @@ public class BisectState {
       return new Range(start, other.start);
     }
 
-    public Range split() {
+    Range split() {
       int length = size() / 2;
       return new Range(start, start + length);
     }
 
-    public boolean contains(int index) {
+    boolean contains(int index) {
       return start <= index && index < end;
     }
 
@@ -118,26 +118,26 @@ public class BisectState {
     final boolean good;
     final Range range;
 
-    public Run(Result result, Range range) {
+    Run(Result result, Range range) {
       assert result != Result.UNKNOWN;
       good = result == Result.GOOD;
       this.range = range;
     }
 
-    public Run(String nonLastEntry) {
+    Run(String nonLastEntry) {
       int sep1 = nonLastEntry.indexOf(':');
       good = nonLastEntry.substring(0, sep1).trim().equals("good");
       String rangeEntry = nonLastEntry.substring(sep1 + 1).trim();
       range = new Range(rangeEntry);
     }
 
-    public void write(Writer writer) throws IOException {
+    void write(Writer writer) throws IOException {
       writer.write(good ? "good" : "bad");
       writer.write(':');
       range.write(writer);
     }
 
-    public boolean isBad() {
+    boolean isBad() {
       return !good;
     }
   }

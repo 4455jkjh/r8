@@ -13,14 +13,12 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
-import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.ir.analysis.fieldvalueanalysis.AbstractFieldSet;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.SingleFieldValue;
@@ -104,7 +102,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     return new RedundantFieldLoadAndStoreEliminationOnCode(code).run();
   }
 
-  private interface ExistingOrMaterializableValue {
+  interface ExistingOrMaterializableValue {
 
     default boolean isExistingValue() {
       return false;
@@ -131,7 +129,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     TypeElement getType(AppView<?> appView, TypeElement outType);
   }
 
-  private abstract static class ArraySlot {
+  abstract static class ArraySlot {
 
     protected final Value array;
     protected final MemberType memberType;
@@ -155,6 +153,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
     public abstract boolean maybeHasIndex(int i);
 
+    @SuppressWarnings("ReferenceEquality")
     boolean baseEquals(ArraySlot arraySlot) {
       return array == arraySlot.array && memberType == arraySlot.memberType;
     }
@@ -211,6 +210,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       return ObjectUtils.hashLLL(array, index, memberType);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object other) {
       if (this == other) {
@@ -224,11 +224,12 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     }
   }
 
-  private static class FieldAndObject {
+  static class FieldAndObject {
 
     private final DexField field;
     private final Value object;
 
+    @SuppressWarnings("ReferenceEquality")
     private FieldAndObject(DexField field, Value receiver) {
       assert receiver == receiver.getAliasedValue();
       this.field = field;
@@ -240,6 +241,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       return field.hashCode() * 7 + object.hashCode();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object other) {
       if (this == other) {
@@ -320,6 +322,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         return value;
       }
 
+      @SuppressWarnings("ReferenceEquality")
       @Override
       public boolean equals(Object obj) {
         if (this == obj) {
@@ -414,11 +417,13 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         return phi.getType();
       }
 
+      @SuppressWarnings("ReferenceEquality")
       @Override
       public boolean isMaterializablePhiFromBlock(BasicBlock block) {
         return this.block == block;
       }
 
+      @SuppressWarnings("ReferenceEquality")
       @Override
       public boolean isMaterializablePhiNotFromBlock(BasicBlock block) {
         return this.block != block;
@@ -636,6 +641,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       return CodeRewriterResult.hasChanged(hasChanged);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void processInstructionsToRemove() {
       instructionsToRemove.forEach(
           (block, instructionsToRemoveInBlock) -> {
@@ -675,22 +681,6 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
           singleTarget.getDefinition().getOptimizationInfo().getInstanceInitializerInfo(invoke);
       if (instanceInitializerInfo.mayHaveOtherSideEffectsThanInstanceFieldAssignments()) {
         killAllNonFinalActiveFields();
-      } else {
-        // The constructor does not mutate existing fields, so cached field values remain valid for
-        // load elimination. However, any field read by the constructor observes the most recent
-        // write, preventing a subsequent store from eliminating that write.
-        AbstractFieldSet readSet = instanceInitializerInfo.readSet();
-        if (readSet.isTop()) {
-          activeState.clearMostRecentFieldWrites();
-        } else if (readSet.isConcreteFieldSet()) {
-          for (DexEncodedField readField : readSet.asConcreteFieldSet().getFields()) {
-            if (readField.isStatic()) {
-              activeState.clearMostRecentStaticFieldWrite(readField.getReference());
-            } else {
-              activeState.clearMostRecentInstanceFieldWrite(readField.getReference());
-            }
-          }
-        }
       }
 
       InstanceFieldInitializationInfoCollection fieldInitializationInfos =
@@ -1444,6 +1434,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       assert mostRecentStaticFieldWrites == null;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private static <K> void intersectFieldValues(
         Map<K, ExistingOrMaterializableValue> fieldValues,
         Map<K, ExistingOrMaterializableValue> other) {

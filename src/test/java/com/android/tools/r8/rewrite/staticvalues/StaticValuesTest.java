@@ -9,6 +9,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.dex.code.DexIfEqz;
 import com.android.tools.r8.dex.code.DexSgetBoolean;
@@ -21,8 +23,21 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class StaticValuesTest extends SmaliTestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void testAllTypes() throws Exception {
@@ -138,7 +153,7 @@ public class StaticValuesTest extends SmaliTestBase {
     assertTrue(value.isDexValueString());
     assertEquals(("8"), value.asDexValueString().getValue().toString());
 
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
 
     assertEquals(StringUtils.lines("true", "1", "2", "3", "4", "5.0", "6.0", "7", "8"), result);
   }
@@ -176,7 +191,7 @@ public class StaticValuesTest extends SmaliTestBase {
     // Nothing changed in the class initializer.
     assertEquals(5, clinit.getMethod().getCode().asDexCode().instructions.length);
 
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
 
     assertEquals(StringUtils.lines("0", "1"), result);
   }
@@ -217,7 +232,7 @@ public class StaticValuesTest extends SmaliTestBase {
     // Empty class initializers should always be removed.
     assertThat(inspector.clazz("Test").clinit(), isAbsent());
 
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
     assertEquals(StringUtils.lines("null", "null", "null"), result);
   }
 
@@ -258,7 +273,7 @@ public class StaticValuesTest extends SmaliTestBase {
     // Empty class initializers should always be removed.
     assertThat(inspector.clazz("Test").clinit(), isAbsent());
 
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
     assertEquals(StringUtils.lines("Value1", "Value2", "Value2"), result);
   }
 
@@ -319,7 +334,7 @@ public class StaticValuesTest extends SmaliTestBase {
     assertTrue(value.isDexValueString());
     assertEquals(("7"), value.asDexValueString().getValue().toString());
 
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
     assertEquals(StringUtils.lines("3", "7") , result);
   }
 
@@ -394,7 +409,7 @@ public class StaticValuesTest extends SmaliTestBase {
     assertTrue(code.instructions[0] instanceof DexSgetBoolean);
     assertTrue(code.instructions[1] instanceof DexIfEqz);
 
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
 
     assertEquals(StringUtils.lines("3", "7"), result);
   }
@@ -461,7 +476,7 @@ public class StaticValuesTest extends SmaliTestBase {
     // Empty class initializers should always be removed.
     assertThat(inspector.clazz(className).clinit(), isAbsent());
 
-    String result = runArt(processedApplication, className);
+    String result = runArt(processedApplication, className, parameters.getDexVm());
     assertEquals(StringUtils.lines("Test", className, "Test", className, "Test", className),
         result);
   }
@@ -507,7 +522,7 @@ public class StaticValuesTest extends SmaliTestBase {
     assertThat(inspector.clazz(className), isPresent());
     assertThat(inspector.clazz(className).clinit(), isPresent());
 
-    String result = runArt(processedApplication, className);
+    String result = runArt(processedApplication, className, parameters.getDexVm());
 
     assertEquals(StringUtils.lines("Test2", "org.example.Test2"), result);
   }
@@ -541,7 +556,7 @@ public class StaticValuesTest extends SmaliTestBase {
     // Nothing changed in the class initializer.
     assertEquals(3, clinit.getMethod().getCode().asDexCode().instructions.length);
 
-    String result = runArt(processedApplication);
+    String result = runArt(processedApplication, parameters.getDexVm());
 
     assertEquals(StringUtils.lines("2"), result);
   }
@@ -577,7 +592,7 @@ public class StaticValuesTest extends SmaliTestBase {
 
     // Run in release mode to turn on initializer defaults rewriting.
     application = compileWithD8(application, options -> options.debug = false);
-    String result = runOnArt(application, CLASS_NAME);
+    String result = runOnArt(application, CLASS_NAME, parameters.getDexVm());
     assertEquals(result, "3");
   }
 
@@ -607,7 +622,7 @@ public class StaticValuesTest extends SmaliTestBase {
     AndroidApp application = builder.build();
 
     // The code does not run on Art, as there is a missing field.
-    ProcessResult result = runOnArtRaw(application, CLASS_NAME);
+    ProcessResult result = runOnArtRaw(application, CLASS_NAME, parameters.getDexVm());
     assertEquals(1, result.exitCode);
     assertTrue(result.stderr.contains("java.lang.NoSuchFieldError"));
 
@@ -615,7 +630,7 @@ public class StaticValuesTest extends SmaliTestBase {
     application = compileWithD8(application, options -> options.debug = false);
 
     // The code does still not run on Art, as there is still a missing field.
-    result = runOnArtRaw(application, CLASS_NAME);
+    result = runOnArtRaw(application, CLASS_NAME, parameters.getDexVm());
     assertEquals(1, result.exitCode);
     assertTrue(result.stderr.contains("java.lang.NoSuchFieldError"));
   }

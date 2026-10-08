@@ -14,6 +14,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.AccessFlags;
 import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.AndroidSdkIntFullEncoding;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -151,7 +152,8 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         {"CINNAMON_BUN", 3700_000},
       };
       for (Object[] versionCodeFull : versionCodesFull) {
-        if ((Integer) versionCodeFull[1] <= parameters.getApiLevel().getMajor() * 100_000) {
+        if ((Integer) versionCodeFull[1]
+            <= AndroidSdkIntFullEncoding.encode(parameters.getApiLevel())) {
           Assert.assertEquals(
               ((Integer) versionCodeFull[1]).intValue(),
               versionCodesFullClass

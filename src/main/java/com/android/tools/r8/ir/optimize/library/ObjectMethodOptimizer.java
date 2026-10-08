@@ -90,6 +90,7 @@ public class ObjectMethodOptimizer extends StatelessLibraryMethodModelCollection
         blocksToRemove);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static InstructionListIterator replaceWithIf(
       IRCode code,
       BasicBlockIterator blockIterator,

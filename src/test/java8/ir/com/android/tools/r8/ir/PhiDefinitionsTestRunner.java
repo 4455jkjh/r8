@@ -13,14 +13,30 @@ import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class PhiDefinitionsTestRunner extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
 
   private ProcessResult runInput;
   private String className = PhiDefinitionsTest.class.getName();
@@ -49,7 +65,9 @@ public class PhiDefinitionsTestRunner extends TestBase {
     Path originalJar = writeAndRunOriginal();
     Path inputJar = temp.getRoot().toPath().resolve("input.jar");
     build(originalJar, new ClassFileConsumer.ArchiveConsumer(inputJar));
-    runCf(inputJar, className);
+    if (parameters.isCfRuntime()) {
+      runCf(inputJar, className);
+    }
     return inputJar;
   }
 
@@ -67,6 +85,7 @@ public class PhiDefinitionsTestRunner extends TestBase {
 
   @Test
   public void testCf() throws Exception {
+    parameters.assumeCfRuntime();
     Path outCf = temp.getRoot().toPath().resolve("cf.zip");
     build(writeAndRunInputJar(), new ClassFileConsumer.ArchiveConsumer(outCf));
     runCf(outCf, className);
@@ -74,6 +93,7 @@ public class PhiDefinitionsTestRunner extends TestBase {
 
   @Test
   public void testDex() throws Exception {
+    parameters.assumeDexRuntime();
     Path outDex = temp.getRoot().toPath().resolve("dex.zip");
     build(writeAndRunInputJar(), new DexIndexedConsumer.ArchiveConsumer(outDex));
     runDex(outDex, className);
@@ -81,6 +101,7 @@ public class PhiDefinitionsTestRunner extends TestBase {
 
   @Test
   public void testCfDump() throws Exception {
+    parameters.assumeCfRuntime();
     Path outCf = temp.getRoot().toPath().resolve("dump-cf.zip");
     build(writeAndRunDumpJar(), new ClassFileConsumer.ArchiveConsumer(outCf));
     runCf(outCf, className);
@@ -88,18 +109,22 @@ public class PhiDefinitionsTestRunner extends TestBase {
 
   @Test
   public void testDexDump() throws Exception {
+    parameters.assumeDexRuntime();
     Path outDex = temp.getRoot().toPath().resolve("dump-dex.zip");
     build(writeAndRunDumpJar(), new DexIndexedConsumer.ArchiveConsumer(outDex));
     runDex(outDex, className);
   }
 
   private void runCf(Path outCf, String className) throws Exception {
-    ProcessResult runCf = ToolHelper.runJava(outCf, className);
+    ProcessResult runCf =
+        ToolHelper.runJava(parameters.asCfRuntime(), ImmutableList.of(outCf), className);
     assertEquals(runInput.toString(), runCf.toString());
   }
 
   private void runDex(Path outDex, String className) throws Exception {
-    ProcessResult runDex = ToolHelper.runArtNoVerificationErrorsRaw(outDex.toString(), className);
+    ProcessResult runDex =
+        ToolHelper.runArtNoVerificationErrorsRaw(
+            outDex.toString(), className, parameters.getDexVm());
     assertEquals(runInput.stdout, runDex.stdout);
     assertEquals(runInput.exitCode, runDex.exitCode);
   }
@@ -115,7 +140,7 @@ public class PhiDefinitionsTestRunner extends TestBase {
     if (consumer instanceof ClassFileConsumer) {
       builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
     } else {
-      builder.addLibraryFiles(ToolHelper.getAndroidJar(ToolHelper.getMinApiLevelForDexVm()));
+      builder.addLibraryFiles(ToolHelper.getAndroidJar(parameters.asDexRuntime().getMinApiLevel()));
     }
     ToolHelper.runR8(builder.build(), options -> options.invalidDebugInfoFatal = true);
   }

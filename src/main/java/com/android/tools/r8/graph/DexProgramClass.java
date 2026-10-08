@@ -242,6 +242,7 @@ public class DexProgramClass extends DexClass
     return marker;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void specify(StructuralSpecification<DexProgramClass, ?> spec) {
     spec.withItem(c -> c.type)
         .withItem(c -> c.superType)
@@ -597,6 +598,7 @@ public class DexProgramClass extends DexClass
     return ClassKind.PROGRAM;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void setKotlinInfo(KotlinClassLevelInfo kotlinInfo) {
     assert kotlinInfo != null;
     assert this.kotlinInfo == getNoKotlinInfo();
@@ -653,6 +655,7 @@ public class DexProgramClass extends DexClass
    *       of a class that implements C directly or indirectly.
    * </ul>
    */
+  @SuppressWarnings("ReferenceEquality")
   private boolean internalInterfaceMayHaveInitializationSideEffects(
       AppView<?> appView,
       DexClass initialAccessHolder,

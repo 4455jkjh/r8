@@ -60,6 +60,7 @@ public class AndroidTextTextUtilsMethodOptimizer extends StatelessLibraryMethodM
     return instructionIterator;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void optimizeEquals(
       IRCode code, InstructionListIterator instructionIterator, InvokeMethod invoke) {
     Value first = invoke.getFirstArgument().getAliasedValue();

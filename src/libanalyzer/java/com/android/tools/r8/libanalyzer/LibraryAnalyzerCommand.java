@@ -145,6 +145,7 @@ public final class LibraryAnalyzerCommand {
       return this;
     }
 
+    @SuppressWarnings("AssignmentExpression")
     public <OS extends OutputStream> Builder setOutputConsumer(
         ByteArrayConsumer<OS> outputConsumer) {
       return setInternalOutputConsumer(

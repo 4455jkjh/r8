@@ -527,7 +527,7 @@ public class StackTraceElementProxyRetracerImpl<T, ST extends StackTraceElementP
       return 0;
     }
 
-    private static class Builder<T, ST extends StackTraceElementProxy<T, ST>> {
+    static class Builder<T, ST extends StackTraceElementProxy<T, ST>> {
 
       private final ST originalElement;
       private RetracedClassReference classContext;

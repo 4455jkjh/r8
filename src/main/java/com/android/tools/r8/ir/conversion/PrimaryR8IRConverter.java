@@ -54,6 +54,7 @@ public class PrimaryR8IRConverter extends IRConverter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexApplication internalOptimize(
       AppView<AppInfoWithLiveness> appView, ExecutorService executorService)
       throws ExecutionException {

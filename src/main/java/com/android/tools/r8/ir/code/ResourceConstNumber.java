@@ -79,6 +79,7 @@ public class ResourceConstNumber extends ConstInstruction {
     throw new Unreachable("We map out of ResourceConstNumber before register allocation");
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean identicalNonValueNonPositionParts(Instruction other) {
     if (other == this) {

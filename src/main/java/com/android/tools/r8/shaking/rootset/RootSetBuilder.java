@@ -734,6 +734,7 @@ public class RootSetBuilder {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void propagateAssumeRules(
       DexClass clazz, DexMethod reference, Collection<DexClass> subclasses) {
     AssumeMethodInfoCollection.Builder infoToBePropagated = null;
@@ -925,6 +926,7 @@ public class RootSetBuilder {
       visitAllSuperInterfaces(originalClazz.type);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void visitAllSuperInterfaces(DexType type) {
       DexClass clazz = appView.definitionFor(type);
       if (clazz == null || clazz.isNotProgramClass() || !seenTypes.add(type)) {
@@ -959,6 +961,7 @@ public class RootSetBuilder {
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void tryAndKeepMethodOnClass(DexClassAndMethod method, ProguardMemberRule rule) {
       SingleResolutionResult<?> resolutionResult =
           appView

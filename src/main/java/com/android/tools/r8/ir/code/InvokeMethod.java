@@ -364,6 +364,7 @@ public abstract class InvokeMethod extends Invoke {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     if (!appView.hasClassHierarchy()) {

@@ -18,6 +18,7 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.apimodel.ApiModelMockClassTest.TestClass;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.AndroidSdkIntFullEncoding;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
@@ -37,9 +38,12 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
 
     private ApiLevelTestConfiguration(
         AndroidApiLevel libraryClassLevel, AndroidApiLevel libraryMethodLevel) {
-      assert libraryClassLevel.getMinor() == 0; // Test can only handle minor of 0 here.
       this.libraryClassLevel = libraryClassLevel;
       this.libraryMethodLevel = libraryMethodLevel;
+    }
+
+    public int getLibraryClassVersionFull() {
+      return AndroidSdkIntFullEncoding.encode(libraryClassLevel);
     }
 
     @Override
@@ -61,10 +65,16 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
   @Parameters(name = "{0} {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        getTestParameters()
+            // BAKLAVA_1 is added to test minor versions.
+            .withApiLevel(AndroidApiLevel.BAKLAVA_1)
+            .withAllRuntimesAndApiLevels()
+            .build(),
         ImmutableList.of(
             new ApiLevelTestConfiguration(AndroidApiLevel.M, AndroidApiLevel.Q),
-            new ApiLevelTestConfiguration(AndroidApiLevel.BAKLAVA, AndroidApiLevel.BAKLAVA_1)));
+            new ApiLevelTestConfiguration(AndroidApiLevel.BAKLAVA, AndroidApiLevel.BAKLAVA_1),
+            new ApiLevelTestConfiguration(
+                AndroidApiLevel.BAKLAVA_1, AndroidApiLevel.CINNAMON_BUN)));
   }
 
   public Method apiMethod() throws Exception {
@@ -107,7 +117,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            Integer.toString(apiLevels.libraryClassLevel.getMajor()))
+            Integer.toString(apiLevels.getLibraryClassVersionFull()))
         .apply(this::checkOutput)
         .inspect(this::inspect);
   }
@@ -123,7 +133,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            Integer.toString(apiLevels.libraryClassLevel.getMajor()))
+            Integer.toString(apiLevels.getLibraryClassVersionFull()))
         .apply(this::checkOutput)
         .inspect(this::inspect);
   }
@@ -138,7 +148,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            Integer.toString(apiLevels.libraryClassLevel.getMajor()))
+            Integer.toString(apiLevels.getLibraryClassVersionFull()))
         .apply(this::checkOutput)
         .inspect(this::inspect);
   }
@@ -171,7 +181,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
   public static class Main {
 
     public static void main(String[] args) {
-      if (AndroidBuildVersion.VERSION >= Integer.parseInt(args[0])) {
+      if (AndroidBuildVersion.VERSION_FULL >= Integer.parseInt(args[0])) {
         new LibraryClass().foo();
       } else {
         System.out.println("Hello World");

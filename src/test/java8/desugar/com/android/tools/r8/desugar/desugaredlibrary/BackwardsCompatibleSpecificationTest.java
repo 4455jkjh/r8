@@ -6,13 +6,13 @@ package com.android.tools.r8.desugar.desugaredlibrary;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK8;
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -43,7 +43,8 @@ public class BackwardsCompatibleSpecificationTest extends DesugaredLibraryTestBa
   }
 
   private Path getReleaseJar() {
-    return Paths.get(ToolHelper.THIRD_PARTY_DIR, "r8-releases", release, "r8lib.jar");
+    assertEquals("2.0.74", release);
+    return TestDeps.getR8V2_0_74LibJar();
   }
 
   @Test

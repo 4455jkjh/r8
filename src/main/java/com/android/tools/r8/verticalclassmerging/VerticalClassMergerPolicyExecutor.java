@@ -58,6 +58,7 @@ public class VerticalClassMergerPolicyExecutor extends PolicyExecutor<VerticalMe
         groups, Comparator.comparing(group -> group.getSource().getType()));
   }
 
+  @SuppressWarnings("NonApiType")
   @Override
   protected LinkedList<VerticalMergeGroup> apply(
       Policy policy, LinkedList<VerticalMergeGroup> linkedGroups, ExecutorService executorService)
@@ -66,6 +67,7 @@ public class VerticalClassMergerPolicyExecutor extends PolicyExecutor<VerticalMe
     return apply(policy.asVerticalClassMergerPolicy(), linkedGroups);
   }
 
+  @SuppressWarnings("NonApiType")
   private <T> LinkedList<VerticalMergeGroup> apply(
       VerticalClassMergerPolicyWithPreprocessing<T> policy,
       LinkedList<VerticalMergeGroup> linkedGroups) {

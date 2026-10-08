@@ -247,7 +247,7 @@ public abstract class TreeShakingTest extends TestBase {
           Collections.singletonList(outJar.toString()),
           getMainClass(),
           extraArtArgs,
-          null);
+          dexVm);
     }
     if (dexComparator != null) {
       CodeInspector ref = new CodeInspector(Paths.get(d8Output));

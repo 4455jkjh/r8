@@ -893,7 +893,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       }
       UncheckedApiLevel apiLevel = getUncheckedMinApiLevel();
       if (apiLevel.isGreaterThan(AndroidApiLevel.LATEST.asUnchecked())) {
-        if (!(apiLevel.equals(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT))) {
+        if (!apiLevel.equals(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT)) {
           reporter.warning(
               new UnsupportedAndroidApiLevelDiagnostic(apiLevel.getMajor(), apiLevel.getMinor()));
         }

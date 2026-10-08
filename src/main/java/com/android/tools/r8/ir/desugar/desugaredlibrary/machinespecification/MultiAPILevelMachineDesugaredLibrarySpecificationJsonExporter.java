@@ -151,6 +151,7 @@ public class MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter {
     }
   }
 
+  @SuppressWarnings("NonApiType")
   private void writeFlagLinkedHashMapToSpecificationDescriptor(
       String key,
       LinkedHashMap<? extends DexItem, ? extends SpecificationDescriptor> map,
@@ -199,6 +200,7 @@ public class MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter {
     writeMembersWithFlags(AMEND_LIBRARY_FIELD_KEY, flags.getAmendLibraryField(), toJson);
   }
 
+  @SuppressWarnings("NonApiType")
   private LinkedHashMap<String, ?> specificationDescriptorLinkedHashMapToJsonStruct(
       LinkedHashMap<? extends DexItem, ? extends SpecificationDescriptor> map) {
     // Already sorted with custom advanced deterministic sort, maintain the order.
@@ -207,12 +209,14 @@ public class MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter {
     return stringMap;
   }
 
+  @SuppressWarnings("NonApiType")
   private TreeMap<String, String> mapToJsonStruct(Map<? extends DexItem, ? extends DexItem> map) {
     TreeMap<String, String> stringMap = new TreeMap<>();
     map.forEach((k, v) -> stringMap.put(toString(k), toString(v)));
     return stringMap;
   }
 
+  @SuppressWarnings("NonApiType")
   private TreeMap<String, ?> specificationDescriptorMapToJsonStruct(
       Map<? extends DexItem, ? extends SpecificationDescriptor> map) {
     TreeMap<String, Object> stringMap = new TreeMap<>();

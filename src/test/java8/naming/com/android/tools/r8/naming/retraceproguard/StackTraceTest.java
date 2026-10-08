@@ -7,10 +7,19 @@ package com.android.tools.r8.naming.retraceproguard;
 import static com.android.tools.r8.naming.retraceproguard.StackTrace.TAB_AT_PREFIX;
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.naming.retraceproguard.StackTrace.StackTraceLine;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class StackTraceTest {
 
   private static String lineOne =
@@ -25,6 +34,14 @@ public class StackTraceTest {
 
   private static String oneLineStackTrace = lineOne;
   private static String twoLineStackTrace = lineTwo + lineOne;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return TestBase.getTestParameters().withDefaultCfRuntime().withDexRuntimes().build();
+  }
 
   private void testEquals(String stderr) {
     StackTrace stackTrace = StackTrace.extractFromJvm(stderr);
@@ -61,23 +78,28 @@ public class StackTraceTest {
 
   @Test
   public void testOneLineJvm() {
+    parameters.assumeCfRuntime();
     checkOneLine(StackTrace.extractFromJvm(oneLineStackTrace));
   }
 
   @Test
   public void testOneLineArt() {
-    checkOneLine(StackTrace.extractFromArt(oneLineStackTrace));
-    checkOneLine(StackTrace.extractFromArt(oneLineStackTrace + randomArtLine));
-    checkOneLine(StackTrace.extractFromArt(randomArtLine + oneLineStackTrace));
+    parameters.assumeDexRuntime();
+    DexVm vm = parameters.getDexVm();
+    checkOneLine(StackTrace.extractFromArt(oneLineStackTrace, vm));
+    checkOneLine(StackTrace.extractFromArt(oneLineStackTrace + randomArtLine, vm));
+    checkOneLine(StackTrace.extractFromArt(randomArtLine + oneLineStackTrace, vm));
   }
 
   @Test
   public void testTwoLinesJvm() {
+    parameters.assumeCfRuntime();
     checkTwoLines(StackTrace.extractFromJvm(twoLineStackTrace));
   }
 
   @Test
   public void testTwoLinesArt() {
+    parameters.assumeCfRuntime();
     checkTwoLines(StackTrace.extractFromJvm(twoLineStackTrace));
     checkTwoLines(StackTrace.extractFromJvm(twoLineStackTrace + randomArtLine));
     checkTwoLines(StackTrace.extractFromJvm(randomArtLine + twoLineStackTrace));
@@ -86,11 +108,13 @@ public class StackTraceTest {
 
   @Test
   public void testEqualsOneLine() {
+    parameters.assumeCfRuntime();
     testEquals(lineOne);
   }
 
   @Test
   public void testEqualsTwoLine() {
+    parameters.assumeCfRuntime();
     testEquals(twoLineStackTrace);
   }
 }

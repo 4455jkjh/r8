@@ -138,6 +138,7 @@ public class RecordFieldValuesRewriter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void splitIfCatchHandlers(
       IRCode code,
       BasicBlock blockWithIncorrectThrowingInstructions,

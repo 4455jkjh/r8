@@ -183,6 +183,7 @@ public abstract class AbstractAccessContexts {
     /**
      * Returns true if this field is written by a method in the program other than {@param method}.
      */
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean isAccessedOutside(DexEncodedMethod method) {
       for (ProgramMethodSet encodedWriteContexts : accessesWithContexts.values()) {

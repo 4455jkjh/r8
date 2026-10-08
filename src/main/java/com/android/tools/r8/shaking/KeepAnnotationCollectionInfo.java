@@ -206,7 +206,7 @@ public abstract class KeepAnnotationCollectionInfo {
     private static final KeepAnnotationCollectionInfo INSTANCE =
         new TopKeepAnnotationCollectionInfo();
 
-    public static KeepAnnotationCollectionInfo getInstance() {
+    static KeepAnnotationCollectionInfo getInstance() {
       return INSTANCE;
     }
 
@@ -233,7 +233,7 @@ public abstract class KeepAnnotationCollectionInfo {
     private static final KeepAnnotationCollectionInfo INSTANCE =
         new BottomKeepAnnotationCollectionInfo();
 
-    public static KeepAnnotationCollectionInfo getInstance() {
+    static KeepAnnotationCollectionInfo getInstance() {
       return INSTANCE;
     }
 
@@ -253,8 +253,7 @@ public abstract class KeepAnnotationCollectionInfo {
     }
   }
 
-  private static final class IntermediateKeepAnnotationCollectionInfo
-      extends KeepAnnotationCollectionInfo {
+  static final class IntermediateKeepAnnotationCollectionInfo extends KeepAnnotationCollectionInfo {
     private final KeepAnnotationInfo anyTypeInfo;
     private final Map<DexType, KeepAnnotationInfo> specificTypeInfo;
 
@@ -357,6 +356,7 @@ public abstract class KeepAnnotationCollectionInfo {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isLessThanOrEqualTo(KeepAnnotationCollectionInfo other) {
     if (this == other) {
       return true;
@@ -373,6 +373,7 @@ public abstract class KeepAnnotationCollectionInfo {
     return asIntermediate().internalIsLessThanOrEqualTo(other.asIntermediate());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isEqualTo(KeepAnnotationCollectionInfo other) {
     if (isTopOrBottom() || other.isTopOrBottom()) {
       return this == other;
@@ -456,6 +457,7 @@ public abstract class KeepAnnotationCollectionInfo {
           && Objects.equals(specificTypeInfo, intermediate.specificTypeInfo);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void destructiveJoin(Builder other) {
       // The empty collection is bottom which joins as identity.
       if (other.isBottom()) {

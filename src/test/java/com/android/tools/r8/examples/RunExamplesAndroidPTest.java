@@ -12,6 +12,8 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.BaseCommand;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.origin.Origin;
@@ -46,7 +48,12 @@ import java.util.zip.ZipFile;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public abstract class RunExamplesAndroidPTest<
         B extends BaseCommand.Builder<? extends BaseCommand, B>>
     extends TestBase {
@@ -198,6 +205,14 @@ public abstract class RunExamplesAndroidPTest<
           .put(DexVm.Version.DEFAULT, ImmutableList.of())
           .build();
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
@@ -205,7 +220,7 @@ public abstract class RunExamplesAndroidPTest<
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   boolean failsOn(Map<DexVm.Version, List<String>> failsOn, String name) {
-    DexVm.Version vmVersion = ToolHelper.getDexVm().getVersion();
+    DexVm.Version vmVersion = parameters.getDexRuntimeVersion();
     return failsOn.containsKey(vmVersion)
         && failsOn.get(vmVersion).contains(name);
   }
@@ -242,7 +257,8 @@ public abstract class RunExamplesAndroidPTest<
         ToolHelper.runArtNoVerificationErrors(
             Arrays.stream(dexes).map(Path::toString).collect(Collectors.toList()),
             qualifiedMainClass,
-            null);
+            null,
+            parameters.getDexVm());
     if (!expectedToFail) {
       ToolHelper.ProcessResult javaResult =
           ToolHelper.runJava(ImmutableList.copyOf(jars), qualifiedMainClass);

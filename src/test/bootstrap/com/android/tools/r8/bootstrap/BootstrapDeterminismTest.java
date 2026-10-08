@@ -90,6 +90,7 @@ public class BootstrapDeterminismTest extends TestBase {
     Path out = temp.newFolder().toPath().resolve("out.jar");
     testForD8(Backend.DEX)
         .addProgramFiles(ToolHelper.getR8WithRelocatedDeps())
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
         .addOptionsModification(
             options -> {

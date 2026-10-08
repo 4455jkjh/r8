@@ -45,8 +45,8 @@ public abstract class ProguardPathList {
   }
 
   private static class FileNameMatcher {
-    public final boolean negated;
-    public final String pattern;
+    final boolean negated;
+    final String pattern;
 
     FileNameMatcher(boolean negated, String pattern) {
       this.negated = negated;

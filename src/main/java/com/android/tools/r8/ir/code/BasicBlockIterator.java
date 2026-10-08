@@ -64,6 +64,7 @@ public class BasicBlockIterator implements ListIterator<BasicBlock> {
     return listIterator.previousIndex();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public BasicBlock positionAfterPreviousBlock(BasicBlock previousBlock) {
     return positionAfterPreviousBlock(currentBlock -> currentBlock == previousBlock);
   }
@@ -73,6 +74,7 @@ public class BasicBlockIterator implements ListIterator<BasicBlock> {
     return next();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public BasicBlock previousUntil(BasicBlock stoppingCriterion) {
     return previousUntil(block -> block == stoppingCriterion);
   }

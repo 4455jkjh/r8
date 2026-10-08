@@ -88,10 +88,12 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
         : new ConcreteMutableFieldSet(writtenBeforeReadSet);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean isDefinitelyThis(Value thisValue, Value value) {
     return value.getAliasedValue() == thisValue;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean isMaybeThis(Value thisValue, Value value) {
     return value == thisValue || thisAliases.contains(value);
   }
@@ -280,6 +282,7 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
         && thisAliases.equals(state.thisAliases);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isIdentical(
       boolean otherIsThisEscaped,
       boolean otherIsThisInitialized,

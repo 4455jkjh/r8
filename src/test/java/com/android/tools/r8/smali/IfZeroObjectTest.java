@@ -7,6 +7,8 @@ package com.android.tools.r8.smali;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
@@ -14,10 +16,23 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class IfZeroObjectTest extends SmaliTestBase {
 
   public static final String CLASS = "Test";
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void testObjectIfs() throws Throwable {
@@ -64,6 +79,6 @@ public class IfZeroObjectTest extends SmaliTestBase {
     main.add("  return-void");
     builder.addMainMethod(2, main.toArray(StringUtils.EMPTY_ARRAY));
 
-    return runOnArtRaw(builder.build(), clazz);
+    return runOnArtRaw(builder.build(), clazz, parameters.getDexVm());
   }
 }

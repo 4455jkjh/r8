@@ -9,6 +9,8 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -16,8 +18,21 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class B77240639 extends TestBase {
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Test
   public void test1() throws Exception {
     AndroidApp app = compileWithD8(readClasses(TestClass.class));
@@ -32,7 +47,8 @@ public class B77240639 extends TestBase {
     CodeInspector inspector = new CodeInspector(app);
     ClassSubject clazz = inspector.clazz(OtherTestClass.class);
     assertThat(clazz, isPresent());
-    ToolHelper.ProcessResult d8Result = runOnArtRaw(app, OtherTestClass.class.getCanonicalName());
+    ToolHelper.ProcessResult d8Result =
+        runOnArtRaw(app, OtherTestClass.class.getCanonicalName(), parameters.getDexVm());
     assertThat(d8Result.stderr, not(containsString("StringIndexOutOfBoundsException")));
   }
 }

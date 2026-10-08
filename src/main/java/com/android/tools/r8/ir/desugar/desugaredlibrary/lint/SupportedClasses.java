@@ -124,7 +124,7 @@ public class SupportedClasses {
       return new Builder(clazz);
     }
 
-    private static class Builder {
+    static class Builder {
 
       private final DexClass clazz;
       private ClassAnnotation classAnnotation;
@@ -167,6 +167,7 @@ public class SupportedClasses {
         supportedFields.put(field.getReference(), field);
       }
 
+      @SuppressWarnings("ReferenceEquality")
       void annotateClass(ClassAnnotation annotation) {
         assert annotation != null;
         assert classAnnotation == null || annotation == classAnnotation;
@@ -432,6 +433,7 @@ public class SupportedClasses {
       return new FieldAnnotation(true, api, api);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public FieldAnnotation combine(FieldAnnotation other) {
       if (this == getDefault()) {
         return other;
@@ -502,6 +504,7 @@ public class SupportedClasses {
       return covariantReturnSupported;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public MethodAnnotation combine(MethodAnnotation other) {
       if (this == getDefault()) {
         return other;

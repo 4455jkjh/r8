@@ -65,7 +65,7 @@ public class LineNumberOptimizationTest extends DebugTestBase {
                 })
             .compile();
 
-    DebugTestConfig config = result.debugConfig();
+    DebugTestConfig config = result.debugConfig(parameters.getRuntime());
     if (writeProguardMap) {
       config.setProguardMap(result.writeProguardMap(), MISSING_FILE_IS_EMPTY_MAP);
     }

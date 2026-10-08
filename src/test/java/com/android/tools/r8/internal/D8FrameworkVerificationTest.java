@@ -5,40 +5,51 @@ package com.android.tools.r8.internal;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.nio.file.Paths;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class D8FrameworkVerificationTest extends CompilationTestBase {
   private static final int MIN_SDK = AndroidApiLevel.N.getMajor();
   private static final String JAR =
       ToolHelper.THIRD_PARTY_DIR + "framework/framework_160115954.jar";
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimesStartingFromIncluding(Version.V7_0_0).build();
+  }
+
   @Test
-  @IgnoreIfVmOlderThan(Version.V7_0_0)
   public void verifyDebugBuild() throws Exception {
     runAndCheckVerification(
         D8Command.builder()
             .addProgramFiles(Paths.get(JAR))
             .setMode(CompilationMode.DEBUG)
             .setMinApiLevel(MIN_SDK),
-        JAR);
+        JAR,
+        parameters.getDexVm());
   }
 
   @Test
-  @IgnoreIfVmOlderThan(Version.V7_0_0)
   public void verifyReleaseBuild() throws Exception {
     runAndCheckVerification(
         D8Command.builder()
             .addProgramFiles(Paths.get(JAR))
             .setMode(CompilationMode.RELEASE)
             .setMinApiLevel(MIN_SDK),
-        JAR);
+        JAR,
+        parameters.getDexVm());
   }
 }

@@ -25,9 +25,11 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ValueUtils;
 import com.google.common.collect.ImmutableList;
+import java.util.Objects;
 import java.util.Set;
 
-public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollection {
+public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollection
+    implements MethodOptimizerCapabilities {
 
   private final AppView<?> appView;
   private final DexItemFactory dexItemFactory;
@@ -40,6 +42,11 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
     this.dexItemFactory = dexItemFactory;
     this.objectsMethods = dexItemFactory.objectsMethods;
     this.options = appView.options();
+  }
+
+  @Override
+  public AppView<?> getAppView() {
+    return appView;
   }
 
   @Override
@@ -59,6 +66,11 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
       Set<BasicBlock> blocksToRemove) {
     DexMethod singleTargetReference = singleTarget.getReference();
     switch (singleTargetReference.getName().getFirstByteAsChar()) {
+      case 'c':
+        if (singleTargetReference.isIdenticalTo(objectsMethods.checkIndex)) {
+          optimizeIntIntToIntFunction(code, instructionIterator, invoke, Objects::checkIndex);
+        }
+        break;
       case 'e':
         if (singleTargetReference == objectsMethods.equals) {
           return optimizeEquals(

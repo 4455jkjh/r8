@@ -13,6 +13,7 @@ import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -21,6 +22,10 @@ import java.util.function.BiFunction;
 
 /** Shared test configuration for D8 compiled resources from the "kotlinR8TestResources/loops". */
 class KotlinLoopD8Config extends D8DebugTestConfig {
+
+  public KotlinLoopD8Config(DexRuntime runtime) {
+    super(runtime);
+  }
 
   static final KotlinCompileMemoizer compiledKotlinJars =
       getCompileMemoizer(KotlinTestBase.getKotlinFilesInResource("loops"))
@@ -40,9 +45,9 @@ class KotlinLoopD8Config extends D8DebugTestConfig {
   }
 
   public static KotlinLoopD8Config build(
-      KotlinTestParameters kotlinTestParameters, AndroidApiLevel apiLevel) {
+      KotlinTestParameters kotlinTestParameters, AndroidApiLevel apiLevel, DexRuntime runtime) {
     try {
-      KotlinLoopD8Config kotlinDebugD8Config = new KotlinLoopD8Config();
+      KotlinLoopD8Config kotlinDebugD8Config = new KotlinLoopD8Config(runtime);
       kotlinDebugD8Config.addPaths(compiledResourcesMemoized.apply(kotlinTestParameters, apiLevel));
       return kotlinDebugD8Config;
     } catch (Throwable e) {

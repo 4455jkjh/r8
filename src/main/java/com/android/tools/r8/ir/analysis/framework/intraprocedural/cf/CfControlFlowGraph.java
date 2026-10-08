@@ -300,6 +300,7 @@ public class CfControlFlowGraph implements ControlFlowGraph<CfBlock, CfInstructi
       return isBlockEntry(nextInstruction);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void updateCatchHandlers(
         CfLabel instruction,
         Deque<CfTryCatch> activeCatchHandlers,
@@ -319,6 +320,7 @@ public class CfControlFlowGraph implements ControlFlowGraph<CfBlock, CfInstructi
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean verifyCatchHandlersUnchanged(
         CfLabel instruction,
         Deque<CfTryCatch> activeCatchHandlers,

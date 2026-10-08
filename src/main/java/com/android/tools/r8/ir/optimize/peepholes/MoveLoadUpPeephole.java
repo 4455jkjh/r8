@@ -54,6 +54,8 @@ public class MoveLoadUpPeephole implements BasicBlockPeephole {
             }
             return false;
           });
+
+  @SuppressWarnings("ReferenceEquality")
   private final Wildcard canMoveOver =
       new Wildcard(
           (i) -> {
@@ -74,6 +76,7 @@ public class MoveLoadUpPeephole implements BasicBlockPeephole {
   // This searches in reverse, so the pattern is built from the bottom.
   private final PeepholeLayout layout = PeepholeLayout.lookBackward(firstLoad, canMoveOver);
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean match(InstructionListIterator it) {
     stackHeight = 0;

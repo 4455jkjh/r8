@@ -54,17 +54,41 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
    * predecessors now target {@code otherBlock} directly, allowing the bottom-up pass to cascade and
    * merge identical predecessor blocks as well.
    */
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code, RegisterAllocator allocator) {
     boolean hasChanged = false;
     Set<BasicBlock> blocksToRemove = Sets.newIdentityHashSet();
     BasicBlockInstructionsEquivalence equivalence =
         new BasicBlockInstructionsEquivalence(code, allocator);
+    if (!appView.options().getTestingOptions().enableDeduplicateAllIdenticalBlocks) {
+      boolean changed;
+      do {
+        changed = false;
+        for (BasicBlock block : code.blocks) {
+          Map<Wrapper<BasicBlock>, BasicBlock> seenPreds = new HashMap<>();
+          for (int predIndex = 0; predIndex < block.getPredecessors().size(); predIndex++) {
+            BasicBlock pred = block.getPredecessors().get(predIndex);
+            if (pred.getInstructions().size() == 1) {
+              continue;
+            }
+            BasicBlock otherPred = seenPreds.putIfAbsent(equivalence.wrap(pred), pred);
+            if (otherPred != null) {
+              changed = true;
+              hasChanged = true;
+              mergeBlocks(otherPred, pred, allocator, equivalence, null, blocksToRemove);
+            }
+          }
+        }
+      } while (changed);
+      code.removeBlocks(blocksToRemove);
+      return CodeRewriterResult.hasChanged(hasChanged);
+    }
     Map<Wrapper<BasicBlock>, BasicBlock> seenBlocks = new HashMap<>();
     Iterator<BasicBlock> iterator = code.blocks.descendingIterator();
     while (iterator.hasNext()) {
       BasicBlock block = iterator.next();
-      if (block == code.entryBlock() || !isWorthDeduplicating(code, block)) {
+      if (block == code.entryBlock() || block.getInstructions().size() == 1) {
         continue;
       }
       BasicBlock otherBlock = seenBlocks.putIfAbsent(equivalence.wrap(block), block);
@@ -75,14 +99,6 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
     }
     code.removeBlocks(blocksToRemove);
     return CodeRewriterResult.hasChanged(hasChanged);
-  }
-
-  // Single-instruction blocks are not worth deduplicating, except returns when generating DEX:
-  // ART compiles each return to an epilogue restoring the callee-saved registers, whereas the goto
-  // replacing a return is never larger than the return in DEX (see DexBuilder).
-  private static boolean isWorthDeduplicating(IRCode code, BasicBlock block) {
-    return block.getInstructions().size() > 1
-        || (block.exit().isReturn() && code.getConversionOptions().isGeneratingDex());
   }
 
   private static void mergeBlocks(
@@ -105,7 +121,13 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
     exit.setPosition(kept.getPosition());
     removed.getInstructions().addLast(exit);
 
-    if (kept.entry().isMoveException() || !isFallthroughBlock(removed)) {
+    if (seenBlocks == null) {
+      equivalence.clearComputedHash(removed);
+      if (kept.entry().isMoveException()) {
+        unlinkTrivialGotoBlock(removed, kept);
+        blocksToRemove.add(removed);
+      }
+    } else if (kept.entry().isMoveException() || !isFallthroughBlock(removed)) {
       for (BasicBlock pred : removed.getPredecessors()) {
         seenBlocks.remove(equivalence.wrap(pred));
         equivalence.clearComputedHash(pred);

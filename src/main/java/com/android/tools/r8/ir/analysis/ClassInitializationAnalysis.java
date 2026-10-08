@@ -95,6 +95,7 @@ public class ClassInitializationAnalysis {
     return TRIVIAL;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isClassDefinitelyLoadedBeforeInstruction(
       DexType type, Instruction instruction, Timing timing) {
     ProgramMethod context = code.context();

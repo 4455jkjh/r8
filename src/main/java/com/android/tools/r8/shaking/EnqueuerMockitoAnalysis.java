@@ -118,10 +118,8 @@ class EnqueuerMockitoAnalysis
           || !invokedMethod.getParameter(0).isIdenticalTo(dexItemFactory.objectType)) {
         return true;
       }
+      // The value may be a phi.
       Value objectValue = invoke.getFirstArgument();
-      if (objectValue == null || objectValue.isPhi()) {
-        return true;
-      }
       ClassTypeElement classType = objectValue.getType().asClassType();
       if (classType == null) {
         return true;

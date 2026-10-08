@@ -44,6 +44,7 @@ public class EmulatedDispatchMethodDescriptor implements SpecificationDescriptor
   private final DerivedMethod forwardingMethod;
   private final LinkedHashMap<DexType, DerivedMethod> dispatchCases;
 
+  @SuppressWarnings("NonApiType")
   public EmulatedDispatchMethodDescriptor(
       DerivedMethod interfaceMethod,
       DerivedMethod emulatedDispatchMethod,
@@ -67,6 +68,7 @@ public class EmulatedDispatchMethodDescriptor implements SpecificationDescriptor
     return forwardingMethod;
   }
 
+  @SuppressWarnings("NonApiType")
   public LinkedHashMap<DexType, DerivedMethod> getDispatchCases() {
     return dispatchCases;
   }

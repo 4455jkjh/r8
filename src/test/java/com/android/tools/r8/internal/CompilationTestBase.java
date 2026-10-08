@@ -19,6 +19,7 @@ import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.naming.MemberNaming.FieldSignature;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
@@ -64,12 +65,13 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
     reporter = new Reporter(handler);
   }
 
-  public AndroidApp runAndCheckVerification(D8Command.Builder builder, String referenceApk)
+  public AndroidApp runAndCheckVerification(
+      D8Command.Builder builder, String referenceApk, DexVm vm)
       throws IOException, CompilationFailedException {
     AndroidAppConsumers appSink = new AndroidAppConsumers(builder);
     D8.run(builder.build());
     AndroidApp result = appSink.build();
-    checkVerification(result, referenceApk);
+    checkVerification(result, referenceApk, vm);
     return result;
   }
 
@@ -79,10 +81,18 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
       String referenceApk,
       List<String> pgConfs,
       Consumer<InternalOptions> optionsConsumer,
-      List<String> inputs)
+      List<String> inputs,
+      DexVm vm)
       throws IOException, CompilationFailedException {
-    return runAndCheckVerification(compiler, mode, referenceApk, pgConfs, optionsConsumer,
-        DexIndexedConsumer::emptyConsumer, inputs);
+    return runAndCheckVerification(
+        compiler,
+        mode,
+        referenceApk,
+        pgConfs,
+        optionsConsumer,
+        DexIndexedConsumer::emptyConsumer,
+        inputs,
+        vm);
   }
 
   public AndroidApp runAndCheckVerification(
@@ -92,7 +102,8 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
       List<String> pgConfs,
       Consumer<InternalOptions> optionsConsumer,
       Supplier<DexIndexedConsumer> dexIndexedConsumerSupplier,
-      List<String> inputs)
+      List<String> inputs,
+      DexVm vm)
       throws IOException, CompilationFailedException {
     assertTrue(referenceApk == null || new File(referenceApk).exists());
     AndroidAppConsumers outputApp;
@@ -134,16 +145,16 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
       outputApp = new AndroidAppConsumers(builder);
       D8.run(builder.build());
     }
-    return checkVerification(outputApp.build(), referenceApk);
+    return checkVerification(outputApp.build(), referenceApk, vm);
   }
 
-  public AndroidApp checkVerification(AndroidApp outputApp, String referenceApk)
+  public AndroidApp checkVerification(AndroidApp outputApp, String referenceApk, DexVm vm)
       throws IOException {
     Path out = temp.getRoot().toPath().resolve("all.zip");
     Path oatFile = temp.getRoot().toPath().resolve("all.oat");
     outputApp.writeToZipForTesting(out, OutputMode.DexIndexed);
     try {
-      ToolHelper.runDex2Oat(out, oatFile, temp.newFolder().toPath());
+      ToolHelper.runDex2Oat(out, oatFile, temp.newFolder().toPath(), vm);
       return outputApp;
     } catch (AssertionError e) {
       if (referenceApk == null) {

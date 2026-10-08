@@ -176,6 +176,7 @@ public class EnumUnboxingCandidateInfoCollection {
 
     private Set<DexProgramClass> subclasses = null;
 
+    @SuppressWarnings("ReferenceEquality")
     public EnumUnboxingCandidateInfo(
         AppView<AppInfoWithLiveness> appView,
         DexProgramClass enumClass,

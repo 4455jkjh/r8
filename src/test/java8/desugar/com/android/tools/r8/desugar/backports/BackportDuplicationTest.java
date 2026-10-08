@@ -69,6 +69,7 @@ public class BackportDuplicationTest extends TestBase {
         .withAllRuntimes()
         .withApiLevel(AndroidApiLevel.J)
         .enableApiLevelsForCf()
+        .withoutCollapsedDexRuntimes()
         .build();
   }
 
@@ -303,7 +304,7 @@ public class BackportDuplicationTest extends TestBase {
       return ToolHelper.runJava(
           parameters.getRuntime().asCf(), outputsRoundTwo, TestClass.class.getTypeName());
     } else {
-      ArtCommandBuilder builder = new ArtCommandBuilder();
+      ArtCommandBuilder builder = new ArtCommandBuilder(parameters.getDexVm());
       builder.setMainClass(TestClass.class.getTypeName());
       outputsRoundTwo.forEach(p -> builder.appendClasspath(p.toAbsolutePath().toString()));
       return ToolHelper.runArtRaw(builder);

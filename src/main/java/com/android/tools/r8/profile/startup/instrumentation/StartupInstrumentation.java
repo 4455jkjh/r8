@@ -190,6 +190,7 @@ public class StartupInstrumentation {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void instrumentMethod(ProgramMethod method, boolean skipMethodLogging) {
     // Disable StringSwitch conversion to avoid having to run the StringSwitchRemover before
     // finalizing the code.

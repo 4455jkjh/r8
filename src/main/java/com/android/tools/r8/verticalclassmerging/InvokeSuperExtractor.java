@@ -49,6 +49,7 @@ public class InvokeSuperExtractor extends DefaultUseRegistry<ProgramMethod> {
     handleInvokeSuper(method);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void handleInvokeSuper(DexMethod method) {
     MethodLookupResult lookupResult = graphLens.lookupInvokeSuper(method, getContext(), codeLens);
     DexMethod rewrittenMethod = lookupResult.getReference();

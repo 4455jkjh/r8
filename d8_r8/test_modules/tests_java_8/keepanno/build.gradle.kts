@@ -25,3 +25,5 @@ tasks {
     }
   }
 }
+
+dependencies { runtimeOnlyData(project(":third_party", "r8v8_0_46")) }

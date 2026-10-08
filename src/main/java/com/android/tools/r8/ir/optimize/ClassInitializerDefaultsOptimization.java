@@ -121,7 +121,7 @@ public class ClassInitializerDefaultsOptimization {
       this.fieldsWithStaticValues.putAll(fieldsWithStaticValues);
     }
 
-    public synchronized void join(Map<DexEncodedField, DexValue> fieldsWithStaticValues) {
+    synchronized void join(Map<DexEncodedField, DexValue> fieldsWithStaticValues) {
       this.fieldsWithStaticValues.putAll(fieldsWithStaticValues);
     }
 

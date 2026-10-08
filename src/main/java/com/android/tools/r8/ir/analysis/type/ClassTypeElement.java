@@ -121,6 +121,7 @@ public class ClassTypeElement extends ReferenceTypeElement {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private ClassTypeElement createVariant(
       Nullability nullability, NullabilityVariants<ClassTypeElement> variants) {
     assert this.nullability != nullability;
@@ -473,7 +474,7 @@ public class ClassTypeElement extends ReferenceTypeElement {
       return new InterfaceMarker(OptionalBool.FALSE, OptionalBool.FALSE);
     }
 
-    public InterfaceMarker(OptionalBool left, OptionalBool right) {
+    InterfaceMarker(OptionalBool left, OptionalBool right) {
       this.left = left;
       this.right = right;
       assert !isMarkedOnBothSides();
@@ -649,6 +650,7 @@ public class ClassTypeElement extends ReferenceTypeElement {
     return lub;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean equals(Object o) {
     if (this == o) {

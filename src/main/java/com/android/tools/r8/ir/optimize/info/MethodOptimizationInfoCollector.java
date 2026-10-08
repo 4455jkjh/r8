@@ -186,6 +186,7 @@ public class MethodOptimizationInfoCollector {
     timing.end();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void analyzeReturns(
       IRCode code, OptimizationFeedback feedback, MethodProcessor methodProcessor) {
     ProgramMethod context = code.context();
@@ -381,9 +382,7 @@ public class MethodOptimizationInfoCollector {
               }
               Value object =
                   instancePut.object().getAliasedValue(aliasesThroughAssumeAndCheckCasts);
-              if (object != receiver
-                  || instancePut.instructionInstanceCanThrow(appView, context)
-                  || field.isVolatile()) {
+              if (object != receiver || instancePut.instructionInstanceCanThrow(appView, context)) {
                 builder.setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
               }
 
@@ -561,6 +560,7 @@ public class MethodOptimizationInfoCollector {
     builder.setWrittenBeforeReadSet(state.getAbstractWrittenBeforeReadSet());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean couldBeReceiverValue(
       Value value,
       Value receiver,
@@ -619,7 +619,6 @@ public class MethodOptimizationInfoCollector {
         } else if (result == InstructionEffect.DESIRED_EFFECT) {
           // The current path is causing the expected effect. No need to go deeper in this path,
           // go to the next block in the work list.
-          continue;
         } else if (result == InstructionEffect.CONDITIONAL_EFFECT) {
           assert !currentBlock.getNormalSuccessors().isEmpty();
           Instruction lastInstruction = currentBlock.getInstructions().getLast();
@@ -743,6 +742,7 @@ public class MethodOptimizationInfoCollector {
   // Note that this method may have false positives, since the application could in principle
   // declare a method called checkParameterIsNotNull(parameter, message) in a package that starts
   // with "kotlin".
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isKotlinCheckParameterIsNotNull(
       AppView<?> appView, InvokeStatic invoke, Value value) {
     // We need to ignore the holder, since Kotlin adds different versions of null-check machinery,
@@ -1135,6 +1135,7 @@ public class MethodOptimizationInfoCollector {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isNonNullOnNormalExit(
       IRCode code, Value value, DominatorTree dominatorTree, Set<BasicBlock> normalExits) {
     assert value.getType().isReferenceType();
@@ -1189,6 +1190,7 @@ public class MethodOptimizationInfoCollector {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isNormalExitDominated(
       BasicBlock normalExit,
       IRCode code,

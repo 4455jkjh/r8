@@ -10,6 +10,8 @@ import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.jasmin.JasminBuilder;
@@ -19,9 +21,22 @@ import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 // Test documenting null-value usages with the reference implementation.
+@RunWith(Parameterized.class)
 public class NullArrayAndNullObjectValueTest extends JasminTestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void testNullIsArray() throws Exception {
@@ -134,7 +149,8 @@ public class NullArrayAndNullObjectValueTest extends JasminTestBase {
     Path d8Jar = temp.getRoot().toPath().resolve("d8-out.jar");
     D8.run(
         D8Command.builder().addProgramFiles(riJar).setOutput(d8Jar, OutputMode.DexIndexed).build());
-    ProcessResult d8Result = ToolHelper.runArtRaw(d8Jar.toString(), "TestClass");
+    ProcessResult d8Result =
+        ToolHelper.runArtRaw(d8Jar.toString(), "TestClass", parameters.getDexVm());
     Assert.assertEquals(d8Result.toString(), 0, riResult.exitCode);
 
     Assert.assertEquals(riResult.stdout, d8Result.stdout);

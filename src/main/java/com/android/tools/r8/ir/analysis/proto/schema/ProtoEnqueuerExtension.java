@@ -215,6 +215,7 @@ public class ProtoEnqueuerExtension
     protos.put(holder, protoMessageInfo);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void notifyFixpoint(
       Enqueuer enqueuer,
@@ -599,6 +600,7 @@ public class ProtoEnqueuerExtension
   }
 
   /** Marks the given oneof field as being written if the corresponding oneof-case field is live. */
+  @SuppressWarnings("ReferenceEquality")
   private void registerWriteToOneOfObjectIfOneOfCaseObjectIsLive(
       ProtoOneOfObjectPair oneOfObjectPair, Enqueuer enqueuer, EnqueuerWorklist worklist) {
     ProtoFieldObject oneOfCaseObject = oneOfObjectPair.getOneOfCaseObject();

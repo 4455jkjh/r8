@@ -11,6 +11,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.jasmin.JasminBuilder;
@@ -24,8 +26,21 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class FieldTypeTest extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   private ClassBuilder addImplementor(
       JasminBuilder jasminBuilder, String name, String superName, String... interfaces) {
@@ -129,7 +144,7 @@ public class FieldTypeTest extends TestBase {
             });
 
     // Run processed (output) program on ART
-    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName);
+    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName, parameters.getDexVm());
     assertEquals(0, artResult.exitCode);
     assertThat(artResult.stderr, not(containsString("DoFieldPut")));
 
@@ -211,7 +226,7 @@ public class FieldTypeTest extends TestBase {
             });
 
     // Run processed (output) program on ART
-    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName);
+    ProcessResult artResult = runOnArtRaw(processedApp, mainClassName, parameters.getDexVm());
     assertNotEquals(0, artResult.exitCode);
     assertThat(artResult.stderr, containsString("java.lang.NullPointerException"));
     assertThat(artResult.stderr, not(containsString("DoFieldPut")));

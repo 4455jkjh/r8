@@ -37,6 +37,7 @@ public class KotlinFlexibleTypeUpperBoundInfo implements EnqueuerMetadataTraceab
         KotlinTypeInfo.create(flexibleTypeUpperBound.getType(), factory, reporter));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean rewrite(Consumer<KmFlexibleTypeUpperBound> consumer, AppView<?> appView) {
     if (this == NO_FLEXIBLE_UPPER_BOUND) {
       // Nothing to do.
@@ -51,6 +52,7 @@ public class KotlinFlexibleTypeUpperBoundInfo implements EnqueuerMetadataTraceab
         appView);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void trace(KotlinMetadataUseRegistry registry) {
     if (this == NO_FLEXIBLE_UPPER_BOUND) {

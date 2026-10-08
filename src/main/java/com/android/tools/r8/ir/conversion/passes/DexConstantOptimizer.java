@@ -198,6 +198,7 @@ public class DexConstantOptimizer extends CodeRewriterPass<AppInfo> {
    * argument is no longer needed after the binary operation and can be overwritten. That is
    * definitely the case if there is no path between the binary operation and all other usages.
    */
+  @SuppressWarnings("ReferenceEquality")
   private static boolean canBe2AddrInstruction(
       Binop binop, int binopInstructionNumber, Reference2IntMap<Value> lastUseOfRelevantValue) {
     Value value = binopWithLit8OrLit16NonConstant(binop);
@@ -315,6 +316,7 @@ public class DexConstantOptimizer extends CodeRewriterPass<AppInfo> {
     code.removeRedundantBlocks();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator insertInstructionWithShortenedLiveRange(
       IRCode code,
       BasicBlockIterator blockIterator,
@@ -360,6 +362,7 @@ public class DexConstantOptimizer extends CodeRewriterPass<AppInfo> {
     return insertionPoint.getPosition();
   }
 
+  @SuppressWarnings({"NonApiType", "ReferenceEquality"})
   private void shortenLiveRangesInsideBlock(
       IRCode code,
       BasicBlock block,

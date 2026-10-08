@@ -131,6 +131,7 @@ public class GenerateDesugaredLibraryLintFiles extends AbstractGenerateFiles {
         lintFile(compilationApiLevel, minApiLevel, ".txt"), desugaredApisSignatures);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean shouldAddMethodToLint(
       MethodAnnotation methodAnnotation, AndroidApiLevel minApiLevel) {
     if (methodAnnotation == null) {

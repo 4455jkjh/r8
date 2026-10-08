@@ -136,6 +136,7 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
     return new R8LibraryDesugaringLensCodeRewriter();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected FieldLookupResult internalDescribeLookupField(FieldLookupResult previous) {
     if (desugaredLibraryRetargeter != null) {
@@ -156,6 +157,7 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
     return previous;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected MethodLookupResult internalDescribeLookupMethod(
       MethodLookupResult previous, DexMethod context, GraphLens codeLens) {

@@ -12,7 +12,7 @@ import java.util.List;
 public class ComparatorUtils {
 
   public static <T extends Comparable<T>> Comparator<List<T>> listComparator() {
-    return listComparator(T::compareTo);
+    return listComparator(Comparable::compareTo);
   }
 
   public static <T> Comparator<List<T>> listComparator(Comparator<T> comparator) {
@@ -20,7 +20,7 @@ public class ComparatorUtils {
   }
 
   public static <T extends Comparable<T>> int compareLists(List<T> xs, List<T> ys) {
-    return compareLists(xs, ys, T::compareTo);
+    return compareLists(xs, ys, Comparable::compareTo);
   }
 
   public static <T> int compareLists(List<T> xs, List<T> ys, Comparator<T> comparator) {
@@ -58,7 +58,7 @@ public class ComparatorUtils {
   }
 
   public static <T extends Comparable<T>> Comparator<T[]> arrayComparator() {
-    return arrayComparator(T::compareTo);
+    return arrayComparator(Comparable::compareTo);
   }
 
   public static <T> Comparator<T[]> arrayComparator(Comparator<T> comparator) {
@@ -72,7 +72,7 @@ public class ComparatorUtils {
   }
 
   public static <T> Comparator<T> unreachableComparator() {
-    return (t1, t2) -> {
+    return (unused1, unused2) -> {
       throw new Unreachable();
     };
   }

@@ -84,6 +84,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
 
     public final Deque<Value> liveStackValues;
 
+    @SuppressWarnings("NonApiType")
     public LiveAtEntrySets(
         LinkedHashSet<Value> liveValues, Set<Value> liveLocalValues, Deque<Value> liveStackValues) {
       assert liveValues.containsAll(liveLocalValues);
@@ -137,6 +138,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   private final IRMetadata metadata;
   private final InternalOptions options;
 
+  @SuppressWarnings("NonApiType")
   public IRCode(
       InternalOptions options,
       ProgramMethod method,
@@ -365,6 +367,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
    * and the predecessors that have a throwing instruction. This is necessary because adding catch
    * handlers to a predecessor would otherwise lead to critical edges.
    */
+  @SuppressWarnings("ReferenceEquality")
   public void prepareBlocksForCatchHandlers() {
     BasicBlock entryBlock = entryBlock();
     ListIterator<BasicBlock> blockIterator = listIterator();
@@ -431,6 +434,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     blocks.addAll(newBlocks);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean verifySplitCriticalEdges() {
     for (BasicBlock block : blocks) {
       // If there are multiple incoming edges, check each has a split block.
@@ -745,6 +749,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void addValueAndCheckUniqueNumber(Int2ReferenceMap<Value> values, Value value) {
     assert value != null;
     int number = value.getNumber();
@@ -809,6 +814,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean verifyDefinition(Value value) {
     Value outValue = value.definition.outValue();
     assert outValue == value
@@ -1008,6 +1014,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean validThrowingInstructions() {
     for (BasicBlock block : blocks) {
       if (block.hasCatchHandlers()) {
@@ -1047,6 +1054,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     return verifySSATypeLattice(wrapSSAVerifierWithStackValueHandling(verifyValue));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean verifyNoNullabilityBottomTypes() {
     Predicate<Value> verifyValue =
         v -> {
@@ -1540,6 +1548,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     }
   }
 
+  @SuppressWarnings("NonApiType")
   @Override
   public LinkedList<BasicBlock> getBlocks() {
     return blocks;

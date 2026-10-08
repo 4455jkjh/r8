@@ -85,7 +85,7 @@ public abstract class AndroidApiDataAccess {
     return RESOURCE_NAME.equals(entry);
   }
 
-  private static class PositionAndLength {
+  static class PositionAndLength {
 
     private static final PositionAndLength EMPTY = new PositionAndLength(0, 0);
 
@@ -120,6 +120,7 @@ public abstract class AndroidApiDataAccess {
       return length;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isEmpty() {
       return this == EMPTY;
     }

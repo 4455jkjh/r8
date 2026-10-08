@@ -89,6 +89,7 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     return block1.hasEquivalentCatchHandlers(block2, true);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean sinkFieldGet(
       IRCode code, BasicBlock block, BasicBlock firstPredecessor, BasicBlock secondPredecessor) {
     FieldGet firstFieldGet = getLastFieldGetInstruction(code, firstPredecessor);
@@ -143,6 +144,7 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     sunkInstruction.setPosition(position);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean hoistFieldGet(IRCode code, BasicBlock block, List<BasicBlock> successors) {
     BasicBlock firstSuccessor = successors.get(0);
     BasicBlock secondSuccessor = successors.get(1);
@@ -205,6 +207,7 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     return firstOutValue.hasLocalInfo() || secondOutValue.hasLocalInfo();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void insertHoistedInstruction(
       IRCode code, BasicBlock block, BasicBlock firstSuccessor, Instruction hoistedInstruction) {
     Instruction lastInstruction = block.getLastInstruction();

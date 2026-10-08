@@ -749,6 +749,7 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
     tryCatchRanges.forEach(tryCatch -> tryCatch.guards.forEach(registry::registerTypeReference));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Int2ReferenceMap<DebugLocalInfo> collectParameterInfo(
       DexEncodedMethod encodedMethod, AppView<?> appView) {

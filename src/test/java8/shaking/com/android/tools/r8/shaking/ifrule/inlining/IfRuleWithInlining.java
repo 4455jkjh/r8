@@ -10,13 +10,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.shaking.forceproguardcompatibility.ProguardCompatibilityTestBase;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.nio.file.Path;
@@ -52,19 +53,22 @@ class Main {
 public class IfRuleWithInlining extends ProguardCompatibilityTestBase {
   private static final List<Class<?>> CLASSES = ImmutableList.of(A.class, D.class, Main.class);
 
+  private final TestParameters parameters;
   private final Shrinker shrinker;
   private final boolean neverInlineMethod;
 
-  public IfRuleWithInlining(Shrinker shrinker, boolean neverInlineMethod) {
-    this.shrinker = shrinker;
+  public IfRuleWithInlining(TestParameters parameters, boolean neverInlineMethod) {
+    this.parameters = parameters;
+    this.shrinker = parameters.isDexRuntime() ? Shrinker.R8 : Shrinker.R8_CF;
     this.neverInlineMethod = neverInlineMethod;
   }
 
-  @Parameters(name = "shrinker: {0} neverInlineMethod: {1}")
+  @Parameters(name = "{0}, neverInlineMethod: {1}")
   public static Collection<Object[]> data() {
     // We don't run this on Proguard, as triggering inlining in Proguard is out of our control.
     return buildParameters(
-        ImmutableList.of(Shrinker.R8, Shrinker.R8_CF), BooleanUtils.values());
+        getTestParameters().withDefaultCfRuntime().withDexRuntimes().build(),
+        BooleanUtils.values());
   }
 
   private void check(AndroidApp app) throws Exception {
@@ -78,7 +82,7 @@ public class IfRuleWithInlining extends ProguardCompatibilityTestBase {
     assertThat(inspector.clazz(D.class), isPresent());
     ProcessResult result;
     if (shrinker == Shrinker.R8) {
-      result = runOnArtRaw(app, Main.class.getName());
+      result = runOnArtRaw(app, Main.class.getName(), parameters.getDexVm());
     } else {
       assert shrinker == Shrinker.R8_CF;
       Path file = File.createTempFile("junit", ".zip", temp.getRoot()).toPath();

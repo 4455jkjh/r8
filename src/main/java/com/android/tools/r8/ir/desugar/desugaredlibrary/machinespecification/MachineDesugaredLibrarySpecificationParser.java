@@ -391,6 +391,7 @@ public class MachineDesugaredLibrarySpecificationParser {
     return map;
   }
 
+  @SuppressWarnings("NonApiType")
   private LinkedHashMap<DexType, DerivedMethod> parseEmulatedDispatchMap(JsonObject jsonObject) {
     LinkedHashMap<DexType, DerivedMethod> map = new LinkedHashMap<>();
     for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {

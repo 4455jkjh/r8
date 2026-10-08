@@ -364,12 +364,12 @@ public class ComposingBuilder {
     private final String holderTypeName;
     private final String methodName;
 
-    public ClassTypeNameAndMethodName(String holderTypeName, String methodName) {
+    ClassTypeNameAndMethodName(String holderTypeName, String methodName) {
       this.holderTypeName = holderTypeName;
       this.methodName = methodName;
     }
 
-    public String getMethodName() {
+    String getMethodName() {
       return methodName;
     }
 
@@ -391,7 +391,7 @@ public class ComposingBuilder {
     }
   }
 
-  private static class UpdateOutlineCallsiteInformation {
+  static class UpdateOutlineCallsiteInformation {
 
     private List<MappedRange> newMappedRanges;
     private final String newMethodName;
@@ -428,7 +428,7 @@ public class ComposingBuilder {
       return new MappedRangeOriginalToMinifiedMap(positionMap);
     }
 
-    public void visitMinified(int originalPosition, IntConsumer consumer) {
+    void visitMinified(int originalPosition, IntConsumer consumer) {
       IntList minifiedPositions = originalToMinified.get(originalPosition);
       if (minifiedPositions != null) {
         minifiedPositions.forEach(consumer);
@@ -909,6 +909,7 @@ public class ComposingBuilder {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean verifyAllOutlineCallSitesAreEqualTo(
         OutlineCallsiteMappingInformation outlineCallSite,
         List<ComputedMappedRangeForOutline> computedMappedRangeForOutlines) {
@@ -1247,6 +1248,7 @@ public class ComposingBuilder {
 
       private final TreeMap<Integer, List<MappedRange>> mappedRangesForPosition;
 
+      @SuppressWarnings("NonApiType")
       private ExistingMappings(TreeMap<Integer, List<MappedRange>> mappedRangesForPosition) {
         this.mappedRangesForPosition = mappedRangesForPosition;
       }

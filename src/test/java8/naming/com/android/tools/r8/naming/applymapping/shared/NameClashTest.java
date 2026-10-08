@@ -9,6 +9,8 @@ import static org.junit.Assert.fail;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.applymapping.shared.ProgramWithLibraryClasses.AnotherLibraryClass;
 import com.android.tools.r8.naming.applymapping.shared.ProgramWithLibraryClasses.LibraryClass;
@@ -21,7 +23,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class NameClashTest extends TestBase {
 
   private static Class<?> MAIN = ProgramClass.class;
@@ -30,9 +37,16 @@ public class NameClashTest extends TestBase {
           AnotherLibraryClass.ANOTHERLIB_MSG, LibraryClass.LIB_MSG, ProgramClass.PRG_MSG);
 
   private static Path prgJarThatUsesOriginalLib;
-  private static Path prgJarThatUsesMinifiedLib;
   private static Path libJar;
   private Path mappingFile;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @BeforeClass
   public static void setUpJars() throws Exception {
@@ -40,9 +54,6 @@ public class NameClashTest extends TestBase {
         getStaticTemp().newFile("prgOrginalLib.jar").toPath().toAbsolutePath();
     writeClassFileDataToJar(
         prgJarThatUsesOriginalLib, ImmutableList.of(ToolHelper.getClassAsBytes(MAIN)));
-    prgJarThatUsesMinifiedLib =
-        getStaticTemp().newFile("prgMinifiedLib.jar").toPath().toAbsolutePath();
-    writeClassFileDataToJar(prgJarThatUsesMinifiedLib, ImmutableList.of(ProgramClassDump.dump()));
     libJar = getStaticTemp().newFile("lib.jar").toPath().toAbsolutePath();
     writeClassesToJar(
         libJar,
@@ -53,15 +64,6 @@ public class NameClashTest extends TestBase {
   @Before
   public void setUpMappingFile() throws Exception {
     mappingFile = temp.newFile("mapping.txt").toPath().toAbsolutePath();
-  }
-
-  private String invertedMapping() {
-     return StringUtils.lines(
-        "A -> " + LibraryClass.class.getTypeName() + ":",
-        "  void a() -> foo",
-        "B -> " + AnotherLibraryClass.class.getTypeName() + ":",
-        "  void a() -> foo"
-    );
   }
 
   // Note that all the test mappings below still need identity mappings for classes/memebers that
@@ -114,19 +116,8 @@ public class NameClashTest extends TestBase {
     );
   }
 
-  private void testProguard_inputJar(Path mappingFile) throws Exception {
-    testForProguard()
-        .addProgramFiles(libJar)
-        .addProgramFiles(prgJarThatUsesOriginalLib)
-        .addKeepMainRule(MAIN)
-        .addKeepRules("-applymapping " + mappingFile)
-        .addDontShrink()
-        .compile()
-        .run(MAIN)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
-  }
-
   private void testR8_inputJar(Path mappingFile) throws Exception {
+    parameters.assumeDexRuntime();
     testForR8(Backend.DEX)
         .addLibraryFiles(ToolHelper.getDefaultAndroidJar())
         .addProgramFiles(libJar)
@@ -136,23 +127,12 @@ public class NameClashTest extends TestBase {
         .addDontShrink()
         .addDontObfuscate()
         .compile()
-        .run(MAIN)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
-  }
-
-  private void testProguard_originalLibraryJar(Path mappingFile) throws Exception {
-    testForProguard()
-        .addLibraryFiles(libJar)
-        .addProgramFiles(prgJarThatUsesOriginalLib)
-        .addKeepMainRule(MAIN)
-        .addKeepRules("-applymapping " + mappingFile)
-        .addDontShrink()
-        .compile()
-        .run(MAIN)
+        .run(parameters.getRuntime(), MAIN)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
   private void testR8_originalLibraryJar(Path mappingFile) throws Exception {
+    parameters.assumeDexRuntime();
     testForR8(Backend.DEX)
         .addLibraryFiles(ToolHelper.getDefaultAndroidJar(), libJar)
         .addProgramFiles(prgJarThatUsesOriginalLib)
@@ -160,32 +140,8 @@ public class NameClashTest extends TestBase {
         .addKeepRules("-applymapping " + mappingFile)
         .addDontShrink()
         .compile()
-        .run(MAIN)
+        .run(parameters.getRuntime(), MAIN)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
-  }
-
-  private void testProguard_minifiedLibraryJar(Path mappingFile) throws Exception {
-    testForProguard()
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar(), libJar)
-        .addProgramFiles(prgJarThatUsesMinifiedLib)
-        .addKeepMainRule(MAIN)
-        .addKeepRules("-applymapping " + mappingFile)
-        .addDontShrink()
-        .compile()
-        .run(MAIN)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
-  }
-
-  @Test
-  public void testProguard_prgClassRenamedToExistingPrgClass() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToAlreadyMappedName());
-    try {
-      testProguard_inputJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("Duplicate jar entry"));
-      assertThat(e.getMessage(), containsString("AnotherLibraryClass.class"));
-    }
   }
 
   @Test
@@ -198,18 +154,6 @@ public class NameClashTest extends TestBase {
       assertThat(e.getCause().getMessage(), containsString("map to same name"));
       assertThat(e.getCause().getMessage(), containsString("$AnotherLibraryClass"));
       assertThat(e.getCause().getMessage(), containsString("$LibraryClass"));
-    }
-  }
-
-  @Test
-  public void testProguard_originalLibClassRenamedToExistingLibClass() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToAlreadyMappedName());
-    try {
-      testProguard_originalLibraryJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("can't find referenced method"));
-      assertThat(e.getMessage(), containsString("ProgramClass"));
     }
   }
 
@@ -227,17 +171,6 @@ public class NameClashTest extends TestBase {
   }
 
   @Test
-  public void testProguard_prgClassesRenamedToSameName() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToTheSameClassName());
-    try {
-      testProguard_inputJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("Duplicate jar entry [Clash.class]"));
-    }
-  }
-
-  @Test
   public void testR8_prgClassesRenamedToSameName() throws Exception {
     FileUtils.writeTextFile(mappingFile, mappingToTheSameClassName());
     try {
@@ -250,18 +183,6 @@ public class NameClashTest extends TestBase {
   }
 
   @Test
-  public void testProguard_originalLibClassesRenamedToSameName() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToTheSameClassName());
-    try {
-      testProguard_originalLibraryJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("can't find referenced method"));
-      assertThat(e.getMessage(), containsString("ProgramClass"));
-    }
-  }
-
-  @Test
   public void testR8_originalLibClassesRenamedToSameName() throws Exception {
     FileUtils.writeTextFile(mappingFile, mappingToTheSameClassName());
     try {
@@ -270,19 +191,6 @@ public class NameClashTest extends TestBase {
     } catch (CompilationFailedException e) {
       assertThat(e.getCause().getMessage(), containsString("map to same name"));
       assertThat(e.getCause().getMessage(), containsString("Clash"));
-    }
-  }
-
-  @Test
-  public void testProguard_prgMethodRenamedToExistingName() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToExistingMethodName());
-    try {
-      testProguard_inputJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("method 'void bar()' can't be mapped to 'bar'"));
-      assertThat(e.getMessage(), containsString("it would conflict with method 'foo'"));
-      assertThat(e.getMessage(), containsString("which is already being mapped to 'bar'"));
     }
   }
 
@@ -305,18 +213,6 @@ public class NameClashTest extends TestBase {
   }
 
   @Test
-  public void testProguard_originalLibMethodRenamedToExistingName() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToExistingMethodName());
-    try {
-      testProguard_originalLibraryJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("can't find referenced method"));
-      assertThat(e.getMessage(), containsString("ProgramClass"));
-    }
-  }
-
-  @Test
   @Ignore("b/136697829")
   public void testR8_originalLibMethodRenamedToExistingName() throws Exception {
     FileUtils.writeTextFile(mappingFile, mappingToExistingMethodName());
@@ -331,19 +227,6 @@ public class NameClashTest extends TestBase {
               "because it is in conflict with an existing member with the same signature."));
       assertThat(
           e.getCause().getMessage(), containsString(ProgramClass.class.getTypeName() + ".bar()"));
-    }
-  }
-
-  @Test
-  public void testProguard_prgMethodRenamedToSameName() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToTheSameMethodName());
-    try {
-      testProguard_inputJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("method 'void bar()' can't be mapped to 'clash'"));
-      assertThat(e.getMessage(), containsString("it would conflict with method 'foo'"));
-      assertThat(e.getMessage(), containsString("which is already being mapped to 'clash'"));
     }
   }
 
@@ -366,18 +249,6 @@ public class NameClashTest extends TestBase {
   }
 
   @Test
-  public void testProguard_originalLibMethodRenamedToSameName() throws Exception {
-    FileUtils.writeTextFile(mappingFile, mappingToTheSameMethodName());
-    try {
-      testProguard_originalLibraryJar(mappingFile);
-      fail("Expect compilation failure.");
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("can't find referenced method"));
-      assertThat(e.getMessage(), containsString("ProgramClass"));
-    }
-  }
-
-  @Test
   @Ignore("b/136697829")
   public void testR8_originalLibMethodRenamedToSameName() throws Exception {
     FileUtils.writeTextFile(mappingFile, mappingToTheSameMethodName());
@@ -392,16 +263,6 @@ public class NameClashTest extends TestBase {
               "because it is in conflict with an existing member with the same signature."));
       assertThat(
           e.getCause().getMessage(), containsString(ProgramClass.class.getTypeName() + ".bar()"));
-    }
-  }
-
-  @Test
-  public void testProguard_minifiedLib() throws Exception {
-    FileUtils.writeTextFile(mappingFile, invertedMapping());
-    try {
-      testProguard_minifiedLibraryJar(mappingFile);
-    } catch (CompilationFailedException e) {
-      assertThat(e.getMessage(), containsString("can't find superclass or interface A"));
     }
   }
 }

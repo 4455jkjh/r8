@@ -98,7 +98,7 @@ class AccessModifierTraversal extends DepthFirstTopDownClassHierarchyTraversal {
     return traversalState.asBottomUpTraversalState();
   }
 
-  private abstract static class TraversalState {
+  abstract static class TraversalState {
 
     boolean isBottomUpTraversalState() {
       return false;
@@ -119,7 +119,7 @@ class AccessModifierTraversal extends DepthFirstTopDownClassHierarchyTraversal {
 
   // TODO(b/279126633): Collect the protected and public method signatures when traversing downwards
   //  to enable publicizing of package private methods with illegal overrides.
-  private static class TopDownTraversalState extends TraversalState {
+  static class TopDownTraversalState extends TraversalState {
 
     private static final TopDownTraversalState EMPTY = new TopDownTraversalState();
 

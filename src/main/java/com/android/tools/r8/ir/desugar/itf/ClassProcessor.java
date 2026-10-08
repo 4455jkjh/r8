@@ -184,7 +184,7 @@ final class ClassProcessor {
       return signatures.isEmpty();
     }
 
-    public MethodSignatures withoutAll(MethodSignatures other) {
+    MethodSignatures withoutAll(MethodSignatures other) {
       Set<Wrapper<DexMethod>> merged = new HashSet<>(signatures);
       merged.removeAll(other.signatures);
       return signatures.size() == merged.size() ? this : new MethodSignatures(merged);
@@ -227,7 +227,8 @@ final class ClassProcessor {
           : new ClassInfo(parent, forwardedMethodTargets, emulatedInterfaceInfo);
     }
 
-    public boolean isEmpty() {
+    @SuppressWarnings("ReferenceEquality")
+    boolean isEmpty() {
       return this == EMPTY;
     }
 
@@ -257,7 +258,7 @@ final class ClassProcessor {
       this.emulatedInterfaceInfo = emulatedInterfaceInfo;
     }
 
-    public SignaturesInfo merge(SignaturesInfo other) {
+    SignaturesInfo merge(SignaturesInfo other) {
       if (isEmpty()) {
         return other;
       }
@@ -269,7 +270,7 @@ final class ClassProcessor {
           emulatedInterfaceInfo.merge(other.emulatedInterfaceInfo));
     }
 
-    public MethodSignatures emulatedInterfaceSignaturesToForward() {
+    MethodSignatures emulatedInterfaceSignaturesToForward() {
       return emulatedInterfaceInfo.signatures.withoutAll(signatures);
     }
 
@@ -277,7 +278,7 @@ final class ClassProcessor {
       return signatures.isEmpty() && emulatedInterfaceInfo.isEmpty();
     }
 
-    public SignaturesInfo withSignatures(MethodSignatures additions) {
+    SignaturesInfo withSignatures(MethodSignatures additions) {
       if (additions.isEmpty()) {
         return this;
       }
@@ -285,7 +286,7 @@ final class ClassProcessor {
       return new SignaturesInfo(newSignatures, emulatedInterfaceInfo);
     }
 
-    public SignaturesInfo withEmulatedInterfaceInfo(
+    SignaturesInfo withEmulatedInterfaceInfo(
         EmulatedInterfaceInfo additionalEmulatedInterfaceInfo) {
       if (additionalEmulatedInterfaceInfo.isEmpty()) {
         return this;
@@ -349,7 +350,7 @@ final class ClassProcessor {
       this.emulatedInterfaces = emulatedInterfaces;
     }
 
-    public EmulatedInterfaceInfo merge(EmulatedInterfaceInfo other) {
+    EmulatedInterfaceInfo merge(EmulatedInterfaceInfo other) {
       if (isEmpty()) {
         return other;
       }
@@ -360,7 +361,7 @@ final class ClassProcessor {
           signatures.merge(other.signatures), emulatedInterfaces.merge(other.emulatedInterfaces));
     }
 
-    public boolean isEmpty() {
+    boolean isEmpty() {
       assert !emulatedInterfaces.isEmpty() || signatures.isEmpty();
       return emulatedInterfaces.isEmpty();
     }
@@ -377,7 +378,7 @@ final class ClassProcessor {
     final DexProgramClass closestProgramSubClass;
     final BiConsumer<DexProgramClass, DexType> reportMissingTypeCallback;
 
-    public ReportingContext(
+    ReportingContext(
         DexClass directSubClass,
         DexProgramClass closestProgramSubClass,
         BiConsumer<DexProgramClass, DexType> reportMissingTypeCallback) {
@@ -395,11 +396,11 @@ final class ClassProcessor {
           reportMissingTypeCallback);
     }
 
-    public DexClass definitionFor(DexType type, AppView<?> appView) {
+    DexClass definitionFor(DexType type, AppView<?> appView) {
       return appView.appInfo().definitionForDesugarDependency(directSubClass, type);
     }
 
-    public void reportMissingType(DexType missingType) {
+    void reportMissingType(DexType missingType) {
       reportMissingTypeCallback.accept(closestProgramSubClass, missingType);
     }
   }

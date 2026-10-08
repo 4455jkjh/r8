@@ -52,6 +52,7 @@ public class ExactDynamicType extends DynamicTypeWithUpperBound {
         : unknown();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public ExactDynamicType withNullability(Nullability nullability) {
     if (getNullability() == nullability) {

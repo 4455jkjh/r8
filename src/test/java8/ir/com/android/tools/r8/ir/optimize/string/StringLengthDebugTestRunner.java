@@ -5,26 +5,37 @@ package com.android.tools.r8.ir.optimize.string;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.debug.D8DebugTestConfig;
 import com.android.tools.r8.debug.DebugTestBase;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.FrameInspector;
 import com.android.tools.r8.debug.DebugTestConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class StringLengthDebugTestRunner extends DebugTestBase {
 
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimesStartingFromIncluding(Version.V5_1_1).build();
+  }
+
   @Test
-  @IgnoreIfVmOlderThan(Version.V5_1_1)
   public void test() throws Throwable {
     Class<?> main = StringLengthDebugTest.class;
     DebugTestConfig config =
-        new D8DebugTestConfig().compileAndAdd(temp, ToolHelper.getClassFileForTestClass(main));
+        new D8DebugTestConfig(parameters.asDexRuntime())
+            .compileAndAdd(temp, ToolHelper.getClassFileForTestClass(main));
     runDebugTest(config, main.getCanonicalName(),
         breakpoint(main.getCanonicalName(), "main"),
         run(),

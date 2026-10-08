@@ -114,6 +114,7 @@ public class Store extends Instruction {
     return DeadInstructionResult.deadIfOutValueIsDead();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean needsValueInRegister(Value value) {
     assert value == src();

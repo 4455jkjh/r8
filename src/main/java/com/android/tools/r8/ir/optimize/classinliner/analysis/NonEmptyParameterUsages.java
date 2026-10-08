@@ -176,6 +176,7 @@ public class NonEmptyParameterUsages extends ParameterUsages {
                 : usagePerContext);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   NonEmptyParameterUsages rebuildParameters(
       IntObjToObjFunction<ParameterUsagePerContext, ParameterUsagePerContext> transformation) {

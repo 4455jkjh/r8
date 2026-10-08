@@ -132,7 +132,7 @@ public class ArrayUtils {
     return map(original, (i, s) -> mapper.apply(s), emptyArray);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "ReferenceEquality"})
   public static <S, T> T[] map(S[] original, IntObjToObjFunction<S, T> mapper, T[] emptyArray) {
     ArrayList<T> results = null;
     for (int i = 0; i < original.length; i++) {
@@ -157,6 +157,7 @@ public class ArrayUtils {
     return results != null ? results.toArray(emptyArray) : (T[]) original;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <S, T> void map(
       S[] array, Function<S, T> fn, T[] emptyArray, Consumer<T[]> onChangedConsumer) {
     T[] newArray = map(array, fn, emptyArray);

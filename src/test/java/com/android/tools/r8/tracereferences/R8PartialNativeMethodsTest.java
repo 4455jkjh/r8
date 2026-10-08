@@ -13,8 +13,8 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -87,6 +87,7 @@ public class R8PartialNativeMethodsTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(inputJar)
         .setR8PartialConfiguration(
@@ -108,6 +109,7 @@ public class R8PartialNativeMethodsTest extends TestBase {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8Partial(Backend.DEX)
+        .setMinApi(apiLevelWithNativeMultiDexSupport())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addProgramFiles(inputJar)
         .addProgramClasses(Main.class)

@@ -9,6 +9,8 @@ import static org.junit.Assert.fail;
 
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.internal.FileUtils;
@@ -17,13 +19,25 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * This test verifies that semantic of class initialization is preserved when a static method
  * invocation is inlined.
  */
-// TODO(shertz) add CF output
+@RunWith(Parameterized.class)
 public class R8InliningRegressionTests extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void testStaticInlining_b71524812() throws Exception {
@@ -57,7 +71,7 @@ public class R8InliningRegressionTests extends TestBase {
             Collections.singletonList(generatedDexFile.toString()),
             mainClass,
             null,
-            ToolHelper.getDexVm());
+            parameters.getDexVm());
     // Compare with Java.
     ToolHelper.ProcessResult javaResult = ToolHelper.runJava(jarFile, mainClass);
     if (javaResult.exitCode != 0) {

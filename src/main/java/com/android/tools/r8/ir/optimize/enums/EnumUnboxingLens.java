@@ -79,6 +79,7 @@ public class EnumUnboxingLens extends NestedGraphLensWithCustomLensCodeRewriter 
     return unboxedEnums;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean isContextFreeForMethods(GraphLens codeLens) {
     if (codeLens == this) {
@@ -131,6 +132,7 @@ public class EnumUnboxingLens extends NestedGraphLensWithCustomLensCodeRewriter 
     return refined;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected MethodLookupResult internalLookupMethod(
       DexMethod reference,

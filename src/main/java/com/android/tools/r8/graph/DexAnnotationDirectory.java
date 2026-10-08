@@ -121,7 +121,7 @@ public class DexAnnotationDirectory extends DexItem {
       }
       return clazz.annotations().equals(other.clazz.annotations());
     }
-    return super.equals(obj);
+    return this == obj;
   }
 
   @Override
@@ -129,7 +129,7 @@ public class DexAnnotationDirectory extends DexItem {
     if (classHasOnlyInternalizableAnnotations) {
       return clazz.annotations().hashCode();
     }
-    return super.hashCode();
+    return System.identityHashCode(this);
   }
 
   @Override

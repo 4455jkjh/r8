@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 
 public class CfFrameUtils {
 
+  @SuppressWarnings("ReferenceEquality")
   public static void storeLocal(
       int localIndex, FrameType frameType, Int2ObjectAVLTreeMap<FrameType> locals) {
     assert !frameType.isTwoWord();
@@ -34,6 +35,7 @@ public class CfFrameUtils {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean verifyLocals(Int2ObjectSortedMap<FrameType> locals) {
     for (Int2ObjectMap.Entry<FrameType> entry : locals.int2ObjectEntrySet()) {
       int localIndex = entry.getIntKey();

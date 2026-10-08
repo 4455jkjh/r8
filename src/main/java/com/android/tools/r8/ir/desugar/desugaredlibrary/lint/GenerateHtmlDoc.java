@@ -92,7 +92,7 @@ public class GenerateHtmlDoc extends AbstractGenerateFiles {
     }
   }
 
-  private abstract static class SourceBuilder<B extends GenerateHtmlDoc.SourceBuilder> {
+  abstract static class SourceBuilder<B extends GenerateHtmlDoc.SourceBuilder> {
 
     protected Map<DexEncodedField, FieldAnnotation> fields =
         new TreeMap<>(Comparator.comparing(DexEncodedField::getReference));

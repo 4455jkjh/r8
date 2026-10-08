@@ -156,6 +156,7 @@ public class TypeConstraintResolver {
     }
   }
 
+  @SuppressWarnings("NonApiType")
   private ArrayList<Value> constrainValues(boolean finished, List<Value> impreciseValues) {
     ArrayList<Value> stillImprecise = new ArrayList<>(impreciseValues.size());
     for (Value value : impreciseValues) {
@@ -212,6 +213,7 @@ public class TypeConstraintResolver {
     return verifyNoConstrainedUses(value, ImmutableSet.of());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean verifyNoConstrainedUses(Value value, Set<Value> assumeNoConstrainedUses) {
     for (Instruction user : value.uniqueUsers()) {
       if (user.isIf()) {

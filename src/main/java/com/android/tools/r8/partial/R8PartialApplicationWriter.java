@@ -57,6 +57,7 @@ public class R8PartialApplicationWriter {
     subCompilationConfiguration.writeApplication(appView, executorService);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void rewriteCodeWithLens(ExecutorService executorService) throws ExecutionException {
     if (appView.graphLens() == appView.codeLens()) {
       assert appView.graphLens().isIdentityLens();

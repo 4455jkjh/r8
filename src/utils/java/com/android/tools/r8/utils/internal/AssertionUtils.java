@@ -8,6 +8,7 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class AssertionUtils {
 
+  @SuppressWarnings("AssignmentExpression")
   public static boolean assertionsEnabled() {
     boolean assertionsEnabled = false;
     //noinspection AssertWithSideEffects

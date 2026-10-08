@@ -191,6 +191,7 @@ public class OnlyDirectlyConnectedOrUnrelatedInterfaces extends MultiClassPolicy
       return group;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     boolean isSafeToAddSubAndSuperInterfaces(
         DexProgramClass clazz,
         Set<DexProgramClass> newSubInterfaces,

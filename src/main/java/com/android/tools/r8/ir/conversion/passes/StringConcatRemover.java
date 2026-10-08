@@ -243,6 +243,7 @@ public class StringConcatRemover extends CodeRewriterPass {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void replaceWithDirectStringBuilderChain(
       IRCode code,
       IRCodeInstructionListIterator iterator,

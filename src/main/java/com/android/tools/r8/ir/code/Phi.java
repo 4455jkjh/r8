@@ -269,6 +269,7 @@ public class Phi extends Value implements InstructionOrPhi {
     replaceOperand(current, newValue, null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceOperand(Value current, Value newValue, Set<Value> affectedValues) {
     for (int i = 0; i < operands.size(); i++) {
       if (operands.get(i) == current) {
@@ -281,6 +282,7 @@ public class Phi extends Value implements InstructionOrPhi {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isTrivialPhi() {
     Value same = null;
     for (Value op : operands) {

@@ -43,7 +43,10 @@ public class KeptByAnnotatedMethodTestRunner extends TestBase {
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
-    testForJvm(parameters).addProgramClasses(CLASSES).run(CLASS).assertSuccessWithOutput(EXPECTED);
+    testForJvm(parameters)
+        .addProgramClasses(CLASSES)
+        .run(parameters.getRuntime(), CLASS)
+        .assertSuccessWithOutput(EXPECTED);
   }
 
   @Test

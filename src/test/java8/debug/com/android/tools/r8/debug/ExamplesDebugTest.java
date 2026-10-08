@@ -8,8 +8,9 @@ import static org.junit.Assume.assumeFalse;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.DebuggeeState;
 import com.android.tools.r8.origin.Origin;
@@ -22,18 +23,32 @@ import org.apache.harmony.jpda.tests.framework.TestErrorException;
 import org.apache.harmony.jpda.tests.framework.jdwp.exceptions.TimeoutException;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class ExamplesDebugTest extends DebugTestBase {
 
   private String clazzName;
   private Path inputJar;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   private Stream<DebuggeeState> input() throws Exception {
     return streamDebugTest(new CfDebugTestConfig(inputJar), clazzName, ANDROID_FILTER);
   }
 
   private Stream<DebuggeeState> d8() throws Exception {
-    D8DebugTestConfig config = new D8DebugTestConfig().compileAndAdd(temp, inputJar);
+    D8DebugTestConfig config =
+        new D8DebugTestConfig(parameters.asDexRuntime()).compileAndAdd(temp, inputJar);
     return streamDebugTest(config, clazzName, ANDROID_FILTER);
   }
 
@@ -101,11 +116,11 @@ public class ExamplesDebugTest extends DebugTestBase {
     // fixed.
     Assume.assumeTrue(
         "Skipping test " + testName.getMethodName() + " because debugging not enabled in 12.0.0",
-        !ToolHelper.getDexVm().isNewerThanOrEqual(DexVm.ART_12_0_0_HOST));
+        !parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V12_0_0));
     // See verifyStateLocation in DebugTestBase.
     Assume.assumeTrue(
         "Streaming on Dalvik DEX runtimes has some unknown interference issue",
-        ToolHelper.getDexVm().getVersion().isNewerThanOrEqual(Version.V6_0_1));
+        parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V6_0_1));
     Assume.assumeTrue(
         "Skipping test "
             + testName.getMethodName()

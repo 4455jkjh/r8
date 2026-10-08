@@ -32,6 +32,7 @@ public class FlowGraph extends BidirectedGraph<FlowGraphNode> implements FlowGra
   private final LinkedHashMap<DexField, FlowGraphFieldNode> fieldNodes;
   private final LinkedHashMap<DexMethod, Int2ReferenceMap<FlowGraphParameterNode>> parameterNodes;
 
+  @SuppressWarnings("NonApiType")
   public FlowGraph(
       LinkedHashMap<DexField, FlowGraphFieldNode> fieldNodes,
       LinkedHashMap<DexMethod, Int2ReferenceMap<FlowGraphParameterNode>> parameterNodes) {
@@ -39,6 +40,7 @@ public class FlowGraph extends BidirectedGraph<FlowGraphNode> implements FlowGra
     this.parameterNodes = parameterNodes;
   }
 
+  @SuppressWarnings("NonApiType")
   public FlowGraph(LinkedHashSet<FlowGraphNode> nodes) {
     this(new LinkedHashMap<>(), new LinkedHashMap<>());
     for (FlowGraphNode node : nodes) {

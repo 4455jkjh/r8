@@ -124,7 +124,7 @@ public class StringSwitchRemover extends CodeRewriterPass<AppInfo> {
         && isClassNameValue(theSwitch.value(), appView.dexItemFactory());
   }
 
-  @SuppressWarnings("UnusedVariable")
+  @SuppressWarnings({"UnusedVariable", "ReferenceEquality"})
   private boolean prepareForStringSwitchRemoval(IRCode code) {
     boolean hasStringSwitch = false;
     ListIterator<BasicBlock> blockIterator = code.listIterator();
@@ -430,6 +430,7 @@ public class StringSwitchRemover extends CodeRewriterPass<AppInfo> {
           hashValue, hashSwitchKeys, hashSwitchTargetIndices, hashSwitchFallthroughIndex);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void createHashSwitchTargets(Phi idPhi, Value notFoundIdValue) {
       for (Map<DexString, BasicBlock> cases : structure.values()) {
         // Create the target block for the hash switch.

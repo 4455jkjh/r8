@@ -721,6 +721,7 @@ public class ProguardMapReader implements AutoCloseable {
   // This happens to help a bit for FieldSignature too, so lump those in.
   private final HashMap<Signature, Signature> signatureCache = new HashMap<>();
 
+  @SuppressWarnings("AssignmentExpression")
   private String substring(int start) {
     int cacheIdx;
     {

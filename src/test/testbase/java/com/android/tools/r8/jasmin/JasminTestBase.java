@@ -11,6 +11,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
@@ -19,6 +20,7 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -30,6 +32,11 @@ public class JasminTestBase extends TestBase {
 
   public static TestParametersBuilder getTestParameters() {
     return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+  }
+
+  // Subclasses running code on ART must provide the VM from their test parameters.
+  protected DexVm getVm() {
+    throw new Unreachable("Expected the VM to be provided by the test parameters");
   }
 
   protected ProcessResult runOnJavaRaw(JasminBuilder builder, String main) throws Exception {
@@ -202,11 +209,10 @@ public class JasminTestBase extends TestBase {
     return runOnArtRaw(result, libraryApp, main);
   }
 
-  @Override
   protected ProcessResult runOnArtRaw(AndroidApp app, String main) throws IOException {
     Path out = temp.getRoot().toPath().resolve("out.zip");
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
-    return ToolHelper.runArtRaw(out.toString(), main);
+    return ToolHelper.runArtRaw(out.toString(), main, getVm());
   }
 
   protected ProcessResult runOnArtRaw(AndroidApp program, AndroidApp library, String main)
@@ -215,14 +221,14 @@ public class JasminTestBase extends TestBase {
     program.writeToZipForTesting(out, OutputMode.DexIndexed);
     Path libraryOut = temp.getRoot().toPath().resolve("libraryOut.zip");
     library.writeToZipForTesting(libraryOut, OutputMode.DexIndexed);
-    return ToolHelper.runArtRaw(ImmutableList.of(out.toString(), libraryOut.toString()), main,
-        null);
+    return ToolHelper.runArtRaw(
+        ImmutableList.of(out.toString(), libraryOut.toString()), main, null, getVm(), false);
   }
 
   protected String runOnArt(AndroidApp app, String main) throws IOException {
     Path out = temp.getRoot().toPath().resolve("out.zip");
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
-    return ToolHelper.runArtNoVerificationErrors(out.toString(), main);
+    return ToolHelper.runArtNoVerificationErrors(out.toString(), main, getVm());
   }
 
   protected DexEncodedMethod getMethod(

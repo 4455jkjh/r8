@@ -110,6 +110,7 @@ public class ThrowNullCode extends Code implements CfWritableCode, DexWritableCo
     return System.identityHashCode(this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected boolean computeEquals(Object other) {
     return this == other;

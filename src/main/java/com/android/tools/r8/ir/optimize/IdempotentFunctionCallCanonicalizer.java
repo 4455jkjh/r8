@@ -64,6 +64,7 @@ public class IdempotentFunctionCallCanonicalizer {
                 return o.getInvokedMethod().hashCode() * 31 + o.inValues().hashCode();
               }
 
+              @SuppressWarnings("ReferenceEquality")
               @Override
               public boolean equals(InvokeMethod a, InvokeMethod b) {
                 assert a == null || !a.outValue().hasLocalInfo();
@@ -234,6 +235,7 @@ public class IdempotentFunctionCallCanonicalizer {
         && factory.libraryMethodsWithReturnValueDependingOnlyOnArguments.contains(invokedMethod);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void insertCanonicalizedInvokeWithInValues(
       IRCode code, Invoke canonicalizedInvoke) {
     BasicBlock entryBlock = code.entryBlock();

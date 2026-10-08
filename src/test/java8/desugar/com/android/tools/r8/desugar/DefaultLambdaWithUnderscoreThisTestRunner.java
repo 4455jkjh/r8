@@ -96,7 +96,7 @@ public class DefaultLambdaWithUnderscoreThisTestRunner extends DebugTestBase {
     parameters.assumeDexRuntime();
     testForD8()
         .addProgramClassesAndInnerClasses(CLASS)
-        .setMinApiThreshold(AndroidApiLevel.K)
+        .setMinApiThreshold(parameters, AndroidApiLevel.K)
         .compile()
         .assertNoMessages()
         .run(parameters.getRuntime(), CLASS)
@@ -119,7 +119,7 @@ public class DefaultLambdaWithUnderscoreThisTestRunner extends DebugTestBase {
                   }
                 });
     if (parameters.isDexRuntime()) {
-      r8FullTestBuilder.setMinApiThreshold(AndroidApiLevel.K);
+      r8FullTestBuilder.setMinApiThreshold(parameters, AndroidApiLevel.K);
     }
     r8FullTestBuilder
         .run(parameters.getRuntime(), CLASS)

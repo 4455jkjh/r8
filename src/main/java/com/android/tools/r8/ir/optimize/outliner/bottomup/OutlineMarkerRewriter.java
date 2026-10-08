@@ -119,6 +119,7 @@ public class OutlineMarkerRewriter {
     new DexConstantOptimizer(appView, constantCanonicalizer).run(code, Timing.empty());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void processOutlineMarkers(IRCode code) {
     for (BasicBlock block : code.getBlocks()) {
       OutlineMarker outlineMarker = block.entry().nextUntilInclusive(Instruction::isOutlineMarker);

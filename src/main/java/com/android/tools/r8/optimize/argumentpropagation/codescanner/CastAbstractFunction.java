@@ -55,6 +55,7 @@ public class CastAbstractFunction implements AbstractFunction {
     return InFlowKind.ABSTRACT_FUNCTION_CAST;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public int internalCompareToSameKind(InFlow other, InFlowComparator comparator) {
     CastAbstractFunction fn = other.asCastAbstractFunction();

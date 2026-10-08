@@ -93,6 +93,14 @@ public abstract class MethodConversionOptions {
     return Target.DEX;
   }
 
+  public boolean isBranchSimplificationRequired() {
+    return false;
+  }
+
+  public boolean hasSeenBranchSimplification() {
+    return false;
+  }
+
   public abstract boolean isGeneratingLir();
 
   public abstract boolean isGeneratingClassFiles();
@@ -105,9 +113,21 @@ public abstract class MethodConversionOptions {
 
     private Target target;
     private boolean finalizeAfterLensCodeRewriter;
+    private boolean branchSimplificationRequired;
+    private boolean seenBranchSimplification;
 
     private MutableMethodConversionOptions(Target target) {
       this.target = target;
+    }
+
+    public MutableMethodConversionOptions setBranchSimplificationRequired() {
+      branchSimplificationRequired = true;
+      return this;
+    }
+
+    public MutableMethodConversionOptions setSeenBranchSimplification() {
+      seenBranchSimplification = true;
+      return this;
     }
 
     public MutableMethodConversionOptions setFinalizeAfterLensCodeRewriter() {
@@ -119,6 +139,16 @@ public abstract class MethodConversionOptions {
       assert isGeneratingDex();
       target = Target.LIR;
       return this;
+    }
+
+    @Override
+    public boolean isBranchSimplificationRequired() {
+      return branchSimplificationRequired;
+    }
+
+    @Override
+    public boolean hasSeenBranchSimplification() {
+      return seenBranchSimplification;
     }
 
     @Override

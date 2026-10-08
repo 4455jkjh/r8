@@ -6,14 +6,29 @@ package com.android.tools.r8.debuginfo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexAddInt;
 import com.android.tools.r8.dex.code.DexAddInt2Addr;
 import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.dex.code.DexReturn;
 import com.android.tools.r8.utils.AndroidApp;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class CodeGeneratorTestRunner extends DebugInfoTestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   /**
    * Companion test checking the behavior when attached to a debugger
@@ -27,7 +42,7 @@ public class CodeGeneratorTestRunner extends DebugInfoTestBase {
 
     String expected = "11";
     assertEquals(expected, runOnJava(clazz));
-    assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName()));
+    assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName(), parameters.getDexVm()));
 
     DebugInfoInspector inspector = inspectMethod(d8App, clazz, "int", "intAddition", "int", "int",
         "int");

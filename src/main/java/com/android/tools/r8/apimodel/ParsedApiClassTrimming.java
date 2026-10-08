@@ -39,11 +39,11 @@ public class ParsedApiClassTrimming {
     void done() throws E;
   }
 
-  public static <E extends Throwable> Collection<ParsedApiClass> trim(
-      Collection<ParsedApiClass> classes, Trimmer<E> trimmer) throws E {
-    var result = new ArrayList<ParsedApiClass>();
+  public static <E extends Throwable> Collection<ParsedApiClass<ApiRange>> trim(
+      Collection<ParsedApiClass<ApiRange>> classes, Trimmer<E> trimmer) throws E {
+    var result = new ArrayList<ParsedApiClass<ApiRange>>();
     for (var clazz : classes) {
-      if (trimmer.skipClass(clazz.getClassReference(), clazz.getRange()) == SkipAnswer.KEEP) {
+      if (trimmer.skipClass(clazz.getClassReference(), clazz.getData()) == SkipAnswer.KEEP) {
         result.add(trim(clazz, trimmer));
       }
     }
@@ -51,10 +51,10 @@ public class ParsedApiClassTrimming {
     return result;
   }
 
-  private static <E extends Throwable> ParsedApiClass trim(ParsedApiClass clazz, Trimmer<E> trimmer)
-      throws E {
+  private static <E extends Throwable> ParsedApiClass<ApiRange> trim(
+      ParsedApiClass<ApiRange> clazz, Trimmer<E> trimmer) throws E {
     var holdingClass = clazz.getClassReference();
-    var trimmedClass = new ParsedApiClass(holdingClass, clazz.getRange());
+    var trimmedClass = new ParsedApiClass<>(holdingClass, clazz.getData());
     clazz.forEachSupertypeThrowing(
         (classReference, apiRange) -> {
           if (trimmer.skipExtends(holdingClass, classReference, apiRange) == SkipAnswer.KEEP) {

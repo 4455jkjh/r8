@@ -110,6 +110,7 @@ public class InvokeDirect extends InvokeMethodWithReceiver {
    * initializing is the same. Art rejects code that has objects created by different new-instance
    * instructions flow to one constructor invoke.
    */
+  @SuppressWarnings("ReferenceEquality")
   public boolean sameConstructorReceiverValue(Invoke other) {
     if (!getInvokedMethod().name.toString().equals(Constants.INSTANCE_INITIALIZER_NAME)) {
       return true;
@@ -166,6 +167,7 @@ public class InvokeDirect extends InvokeMethodWithReceiver {
         this, clazz, appView, mode, assumption);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public DeadInstructionResult canBeDeadCode(AppView<?> appView, IRCode code) {
     ProgramMethod context = code.context();

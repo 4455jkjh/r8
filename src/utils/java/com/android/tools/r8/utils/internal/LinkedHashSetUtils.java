@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 
 public class LinkedHashSetUtils {
 
+  @SuppressWarnings("NonApiType")
   public static <T> void addAll(LinkedHashSet<T> set, LinkedHashSet<T> elements) {
     set.addAll(elements);
   }

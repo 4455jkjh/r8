@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking.methods;
 
-import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -59,7 +58,7 @@ public abstract class MethodsTestBase extends TestBase {
         .addKeepRules(keepRules)
         .compile()
         .inspect(i -> inspector.accept(i, Shrinker.R8Full))
-        .run(getMainClass())
+        .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(expected);
   }
 
@@ -67,25 +66,13 @@ public abstract class MethodsTestBase extends TestBase {
       List<String> keepRules, BiConsumer<CodeInspector, Shrinker> inspector, String expected)
       throws Throwable {
     testForR8Compat(parameters.getBackend())
+        .setMinApi(parameters)
         .enableNoVerticalClassMergingAnnotations()
         .addProgramClasses(getClasses())
         .addKeepRules(keepRules)
         .compile()
         .inspect(i -> inspector.accept(i, Shrinker.R8Compat))
-        .run(getMainClass())
-        .assertSuccessWithOutput(expected);
-  }
-
-  public void testOnProguard(
-      List<String> keepRules, BiConsumer<CodeInspector, Shrinker> inspector, String expected)
-      throws Throwable {
-    testForProguard()
-        .addProgramClasses(getClasses())
-        .addProgramClasses(NoVerticalClassMerging.class)
-        .addKeepRules(keepRules)
-        .compile()
-        .inspect(i -> inspector.accept(i, Shrinker.Proguard))
-        .run(getMainClass())
+        .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(expected);
   }
 
@@ -94,7 +81,6 @@ public abstract class MethodsTestBase extends TestBase {
       BiConsumer<CodeInspector, Shrinker> inspector,
       Function<Shrinker, String> expected)
       throws Throwable {
-    testOnProguard(keepRules, inspector, expected.apply(Shrinker.Proguard));
     testOnR8Compat(keepRules, inspector, expected.apply(Shrinker.R8Compat));
     testOnR8(keepRules, inspector, expected.apply(Shrinker.R8Full));
   }

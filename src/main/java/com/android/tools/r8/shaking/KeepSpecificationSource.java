@@ -80,7 +80,7 @@ public abstract class KeepSpecificationSource {
 
     private final byte[] content;
 
-    public KeepSpecificationBytes(Origin origin, byte[] bytes) {
+    KeepSpecificationBytes(Origin origin, byte[] bytes) {
       super(origin);
       this.content = bytes;
     }

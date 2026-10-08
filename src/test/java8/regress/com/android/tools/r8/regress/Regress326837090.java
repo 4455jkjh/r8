@@ -49,7 +49,7 @@ public class Regress326837090 extends TestBase {
         .enableInliningAnnotations()
         .addOptionsModification(o -> o.testing.reverseClassSortingForDeterminism = sortBackwards)
         .compile()
-        .run(TestClass.class)
+        .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines("foo", "foo")
         .inspect(
             codeInspector -> {

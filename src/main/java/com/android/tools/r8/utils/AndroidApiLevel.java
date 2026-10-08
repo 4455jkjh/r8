@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 
 /** Android API level description */
+@SuppressWarnings("AssignmentExpression")
 public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   private static final List<AndroidApiLevel> valuesSorted;
 
@@ -227,6 +228,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   /**
    * @throws IllegalArgumentException if the parsed API version is invalid (e.g. 99.99).
    */
+  @SuppressWarnings("ReferenceEquality")
   public static AndroidApiLevel getAndroidApiLevel(int major, int minor) {
     assert CINNAMON_BUN == LATEST; // This has to be updated when new API levels are added.
     switch (major) {
@@ -444,6 +446,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     return getAndroidApiLevel(UncheckedApiLevel.parse(apiLevel));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public byte serializeAsByte() {
     if (this == EXTENSION) {
       return 0x7f;

@@ -49,6 +49,7 @@ public class OriginalFieldWitnessInstruction extends Move {
     builder.addOriginalFieldWitness(getWitness(), src());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean identicalNonValueNonPositionParts(Instruction other) {
     if (this == other) {

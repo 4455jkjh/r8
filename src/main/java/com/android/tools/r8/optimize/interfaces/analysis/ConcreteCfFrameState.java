@@ -517,6 +517,7 @@ public class ConcreteCfFrameState extends CfFrameState {
     acceptWidePrimitiveHigh(localIndex, otherFrameType, otherIterator);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void acceptWidePrimitiveHigh(
       int localIndex,
       WidePrimitiveFrameType frameType,

@@ -17,9 +17,9 @@ import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.hamcrest.CoreMatchers.endsWith;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -27,7 +27,6 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpeci
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,16 +37,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class Jdk11AtomicTests extends DesugaredLibraryTestBase {
 
-  private static final Path ATOMIC_TESTS_FOLDER =
-      Paths.get(ToolHelper.JDK_11_TESTS_DIR + "java/util/concurrent/atomic/");
   private static Path ATOMIC_COMPILED_TESTS_FOLDER;
   private static final String ATOMIC_REFERENCE_TEST = "AtomicReferenceTest";
   private static final String ATOMIC_UPDATERS = "AtomicUpdaters";
-  private static final Path[] ATOMIC_TESTS_FILES =
-      new Path[] {
-        ATOMIC_TESTS_FOLDER.resolve(ATOMIC_REFERENCE_TEST + JAVA_EXTENSION),
-        ATOMIC_TESTS_FOLDER.resolve(ATOMIC_UPDATERS + JAVA_EXTENSION)
-      };
 
   private final TestParameters parameters;
   private final LibraryDesugaringSpecification libraryDesugaringSpecification;
@@ -78,10 +70,13 @@ public class Jdk11AtomicTests extends DesugaredLibraryTestBase {
 
   @BeforeClass
   public static void compileAtomicClasses() throws Exception {
+    Path atomicTestsFolder = TestDeps.getJdk11TestPath("java", "util", "concurrent", "atomic");
     ATOMIC_COMPILED_TESTS_FOLDER = getStaticTemp().newFolder("atomic").toPath();
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
         .addClasspathFiles(testNGPath())
-        .addSourceFiles(ATOMIC_TESTS_FILES)
+        .addSourceFiles(
+            atomicTestsFolder.resolve(ATOMIC_REFERENCE_TEST + JAVA_EXTENSION),
+            atomicTestsFolder.resolve(ATOMIC_UPDATERS + JAVA_EXTENSION))
         .setOutputPath(ATOMIC_COMPILED_TESTS_FOLDER)
         .compile();
   }

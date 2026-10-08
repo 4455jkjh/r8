@@ -92,6 +92,7 @@ public class AssumeIntRange extends Instruction {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean identicalNonValueNonPositionParts(Instruction other) {
     if (this == other) {

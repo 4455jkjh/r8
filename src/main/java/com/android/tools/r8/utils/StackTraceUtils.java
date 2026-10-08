@@ -32,6 +32,7 @@ public class StackTraceUtils {
 
   private static int counter = 0;
 
+  @SuppressWarnings("JdkObsolete")
   private static PrintStream getStacktracePrintStream() {
     if (pathToWriteStacktrace == null) {
       throw new RuntimeException("pathToWriteStacktrace is null");

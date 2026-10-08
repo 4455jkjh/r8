@@ -305,10 +305,12 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
             Lists.newArrayList(test.compileClassesTogether(inputJarFile, null).values()));
 
     Path out1 = mergedFromCompiledTogether.writeToZip();
-    ToolHelper.runArtNoVerificationErrors(out1.toString(), testPackage + "." + mainClass);
+    ToolHelper.runArtNoVerificationErrors(
+        out1.toString(), testPackage + "." + mainClass, parameters.getDexVm());
 
     Path out2 = mergedFromCompiledSeparately.writeToZip();
-    ToolHelper.runArtNoVerificationErrors(out2.toString(), testPackage + "." + mainClass);
+    ToolHelper.runArtNoVerificationErrors(
+        out2.toString(), testPackage + "." + mainClass, parameters.getDexVm());
 
     Path dissasemble1 = temp.newFolder().toPath().resolve("disassemble1.txt");
     Path dissasemble2 = temp.newFolder().toPath().resolve("disassemble2.txt");

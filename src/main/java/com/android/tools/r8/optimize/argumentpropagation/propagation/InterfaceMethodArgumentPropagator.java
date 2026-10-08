@@ -125,6 +125,7 @@ public class InterfaceMethodArgumentPropagator extends MethodArgumentPropagator 
     return interfaceState;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void propagateInterfaceStateToClassHierarchy(
       DexProgramClass interfaceDefinition, MethodStateCollectionBySignature interfaceState) {
     // Propagate the argument information for the interface's non-private virtual methods to the

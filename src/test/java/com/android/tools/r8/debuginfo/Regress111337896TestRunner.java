@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.dex.code.DexNop;
@@ -16,8 +18,21 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
 import java.util.Arrays;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class Regress111337896TestRunner extends DebugInfoTestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void test() throws Exception {
@@ -38,7 +53,7 @@ public class Regress111337896TestRunner extends DebugInfoTestBase {
                 .setMinApiLevel(minApi.getMajor())
                 .build());
         AndroidApp app = appSink.build();
-        assertEquals(expected, runOnArt(app, clazz.getCanonicalName()));
+        assertEquals(expected, runOnArt(app, clazz.getCanonicalName(), parameters.getDexVm()));
 
         // Check that the compiled output contains a nop to workaround the issue.
         // We can't really check much else as this only reproduces on some physical x86_64 devices.
@@ -89,7 +104,7 @@ public class Regress111337896TestRunner extends DebugInfoTestBase {
                 .setMinApiLevel(minApi.getMajor())
                 .build());
         AndroidApp app = appSink.build();
-        assertEquals(expected, runOnArt(app, clazz.getCanonicalName()));
+        assertEquals(expected, runOnArt(app, clazz.getCanonicalName(), parameters.getDexVm()));
 
         // Check that the compiled output contains a nop to workaround the issue.
         // We can't really check much else as this only reproduces on some physical x86_64 devices.

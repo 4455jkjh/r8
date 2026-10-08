@@ -18,8 +18,10 @@ import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.R8RunArtTestsTest.DexTool;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCondition;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
@@ -29,7 +31,10 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Assume;
@@ -66,8 +71,26 @@ public abstract class R8RunExamplesTestBase extends TestBase {
     return new String[] {pkg, input.name(), compiler.name(), mode.name(), clazz, output.name()};
   }
 
+  // Runs CF output tests on the default CF runtime and DEX output tests on each DEX runtime.
+  protected static Collection<Object[]> addTestParameters(Collection<String[]> tests) {
+    List<Object[]> result = new ArrayList<>();
+    for (TestParameters parameters :
+        getTestParameters().withDefaultCfRuntime().withDexRuntimes().build()) {
+      String output = parameters.isCfRuntime() ? Output.CF.name() : Output.DEX.name();
+      for (String[] test : tests) {
+        if (test[5].equals(output)) {
+          result.add(
+              new Object[] {parameters, test[0], test[1], test[2], test[3], test[4], test[5]});
+        }
+      }
+    }
+    return result;
+  }
+
   @Rule
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
+
+  protected final TestParameters parameters;
 
   private final Input input;
   private final CompilerUnderTest compiler;
@@ -77,7 +100,14 @@ public abstract class R8RunExamplesTestBase extends TestBase {
   protected final Output output;
 
   public R8RunExamplesTestBase(
-      String pkg, String input, String compiler, String mode, String mainClass, String output) {
+      TestParameters parameters,
+      String pkg,
+      String input,
+      String compiler,
+      String mode,
+      String mainClass,
+      String output) {
+    this.parameters = parameters;
     this.pkg = pkg;
     this.input = Input.valueOf(input);
     this.compiler = CompilerUnderTest.valueOf(compiler);
@@ -176,11 +206,13 @@ public abstract class R8RunExamplesTestBase extends TestBase {
     }
     Assume.assumeTrue(ToolHelper.artSupported() || ToolHelper.compareAgaintsGoldenFiles());
 
-    DexVm vm = ToolHelper.getDexVm();
-    Assume.assumeFalse("Triage (b/144966342)", vm.isNewerThan(DexVm.ART_9_0_0_HOST));
+    if (parameters.isDexRuntime()) {
+      Assume.assumeFalse(
+          "b/570426614", parameters.getDexRuntimeVersion().isNewerThan(Version.V9_0_0));
 
-    if (shouldSkipVm(vm.getVersion())) {
-      return;
+      if (shouldSkipVm(parameters.getDexRuntimeVersion())) {
+        return;
+      }
     }
 
     Path generated = getOutputFile();
@@ -194,7 +226,8 @@ public abstract class R8RunExamplesTestBase extends TestBase {
 
     TestCondition condition =
         output == Output.CF ? getFailingRunCf().get(mainClass) : getFailingRun().get(mainClass);
-    if (condition != null && condition.test(DexTool.NONE, compiler, vm.getVersion(), mode)) {
+    if (condition != null
+        && condition.test(DexTool.NONE, compiler, parameters.getRuntime(), mode)) {
       thrown.expect(Throwable.class);
     }
 
@@ -220,7 +253,10 @@ public abstract class R8RunExamplesTestBase extends TestBase {
     // Check output against JVM output if we have it, otherwise check on art
     String d8Output =
         ToolHelper.runArtNoVerificationErrors(
-            Collections.singletonList(generated.toString()), mainClass, null, vm);
+            Collections.singletonList(generated.toString()),
+            mainClass,
+            null,
+            parameters.getDexVm());
     String javaOutput = javaResult.stdout;
     assertEquals("JVM and Art output differ", javaOutput, d8Output);
   }

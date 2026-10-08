@@ -56,11 +56,7 @@ public class GlobalSyntheticsGeneratorCommandParser {
             CliParserUtils.addMinApiOption(
                 b -> b.hasDefinedApiLevel,
                 (b, apiLevel) -> {
-                  if (apiLevel.getMinor() != 0) {
-                    b.builder.error(
-                        new StringDiagnostic("Minor API versions are not supported", b.origin));
-                  }
-                  b.builder.setMinApiLevel(apiLevel.getMajor());
+                  b.builder.setMinApiLevel(apiLevel.getMajor(), apiLevel.getMinor());
                   b.hasDefinedApiLevel = true;
                 },
                 (b, err) -> b.builder.error(new StringDiagnostic(err, b.origin))))

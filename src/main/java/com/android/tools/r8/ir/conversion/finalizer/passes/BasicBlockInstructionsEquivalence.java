@@ -59,6 +59,7 @@ class BasicBlockInstructionsEquivalence extends Equivalence<BasicBlock> {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean verifyAllSuccessors(List<BasicBlock> successors0, List<BasicBlock> successors1) {
     if (successors0.size() != successors1.size()) {
       return false;

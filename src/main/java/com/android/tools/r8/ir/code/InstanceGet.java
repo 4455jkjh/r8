@@ -20,7 +20,6 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.ir.analysis.ClassInitializationAnalysis;
@@ -62,6 +61,7 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
     return super.canBeDeadCode(appView, code);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static InstanceGet copyOf(Value newValue, InstanceGet original) {
     assert newValue != original.outValue();
     return InstanceGet.builder()
@@ -150,17 +150,6 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
   }
 
   @Override
-  public boolean instructionMayHaveSideEffects(
-      AppView<?> appView,
-      ProgramMethod context,
-      AbstractValueSupplier abstractValueSupplier,
-      SideEffectAssumption assumption) {
-    FieldResolutionResult resolutionResult = appView.appInfo().resolveField(getField(), context);
-    return internalInstructionInstanceCanThrow(appView, context, assumption, resolutionResult)
-        || resolutionResult.getResolvedField().isVolatile();
-  }
-
-  @Override
   public int maxInValueRegister() {
     return Constants.U4BIT_MAX;
   }
@@ -242,6 +231,7 @@ public class InstanceGet extends FieldInstruction implements FieldGet, InstanceF
     builder.add(new CfInstanceFieldRead(getField()), this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean throwsNpeIfValueIsNull(Value value, AppView<?> appView, ProgramMethod context) {
     return object() == value;

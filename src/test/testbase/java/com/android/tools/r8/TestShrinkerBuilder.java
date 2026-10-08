@@ -14,7 +14,6 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -58,7 +57,7 @@ public abstract class TestShrinkerBuilder<
 
   // TODO(b/270021825): Look into if we can assert backend is DEX.
   @Override
-  public T setMinApi(AndroidApiLevel minApiLevel) {
+  public T setMinApi(UncheckedApiLevel minApiLevel) {
     return backend == Backend.DEX ? super.setMinApi(minApiLevel) : self();
   }
 

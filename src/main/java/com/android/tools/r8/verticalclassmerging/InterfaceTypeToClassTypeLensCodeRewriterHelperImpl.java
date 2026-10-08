@@ -190,6 +190,7 @@ public class InterfaceTypeToClassTypeLensCodeRewriterHelperImpl
         .addLast(new WorklistItem(operandIndex, originalType, rewrittenType));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator insertCastForOperand(
       Value operand,
       DexType castType,
@@ -226,6 +227,7 @@ public class InterfaceTypeToClassTypeLensCodeRewriterHelperImpl
     return instructionIterator;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isOperandRewrittenWithLens(
       Value operand, BasicBlock blockWithUser, boolean isCodeFullyRewrittenWithLens) {
     if (isCodeFullyRewrittenWithLens) {

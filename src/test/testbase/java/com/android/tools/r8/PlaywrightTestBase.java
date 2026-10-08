@@ -15,13 +15,13 @@ import com.microsoft.playwright.Request;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
+
 public class PlaywrightTestBase extends TestBase {
   private static Playwright playwright;
   private static Browser browser;
@@ -131,26 +131,8 @@ public class PlaywrightTestBase extends TestBase {
 
 
   private static Path resolveChromeExecutable() {
-    Path chromeDir = Paths.get(ToolHelper.THIRD_PARTY_DIR, "chrome_headless");
-    if (!Files.exists(chromeDir)) {
-      return null;
-    }
-
+    Path chromeDir = TestDeps.getChromeHeadlessDir();
     boolean isMac = ToolHelper.isMac();
-    boolean isWindows = ToolHelper.isWindows();
-    boolean isLinux = ToolHelper.isLinux();
-
-    if (isMac) {
-      chromeDir = chromeDir.resolve("mac");
-    } else if (isLinux) {
-      chromeDir = chromeDir.resolve("linux");
-    } else if (isWindows) {
-      chromeDir = chromeDir.resolve("windows");
-    }
-
-    if (!Files.exists(chromeDir)) {
-      return null;
-    }
 
     String[] executables = {
       "chrome-headless-shell", "chrome", "chromium", "chrome-headless-shell.exe", "chrome.exe"

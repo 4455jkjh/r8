@@ -6,8 +6,14 @@ package com.android.tools.r8.ir.optimize.inliner;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 class Foobar {
   public static void main(String[] args) {
@@ -21,7 +27,16 @@ class Bar {
   }
 }
 
+@RunWith(Parameterized.class)
 public class InliningOptimize extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
 
   @Test
   public void test() throws Exception {
@@ -45,7 +60,7 @@ public class InliningOptimize extends TestBase {
                             invoke.getMethod().name.toString().contains("returnPlusConstant"));
                       });
             })
-        .run(Foobar.class)
+        .run(parameters.getRuntime(), Foobar.class)
         .assertSuccessWithOutputLines("Value: 84");
   }
 }

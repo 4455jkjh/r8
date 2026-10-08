@@ -698,6 +698,7 @@ public class DexCode extends Code
     return current;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public String toSmaliString(RetracerForCodePrinting retracer) {
     StringBuilder builder = new StringBuilder();
     // Find labeled targets.

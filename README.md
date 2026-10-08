@@ -67,9 +67,6 @@ The R8 project uses [`depot_tools`](https://www.chromium.org/developers/how-tos/
 from the chromium project to manage dependencies. Install `depot_tools` and add it to
 your path before proceeding.
 
-The R8 project uses Java 8 language features and requires a Java 8 compiler
-and runtime system.
-
 Typical steps to download and build:
 
 
@@ -78,8 +75,8 @@ Typical steps to download and build:
     $ tools/gradle.py r8
 
 The `tools/gradle.py` script will bootstrap using depot_tools to download
-a version of gradle to use for building on the first run. This will produce
-a jar file: `build/libs/r8.jar` which contains both R8 and D8.
+a version of gradle and the required JDKs to use for building on the first run.
+This will produce a jar file: `build/libs/r8.jar` which contains both R8 and D8.
 
 ## Setting up IntelliJ
 
@@ -88,7 +85,6 @@ Follow the instructions in the above section.
 1. Open the root project `r8/` in IntelliJ
 2. Navigate to "Settings" > "Build, Execution, Deployment" > "Build Tools" > "Gradle"
    1. Select `r8/third_party/gradle` as "Local installation" in "Distribution"
-   2. Select `r8/third_party/openjdk/jdk-11/linux` as "Gradle JVM"
 3. Sync the project using Gradle
 
 In order to run tests it may currently be necessary to run `tools/test.py` from the command line first.

@@ -9,7 +9,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverPropagateValue;
@@ -100,8 +99,6 @@ public class KeptViaClassInitializerTestRunner extends TestBase {
 
   @Test
   public void testKeptMethod() throws Exception {
-    assumeTrue(ToolHelper.getDexVm().getVersion().isNewerThanOrEqual(Version.V7_0_0));
-
     MethodReference mainMethod =
         methodFromMethod(Main.class.getDeclaredMethod("main", String[].class));
 

@@ -57,7 +57,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
     boolean printHelp = false;
     boolean printVersion = false;
 
-    public ParserState(RetraceCommand.Builder builder, DiagnosticsHandler diagnosticsHandler) {
+    ParserState(RetraceCommand.Builder builder, DiagnosticsHandler diagnosticsHandler) {
       this.builder = builder;
       this.diagnosticsHandler = diagnosticsHandler;
     }
@@ -375,6 +375,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
     }
   }
 
+  @SuppressWarnings({"ClosingStandardOutputStreams", "JdkObsolete"})
   private static void run(String[] args, DiagnosticsHandler diagnosticsHandler) {
     ParserState state = parseArguments(args, diagnosticsHandler);
     if (state.printHelp) {
@@ -466,7 +467,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
     private final DiagnosticsHandler diagnosticsHandler;
     private final boolean printInfo;
 
-    public RetraceDiagnosticsHandler(DiagnosticsHandler diagnosticsHandler, boolean printInfo) {
+    RetraceDiagnosticsHandler(DiagnosticsHandler diagnosticsHandler, boolean printInfo) {
       this.diagnosticsHandler = diagnosticsHandler;
       this.printInfo = printInfo;
       assert diagnosticsHandler != null;

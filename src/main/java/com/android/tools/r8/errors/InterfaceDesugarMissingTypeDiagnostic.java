@@ -63,6 +63,7 @@ public class InterfaceDesugarMissingTypeDiagnostic implements DesugarDiagnostic 
     return contextType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public String getDiagnosticMessage() {
     StringBuilder builder =

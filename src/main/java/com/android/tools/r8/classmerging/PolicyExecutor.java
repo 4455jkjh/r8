@@ -60,6 +60,7 @@ public abstract class PolicyExecutor<MG extends MergeGroup> {
     return linkedGroups;
   }
 
+  @SuppressWarnings("NonApiType")
   protected abstract LinkedList<MG> apply(
       Policy policy, LinkedList<MG> linkedGroups, ExecutorService executorService)
       throws ExecutionException;

@@ -70,6 +70,7 @@ public class ConstNumber extends ConstInstruction {
     return copyOf(newValue, original);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static ConstNumber copyOf(Value newValue, ConstNumber original) {
     assert newValue != original.outValue();
     return new ConstNumber(newValue, original.getRawValue());
@@ -288,6 +289,7 @@ public class ConstNumber extends ConstInstruction {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean identicalNonValueNonPositionParts(Instruction other) {
     if (other == this) {

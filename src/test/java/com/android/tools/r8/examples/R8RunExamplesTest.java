@@ -10,6 +10,7 @@ import static com.android.tools.r8.TestCondition.match;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.TestCondition;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.google.common.collect.ImmutableMap;
@@ -26,8 +27,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class R8RunExamplesTest extends R8RunExamplesTestBase {
 
-  @Parameters(name = "{0}_{1}_{2}_{3}_{5}_{6}")
-  public static Collection<String[]> data() {
+  @Parameters(name = "{0}, {1}_{2}_{3}_{4}_{6}_{7}")
+  public static Collection<Object[]> data() {
     String[] tests = {
       "arithmetic.Arithmetic",
       "inlining.Inlining",
@@ -68,17 +69,18 @@ public class R8RunExamplesTest extends R8RunExamplesTestBase {
               test,
               Output.DEX));
     }
-    return fullTestList;
+    return addTestParameters(fullTestList);
   }
 
   public R8RunExamplesTest(
+      TestParameters parameters,
       String pkg,
       String input,
       String compiler,
       String mode,
       String mainClass,
       String output) {
-    super(pkg, input, compiler, mode, mainClass, output);
+    super(parameters, pkg, input, compiler, mode, mainClass, output);
   }
 
   @Override

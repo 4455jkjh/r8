@@ -378,6 +378,7 @@ public class DesugaredLibraryConversionCfProvider {
 
   // The parameters are converted and returned in an array of converted parameters. The parameter
   // array then needs to be unwrapped at the call site.
+  @SuppressWarnings("NonApiType")
   private void addOutlineParameterConversionInstructions(
       DexMethod[] parameterConversions,
       DexMethod parameterConversionTarget,
@@ -437,6 +438,7 @@ public class DesugaredLibraryConversionCfProvider {
     return new CfCode(holder, stackIndex + 4, stackIndex, cfInstructions);
   }
 
+  @SuppressWarnings("NonApiType")
   private void addInlineParameterConversionInstructions(
       DexMethod[] parameterConversions,
       ArrayList<CfInstruction> cfInstructions,

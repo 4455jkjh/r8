@@ -32,7 +32,7 @@ public class TimingImpl extends TimingImplBase {
     stack.push(top);
   }
 
-  private static class MemInfo {
+  static class MemInfo {
     final long used;
 
     MemInfo(long used) {
@@ -93,6 +93,7 @@ public class TimingImpl extends TimingImplBase {
       return title + ": " + prettyTime(duration());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public String toString(Node top) {
       if (this == top) return toString();
       return "(" + prettyPercentage(duration(), top.duration()) + ") " + toString();
@@ -230,12 +231,13 @@ public class TimingImpl extends TimingImplBase {
       final Node mergeTarget;
       final Node mergeSource;
 
-      public Item(Node mergeTarget, Node mergeSource) {
+      Item(Node mergeTarget, Node mergeSource) {
         this.mergeTarget = mergeTarget;
         this.mergeSource = mergeSource;
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void add(Collection<Timing> timings) {
       final boolean trackMemory = merged.trackMemory;
@@ -374,6 +376,7 @@ public class TimingImpl extends TimingImplBase {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void report() {
     assert stack.size() == 1 : "Unexpected non-singleton stack: " + stack;

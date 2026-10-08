@@ -176,8 +176,12 @@ def ensure_dependencies(options):
         os.path.join(utils.OPENSOURCE_DUMPS_DIR, SIZE_COMPILEDUMPS[c])
         for c in options.compiledumps
     }
-    dex2oat_host_dir = os.path.join(utils.TOOLS_DIR, 'linux',
-                                    dex2oat.DIRS[dex2oat.LATEST])
+    if dex2oat.LATEST in dex2oat.HOST_ART_VERSIONS:
+        dex2oat_host_dir = os.path.join(utils.TOOLS_DIR, 'linux',
+                                        dex2oat.DIRS[dex2oat.LATEST])
+    else:
+        dex2oat_host_dir = os.path.join(utils.THIRD_PARTY, 'dex2oat',
+                                        dex2oat.LATEST)
     deps_to_download.add(dex2oat_host_dir)
 
     for dep_path in sorted(deps_to_download):
@@ -496,26 +500,6 @@ def resolve_baseline_results(options,
         return selected_hash, None
 
 
-def build_binary_sizes_dict(items):
-    binary_sizes = {}
-    for key, entry in (items or {}).items():
-        dex_size = entry.get('dex_size')
-        if dex_size is None:
-            continue
-        name = entry.get('name', key)
-        kind = entry.get('kind', '')
-        if 'd8-debug' in kind or key.endswith(':d8-debug'):
-            tool = 'd8-debug'
-        elif 'd8-release' in kind or key.endswith(':d8-release'):
-            tool = 'd8-release'
-        elif 'd8' in kind or key.endswith(':d8'):
-            tool = 'd8'
-        else:
-            tool = 'r8'
-        binary_sizes[f'{name} ({tool})'] = int(dex_size)
-    return binary_sizes
-
-
 def format_bytes(num_bytes):
     abs_bytes = abs(num_bytes)
     if abs_bytes < 1024:
@@ -535,7 +519,7 @@ def format_diff(base_val, patch_val):
     sign = '+' if diff_bytes > 0 else ''
     text = f'{sign}{format_bytes(diff_bytes)} ({pct:.2f}%)'
     badge = '🟢' if diff_bytes < 0 else '🔴'
-    return f'{badge} **{text}**'
+    return f'{badge} {text}'
 
 
 def geomean_ratio(ratios):
@@ -551,9 +535,15 @@ def display_name_and_type(key, entry):
         return name, 'd8-debug'
     if 'd8-release' in kind:
         return name, 'd8-rel'
+    display_type = 'r8'
     if name.endswith('Partial'):
-        return name[:-len('Partial')], 'r8-part'
-    return name, 'r8'
+        name = name[:-len('Partial')]
+        display_type = 'r8-part'
+    # Keep the names short so that the table rows fit in Gerrit emails.
+    for suffix in ('WithResourceShrinking', 'App'):
+        if name.endswith(suffix):
+            name = name[:-len(suffix)]
+    return name, display_type
 
 
 def max_abs_pct_change(base_entry, patch_entry, metrics):
@@ -576,7 +566,7 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
     for key, patch_entry in patch_items.items():
         base_entry = (base_items or {}).get(key, {})
         display_name, display_type = display_name_and_type(key, patch_entry)
-        row_cells = [f'`{display_name}`', display_type]
+        row_cells = [display_name, display_type]
         row_has_diff = False
         for m in metrics:
             b_val = base_entry.get(m)
@@ -625,12 +615,19 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
     for m in metrics:
         footer_row.append(fmt_geomean(ratios[m]))
 
+    # Resource sizes rarely change. Drop the column when they did not, to keep
+    # the rows narrow enough to not wrap in Gerrit emails.
+    if all(row[-1] in ('0B', '—') for row in data_rows):
+        headers = headers[:-1]
+        data_rows = [row[:-1] for row in data_rows]
+        footer_row = footer_row[:-1]
+
     # PolyGerrit's <gr-formatted-text> renders GFM pipe tables into HTML
     # <table>/<th align=...>/<td align=...>, but its Shadow DOM stylesheet
     # defines no cell padding on th/td. Adding non-breaking spaces (\u00a0)
     # provides horizontal column spacing in HTML while ASCII space padding
     # keeps the raw Markdown pipes aligned in plain text logs.
-    pad = '\u00a0\u00a0\u00a0'
+    pad = '\u00a0\u00a0'
 
     def pad_cells(row):
         return [
@@ -726,12 +723,9 @@ def main(argv=None):
         if options.json_output:
             json_path = os.path.abspath(options.json_output)
             os.makedirs(os.path.dirname(json_path), exist_ok=True)
-            got_revision = head_hash if options.upload_baseline else base_hash
             with open(json_path, 'w') as f:
                 json.dump(
                     {
-                        'got_revision': got_revision,
-                        'binary_sizes': build_binary_sizes_dict(patch_items),
                         'base_hash': base_hash,
                         'head_hash': head_hash,
                         'base': base_items,

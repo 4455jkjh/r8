@@ -92,6 +92,7 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
     return classes.containsAll(collection);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void forEachSource(Consumer<DexProgramClass> consumer) {
     assert hasTarget();
     for (DexProgramClass clazz : classes) {
@@ -101,6 +102,7 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
     }
   }
 
+  @SuppressWarnings("NonApiType")
   public LinkedList<DexProgramClass> getClasses() {
     return classes;
   }
@@ -143,6 +145,7 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
     this.instanceFieldMap = instanceFieldMap;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Iterable<DexProgramClass> getSources() {
     assert hasTarget();
     return Iterables.filter(classes, clazz -> clazz != target);
@@ -161,6 +164,7 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
     return target;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public ProgramField getTargetInstanceField(ProgramField field) {
     assert hasTarget();
     assert hasInstanceFieldMap();

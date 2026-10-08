@@ -27,53 +27,53 @@ public class ParsedApiClassSorting {
       Comparator.comparing(FieldTypelessReference::getFieldName)
           .thenComparing(field -> field.getHolderClass().getDescriptor());
 
-  private static final Comparator<ParsedApiClass> PARSED_API_CLASS_COMPARATOR =
+  private static final Comparator<ParsedApiClass<?>> PARSED_API_CLASS_COMPARATOR =
       Comparator.comparing(ParsedApiClass::getClassReference, CLASS_REFERENCE_COMPARATOR);
 
-  public static Collection<ParsedApiClass> sorted(Collection<ParsedApiClass> apiClasses)
+  public static <D> Collection<ParsedApiClass<D>> sorted(Collection<ParsedApiClass<D>> apiClasses)
       throws ApiDatabaseGeneratorException {
-    List<ParsedApiClass> sortedClasses = new ArrayList<>(apiClasses.size());
-    for (ParsedApiClass apiClass : apiClasses) {
+    List<ParsedApiClass<D>> sortedClasses = new ArrayList<>(apiClasses.size());
+    for (ParsedApiClass<D> apiClass : apiClasses) {
       sortedClasses.add(sortedClass(apiClass));
     }
     return uniquelySorted(
         sortedClasses, PARSED_API_CLASS_COMPARATOR, ParsedApiClass::getClassReference);
   }
 
-  private static ParsedApiClass sortedClass(ParsedApiClass apiClass)
+  private static <D> ParsedApiClass<D> sortedClass(ParsedApiClass<D> apiClass)
       throws ApiDatabaseGeneratorException {
-    ParsedApiClass sortedClass =
-        new ParsedApiClass(apiClass.getClassReference(), apiClass.getRange());
+    ParsedApiClass<D> sortedClass =
+        new ParsedApiClass<>(apiClass.getClassReference(), apiClass.getData());
 
     List<ClassReference> supertypes = new ArrayList<>();
     apiClass.forEachSupertype((ref, range) -> supertypes.add(ref));
     for (ClassReference supertype : uniquelySorted(supertypes, CLASS_REFERENCE_COMPARATOR)) {
-      sortedClass.registerSupertype(supertype, apiClass.getSupertypeRange(supertype));
+      sortedClass.registerSupertype(supertype, apiClass.getSupertypeData(supertype));
     }
 
     List<ClassReference> interfaces = new ArrayList<>();
     apiClass.forEachInterface((ref, range) -> interfaces.add(ref));
     for (ClassReference iface : uniquelySorted(interfaces, CLASS_REFERENCE_COMPARATOR)) {
-      sortedClass.registerInterface(iface, apiClass.getInterfaceRange(iface));
+      sortedClass.registerInterface(iface, apiClass.getInterfaceData(iface));
     }
 
     List<MethodReference> methods = new ArrayList<>();
     apiClass.forEachMethod((ref, range) -> methods.add(ref));
     for (MethodReference method : uniquelySorted(methods, METHOD_REFERENCE_COMPARATOR)) {
-      sortedClass.registerMethod(method, apiClass.getMethodRange(method));
+      sortedClass.registerMethod(method, apiClass.getMethodData(method));
     }
 
     List<FieldTypelessReference> fields = new ArrayList<>();
     apiClass.forEachField((ref, range) -> fields.add(ref));
     for (FieldTypelessReference field : uniquelySorted(fields, FIELD_REFERENCE_COMPARATOR)) {
-      sortedClass.registerField(field, apiClass.getFieldRange(field));
+      sortedClass.registerField(field, apiClass.getFieldData(field));
     }
 
     return sortedClass;
   }
 
   private static <T> List<T> uniquelySorted(
-      Collection<T> items, Comparator<T> comparator, Function<T, ?> toMessage)
+      Collection<T> items, Comparator<? super T> comparator, Function<T, ?> toMessage)
       throws ApiDatabaseGeneratorException {
     List<T> sorted = new ArrayList<>(items);
     sorted.sort(comparator);
@@ -88,7 +88,7 @@ public class ParsedApiClassSorting {
     return sorted;
   }
 
-  private static <T> List<T> uniquelySorted(Collection<T> items, Comparator<T> comparator)
+  private static <T> List<T> uniquelySorted(Collection<T> items, Comparator<? super T> comparator)
       throws ApiDatabaseGeneratorException {
     return uniquelySorted(items, comparator, Object::toString);
   }

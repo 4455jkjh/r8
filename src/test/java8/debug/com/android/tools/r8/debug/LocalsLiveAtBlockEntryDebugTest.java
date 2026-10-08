@@ -5,9 +5,9 @@ package com.android.tools.r8.debug;
 
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -18,6 +18,9 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test to check that locals that are introduced in a block that is not hit, still start in the
@@ -25,29 +28,39 @@ import org.junit.runner.RunWith;
  *
  * <p>See b/75251251 or b/78617758
  */
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class LocalsLiveAtBlockEntryDebugTest extends DebugTestBase {
 
   final String className = "LocalsLiveAtEntry";
   final String sourcefile = className + ".j";
   final String methodName = "test";
 
-  @Test
-  public void testCF() throws Throwable {
-    JasminBuilder builder = getBuilderForTest(className, methodName);
-    Path outdir = temp.newFolder().toPath();
-    builder.writeClassFiles(outdir);
-    CfDebugTestConfig config = new CfDebugTestConfig();
-    config.addPaths(outdir);
-    runTest(config);
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters()
+        .withDefaultCfRuntime()
+        .withDexRuntimesStartingFromIncluding(Version.V7_0_0)
+        .build();
   }
 
   @Test
-  @IgnoreIfVmOlderThan(Version.V7_0_0)
+  public void testCF() throws Throwable {
+    parameters.assumeCfRuntime();
+    JasminBuilder builder = getBuilderForTest(className, methodName);
+    Path outdir = temp.newFolder().toPath();
+    builder.writeClassFiles(outdir);
+    runTest(new CfDebugTestConfig(parameters.asCfRuntime(), ImmutableList.of(outdir)));
+  }
+
+  @Test
   public void testD8() throws Throwable {
+    parameters.assumeDexRuntime();
     JasminBuilder builder = getBuilderForTest(className, methodName);
     List<Path> outputs = builder.writeClassFiles(temp.newFolder().toPath());
-    runTest(new D8DebugTestConfig().compileAndAdd(temp, outputs));
+    runTest(new D8DebugTestConfig(parameters.asDexRuntime()).compileAndAdd(temp, outputs));
   }
 
   private void runTest(DebugTestConfig config) throws Throwable {

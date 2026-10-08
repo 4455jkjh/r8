@@ -56,7 +56,7 @@ public class InterfaceRenewalInLoopDebugTestRunner extends DebugTestBase {
     assertThat(methodSubject, isPresent());
     verifyNotDevirtualized(methodSubject);
 
-    DebugTestConfig config = result.debugConfig();
+    DebugTestConfig config = result.debugConfig(parameters.getRuntime());
     runDebugTest(config, MAIN.getCanonicalName(),
         breakpoint(MAIN.getCanonicalName(), "booRunner", 37),
         run(),

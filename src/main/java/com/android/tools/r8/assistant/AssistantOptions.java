@@ -27,6 +27,7 @@ public class AssistantOptions {
   public boolean enableAssistantInstrumentation =
       parseSystemPropertyOrDefault("com.android.tools.r8.assistant.instrumentation", false);
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean shouldExitEarly() {
     // TODO(b/486089172): Consider making this an option instead.
     return (exportFinalKeepInfoCollectionToDirectory != null

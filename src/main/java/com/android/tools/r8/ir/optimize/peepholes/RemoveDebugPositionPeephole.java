@@ -47,6 +47,7 @@ public class RemoveDebugPositionPeephole implements BasicBlockPeephole {
   private final PeepholeLayout layout =
       PeepholeLayout.lookForward(debugPositionExp, secondInstructionExp);
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean match(InstructionListIterator it) {
     Match match = layout.test(it);

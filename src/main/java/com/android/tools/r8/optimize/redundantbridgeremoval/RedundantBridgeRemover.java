@@ -149,6 +149,7 @@ public class RedundantBridgeRemover extends MemberRebindingHelper {
     run(executorService, timing, null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void run(
       ExecutorService executorService,
       Timing timing,
@@ -300,6 +301,7 @@ public class RedundantBridgeRemover extends MemberRebindingHelper {
       return removedBridges;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void visit(DexProgramClass clazz) {
       ProgramMethodSet bridgesToRemoveForClass = ProgramMethodSet.create();
@@ -441,6 +443,7 @@ public class RedundantBridgeRemover extends MemberRebindingHelper {
       this.bridge = bridge;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     protected DexEncodedMethod lookupMethod(
         DexClass clazz, DexProto methodProto, DexString methodName) {

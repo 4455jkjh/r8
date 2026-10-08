@@ -8,16 +8,15 @@ import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11TestLi
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
 import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Assume;
@@ -30,8 +29,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class Jdk11NameLimitsTest extends DesugaredLibraryTestBase {
 
-  private static final Path TEST_PATH =
-      Paths.get(ToolHelper.JDK_11_TESTS_DIR).resolve("java/nio/file/Files/NameLimits.java");
   private static Path[] COMPILED_TEST_PATH;
 
   private final TestParameters parameters;
@@ -70,7 +67,8 @@ public class Jdk11NameLimitsTest extends DesugaredLibraryTestBase {
     Path tmpDirectory = getStaticTemp().newFolder("cmp").toPath();
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
         .addOptions(options)
-        .addSourceFiles(TEST_PATH)
+        .addSourceFiles(
+            TestDeps.getJdk11TestPath("java", "nio", "file", "Files", "NameLimits.java"))
         .setOutputPath(tmpDirectory)
         .compile();
     COMPILED_TEST_PATH = getAllFilesWithSuffixInDirectory(tmpDirectory, CLASS_EXTENSION);

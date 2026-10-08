@@ -13,6 +13,7 @@ import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexClass;
@@ -244,35 +245,35 @@ public class SmaliTestBase extends TestBase {
         .getMethod();
   }
 
-  public String runArt(AndroidApp application) {
-    return runArt(application, DEFAULT_MAIN_CLASS_NAME);
+  public String runArt(AndroidApp application, DexVm vm) {
+    return runArt(application, DEFAULT_MAIN_CLASS_NAME, vm);
   }
 
-  public String runArt(AndroidApp application, String mainClass) {
+  public String runArt(AndroidApp application, String mainClass, DexVm vm) {
     try {
       Path out = temp.getRoot().toPath().resolve("run-art-input.zip");
       // TODO(sgjesse): Pass in a unique temp directory for each run.
       application.writeToZipForTesting(out, OutputMode.DexIndexed);
-      return ToolHelper.runArtNoVerificationErrors(out.toString(), mainClass);
+      return ToolHelper.runArtNoVerificationErrors(out.toString(), mainClass, vm);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static String runArt(Path path, String mainClass) {
+  public static String runArt(Path path, String mainClass, DexVm vm) {
     try {
-      return ToolHelper.runArtNoVerificationErrors(path.toString(), mainClass);
+      return ToolHelper.runArtNoVerificationErrors(path.toString(), mainClass, vm);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public void runDex2Oat(AndroidApp application) {
+  public void runDex2Oat(AndroidApp application, DexVm vm) {
     try {
       Path dexOut = temp.getRoot().toPath().resolve("run-dex2oat-input.zip");
       Path oatFile = temp.getRoot().toPath().resolve("oat-file");
       application.writeToZipForTesting(dexOut, OutputMode.DexIndexed);
-      ToolHelper.runDex2Oat(dexOut, oatFile, temp.newFolder().toPath());
+      ToolHelper.runDex2Oat(dexOut, oatFile, temp.newFolder().toPath(), vm);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

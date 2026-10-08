@@ -137,6 +137,7 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
     return residualSignature;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void addMappingInformation(
       ReferentialMappingInformation info, Consumer<MappingInformation> onProhibitedAddition) {
     if (additionalMappingInformation == EMPTY_MAPPING_INFORMATION) {

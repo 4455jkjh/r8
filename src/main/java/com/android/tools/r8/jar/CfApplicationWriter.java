@@ -8,6 +8,7 @@ import static com.android.tools.r8.utils.positions.LineNumberOptimizer.runAndWri
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.ClassFileConsumerUtils;
+import com.android.tools.r8.GlobalSyntheticsConsumer;
 import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.ApplicationWriter;
@@ -66,10 +67,9 @@ public class CfApplicationWriter {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void writeApplication(
-      ClassFileConsumer consumer,
-      ExecutorService executorService,
-      Timing timing)
+      ClassFileConsumer consumer, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     timing.begin("CfApplication.write");
 
@@ -100,7 +100,9 @@ public class CfApplicationWriter {
         classes = new ArrayList<>(allClasses.size());
         for (DexProgramClass clazz : allClasses) {
           if (appView.getSyntheticItems().isGlobalSyntheticClassTransitive(clazz)) {
-            globalSyntheticClasses.add(clazz);
+            if (options.getGlobalSyntheticsConsumer() != GlobalSyntheticsConsumer.emptyConsumer()) {
+              globalSyntheticClasses.add(clazz);
+            }
             Consumer<DexProgramClass> globalSyntheticCreatedCallback =
                 appView.options().testing.globalSyntheticCreatedCallback;
             if (globalSyntheticCreatedCallback != null) {
@@ -131,6 +133,8 @@ public class CfApplicationWriter {
             executorService,
             timing);
         globalsConsumer.finished(appView);
+      } else if (options.hasGlobalSyntheticsConsumer()) {
+        options.getGlobalSyntheticsConsumer().finished(appView.reporter());
       }
       ApplicationWriter.supplyAdditionalConsumers(appView, Collections.emptyList());
     } finally {

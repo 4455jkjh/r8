@@ -218,6 +218,7 @@ public class DefaultInstanceInitializerCode extends Code
     return System.identityHashCode(this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected boolean computeEquals(Object other) {
     return this == other;

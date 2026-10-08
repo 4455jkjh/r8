@@ -78,7 +78,7 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
       this.appView = appView;
     }
 
-    public void addCode(DexWritableCode code, ProgramMethod method) {
+    void addCode(DexWritableCode code, ProgramMethod method) {
       assert appView.options().canUseCanonicalizedCodeObjects();
       if (counts == null) {
         counts = new HashMap<>();
@@ -91,7 +91,7 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
       }
     }
 
-    public int getCount(ProgramMethod method) {
+    int getCount(ProgramMethod method) {
       if (counts == null) {
         assert !appView.options().canUseCanonicalizedCodeObjects()
             || method.getDefinition().getDexWritableCodeOrNull() == null;

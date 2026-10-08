@@ -931,6 +931,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    * Returns a copy of this AppInfoWithLiveness where the set of classes is pruned using the given
    * DexApplication object.
    */
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public AppInfoWithLiveness prunedCopyFrom(
       PrunedItems prunedItems, ExecutorService executorService, Timing timing)

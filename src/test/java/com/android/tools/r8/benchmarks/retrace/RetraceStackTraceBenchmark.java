@@ -7,8 +7,8 @@ import static com.android.tools.r8.ToolHelper.shouldRunSlowTests;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.benchmarks.BenchmarkDependency;
@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -41,8 +40,7 @@ import org.junit.runners.Parameterized.Parameters;
 public abstract class RetraceStackTraceBenchmark extends BenchmarkBase {
 
   private static final BenchmarkDependency benchmarkDependency =
-      new BenchmarkDependency(
-          "retraceBenchmark", "retrace_benchmark", Paths.get(ToolHelper.THIRD_PARTY_DIR));
+      new BenchmarkDependency("retraceBenchmark", TestDeps::getRetraceBenchmarkDir);
 
   protected RetraceStackTraceBenchmark(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);

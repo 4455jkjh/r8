@@ -95,7 +95,7 @@ public class IfRuleEvaluator {
     tasks.await();
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "ReferenceEquality"})
   void forEachRelevantCandidate(
       ProguardIfRule ifRule,
       ClassKind<?> classKind,

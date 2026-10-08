@@ -256,6 +256,18 @@ def run(options, r8jar, testjars):
     cmd.extend([
         f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
         f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',
+        f'-DTEST_DEP_CHROME_BENCHMARK={utils.OPENSOURCE_DUMPS_DIR}/chrome',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_CRANE={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/crane',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_JETCASTER={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetcaster',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_JETCHAT={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetchat',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_JETLAGGED={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetlagged',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_JETNEWS={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetnews',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_JETSNACK={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetsnack',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_OWL={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/owl',
+        f'-DTEST_DEP_COMPOSE_SAMPLES_REPLY={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/reply',
+        f'-DTEST_DEP_NOWINANDROID={utils.OPENSOURCE_DUMPS_DIR}/android/nowinandroid',
+        f'-DTEST_DEP_RETRACE_BENCHMARK={utils.THIRD_PARTY}/retrace_benchmark',
+        f'-DTEST_DEP_TIVI={utils.OPENSOURCE_DUMPS_DIR}/tivi',
     ])
     if options.iterations is not None:
         if options.iterations == 0:

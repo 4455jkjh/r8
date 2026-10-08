@@ -13,6 +13,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 
 public class AccessUtils {
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean isAccessibleInSameContextsAs(
       DexType newType, DexType oldType, AppView<AppInfoWithLiveness> appView) {
     DexType newBaseType = newType.getBaseType();

@@ -90,6 +90,7 @@ public abstract class FlowGraphNode {
     predecessors.clear();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void clearPredecessors(FlowGraphNode cause) {
     for (FlowGraphNode predecessor : predecessors) {
       if (predecessor != cause) {

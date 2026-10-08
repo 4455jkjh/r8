@@ -51,6 +51,7 @@ public abstract class ArithmeticBinop extends Binop {
         && rightValue().isConstant();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean needsValueInRegister(Value value) {
     assert !isSub(); // Constants in instructions for sub must be handled in subclass Sub.

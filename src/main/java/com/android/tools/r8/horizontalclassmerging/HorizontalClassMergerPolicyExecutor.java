@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 
 public class HorizontalClassMergerPolicyExecutor extends PolicyExecutor<HorizontalMergeGroup> {
 
+  @SuppressWarnings("NonApiType")
   @Override
   protected LinkedList<HorizontalMergeGroup> apply(
       Policy policy, LinkedList<HorizontalMergeGroup> groups, ExecutorService executorService)
@@ -36,6 +37,7 @@ public class HorizontalClassMergerPolicyExecutor extends PolicyExecutor<Horizont
     return groups;
   }
 
+  @SuppressWarnings("NonApiType")
   void applySingleClassPolicy(SingleClassPolicy policy, LinkedList<HorizontalMergeGroup> groups) {
     Iterator<HorizontalMergeGroup> i = groups.iterator();
     while (i.hasNext()) {
@@ -52,7 +54,7 @@ public class HorizontalClassMergerPolicyExecutor extends PolicyExecutor<Horizont
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   private LinkedList<HorizontalMergeGroup> applyMultiClassPolicy(
       MultiClassPolicy policy, LinkedList<HorizontalMergeGroup> groups) {
     // For each group apply the multi class policy and add all the new groups together.
@@ -71,7 +73,7 @@ public class HorizontalClassMergerPolicyExecutor extends PolicyExecutor<Horizont
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType"})
   private <T> LinkedList<HorizontalMergeGroup> applyMultiClassPolicyWithPreprocessing(
       MultiClassPolicyWithPreprocessing<T> policy,
       LinkedList<HorizontalMergeGroup> groups,

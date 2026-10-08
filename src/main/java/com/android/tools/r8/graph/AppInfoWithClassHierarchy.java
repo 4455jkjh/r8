@@ -124,6 +124,7 @@ public class AppInfoWithClassHierarchy extends AppInfo {
         getMissingClasses());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public AppInfoWithClassHierarchy prunedCopyFrom(
       PrunedItems prunedItems, ExecutorService executorService, Timing timing)

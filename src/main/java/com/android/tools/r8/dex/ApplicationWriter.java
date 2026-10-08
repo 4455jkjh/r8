@@ -13,10 +13,12 @@ import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.DexFilePerClassFileConsumer;
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.FeatureSplit;
+import com.android.tools.r8.GlobalSyntheticsConsumer;
 import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.debuginfo.DebugRepresentation.DebugRepresentationPredicate;
+import com.android.tools.r8.debuginfo.PcBasedDebugInfoConsolidator;
 import com.android.tools.r8.dex.FileWriter.ByteBufferResult;
 import com.android.tools.r8.dex.distribution.Distributor;
 import com.android.tools.r8.dex.distribution.FilePerInputClassDistributor;
@@ -110,7 +112,7 @@ public class ApplicationWriter {
     private final AppView<?> appView;
     private final NamingLens namingLens;
 
-    public SortAnnotations(AppView<?> appView) {
+    SortAnnotations(AppView<?> appView) {
       this.appView = appView;
       this.namingLens = appView.getNamingLens();
     }
@@ -172,6 +174,7 @@ public class ApplicationWriter {
     return appView.getNamingLens();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private List<VirtualFile> distribute(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     Collection<DexProgramClass> classes = appView.appInfo().classes();
@@ -186,7 +189,10 @@ public class ApplicationWriter {
           if (globalSyntheticCreatedCallback != null) {
             globalSyntheticCreatedCallback.accept(clazz);
           }
-          globalSynthetics.add(clazz);
+          if (appView.options().getGlobalSyntheticsConsumer()
+              != GlobalSyntheticsConsumer.emptyConsumer()) {
+            globalSynthetics.add(clazz);
+          }
         } else {
           classes.add(clazz);
         }
@@ -259,7 +265,6 @@ public class ApplicationWriter {
       file.commitTransaction();
     }
   }
-
 
   protected void writeVirtualFiles(
       ExecutorService executorService,
@@ -344,8 +349,11 @@ public class ApplicationWriter {
             DebugRepresentation.fromFiles(virtualFiles, options);
         mapSupplierResult =
             runAndWriteMap(appView, executorService, timing, originalSourceFiles, representation);
-      } else if (options.convertPcBasedDebugInfoToNative) {
-        convertPcBasedDebugInfoToNative(appView, executorService, timing);
+      } else {
+        if (options.convertPcBasedDebugInfoToNative) {
+          convertPcBasedDebugInfoToNative(appView, executorService, timing);
+        }
+        PcBasedDebugInfoConsolidator.run(appView, virtualFiles, executorService, timing);
       }
 
       // With the mapping id/hash known, it is safe to compute the remaining dex strings.

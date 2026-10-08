@@ -38,6 +38,7 @@ public class UninitializedThis extends UninitializedFrameType {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public SingleFrameType join(
       AppView<? extends AppInfoWithClassHierarchy> appView, SingleFrameType frameType) {

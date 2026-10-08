@@ -85,6 +85,7 @@ public class KotlinMetadataRewriter {
     return annotation.annotation.type != kotlinMetadataType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void runForR8(ExecutorService executorService) throws ExecutionException {
     AppView<? extends AppInfoWithClassHierarchy> appView = this.appView.withClassHierarchy();
     GraphLens graphLens = appView.graphLens();
@@ -171,6 +172,7 @@ public class KotlinMetadataRewriter {
         executorService);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void processClassInD8(
       DexProgramClass clazz,
       BooleanBox reportedUnknownMetadataVersion,

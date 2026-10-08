@@ -13,7 +13,8 @@ import java.util.Collection;
 
 public class AmendApiFromResources {
 
-  public static void applyAmendments(Collection<ParsedApiClass> classes, ApiJarInfo jarInfo)
+  public static void applyAmendments(
+      Collection<ParsedApiClass<ApiRange>> classes, ApiJarInfo jarInfo)
       throws ApiDatabaseGeneratorException, IOException {
     ApiAmendments missingApi =
         readResource("/resources/missing.api.txt", ApiAmendmentsParser::parseApiAmendments);

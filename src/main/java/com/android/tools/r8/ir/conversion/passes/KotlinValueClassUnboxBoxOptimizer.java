@@ -71,6 +71,7 @@ public class KotlinValueClassUnboxBoxOptimizer extends CodeRewriterPass<AppInfoW
     return CodeRewriterResult.hasChanged(changed);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean optimizeValueClassBoxing(
       IRCode code,
       InstructionListIterator instructionIterator,

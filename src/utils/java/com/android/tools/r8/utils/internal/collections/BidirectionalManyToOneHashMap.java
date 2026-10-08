@@ -121,6 +121,7 @@ public class BidirectionalManyToOneHashMap<K, V> implements MutableBidirectional
     keys.forEach(this::remove);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Set<K> removeValue(V value) {
     Set<K> keys = inverse.remove(value);

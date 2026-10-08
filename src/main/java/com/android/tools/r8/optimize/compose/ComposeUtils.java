@@ -33,6 +33,7 @@ public class ComposeUtils {
    * }
    * </pre>
    */
+  @SuppressWarnings("ReferenceEquality")
   public static boolean isUpdateChangedFlags(IRCode code, DexItemFactory factory) {
     ProgramMethod method = code.context();
     if (!method.getAccessFlags().isStatic()

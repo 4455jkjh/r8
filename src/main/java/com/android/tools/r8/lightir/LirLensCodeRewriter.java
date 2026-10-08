@@ -77,6 +77,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
 
   private boolean hasNonTrivialRewritings = false;
 
+  @SuppressWarnings("ReferenceEquality")
   public LirLensCodeRewriter(
       AppView<?> appView,
       LirCode<EV> code,
@@ -198,6 +199,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void addFieldInstructionToRewrite(DexField field) {
     if (fieldInstructionsToRewrite == NO_FIELD_INSTRUCTIONS_TO_REWRITE) {
       fieldInstructionsToRewrite = Sets.newIdentityHashSet();
@@ -205,6 +207,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     fieldInstructionsToRewrite.add(field);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void addRewrittenMethodMapping(DexMethod method, DexMethod rewrittenMethod) {
     getOrCreateConstantPoolMapping()
         .compute(
@@ -225,6 +228,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
             });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void addTypeInstructionToRewrite(DexType type) {
     if (typeInstructionsToRewrite == NO_TYPE_INSTRUCTIONS_TO_REWRITE) {
       typeInstructionsToRewrite = Sets.newIdentityHashSet();
@@ -232,6 +236,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     typeInstructionsToRewrite.add(type);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void addRewrittenMapping(LirConstant item, LirConstant rewrittenItem) {
     if (item == rewrittenItem) {
       return;
@@ -455,6 +460,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LirCode<EV> rewrite(Timing timing) {
     try (Timing t0 = timing.begin("Rewrite lir")) {
       if (getCode().hasExplicitCodeLens()) {

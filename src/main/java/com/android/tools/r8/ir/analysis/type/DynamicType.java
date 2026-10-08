@@ -36,6 +36,7 @@ public abstract class DynamicType {
     return create(appView, dynamicUpperBoundType, dynamicLowerBoundType);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static DynamicTypeWithUpperBound create(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       TypeElement dynamicUpperBoundType,

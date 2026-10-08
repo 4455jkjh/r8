@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8;
+import com.android.tools.r8.GlobalSyntheticsGenerator;
+import com.android.tools.r8.GlobalSyntheticsGeneratorCommand;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -289,6 +291,47 @@ public class GlobalSyntheticOutputCliTest extends TestBase {
             .add("--output")
             .add(finalOut.toString())
             .build());
+
+    testForD8()
+        .addProgramFiles(finalOut)
+        .run(parameters.getRuntime(), TestClass1.class)
+        .assertSuccessWithOutput(EXPECTED);
+  }
+
+  @Test
+  public void testIgnoreGlobals() throws Exception {
+    Path input1 = transformClass(TestClass1.class);
+    Path input2 = transformClass(TestClass2.class);
+    Path dexOut1 = temp.newFolder().toPath().resolve("out1.jar");
+    Path dexOut2 = temp.newFolder().toPath().resolve("out2.jar");
+    forkD8(input1.toString(), "--intermediate", "--output", dexOut1.toString(), "--ignore-globals");
+    forkD8(
+        input2.toString(),
+        "--file-per-class-file",
+        "--output",
+        dexOut2.toString(),
+        "--ignore-globals");
+
+    assertTrue(Files.exists(dexOut1));
+    assertTrue(Files.exists(dexOut2));
+
+    Path globalsOut = temp.newFolder().toPath().resolve("all.globals");
+    GlobalSyntheticsGenerator.run(
+        GlobalSyntheticsGeneratorCommand.builder()
+            .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.LATEST))
+            .setMinApiLevel(parameters.getApiLevel().getMajor())
+            .setGlobalSyntheticsOutput(globalsOut)
+            .build());
+    assertTrue(Files.exists(globalsOut));
+
+    Path finalOut = temp.newFolder().toPath().resolve("out.jar");
+    forkD8(
+        dexOut1.toString(),
+        dexOut2.toString(),
+        "--globals",
+        globalsOut.toString(),
+        "--output",
+        finalOut.toString());
 
     testForD8()
         .addProgramFiles(finalOut)

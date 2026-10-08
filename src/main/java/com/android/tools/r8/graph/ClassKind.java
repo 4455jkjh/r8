@@ -156,7 +156,7 @@ public class ClassKind<C extends DexClass> {
                   skipNameValidationForTesting),
           DexClass::isLibraryClass);
 
-  private interface Factory<C extends DexClass> {
+  interface Factory<C extends DexClass> {
     C create(
         DexType type,
         Kind kind,

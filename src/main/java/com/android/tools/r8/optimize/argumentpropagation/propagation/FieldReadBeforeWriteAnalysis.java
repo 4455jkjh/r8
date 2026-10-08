@@ -51,6 +51,7 @@ class FieldReadBeforeWriteAnalysis {
     return !isInstanceFieldNeverReadBeforeWrite(field);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInstanceFieldNeverReadBeforeWrite(ProgramField field) {
     assert field.getHolder() == context.getHolder();
     InstancePut instancePut = null;
@@ -87,6 +88,7 @@ class FieldReadBeforeWriteAnalysis {
     return isFieldMaybeReadBeforeInstructionInInitializer(field, instancePut);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isStaticFieldNeverReadBeforeWrite(ProgramField field) {
     assert field.getHolder() == context.getHolder();
     StaticPut staticPut = null;
@@ -106,6 +108,7 @@ class FieldReadBeforeWriteAnalysis {
         && lazyDominatorTree.computeIfAbsent().dominatesAllOf(staticPut.getBlock(), returnBlocks);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isFieldMaybeReadBeforeInstructionInInitializer(
       DexClassAndField field, Instruction instruction) {
     BasicBlock block = instruction.getBlock();
@@ -156,6 +159,7 @@ class FieldReadBeforeWriteAnalysis {
    * Eagerly creates a mapping from each block to the set of fields that may be read in that block
    * and its transitive predecessors.
    */
+  @SuppressWarnings("ReferenceEquality")
   private Map<BasicBlock, AbstractFieldSet> createFieldsMaybeReadBeforeBlockInclusive() {
     Map<BasicBlock, AbstractFieldSet> result = new IdentityHashMap<>();
     Deque<BasicBlock> worklist = DequeUtils.newArrayDeque(code.entryBlock());

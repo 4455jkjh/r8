@@ -835,6 +835,7 @@ public class LirCode<EV> extends Code
         metadataMap);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LirCode<EV> newCodeWithRewrittenConstantPool(Function<LirConstant, LirConstant> rewriter) {
     LirConstant[] rewrittenConstants = ArrayUtils.map(constants, rewriter, new LirConstant[0]);
     if (constants == rewrittenConstants) {
@@ -853,6 +854,7 @@ public class LirCode<EV> extends Code
         metadataMap);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LirCode<EV> newCodeWithRewrittenTryCatchTable(TryCatchTable rewrittenTryCatchTable) {
     if (rewrittenTryCatchTable == tryCatchTable) {
       return this;

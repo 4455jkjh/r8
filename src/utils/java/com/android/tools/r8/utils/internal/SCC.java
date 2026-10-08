@@ -34,6 +34,7 @@ public class SCC<Node> {
     return components;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void dfs(Node value) {
     discoverTime.put(value, currentTime++);
     unassignedSet.add(value);

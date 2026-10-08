@@ -388,6 +388,7 @@ public class ResourceShrinkerEnqueuerExtension
     fieldToValueMapping.put(programClass.getType(), valueMapping);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void analyzeClassInitializer(
       Map<DexField, Object> valueMapping, ProgramMethod programClassInitializer) {
     IRCode code = programClassInitializer.buildIR(appView, MethodConversionOptions.nonConverting());

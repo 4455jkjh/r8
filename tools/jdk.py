@@ -7,13 +7,26 @@ import os
 import defines
 
 JDK_DIRS = os.path.join(defines.THIRD_PARTY, 'openjdk')
+GRADLE_DAEMON_JVM_PROPERTIES = os.path.join(defines.REPO_ROOT, 'gradle',
+                                            'gradle-daemon-jvm.properties')
 
 ALL_JDKS = ['openjdk-9.0.4', 'jdk-11', 'jdk-17', 'jdk-21', 'jdk-25']
+
+DEFAULT_JDK_HOME = None
 
 
 # This JDK is used for everything except the compilation of the compiler.
 def GetDefaultJdkHome():
-    return GetJdk21Home()
+    if DEFAULT_JDK_HOME is None:
+        with open(GRADLE_DAEMON_JVM_PROPERTIES) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('toolchainVersion='):
+                    version = line.split('=', 1)[1].strip()
+                    return GetJdkHome(f'jdk-{version}')
+        raise Exception('No toolchainVersion found in ' +
+                        GRADLE_DAEMON_JVM_PROPERTIES)
+    return DEFAULT_JDK_HOME
 
 
 # This JDK is used for compilation and tasks related to compilation of the compiler.

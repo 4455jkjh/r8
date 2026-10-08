@@ -508,6 +508,7 @@ public abstract class FieldResolutionResult
 
     private Builder() {}
 
+    @SuppressWarnings("ReferenceEquality")
     public void addResolutionResult(FieldResolutionResult otherResult) {
       assert otherResult != null;
       if (currentResult == null) {

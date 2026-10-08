@@ -350,24 +350,24 @@ public class StringConcatInstructionDesugaring implements CfInstructionDesugarin
       this.method = method;
     }
 
-    public ValueType getValueType() {
+    ValueType getValueType() {
       assert method.getProto().getArity() == 1;
       return ValueType.fromDexType(method.getParameter(0));
     }
 
-    public boolean isArgumentChunk() {
+    boolean isArgumentChunk() {
       return false;
     }
 
-    public ArgumentChunk asArgumentChunk() {
+    ArgumentChunk asArgumentChunk() {
       return null;
     }
 
-    public boolean isConstantChunk() {
+    boolean isConstantChunk() {
       return false;
     }
 
-    public ConstantChunk asConstantChunk() {
+    ConstantChunk asConstantChunk() {
       return null;
     }
   }
@@ -381,7 +381,7 @@ public class StringConcatInstructionDesugaring implements CfInstructionDesugarin
       this.variableIndex = variableIndex;
     }
 
-    public int getVariableIndex() {
+    int getVariableIndex() {
       return variableIndex;
     }
 
@@ -405,7 +405,7 @@ public class StringConcatInstructionDesugaring implements CfInstructionDesugarin
       this.stringConstant = stringConstant;
     }
 
-    public DexString getStringConstant() {
+    DexString getStringConstant() {
       return stringConstant;
     }
 

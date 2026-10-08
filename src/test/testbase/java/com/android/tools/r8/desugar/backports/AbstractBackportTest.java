@@ -29,15 +29,15 @@ import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableList;
-import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
-import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,8 +47,8 @@ public abstract class AbstractBackportTest extends TestBase {
   private final ClassInfo testClass;
   private final Path testJar;
   private final String testClassName;
-  private final Int2IntSortedMap invokeStaticCounts = new Int2IntAVLTreeMap();
-  private final Int2IntSortedMap staticGetCounts = new Int2IntAVLTreeMap();
+  private final NavigableMap<AndroidApiLevel, Integer> invokeStaticCounts = new TreeMap<>();
+  private final NavigableMap<AndroidApiLevel, Integer> staticGetCounts = new TreeMap<>();
   private final Set<String> ignoredInvokes = new HashSet<>();
 
   private static class ClassInfo {
@@ -164,26 +164,24 @@ public abstract class AbstractBackportTest extends TestBase {
     }
 
     // Assume all method calls and static gets will be rewritten on the lowest API level.
-    invokeStaticCounts.put(AndroidApiLevel.B.getMajor(), 0);
-    staticGetCounts.put(AndroidApiLevel.B.getMajor(), 0);
+    invokeStaticCounts.put(AndroidApiLevel.B, 0);
+    staticGetCounts.put(AndroidApiLevel.B, 0);
   }
 
   protected void registerTarget(AndroidApiLevel apiLevel, int invokeStaticCount) {
-    invokeStaticCounts.put(apiLevel.getMajor(), invokeStaticCount);
+    invokeStaticCounts.put(apiLevel, invokeStaticCount);
   }
 
   void registerFieldTarget(AndroidApiLevel apiLevel, int getStaticCount) {
-    staticGetCounts.put(apiLevel.getMajor(), getStaticCount);
+    staticGetCounts.put(apiLevel, getStaticCount);
   }
 
   private int getTargetInvokesCount(AndroidApiLevel apiLevel) {
-    int key = invokeStaticCounts.headMap(apiLevel.getMajor() + 1).lastIntKey();
-    return invokeStaticCounts.get(key);
+    return invokeStaticCounts.floorEntry(apiLevel).getValue();
   }
 
   private int getTargetGetCount(AndroidApiLevel apiLevel) {
-    int key = staticGetCounts.headMap(apiLevel.getMajor() + 1).lastIntKey();
-    return staticGetCounts.get(key);
+    return staticGetCounts.floorEntry(apiLevel).getValue();
   }
 
   protected void ignoreInvokes(String methodName) {

@@ -325,6 +325,7 @@ public class AnnotationRemover {
     return rewrite;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexAnnotationElement rewriteAnnotationElement(
       DexType annotationType, DexAnnotationElement original, ProgramDefinition holder) {
     // The dalvik.annotation.AnnotationDefault is typically not on bootclasspath. However, if it

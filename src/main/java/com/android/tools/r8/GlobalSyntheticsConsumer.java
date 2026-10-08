@@ -47,4 +47,36 @@ public interface GlobalSyntheticsConsumer {
    * @param handler Diagnostics handler for reporting.
    */
   default void finished(DiagnosticsHandler handler) {}
+
+  /** Empty consumer to request the production of the resource but ignore its value. */
+  static GlobalSyntheticsConsumer emptyConsumer() {
+    return ForwardingConsumer.EMPTY_CONSUMER;
+  }
+
+  /** Forwarding consumer to delegate to an optional existing consumer. */
+  @KeepForApi
+  class ForwardingConsumer implements GlobalSyntheticsConsumer {
+
+    private static final GlobalSyntheticsConsumer EMPTY_CONSUMER = new ForwardingConsumer(null);
+
+    private final GlobalSyntheticsConsumer consumer;
+
+    public ForwardingConsumer(GlobalSyntheticsConsumer consumer) {
+      this.consumer = consumer;
+    }
+
+    @Override
+    public void accept(ByteDataView data, ClassReference context, DiagnosticsHandler handler) {
+      if (consumer != null) {
+        consumer.accept(data, context, handler);
+      }
+    }
+
+    @Override
+    public void finished(DiagnosticsHandler handler) {
+      if (consumer != null) {
+        consumer.finished(handler);
+      }
+    }
+  }
 }

@@ -643,6 +643,7 @@ public class SyntheticItems {
     return contexts.get(0).getFeatureSplit();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static <T> boolean verifyAllHaveSameFeature(
       List<T> items, Function<T, FeatureSplit> getter) {
     assert !items.isEmpty();
@@ -1404,7 +1405,7 @@ public class SyntheticItems {
     private final DexType holder;
     private final DexType context;
 
-    public SyntheticInfoConsumerDataImpl(DexType holder, DexType context) {
+    SyntheticInfoConsumerDataImpl(DexType holder, DexType context) {
       this.holder = holder;
       this.context = context;
     }

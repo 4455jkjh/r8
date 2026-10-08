@@ -48,6 +48,7 @@ public class KotlinContractInfo implements EnqueuerMetadataTraceable {
     forEachApply(effects, effect -> effect::trace, registry);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean rewrite(Consumer<KmContract> consumer, AppView<?> appView) {
     if (this == NO_EFFECT) {
       return false;

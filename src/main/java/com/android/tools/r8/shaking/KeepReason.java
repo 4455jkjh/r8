@@ -92,7 +92,7 @@ public abstract class KeepReason {
     return new MethodHandleReferencedFrom(method.getDefinition());
   }
 
-  private abstract static class BasedOnOtherMethod extends KeepReason {
+  abstract static class BasedOnOtherMethod extends KeepReason {
 
     private final DexEncodedMethod method;
 
@@ -331,7 +331,7 @@ public abstract class KeepReason {
 
       private final Origin origin;
 
-      public XmlGraphNode(Origin origin) {
+      XmlGraphNode(Origin origin) {
         super(false);
         this.origin = origin;
       }

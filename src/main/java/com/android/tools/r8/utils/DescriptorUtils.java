@@ -248,7 +248,7 @@ public class DescriptorUtils {
       case '[':
         return internalName;
       default:
-        return new StringBuilder("L").append(internalName).append(";").toString();
+        return "L" + internalName + ";";
     }
   }
 

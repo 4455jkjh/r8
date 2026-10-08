@@ -112,6 +112,7 @@ public class ConcretePathConstraintAnalysisState extends PathConstraintAnalysisS
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void ensureHashMapBacking() {
     if (pathConstraints.isEmpty()) {
       assert pathConstraints == Collections.<ComputationTreeNode, PathConstraintKind>emptyMap();

@@ -9,6 +9,7 @@ import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 
 import com.android.tools.r8.Jdk9TestUtils;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime;
@@ -16,7 +17,6 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,8 +29,6 @@ public class Jdk11ObjectsTests extends TestBase {
 
   private static final String BASIC_OBJECTS_TEST = "BasicObjectsTest";
   private static Path[] JDK_11_OBJECTS_TEST_CLASS_FILES;
-  private static final Path JDK_11_OBJECTS_JAVA_DIR =
-      Paths.get(ToolHelper.JDK_11_TESTS_DIR + "java/util/Objects");
 
   @Parameter(0)
   public TestParameters parameters;
@@ -51,7 +49,9 @@ public class Jdk11ObjectsTests extends TestBase {
   public static void compileObjectsClass() throws Exception {
     Path jdk11ObjectsTestsDir = getStaticTemp().newFolder("objects").toPath();
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
-        .addSourceFiles(JDK_11_OBJECTS_JAVA_DIR.resolve(BASIC_OBJECTS_TEST + JAVA_EXTENSION))
+        .addSourceFiles(
+            TestDeps.getJdk11TestPath(
+                "java", "util", "Objects", BASIC_OBJECTS_TEST + JAVA_EXTENSION))
         .setOutputPath(jdk11ObjectsTestsDir)
         .compile();
     JDK_11_OBJECTS_TEST_CLASS_FILES =

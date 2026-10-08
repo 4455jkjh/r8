@@ -522,15 +522,15 @@ public class R8CommandParser {
   //   pathA: -> first = pathA, second = null
   private static class PossibleDoublePath {
 
-    public final Path first;
-    public final Path second;
+    final Path first;
+    final Path second;
 
     private PossibleDoublePath(Path first, Path second) {
       this.first = first;
       this.second = second;
     }
 
-    public static PossibleDoublePath parse(String input) {
+    static PossibleDoublePath parse(String input) {
       Path first = null, second = null;
       List<String> inputSplit = StringUtils.split(input, File.pathSeparatorChar);
       if (inputSplit.isEmpty() || inputSplit.size() > 2) {
@@ -562,7 +562,7 @@ public class R8CommandParser {
     private final List<FeatureSplitConfig> resourceOnlySplits = new ArrayList<>();
     private final Map<Path, FeatureSplitConfig> withCodeSplits = new HashMap<>();
 
-    public void addInputOutput(String input, String output) {
+    void addInputOutput(String input, String output) {
       PossibleDoublePath inputPaths = PossibleDoublePath.parse(input);
       PossibleDoublePath outputPaths = PossibleDoublePath.parse(output);
       FeatureSplitConfig featureSplitConfig;
@@ -588,7 +588,7 @@ public class R8CommandParser {
       featureSplitConfig.outputResources = outputPaths.second;
     }
 
-    public Collection<FeatureSplitConfig> getConfigs() {
+    Collection<FeatureSplitConfig> getConfigs() {
       ArrayList<FeatureSplitConfig> featureSplitConfigs = new ArrayList<>(resourceOnlySplits);
       featureSplitConfigs.addAll(withCodeSplits.values());
       return featureSplitConfigs;

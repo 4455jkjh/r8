@@ -38,13 +38,15 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class SplitBlockTest extends IrInjectionTestBase {
 
+  private final TestParameters parameters;
+
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withNoneRuntime().build();
+    return getTestParameters().withDexRuntimes().build();
   }
 
   public SplitBlockTest(TestParameters parameters) {
-    parameters.assertNoneRuntime();
+    this.parameters = parameters;
   }
 
   private TestApplication codeWithoutCatchHandlers() throws Exception {
@@ -112,7 +114,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
       assertSame(newBlock, code.blocks.get(1));
 
       // Run code and check result (code in the test object is updated).
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals("6", result);
     }
   }
@@ -149,7 +151,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
       assertSame(newBlock, code.blocks.get(1));
 
       // Run code and check result (code in the test object is updated).
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals("6", result);
     }
   }
@@ -234,7 +236,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
       code.blocks.forEach(this::hasCatchandlerIfThrowing);
 
       // Run code and check result (code in the test object is updated).
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(codeThrows ? "-1" : "2", result);
     }
   }
@@ -275,7 +277,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
       code.blocks.forEach(this::hasCatchandlerIfThrowing);
 
       // Run code and check result (code in the test object is updated).
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(codeThrows ? "-1" : "2", result);
     }
   }
@@ -354,7 +356,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
       assertSame(newBlock, code.blocks.get(1));
 
       // Run code and check result (code in the test object is updated).
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(hitTrueBranch ? "0" : "1", result);
     }
   }
@@ -392,7 +394,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
       constInstruction.setPosition(Position.none());
     }
     // Run code and check result (code in the test object is updated).
-    String result = test.run();
+    String result = test.run(parameters.getDexVm());
     assertEquals(hitTrueBranch ? "10" : "11", result);
   }
 
@@ -476,7 +478,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
       assertSame(newBlock, code.blocks.get(1));
 
       // Run code and check result (code in the test object is updated).
-      String result = test.run();
+      String result = test.run(parameters.getDexVm());
       assertEquals(hitCase ? "3" : "5", result);
     }
   }

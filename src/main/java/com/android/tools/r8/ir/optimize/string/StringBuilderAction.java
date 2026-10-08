@@ -485,6 +485,7 @@ public interface StringBuilderAction {
       removeInstruction = true;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void perform(
         AppView<?> appView,

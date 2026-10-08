@@ -5,6 +5,7 @@
 package com.android.tools.r8.examples;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
@@ -13,8 +14,6 @@ import com.android.tools.r8.R8CompatTestBuilder;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.OffOrAuto;
@@ -37,8 +36,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command.Builder> {
 
   private static final ArrayList<String> PROGUARD_OPTIONS = Lists.newArrayList(
@@ -194,7 +194,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                 builder
                     .addKeepRules(PROGUARD_OPTIONS)
                     .addOptionsModification(options -> options.enableClassInlining = false)
-                    .setMinApi(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
+                    .setMinApi(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
         .withDexCheck(
             (inspector, syntheticItems) ->
                 checkLambdaCount(inspector, syntheticItems, 3, "lambdadesugaring"))
@@ -205,7 +205,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
             builder ->
                 builder
                     .addKeepRules(PROGUARD_OPTIONS)
-                    .setMinApi(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
+                    .setMinApi(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
         .withDexCheck(
             (inspector, syntheticItems) ->
                 checkLambdaCount(inspector, syntheticItems, 0, "lambdadesugaring"))
@@ -225,14 +225,14 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                         "-keep class lambdadesugaring.LambdaDesugaring {",
                         "  void testMultipleInterfaces();",
                         "}")
-                    .setMinApi(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
+                    .setMinApi(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
         .withDexCheck(inspector -> checkTestMultipleInterfacesCheckCastCount(inspector, 0))
         .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
   }
 
   @Test
-  @IgnoreIfVmOlderThan(Version.V7_0_0)
   public void lambdaDesugaringWithDefaultMethods() throws Throwable {
+    assumeTrue(parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V7_0_0));
     test("lambdadesugaring", "lambdadesugaring", "LambdaDesugaring")
         .withBuilder(
             builder ->
@@ -276,7 +276,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                           options.interfaceMethodDesugaring = OffOrAuto.Auto;
                         })
                     .enableProguardTestOptions()
-                    .setMinApi(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
+                    .setMinApi(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
         .withProguardCompatibilityMode(enableProguardCompatibilityMode)
         .withDexCheck(
             (inspector, syntheticItems) ->
@@ -291,7 +291,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                     .addOptionsModification(
                         options -> options.interfaceMethodDesugaring = OffOrAuto.Auto)
                     .enableProguardTestOptions()
-                    .setMinApi(ToolHelper.getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
+                    .setMinApi(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
         .withProguardCompatibilityMode(enableProguardCompatibilityMode)
         .withDexCheck(
             (inspector, syntheticItems) ->
@@ -300,19 +300,18 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
   }
 
   @Test
-  @IgnoreIfVmOlderThan(Version.V7_0_0)
   public void lambdaDesugaringNPlusWithDefaultMethods() throws Throwable {
     lambdaDesugaringNPlusWithDefaultMethods(false);
   }
 
   @Test
-  @IgnoreIfVmOlderThan(Version.V7_0_0)
   public void lambdaDesugaringNPlusWithDefaultMethodsCompat() throws Throwable {
     lambdaDesugaringNPlusWithDefaultMethods(true);
   }
 
   private void lambdaDesugaringNPlusWithDefaultMethods(boolean enableProguardCompatibilityMode)
       throws Throwable {
+    assumeTrue(parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V7_0_0));
     test("lambdadesugaringnplus", "lambdadesugaringnplus", "LambdasWithStaticAndDefaultMethods")
         .withBuilder(
             builder ->

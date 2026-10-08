@@ -62,6 +62,7 @@ public class CfFrameVerifier {
     return new Builder(appView, code, method);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public StackMapStatus run() {
     if (!appView.options().canUseInputStackMaps()
         || appView.options().testing.disableStackMapVerification) {
@@ -167,6 +168,7 @@ public class CfFrameVerifier {
     return !instruction.isLabel() && !instruction.isFrame() && !instruction.isPosition();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private TraversalContinuation<CfCodeDiagnostics, Map<CfLabel, CfFrame>> buildLabelToFrameMap() {
     Map<CfLabel, CfFrame> labelToFrameMap = new IdentityHashMap<>();
     List<CfLabel> labels = new ArrayList<>();
@@ -219,6 +221,7 @@ public class CfFrameVerifier {
     return StackMapStatus.INVALID;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void updateActiveCatchHandlers(CfLabel label) {
     if (tryCatchRangeLabels.contains(label)) {
       for (CfTryCatch tryCatchRange : code.getTryCatchRanges()) {
@@ -372,6 +375,7 @@ public class CfFrameVerifier {
             appView));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isFinalAndExitInstruction(CfInstruction instruction) {
     boolean isReturnOrThrow = instruction.isThrow() || instruction.isReturn();
     if (!isReturnOrThrow) {

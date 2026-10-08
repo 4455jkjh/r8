@@ -120,6 +120,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
       return range;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void addMappingInformation(
         MappingInformation info, Consumer<MappingInformation> onProhibitedAddition) {
@@ -154,7 +155,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
         List<MappedRange> mappedRangesForSignature =
             ListUtils.sort(
                 partition.getMappedRanges(),
-                Comparator.comparing(range -> range.minifiedRange.from));
+                Comparator.comparingInt(range -> range.minifiedRange.from));
         Range lastRange = new Range(-1, -1);
         for (MappedRange range : mappedRangesForSignature) {
           if (range.minifiedRange.equals(lastRange)) {
@@ -646,6 +647,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
       return renamedName;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void addMappingInformation(
         MappingInformation info, Consumer<MappingInformation> onProhibitedAddition) {
       if (additionalMappingInformation == EMPTY_MAPPING_INFORMATION) {

@@ -118,21 +118,21 @@ public class NestBasedAccessDesugaring implements CfInstructionDesugaring {
     private final T target;
 
     @SuppressWarnings("ReferenceEquality")
-    public BridgeAndTarget(DexMethod bridge, T target) {
+    BridgeAndTarget(DexMethod bridge, T target) {
       this.bridge = bridge;
       this.target = target;
       assert bridge.holder == target.getHolderType();
     }
 
-    public DexMethod getBridge() {
+    DexMethod getBridge() {
       return bridge;
     }
 
-    public T getTarget() {
+    T getTarget() {
       return target;
     }
 
-    public boolean shouldAddBridge() {
+    boolean shouldAddBridge() {
       return target.isProgramMember() && target.getHolder().lookupDirectMethod(bridge) == null;
     }
   }

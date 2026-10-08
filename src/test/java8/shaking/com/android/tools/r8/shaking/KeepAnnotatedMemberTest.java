@@ -16,9 +16,9 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -29,8 +29,6 @@ import com.android.tools.r8.utils.graphinspector.GraphInspector;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -45,7 +43,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class KeepAnnotatedMemberTest extends TestBase {
 
-  private static final Path R8_JAR = Paths.get(ToolHelper.THIRD_PARTY_DIR, "r8", "r8.jar");
   private static final String ABSENT_ANNOTATION = "com.android.tools.r8.MissingAnnotation";
   private static final String PRESENT_ANNOTATION =
       "com.android.tools.r8.com.google.common.annotations.VisibleForTesting";
@@ -66,7 +63,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
 
   @Test
   public void testPresence() throws Exception {
-    CodeInspector inspector = new CodeInspector(R8_JAR);
+    CodeInspector inspector = new CodeInspector(TestDeps.getR8Jar());
     assertThat(inspector.clazz(ABSENT_ANNOTATION), not(isPresent()));
     assertThat(inspector.clazz(PRESENT_ANNOTATION), isPresent());
     ClassSubject clazz = inspector.clazz(CLASS_WITH_ANNOTATED_METHOD);
@@ -77,7 +74,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   @Test
   public void testPresentAnnotation() throws Exception {
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         .addKeepRules("-keep class * { @" + PRESENT_ANNOTATION + " *; }")
         .addDontWarnGoogle()
         .addDontWarnJavax()
@@ -89,7 +86,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   public void testPresentAnnotationSplit() throws Exception {
     // These rules should be equivalent to the above.
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         .addKeepRules(
             "-keep class *", "-keepclassmembers class * { @" + PRESENT_ANNOTATION + " *; }")
         .addDontWarnGoogle()
@@ -101,7 +98,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   @Test
   public void testWithMembersAbsentAnnotation() throws Exception {
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         .allowUnusedProguardConfigurationRules()
         .addKeepRules("-keepclasseswithmembers class * { @" + ABSENT_ANNOTATION + " *; }")
         .allowDiagnosticInfoMessages()
@@ -115,7 +112,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   @Test
   public void testWithMembersPresentAnnotation() throws Exception {
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         .addKeepRules("-keepclasseswithmembers class * { @" + PRESENT_ANNOTATION + " *** *(...); }")
         .addDontWarnGoogle()
         .addDontWarnJavax()
@@ -132,7 +129,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   @Test
   public void testUnsatisfiedClassMembersPresentAnnotation() throws Exception {
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         // TODO(b/159971974): Technically this rule does not hit anything and should fail due to
         //  missing allowUnusedProguardConfigurationRules()
         .addKeepRules("-keepclassmembers class * { @" + PRESENT_ANNOTATION + " *** *(...); }")
@@ -143,7 +140,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   @Test
   public void testSatisfiedClassMembersPresentAnnotation() throws Exception {
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         .addKeepClassAndDefaultConstructor(CLASS_WITH_ANNOTATED_METHOD)
         .addKeepRules("-keepclassmembers class * { @" + PRESENT_ANNOTATION + " *** *(...); }")
         .compile()
@@ -167,7 +164,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   @Test
   public void testUnsatisfiedConditionalPresentAnnotation() throws Exception {
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         .allowUnusedProguardConfigurationRules()
         .addKeepRules("-if class * -keep class <1> { @" + PRESENT_ANNOTATION + " *** *(...); }")
         .allowDiagnosticInfoMessages()
@@ -181,7 +178,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
   @Test
   public void testSatisfiedConditionalPresentAnnotation() throws Exception {
     testForR8(Backend.CF)
-        .addProgramFiles(R8_JAR)
+        .addProgramFiles(TestDeps.getR8Jar())
         .addKeepClassAndDefaultConstructor(CLASS_WITH_ANNOTATED_METHOD)
         .addKeepRules("-if class * -keep class <1> { @" + PRESENT_ANNOTATION + " *** *(...); }")
         .compile()
@@ -207,7 +204,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
     GraphInspector referenceInspector =
         testForR8(Backend.CF)
             .enableGraphInspector()
-            .addProgramFiles(R8_JAR)
+            .addProgramFiles(TestDeps.getR8Jar())
             .addKeepMainRule(R8.class)
             .addKeepClassRules(CLASS_WITH_ANNOTATED_METHOD)
             .addKeepRules("-keepclassmembers class * { @" + PRESENT_ANNOTATION + " *** *(...); }")
@@ -221,7 +218,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
     GraphInspector ifThenKeepClassMembersInspector =
         testForR8(Backend.CF)
             .enableGraphInspector()
-            .addProgramFiles(R8_JAR)
+            .addProgramFiles(TestDeps.getR8Jar())
             .addKeepMainRule(R8.class)
             .addKeepClassRules(CLASS_WITH_ANNOTATED_METHOD)
             .addKeepRules(
@@ -240,7 +237,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
     GraphInspector ifThenKeepClassesWithMembersInspector =
         testForR8(Backend.CF)
             .enableGraphInspector()
-            .addProgramFiles(R8_JAR)
+            .addProgramFiles(TestDeps.getR8Jar())
             .addKeepMainRule(R8.class)
             .addKeepClassRules(CLASS_WITH_ANNOTATED_METHOD)
             .addKeepRules(
@@ -259,7 +256,7 @@ public class KeepAnnotatedMemberTest extends TestBase {
     GraphInspector ifHasMemberThenKeepClassInspector =
         testForR8(Backend.CF)
             .enableGraphInspector()
-            .addProgramFiles(R8_JAR)
+            .addProgramFiles(TestDeps.getR8Jar())
             .addKeepMainRule(R8.class)
             .addKeepClassRules(CLASS_WITH_ANNOTATED_METHOD)
             .addKeepRules(

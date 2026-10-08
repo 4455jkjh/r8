@@ -28,6 +28,7 @@ public class ReprocessingOptimizationCollectionImpl implements ReprocessingOptim
   private ArgumentPropagator argumentPropagator;
   private final List<ReprocessingOptimization> optimizationsToApply;
 
+  @SuppressWarnings("ReferenceEquality")
   public ReprocessingOptimizationCollectionImpl(
       AppView<AppInfoWithLiveness> appView,
       ArgumentPropagator argumentPropagator,
@@ -39,6 +40,7 @@ public class ReprocessingOptimizationCollectionImpl implements ReprocessingOptim
     assert argumentPropagator == null || optimizationsToApply.get(0) == argumentPropagator;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean assertValidAppliedLensOnAllOptimizations() {
     optimizationsToApply.forEach(
         opt -> {
@@ -68,6 +70,7 @@ public class ReprocessingOptimizationCollectionImpl implements ReprocessingOptim
     optimizationsToApply.forEach(opt -> opt.classInitializerAnalysis(method, staticFieldValues));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void applyArgumentPropagator(
       PrimaryR8IRConverter converter,

@@ -46,6 +46,7 @@ public class FieldReadForInvokeReceiverAnalysis {
         instruction, builder -> builder.setIsReadForInvokeReceiver(methods));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Set<DexMethod> getMethods(Value value, ProgramMethod context) {
     WorkList<Instruction> users = WorkList.newIdentityWorkList();
     if (!enqueueUsersForAnalysis(value, users)) {

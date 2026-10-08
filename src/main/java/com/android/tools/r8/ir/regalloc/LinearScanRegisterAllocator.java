@@ -394,7 +394,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "ReferenceEquality"})
   public static void computeDebugInfo(
       IRCode code,
       ImmutableList<BasicBlock> blocks,
@@ -594,6 +594,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         || valuesContain(usedValue, instruction.getDebugValues());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean valuesContain(Value value, Collection<Value> values) {
     for (Value other : values) {
       if (value == other) {
@@ -608,6 +609,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static void setLocalsAtEntry(
       BasicBlock block,
       InstructionListIterator instructionIterator,
@@ -1164,9 +1166,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
       // Advance the state before allocating the registers of the invoke/range arguments below, so
       // that the registers of the intervals that expired before this interval are free.
-      timing.begin("Advance state");
-      advanceStateToLiveIntervals(unhandledInterval);
-      timing.end();
+      if (options().getTestingOptions().enableFreeExpiredRegistersBeforeInvokeRangeAllocation) {
+        advanceStateToLiveIntervals(unhandledInterval);
+      }
 
       // If this interval value has an invoke/rangerange user, then fix the registers for the
       // consecutive arguments now and add hints to the live intervals leading up to this
@@ -1179,6 +1181,10 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         // The value itself is in the chain that has now gotten registers allocated.
         expiredHere.clear();
         continue;
+      }
+
+      if (!options().getTestingOptions().enableFreeExpiredRegistersBeforeInvokeRangeAllocation) {
+        advanceStateToLiveIntervals(unhandledInterval);
       }
 
       // Perform the actual allocation.
@@ -1317,6 +1323,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   }
 
   private void advanceStateToLiveIntervals(LiveIntervals unhandledInterval) {
+    timing.begin("Advance state");
     int start = unhandledInterval.getStart();
     // Check for active intervals that expired or became inactive.
     active.removeIf(
@@ -1360,6 +1367,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
           }
           return false;
         });
+    timing.end();
   }
 
   private boolean invariantsHold(ArgumentReuseMode mode) {
@@ -1419,6 +1427,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean verifyRegisterAssignmentNotConflictingWithArgument(LiveIntervals interval) {
     assert interval.hasRegister();
     for (LiveIntervals argumentIntervals : getArgumentLiveIntervals()) {
@@ -1455,7 +1464,11 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       return;
     }
     Value value = unhandledInterval.getValue();
-    if (value.isDefinedByInstructionSatisfying(i -> i.isArithmeticBinop() || i.isLogicalBinop())) {
+    if (value.isDefinedByInstructionSatisfying(
+        i ->
+            i.isArithmeticBinop()
+                || (options().getTestingOptions().enable2AddrHintsForLogicalBinop
+                    && i.isLogicalBinop()))) {
       Binop binop = value.getDefinition().asBinop();
       Value left = binop.leftValue();
       if (left.getLiveIntervals() != null && !left.getLiveIntervals().overlaps(unhandledInterval)) {
@@ -1566,6 +1579,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     timing.end();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void allocateLinkedIntervals(List<LiveIntervals> intervalsList, Invoke invoke) {
     LiveIntervals start = ListUtils.first(intervalsList);
 
@@ -1679,6 +1693,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
   // Returns true if intervals has a split, which overlaps with any of the live intervals in the
   // given list.
+  @SuppressWarnings("ReferenceEquality")
   private boolean liveIntervalsOverlappingAnyOf(
       LiveIntervals argumentLiveIntervals, List<LiveIntervals> intervalsList) {
     assert argumentLiveIntervals == argumentLiveIntervals.getSplitParent();
@@ -1850,6 +1865,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   //
   // We work around that bug by disallowing aget-wide with the same array
   // and result register.
+  @SuppressWarnings("ReferenceEquality")
   private boolean needsArrayGetWideWorkaround(LiveIntervals intervals) {
     if (options().canUseSameArrayAndResultRegisterInArrayGetWide()) {
       return false;
@@ -1881,6 +1897,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return arrayReg == register;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean needsSingleResultOverlappingLongOperandsWorkaround(LiveIntervals intervals) {
     if (!options().canHaveCmpLongBug() && !options().canHaveLongToIntBug()) {
       return false;
@@ -1940,6 +1957,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   //
   // Dalvik would add v0 and v2 and write that to v3. It would then read v1 and v3 and produce
   // the wrong result.
+  @SuppressWarnings("ReferenceEquality")
   private boolean needsLongResultOverlappingLongOperandsWorkaround(LiveIntervals intervals) {
     if (!options().canHaveOverlappingLongRegisterBug()) {
       return false;
@@ -2055,6 +2073,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean allocateSingleInterval(LiveIntervals unhandledInterval) {
     int registerConstraint = unhandledInterval.getRegisterLimit();
     assert registerConstraint <= Constants.U16BIT_MAX;
@@ -2560,6 +2579,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     updateRegisterHints(intervals);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void updateRegisterHints(LiveIntervals intervals) {
     Value value = intervals.getValue();
     // If the value flows into a phi, set the hint for all the operand splits that flow into the
@@ -2691,6 +2711,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return candidate;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean allocateBlockedRegister(LiveIntervals unhandledInterval, int registerConstraint) {
     // Initialize all candidate registers to Integer.MAX_VALUE.
     RegisterPositions usePositions = new RegisterPositionsImpl(registerConstraint + 1);
@@ -2857,6 +2878,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void spillCurrentInterval(LiveIntervals unhandledInterval) {
     int splitPosition = unhandledInterval.getFirstUse();
     LiveIntervals split = unhandledInterval.splitBefore(splitPosition, mode);
@@ -2910,6 +2932,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void spillOverlappingActiveIntervals(
       LiveIntervals unhandledInterval, int candidate, boolean candidateIsWide) {
     assert !unhandledInterval.hasRegister();
@@ -2969,6 +2992,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     assert registersAreFree(candidate, candidateIsWide);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void splitRangesForSpilledArgument(LiveIntervals spilled) {
     assert spilled.isSpilled();
     assert spilled.isArgumentInterval();
@@ -2988,6 +3012,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     unhandled.add(splitOfSplit);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void splitRangesForSpilledInterval(LiveIntervals spilled) {
     // Spilling a non-pinned, non-rematerializable value. We use the value in the spill
     // register for as long as possible to avoid further moves.
@@ -3136,6 +3161,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
   // Resolve control flow by inserting phi moves and by inserting moves when the live intervals
   // change for a value across block boundaries.
+  @SuppressWarnings("ReferenceEquality")
   private void resolveControlFlow(SpillMoveSet spillMoves) {
     // For a control-flow graph like the following where a value v is split at an instruction in
     // block C a spill move is inserted in block C to transfer the value from register r0 to
@@ -3447,6 +3473,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static int getLiveRangeEndOnExceptionalFlow(Instruction instruction, Value value) {
     int end = instruction.getNumber();
     if (instruction.isCheckCast() && value != instruction.asCheckCast().object()) {
@@ -3589,6 +3616,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         && !argumentsAreAlreadyLinked(invoke);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean argumentsAreAlreadyLinked(Invoke invoke) {
     Iterator<Value> it = invoke.arguments().iterator();
     Argument current = it.next().getDefinitionOrNull(Instruction::isArgument);
@@ -3618,6 +3646,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
   }
 
+  @SuppressWarnings("AssignmentExpression")
   private void linkArgumentValuesAndIntervals(List<Value> arguments) {
     if (!arguments.isEmpty()) {
       Value last = firstArgumentValue = arguments.get(0);
@@ -3661,6 +3690,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   // error in the input to read a join of the uninitialized and initialized this.
   //
   // See also b/468253695.
+  @SuppressWarnings("ReferenceEquality")
   private void insertInitializedThisMove() {
     if (!code.method().isInstanceInitializer()) {
       return;

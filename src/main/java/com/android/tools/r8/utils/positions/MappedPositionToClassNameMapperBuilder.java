@@ -346,7 +346,7 @@ public class MappedPositionToClassNameMapperBuilder {
         methodSpecificMappingInformation.add(OutlineMappingInformation.builder().build());
       }
 
-      mappedPositions.sort(Comparator.comparing(MappedPosition::getObfuscatedLine));
+      mappedPositions.sort(Comparator.comparingInt(MappedPosition::getObfuscatedLine));
 
       Map<OutlineCallerPosition, MappedRange> outlineCallerPositions = new LinkedHashMap<>();
 
@@ -665,7 +665,7 @@ public class MappedPositionToClassNameMapperBuilder {
       return this == SAME_DELTA;
     }
 
-    public MappedPositionRange canAddNextMappingToRange(
+    MappedPositionRange canAddNextMappingToRange(
         MappedPosition lastPosition, MappedPosition currentPosition, int maxGap) {
       if (isOutOfRange()) {
         return this;
@@ -712,16 +712,16 @@ public class MappedPositionToClassNameMapperBuilder {
       this.outlineMethod = outlineMethod;
     }
 
-    public void setMappedPositionsOutline(List<MappedPosition> mappedPositionsOutline) {
+    void setMappedPositionsOutline(List<MappedPosition> mappedPositionsOutline) {
       this.mappedOutlinePositions = mappedPositionsOutline;
     }
 
-    public void addMappedRangeForOutlineCallee(
+    void addMappedRangeForOutlineCallee(
         MappedRange mappedRangeForOutline, Int2IntMap calleePositions) {
       mappedOutlineCalleePositions.add(Pair.create(mappedRangeForOutline, calleePositions));
     }
 
-    public void fixup() {
+    void fixup() {
       if (mappedOutlinePositions == null || mappedOutlineCalleePositions.isEmpty()) {
         assert mappedOutlinePositions != null : "Mapped outline positions is null";
         // TODO(b/296195931): Reenable assert.

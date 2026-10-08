@@ -192,6 +192,7 @@ public class GenericSignatureTypeRewriter {
           });
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public ReturnType visitReturnType(ReturnType returnType) {
       if (returnType.isVoidDescriptor()) {

@@ -399,6 +399,7 @@ public abstract class InterfaceMethodRewriter {
     return computeEmulatedInterfaceVirtualDispatch(resolutionResult);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private RetargetMethodSupplier computeInvokeVirtual(
       DexClass holder,
       DexMethod invokedMethod,
@@ -467,6 +468,7 @@ public abstract class InterfaceMethodRewriter {
     };
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private RetargetMethodSupplier computeInvokeDirect(
       DexClass clazz,
       DexMethod invokedMethod,

@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -16,7 +17,6 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.base.Charsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,8 +36,9 @@ public class BootstrapTest extends TestBase {
   private static final Class<?> HELLO_CLASS = HelloWorldProgram.class;
   private static String HELLO_EXPECTED = StringUtils.lines("Hello, world!");
 
-  private static final Path R8_STABLE_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "r8-releases", "3.2.54", "r8.jar");
+  private static Path getR8StableJar() {
+    return TestDeps.getR8V3_2_54Jar();
+  }
 
   private static class R8Result {
 
@@ -94,7 +95,7 @@ public class BootstrapTest extends TestBase {
   private R8Result compareForMode(CompilationMode mode) throws Exception {
     // Run r8.jar on hello.jar to ensure that r8.jar is a working compiler.
     R8Result helloCompiledWithR8 =
-        runExternalR8(R8_STABLE_JAR, getHelloInputs(), getHelloKeepRules(), mode);
+        runExternalR8(getR8StableJar(), getHelloInputs(), getHelloKeepRules(), mode);
     testForJvm(parameters)
         .addProgramFiles(helloCompiledWithR8.outputJar)
         .run(parameters.getRuntime(), HELLO_CLASS)
@@ -118,7 +119,7 @@ public class BootstrapTest extends TestBase {
   private Path compileR8WithR8(CompilationMode mode) throws Exception {
     return testForR8(parameters.getBackend())
         .setMode(mode)
-        .addProgramFiles(R8_STABLE_JAR)
+        .addProgramFiles(getR8StableJar())
         .addKeepRules(TestBase.keepMainProguardConfiguration(R8.class))
         // The r8 stable/release hits open interface issues.
         .addOptionsModification(o -> o.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces())

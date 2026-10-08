@@ -186,10 +186,11 @@ public class RetraceBase<T, ST extends StackTraceElementProxy<T, ST>> {
 
     private final boolean isVerbose;
 
-    public RetraceStackTraceElementProxyEquivalence(boolean isVerbose) {
+    RetraceStackTraceElementProxyEquivalence(boolean isVerbose) {
       this.isVerbose = isVerbose;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     protected boolean doEquivalent(
         RetraceStackTraceElementProxy<T, ST> one, RetraceStackTraceElementProxy<T, ST> other) {
@@ -314,7 +315,7 @@ public class RetraceBase<T, ST extends StackTraceElementProxy<T, ST>> {
         Function<RetraceStackTraceElementProxy<T, ST>, Boolean> predicate,
         Function<RetraceStackTraceElementProxy<T, ST>, V> getter) {
       return Comparator.comparing(predicate)
-              .thenComparing(getter, Comparator.nullsFirst(V::compareTo))
+              .thenComparing(getter, Comparator.nullsFirst(Comparable::compareTo))
               .compare(one, other)
           != 0;
     }

@@ -157,6 +157,7 @@ public class ConstantCanonicalizer {
     return catchHandlerBlocks.getSeenSet();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public ConstantCanonicalizer canonicalize() {
     Object2ObjectLinkedOpenCustomHashMap<Instruction, List<Instruction>> valuesDefinedByConstant =
         new Object2ObjectLinkedOpenCustomHashMap<>(
@@ -185,6 +186,7 @@ public class ConstantCanonicalizer {
                 }
               }
 
+              @SuppressWarnings("ReferenceEquality")
               @Override
               public boolean equals(Instruction a, Instruction b) {
                 if (a == b) {
@@ -495,6 +497,7 @@ public class ConstantCanonicalizer {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isInstructionDominatedBy(
       Instruction dominated, Instruction dominator, LazyDominatorTree dominatorTree) {
     if (dominated.getBlock() == dominator.getBlock()) {
@@ -585,6 +588,7 @@ public class ConstantCanonicalizer {
     return isReadOfEffectivelyFinalFieldOutsideInitializer(staticGet, null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean isReadOfEffectivelyFinalFieldOutsideInitializer(
       FieldGet fieldGet, NewInstance newInstance) {
     if (getOrComputeIsAccessingVolatileField()) {
@@ -685,6 +689,7 @@ public class ConstantCanonicalizer {
     it.add(canonicalizedConstant);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InstructionListIterator insertCanonicalizedConstantAtInsertionPoint(
       BasicBlockIterator blockIterator,
       InstructionListIterator instructionIterator,

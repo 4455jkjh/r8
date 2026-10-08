@@ -234,6 +234,7 @@ public final class ProgramMethod extends DexClassAndMethod
     return asProgramMethodOrNull(definitions.definitionFor(newMethod));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean verifyIsConsistentWithLookup(DexDefinitionSupplier definitions) {
     DexClassAndMethod lookupMethod = definitions.definitionFor(getReference());
     assert getDefinition() == lookupMethod.getDefinition();

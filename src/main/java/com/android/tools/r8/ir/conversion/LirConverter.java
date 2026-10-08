@@ -134,6 +134,7 @@ public class LirConverter {
         () -> appView.clearCodeRewritings(executorService, timing));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static <T extends Throwable> void rewriteLirWithLens(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       Timing timing,
@@ -200,6 +201,7 @@ public class LirConverter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static void finalizeLirToOutputFormat(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       Timing timing,

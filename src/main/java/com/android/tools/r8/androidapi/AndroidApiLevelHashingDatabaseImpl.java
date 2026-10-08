@@ -35,6 +35,7 @@ public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDataba
   private final DiagnosticsHandler diagnosticsHandler;
   private static volatile AndroidApiDataAccess dataAccess;
 
+  @SuppressWarnings("LockOnNonEnclosingClassLiteral")
   private static AndroidApiDataAccess getDataAccess(
       InternalOptions options, DiagnosticsHandler diagnosticsHandler) {
     if (dataAccess == null) {
@@ -131,6 +132,7 @@ public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDataba
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private AndroidApiLevel lookupApiLevel(DexReference reference) {
     // TODO(b/326252366): Assigning all extension items the same "fake" API level results in API
     //  outlines becoming mergable across extensions, which should be prevented.

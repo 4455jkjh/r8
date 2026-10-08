@@ -13,9 +13,9 @@ import java.util.Map;
 public class ArrayFilledDataPayloadResolver {
 
   private static class PayloadData {
-    public int element_width;
-    public long size;
-    public short[] data;
+    int element_width;
+    long size;
+    short[] data;
   }
 
   private final Map<Integer, DexFillArrayDataPayload> unresolvedPayload = new HashMap<>();

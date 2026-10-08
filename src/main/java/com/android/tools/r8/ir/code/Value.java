@@ -221,6 +221,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean hasAliasedValue() {
     return getAliasedValue() != this;
   }
@@ -244,6 +245,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return getAliasedValue(configuration, Predicates.alwaysFalse());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Value getAliasedValue(
       AliasedValueConfiguration configuration, Predicate<Value> stoppingCriterion) {
     assert stoppingCriterion != null;
@@ -314,6 +316,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     end.addDebugValue(this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean onlyUsedInBlock(BasicBlock block) {
     if (hasPhiUsers() || hasDebugUsers()) {
       return false;
@@ -326,6 +329,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return true;
   }
 
+  @SuppressWarnings("AssignmentExpression")
   public Set<Instruction> uniqueUsers() {
     if (uniqueUsers != null) {
       return uniqueUsers;
@@ -382,6 +386,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
   }
 
   /** Returns true if any users were found. */
+  @SuppressWarnings("ReferenceEquality")
   public boolean collectUsersDominatedByInstruction(
       DominatorTree dominatorTree,
       Set<Instruction> dominatedUsers,
@@ -422,6 +427,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return phiUsers.getFirst();
   }
 
+  @SuppressWarnings("AssignmentExpression")
   public Set<Phi> uniquePhiUsers() {
     if (uniquePhiUsers != null) {
       return uniquePhiUsers;
@@ -543,6 +549,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     uniqueUsers = null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void fullyRemoveUser(Instruction user) {
     users.removeIf(u -> u == user);
     uniqueUsers = null;
@@ -576,6 +583,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     uniquePhiUsers = null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void fullyRemovePhiUser(Phi user) {
     phiUsers.removeIf(u -> u == user);
     uniquePhiUsers = null;
@@ -635,6 +643,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     replaceUsers(newValue, null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceUsers(Value newValue, Set<Value> affectedValues) {
     if (this == newValue) {
       return;
@@ -654,6 +663,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     clearUsers();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replacePhiUsers(Value newValue) {
     if (this == newValue) {
       return;
@@ -664,6 +674,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     clearPhiUsers();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceSelectiveInstructionUsers(Value newValue, Predicate<Instruction> predicate) {
     if (this == newValue) {
       return;
@@ -683,6 +694,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     replaceSelectiveUsers(newValue, selectedInstructions, selectedPhisWithPredecessorIndexes, null);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceSelectiveUsers(
       Value newValue,
       Set<Instruction> selectedInstructions,
@@ -804,6 +816,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return number;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();

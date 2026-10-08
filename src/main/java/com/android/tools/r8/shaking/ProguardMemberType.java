@@ -14,10 +14,12 @@ public enum ProguardMemberType {
   CONSTRUCTOR,
   METHOD;
 
+  @SuppressWarnings("EnumOrdinal")
   public boolean includesFields() {
     return ordinal() <= ALL.ordinal();
   }
 
+  @SuppressWarnings("EnumOrdinal")
   public boolean includesMethods() {
     return ordinal() >= ALL.ordinal();
   }

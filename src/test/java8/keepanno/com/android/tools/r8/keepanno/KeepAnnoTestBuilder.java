@@ -25,6 +25,7 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestShrinkerBuilder;
@@ -576,7 +577,8 @@ public abstract class KeepAnnoTestBuilder {
       super(params);
       builder =
           TestBase.testForExternalR8(temp, parameters().getBackend())
-              .useProvidedR8(KeepAnnoTestUtils.R8_LIB)
+              // Track support for R8 version 8.0.46 which is included in AGP 8.0.2
+              .useProvidedR8(TestDeps.getR8V8_0_46LibJar())
               .addProgramFiles(KeepAnnoTestUtils.getKeepAnnoLib(temp, keepAnnotationLibrary))
               .setMinApi(parameters());
     }

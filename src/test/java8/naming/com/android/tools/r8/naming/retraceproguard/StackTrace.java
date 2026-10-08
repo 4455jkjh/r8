@@ -135,7 +135,7 @@ class StackTrace {
     return originalStderr;
   }
 
-  public static StackTrace extractFromArt(String stderr) {
+  public static StackTrace extractFromArt(String stderr, DexVm vm) {
     List<StackTraceLine> stackTraceLines = new ArrayList<>();
     List<String> stderrLines = StringUtils.splitLines(stderr);
 
@@ -181,7 +181,7 @@ class StackTrace {
       // Find all lines starting with "\tat" except "dalvik.system.NativeStart.main" frame
       // if present.
       if (line.startsWith(TAB_AT_PREFIX)
-          && !(ToolHelper.getDexVm().isOlderThanOrEqual(DexVm.ART_4_4_4_HOST)
+          && !(vm.isOlderThanOrEqual(DexVm.ART_4_4_4_HOST)
               && line.contains("dalvik.system.NativeStart.main"))) {
         stackTraceLines.add(StackTraceLine.parse(stderrLines.get(i)));
       }
@@ -226,7 +226,7 @@ class StackTrace {
       return extractFromJvm(single.getStdErr());
     } else {
       assert single.runtime().isDex();
-      return extractFromArt(single.getStdErr());
+      return extractFromArt(single.getStdErr(), single.runtime().asDex().getVm());
     }
   }
 

@@ -65,6 +65,7 @@ public class FieldReadBeforeWriteDfsAnalysisState {
     return escape != null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   boolean isDefinitelyInstance(Value value) {
     return value.getAliasedValue() == newInstance.outValue();
   }

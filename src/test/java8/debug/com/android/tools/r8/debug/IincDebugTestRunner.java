@@ -13,8 +13,9 @@ import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.DebuggeeState;
@@ -24,8 +25,22 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class IincDebugTestRunner extends DebugTestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
   @Test
   public void compareDifferentRegister() throws Exception {
     compareOutput(IincDebugTestDump.dump(1, 2, false));
@@ -65,7 +80,7 @@ public class IincDebugTestRunner extends DebugTestBase {
     assertEquals(runInput.toString(), runCf.toString());
     String runDex =
         ToolHelper.runArtNoVerificationErrors(
-            buildDex(inputJar).toString(), IincDebugTestDump.CLASS_NAME);
+            buildDex(inputJar).toString(), IincDebugTestDump.CLASS_NAME, parameters.getDexVm());
     assertEquals(runInput.stdout, runDex);
   }
 
@@ -74,11 +89,11 @@ public class IincDebugTestRunner extends DebugTestBase {
     // fixed.
     Assume.assumeTrue(
         "Skipping test " + testName.getMethodName() + " because debugging not enabled in 12.0.0",
-        !ToolHelper.getDexVm().isNewerThanOrEqual(DexVm.ART_12_0_0_HOST));
+        !parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V12_0_0));
     // See verifyStateLocation in DebugTestBase.
     Assume.assumeTrue(
         "Streaming on Dalvik DEX runtimes has some unknown interference issue",
-        ToolHelper.getDexVm().getVersion().isNewerThanOrEqual(Version.V6_0_1));
+        parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V6_0_1));
     Assume.assumeTrue(
         "Skipping test "
             + testName.getMethodName()
@@ -87,7 +102,9 @@ public class IincDebugTestRunner extends DebugTestBase {
     Path inputJar = buildInput(clazz);
     new DebugStreamComparator()
         .add("Input", streamDebugTest(new CfDebugTestConfig(inputJar)))
-        .add("R8/DEX", streamDebugTest(new DexDebugTestConfig(buildDex(inputJar))))
+        .add(
+            "R8/DEX",
+            streamDebugTest(new DexDebugTestConfig(parameters.asDexRuntime(), buildDex(inputJar))))
         .add("R8/CF", streamDebugTest(new CfDebugTestConfig(buildCf(inputJar))))
         .compare();
   }
@@ -129,7 +146,7 @@ public class IincDebugTestRunner extends DebugTestBase {
     if ((consumer instanceof ClassFileConsumer)) {
       builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
     } else {
-      builder.addLibraryFiles(ToolHelper.getAndroidJar(ToolHelper.getMinApiLevelForDexVm()));
+      builder.addLibraryFiles(ToolHelper.getAndroidJar(parameters.asDexRuntime().getMinApiLevel()));
     }
     ToolHelper.runR8(builder.build(), options -> options.invalidDebugInfoFatal = true);
   }

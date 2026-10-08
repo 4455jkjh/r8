@@ -397,6 +397,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void pop(N node) {
     N popped = stack.pop();
     assert popped == node;
@@ -442,7 +443,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
   }
 
   // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "NonApiType", "ReferenceEquality"})
   private LinkedList<N> extractCycle(N entry) {
     LinkedList<N> cycle = new LinkedList<>();
     do {
@@ -452,6 +453,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
     return cycle;
   }
 
+  @SuppressWarnings("NonApiType")
   private boolean verifyCycleSatisfies(N entry, Predicate<LinkedList<N>> predicate) {
     LinkedList<N> cycle = extractCycle(entry);
     assert predicate.test(cycle);
@@ -459,6 +461,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
     return true;
   }
 
+  @SuppressWarnings("NonApiType")
   private CallEdge<N> findCallEdgeForRemoval(LinkedList<N> extractedCycle) {
     N callee = extractedCycle.getLast();
     for (N caller : extractedCycle) {
@@ -496,6 +499,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
         .add(caller.getProgramMethod());
   }
 
+  @SuppressWarnings("NonApiType")
   private void recoverStack(LinkedList<N> extractedCycle) {
     Iterator<N> descendingIt = extractedCycle.descendingIterator();
     while (descendingIt.hasNext()) {

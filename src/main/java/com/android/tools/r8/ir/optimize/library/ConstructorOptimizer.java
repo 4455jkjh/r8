@@ -36,6 +36,7 @@ public class ConstructorOptimizer extends StatelessLibraryMethodModelCollection 
     return dexItemFactory.constructorType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public InstructionListIterator optimize(
       IRCode code,

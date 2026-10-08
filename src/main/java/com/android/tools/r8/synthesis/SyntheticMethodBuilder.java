@@ -144,6 +144,7 @@ public class SyntheticMethodBuilder {
     return this;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   DexEncodedMethod build(ClassKind<?> classKind) {
     assert name != null;
     DexMethod methodSignature = getMethodSignature();

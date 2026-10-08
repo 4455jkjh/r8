@@ -4,14 +4,15 @@
 package com.android.tools.r8.jasmin;
 
 import static java.util.Collections.emptyList;
+import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowingBiFunction;
+import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.VmTestRunner;
-import com.android.tools.r8.VmTestRunner.IgnoreForRangeOfVmVersions;
-import com.android.tools.r8.VmTestRunner.IgnoreForVmVersions;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassFileVersion;
 import com.android.tools.r8.utils.internal.ThrowingSupplier;
@@ -19,11 +20,27 @@ import java.util.function.BiConsumer;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(VmTestRunner.class)
+@RunWith(Parameterized.class)
 public class MemberResolutionTest extends JasminTestBase {
 
   private static final String MAIN_CLASS = "Main";
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimes().build();
+  }
+
+  @Override
+  protected DexVm getVm() {
+    return parameters.getDexVm();
+  }
 
   @Test
   public void lookupStaticFieldFromDiamondInterface() throws Exception {
@@ -221,8 +238,9 @@ public class MemberResolutionTest extends JasminTestBase {
   }
 
   @Test
-  @IgnoreForRangeOfVmVersions(from = Version.V5_1_1, to = Version.V7_0_0)
   public void lookupVirtualMethodWithConflictingPrivate() throws Exception {
+    assumeFalse(
+        parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V5_1_1, Version.V7_0_0));
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JSE_5);
 
     ClassBuilder superClass = builder.addClass("SuperClass");
@@ -258,8 +276,9 @@ public class MemberResolutionTest extends JasminTestBase {
   }
 
   @Test
-  @IgnoreForRangeOfVmVersions(from = Version.V5_1_1, to = Version.V7_0_0)
   public void lookupDirectMethodFromWrongContext() throws Exception {
+    assumeFalse(
+        parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V5_1_1, Version.V7_0_0));
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JSE_5);
 
     ClassBuilder superClass = builder.addClass("SuperClass");
@@ -331,8 +350,9 @@ public class MemberResolutionTest extends JasminTestBase {
   }
 
   @Test
-  @IgnoreForRangeOfVmVersions(from = Version.V5_1_1, to = Version.V7_0_0)
   public void lookupStaticMethodWithConflictingVirtual() throws Exception {
+    assumeFalse(
+        parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V5_1_1, Version.V7_0_0));
     JasminBuilder builder = new JasminBuilder();
 
     ClassBuilder superClass = builder.addClass("SuperClass");
@@ -368,8 +388,9 @@ public class MemberResolutionTest extends JasminTestBase {
   }
 
   @Test
-  @IgnoreForRangeOfVmVersions(from = Version.V5_1_1, to = Version.V7_0_0)
   public void lookupVirtualMethodWithConflictingStatic() throws Exception {
+    assumeFalse(
+        parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V5_1_1, Version.V7_0_0));
     JasminBuilder builder = new JasminBuilder();
 
     ClassBuilder superClass = builder.addClass("SuperClass");
@@ -405,8 +426,9 @@ public class MemberResolutionTest extends JasminTestBase {
   }
 
   @Test
-  @IgnoreForRangeOfVmVersions(from = Version.V5_1_1, to = Version.V7_0_0)
   public void testInterfaceWithDifferentSuper() throws Exception {
+    assumeFalse(
+        parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V5_1_1, Version.V7_0_0));
     JasminBuilder builder = new JasminBuilder();
 
     ClassBuilder superInterface = builder.addClass("SuperInterface");
@@ -467,8 +489,8 @@ public class MemberResolutionTest extends JasminTestBase {
 
   @Test
   // TODO(119938529): Triage.
-  @IgnoreForVmVersions(Version.V8_1_0)
   public void testRebindVirtualCallToStatic() throws Exception {
+    assumeFalse(parameters.isDexRuntimeVersion(Version.V8_1_0));
     // Library classes.
     JasminBuilder libraryBuilder = new JasminBuilder();
     ClassBuilder classWithStatic = libraryBuilder.addClass("ClassWithStatic");
@@ -502,8 +524,8 @@ public class MemberResolutionTest extends JasminTestBase {
 
   @Test
   // TODO(119938529): Triage.
-  @IgnoreForVmVersions(Version.V8_1_0)
   public void testRebindVirtualCallToPackagePrivateStatic() throws Exception {
+    assumeFalse(parameters.isDexRuntimeVersion(Version.V8_1_0));
     // Library classes.
     JasminBuilder libraryBuilder = new JasminBuilder();
     ClassBuilder classWithStatic = libraryBuilder.addClass("ClassWithStatic");
@@ -539,8 +561,8 @@ public class MemberResolutionTest extends JasminTestBase {
 
   @Test
   // TODO(119938529): Triage.
-  @IgnoreForVmVersions(Version.V8_1_0)
   public void testRebindVirtualCallToStaticInPackagePrivateClass() throws Exception {
+    assumeFalse(parameters.isDexRuntimeVersion(Version.V8_1_0));
     // Library classes.
     JasminBuilder libraryBuilder = new JasminBuilder();
     ClassBuilder classWithStatic = libraryBuilder.addClass("ClassWithStatic");

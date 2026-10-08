@@ -164,6 +164,7 @@ public class BottomUpOutlinerPrefixer {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Instruction processNonEscapingStringBuilder(
       Instruction firstOutlinedInstruction, Set<Value> stringBuilderAliases) {
     // Iterate backwards starting from the first outlined instruction and move eligible
@@ -246,6 +247,7 @@ public class BottomUpOutlinerPrefixer {
    *
    * @return The {@param nonOutlinedInstruction}, which is now the new first outlined instruction.
    */
+  @SuppressWarnings("ReferenceEquality")
   private Instruction moveNonOutlinedInstructionToOutline(
       Instruction nonOutlinedInstruction, Instruction firstOutlinedInstruction) {
     if (nonOutlinedInstruction != firstOutlinedInstruction.getPrev()) {

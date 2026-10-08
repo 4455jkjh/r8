@@ -83,6 +83,7 @@ public class KeepRadiusOptions {
     return htmlOutputPath;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean shouldExitEarly() {
     if (!isEnabled() || options.programConsumer != DexIndexedConsumer.emptyConsumer()) {
       return false;

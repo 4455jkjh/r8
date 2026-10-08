@@ -4,10 +4,12 @@
 
 package com.android.tools.r8.ir.synthetic;
 
+import com.android.tools.r8.cf.code.CfCheckCast;
 import com.android.tools.r8.cf.code.CfCmp;
 import com.android.tools.r8.cf.code.CfConstNumber;
 import com.android.tools.r8.cf.code.CfConstString;
 import com.android.tools.r8.cf.code.CfFrame;
+import com.android.tools.r8.cf.code.CfGoto;
 import com.android.tools.r8.cf.code.CfIf;
 import com.android.tools.r8.cf.code.CfIfCmp;
 import com.android.tools.r8.cf.code.CfInstanceOf;
@@ -38,6 +40,10 @@ import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.IntBox;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceAVLTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +56,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
 
   private final List<DexValue> bootstrapArgs;
   private final DexType arg0Type;
+  private final boolean isRestartable;
   private final Dispatcher dispatcher;
   private final DexMethod intEq;
   private final Map<DexType, DexMethod> enumEqMethods;
@@ -73,6 +80,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
       DexType holder,
       DexType arg0Type,
       List<DexValue> bootstrapArgs,
+      boolean isRestartable,
       Dispatcher dispatcher,
       DexMethod intEq,
       Map<DexType, DexMethod> enumEqMethods,
@@ -81,6 +89,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
     super(appView, holder);
     this.arg0Type = arg0Type;
     this.bootstrapArgs = bootstrapArgs;
+    this.isRestartable = isRestartable;
     this.dispatcher = dispatcher;
     this.intEq = intEq;
     this.enumEqMethods = enumEqMethods;
@@ -98,16 +107,14 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
 
     CfFrame frame = computeCfFrame();
 
-    // Objects.checkIndex(restart, length + 1);
-    instructions.add(loadArg1());
-    instructions.add(new CfConstNumber(bootstrapArgs.size() + 1, ValueType.INT));
-    DexMethod checkIndex =
-        factory.createMethod(
-            factory.objectsType,
-            factory.createProto(factory.intType, factory.intType, factory.intType),
-            "checkIndex");
-    instructions.add(new CfInvoke(Opcodes.INVOKESTATIC, checkIndex, false));
-    instructions.add(new CfStackInstruction(Opcode.Pop));
+    if (isRestartable) {
+      // Objects.checkIndex(restart, length + 1);
+      instructions.add(loadArg1());
+      instructions.add(new CfConstNumber(bootstrapArgs.size() + 1, ValueType.INT));
+      instructions.add(
+          new CfInvoke(Opcodes.INVOKESTATIC, factory.objectsMethods.checkIndex, false));
+      instructions.add(new CfStackInstruction(Opcode.Pop));
+    }
 
     if (!isPrimitiveSwitch) {
       // if (obj == null) { return -1; }
@@ -133,18 +140,26 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
       cfLabels.add(new CfLabel());
     }
     cfLabels.add(defaultLabel);
-    instructions.add(loadArg1());
-    instructions.add(new CfSwitch(Kind.TABLE, defaultLabel, new int[] {0}, cfLabels));
+    if (isRestartable) {
+      instructions.add(loadArg1());
+      instructions.add(new CfSwitch(Kind.TABLE, defaultLabel, new int[] {0}, cfLabels));
+    }
 
-    IntBox index = new IntBox(0);
+    int stringCount = getLeadingStringCount();
+    if (stringCount > 0) {
+      generateStringSwitch(stringCount, cfLabels.get(stringCount), instructions, frame, factory);
+    }
+
+    IntBox index = new IntBox(stringCount);
     IntBox enumIndex = new IntBox(0);
-    bootstrapArgs.forEach(
+    List<DexValue> remainingBootstrapArgs =
+        bootstrapArgs.subList(stringCount, bootstrapArgs.size());
+    remainingBootstrapArgs.forEach(
         dexValue ->
             dispatcher.generate(
                 dexValue,
                 dexType -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   if (!isPrimitiveSwitch) {
                     instructions.add(loadArg0());
                     instructions.add(new CfInstanceOf(dexType));
@@ -158,8 +173,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 intValue -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   if (isPrimitiveSwitch) {
                     instructions.add(new CfConstNumber(intValue, ValueType.INT));
@@ -185,8 +199,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 dexString -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   instructions.add(new CfConstString(dexString));
                   instructions.add(
@@ -197,8 +210,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 (type, enumField) -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   // TODO(b/399808482): In R8 release, we can analyze at compile-time program enum
                   //  and generate a fast check based on the field. But these information are not
                   //  available in Cf instructions.
@@ -219,8 +231,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 bool -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   if (isPrimitiveSwitch) {
                     instructions.add(
@@ -241,8 +252,7 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                   instructions.add(new CfReturn(ValueType.INT));
                 },
                 dexNumber -> {
-                  instructions.add(cfLabels.get(index.get()));
-                  instructions.add(frame);
+                  emitCaseLabelAndFrame(index.get(), cfLabels, frame, instructions);
                   instructions.add(loadArg0());
                   if (dexNumber.isDexValueFloat()) {
                     instructions.add(new CfConstNumber(dexNumber.getRawValue(), ValueType.FLOAT));
@@ -290,7 +300,75 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
     return standardCfCodeFromInstructions(instructions);
   }
 
+  private int getLeadingStringCount() {
+    // In enumSwitch, string labels are enum constant names (and populate enumEqMethods).
+    if (arg0Type.isPrimitiveType() || isRestartable || !enumEqMethods.isEmpty()) {
+      return 0;
+    }
+    int count = 0;
+    while (count < bootstrapArgs.size() && bootstrapArgs.get(count).isDexValueString()) {
+      count++;
+    }
+    return count;
+  }
+
+  // Emits a lookupSwitch on ((String) arg0).hashCode() followed by String.equals() checks, falling
+  // through to defaultTarget if arg0 is not a String or no string case matches.
+  private void generateStringSwitch(
+      int stringCount,
+      CfLabel defaultTarget,
+      List<CfInstruction> instructions,
+      CfFrame frame,
+      DexItemFactory factory) {
+    Int2ReferenceSortedMap<IntList> hashToCases = new Int2ReferenceAVLTreeMap<>();
+    for (int i = 0; i < stringCount; i++) {
+      int hash = bootstrapArgs.get(i).asDexValueString().getValue().javaLangStringHashCode();
+      hashToCases.computeIfAbsent(hash, k -> new IntArrayList()).add(i);
+    }
+    List<CfLabel> targets = new ArrayList<>();
+    for (int i = 0; i < hashToCases.size(); i++) {
+      targets.add(new CfLabel());
+    }
+    instructions.add(loadArg0());
+    instructions.add(new CfInstanceOf(factory.stringType));
+    instructions.add(new CfIf(IfType.EQ, ValueType.INT, defaultTarget));
+    instructions.add(loadArg0());
+    instructions.add(new CfCheckCast(factory.stringType));
+    instructions.add(new CfInvoke(Opcodes.INVOKEVIRTUAL, factory.stringMembers.hashCode, false));
+    instructions.add(
+        new CfSwitch(Kind.LOOKUP, defaultTarget, hashToCases.keySet().toIntArray(), targets));
+    int targetIndex = 0;
+    for (IntList cases : hashToCases.values()) {
+      instructions.add(targets.get(targetIndex++));
+      instructions.add(frame);
+      for (int i = 0; i < cases.size(); i++) {
+        int caseIndex = cases.getInt(i);
+        CfLabel next = new CfLabel();
+        instructions.add(loadArg0());
+        instructions.add(new CfCheckCast(factory.stringType));
+        instructions.add(
+            new CfConstString(bootstrapArgs.get(caseIndex).asDexValueString().getValue()));
+        instructions.add(new CfInvoke(Opcodes.INVOKEVIRTUAL, factory.stringMembers.equals, false));
+        instructions.add(new CfIf(IfType.EQ, ValueType.INT, next));
+        instructions.add(new CfConstNumber(caseIndex, ValueType.INT));
+        instructions.add(new CfReturn(ValueType.INT));
+        instructions.add(next);
+        instructions.add(frame);
+      }
+      instructions.add(new CfGoto(defaultTarget));
+    }
+  }
+
+  private void emitCaseLabelAndFrame(
+      int caseIndex, List<CfLabel> cfLabels, CfFrame frame, List<CfInstruction> instructions) {
+    if (isRestartable || caseIndex > 0) {
+      instructions.add(cfLabels.get(caseIndex));
+      instructions.add(frame);
+    }
+  }
+
   private CfLoad loadArg1() {
+    assert isRestartable;
     return new CfLoad(ValueType.INT, arg0Type.isWideType() ? 2 : 1);
   }
 
@@ -306,12 +384,11 @@ public class TypeSwitchSyntheticCfCodeProvider extends SyntheticCfCodeProvider {
                 || arg0Type.isBooleanType()
             ? appView.dexItemFactory().intType
             : arg0Type;
-    CfFrame frame =
-        CfFrame.builder()
-            .appendLocal(FrameType.initialized(frameType))
-            .appendLocal(FrameType.intType())
-            .build();
-    return frame;
+    CfFrame.Builder builder = CfFrame.builder().appendLocal(FrameType.initialized(frameType));
+    if (isRestartable) {
+      builder.appendLocal(FrameType.intType());
+    }
+    return builder.build();
   }
 
   public static boolean allowsInlinedIntegerEquality(DexType arg0Type, DexItemFactory factory) {

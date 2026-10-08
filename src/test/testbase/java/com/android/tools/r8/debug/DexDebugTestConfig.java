@@ -5,10 +5,8 @@ package com.android.tools.r8.debug;
 
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.DexRuntime;
-import com.android.tools.r8.ToolHelper;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /** Base test configuration with DEX version of JDWP. */
@@ -16,19 +14,8 @@ public class DexDebugTestConfig extends DebugTestConfig {
 
   private final DexRuntime runtime;
 
-  @Deprecated
-  public DexDebugTestConfig() {
-    this(Collections.emptyList());
-  }
-
-  @Deprecated
-  public DexDebugTestConfig(Path... paths) {
-    this(Arrays.asList(paths));
-  }
-
-  @Deprecated
-  public DexDebugTestConfig(List<Path> paths) {
-    this(new DexRuntime(ToolHelper.getDexVm()), paths);
+  public DexDebugTestConfig(DexRuntime runtime, Path... paths) {
+    this(runtime, Arrays.asList(paths));
   }
 
   public DexDebugTestConfig(TestRuntime.DexRuntime runtime, List<Path> paths) {

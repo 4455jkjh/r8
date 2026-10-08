@@ -73,7 +73,7 @@ public interface ClassPositionRemapper {
     private abstract static class OptimizingMethodPositionRemapper
         implements MethodPositionRemapper {
 
-      protected int nextOptimizedLineNumber = 0;
+      int nextOptimizedLineNumber = 0;
 
       @Override
       public Pair<Position, Position> createRemappedPosition(Position position) {
@@ -87,7 +87,7 @@ public interface ClassPositionRemapper {
         return new Pair<>(position, newPosition);
       }
 
-      protected abstract void advanceNextOptimizedLineNumber(Position position);
+      abstract void advanceNextOptimizedLineNumber(Position position);
 
       @Override
       public void setNextOptimizedLineNumber(int nextOptimizedLineNumber) {
@@ -149,6 +149,7 @@ public interface ClassPositionRemapper {
       this.kotlinSourceDebugExtensions = kotlinSourceDebugExtensions;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public ClassPositionRemapper createClassPositionRemapper(DexProgramClass clazz) {
       ClassPositionRemapper baseClassRemapper = baseRemapper.createClassPositionRemapper(clazz);

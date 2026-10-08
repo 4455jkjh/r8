@@ -64,23 +64,23 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
 
   /** The returned map has hash-independent iteration. */
   public static Map<ApiDatabaseEntry, AndroidApiLevel> generateEntries(
-      Collection<ParsedApiClass> apiClasses) throws GenerationException {
+      Collection<ParsedApiClass<ApiRange>> apiClasses) throws GenerationException {
     return new EntryBuilder().addEntriesFor(apiClasses).build();
   }
 
   private static class EntryBuilder {
-    public final Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = new LinkedHashMap<>();
+    final Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = new LinkedHashMap<>();
 
-    public EntryBuilder addEntriesFor(Collection<ParsedApiClass> apiClasses)
+    EntryBuilder addEntriesFor(Collection<ParsedApiClass<ApiRange>> apiClasses)
         throws GenerationException {
-      for (ParsedApiClass apiClass : apiClasses) {
+      for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
         addEntriesFor(apiClass);
       }
       return this;
     }
 
-    public void addEntriesFor(ParsedApiClass apiClass) throws GenerationException {
-      addEntry(apiClass.getClassReference(), apiClass.getRange());
+    void addEntriesFor(ParsedApiClass<ApiRange> apiClass) throws GenerationException {
+      addEntry(apiClass.getClassReference(), apiClass.getData());
       apiClass.forEachMethodThrowing(this::addEntry);
       apiClass.forEachFieldThrowing(this::addEntry);
     }
@@ -110,7 +110,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
       databaseEntries.put(entry, apiLevel);
     }
 
-    public Map<ApiDatabaseEntry, AndroidApiLevel> build() {
+    Map<ApiDatabaseEntry, AndroidApiLevel> build() {
       return databaseEntries;
     }
   }
@@ -149,18 +149,18 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
     private final IntBox intBox = new IntBox(0);
     private final Object2IntMap<ConstantPoolEntry> pool = new Object2IntLinkedOpenHashMap<>();
 
-    public int getOrAdd(ConstantPoolEntry entry) {
+    int getOrAdd(ConstantPoolEntry entry) {
       return pool.computeIfAbsent(entry, ignored -> intBox.getAndIncrement());
     }
 
-    public void forEach(ThrowingBiConsumer<ConstantPoolEntry, Integer, IOException> consumer)
+    void forEach(ThrowingBiConsumer<ConstantPoolEntry, Integer, IOException> consumer)
         throws IOException {
       for (var mapEntry : pool.object2IntEntrySet()) {
         consumer.accept(mapEntry.getKey(), mapEntry.getIntValue());
       }
     }
 
-    public int size() {
+    int size() {
       return pool.size();
     }
   }
@@ -294,6 +294,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
   }
 
   /** This will serialize a collection of DexReferences and apis into a byte stream. */
+  @SuppressWarnings("ReferenceEquality")
   private static int serializeIntoPayload(
       List<Pair<ApiDatabaseEntry, AndroidApiLevel>> pairs,
       ByteArrayOutputStream payload,

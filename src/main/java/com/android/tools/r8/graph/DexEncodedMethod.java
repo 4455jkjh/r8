@@ -594,6 +594,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     kotlinMemberInfo = getNoKotlinInfo();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void setKotlinMemberInfo(KotlinMethodLevelInfo kotlinMemberInfo) {
     // Structure-changing optimizations, such as (vertical|horizontal) merger or inliner, that
     // may need to redefine what this method is. Simply, the method merged/inlined by optimization
@@ -737,6 +738,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     code = null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean hasParameterInfo() {
     return parameterInfo != NO_PARAMETER_INFO;
   }

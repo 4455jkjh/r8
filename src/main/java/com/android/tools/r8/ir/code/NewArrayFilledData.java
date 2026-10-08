@@ -165,6 +165,7 @@ public class NewArrayFilledData extends Instruction {
         internalComputeObjectState(appView, context, abstractValueSupplier));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean instructionMayHaveSideEffects(
       AppView<?> appView,

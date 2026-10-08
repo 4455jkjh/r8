@@ -62,6 +62,7 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
             // TODO(b/507731439): Test on ART 17.
             .withDexRuntimesRangeIncluding(V5_1_1, V16_0_0)
             .withApiLevelsStartingAtIncluding(AndroidApiLevel.L)
+            .withoutCollapsedDexRuntimes()
             .build(),
         ImmutableList.of(JDK11_PATH),
         ImmutableList.of(D8_L8DEBUG));
@@ -127,7 +128,8 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
   }
 
   private void verifyResult(Path helloOutput) throws IOException {
-    ProcessResult processResult = ToolHelper.runArtRaw(helloOutput.toString(), HELLO_NAME);
+    ProcessResult processResult =
+        ToolHelper.runArtRaw(helloOutput.toString(), HELLO_NAME, parameters.getDexVm());
     assertEquals(HELLO_EXPECTED, processResult.stdout);
   }
 

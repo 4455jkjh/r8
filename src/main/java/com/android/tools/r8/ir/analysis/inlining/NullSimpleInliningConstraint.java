@@ -64,6 +64,7 @@ public class NullSimpleInliningConstraint extends SimpleInliningArgumentConstrai
     return withArgumentIndex(newArgumentIndex, factory);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public final boolean isSatisfied(InvokeMethod invoke) {
     Value argument = getArgument(invoke);

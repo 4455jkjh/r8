@@ -88,6 +88,7 @@ public class SingleCallerInlinerCallGraph extends CallGraphBase<Node> {
       super(method);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void addCaller(Node caller) {
       assert this.caller == null;
       if (this == caller) {
@@ -139,11 +140,13 @@ public class SingleCallerInlinerCallGraph extends CallGraphBase<Node> {
       return callees.contains(callee);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean hasCaller(Node caller) {
       return this.caller != null && this.caller == caller;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void removeCaller(Node caller) {
       assert this.caller != null;

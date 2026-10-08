@@ -38,6 +38,7 @@ public class ConstResourceNumberRewriter extends CodeRewriterPass<AppInfo> {
     return DescriptorUtils.isRClassDescriptor(holder.getType().toDescriptorString());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code) {
     boolean hasChanged = false;

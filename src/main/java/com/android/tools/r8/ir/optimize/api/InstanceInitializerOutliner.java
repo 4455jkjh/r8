@@ -180,6 +180,7 @@ public class InstanceInitializerOutliner extends CodeRewriterPass<AppInfo> {
     return CodeRewriterResult.HAS_CHANGED;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean canSkipClInit(
       InstructionListIterator iterator, NewInstance newInstance, Value newInstanceOutValue) {
     if (neverOutlineClinit.contains(newInstance.clazz)) {

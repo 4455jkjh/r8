@@ -231,6 +231,7 @@ public class MethodResolutionOptimizationInfoAnalysis {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void handleInvokeInterfaceToSiblingMethod(
         DexProgramClass iface,
         DexProgramClass subClass,

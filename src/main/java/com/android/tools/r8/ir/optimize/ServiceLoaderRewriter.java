@@ -123,6 +123,7 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
         || keepInfo.hasMinimumKeepInfoThatMatches(serviceLoaderMethods.loadWithClassLoader, test);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected CodeRewriterResult rewriteCode(
       IRCode code,
@@ -489,6 +490,7 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
    *   * .hasNext() and .next() are not in a loop.
    * </pre>
    */
+  @SuppressWarnings("ReferenceEquality")
   private DirectRewriteResult analyzeForDirectRewrite(ServiceLoaderLoadResult loadResult) {
     // Require -assumenosideeffects class java.util.ServiceLoader { java.lang.Object load(...); }
     // because this direct rewriting does not wrap exceptions in ServiceConfigurationError.
@@ -596,6 +598,7 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
     return hasPredecessorPathTo(subgraphEntryBlock, targetBlock, targetBlock);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean hasPredecessorPathTo(
       BasicBlock subgraphEntryBlock, BasicBlock subgraphExitBlock, BasicBlock targetBlock) {
     if (subgraphEntryBlock == subgraphExitBlock) {
@@ -633,6 +636,7 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean hasServiceImplementationInDifferentFeature(
       IRCode code, DexType serviceType, boolean baseFeatureOnly) {
     AppView<AppInfoWithLiveness> appViewWithClasses = appView();
@@ -725,13 +729,13 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
   }
 
   private static class ServiceLoaderLoadResult {
-    public final InvokeStatic loadInvoke;
-    public final InvokeVirtual classLoaderInvoke;
-    public final DexType serviceType;
-    public final List<DexClass> implClasses;
-    public final InvokeVirtual iteratorInvoke;
+    final InvokeStatic loadInvoke;
+    final InvokeVirtual classLoaderInvoke;
+    final DexType serviceType;
+    final List<DexClass> implClasses;
+    final InvokeVirtual iteratorInvoke;
 
-    public ServiceLoaderLoadResult(
+    ServiceLoaderLoadResult(
         InvokeStatic loadInvoke,
         InvokeVirtual classLoaderInvoke,
         DexType serviceType,
@@ -746,11 +750,11 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
   }
 
   private static class DirectRewriteResult {
-    public final InvokeMethod priorHasNextInstr;
-    public final InvokeMethod nextInstr;
-    public final InvokeMethod subsequentHasNextInstr;
+    final InvokeMethod priorHasNextInstr;
+    final InvokeMethod nextInstr;
+    final InvokeMethod subsequentHasNextInstr;
 
-    public DirectRewriteResult(
+    DirectRewriteResult(
         InvokeMethod priorHasNextInstr,
         InvokeMethod nextInstr,
         InvokeMethod subsequentHasNextInstr) {

@@ -115,7 +115,7 @@ public class ArchiveProtoAndroidResourceProvider implements AndroidResourceProvi
     private final byte[] bytes;
     private final Origin origin;
 
-    public ByteAndroidResourceInput(String name, Kind kind, byte[] bytes, Origin origin) {
+    ByteAndroidResourceInput(String name, Kind kind, byte[] bytes, Origin origin) {
       this.name = name;
       this.kind = kind;
       this.bytes = bytes;
