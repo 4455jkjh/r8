@@ -33,6 +33,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class LoopBackEdgeCanonicalizerTest extends TestBase {
 
+  private static final String[] EXPECTED_OUTPUT = new String[] {"30", "6", "5", "1", "4", "3"};
+
   @Parameter(0)
   public TestParameters parameters;
 
@@ -50,7 +52,18 @@ public class LoopBackEdgeCanonicalizerTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutputLines("30", "6", "5", "1", "4", "3");
+        .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+  }
+
+  @Test
+  public void testD8Debug() throws Exception {
+    testForD8(parameters)
+        .addInnerClasses(getClass())
+        .debug()
+        .compile()
+        .inspect(this::inspect)
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
   }
 
   private void inspect(CodeInspector inspector) {

@@ -54,6 +54,17 @@ public class LoopBackEdgeCanonicalizerIrreducibleTest extends TestBase {
   }
 
   @Test
+  public void testD8Debug() throws Exception {
+    testForD8(parameters)
+        .addProgramClassFileData(buildIrreducibleClass())
+        .debug()
+        .compile()
+        .inspect(this::inspect)
+        .run(parameters.getRuntime(), "Irreducible")
+        .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+  }
+
+  @Test
   public void testR8() throws Exception {
     testForR8(parameters)
         .addProgramClassFileData(buildIrreducibleClass())

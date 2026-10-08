@@ -69,7 +69,6 @@ import com.android.tools.r8.ir.code.NewArrayFilledData;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.finalizer.LoopBackEdgeCanonicalizer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.regalloc.LinearScanRegisterAllocator;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
@@ -379,7 +378,12 @@ public class DexBuilder {
       }
       DebugPosition debugPosition = currentBlock.entry().asDebugPosition();
       Goto exit = currentBlock.exit().asGoto();
-      if (debugPosition == null || exit == null || debugPosition.getPosition().isNone()) {
+      // The BackTo of a loop latch must remain, as removing the latch would turn the forward
+      // branches to it into backward branches.
+      if (debugPosition == null
+          || exit == null
+          || exit.isBackTo()
+          || debugPosition.getPosition().isNone()) {
         continue;
       }
       boolean allMatch = true;
@@ -896,7 +900,7 @@ public class DexBuilder {
   // When the loop back edges are canonicalized, the BackTo instructions are the only backward
   // branches.
   private boolean verifyBranchDirection(JumpInstruction branch, int relativeOffset) {
-    if (LoopBackEdgeCanonicalizer.isEnabled(options, ir)) {
+    if (options.getTestingOptions().enableLoopBackEdgeCanonicalizer) {
       assert branch.isBackTo() ? relativeOffset <= 0 : relativeOffset > 0
           : "Unexpected branch offset "
               + relativeOffset

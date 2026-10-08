@@ -13,7 +13,6 @@ import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
-import com.android.tools.r8.utils.InternalOptions;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -46,11 +45,6 @@ public class LoopBackEdgeCanonicalizer extends CodeRewriterPass<AppInfo> {
     super(appView);
   }
 
-  public static boolean isEnabled(InternalOptions options, IRCode code) {
-    return options.getTestingOptions().enableLoopBackEdgeCanonicalizer
-        && !options.shouldCompileMethodInDebugMode(code.context());
-  }
-
   @Override
   protected String getRewriterId() {
     return "LoopBackEdgeCanonicalizer";
@@ -58,7 +52,8 @@ public class LoopBackEdgeCanonicalizer extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return isEnabled(options, code) && code.getBlocks().size() >= 2;
+    return options.getTestingOptions().enableLoopBackEdgeCanonicalizer
+        && code.getBlocks().size() >= 2;
   }
 
   @Override
@@ -128,7 +123,8 @@ public class LoopBackEdgeCanonicalizer extends CodeRewriterPass<AppInfo> {
     // Move the phi operands of the back edges to new phis in the latch.
     List<Phi> latchPhis = new ArrayList<>(header.getPhis().size());
     for (Phi headerPhi : header.getPhis()) {
-      Phi latchPhi = code.createPhi(latch, TypeElement.getBottom());
+      // In debug mode, the operands of a phi with local info must have the same local info.
+      Phi latchPhi = code.createPhi(latch, TypeElement.getBottom(), headerPhi.getLocalInfo());
       for (int index : backEdgeIndices) {
         latchPhi.appendOperand(headerPhi.getOperand(index));
       }

@@ -73,9 +73,10 @@ public class Regress111337896TestRunner extends DebugInfoTestBase {
     }
     if (mode == CompilationMode.DEBUG) {
       // In debug mode a nop is used to preserve line 21. A second nop is recovering the pop after
-      // it.hasNext on line 23, where the result is not used.
+      // it.hasNext on line 23, where the result is not used. A third nop preserves the line of the
+      // continue statement, whose jump to the loop latch is a fallthrough.
       info.checkLineExists(21);
-      assertEquals(2, nopsFound);
+      assertEquals(3, nopsFound);
     } else {
       // Release mode will have removed the line.
       info.checkNoLine(21);
