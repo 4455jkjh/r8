@@ -61,6 +61,29 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
     Set<BasicBlock> blocksToRemove = Sets.newIdentityHashSet();
     BasicBlockInstructionsEquivalence equivalence =
         new BasicBlockInstructionsEquivalence(code, allocator);
+    if (!appView.options().getTestingOptions().enableDeduplicateAllIdenticalBlocks) {
+      boolean changed;
+      do {
+        changed = false;
+        for (BasicBlock block : code.blocks) {
+          Map<Wrapper<BasicBlock>, BasicBlock> seenPreds = new HashMap<>();
+          for (int predIndex = 0; predIndex < block.getPredecessors().size(); predIndex++) {
+            BasicBlock pred = block.getPredecessors().get(predIndex);
+            if (pred.getInstructions().size() == 1) {
+              continue;
+            }
+            BasicBlock otherPred = seenPreds.putIfAbsent(equivalence.wrap(pred), pred);
+            if (otherPred != null) {
+              changed = true;
+              hasChanged = true;
+              mergeBlocks(otherPred, pred, allocator, equivalence, null, blocksToRemove);
+            }
+          }
+        }
+      } while (changed);
+      code.removeBlocks(blocksToRemove);
+      return CodeRewriterResult.hasChanged(hasChanged);
+    }
     Map<Wrapper<BasicBlock>, BasicBlock> seenBlocks = new HashMap<>();
     Iterator<BasicBlock> iterator = code.blocks.descendingIterator();
     while (iterator.hasNext()) {
@@ -98,7 +121,13 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
     exit.setPosition(kept.getPosition());
     removed.getInstructions().addLast(exit);
 
-    if (kept.entry().isMoveException() || !isFallthroughBlock(removed)) {
+    if (seenBlocks == null) {
+      equivalence.clearComputedHash(removed);
+      if (kept.entry().isMoveException()) {
+        unlinkTrivialGotoBlock(removed, kept);
+        blocksToRemove.add(removed);
+      }
+    } else if (kept.entry().isMoveException() || !isFallthroughBlock(removed)) {
       for (BasicBlock pred : removed.getPredecessors()) {
         seenBlocks.remove(equivalence.wrap(pred));
         equivalence.clearComputedHash(pred);

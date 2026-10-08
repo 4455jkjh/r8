@@ -2372,6 +2372,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableKnownBooleanShiftDiamondSimplification =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKnownBooleanShiftDiamondSimplification", true);
+    public boolean enableDeduplicateAllIdenticalBlocks =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableDeduplicateAllIdenticalBlocks", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
