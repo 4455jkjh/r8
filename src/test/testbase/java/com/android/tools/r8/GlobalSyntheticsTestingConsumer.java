@@ -49,6 +49,10 @@ public class GlobalSyntheticsTestingConsumer implements GlobalSyntheticsConsumer
     return !globals.isEmpty();
   }
 
+  public boolean isFinished() {
+    return finished;
+  }
+
   public boolean isSingleGlobal() {
     return globals.size() == 1 && globals.get(null) != null;
   }
