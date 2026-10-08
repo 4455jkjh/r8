@@ -2378,6 +2378,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableBranchDiamondInverter =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableBranchDiamondInverter", true);
+    public boolean enable2AddrHintsForLogicalBinop =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enable2AddrHintsForLogicalBinop", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {

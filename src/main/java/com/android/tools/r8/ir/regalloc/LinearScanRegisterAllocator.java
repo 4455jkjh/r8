@@ -1464,7 +1464,11 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       return;
     }
     Value value = unhandledInterval.getValue();
-    if (value.isDefinedByInstructionSatisfying(i -> i.isArithmeticBinop() || i.isLogicalBinop())) {
+    if (value.isDefinedByInstructionSatisfying(
+        i ->
+            i.isArithmeticBinop()
+                || (options().getTestingOptions().enable2AddrHintsForLogicalBinop
+                    && i.isLogicalBinop()))) {
       Binop binop = value.getDefinition().asBinop();
       Value left = binop.leftValue();
       if (left.getLiveIntervals() != null && !left.getLiveIntervals().overlaps(unhandledInterval)) {
