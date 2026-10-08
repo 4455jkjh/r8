@@ -102,7 +102,6 @@ import com.android.tools.r8.ir.optimize.info.initializer.NonTrivialInstanceIniti
 import com.android.tools.r8.ir.optimize.info.initializer.readbeforewrite.ReadBeforeWriteAnalysis;
 import com.android.tools.r8.ir.optimize.info.initializer.readbeforewrite.ReadBeforeWriteAnalysisState;
 import com.android.tools.r8.ir.optimize.typechecks.CheckCastAndInstanceOfMethodSpecialization;
-import com.android.tools.r8.kotlin.Kotlin;
 import com.android.tools.r8.kotlin.Kotlin.Intrinsics;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
 import com.android.tools.r8.optimize.compose.ComposeUtils;
@@ -739,38 +738,24 @@ public class MethodOptimizationInfoCollector {
     NO_EFFECT
   }
 
-  // Note that this method may have false positives, since the application could in principle
-  // declare a method called checkParameterIsNotNull(parameter, message) in a package that starts
-  // with "kotlin".
   @SuppressWarnings("ReferenceEquality")
   private static boolean isKotlinCheckParameterIsNotNull(
       AppView<?> appView, InvokeStatic invoke, Value value) {
-    // We need to ignore the holder, since Kotlin adds different versions of null-check machinery,
-    // e.g., kotlin.collections.ArraysKt___ArraysKt... or kotlin.jvm.internal.ArrayIteratorKt...
     Intrinsics intrinsics = appView.dexItemFactory().kotlin().intrinsics();
     DexMethod originalInvokedMethod =
         appView.graphLens().getOriginalMethodSignature(invoke.getInvokedMethod());
-    boolean isCheckNotNullMethod =
-        originalInvokedMethod.match(intrinsics.checkParameterIsNotNull)
-            || originalInvokedMethod.match(intrinsics.checkNotNullParameter);
-    return isCheckNotNullMethod
-        && invoke.getFirstArgument() == value
-        && originalInvokedMethod.getHolderType().getPackageDescriptor().startsWith(Kotlin.NAME);
+    return (originalInvokedMethod.isIdenticalTo(intrinsics.checkParameterIsNotNull)
+            || originalInvokedMethod.isIdenticalTo(intrinsics.checkNotNullParameter))
+        && invoke.getFirstArgument() == value;
   }
 
-  // Note that this method may have false positives, since the application could in principle
-  // declare a method called throwParameterIsNullException(parameterName) in a package that starts
-  // with "kotlin".
   private static boolean isKotlinThrowParameterIsNullException(
       AppView<?> appView, InvokeStatic invoke) {
-    // We need to ignore the holder, since Kotlin adds different versions of null-check machinery,
-    // e.g., kotlin.collections.ArraysKt___ArraysKt... or kotlin.jvm.internal.ArrayIteratorKt...
     Intrinsics intrinsics = appView.dexItemFactory().kotlin().intrinsics();
     DexMethod originalInvokedMethod =
         appView.graphLens().getOriginalMethodSignature(invoke.getInvokedMethod());
-    return (originalInvokedMethod.match(intrinsics.throwParameterIsNullException)
-            || originalInvokedMethod.match(intrinsics.throwParameterIsNullNPE))
-        && originalInvokedMethod.getHolderType().getPackageDescriptor().startsWith(Kotlin.NAME);
+    return originalInvokedMethod.isIdenticalTo(intrinsics.throwParameterIsNullException)
+        || originalInvokedMethod.isIdenticalTo(intrinsics.throwParameterIsNullNPE);
   }
 
   private static boolean isNullCheck(Instruction instr, Value value) {
