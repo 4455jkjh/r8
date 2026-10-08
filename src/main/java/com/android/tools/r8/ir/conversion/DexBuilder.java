@@ -62,6 +62,7 @@ import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InstructionList;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.IntSwitch;
+import com.android.tools.r8.ir.code.Invoke;
 import com.android.tools.r8.ir.code.JumpInstruction;
 import com.android.tools.r8.ir.code.Move;
 import com.android.tools.r8.ir.code.NewArrayFilledData;
@@ -129,6 +130,9 @@ public class DexBuilder {
   // Keeps track of the previous non-fallthrough info added to the dex builder.
   private Info previousNonFallthroughInfo;
 
+  // Keeps track of a move-result instruction that should be emitted at the following DebugPosition.
+  private DexInstruction pendingMoveResult;
+
   // The number of ingoing and outgoing argument registers for the code.
   private int inRegisterCount = 0;
   private int outRegisterCount = 0;
@@ -181,6 +185,7 @@ public class DexBuilder {
     instructionToInfo = new Info[instructionNumberToIndex(ir.numberRemainingInstructions())];
     inRegisterCount = 0;
     outRegisterCount = 0;
+    pendingMoveResult = null;
     nextBlock = null;
   }
 
@@ -336,6 +341,7 @@ public class DexBuilder {
     TryInfo tryInfo = computeTryInfo(dexInstructions);
 
     // Return the dex code.
+    assert pendingMoveResult == null;
     DexCode code =
         new DexCode(
             registerAllocator.registersUsed(),
@@ -355,7 +361,8 @@ public class DexBuilder {
       BasicBlock previousBlock, BasicBlock currentBlock) {
     return previousBlock.exit().isGoto()
         && currentBlock.getPredecessors().size() == 1
-        && currentBlock.getPredecessors().get(0) == previousBlock;
+        && currentBlock.getPredecessors().get(0) == previousBlock
+        && !previousBlock.hasCatchSuccessor(currentBlock);
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -750,10 +757,57 @@ public class DexBuilder {
     add(ir, new FixedSizeInfo(ir, new DexNop()));
   }
 
+  private Instruction skipDebugLocalChangeNotStartingNewLocals(Instruction next) {
+    while (next != null && next.isDebugLocalsChange()) {
+      if (!next.asDebugLocalsChange().getStarting().isEmpty()) {
+        return null;
+      }
+      next = next.getNext();
+    }
+    return next;
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  private boolean hasDebugPositionForMoveResult(Invoke invoke) {
+    if (isBuildingForComparison()
+        || !options.debug
+        || options.disableAdditionalDebuggerSupport
+        || !options.ensureJvmCompatibleStepOutBehavior
+        || invoke.outValue().hasLocalInfo()) {
+      return false;
+    }
+    BasicBlock currentBlock = invoke.getBlock();
+    Instruction next = skipDebugLocalChangeNotStartingNewLocals(invoke.getNext());
+    if (next != null
+        && next.isGoto()
+        && next.asGoto().getTarget() == nextBlock
+        && isTrivialFallthroughTarget(currentBlock, nextBlock)) {
+      currentBlock = nextBlock;
+      next = skipDebugLocalChangeNotStartingNewLocals(currentBlock.entry());
+    }
+    return next != null && next.isDebugPosition();
+  }
+
+  public void addInvokeAndMoveResult(
+      Invoke invoke, DexInstruction dexInvoke, DexInstruction dexMoveResult) {
+    if (hasDebugPositionForMoveResult(invoke)) {
+      assert pendingMoveResult == null;
+      pendingMoveResult = dexMoveResult;
+      add(invoke, dexInvoke);
+    } else {
+      add(invoke, dexInvoke, dexMoveResult);
+    }
+  }
+
   public void addDebugPosition(DebugPosition position) {
-    // Remaining debug positions always require we emit an actual nop instruction.
-    // See removeRedundantDebugPositions.
-    addNop(position);
+    if (pendingMoveResult != null) {
+      add(position, new FixedSizeInfo(position, pendingMoveResult));
+      pendingMoveResult = null;
+    } else {
+      // Remaining debug positions always require we emit an actual nop instruction.
+      // See removeRedundantDebugPositions.
+      addNop(position);
+    }
   }
 
   public void add(Instruction instr, DexInstruction dex) {

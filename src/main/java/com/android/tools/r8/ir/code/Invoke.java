@@ -182,7 +182,7 @@ public abstract class Invoke extends Instruction {
       } else {
         throw new Unreachable("Unexpected result type " + outType());
       }
-      builder.add(this, instruction, moveResult);
+      builder.addInvokeAndMoveResult(this, instruction, moveResult);
     } else {
       builder.add(this, instruction);
     }

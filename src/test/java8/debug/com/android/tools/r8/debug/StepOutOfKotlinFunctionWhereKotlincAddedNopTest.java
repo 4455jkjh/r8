@@ -50,11 +50,14 @@ public class StepOutOfKotlinFunctionWhereKotlincAddedNopTest extends KotlinDebug
             .writeToZip();
   }
 
-  @Test
-  public void test() throws Throwable {
+  private void runTest(
+      byte[] classFileData,
+      int expectedStepOutLine,
+      int expectedStepOutLineWithoutAdditionalDebuggerSupport)
+      throws Throwable {
     runDebugTest(
         testForRuntime(parameters)
-            .addProgramClassFileData(dump())
+            .addProgramClassFileData(classFileData)
             .debugConfig(parameters.getRuntime())
             .addPaths(
                 parameters.isCfRuntime()
@@ -65,46 +68,59 @@ public class StepOutOfKotlinFunctionWhereKotlincAddedNopTest extends KotlinDebug
         run(),
         checkLine("B495501447.kt", 1),
         stepOut(INTELLIJ_FILTER),
-        checkLine("B495501447.kt", parameters.isCfRuntime() ? 4 : 5),
+        checkLine("B495501447.kt", expectedStepOutLine),
         run());
+    if (parameters.isDexRuntime()) {
+      Path dex =
+          testForD8(parameters.getBackend())
+              .addProgramClassFileData(classFileData)
+              .setMinApi(parameters)
+              .compile()
+              .writeToZip();
+      runDebugTest(
+          testForD8(parameters.getBackend())
+              .addProgramFiles(dex)
+              .setMinApi(parameters)
+              .addOptionsModification(options -> options.passthroughDexCode = false)
+              .debugConfig(parameters.getRuntime())
+              .addPaths(kotlinStdlibDex),
+          "B495501447Kt",
+          breakpoint("B495501447Kt", "foo"),
+          run(),
+          checkLine("B495501447.kt", 1),
+          stepOut(INTELLIJ_FILTER),
+          checkLine("B495501447.kt", expectedStepOutLine),
+          run());
+      runDebugTest(
+          testForD8(parameters.getBackend())
+              .addProgramClassFileData(classFileData)
+              .setMinApi(parameters)
+              .addOptionsModification(options -> options.disableAdditionalDebuggerSupport = true)
+              .debugConfig(parameters.getRuntime())
+              .addPaths(kotlinStdlibDex),
+          "B495501447Kt",
+          breakpoint("B495501447Kt", "foo"),
+          run(),
+          checkLine("B495501447.kt", 1),
+          stepOut(INTELLIJ_FILTER),
+          checkLine("B495501447.kt", expectedStepOutLineWithoutAdditionalDebuggerSupport),
+          run());
+    }
+  }
+
+  @Test
+  public void test() throws Throwable {
+    runTest(dump(), 4, 5);
   }
 
   @Test
   public void testTryCatch() throws Throwable {
-    runDebugTest(
-        testForRuntime(parameters)
-            .addProgramClassFileData(dumpTryCatch())
-            .debugConfig(parameters.getRuntime())
-            .addPaths(
-                parameters.isCfRuntime()
-                    ? KOTLINC_2_4_20.getCompiler().getKotlinStdlibJar()
-                    : kotlinStdlibDex),
-        "B495501447Kt",
-        breakpoint("B495501447Kt", "foo"),
-        run(),
-        checkLine("B495501447.kt", 1),
-        stepOut(INTELLIJ_FILTER),
-        checkLine("B495501447.kt", parameters.isCfRuntime() ? 5 : 6),
-        run());
+    runTest(dumpTryCatch(), 5, 6);
   }
 
   @Test
   public void testAssignToLocal() throws Throwable {
-    runDebugTest(
-        testForRuntime(parameters)
-            .addProgramClassFileData(dumpAssignToLocal())
-            .debugConfig(parameters.getRuntime())
-            .addPaths(
-                parameters.isCfRuntime()
-                    ? KOTLINC_2_4_20.getCompiler().getKotlinStdlibJar()
-                    : kotlinStdlibDex),
-        "B495501447Kt",
-        breakpoint("B495501447Kt", "foo"),
-        run(),
-        checkLine("B495501447.kt", 1),
-        stepOut(INTELLIJ_FILTER),
-        checkLine("B495501447.kt", 6),
-        run());
+    runTest(dumpAssignToLocal(), 6, 6);
   }
 
   /*
