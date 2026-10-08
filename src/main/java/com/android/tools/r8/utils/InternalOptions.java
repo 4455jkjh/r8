@@ -2369,6 +2369,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableFreeExpiredRegistersBeforeInvokeRangeAllocation =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableFreeExpiredRegistersBeforeInvokeRangeAllocation", true);
+    public boolean enableKnownBooleanShiftDiamondSimplification =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableKnownBooleanShiftDiamondSimplification", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {

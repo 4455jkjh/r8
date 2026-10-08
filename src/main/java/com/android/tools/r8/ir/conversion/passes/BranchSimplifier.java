@@ -265,7 +265,8 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
           return true;
         }
       }
-      if (lhsRoot.isDefinedByInstructionSatisfying(Instruction::isUshr)) {
+      if (options.getTestingOptions().enableKnownBooleanShiftDiamondSimplification
+          && lhsRoot.isDefinedByInstructionSatisfying(Instruction::isUshr)) {
         Ushr ushr = lhsRoot.getDefinition().asUshr();
         if (ushr.getNumericType() == NumericType.INT
             && ushr.rightValue().isConstInt()
@@ -560,7 +561,8 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     if (theIf.isZeroTest()
         && theIf.getType().isEqualsOrNotEquals()
         && (lhs.knownToBeBoolean()
-            || (!options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
+            || (options.getTestingOptions().enableKnownBooleanShiftDiamondSimplification
+                && !options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
                 && lhs.getAbstractValue(appView, code.context()).isBoolean()))) {
       BasicBlock trueBlock = theIf.getTrueTarget();
       BasicBlock falseBlock = theIf.fallthroughBlock();
@@ -588,7 +590,8 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
                 phi.replaceUsers(lhs);
                 deadPhis++;
               } else if ((zeroInt == 1 && oneInt == 0)
-                  || (!options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
+                  || (options.getTestingOptions().enableKnownBooleanShiftDiamondSimplification
+                      && !options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()
                       && zeroInt != oneInt
                       && ((zeroInt << 1) == oneInt
                           || (zeroInt >>> 1) == oneInt
