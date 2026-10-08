@@ -2375,6 +2375,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableDeduplicateAllIdenticalBlocks =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableDeduplicateAllIdenticalBlocks", true);
+    public boolean enableBranchDiamondInverter =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableBranchDiamondInverter", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
