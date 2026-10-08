@@ -1166,9 +1166,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
       // Advance the state before allocating the registers of the invoke/range arguments below, so
       // that the registers of the intervals that expired before this interval are free.
-      timing.begin("Advance state");
-      advanceStateToLiveIntervals(unhandledInterval);
-      timing.end();
+      if (options().getTestingOptions().enableFreeExpiredRegistersBeforeInvokeRangeAllocation) {
+        advanceStateToLiveIntervals(unhandledInterval);
+      }
 
       // If this interval value has an invoke/rangerange user, then fix the registers for the
       // consecutive arguments now and add hints to the live intervals leading up to this
@@ -1181,6 +1181,10 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         // The value itself is in the chain that has now gotten registers allocated.
         expiredHere.clear();
         continue;
+      }
+
+      if (!options().getTestingOptions().enableFreeExpiredRegistersBeforeInvokeRangeAllocation) {
+        advanceStateToLiveIntervals(unhandledInterval);
       }
 
       // Perform the actual allocation.
@@ -1319,6 +1323,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   }
 
   private void advanceStateToLiveIntervals(LiveIntervals unhandledInterval) {
+    timing.begin("Advance state");
     int start = unhandledInterval.getStart();
     // Check for active intervals that expired or became inactive.
     active.removeIf(
@@ -1362,6 +1367,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
           }
           return false;
         });
+    timing.end();
   }
 
   private boolean invariantsHold(ArgumentReuseMode mode) {
