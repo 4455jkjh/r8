@@ -20,6 +20,7 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
@@ -89,6 +90,12 @@ public class DependenciesPlugin : Plugin<Project> {
 
     target.tasks.withType(Test::class.java).configureEach {
       outputs.doNotCacheIf("Test runs should not and cannot not be cached") { true }
+      jvmArgumentProviders.add(
+        TestDepsCommandLineArgumentProvider(files = testDepsFiles, arguments = testDepsArguments)
+      )
+    }
+
+    target.tasks.withType(JavaExec::class.java).configureEach {
       jvmArgumentProviders.add(
         TestDepsCommandLineArgumentProvider(files = testDepsFiles, arguments = testDepsArguments)
       )

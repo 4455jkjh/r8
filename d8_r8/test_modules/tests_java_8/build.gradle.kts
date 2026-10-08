@@ -171,6 +171,13 @@ tasks {
     classpath = sourceSets.test.get().runtimeClasspath + partialTestClassesConfig
     // The output is deliberately not Gradle tracked since its a circular dependency.
   }
+
+  register<JavaExec>("generateApiDatabase") {
+    dependsOn(partialTestClassesConfig)
+    mainClass.set("com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGeneratorTest")
+    classpath = sourceSets.test.get().runtimeClasspath + partialTestClassesConfig
+    // The output is deliberately not Gradle tracked since its a circular dependency.
+  }
 }
 
 val testJar by configurations.consumable("testJar")

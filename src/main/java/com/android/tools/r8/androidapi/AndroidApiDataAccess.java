@@ -14,7 +14,10 @@ import com.android.tools.r8.dex.CompatByteBuffer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.LebUtils;
+import com.android.tools.r8.utils.LebUtils.ByteSupplier;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.zipflinger.Entry;
 import com.android.zipflinger.ZipArchive;
@@ -32,12 +35,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 /**
  * Implements low-level access methods for seeking on top of the database file defined by {@link
- * AndroidApiLevelHashingDatabaseImpl} where a description of the format can also be found.
+ * com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator#writeEntries}, where a
+ * description of the format can also be found.
  */
 public abstract class AndroidApiDataAccess {
 
@@ -76,9 +79,11 @@ public abstract class AndroidApiDataAccess {
   private static final String RESOURCE_NAME = "resources/api_database.ser";
   private static final int ENTRY_SIZE_IN_BITS_FOR_CONSTANT_POOL_MAP = 17;
   private static final int ENTRY_SIZE_IN_BITS_FOR_API_MAP = 18;
-  // The payload offset is an offset into the payload defined by an integer and a length defined by
-  // a short.
-  private static final int PAYLOAD_OFFSET_WITH_LENGTH = 4 + 2;
+  // The payload offset is an offset into the payload defined by a 4-byte integer and a length
+  // defined by a 2-byte unsigned short.
+  private static final int PAYLOAD_POSITION_SIZE = Integer.BYTES;
+  private static final int PAYLOAD_LENGTH_SIZE = Short.BYTES;
+  private static final int PAYLOAD_OFFSET_WITH_LENGTH = PAYLOAD_POSITION_SIZE + PAYLOAD_LENGTH_SIZE;
   private static final byte ZERO_BYTE = (byte) 0;
 
   public static boolean isApiDatabaseEntry(String entry) {
@@ -109,7 +114,15 @@ public abstract class AndroidApiDataAccess {
     }
 
     public static PositionAndLength create(byte[] data, int offset) {
-      return create(readIntFromOffset(data, offset), readShortFromOffset(data, offset + 4));
+      return create(
+          readIntFromOffset(data, offset),
+          readUnsignedShortFromOffset(data, offset + PAYLOAD_POSITION_SIZE));
+    }
+
+    public static PositionAndLength create(CompatByteBuffer buffer, int offset) {
+      return create(
+          buffer.getInt(offset),
+          readUnsignedShortFromOffset(buffer, offset + PAYLOAD_POSITION_SIZE));
     }
 
     public int getPosition() {
@@ -318,11 +331,18 @@ public abstract class AndroidApiDataAccess {
     return Ints.fromBytes(data[offset], data[offset + 1], data[offset + 2], data[offset + 3]);
   }
 
-  static int readShortFromOffset(byte[] data, int offset) {
+  static int readUnsignedShortFromOffset(byte[] data, int offset) {
     return Ints.fromBytes(ZERO_BYTE, ZERO_BYTE, data[offset], data[offset + 1]);
   }
 
+  static int readUnsignedShortFromOffset(CompatByteBuffer buffer, int offset) {
+    // Do not use buffer.getShort() since that will sign-extend the unsigned 16-bit value.
+    return Ints.fromBytes(ZERO_BYTE, ZERO_BYTE, buffer.get(offset), buffer.get(offset + 1));
+  }
+
   private int constantPoolSizeCache = -1;
+
+  abstract byte readByte(int offset);
 
   abstract int readConstantPoolSize();
 
@@ -330,10 +350,28 @@ public abstract class AndroidApiDataAccess {
 
   abstract boolean payloadHasConstantPoolValue(int offset, int length, byte[] value);
 
-  abstract int payloadContainsConstantPoolValue(
-      int offset, int length, byte[] value, BiPredicate<Integer, byte[]> predicate);
-
   abstract AndroidApiLevel readApiLevelForPayloadOffset(int offset, int length, byte[] value);
+
+  private int payloadContainsConstantPoolValue(int offset, int length, byte[] value) {
+    IntBox currentOffset = new IntBox(offset);
+    int endOffset = offset + length;
+    ByteSupplier byteSupplier =
+        () -> {
+          int pos = currentOffset.getAndIncrement();
+          if (pos >= endOffset) {
+            throw new IndexOutOfBoundsException(
+                "ULEB128 sequence overran payload slice at offset " + pos);
+          }
+          return readByte(pos);
+        };
+    while (currentOffset.get() < endOffset) {
+      int index = LebUtils.parseUleb128(byteSupplier);
+      if (isConstantPoolEntry(index, value)) {
+        return index;
+      }
+    }
+    return -1;
+  }
 
   public int getConstantPoolSize() {
     if (constantPoolSizeCache == -1) {
@@ -348,8 +386,8 @@ public abstract class AndroidApiDataAccess {
   }
 
   /**
-   * If the position defines a unique result, the first byte is has the first bit set to 1 (making
-   * it negative) and the actual index specified in the least significant two bytes.
+   * If the position defines a unique result, the first bit is set to 1 (making it negative) and the
+   * actual index is specified in the remaining 31 bits.
    */
   public static int getConstantPoolIndexFromUniqueConstantPoolEntry(int position) {
     assert isUniqueConstantPoolEntry(position);
@@ -373,10 +411,7 @@ public abstract class AndroidApiDataAccess {
     } else {
       assert length > 0;
       return payloadContainsConstantPoolValue(
-          payloadOffset(getConstantPoolSize()) + position,
-          length,
-          bytes,
-          this::isConstantPoolEntry);
+          payloadOffset(getConstantPoolSize()) + position, length, bytes);
     }
     return -1;
   }
@@ -421,14 +456,18 @@ public abstract class AndroidApiDataAccess {
     }
 
     @Override
+    byte readByte(int offset) {
+      return mappedByteBuffer.get(offset);
+    }
+
+    @Override
     int readConstantPoolSize() {
       return mappedByteBuffer.getInt(constantPoolSizeOffset());
     }
 
     @Override
     public PositionAndLength readPositionAndLength(int offset) {
-      return PositionAndLength.create(
-          mappedByteBuffer.getInt(offset), mappedByteBuffer.getShort(offset + 4));
+      return PositionAndLength.create(mappedByteBuffer, offset);
     }
 
     @Override
@@ -443,32 +482,12 @@ public abstract class AndroidApiDataAccess {
     }
 
     @Override
-    int payloadContainsConstantPoolValue(
-        int offset, int length, byte[] value, BiPredicate<Integer, byte[]> predicate) {
-      for (int i = offset; i < offset + length; i += 2) {
-        // Do not use mappedByteBuffer.getShort() since that will add the sign.
-        int index =
-            Ints.fromBytes(
-                ZERO_BYTE, ZERO_BYTE, mappedByteBuffer.get(i), mappedByteBuffer.get(i + 1));
-        if (predicate.test(index, value)) {
-          return index;
-        }
-      }
-      return -1;
-    }
-
-    @Override
     AndroidApiLevel readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
       int currentOffset = offset;
       while (currentOffset < offset + length) {
         // Read the length
-        int lengthOfEntry =
-            Ints.fromBytes(
-                ZERO_BYTE,
-                ZERO_BYTE,
-                mappedByteBuffer.get(currentOffset),
-                mappedByteBuffer.get(currentOffset + 1));
-        int startPosition = currentOffset + 2;
+        int lengthOfEntry = readUnsignedShortFromOffset(mappedByteBuffer, currentOffset);
+        int startPosition = currentOffset + PAYLOAD_LENGTH_SIZE;
         if (value.length == lengthOfEntry
             && payloadHasConstantPoolValue(startPosition, lengthOfEntry, value)) {
           return AndroidApiLevel.deserializeFromByte(
@@ -487,6 +506,11 @@ public abstract class AndroidApiDataAccess {
 
     private AndroidApiDataAccessInMemory(byte[] data) {
       this.data = data;
+    }
+
+    @Override
+    byte readByte(int offset) {
+      return data[offset];
     }
 
     @Override
@@ -513,27 +537,12 @@ public abstract class AndroidApiDataAccess {
     }
 
     @Override
-    int payloadContainsConstantPoolValue(
-        int offset, int length, byte[] value, BiPredicate<Integer, byte[]> predicate) {
-      if (data.length < length) {
-        return -1;
-      }
-      for (int i = offset; i < offset + length; i += 2) {
-        int index = Ints.fromBytes(ZERO_BYTE, ZERO_BYTE, data[i], data[i + 1]);
-        if (predicate.test(index, value)) {
-          return index;
-        }
-      }
-      return -1;
-    }
-
-    @Override
     AndroidApiLevel readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
       int index = offset;
       while (index < offset + length) {
         // Read size of entry
-        int lengthOfEntry = Ints.fromBytes(ZERO_BYTE, ZERO_BYTE, data[index], data[index + 1]);
-        int startIndex = index + 2;
+        int lengthOfEntry = readUnsignedShortFromOffset(data, index);
+        int startIndex = index + PAYLOAD_LENGTH_SIZE;
         int endIndex = startIndex + lengthOfEntry;
         if (payloadHasConstantPoolValue(startIndex, lengthOfEntry, value)) {
           return AndroidApiLevel.deserializeFromByte(data[endIndex]);
@@ -547,6 +556,11 @@ public abstract class AndroidApiDataAccess {
   public static class AndroidApiDataAccessNoBacking extends AndroidApiDataAccess {
 
     @Override
+    byte readByte(int offset) {
+      throw new Unreachable();
+    }
+
+    @Override
     int readConstantPoolSize() {
       throw new Unreachable();
     }
@@ -558,12 +572,6 @@ public abstract class AndroidApiDataAccess {
 
     @Override
     boolean payloadHasConstantPoolValue(int offset, int length, byte[] value) {
-      throw new Unreachable();
-    }
-
-    @Override
-    int payloadContainsConstantPoolValue(
-        int offset, int length, byte[] value, BiPredicate<Integer, byte[]> predicate) {
       throw new Unreachable();
     }
 

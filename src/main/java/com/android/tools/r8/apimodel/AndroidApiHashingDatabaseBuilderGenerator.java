@@ -7,6 +7,7 @@ package com.android.tools.r8.apimodel;
 import static com.android.tools.r8.androidapi.AndroidApiDataAccess.constantPoolHash;
 import static com.android.tools.r8.lightir.ByteUtils.isU2;
 import static com.android.tools.r8.lightir.ByteUtils.setBitAtIndex;
+import static com.android.tools.r8.utils.LebUtils.putUleb128;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.androidapi.AndroidApiDataAccess;
@@ -16,7 +17,6 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.IntBox;
-import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public class AndroidApiHashingDatabaseBuilderGenerator {
 
@@ -50,7 +51,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
    * com.android.tools.r8.ApiDatabaseGenerator} changes. This can be because of changes to
    * amendments or changes to the underlying format.
    */
-  public static final int DATABASE_FORMAT_VERSION = 1;
+  public static final int DATABASE_FORMAT_VERSION = 2;
 
   public static class GenerationException extends Exception {
     public GenerationException(String message) {
@@ -153,8 +154,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
       return pool.computeIfAbsent(entry, ignored -> intBox.getAndIncrement());
     }
 
-    void forEach(ThrowingBiConsumer<ConstantPoolEntry, Integer, IOException> consumer)
-        throws IOException {
+    private void forEach(BiConsumer<ConstantPoolEntry, Integer> consumer) {
       for (var mapEntry : pool.object2IntEntrySet()) {
         consumer.accept(mapEntry.getKey(), mapEntry.getIntValue());
       }
@@ -216,16 +216,17 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
               + ", got "
               + outputStream.size());
     }
-    IntBox lastReadIndex = new IntBox(-1);
-    constantPool.forEach(
-        (entry, id) -> {
-          if (id <= lastReadIndex.getAndIncrement()) {
-            throw new IOException("Constant pool ID out of order");
-          }
-          outputStream.writeInt(payload.size());
-          outputStream.writeShort(entry.getLength());
-          entry.writeTo(payload);
-        });
+    int lastReadIndex = -1;
+    for (var mapEntry : constantPool.pool.object2IntEntrySet()) {
+      ConstantPoolEntry entry = mapEntry.getKey();
+      int id = mapEntry.getIntValue();
+      if (id <= lastReadIndex++) {
+        throw new IOException("Constant pool ID out of order");
+      }
+      outputStream.writeInt(payload.size());
+      outputStream.write(intToShortEncodedByteArray(entry.getLength()));
+      entry.writeTo(payload);
+    }
 
     // Serialize hash lookup table for constant pool.
     Map<Integer, List<Integer>> constantPoolLookupTable = new HashMap<>();
@@ -249,7 +250,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
         constantPoolEntries[entry.getKey()] = payload.size();
         ByteArrayOutputStream temp = new ByteArrayOutputStream();
         for (Integer id : entry.getValue()) {
-          temp.write(intToShortEncodedByteArray(id));
+          putUleb128(temp, id);
         }
         payload.write(temp.toByteArray());
         constantPoolEntryLengths[entry.getKey()] = temp.size();
@@ -262,7 +263,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
     }
     for (int i = 0; i < constantPoolEntries.length; i++) {
       outputStream.writeInt(constantPoolEntries[i]);
-      outputStream.writeShort(constantPoolEntryLengths[i]);
+      outputStream.write(intToShortEncodedByteArray(constantPoolEntryLengths[i]));
     }
 
     int[] apiOffsets = new int[apiHashMapSize];
@@ -286,7 +287,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
     }
     for (int i = 0; i < apiOffsets.length; i++) {
       outputStream.writeInt(apiOffsets[i]);
-      outputStream.writeShort(apiOffsetLengths[i]);
+      outputStream.write(intToShortEncodedByteArray(apiOffsetLengths[i]));
     }
 
     // Write the payload.
@@ -325,8 +326,10 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
     return tempArray.length;
   }
 
-  public static byte[] intToShortEncodedByteArray(int value) {
-    assert isU2(value);
+  public static byte[] intToShortEncodedByteArray(int value) throws GenerationException {
+    if (!isU2(value)) {
+      throw new GenerationException("Value exceeds u2 limit: " + value);
+    }
     byte[] bytes = new byte[2];
     bytes[0] = (byte) (value >> 8);
     bytes[1] = (byte) value;

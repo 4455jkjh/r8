@@ -581,6 +581,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
    * were introduced. Running main will generate a new jar and run tests on it to ensure it is
    * compatible with R8 sources and works as expected.
    *
+   * <p>OBS: This cannot be run via the editor, run it via the matching Gradle task.
+   *
    * <p>The generated jar depends on r8NoManifestWithoutDeps.
    *
    * <p>If the generated jar passes tests it will be moved and overwrite
