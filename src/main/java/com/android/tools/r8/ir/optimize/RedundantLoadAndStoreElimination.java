@@ -13,14 +13,12 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
-import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.ir.analysis.fieldvalueanalysis.AbstractFieldSet;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.SingleFieldValue;
@@ -675,22 +673,6 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
           singleTarget.getDefinition().getOptimizationInfo().getInstanceInitializerInfo(invoke);
       if (instanceInitializerInfo.mayHaveOtherSideEffectsThanInstanceFieldAssignments()) {
         killAllNonFinalActiveFields();
-      } else {
-        // The constructor does not mutate existing fields, so cached field values remain valid for
-        // load elimination. However, any field read by the constructor observes the most recent
-        // write, preventing a subsequent store from eliminating that write.
-        AbstractFieldSet readSet = instanceInitializerInfo.readSet();
-        if (readSet.isTop()) {
-          activeState.clearMostRecentFieldWrites();
-        } else if (readSet.isConcreteFieldSet()) {
-          for (DexEncodedField readField : readSet.asConcreteFieldSet().getFields()) {
-            if (readField.isStatic()) {
-              activeState.clearMostRecentStaticFieldWrite(readField.getReference());
-            } else {
-              activeState.clearMostRecentInstanceFieldWrite(readField.getReference());
-            }
-          }
-        }
       }
 
       InstanceFieldInitializationInfoCollection fieldInitializationInfos =
