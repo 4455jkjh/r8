@@ -487,7 +487,10 @@ public class MappedPositionToClassNameMapperBuilder {
           // At least one position has only the synthetic method as its frame, so we can't strip it.
           return false;
         }
-        if (position.isOutline() || position.isOutlineCaller()) {
+        if (position.isOutline()) {
+          // Outline methods have synthetic positions that must be preserved for retracing.
+          // Note that OutlineCallerPositions (and their outlinePositions) can have their synthetic
+          // outer frame stripped as long as they have a callerPosition (checked above).
           return false;
         }
       }
@@ -500,16 +503,30 @@ public class MappedPositionToClassNameMapperBuilder {
       boolean d8R8Synthesized = method.getDefinition().isD8R8Synthesized();
       for (MappedPosition mappedPosition : mappedPositions) {
         Position position = mappedPosition.getPosition();
-        while (position.hasCallerPosition()) {
-          assert !position.isOutline();
-          assert !position.isD8R8Synthesized();
-          position = position.getCallerPosition();
+        verifySyntheticPosition(thisMethod, d8R8Synthesized, position);
+        if (position.isOutlineCaller()) {
+          // Verify that all outlinePositions have the same outermost caller as the
+          // OutlineCallerPosition so that stripping the outer frame is consistent across both.
+          position
+              .getOutlinePositions()
+              .forEach(
+                  (line, outlinePosition) ->
+                      verifySyntheticPosition(thisMethod, d8R8Synthesized, outlinePosition));
         }
-        DexMethod outerCaller = position.getMethod();
-        assert thisMethod.isIdenticalTo(outerCaller);
-        assert d8R8Synthesized == position.isD8R8Synthesized();
       }
       return true;
+    }
+
+    private void verifySyntheticPosition(
+        DexMethod thisMethod, boolean d8R8Synthesized, Position position) {
+      while (position.hasCallerPosition()) {
+        assert !position.isOutline();
+        assert !position.isD8R8Synthesized();
+        position = position.getCallerPosition();
+      }
+      DexMethod outerCaller = position.getMethod();
+      assert thisMethod.isIdenticalTo(outerCaller);
+      assert d8R8Synthesized == position.isD8R8Synthesized();
     }
 
     private MethodReference computeMappedMethod(DexMethod current, AppView<?> appView) {

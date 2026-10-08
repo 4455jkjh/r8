@@ -4,22 +4,19 @@
 package com.android.tools.r8.mappingcompose;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.profile.art.completeness.OutlineOptimizationProfileRewritingTest.Main;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -31,11 +28,16 @@ import org.junit.runners.Parameterized.Parameters;
 public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
 
   @Parameter(0)
+  public boolean keepConstantArguments;
+
+  @Parameter(1)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withDefaultDexRuntime().withMinimumApiLevel().build();
+  @Parameters(name = "{1}, keepConstantArguments: {0}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        BooleanUtils.values(),
+        getTestParameters().withDefaultDexRuntime().withMinimumApiLevel().build());
   }
 
   @Test
@@ -52,7 +54,8 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
                   options.outline.minSize = 2;
                 })
             .collectSyntheticItems()
-            .enableConstantArgumentAnnotations()
+            .addConstantArgumentAnnotations()
+            .enableConstantArgumentAnnotations(keepConstantArguments)
             .enableInliningAnnotations()
             .enableNoHorizontalClassMergingAnnotations()
             .compile()
@@ -67,22 +70,16 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
         FileUtils.writeTextFile(
             temp.newFolder().toPath().resolve("map.txt"), r8CompileResult.getProguardMap());
 
-    // TODO(b/569565949): Running D8 with --pg-map and --pg-map-output on R8 output should succeed.
-    CompilationFailedException exception =
-        assertThrows(
-            CompilationFailedException.class,
-            () ->
-                testForD8(parameters.getBackend())
-                    .addProgramFiles(r8CompileResult.writeToZip())
-                    .setMinApi(parameters)
-                    .release()
-                    .internalEnableMappingOutput()
-                    .apply(b -> b.getBuilder().setProguardMapInputFile(r8OutputMap))
-                    .addOptionsModification(o -> o.testing.forceJumboStringProcessing = true)
-                    .compile());
-    assertThat(
-        exception.getCause().getMessage(),
-        containsString("Could not find ranges for outline position '1'"));
+    testForD8(parameters.getBackend())
+        .addProgramFiles(r8CompileResult.writeToZip())
+        .setMinApi(parameters)
+        .release()
+        .internalEnableMappingOutput()
+        .apply(b -> b.getBuilder().setProguardMapInputFile(r8OutputMap))
+        .addOptionsModification(o -> o.testing.forceJumboStringProcessing = true)
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("0a", "step1", "step2", "0b", "step1", "step2");
   }
 
   static class Main {

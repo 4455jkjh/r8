@@ -592,18 +592,97 @@ public abstract class Position implements StructuralItem<Position> {
     }
 
     @Override
-    public PositionBuilder<?, ?> builderWithCopy() {
+    public OutlineCallerPositionBuilder builderWithCopy() {
       OutlineCallerPositionBuilder outlineCallerPositionBuilder =
-          builder()
-              .setLine(line)
-              .setMethod(method)
-              .setCallerPosition(callerPosition)
-              .setOutlineCallee(outlineCallee)
-              .setIsOutline(isOutline)
-              .setRemoveInnerFramesIfThrowingNpe(isRemoveInnerFramesIfThrowingNpe())
-              .setIsD8R8Synthesized(isD8R8Synthesized());
+          builderWithCopyWithoutOutlinePositions();
       outlinePositions.forEach(outlineCallerPositionBuilder::addOutlinePosition);
       return outlineCallerPositionBuilder;
+    }
+
+    public OutlineCallerPositionBuilder builderWithCopyWithoutOutlinePositions() {
+      return builder()
+          .setLine(line)
+          .setMethod(method)
+          .setCallerPosition(callerPosition)
+          .setOutlineCallee(outlineCallee)
+          .setIsOutline(isOutline)
+          .setRemoveInnerFramesIfThrowingNpe(isRemoveInnerFramesIfThrowingNpe())
+          .setIsD8R8Synthesized(isD8R8Synthesized());
+    }
+
+    @Override
+    public Position withOutermostCallerPosition(Position newOutermostCallerPosition) {
+      // Keep the outer caller chain of each entry in outlinePositions in sync with the
+      // OutlineCallerPosition itself when appending a new outermost caller frame.
+      OutlineCallerPositionBuilder builder =
+          builderWithCopyWithoutOutlinePositions()
+              .setCallerPosition(
+                  hasCallerPosition()
+                      ? getCallerPosition().withOutermostCallerPosition(newOutermostCallerPosition)
+                      : newOutermostCallerPosition);
+      outlinePositions.forEach(
+          (line, position) ->
+              builder.addOutlinePosition(
+                  line, position.withOutermostCallerPosition(newOutermostCallerPosition)));
+      return builder.build();
+    }
+
+    @Override
+    @SuppressWarnings("ReferenceEquality")
+    public Position replacePosition(Position originalPosition, Position newPosition) {
+      if (this == originalPosition) {
+        // The OutlineCallerPosition itself is the outermost caller being replaced (e.g., when a
+        // synthetic method containing an outline call is moved or inlined). Update the method and
+        // caller information from newPosition while preserving the OutlineCallerPosition.
+        OutlineCallerPositionBuilder builder =
+            builderWithCopyWithoutOutlinePositions()
+                .setMethod(newPosition.getMethod())
+                .setCallerPosition(newPosition.getCallerPosition())
+                .setIsD8R8Synthesized(newPosition.isD8R8Synthesized())
+                .setRemoveInnerFramesIfThrowingNpe(newPosition.isRemoveInnerFramesIfThrowingNpe());
+        outlinePositions.forEach(
+            (line, position) -> {
+              Position outermostCaller = position.getOutermostCaller();
+              // If newPosition was created via outermostCaller.builderWithCopy(), convert it to a
+              // non-OutlineCallerPosition while preserving the entry's outermost caller line.
+              Position newOutermostCaller =
+                  newPosition.isOutlineCaller()
+                      ? (newPosition.isD8R8Synthesized()
+                              ? SyntheticPosition.builder()
+                              : SourcePosition.builder())
+                          .setLine(outermostCaller.getLine())
+                          .setMethod(newPosition.getMethod())
+                          .setCallerPosition(newPosition.getCallerPosition())
+                          .setIsD8R8Synthesized(newPosition.isD8R8Synthesized())
+                          .setRemoveInnerFramesIfThrowingNpe(
+                              newPosition.isRemoveInnerFramesIfThrowingNpe())
+                          .build()
+                      : newPosition;
+              builder.addOutlinePosition(
+                  line, position.replacePosition(outermostCaller, newOutermostCaller));
+            });
+        return builder.build();
+      }
+      if (!hasCallerPosition()) {
+        return this;
+      }
+      // Propagate the replacement to both callerPosition and outlinePositions. When replacing the
+      // outermost caller of this OutlineCallerPosition, also replace the outermost caller of each
+      // outlinePosition (which may be a distinct Position instance with its own line number).
+      Position outermostCaller = getOutermostCaller();
+      OutlineCallerPositionBuilder builder =
+          builderWithCopyWithoutOutlinePositions()
+              .setCallerPosition(callerPosition.replacePosition(originalPosition, newPosition));
+      outlinePositions.forEach(
+          (line, position) ->
+              builder.addOutlinePosition(
+                  line,
+                  position.replacePosition(
+                      originalPosition == outermostCaller
+                          ? position.getOutermostCaller()
+                          : originalPosition,
+                      newPosition)));
+      return builder.build();
     }
 
     @Override

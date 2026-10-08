@@ -6,6 +6,8 @@ package com.android.tools.r8.ir.code;
 
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.ir.code.Position.OutlineCallerPosition;
+import com.android.tools.r8.ir.code.Position.OutlineCallerPosition.OutlineCallerPositionBuilder;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
 import com.android.tools.r8.ir.code.Position.SyntheticPosition;
 import java.util.HashMap;
@@ -71,6 +73,23 @@ public class CanonicalPositions {
     if (position.isD8R8Synthesized() && callerPosition != null) {
       assert !position.hasCallerPosition();
       return getCanonical(Code.newInlineePosition(callerPosition, position, true));
+    }
+    if (position.isOutlineCaller()) {
+      // Also canonicalize each entry in outlinePositions with callerPosition so that the outline
+      // positions maintain the same outer caller chain as the OutlineCallerPosition itself (e.g.,
+      // when a method containing an outline call is inlined or moved as inlining).
+      OutlineCallerPosition outlineCaller = position.asOutlineCaller();
+      OutlineCallerPositionBuilder builder =
+          outlineCaller
+              .builderWithCopyWithoutOutlinePositions()
+              .setCallerPosition(canonicalizeCallerPosition(position.getCallerPosition()));
+      outlineCaller
+          .getOutlinePositions()
+          .forEach(
+              (line, outlinePosition) ->
+                  builder.addOutlinePosition(
+                      line, canonicalizePositionWithCaller(outlinePosition)));
+      return getCanonical(builder.build());
     }
     return getCanonical(
         position
