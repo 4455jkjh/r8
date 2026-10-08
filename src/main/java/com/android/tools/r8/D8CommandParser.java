@@ -130,6 +130,7 @@ public class D8CommandParser {
     private CompilationMode compilationMode = null;
     private Path outputPath = null;
     private Path globalsOutputPath = null;
+    private boolean ignoreGlobals = false;
     private OutputMode outputMode = null;
     private boolean hasDefinedApiLevel = false;
     private final OrderedClassFileResourceProvider.Builder classpathBuilder =
@@ -212,8 +213,24 @@ public class D8CommandParser {
                             + "'",
                         state.origin);
                 state.builder.error(diagnostic);
+              } else if (state.ignoreGlobals) {
+                state.builder.error(
+                    new StringDiagnostic(
+                        "Cannot use both --globals-output and --ignore-globals", state.origin));
               } else {
                 state.globalsOutputPath = Paths.get(arg);
+              }
+            })
+        .option0(
+            "--ignore-globals",
+            "Ignore global synthetics.",
+            state -> {
+              if (state.globalsOutputPath != null) {
+                state.builder.error(
+                    new StringDiagnostic(
+                        "Cannot use both --globals-output and --ignore-globals", state.origin));
+              } else {
+                state.ignoreGlobals = true;
               }
             })
         .option1(
@@ -451,6 +468,8 @@ public class D8CommandParser {
     }
     if (state.globalsOutputPath != null) {
       builder.setGlobalSyntheticsOutput(state.globalsOutputPath);
+    } else if (state.ignoreGlobals) {
+      builder.setGlobalSyntheticsConsumer(GlobalSyntheticsConsumer.emptyConsumer());
     }
     return builder.setOutput(state.outputPath, state.outputMode);
   }

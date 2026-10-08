@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.synthesis.globals;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -52,7 +51,7 @@ public class GlobalSyntheticsConsumerFinishedTest extends TestBase {
         .apply(b -> b.getBuilder().setGlobalSyntheticsConsumer(globals))
         .compile();
     assertFalse(globals.hasGlobals());
-    assertEquals(parameters.isDexRuntime(), globals.isFinished());
+    assertTrue(globals.isFinished());
   }
 
   static class TestClassWithGlobals {

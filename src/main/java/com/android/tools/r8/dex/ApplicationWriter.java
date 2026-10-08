@@ -13,6 +13,7 @@ import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.DexFilePerClassFileConsumer;
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.FeatureSplit;
+import com.android.tools.r8.GlobalSyntheticsConsumer;
 import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
@@ -173,6 +174,7 @@ public class ApplicationWriter {
     return appView.getNamingLens();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private List<VirtualFile> distribute(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     Collection<DexProgramClass> classes = appView.appInfo().classes();
@@ -187,7 +189,10 @@ public class ApplicationWriter {
           if (globalSyntheticCreatedCallback != null) {
             globalSyntheticCreatedCallback.accept(clazz);
           }
-          globalSynthetics.add(clazz);
+          if (appView.options().getGlobalSyntheticsConsumer()
+              != GlobalSyntheticsConsumer.emptyConsumer()) {
+            globalSynthetics.add(clazz);
+          }
         } else {
           classes.add(clazz);
         }
