@@ -25,14 +25,13 @@ import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.utils.LebUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrategy {
 
@@ -83,7 +82,7 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
   }
 
   private static class DeduplicatedCodeCounts {
-    private Map<DexWritableCacheKey, Integer> counts;
+    private Object2IntOpenHashMap<DexWritableCacheKey> counts;
     private final AppView<?> appView;
     private long totalCodeSize = 0;
 
@@ -100,11 +99,11 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
     private boolean addCode(DexWritableCode code, ProgramMethod method) {
       assert appView.options().canUseCanonicalizedCodeObjects();
       if (counts == null) {
-        counts = new HashMap<>();
+        counts = new Object2IntOpenHashMap<>();
       }
       DexWritableCacheKey cacheKey = code.getCacheLookupKey(method, appView.dexItemFactory());
-      Integer previous = counts.put(cacheKey, counts.getOrDefault(cacheKey, 0) + 1);
-      return previous == null;
+      int previous = counts.addTo(cacheKey, 1);
+      return previous == 0;
     }
 
     int getCount(ProgramMethod method) {
@@ -114,7 +113,7 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
       }
       DexWritableCacheKey cacheLookupKey = code.getCacheLookupKey(method, appView.dexItemFactory());
       assert counts.containsKey(cacheLookupKey);
-      return counts.get(cacheLookupKey);
+      return counts.getInt(cacheLookupKey);
     }
 
     long getTotalCodeSize() {
