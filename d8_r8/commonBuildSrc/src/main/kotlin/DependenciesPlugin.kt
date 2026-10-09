@@ -692,6 +692,7 @@ private fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {
       "lib-v36",
       "lib-v36.1",
       "lib-v37",
+      "lib-v37.1",
     )
     .map(::getThirdPartyAndroidJar)
 }
@@ -711,6 +712,7 @@ private fun getThirdPartyDex2Oat(version: String): ThirdPartyDependency {
 private fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
   return listOf(
       listOf("host", "art-master"),
+      listOf("host", "art-17.1.0"),
       listOf("host", "art-17.0.0-beta4"),
       listOf("host", "art-16.0.0"),
       listOf("host", "art-15.0.0-beta2"),

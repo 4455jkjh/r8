@@ -143,7 +143,7 @@ luci.gitiles_poller(
     name = "branch-gitiles-9.0-forward",
     bucket = "ci",
     repo = "https://r8.googlesource.com/r8",
-    refs = ["refs/heads/([9]\\.[0-9]+)"],
+    refs = ["refs/heads/([9]\\.[0-9]+(\\.[0-9]+)?)"],
     path_regexps = ["src/main/java/com/android/tools/r8/Version.java"],
 )
 
@@ -151,7 +151,7 @@ luci.gitiles_poller(
     name = "branch-gitiles-9.2-forward",
     bucket = "ci",
     repo = "https://r8.googlesource.com/r8",
-    refs = ["refs/heads/([9]\\.([2-9]|[1-9][0-9])+(\\.[0-9]+)?|[9]\\.[0-9]+(\\.[0-9]+)?)"],
+    refs = ["refs/heads/([9]\\.([2-9]|[1-9][0-9])+(\\.[0-9]+)?)"],
     path_regexps = ["src/main/java/com/android/tools/r8/Version.java"],
 )
 
@@ -159,7 +159,15 @@ luci.gitiles_poller(
     name = "branch-gitiles-9.3-forward",
     bucket = "ci",
     repo = "https://r8.googlesource.com/r8",
-    refs = ["refs/heads/([9]\\.([3-9]|[1-9][0-9])+(\\.[0-9]+)?|[9]\\.[0-9]+(\\.[0-9]+)?)"],
+    refs = ["refs/heads/([9]\\.([3-9]|[1-9][0-9])+(\\.[0-9]+)?)"],
+    path_regexps = ["src/main/java/com/android/tools/r8/Version.java"],
+)
+
+luci.gitiles_poller(
+    name = "branch-gitiles-9.6-forward",
+    bucket = "ci",
+    repo = "https://r8.googlesource.com/r8",
+    refs = ["refs/heads/([9]\\.([6-9]|[1-9][0-9])+(\\.[0-9]+)?)"],
     path_regexps = ["src/main/java/com/android/tools/r8/Version.java"],
 )
 
@@ -764,6 +772,12 @@ r8_tester_with_default(
     ["--dex_vm=17.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
     release_trigger = ["branch-gitiles-9.3-forward"],
+)
+r8_tester_with_default(
+    "linux-android-17.1",
+    ["--dex_vm=17.1.0", "--all_tests", "--command_cache_dir=.ccache"],
+    dimensions = get_dimensions(tester = True),
+    release_trigger = ["branch-gitiles-9.6-forward"],
 )
 
 r8_tester_with_default(

@@ -33,6 +33,8 @@ public class AndroidApiLevelTest extends TestBase {
     assertSame(AndroidApiLevel.V, AndroidApiLevel.getAndroidApiLevel(35, 0));
     assertSame(AndroidApiLevel.BAKLAVA, AndroidApiLevel.getAndroidApiLevel(36, 0));
     assertSame(AndroidApiLevel.BAKLAVA_1, AndroidApiLevel.getAndroidApiLevel(36, 1));
+    assertSame(AndroidApiLevel.CINNAMON_BUN, AndroidApiLevel.getAndroidApiLevel(37, 0));
+    assertSame(AndroidApiLevel.CINNAMON_BUN_1, AndroidApiLevel.getAndroidApiLevel(37, 1));
   }
 
   @Test
@@ -52,5 +54,6 @@ public class AndroidApiLevelTest extends TestBase {
   public void testIllegal() {
     assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(35, 1));
     assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(36, 2));
+    assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(37, 2));
   }
 }

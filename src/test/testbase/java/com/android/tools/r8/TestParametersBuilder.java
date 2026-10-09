@@ -70,6 +70,11 @@ public class TestParametersBuilder {
     return withCfRuntimes().withDexRuntimes();
   }
 
+  // TODO(b/571432276): Fix tests on ART 17.1.0.
+  public TestParametersBuilder withAllRuntimesWithout17_1() {
+    return withCfRuntimes().withDexRuntimesEndingAtExcluding(DexVm.Version.V17_1_0);
+  }
+
   public TestParametersBuilder withAllRuntimesAndApiLevels() {
     return withCfRuntimes().withDexRuntimes().withAllApiLevels();
   }
@@ -140,6 +145,11 @@ public class TestParametersBuilder {
   /** Add all available DEX runtimes except master. */
   public TestParametersBuilder withDexRuntimes() {
     return withDexRuntimeFilter(vm -> true);
+  }
+
+  // TODO(b/571432276): Fix tests on ART 17.1.0.
+  public TestParametersBuilder withDexRuntimesWithout17_1() {
+    return withDexRuntimesEndingAtExcluding(DexVm.Version.V17_1_0);
   }
 
   public TestParametersBuilder withDexRuntimesAndAllApiLevels() {

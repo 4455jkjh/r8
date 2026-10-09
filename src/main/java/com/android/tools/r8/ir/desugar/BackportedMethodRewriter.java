@@ -73,6 +73,7 @@ import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.AndroidSdkIntFullEncoding;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -372,6 +373,12 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN)) {
         initializeCinnamonBunMethodProviders(factory);
+      }
+      // CINNAMON_BUN_1 does not add any method providers.
+      // Add version specific method providers like above if required, when updating.
+      assert AndroidApiLevel.CINNAMON_BUN_1.isEqualTo(AndroidApiLevel.LATEST);
+      if (options.getMinApiLevel().isLessThan(AndroidApiLevel.LATEST)) {
+        initializeAndroidVersionCodesFullMethodProviders(factory);
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.MAIN)) {
         initializeNextMethodProviders(factory);
@@ -2149,6 +2156,26 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
               // Template code calls the method again.
               BackportedMethods::AndroidOsBuildVersionMethods_getSdkIntFull));
 
+      // AutoCloseable desugaring is disabled on low min-api levels, we rely on backports instead.
+      if (!appView.options().shouldDesugarAutoCloseable()) {
+        // void java.util.concurrent.ExecutorService.close()
+        type = factory.createType("Ljava/util/concurrent/ExecutorService;");
+        name = factory.closeMethodName;
+        proto = factory.createProto(factory.voidType);
+        method = factory.createMethod(type, proto, name);
+        addProvider(
+            new StatifyingMethodGenerator(
+                method,
+                appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
+                    ? BackportedMethods::ExecutorServiceMethods_closeExecutorServiceNPlus
+                    : BackportedMethods::ExecutorServiceMethods_closeExecutorService,
+                "closeExecutorService",
+                type));
+      }
+    }
+
+    private void initializeAndroidVersionCodesFullMethodProviders(DexItemFactory factory) {
+      assert AndroidApiLevel.CINNAMON_BUN_1.isEqualTo(AndroidApiLevel.LATEST);
       // android.os.Build$VERSION_CODES_FULL
       Object[][] versionCodesFull = {
         {"BASE", 100_000},
@@ -2187,33 +2214,22 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         {"UPSIDE_DOWN_CAKE", 3400_000},
         {"VANILLA_ICE_CREAM", 3500_000},
         {"BAKLAVA", 3600_000},
+        {"BAKLAVA_1", 3600_001},
+        {"CINNAMON_BUN", 3700_000},
+        {"CINNAMON_BUN_1", 3700_001},
       };
-      type = factory.createType("Landroid/os/Build$VERSION_CODES_FULL;");
+      DexType type = factory.createType("Landroid/os/Build$VERSION_CODES_FULL;");
+      AndroidApiLevel minApiLevel = appView.options().getMinApiLevel();
       for (Object[] versionCodeFull : versionCodesFull) {
-        name = factory.createString((String) versionCodeFull[0]);
-        field = factory.createField(type, factory.intType, name);
-        addProviderForField(
-            new StaticGetRewriter(
-                field,
-                AndroidOsBuildVersionCodesFullRewrites.rewriteToConstInstruction(
-                    (Integer) versionCodeFull[1])));
-      }
-
-      // AutoCloseable desugaring is disabled on low min-api levels, we rely on backports instead.
-      if (!appView.options().shouldDesugarAutoCloseable()) {
-        // void java.util.concurrent.ExecutorService.close()
-        type = factory.createType("Ljava/util/concurrent/ExecutorService;");
-        name = factory.closeMethodName;
-        proto = factory.createProto(factory.voidType);
-        method = factory.createMethod(type, proto, name);
-        addProvider(
-            new StatifyingMethodGenerator(
-                method,
-                appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
-                    ? BackportedMethods::ExecutorServiceMethods_closeExecutorServiceNPlus
-                    : BackportedMethods::ExecutorServiceMethods_closeExecutorService,
-                "closeExecutorService",
-                type));
+        int value = (Integer) versionCodeFull[1];
+        if (minApiLevel.isLessThan(AndroidApiLevel.BAKLAVA)
+            || value > AndroidSdkIntFullEncoding.encode(minApiLevel)) {
+          DexString name = factory.createString((String) versionCodeFull[0]);
+          DexField field = factory.createField(type, factory.intType, name);
+          addProviderForField(
+              new StaticGetRewriter(
+                  field, AndroidOsBuildVersionCodesFullRewrites.rewriteToConstInstruction(value)));
+        }
       }
     }
 

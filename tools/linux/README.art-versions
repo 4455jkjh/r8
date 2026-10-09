@@ -68,6 +68,34 @@ by the script for running Art.
 repo init -b udc-preview1-release
 
 
+art-17.1.0 (Android Cinnamon Bun 1)
+-----------------------------------
+Build branch 26Q3-release. Art at c376f13554ec85aa906c89964ca39592c8d52001
+
+export BRANCH=26Q3-release
+mkdir ${BRANCH}
+cd ${BRANCH}
+export ANDROID_CHECKOUT=$(pwd)
+repo init -u https://android.googlesource.com/platform/manifest -b ${BRANCH}
+repo sync -cq -j48
+source build/envsetup.sh
+lunch aosp_akita-trunk_staging-userdebug
+m systemimage
+SISO_EXPERIMENTS=ignore-missing-targets art/tools/buildbot-build.sh --host
+repo manifest -r -o build_spec.xml
+
+Collected into tools/linux/host/art-17.1.0. The "host" path element is checked
+by the script for running Art.
+
+  cd <r8 checkout>
+  scripts/update-host-art.sh \
+     --android-checkout $ANDROID_CHECKOUT \
+     --art-dir host/art-17.1.0 \
+     --android-product akita
+
+  (cd tools/linux/host; upload_to_google_storage.py -a --bucket r8-deps art-17.1.0)
+
+
 art-17 beta 4 (Android Cinnamon Bun)
 -----------------------------
 Build branch 26Q2-beta-release. Art at 63a204192f29f530a58335de1db86d373f398260

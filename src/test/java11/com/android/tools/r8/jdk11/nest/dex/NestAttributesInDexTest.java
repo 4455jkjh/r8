@@ -40,7 +40,7 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters()
-        .withAllRuntimes()
+        .withAllRuntimesWithout17_1()
         .withAllApiLevelsAlsoForCf()
         .withPartialCompilation()
         .build();

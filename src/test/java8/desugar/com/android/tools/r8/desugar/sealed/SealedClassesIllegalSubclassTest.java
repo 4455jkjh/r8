@@ -51,7 +51,7 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters()
-            .withAllRuntimes()
+            .withAllRuntimesWithout17_1()
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
             .build(),

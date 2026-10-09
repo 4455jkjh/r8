@@ -59,7 +59,7 @@ public class StacktracePreservationTest extends TestBase {
     // The test assumes that all targets are >= 24
     List<AndroidApiLevel> targets = ImmutableList.of(AndroidApiLevel.LATEST, AndroidApiLevel.Sv2);
 
-    Version maxVm = Version.V17_0_0;
+    Version maxVm = Version.V17_1_0;
 
     List<Object[]> parametersList = new ArrayList<>();
     for (AndroidApiLevel target : targets) {
@@ -74,7 +74,7 @@ public class StacktracePreservationTest extends TestBase {
       }
     }
     // Verify that valid configurations are actually found.
-    assert parametersList.size() == 102
+    assert parametersList.size() == 103
         : "Unexpected configuration count: " + parametersList.size();
 
     return TestParametersBuilder.filterByDexVmVersion(

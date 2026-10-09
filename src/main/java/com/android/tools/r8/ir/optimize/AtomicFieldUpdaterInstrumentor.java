@@ -335,7 +335,7 @@ public class AtomicFieldUpdaterInstrumentor {
     // If this assert fails then check these things before updating the assert:
     //   * Check if AtomicReferenceFieldUpdater.newUpdater has changed implementation.
     //     * If so, verify/correct the static checks to match the runtime checks.
-    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_1);
     return UpdaterFieldInfo.createReference(
         updaterField, fieldType, holderValue, fieldNameValue, invokeStatic.getPosition());
   }
@@ -354,7 +354,7 @@ public class AtomicFieldUpdaterInstrumentor {
     // If this assert fails then check these things before updating the assert:
     //   * Check if AtomicIntegerFieldUpdater.newUpdater has changed implementation.
     //     * If so, verify/correct the static checks to match the runtime checks.
-    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_1);
     return UpdaterFieldInfo.createInt(
         updaterField, holderValue, fieldNameValue, invokeStatic.getPosition());
   }
@@ -373,7 +373,7 @@ public class AtomicFieldUpdaterInstrumentor {
     // If this assert fails then check these things before updating the assert:
     //   * Check if AtomicLongFieldUpdater.newUpdater has changed implementation.
     //     * If so, verify/correct the static checks to match the runtime checks.
-    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_1);
     return UpdaterFieldInfo.createLong(
         updaterField, holderValue, fieldNameValue, invokeStatic.getPosition());
   }

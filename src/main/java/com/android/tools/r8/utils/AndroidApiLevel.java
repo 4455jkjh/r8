@@ -51,6 +51,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   public static final AndroidApiLevel BAKLAVA;
   public static final AndroidApiLevel BAKLAVA_1;
   public static final AndroidApiLevel CINNAMON_BUN;
+  public static final AndroidApiLevel CINNAMON_BUN_1;
   public static final AndroidApiLevel MAIN;
   // Used for API modeling of Android extension APIs.
   public static final AndroidApiLevel EXTENSION;
@@ -109,13 +110,14 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     builder.add(BAKLAVA = new AndroidApiLevel(36, 0, "BAKLAVA"));
     builder.add(BAKLAVA_1 = new AndroidApiLevel(36, 1, "BAKLAVA_1"));
     builder.add(CINNAMON_BUN = new AndroidApiLevel(37, 0, "CINNAMON_BUN"));
+    builder.add(CINNAMON_BUN_1 = new AndroidApiLevel(37, 1, "CINNAMON_BUN_1"));
     builder.add(MAIN = new AndroidApiLevel(38, 0, "MAIN"));
     builder.add(EXTENSION = new AndroidApiLevel(Integer.MAX_VALUE, 0, "EXTENSION"));
     valuesSorted = builder.build();
-    assert valuesSorted.size() == 40;
+    assert valuesSorted.size() == 41;
     assert checkValuesSorted();
 
-    LATEST = CINNAMON_BUN;
+    LATEST = CINNAMON_BUN_1;
     API_DATABASE_LEVEL = LATEST;
     UNKNOWN = MAIN;
     assert UNKNOWN.isGreaterThan(LATEST);
@@ -230,7 +232,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
    */
   @SuppressWarnings("ReferenceEquality")
   public static AndroidApiLevel getAndroidApiLevel(int major, int minor) {
-    assert CINNAMON_BUN == LATEST; // This has to be updated when new API levels are added.
+    assert CINNAMON_BUN_1 == LATEST; // This has to be updated when new API levels are added.
     switch (major) {
       case 1:
         if (minor == 0) {
@@ -418,6 +420,9 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
       case 37:
         if (minor == 0) {
           return CINNAMON_BUN;
+        }
+        if (minor == 1) {
+          return CINNAMON_BUN_1;
         }
         break;
       case 38:

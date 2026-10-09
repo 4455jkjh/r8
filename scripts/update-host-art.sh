@@ -3,23 +3,23 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-# This script will update the host art VM in tools/linux/art
-
-# Before running this script make sure that you have a full android build
-# and that the host Art version required is build in ~/android/master:
+# This script will update the host art VM in tools/linux/host/art-<version>.
+# See tools/linux/README.art-versions for full details.
 #
-#  m -j24
-#  m -j24 build-art
+# Before running this script make sure that you have built the system image and
+# host Art version required in your Android checkout:
 #
-# Maybe also run the Art host tests:
-#
-#  m -j24 test-art-host
+#  source build/envsetup.sh
+#  lunch aosp_akita-trunk_staging-userdebug
+#  m systemimage
+#  SISO_EXPERIMENTS=ignore-missing-targets art/tools/buildbot-build.sh --host
+#  repo manifest -r -o build_spec.xml
 
 set -e
 
 ANDROID_CHECKOUT=~/android/master
-ANDROID_PRODUCT=angler
-ART_DIR=art
+ANDROID_PRODUCT=akita
+ART_DIR=host/art-master
 DEST_ROOT=tools/linux
 
 function usage {
@@ -48,11 +48,11 @@ function usage {
   echo "  "
   echo "Update a specific version of art:"
   echo "  "
-  echo "  $(basename $0) --android-checkout ~/android/5.1.1_r19 --art-dir 5.1.1"
+  echo "  $(basename $0) --android-checkout ~/android/checkout --art-dir host/art-17.1.0 --android-product akita"
   echo "  "
   echo "Test the Art bundle in a temporary directory:"
   echo "  "
-  echo "  $(basename $0) --android-checkout ~/android/5.1.1_r19 --art-dir art-5.1.1 --android-product mako --destination-dir /tmp/art"
+  echo "  $(basename $0) --android-checkout ~/android/checkout --art-dir host/art-17.1.0 --android-product akita --destination-dir /tmp/art"
   echo "  "
   exit 1
 }
@@ -203,5 +203,4 @@ strip $DEST/framework/x86/* 2> /dev/null
 strip $DEST/framework/x86_64/* 2> /dev/null
 
 echo "Now run"
-echo "(cd $DEST_ROOT/host; upload_to_google_storage.py -a --bucket r8-deps $ART_DIR)"
-echo "NOTE; If $ART_DIR has several directory elements adjust accordingly."
+echo "(cd $(dirname $DEST); upload_to_google_storage.py -a --bucket r8-deps $(basename $DEST))"

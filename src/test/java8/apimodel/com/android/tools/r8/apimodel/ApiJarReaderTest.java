@@ -36,7 +36,7 @@ public class ApiJarReaderTest extends TestBase {
     AndroidApiLevel apiLevel = AndroidApiLevel.API_DATABASE_LEVEL;
     ApiJarInfo jarInfo = ApiJarReader.read(ToolHelper.getAndroidJar(apiLevel));
     assertNotNull(jarInfo);
-    assertEquals(6_440, jarInfo.size());
+    assertEquals(6_458, jarInfo.size());
     assertTrue(jarInfo.hasClass("java/lang/Object"));
   }
 }

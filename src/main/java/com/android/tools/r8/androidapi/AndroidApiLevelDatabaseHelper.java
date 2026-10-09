@@ -17,6 +17,7 @@ public class AndroidApiLevelDatabaseHelper {
     notModeledTypes.add("android.annotation.Nullable");
     notModeledTypes.add("android.annotation.NonNull");
     notModeledTypes.add("android.annotation.FlaggedApi");
+    notModeledTypes.add("android.annotation.RequiresFlag");
     notModeledTypes.add(
         "android.adservices.ondevicepersonalization.FederatedComputeScheduleRequest");
     notModeledTypes.add(

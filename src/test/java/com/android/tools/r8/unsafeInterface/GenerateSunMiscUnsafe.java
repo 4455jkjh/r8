@@ -59,7 +59,7 @@ public class GenerateSunMiscUnsafe extends TestBase {
     //     * If so, add the new methods here
     //       (and to SunMiscUnsafeApiTest but it will fail if you don't).
     //   * Verify that no existing methods have been removed.
-    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_1);
     // Public signatures of sun.misc.Unsafe.
     ClassWriter cw = new ClassWriter(0);
 
