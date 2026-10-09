@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -32,8 +33,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MemberRebindingTest extends TestBase {
 
-  private static final Path JAR_LIBRARY =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR + "memberrebindinglib.jar");
+  private static final String EXAMPLE_JAR = "memberrebindinglib.jar";
 
   private final String name;
 
@@ -180,9 +180,9 @@ public class MemberRebindingTest extends TestBase {
     public Path getBuildPath() {
       switch (version) {
         case PRE_N:
-          return Paths.get(ToolHelper.EXAMPLES_BUILD_DIR);
+          return TestDeps.getExamplesDir();
         case N:
-          return Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR);
+          return TestDeps.getExamplesAndroidNDir();
         default:
           throw new Unreachable();
       }
@@ -244,7 +244,7 @@ public class MemberRebindingTest extends TestBase {
   public void memberRebindingTest() throws Exception {
     testForR8(backend)
         .addProgramFiles(programFile)
-        .addClasspathFiles(JAR_LIBRARY)
+        .addClasspathFiles(TestDeps.getExamplesPath(EXAMPLE_JAR))
         .applyIf(
             keepRuleFile != null,
             b -> b.addKeepRuleFiles(Paths.get(ToolHelper.EXAMPLES_DIR, name, keepRuleFile)))

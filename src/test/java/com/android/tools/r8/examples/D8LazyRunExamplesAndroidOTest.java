@@ -14,6 +14,7 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.DirectoryClassFileProvider;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
@@ -23,7 +24,6 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +49,7 @@ public class D8LazyRunExamplesAndroidOTest
         Consumer<Path> pathConsumer,
         Consumer<ClassFileResourceProvider> providerConsumer) {
       addClasspathPath(getClassesRoot(testJarFile), providerConsumer);
-      addClasspathPath(getLegacyClassesRoot(testJarFile, packageName), providerConsumer);
+      addClasspathPath(getLegacyClassesRoot(packageName), providerConsumer);
     }
 
     private void addClasspathPath(Path location, Consumer<ClassFileResourceProvider> fn) {
@@ -81,8 +81,7 @@ public class D8LazyRunExamplesAndroidOTest
   @Test
   public void dexPerClassFileWithDesugaringAndFolderClasspath() throws Throwable {
     AndroidApiLevel minAPILevel = AndroidApiLevel.K;
-    Path inputFile =
-        Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR, "interfacemethods" + JAR_EXTENSION);
+    Path inputFile = TestDeps.getExamplesAndroidNPath("interfacemethods" + JAR_EXTENSION);
     Path tmpClassesDir = temp.newFolder().toPath();
     ZipUtils.unzip(inputFile.toString(), tmpClassesDir.toFile());
     Path androidJar = ToolHelper.getAndroidJar(minAPILevel);

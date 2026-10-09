@@ -8,3 +8,8 @@ java {
     java.srcDir(getRoot().resolveAll("src", "test", "java8", "classmerging"))
   }
 }
+
+dependencies {
+  runtimeOnlyData(project(":third_party", "examples"))
+  runtimeOnlyData(project(":third_party", "examplesAndroidO"))
+}

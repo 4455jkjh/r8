@@ -19,6 +19,7 @@ import com.android.tools.r8.Disassemble.DisassembleCommand;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
@@ -140,10 +141,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
     private Path makeRelative(Path testJarFile, Path classFile) {
       Path regularParent =
           testJarFile.getParent().resolve(Paths.get("classes"));
-      Path legacyParent =
-          regularParent.resolve(
-              Paths.get(
-                  ToolHelper.THIRD_PARTY_DIR, regularParent.getFileName().toString() + "Legacy"));
+      Path legacyParent = TestDeps.getExamplesAndroidOLegacyDir();
 
       if (classFile.startsWith(regularParent)) {
         return regularParent.relativize(classFile);
@@ -159,12 +157,10 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
           getClassesRoot(testJarFile),
           path -> result.put(path.toFile().getName(), path.toString()));
       // Collect generated classes, overwrite non-generated files.
-      visitFiles(
-          getGeneratedRoot(testJarFile),
-          path -> result.put(path.toFile().getName(), path.toString()));
+      visitFiles(getGeneratedRoot(), path -> result.put(path.toFile().getName(), path.toString()));
       // Collect legacy classes.
       visitFiles(
-          getLegacyClassesRoot(testJarFile, packageName),
+          getLegacyClassesRoot(packageName),
           path -> result.put(path.toFile().getName(), path.toString()));
       List<String> files = new ArrayList<>(result.values());
       Collections.sort(files);
@@ -176,9 +172,8 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
       return parent.resolve(Paths.get("classes", packageName));
     }
 
-    Path getGeneratedRoot(Path testJarFile) {
-      String sourceSet = testJarFile.getParent().toFile().getName();
-      return Paths.get(ToolHelper.THIRD_PARTY_DIR, sourceSet + "Generated", packageName);
+    Path getGeneratedRoot() {
+      return TestDeps.getExamplesAndroidOGeneratedPath(packageName);
     }
 
     D8TestCompileResult compileClassFilesInIntermediate(
@@ -258,7 +253,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
     String testPackage = "incremental";
     String mainClass = "IncrementallyCompiled";
 
-    Path inputJarFile = Paths.get(EXAMPLE_DIR, testPackage + JAR_EXTENSION);
+    Path inputJarFile = TestDeps.getExamplesAndroidOPath(testPackage + JAR_EXTENSION);
 
     D8IncrementalTestRunner test = test(testName, testPackage, mainClass);
 
@@ -292,7 +287,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
     String testPackage = "lambdadesugaringnplus";
     String mainClass = "LambdasWithStaticAndDefaultMethods";
 
-    Path inputJarFile = Paths.get(EXAMPLE_DIR, testPackage + JAR_EXTENSION);
+    Path inputJarFile = TestDeps.getExamplesAndroidOPath(testPackage + JAR_EXTENSION);
 
     D8IncrementalTestRunner test = test(testName, testPackage, mainClass);
     test.withInterfaceMethodDesugaring(OffOrAuto.Auto);
@@ -335,7 +330,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
     String testPackage = "interfacedispatchclasses";
     String mainClass = "TestInterfaceDispatchClasses";
 
-    Path inputJarFile = Paths.get(EXAMPLE_DIR, testPackage + JAR_EXTENSION);
+    Path inputJarFile = TestDeps.getExamplesAndroidOPath(testPackage + JAR_EXTENSION);
 
     D8IncrementalTestRunner test = test(testName, testPackage, mainClass);
     test.withInterfaceMethodDesugaring(OffOrAuto.Auto);
@@ -364,7 +359,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
 
     Path out = temp.getRoot().toPath();
 
-    Path inputJarFile = Paths.get(EXAMPLE_DIR, testPackage + JAR_EXTENSION);
+    Path inputJarFile = TestDeps.getExamplesAndroidOPath(testPackage + JAR_EXTENSION);
 
     D8IncrementalTestRunner test = test(testName, testPackage, mainClass);
     test.compileClassesTogether(inputJarFile, out);

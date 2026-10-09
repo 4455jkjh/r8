@@ -12,6 +12,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.UncheckedApiLevel;
@@ -24,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,7 +42,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class PackageNamingTest extends TestBase {
 
-  private final Path input;
+  private final String test;
   private final Path keepRulesFile;
   private final ThrowingConsumer<CodeInspector, RuntimeException> inspection;
 
@@ -70,7 +70,7 @@ public class PackageNamingTest extends TestBase {
       String test,
       Path keepRulesFile,
       ThrowingConsumer<CodeInspector, RuntimeException> inspection) {
-    this.input = Paths.get(ToolHelper.EXAMPLES_BUILD_DIR + test + ".jar");
+    this.test = test;
     this.keepRulesFile = keepRulesFile;
     this.inspection = inspection;
   }
@@ -78,7 +78,7 @@ public class PackageNamingTest extends TestBase {
   @Test
   public void packageNamingTest() throws Exception {
     testForR8(Backend.DEX)
-        .addProgramFiles(input)
+        .addProgramFiles(TestDeps.getExamplesPath(test + ".jar"))
         .addKeepRuleFiles(keepRulesFile)
         // This is testing package renaming so do not repackage classes into the default package.
         .applyIf(

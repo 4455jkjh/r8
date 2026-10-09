@@ -43,6 +43,8 @@ dependencies {
   runtimeOnlyData(project(":third_party", "aapt2"))
   runtimeOnlyData(project(":third_party", "chromeHeadless"))
   runtimeOnlyData(project(":third_party", "dependenciesBucket"))
+  runtimeOnlyData(project(":third_party", "desugarJdkLibs11"))
+  runtimeOnlyData(project(":third_party", "desugarJdkLibs8"))
   runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
   runtimeOnlyData(project(":third_party", "googleJavaFormat"))
   runtimeOnlyData(project(":third_party", "googleKotlinFormat"))

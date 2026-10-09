@@ -7,6 +7,7 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.TreeShakingTest;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -14,6 +15,7 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,8 +35,8 @@ public class TreeShaking15Test extends TreeShakingTest {
   }
 
   @Override
-  protected String getName() {
-    return "examples/shaking15";
+  protected Path getProgramFile() {
+    return TestDeps.getExamplesPath("shaking15.jar");
   }
 
   @Override

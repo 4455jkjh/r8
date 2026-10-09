@@ -3,11 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.examples;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.TreeShakingTest;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
@@ -29,8 +31,8 @@ public class TreeShaking6Test extends TreeShakingTest {
   }
 
   @Override
-  protected String getName() {
-    return "examples/shaking6";
+  protected Path getProgramFile() {
+    return TestDeps.getExamplesPath("shaking6.jar");
   }
 
   @Override

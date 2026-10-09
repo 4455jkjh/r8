@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.optimize;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -23,8 +24,6 @@ import org.junit.runners.Parameterized;
 public class MemberValuePropagationTest extends TestBase {
   private static final String PACKAGE_NAME = "write_only_field";
   private static final String QUALIFIED_CLASS_NAME = PACKAGE_NAME + ".WriteOnlyCls";
-  private static final Path EXAMPLE_JAR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR).resolve(PACKAGE_NAME + FileUtils.JAR_EXTENSION);
   private static final Path EXAMPLE_KEEP =
       Paths.get(ToolHelper.EXAMPLES_DIR).resolve(PACKAGE_NAME).resolve("keep-rules.txt");
   private static final Path DONT_OPTIMIZE =
@@ -72,7 +71,7 @@ public class MemberValuePropagationTest extends TestBase {
 
   private CodeInspector runR8(Path proguardConfig) throws Exception {
     return testForR8(backend)
-        .addProgramFiles(EXAMPLE_JAR)
+        .addProgramFiles(TestDeps.getExamplesPath(PACKAGE_NAME + FileUtils.JAR_EXTENSION))
         .addKeepRuleFiles(proguardConfig)
         .addDontObfuscate()
         .addOptionsModification(o -> o.enableClassInlining = false)

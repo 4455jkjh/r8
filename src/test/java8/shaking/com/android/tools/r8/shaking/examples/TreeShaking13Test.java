@@ -6,6 +6,7 @@ package com.android.tools.r8.shaking.examples;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.TreeShakingTest;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -14,6 +15,7 @@ import com.android.tools.r8.utils.codeinspector.FieldAccessInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import org.junit.Test;
@@ -34,8 +36,8 @@ public class TreeShaking13Test extends TreeShakingTest {
   }
 
   @Override
-  protected String getName() {
-    return "examples/shaking13";
+  protected Path getProgramFile() {
+    return TestDeps.getExamplesPath("shaking13.jar");
   }
 
   @Override

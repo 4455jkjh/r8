@@ -5,22 +5,20 @@ package com.android.tools.r8.benchmarks.appdumps;
 
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Supplier;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public abstract class OpenSourceBenchmarks extends BenchmarkBase {
-
-  private static final Path dir = Paths.get(ToolHelper.THIRD_PARTY_DIR, "opensource-apps/android");
 
   protected OpenSourceBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
@@ -109,11 +107,11 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     testBuilder.setMinApi(24);
   }
 
-  protected static AppDumpBenchmarkBuilder builder(String name, String app) {
+  protected static AppDumpBenchmarkBuilder builder(String name, Supplier<Path> app) {
     return AppDumpBenchmarkBuilder.builder()
         .setName(name)
         .setEnableResourceShrinking(true)
-        .setDumpDependencyPath(dir.resolve(app))
+        .setDumpDependencyPath(app)
         .setFromRevision(16457);
   }
 
@@ -125,7 +123,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("FeederApp", "feeder").buildR8(OpenSourceBenchmarks::configure);
+      return builder("FeederApp", TestDeps::getFeederDir).buildR8(OpenSourceBenchmarks::configure);
     }
 
     public FeederApp(BenchmarkConfig config, TestParameters parameters) {
@@ -141,7 +139,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("FeederAppPartial", "feeder")
+      return builder("FeederAppPartial", TestDeps::getFeederDir)
           .buildR8WithPartialShrinking(OpenSourceBenchmarks::configurePartial);
     }
 
@@ -158,7 +156,8 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("BookStoryApp", "bookstory").buildR8(OpenSourceBenchmarks::configure);
+      return builder("BookStoryApp", TestDeps::getBookStoryDir)
+          .buildR8(OpenSourceBenchmarks::configure);
     }
 
     public BookStoryApp(BenchmarkConfig config, TestParameters parameters) {
@@ -174,7 +173,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("BookStoryAppPartial", "bookstory")
+      return builder("BookStoryAppPartial", TestDeps::getBookStoryDir)
           .buildR8WithPartialShrinking(OpenSourceBenchmarks::configurePartial);
     }
 
@@ -191,7 +190,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("ReadYouApp", "readyou")
+      return builder("ReadYouApp", TestDeps::getReadYouDir)
           .setRemoveDontObfuscate()
           .buildR8(OpenSourceBenchmarks::configure);
     }
@@ -209,7 +208,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("ReadYouAppPartial", "readyou")
+      return builder("ReadYouAppPartial", TestDeps::getReadYouDir)
           .setRemoveDontObfuscate()
           .buildR8WithPartialShrinking(OpenSourceBenchmarks::configurePartial);
     }
@@ -227,7 +226,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("FossifyFileManagerApp", "fossify-filemanager")
+      return builder("FossifyFileManagerApp", TestDeps::getFossifyFileManagerDir)
           // The host dex2oat boot image has no framework classes, so android.* types are
           // unresolved. Glide's DrawableCrossFadeTransition.transition merges Drawable and
           // ColorDrawable, which the verifier then rejects as a hard failure when the merge is
@@ -249,7 +248,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("FossifyFileManagerAppPartial", "fossify-filemanager")
+      return builder("FossifyFileManagerAppPartial", TestDeps::getFossifyFileManagerDir)
           // The host dex2oat boot image has no framework classes, so android.* types are
           // unresolved. Glide's DrawableCrossFadeTransition.transition merges Drawable and
           // ColorDrawable, which the verifier then rejects as a hard failure when the merge is
@@ -271,7 +270,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("NewPipeKotlinApp", "newpipe")
+      return builder("NewPipeKotlinApp", TestDeps::getNewPipeDir)
           .setRemoveDontObfuscate()
           .buildR8(OpenSourceBenchmarks::configureMinApi24);
     }
@@ -289,7 +288,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("NewPipeKotlinAppPartial", "newpipe")
+      return builder("NewPipeKotlinAppPartial", TestDeps::getNewPipeDir)
           .setRemoveDontObfuscate()
           .buildR8WithPartialShrinking(OpenSourceBenchmarks::configureMinApi24Partial);
     }
@@ -307,7 +306,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("TuskyApp", "tusky")
+      return builder("TuskyApp", TestDeps::getTuskyDir)
           .buildR8(OpenSourceBenchmarks::configureWithoutOpenInterfaceSuppression);
     }
 
@@ -324,7 +323,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("TuskyAppPartial", "tusky")
+      return builder("TuskyAppPartial", TestDeps::getTuskyDir)
           .buildR8WithPartialShrinking(
               OpenSourceBenchmarks::configurePartialWithoutOpenInterfaceSuppression);
     }
@@ -342,7 +341,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("KeePassDXApp", "keepassdx")
+      return builder("KeePassDXApp", TestDeps::getKeePassDXDir)
           .setRemoveDontOptimize()
           .buildR8(OpenSourceBenchmarks::configureMinApi24WithoutOpenInterfaceSuppression);
     }
@@ -360,7 +359,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("KeePassDXAppPartial", "keepassdx")
+      return builder("KeePassDXAppPartial", TestDeps::getKeePassDXDir)
           .setRemoveDontOptimize()
           .buildR8WithPartialShrinking(
               OpenSourceBenchmarks::configureMinApi24PartialWithoutOpenInterfaceSuppression);
@@ -379,7 +378,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("OmniNotesApp", "omninotes")
+      return builder("OmniNotesApp", TestDeps::getOmniNotesDir)
           .setRemoveDontOptimize()
           .setRemoveDontObfuscate()
           // The host dex2oat boot image has no framework classes, so android.* types are
@@ -403,7 +402,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("OmniNotesAppPartial", "omninotes")
+      return builder("OmniNotesAppPartial", TestDeps::getOmniNotesDir)
           .setRemoveDontOptimize()
           .setRemoveDontObfuscate()
           // The host dex2oat boot image has no framework classes, so android.* types are
@@ -428,7 +427,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("OpenTracksApp", "opentracks")
+      return builder("OpenTracksApp", TestDeps::getOpenTracksDir)
           .setRemoveDontOptimize()
           .buildR8(OpenSourceBenchmarks::configureWithoutOpenInterfaceSuppression);
     }
@@ -446,7 +445,7 @@ public abstract class OpenSourceBenchmarks extends BenchmarkBase {
     }
 
     public static BenchmarkConfig config() {
-      return builder("OpenTracksAppPartial", "opentracks")
+      return builder("OpenTracksAppPartial", TestDeps::getOpenTracksDir)
           .setRemoveDontOptimize()
           .buildR8WithPartialShrinking(
               OpenSourceBenchmarks::configurePartialWithoutOpenInterfaceSuppression);

@@ -28,10 +28,12 @@ public class R8EntryPointTests extends TestBase {
 
   private static final String MAPPING = "mapping.txt";
   private static final String SEEDS = "seeds.txt";
-  private static final Path INPUT_JAR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "minification" + FileUtils.JAR_EXTENSION);
   private static final Path PROGUARD_FLAGS =
       Paths.get(ToolHelper.EXAMPLES_DIR, "minification",  "keep-rules.txt");
+
+  private static Path getInputJar() {
+    return TestDeps.getExamplesPath("minification" + FileUtils.JAR_EXTENSION);
+  }
 
   private Path testFlags;
 
@@ -101,12 +103,18 @@ public class R8EntryPointTests extends TestBase {
   @Test
   public void testMainDir() throws IOException, InterruptedException {
     Path out = temp.newFolder("outdex").toPath();
-    ProcessResult r8 = ToolHelper.forkR8(Paths.get("."),
-        "--lib", ToolHelper.getDefaultAndroidJar().toString(),
-        "--output", out.toString(),
-        "--pg-conf", PROGUARD_FLAGS.toString(),
-        "--pg-conf", testFlags.toString(),
-        INPUT_JAR.toString());
+    ProcessResult r8 =
+        ToolHelper.forkR8(
+            Paths.get("."),
+            "--lib",
+            ToolHelper.getDefaultAndroidJar().toString(),
+            "--output",
+            out.toString(),
+            "--pg-conf",
+            PROGUARD_FLAGS.toString(),
+            "--pg-conf",
+            testFlags.toString(),
+            getInputJar().toString());
     Assert.assertEquals(0, r8.exitCode);
     Assert.assertTrue(Files.isRegularFile(out.resolve(ToolHelper.DEFAULT_DEX_FILENAME)));
     Assert.assertTrue(Files.isRegularFile(testFlags.getParent().resolve(MAPPING)));
@@ -118,12 +126,18 @@ public class R8EntryPointTests extends TestBase {
     temp.newFolder("outdex");
     Path out = Paths.get("outdex");
     Path workingDir = temp.getRoot().toPath();
-    ProcessResult r8 = ToolHelper.forkR8(workingDir,
-        "--lib", ToolHelper.getDefaultAndroidJar().toAbsolutePath().toString(),
-        "--output", out.toString(),
-        "--pg-conf", PROGUARD_FLAGS.toAbsolutePath().toString(),
-        "--pg-conf", testFlags.toAbsolutePath().toString(),
-        INPUT_JAR.toAbsolutePath().toString());
+    ProcessResult r8 =
+        ToolHelper.forkR8(
+            workingDir,
+            "--lib",
+            ToolHelper.getDefaultAndroidJar().toAbsolutePath().toString(),
+            "--output",
+            out.toString(),
+            "--pg-conf",
+            PROGUARD_FLAGS.toAbsolutePath().toString(),
+            "--pg-conf",
+            testFlags.toAbsolutePath().toString(),
+            getInputJar().toAbsolutePath().toString());
     Assert.assertEquals(0, r8.exitCode);
     Assert.assertTrue(
         Files.isRegularFile(workingDir.resolve(out).resolve(ToolHelper.DEFAULT_DEX_FILENAME)));
@@ -135,12 +149,18 @@ public class R8EntryPointTests extends TestBase {
   @Test
   public void testMainZip() throws IOException, InterruptedException {
     Path out = temp.newFolder("outdex").toPath().resolve("dex.zip");
-    ProcessResult r8 = ToolHelper.forkR8(Paths.get("."),
-        "--lib", ToolHelper.getDefaultAndroidJar().toString(),
-        "--output", out.toString(),
-        "--pg-conf", PROGUARD_FLAGS.toString(),
-        "--pg-conf", testFlags.toString(),
-        INPUT_JAR.toString());
+    ProcessResult r8 =
+        ToolHelper.forkR8(
+            Paths.get("."),
+            "--lib",
+            ToolHelper.getDefaultAndroidJar().toString(),
+            "--output",
+            out.toString(),
+            "--pg-conf",
+            PROGUARD_FLAGS.toString(),
+            "--pg-conf",
+            testFlags.toString(),
+            getInputJar().toString());
     Assert.assertEquals(0, r8.exitCode);
     Assert.assertTrue(Files.isRegularFile(out));
     Assert.assertTrue(Files.isRegularFile(testFlags.getParent().resolve(MAPPING)));
@@ -162,7 +182,7 @@ public class R8EntryPointTests extends TestBase {
             PROGUARD_FLAGS.toString(),
             "--pg-conf",
             testFlags.toString(),
-            INPUT_JAR.toString());
+            getInputJar().toString());
     Assert.assertEquals(0, r8.exitCode);
   }
 
@@ -181,7 +201,7 @@ public class R8EntryPointTests extends TestBase {
             PROGUARD_FLAGS.toString(),
             "--pg-conf",
             testFlags.toString(),
-            INPUT_JAR.toString());
+            getInputJar().toString());
     Assert.assertEquals(0, r8.exitCode);
   }
 
@@ -201,7 +221,7 @@ public class R8EntryPointTests extends TestBase {
             PROGUARD_FLAGS.toString(),
             "--pg-conf",
             testFlags.toString(),
-            INPUT_JAR.toString());
+            getInputJar().toString());
     Assert.assertEquals(1, r8.exitCode);
     assertThat(
         r8.stderr, containsString("Cannot compile in both --dex and --classfile output mode"));
@@ -210,7 +230,7 @@ public class R8EntryPointTests extends TestBase {
   private R8Command getCommand(Path out) throws CompilationFailedException {
     return R8Command.builder()
         .addLibraryFiles(ToolHelper.getDefaultAndroidJar())
-        .addProgramFiles(INPUT_JAR)
+        .addProgramFiles(getInputJar())
         .setOutput(out, OutputMode.DexIndexed)
         .addProguardConfigurationFiles(PROGUARD_FLAGS, testFlags)
         .build();

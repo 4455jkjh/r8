@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -53,8 +54,7 @@ public class R8InliningRegressionTests extends TestBase {
     Assume.assumeTrue(ToolHelper.artSupported() || ToolHelper.compareAgaintsGoldenFiles());
 
     Path proguardRules = Paths.get(ToolHelper.EXAMPLES_DIR, folder, "keep-rules.txt");
-    Path jarFile =
-        Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, folder + FileUtils.JAR_EXTENSION);
+    Path jarFile = TestDeps.getExamplesPath(folder + FileUtils.JAR_EXTENSION);
 
     // Build with R8
     AndroidApp.Builder builder = AndroidApp.builder();
@@ -62,8 +62,8 @@ public class R8InliningRegressionTests extends TestBase {
     AndroidApp app = compileWithR8(builder.build(), proguardRules);
 
     // Compare original and generated DEX files.
-    String originalDexFile = Paths
-        .get(ToolHelper.EXAMPLES_BUILD_DIR, folder, ToolHelper.DEFAULT_DEX_FILENAME).toString();
+    String originalDexFile =
+        TestDeps.getExamplesPath(folder, ToolHelper.DEFAULT_DEX_FILENAME).toString();
     Path generatedDexFile = temp.getRoot().toPath().resolve("classes.jar");
     app.writeToZipForTesting(generatedDexFile, OutputMode.DexIndexed);
     String artOutput =

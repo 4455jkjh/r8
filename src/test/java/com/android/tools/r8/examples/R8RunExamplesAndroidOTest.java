@@ -11,6 +11,7 @@ import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.R8CompatTestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -198,7 +199,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
         .withDexCheck(
             (inspector, syntheticItems) ->
                 checkLambdaCount(inspector, syntheticItems, 3, "lambdadesugaring"))
-        .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
+        .run(TestDeps.getExamplesAndroidOLegacyDir());
 
     test("lambdadesugaring", "lambdadesugaring", "LambdaDesugaring")
         .withBuilder(
@@ -209,7 +210,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
         .withDexCheck(
             (inspector, syntheticItems) ->
                 checkLambdaCount(inspector, syntheticItems, 0, "lambdadesugaring"))
-        .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
+        .run(TestDeps.getExamplesAndroidOLegacyDir());
   }
 
   @Test
@@ -227,7 +228,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                         "}")
                     .setMinApi(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
         .withDexCheck(inspector -> checkTestMultipleInterfacesCheckCastCount(inspector, 0))
-        .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
+        .run(TestDeps.getExamplesAndroidOLegacyDir());
   }
 
   @Test
@@ -243,14 +244,14 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
         .withDexCheck(
             (inspector, syntheticItems) ->
                 checkLambdaCount(inspector, syntheticItems, 3, "lambdadesugaring"))
-        .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
+        .run(TestDeps.getExamplesAndroidOLegacyDir());
 
     test("lambdadesugaring", "lambdadesugaring", "LambdaDesugaring")
         .withBuilder(builder -> builder.addKeepRules(PROGUARD_OPTIONS).setMinApi(AndroidApiLevel.N))
         .withDexCheck(
             (inspector, syntheticItems) ->
                 checkLambdaCount(inspector, syntheticItems, 0, "lambdadesugaring"))
-        .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
+        .run(TestDeps.getExamplesAndroidOLegacyDir());
   }
 
   @Override
@@ -436,7 +437,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                 for (Consumer<R8CompatTestBuilder> testBuilderConsumer : testBuilderConsumers) {
                   testBuilderConsumer.accept(b);
                 }
-                visitFiles(getLegacyClassesRoot(inputFile, packageName), b::addProgramFiles);
+                visitFiles(getLegacyClassesRoot(packageName), b::addProgramFiles);
                 b.addLibraryFiles(
                     ToolHelper.getAndroidJar(
                         androidJarVersion == null

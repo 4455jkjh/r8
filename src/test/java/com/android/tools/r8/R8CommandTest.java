@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static com.android.tools.r8.ToolHelper.EXAMPLES_BUILD_DIR;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -796,7 +795,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
   }
 
   private ProcessResult runR8OnShaking1(Path additionalProguardConfiguration) throws Throwable {
-    Path input = Paths.get(EXAMPLES_BUILD_DIR, "shaking1.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("shaking1.jar").toAbsolutePath();
     Path proguardConfiguration =
         Paths.get(ToolHelper.EXAMPLES_DIR, "shaking1", "keep-rules.txt").toAbsolutePath();
     return ToolHelper.forkR8(temp.getRoot().toPath(),

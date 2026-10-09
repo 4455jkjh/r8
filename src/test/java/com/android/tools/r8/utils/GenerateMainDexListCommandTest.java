@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.ToolHelper.EXAMPLES_BUILD_DIR;
 import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -15,6 +14,7 @@ import com.android.tools.r8.GenerateMainDexList;
 import com.android.tools.r8.GenerateMainDexListCommand;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
@@ -73,10 +73,11 @@ public class GenerateMainDexListCommandTest extends TestBase {
 
   // Add the jars used in the com.android.tools.r8.maindexlist.MainDexTracingTest test.
   private void addInputJarsToCommandLine(List<String> args) {
-    args.add(Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "multidex001" + JAR_EXTENSION)
-        .toAbsolutePath().toString());
-    args.add(Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "multidexfakeframeworks" + JAR_EXTENSION)
-        .toAbsolutePath().toString());
+    args.add(TestDeps.getExamplesPath("multidex001" + JAR_EXTENSION).toAbsolutePath().toString());
+    args.add(
+        TestDeps.getExamplesPath("multidexfakeframeworks" + JAR_EXTENSION)
+            .toAbsolutePath()
+            .toString());
   }
 
   // Add main-dex rules used in the com.android.tools.r8.maindexlist.MainDexTracingTest test.
@@ -174,7 +175,7 @@ public class GenerateMainDexListCommandTest extends TestBase {
 
   @Test(expected = CompilationFailedException.class)
   public void duplicateProgramClasses() throws Throwable {
-    Path input = Paths.get(EXAMPLES_BUILD_DIR, "arithmetic.jar");
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     DiagnosticsChecker.checkErrorsContains(
         "defined multiple times",
         handler ->
@@ -188,7 +189,7 @@ public class GenerateMainDexListCommandTest extends TestBase {
 
   @Test
   public void emptyMainDex() throws Throwable {
-    Path input = Paths.get(EXAMPLES_BUILD_DIR, "arithmetic.jar");
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     List<String> result = GenerateMainDexList.run(
         GenerateMainDexListCommand.builder()
             .addLibraryFiles(ToolHelper.getDefaultAndroidJar())
@@ -199,7 +200,7 @@ public class GenerateMainDexListCommandTest extends TestBase {
 
   @Test
   public void nonEmptyMainDex() throws Throwable {
-    Path input = Paths.get(EXAMPLES_BUILD_DIR, "arithmetic.jar");
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     List<String> result = GenerateMainDexList.run(
         GenerateMainDexListCommand.builder()
             .addLibraryFiles(ToolHelper.getDefaultAndroidJar())

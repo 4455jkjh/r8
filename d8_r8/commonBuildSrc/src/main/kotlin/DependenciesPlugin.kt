@@ -415,14 +415,9 @@ public object ThirdPartyDeps {
     )
   public val examplesAndroidP: ThirdPartyDependency =
     ThirdPartyDependency("examplesAndroidP", Paths.get("third_party", "examplesAndroidP").toFile())
-  public val examplesAndroidPGenerated: ThirdPartyDependency =
+  public val desugarJdkLibs8: ThirdPartyDependency =
     ThirdPartyDependency(
-      "examplesAndroidPGenerated",
-      Paths.get("third_party", "examplesAndroidPGenerated").toFile(),
-    )
-  public val desugarJdkLibs: ThirdPartyDependency =
-    ThirdPartyDependency(
-      "desugar-jdk-libs",
+      "desugar-jdk-libs-8",
       Paths.get("third_party", "openjdk", "desugar_jdk_libs").toFile(),
     )
   public val desugarJdkLibsLegacy: ThirdPartyDependency =

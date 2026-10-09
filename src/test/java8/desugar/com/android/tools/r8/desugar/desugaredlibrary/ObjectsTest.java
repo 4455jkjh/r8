@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.desugar.desugaredlibrary;
 
-import static com.android.tools.r8.ToolHelper.DESUGARED_JDK_8_LIB_JAR;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.SPECIFICATIONS_WITH_CF2CF;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LATEST;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LEGACY;
@@ -17,6 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -75,7 +75,7 @@ public class ObjectsTest extends DesugaredLibraryTestBase implements Opcodes {
     LibraryDesugaringSpecification jdk8MaxCompileSdk =
         new LibraryDesugaringSpecification(
             "JDK8_MAX",
-            DESUGARED_JDK_8_LIB_JAR,
+            TestDeps.getDesugarJdkLibs8Jar(),
             "desugar_jdk_libs.json",
             AndroidApiLevel.LATEST,
             LibraryDesugaringSpecification.JDK8_DESCRIPTOR,

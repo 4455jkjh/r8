@@ -20,6 +20,7 @@ import com.android.tools.r8.GenerateMainDexListCommand;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
@@ -55,8 +56,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MainDexTracingTest extends TestBase {
 
-  private static final String EXAMPLE_BUILD_DIR = ToolHelper.EXAMPLES_BUILD_DIR;
-  private static final String EXAMPLE_O_BUILD_DIR = ToolHelper.EXAMPLES_ANDROID_O_BUILD_DIR;
   private static final String EXAMPLE_SRC_DIR = ToolHelper.EXAMPLES_DIR;
   private static final String EXAMPLE_O_SRC_DIR = ToolHelper.EXAMPLES_ANDROID_O_DIR;
 
@@ -91,8 +90,7 @@ public class MainDexTracingTest extends TestBase {
     System.setOut(new PrintStream(baos));
     doTest(
         "traceMainDexList001_1",
-        "multidex001",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex001" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex", "main-dex-rules-whyareyoukeeping.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-1.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-1.txt"),
@@ -108,8 +106,7 @@ public class MainDexTracingTest extends TestBase {
     WhyAreYouKeepingConsumer graphConsumer = new WhyAreYouKeepingConsumer(null);
     doTest(
         "traceMainDexList001_1",
-        "multidex001",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex001" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex", "main-dex-rules.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-1.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-1.txt"),
@@ -158,8 +155,7 @@ public class MainDexTracingTest extends TestBase {
   public void traceMainDexList001_1() throws Throwable {
     doTest(
         "traceMainDexList001_1",
-        "multidex001",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex001" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex", "main-dex-rules.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-1.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-1.txt"),
@@ -170,8 +166,7 @@ public class MainDexTracingTest extends TestBase {
   public void traceMainDexList001_2() throws Throwable {
     doTest(
         "traceMainDexList001_2",
-        "multidex001",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex001" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "main-dex-rules-2.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-2.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex001", "ref-list-2.txt"),
@@ -182,8 +177,7 @@ public class MainDexTracingTest extends TestBase {
   public void traceMainDexList002() throws Throwable {
     doTest(
         "traceMainDexList002",
-        "multidex002",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex002" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex", "main-dex-rules.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex002", "ref-list-1.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex002", "ref-list-1.txt"),
@@ -194,8 +188,7 @@ public class MainDexTracingTest extends TestBase {
   public void traceMainDexList003() throws Throwable {
     doTest(
         "traceMainDexList003",
-        "multidex003",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex003" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex", "main-dex-rules.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex003", "ref-list-1.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex003", "ref-list-1.txt"),
@@ -206,8 +199,7 @@ public class MainDexTracingTest extends TestBase {
   public void traceMainDexList004() throws Throwable {
     doTest(
         "traceMainDexList004",
-        "multidex004",
-        EXAMPLE_O_BUILD_DIR,
+        TestDeps.getExamplesAndroidOPath("multidex004" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex", "main-dex-rules.txt"),
         Paths.get(EXAMPLE_O_SRC_DIR, "multidex004", "ref-list-r8.txt"),
         Paths.get(EXAMPLE_O_SRC_DIR, "multidex004", "ref-list-1.txt"),
@@ -236,8 +228,7 @@ public class MainDexTracingTest extends TestBase {
   public void traceMainDexList005_4() throws Throwable {
     doTest(
         "traceMainDexList005",
-        "multidex005",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex005" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex005", "main-dex-rules-4.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex005", "ref-list-4-r8.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex005", "ref-list-4.txt"),
@@ -278,8 +269,7 @@ public class MainDexTracingTest extends TestBase {
   public void traceMainDexList006() throws Throwable {
     doTest(
         "traceMainDexList006",
-        "multidex006",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex006" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex006", "main-dex-rules-1.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex006", "ref-list-1.txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex006", "ref-list-1.txt"),
@@ -289,8 +279,7 @@ public class MainDexTracingTest extends TestBase {
   private void doTest5(int variant) throws Throwable {
     doTest(
         "traceMainDexList005",
-        "multidex005",
-        EXAMPLE_BUILD_DIR,
+        TestDeps.getExamplesPath("multidex005" + JAR_EXTENSION),
         Paths.get(EXAMPLE_SRC_DIR, "multidex005", "main-dex-rules-" + variant + ".txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex005", "ref-list-" + variant + ".txt"),
         Paths.get(EXAMPLE_SRC_DIR, "multidex005", "ref-list-" + variant + ".txt"),
@@ -299,8 +288,7 @@ public class MainDexTracingTest extends TestBase {
 
   private void doTest(
       String testName,
-      String packageName,
-      String buildDir,
+      Path packageJar,
       Path mainDexRules,
       Path expectedR8MainDexList,
       Path expectedMainDexList,
@@ -308,8 +296,7 @@ public class MainDexTracingTest extends TestBase {
       throws Throwable {
     doTest(
         testName,
-        packageName,
-        buildDir,
+        packageJar,
         mainDexRules,
         expectedR8MainDexList,
         expectedMainDexList,
@@ -321,8 +308,7 @@ public class MainDexTracingTest extends TestBase {
 
   private void doTest(
       String testName,
-      String packageName,
-      String buildDir,
+      Path packageJar,
       Path mainDexRules,
       Path expectedR8MainDexList,
       Path expectedMainDexList,
@@ -331,15 +317,16 @@ public class MainDexTracingTest extends TestBase {
       throws Throwable {
     Path out = temp.getRoot().toPath().resolve(testName + ZIP_EXTENSION);
 
-    Path inputJar = getInputJar(Paths.get(buildDir, packageName + JAR_EXTENSION));
+    Path inputJar = getInputJar(packageJar);
     // Build main-dex list using GenerateMainDexList and test the output from run.
     GenerateMainDexListCommand.Builder mdlCommandBuilder = GenerateMainDexListCommand.builder();
-    GenerateMainDexListCommand mdlCommand = mdlCommandBuilder
-        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.K))
-        .addProgramFiles(inputJar)
-        .addProgramFiles(Paths.get(EXAMPLE_BUILD_DIR, "multidexfakeframeworks" + JAR_EXTENSION))
-        .addMainDexRulesFiles(mainDexRules)
-        .build();
+    GenerateMainDexListCommand mdlCommand =
+        mdlCommandBuilder
+            .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.K))
+            .addProgramFiles(inputJar)
+            .addProgramFiles(TestDeps.getExamplesPath("multidexfakeframeworks" + JAR_EXTENSION))
+            .addMainDexRulesFiles(mainDexRules)
+            .build();
     List<String> mainDexGeneratorMainDexList =
         GenerateMainDexList.run(mdlCommand).stream()
             .map(this::mainDexStringToDescriptor)
@@ -353,7 +340,7 @@ public class MainDexTracingTest extends TestBase {
         mdlCommandBuilder
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.K))
             .addProgramFiles(inputJar)
-            .addProgramFiles(Paths.get(EXAMPLE_BUILD_DIR, "multidexfakeframeworks" + JAR_EXTENSION))
+            .addProgramFiles(TestDeps.getExamplesPath("multidexfakeframeworks" + JAR_EXTENSION))
             .addMainDexRulesFiles(mainDexRules)
             .setMainDexListConsumer(ToolHelper.consumeString(mainDexListOutput::set))
             .build();
@@ -373,8 +360,7 @@ public class MainDexTracingTest extends TestBase {
           testForD8(Backend.DEX)
               .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.K))
               .addProgramFiles(inputJar)
-              .addProgramFiles(
-                  Paths.get(EXAMPLE_BUILD_DIR, "multidexfakeframeworks" + JAR_EXTENSION))
+              .addProgramFiles(TestDeps.getExamplesPath("multidexfakeframeworks" + JAR_EXTENSION))
               .addMainDexRulesFiles(mainDexRules)
               .collectSyntheticItems()
               .setMainDexListConsumer(ToolHelper.consumeString(mainDexListOutputFromD8::set))
@@ -394,7 +380,7 @@ public class MainDexTracingTest extends TestBase {
     SyntheticItemsTestUtils r8SyntheticItems =
         testForR8(Backend.DEX)
             .addProgramFiles(inputJar)
-            .addProgramFiles(Paths.get(EXAMPLE_BUILD_DIR, "multidexfakeframeworks" + JAR_EXTENSION))
+            .addProgramFiles(TestDeps.getExamplesPath("multidexfakeframeworks" + JAR_EXTENSION))
             .addKeepRules("-keepattributes *Annotation*")
             .addMainDexRuleFiles(mainDexRules)
             .apply(configuration)

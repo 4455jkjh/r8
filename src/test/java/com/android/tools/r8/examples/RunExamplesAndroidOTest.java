@@ -18,6 +18,7 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfRuntime;
@@ -53,7 +54,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -81,8 +81,6 @@ import org.junit.runners.Parameterized.Parameters;
 public abstract class RunExamplesAndroidOTest<
         B extends BaseCommand.Builder<? extends BaseCommand, B>>
     extends TestBase {
-  static final String EXAMPLE_DIR = ToolHelper.EXAMPLES_ANDROID_O_BUILD_DIR;
-
   @Parameter(0)
   public TestParameters parameters;
 
@@ -208,7 +206,7 @@ public abstract class RunExamplesAndroidOTest<
     }
 
     Path getInputJar() {
-      return Paths.get(EXAMPLE_DIR, packageName + JAR_EXTENSION);
+      return TestDeps.getExamplesAndroidOPath(packageName + JAR_EXTENSION);
     }
 
     void run(Path... additionalJavaClasspaths) throws Throwable {
@@ -435,7 +433,7 @@ public abstract class RunExamplesAndroidOTest<
     test("lambdadesugaring", "lambdadesugaring", "LambdaDesugaring")
         .withMinApiLevel(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K))
         .withKeepAll()
-        .run(Paths.get(ToolHelper.THIRD_PARTY_DIR, "examplesAndroidOLegacy"));
+        .run(TestDeps.getExamplesAndroidOLegacyDir());
   }
 
   @Test
@@ -545,7 +543,7 @@ public abstract class RunExamplesAndroidOTest<
     // Main dex interface has one static method.
     testIntermediateWithMainDexList(
         "interfacemethods",
-        Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR, "interfacemethods" + JAR_EXTENSION),
+        TestDeps.getExamplesAndroidNPath("interfacemethods" + JAR_EXTENSION),
         2,
         ImmutableList.of("interfacemethods.I2", "interfacemethods.I2$-CC"),
         false);
@@ -557,7 +555,7 @@ public abstract class RunExamplesAndroidOTest<
     // Main dex interface has one default method.
     testIntermediateWithMainDexList(
         "interfacemethods",
-        Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR, "interfacemethods" + JAR_EXTENSION),
+        TestDeps.getExamplesAndroidNPath("interfacemethods" + JAR_EXTENSION),
         2,
         ImmutableList.of("interfacemethods.I2", "interfacemethods.I2$-CC"),
         false);
@@ -581,7 +579,7 @@ public abstract class RunExamplesAndroidOTest<
       throws Throwable {
     testIntermediateWithMainDexList(
         packageName,
-        Paths.get(EXAMPLE_DIR, packageName + JAR_EXTENSION),
+        TestDeps.getExamplesAndroidOPath(packageName + JAR_EXTENSION),
         expectedMainDexListSize,
         mainDexClasses,
         hasLambda);
@@ -686,13 +684,13 @@ public abstract class RunExamplesAndroidOTest<
             .addLibraryFiles(ToolHelper.getAndroidJar(minApi))
             .setIntermediate(true)
             .addProgramFiles(input);
-    visitFiles(getLegacyClassesRoot(input, packageName), command::addProgramFiles);
+    visitFiles(getLegacyClassesRoot(packageName), command::addProgramFiles);
     ToolHelper.runD8(command, option -> {
       option.interfaceMethodDesugaring = OffOrAuto.Auto;
     });
 
     TestRunner<?> end =
-        test(packageName + "dex", packageName, "N/A")
+        test(packageName + "dex", "N/A", "N/A")
             .withOptionConsumer(option -> option.minimalMainDex = true)
             .withOptionConsumer(option -> option.enableInheritanceClassInDexDistributor = false)
             .withMainDexKeepClassRules(mainDexClasses)
@@ -762,10 +760,8 @@ public abstract class RunExamplesAndroidOTest<
     }
   }
 
-  protected Path getLegacyClassesRoot(Path testJarFile, String packageName) {
-    Path parent = testJarFile.getParent();
-    return Paths.get(
-        ToolHelper.THIRD_PARTY_DIR, parent.getFileName().toString() + "Legacy", packageName);
+  protected Path getLegacyClassesRoot(String packageName) {
+    return TestDeps.getExamplesAndroidOLegacyPath(packageName);
   }
 
   public void visitFiles(Path dir, Consumer<Path> consumer) {

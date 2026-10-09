@@ -17,5 +17,6 @@ java {
 
 dependencies {
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
+  runtimeOnlyData(project(":third_party", "desugarJdkLibs8"))
   runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
 }

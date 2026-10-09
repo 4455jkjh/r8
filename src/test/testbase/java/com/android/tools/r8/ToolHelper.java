@@ -208,10 +208,6 @@ public class ToolHelper {
   public static final String EXAMPLES_DIR = TESTS_DIR + "examples/";
   public static final String EXAMPLES_ANDROID_O_DIR = TESTS_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_DIR = TESTS_DIR + "examplesAndroidP/";
-  public static final String EXAMPLES_BUILD_DIR = THIRD_PARTY_DIR + "examples/";
-  public static final String EXAMPLES_ANDROID_N_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidN/";
-  public static final String EXAMPLES_ANDROID_O_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidO/";
-  public static final String EXAMPLES_ANDROID_P_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidP/";
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";
   public static final String KEEP_RADIUS_WEB_DIR = getProjectRoot() + "src/keepradius/web/";
 
@@ -268,10 +264,6 @@ public class ToolHelper {
 
   public static final String DESUGARED_LIB_RELEASES_DIR =
       OPEN_JDK_DIR + "desugar_jdk_libs_releases/";
-  public static final Path DESUGARED_JDK_8_LIB_JAR =
-      Paths.get(OPEN_JDK_DIR + "desugar_jdk_libs/desugar_jdk_libs.jar");
-  public static final Path DESUGARED_JDK_11_LIB_JAR =
-      Paths.get(OPEN_JDK_DIR + "desugar_jdk_libs_11/desugar_jdk_libs.jar");
 
   public static boolean isLocalDevelopment() {
     return System.getProperty("local_development", "0").equals("1");

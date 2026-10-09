@@ -5,14 +5,12 @@
 package com.android.tools.r8.resource;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,8 +23,6 @@ public class DataResourceTest extends TestBase {
 
   private static final String PACKAGE_NAME = "dataresource";
   private static final String MAIN_CLASS_NAME = PACKAGE_NAME + ".ResourceTest";
-  private static final Path INPUT_JAR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, PACKAGE_NAME + FileUtils.JAR_EXTENSION);
   private static final String EXPECTED_OUTPUT =
       StringUtils.unixLines(
           "LibClass dir: true",
@@ -94,7 +90,7 @@ public class DataResourceTest extends TestBase {
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
-        .addProgramFiles(INPUT_JAR)
+        .addProgramFiles(TestDeps.getExamplesPath(PACKAGE_NAME + FileUtils.JAR_EXTENSION))
         .run(parameters.getRuntime(), MAIN_CLASS_NAME)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
@@ -102,7 +98,7 @@ public class DataResourceTest extends TestBase {
   @Test
   public void dataResourceTest() throws Exception {
     testForR8(parameters.getBackend())
-        .addProgramFiles(INPUT_JAR)
+        .addProgramFiles(TestDeps.getExamplesPath(PACKAGE_NAME + FileUtils.JAR_EXTENSION))
         .addKeepRules("-keepdirectories")
         .addDontObfuscate()
         .addDontShrink()

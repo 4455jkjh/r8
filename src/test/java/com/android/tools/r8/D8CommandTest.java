@@ -4,7 +4,6 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.R8CommandTest.getOutputPath;
-import static com.android.tools.r8.ToolHelper.EXAMPLES_BUILD_DIR;
 import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -105,7 +104,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
   @Test
   public void defaultOutIsCwd() throws Throwable {
     Path working = temp.getRoot().toPath();
-    Path input = Paths.get(EXAMPLES_BUILD_DIR + "/arithmetic.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("arithmetic.jar").toAbsolutePath();
     Path output = working.resolve("classes.dex");
     assertFalse(Files.exists(output));
     assertEquals(0, ToolHelper.forkD8(working, input.toString()).exitCode);
@@ -116,7 +115,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
   public void flagsFile() throws Throwable {
     Path working = temp.getRoot().toPath();
     Path flagsFile = working.resolve("flags.txt");
-    Path input = Paths.get(EXAMPLES_BUILD_DIR + "/arithmetic.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("arithmetic.jar").toAbsolutePath();
     Path output = working.resolve("output.zip");
     FileUtils.writeTextFile(
         flagsFile, "--output", "output.zip", "--min-api", "24", input.toString());
@@ -148,7 +147,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     Path working = temp.getRoot().toPath();
     Path flagsFile = working.resolve("flags.txt");
     Path recursiveFlagsFile = working.resolve("recursive_flags.txt");
-    Path input = Paths.get(EXAMPLES_BUILD_DIR + "/arithmetic.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("arithmetic.jar").toAbsolutePath();
     FileUtils.writeTextFile(recursiveFlagsFile, "--output", "output.zip");
     FileUtils.writeTextFile(
         flagsFile, "--min-api", "24", input.toString(), "@" + recursiveFlagsFile);
@@ -339,7 +338,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
       Files.createFile(file);
       assertTrue(Files.exists(file));
     }
-    Path input = Paths.get(EXAMPLES_BUILD_DIR, "arithmetic.jar");
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     ProcessResult result =
         ToolHelper.forkD8(Paths.get("."), input.toString(), "--output", existingDir.toString());
     assertEquals(result.toString(), 0, result.exitCode);
@@ -476,8 +475,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
 
   @Test
   public void folderLibAndClasspath() throws Throwable {
-    Path inputFile =
-        Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR, "interfacemethods" + JAR_EXTENSION);
+    Path inputFile = TestDeps.getExamplesAndroidNPath("interfacemethods" + JAR_EXTENSION);
     Path tmpClassesDir = temp.newFolder().toPath();
     ZipUtils.unzip(inputFile.toString(), tmpClassesDir.toFile());
     D8Command command =
@@ -501,8 +499,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
 
   @Test
   public void folderClasspathMultiple() throws Throwable {
-    Path inputFile =
-        Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR, "interfacemethods" + JAR_EXTENSION);
+    Path inputFile = TestDeps.getExamplesAndroidNPath("interfacemethods" + JAR_EXTENSION);
     Path tmpClassesDir1 = temp.newFolder().toPath();
     Path tmpClassesDir2 = temp.newFolder().toPath();
     ZipUtils.unzip(inputFile.toString(), tmpClassesDir1.toFile());
@@ -526,8 +523,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
 
   @Test(expected = CompilationFailedException.class)
   public void classFolderProgram() throws Throwable {
-    Path inputFile =
-        Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR, "interfacemethods" + JAR_EXTENSION);
+    Path inputFile = TestDeps.getExamplesAndroidNPath("interfacemethods" + JAR_EXTENSION);
     Path tmpClassesDir = temp.newFolder().toPath();
     ZipUtils.unzip(inputFile.toString(), tmpClassesDir.toFile());
     parse(tmpClassesDir.toString());
@@ -570,7 +566,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
       }
     }
 
-    Path input = Paths.get(EXAMPLES_BUILD_DIR, "arithmetic.jar");
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     ProgramResourceProvider myProvider =
         ArchiveProgramResourceProvider.fromSupplier(
             new MyOrigin(), () -> new ZipFile(input.toFile(), StandardCharsets.UTF_8));

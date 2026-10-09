@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.desugar.desugaredlibrary.test;
 
-import static com.android.tools.r8.ToolHelper.DESUGARED_JDK_11_LIB_JAR;
-import static com.android.tools.r8.ToolHelper.DESUGARED_JDK_8_LIB_JAR;
 import static com.android.tools.r8.ToolHelper.DESUGARED_LIB_RELEASES_DIR;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LATEST;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LEGACY;
@@ -123,7 +121,7 @@ public class LibraryDesugaringSpecification {
       Path jdklib_desugaring = staticTemp.newFolder("jdklib_desugaring").toPath();
       tempLibraryJdk11UndesugarCache =
           DesugaredLibraryJDK11Undesugarer.undesugaredJarJDK11(
-              jdklib_desugaring, DESUGARED_JDK_11_LIB_JAR);
+              jdklib_desugaring, TestDeps.getDesugarJdkLibs11Jar());
       return tempLibraryJdk11UndesugarCache;
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -138,7 +136,7 @@ public class LibraryDesugaringSpecification {
   public static LibraryDesugaringSpecification JDK8 =
       new LibraryDesugaringSpecification(
           "JDK8",
-          DESUGARED_JDK_8_LIB_JAR,
+          TestDeps::getDesugarJdkLibs8Jar,
           "desugar_jdk_libs.json",
           AndroidApiLevel.P,
           JDK8_DESCRIPTOR,
@@ -177,7 +175,7 @@ public class LibraryDesugaringSpecification {
       new LibraryDesugaringSpecification(
           "JDK11_LEGACY",
           // The legacy specification is not using the undesugared JAR.
-          DESUGARED_JDK_11_LIB_JAR,
+          TestDeps::getDesugarJdkLibs11Jar,
           "jdk11/desugar_jdk_libs_legacy.json",
           AndroidApiLevel.CINNAMON_BUN,
           JDK11_LEGACY_DESCRIPTOR,
