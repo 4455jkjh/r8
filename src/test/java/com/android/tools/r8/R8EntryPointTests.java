@@ -137,7 +137,7 @@ public class R8EntryPointTests extends TestBase {
             PROGUARD_FLAGS.toAbsolutePath().toString(),
             "--pg-conf",
             testFlags.toAbsolutePath().toString(),
-            getInputJar().toAbsolutePath().toString());
+            getInputJar().toString());
     Assert.assertEquals(0, r8.exitCode);
     Assert.assertTrue(
         Files.isRegularFile(workingDir.resolve(out).resolve(ToolHelper.DEFAULT_DEX_FILENAME)));
@@ -174,7 +174,7 @@ public class R8EntryPointTests extends TestBase {
         ToolHelper.forkR8(
             Paths.get("."),
             "--lib",
-            ToolHelper.getJava8RuntimeJar().toString(),
+            TestDeps.getJava8RuntimeJar().toString(),
             "--classfile",
             "--output",
             out.toString(),

@@ -12,8 +12,8 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.codeinspector.AnnotationSubject;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -62,7 +62,7 @@ public class MetadataRewriteInRenamedTypeTest extends KotlinMetadataTestBase {
     testForR8(parameters.getBackend())
         .addLibraryFiles(
             annoJarMap.getForConfiguration(kotlinParameters),
-            ToolHelper.getJava8RuntimeJar(),
+            TestDeps.getJava8RuntimeJar(),
             kotlinc.getKotlinStdlibJar())
         .addProgramFiles(inputJarMap.getForConfiguration(kotlinParameters))
         .addKeepRules(OBFUSCATE_RENAMED, KEEP_KEPT)

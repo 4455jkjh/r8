@@ -10,9 +10,9 @@ import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.TestAppViewBuilder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.MethodResolutionResult;
@@ -42,7 +42,7 @@ public class InvokePolymorphicResolutionTest extends TestBase {
     // Note: this could just as well resolve without liveness.
     AppView<? extends AppInfoWithClassHierarchy> appView =
         TestAppViewBuilder.builder()
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .buildWithLiveness(Timing.empty());
 
     // An exact resolution will find invokeExact.

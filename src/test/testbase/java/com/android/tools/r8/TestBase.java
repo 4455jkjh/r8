@@ -874,7 +874,7 @@ public class TestBase {
       builder.addLibraryFiles(ToolHelper.getMostRecentAndroidJar());
     } else {
       assert backend == Backend.CF;
-      builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
+      builder.addLibraryFiles(TestDeps.getJava8RuntimeJar());
     }
     return builder.build();
   }
@@ -1748,7 +1748,7 @@ public class TestBase {
       return ToolHelper.getAndroidJar(parameters.getRuntime().asDex().getMinApiLevel());
     } else {
       assert parameters.isCfRuntime();
-      return ToolHelper.getJava8RuntimeJar();
+      return TestDeps.getJava8RuntimeJar();
     }
   }
 
@@ -1758,7 +1758,7 @@ public class TestBase {
       return ToolHelper.getDefaultAndroidJar();
     } else {
       assert backend == Backend.CF;
-      return ToolHelper.getJava8RuntimeJar();
+      return TestDeps.getJava8RuntimeJar();
     }
   }
 

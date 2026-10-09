@@ -24,6 +24,8 @@ tasks {
 }
 
 dependencies {
+  runtimeOnlyData(project(":third_party", "java8Runtime"))
+  runtimeOnlyData(project(":third_party", "proguard7_0_0"))
   runtimeOnlyData(project(":third_party", "r8Mappings"))
   runtimeOnlyData(project(":third_party", "retraceBinaryCompatibility"))
   runtimeOnlyData(project(":third_party", "retracePartitionFormats"))

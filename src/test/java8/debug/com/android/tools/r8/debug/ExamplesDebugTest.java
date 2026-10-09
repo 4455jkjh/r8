@@ -62,7 +62,7 @@ public class ExamplesDebugTest extends DebugTestBase {
     ToolHelper.runR8(
         R8Command.builder()
             .addProgramFiles(input)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setMode(CompilationMode.DEBUG)
             .setOutput(output, OutputMode.ClassFile)
             .setDisableTreeShaking(true)

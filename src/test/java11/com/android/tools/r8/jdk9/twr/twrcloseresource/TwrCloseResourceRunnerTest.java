@@ -54,7 +54,7 @@ public class TwrCloseResourceRunnerTest extends TestBase {
         .addProgramClassFileData(IfaceDump.dump(), TwrCloseResourceTestDump.dump())
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.LATEST))
         .setMinApi(parameters)
-        .run(parameters.getRuntime(), TEST_CLASS, anyReachableJar.toAbsolutePath().toString())
+        .run(parameters.getRuntime(), TEST_CLASS, anyReachableJar.toString())
         .assertSuccessWithOutput(EXPECTED_RESULT);
   }
 
@@ -79,10 +79,7 @@ public class TwrCloseResourceRunnerTest extends TestBase {
                     .setDisableMinification(true)
                     .addProguardConfiguration(
                         ImmutableList.of("-keepattributes *"), Origin.unknown()))
-        .run(
-            parameters.getRuntime(),
-            TEST_CLASS,
-            TestDeps.getCoreLambdaStubsJar().toAbsolutePath().toString())
+        .run(parameters.getRuntime(), TEST_CLASS, TestDeps.getCoreLambdaStubsJar().toString())
         .assertSuccessWithOutput(EXPECTED_RESULT);
   }
 }

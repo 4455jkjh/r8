@@ -14,9 +14,9 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -101,7 +101,7 @@ public class IdentityMappingFileTest extends TestBase {
               .addClassProgramData(getMainWithoutLineTable(), Origin.unknown())
               .addProguardConfiguration(
                   ImmutableList.of(keepMainProguardConfiguration(Main.class)), Origin.unknown())
-              .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+              .addLibraryFiles(TestDeps.getJava8RuntimeJar())
               .setProguardMapOutputPath(mappingPath)
               .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
               .build());
@@ -123,7 +123,7 @@ public class IdentityMappingFileTest extends TestBase {
               .addClassProgramData(getMainWithoutLineTable(), Origin.unknown())
               .addProguardConfiguration(
                   ImmutableList.of(keepMainProguardConfiguration(Main.class)), Origin.unknown())
-              .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+              .addLibraryFiles(TestDeps.getJava8RuntimeJar())
               .setProguardMapConsumer(
                   new StringConsumer() {
                     @Override

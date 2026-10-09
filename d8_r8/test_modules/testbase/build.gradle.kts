@@ -41,15 +41,25 @@ dependencies {
   sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
   // Declare local runtime dependencies.
   runtimeOnlyData(project(":third_party", "aapt2"))
+  runtimeOnlyData(project(":third_party", "artTests"))
+  runtimeOnlyData(project(":third_party", "artTestsLegacy"))
   runtimeOnlyData(project(":third_party", "chromeHeadless"))
   runtimeOnlyData(project(":third_party", "dependenciesBucket"))
   runtimeOnlyData(project(":third_party", "desugarJdkLibs11"))
   runtimeOnlyData(project(":third_party", "desugarJdkLibs8"))
   runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_0_9"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_0_10"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_1_0"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_1_1"))
+  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_1_5"))
   runtimeOnlyData(project(":third_party", "googleJavaFormat"))
   runtimeOnlyData(project(":third_party", "googleKotlinFormat"))
+  runtimeOnlyData(project(":third_party", "java8Runtime"))
   runtimeOnlyData(project(":third_party", "jdwpTests"))
   runtimeOnlyData(project(":third_party", "kotlinR8TestResources"))
+  runtimeOnlyData(project(":third_party", "proguard7_0_0"))
+  runtimeOnlyData(project(":third_party", "proguard7_7_0"))
 }
 
 dependencies {

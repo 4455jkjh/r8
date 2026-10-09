@@ -11,6 +11,7 @@ import static org.junit.Assert.assertThrows;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -65,7 +66,7 @@ public class LibraryClassExtendingProgramClassSuperTest extends TestBase {
                 : testForR8(parameters.getBackend()))
             .addLibraryFiles(
                 parameters.isCfRuntime()
-                    ? ToolHelper.getJava8RuntimeJar()
+                    ? TestDeps.getJava8RuntimeJar()
                     : ToolHelper.getAndroidJar(parameters.getApiLevel()))
             .addLibraryClasses(LibraryClass.class)
             .addProgramClasses(ProgramDirectSuper.class, ProgramIndirectSuper.class, Main.class)

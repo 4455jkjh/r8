@@ -26,4 +26,8 @@ tasks {
   }
 }
 
-dependencies { runtimeOnlyData(project(":third_party", "r8v8_0_46")) }
+dependencies {
+  runtimeOnlyData(project(":third_party", "java8Runtime"))
+  runtimeOnlyData(project(":third_party", "proguard7_7_0"))
+  runtimeOnlyData(project(":third_party", "r8v8_0_46"))
+}

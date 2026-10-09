@@ -18,7 +18,6 @@ import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -37,7 +36,6 @@ import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.BeforeClass;
@@ -84,7 +82,7 @@ public class Jdk11Jsr166Tests extends DesugaredLibraryTestBase {
     Path jsr166SuiteClasses = getStaticTemp().newFolder("jsr166SuiteClasses").toPath();
 
     javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
-        .addClasspathFiles(Paths.get(ToolHelper.THIRD_PARTY_DIR + "junit/junit-4.13-beta-2.jar"))
+        .addClasspathFiles(TestDeps.getJunitJar())
         .addSourceFiles(
             Files.walk(TestDeps.getJdk11TestPath("java", "util", "concurrent", "tck"))
                 .filter(path -> path.getFileName().toString().endsWith(".java"))
@@ -189,7 +187,7 @@ public class Jdk11Jsr166Tests extends DesugaredLibraryTestBase {
     DesugaredLibraryTestCompileResult<?> compileResult =
         testForDesugaredLibrary(
                 parameters, libraryDesugaringSpecification, compilationSpecification)
-            .addProgramFiles(Paths.get("third_party/junit/junit-4.13-beta-2.jar"))
+            .addProgramFiles(TestDeps.getJunitJar())
             .addProgramFiles(
                 parameters.getDexRuntimeVersion().isOlderThan(Version.V7_0_0)
                     ? jsr166SuitePreN

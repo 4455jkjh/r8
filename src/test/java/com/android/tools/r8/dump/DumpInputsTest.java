@@ -9,13 +9,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.DumpInputFlags;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,7 +45,7 @@ public class DumpInputsTest extends TestBase {
     Path dump = temp.newFolder().toPath().resolve("dump.zip");
     testForR8(parameters.getBackend())
         .addProgramClasses(TestClass.class)
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addKeepMainRule(TestClass.class)
         .addOptionsModification(
             options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))
@@ -102,7 +102,7 @@ public class DumpInputsTest extends TestBase {
         .addProgramClasses(TestClass.class)
         // Setting a directory will allow compilation to continue.
         // Ensure the compilation and run can actually succeed.
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addKeepMainRule(TestClass.class)
         .addOptionsModification(
             options -> options.setDumpInputFlags(DumpInputFlags.dumpToDirectory(dumpDir)))
@@ -122,7 +122,7 @@ public class DumpInputsTest extends TestBase {
         .addProgramClasses(TestClass.class)
         // Setting a directory will allow compilation to continue.
         // Ensure the compilation and run can actually succeed.
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addKeepMainRule(TestClass.class)
         .compile();
     verifyDumpDirectory(dumpDir, false, true);

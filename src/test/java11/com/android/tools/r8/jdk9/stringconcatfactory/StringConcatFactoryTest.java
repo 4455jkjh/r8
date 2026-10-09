@@ -14,11 +14,11 @@ import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestState;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -71,7 +71,7 @@ public class StringConcatFactoryTest extends TestBase {
             .setMinApi(parameters)
             .addInnerClassesAndStrippedOuter(getClass())
             // Always link to the JDK8 rt.jar which has no definition of StringConcatFactory.
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .addKeepMainRule(MAIN.getTypeName());
     R8TestCompileResult compileResult;
     try {
@@ -103,7 +103,7 @@ public class StringConcatFactoryTest extends TestBase {
         .setMinApi(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         // Always link to the JDK8 rt.jar which has no definition of StringConcatFactory.
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addKeepMainRule(MAIN.getTypeName())
         .applyIf(
             parameters.isCfRuntime(), b -> b.addDontWarn("java.lang.invoke.StringConcatFactory"))
@@ -130,7 +130,7 @@ public class StringConcatFactoryTest extends TestBase {
         .setMinApi(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         // Always link to the JDK8 rt.jar which has no definition of StringConcatFactory.
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addKeepMainRule(MAIN.getTypeName())
         .allowDiagnosticWarningMessages(parameters.isCfRuntime())
         .compileWithExpectedDiagnostics(

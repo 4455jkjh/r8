@@ -6,6 +6,7 @@ package com.android.tools.r8.regress;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -87,7 +88,7 @@ public class UnicodeSetRegressionTest extends TestBase {
         R8Command.builder()
             .addProgramFiles(getJarPath())
             .setOutput(Paths.get(combinedInput.toString()), OutputMode.ClassFile)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar());
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar());
     AndroidAppConsumers compatSink = new AndroidAppConsumers(builder);
     // Ignore missing classes since we don't want to link to the IBM text library.
     ToolHelper.runR8(builder.build(), options -> options.ignoreMissingClasses = true);

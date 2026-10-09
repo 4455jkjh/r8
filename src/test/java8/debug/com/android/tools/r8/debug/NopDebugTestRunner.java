@@ -8,6 +8,7 @@ import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.DebuggeeState;
 import com.android.tools.r8.origin.Origin;
@@ -49,7 +50,7 @@ public class NopDebugTestRunner extends DebugTestBase {
     Path outputJar = temp.getRoot().toPath().resolve(outputName);
     ToolHelper.runR8(
         R8Command.builder()
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setMode(CompilationMode.DEBUG)
             .setDisableTreeShaking(true)
             .setDisableMinification(true)

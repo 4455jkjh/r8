@@ -7,9 +7,9 @@ package com.android.tools.r8.apimodel;
 import static org.junit.Assert.assertNull;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.testing.AndroidBuildVersion;
@@ -43,7 +43,7 @@ public class ApiModelNoLibraryReferenceTest extends TestBase {
                     descriptor(AccessibilityEvent.class),
                     DescriptorUtils.javaTypeToDescriptor(API_TYPE_NAME))
                 .transform())
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .setMinApi(parameters)
         .addDontWarn(API_TYPE_NAME)
         .addKeepMainRule(Main.class)

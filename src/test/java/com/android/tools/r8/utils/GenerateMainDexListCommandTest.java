@@ -73,11 +73,8 @@ public class GenerateMainDexListCommandTest extends TestBase {
 
   // Add the jars used in the com.android.tools.r8.maindexlist.MainDexTracingTest test.
   private void addInputJarsToCommandLine(List<String> args) {
-    args.add(TestDeps.getExamplesPath("multidex001" + JAR_EXTENSION).toAbsolutePath().toString());
-    args.add(
-        TestDeps.getExamplesPath("multidexfakeframeworks" + JAR_EXTENSION)
-            .toAbsolutePath()
-            .toString());
+    args.add(TestDeps.getExamplesPath("multidex001" + JAR_EXTENSION).toString());
+    args.add(TestDeps.getExamplesPath("multidexfakeframeworks" + JAR_EXTENSION).toString());
   }
 
   // Add main-dex rules used in the com.android.tools.r8.maindexlist.MainDexTracingTest test.

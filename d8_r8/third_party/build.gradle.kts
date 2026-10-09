@@ -61,6 +61,10 @@ registerTestDep("aapt2", ThirdPartyDeps.aapt2, "AAPT2")
 
 registerTestDep("apiDatabase", ThirdPartyDeps.apiDatabase, "API_DATABASE")
 
+registerTestDep("artTests", ThirdPartyDeps.artTests, "ART_TESTS")
+
+registerTestDep("artTestsLegacy", ThirdPartyDeps.artTestsLegacy, "ART_TESTS_LEGACY")
+
 registerTestDep("bookstory", ThirdPartyDeps.bookstory, "BOOKSTORY")
 
 registerTestDep("bundletool", ThirdPartyDeps.bundletool, "BUNDLETOOL")
@@ -127,6 +131,42 @@ registerTestDep(
   "DESUGAR_LIBRARY_CONVERSIONS",
 )
 
+registerTestDep(
+  "desugarLibraryRelease1_0_9",
+  ThirdPartyDeps.desugarLibraryRelease1_0_9,
+  "DESUGAR_LIBRARY_RELEASE_1_0_9",
+)
+
+registerTestDep(
+  "desugarLibraryRelease1_0_10",
+  ThirdPartyDeps.desugarLibraryRelease1_0_10,
+  "DESUGAR_LIBRARY_RELEASE_1_0_10",
+)
+
+registerTestDep(
+  "desugarLibraryRelease1_1_0",
+  ThirdPartyDeps.desugarLibraryRelease1_1_0,
+  "DESUGAR_LIBRARY_RELEASE_1_1_0",
+)
+
+registerTestDep(
+  "desugarLibraryRelease1_1_1",
+  ThirdPartyDeps.desugarLibraryRelease1_1_1,
+  "DESUGAR_LIBRARY_RELEASE_1_1_1",
+)
+
+registerTestDep(
+  "desugarLibraryRelease1_1_5",
+  ThirdPartyDeps.desugarLibraryRelease1_1_5,
+  "DESUGAR_LIBRARY_RELEASE_1_1_5",
+)
+
+registerTestDep(
+  "desugarLibraryRelease2_0_3",
+  ThirdPartyDeps.desugarLibraryRelease2_0_3,
+  "DESUGAR_LIBRARY_RELEASE_2_0_3",
+)
+
 registerTestDep("examples", ThirdPartyDeps.examples, "EXAMPLES")
 
 registerTestDep("examplesAndroidN", ThirdPartyDeps.examplesAndroidN, "EXAMPLES_ANDROID_N")
@@ -161,6 +201,8 @@ registerTestDep("guavaJre", ThirdPartyDeps.guavaJre, "GUAVA_JRE")
 
 registerTestDep("jacoco", ThirdPartyDeps.jacoco, "JACOCO")
 
+registerTestDep("java8Runtime", ThirdPartyDeps.java8Runtime, "JAVA_8_RUNTIME")
+
 registerTestDep("jdk11Test", ThirdPartyDeps.jdk11Test, "JDK11_TEST")
 
 registerTestDep("jdk21Float16Test", ThirdPartyDeps.jdk21Float16Test, "JDK21_FLOAT16_TEST")
@@ -194,6 +236,10 @@ registerTestDep(
   ThirdPartyDeps.processKeepRulesBinaryCompatibility,
   "PROCESS_KEEP_RULES_BINARY_COMPATIBILITY",
 )
+
+registerTestDep("proguard7_0_0", ThirdPartyDeps.proguard7_0_0, "PROGUARD_7_0_0")
+
+registerTestDep("proguard7_7_0", ThirdPartyDeps.proguard7_7_0, "PROGUARD_7_7_0")
 
 registerTestDep("r8", ThirdPartyDeps.r8, "R8")
 

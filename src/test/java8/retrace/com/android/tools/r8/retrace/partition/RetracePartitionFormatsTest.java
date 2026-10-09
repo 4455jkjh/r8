@@ -103,7 +103,7 @@ public class RetracePartitionFormatsTest extends TestBase {
             "com.android.tools.r8.R8",
             "--no-tree-shaking",
             "--lib",
-            ToolHelper.getJava8RuntimeJar().toString(),
+            TestDeps.getJava8RuntimeJar().toString(),
             ToolHelper.R8LIB_JAR.toString());
     assertEquals("Expected compilation to fail: " + result, result.exitCode, 1);
 

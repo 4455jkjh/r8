@@ -10,6 +10,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -82,7 +83,7 @@ public class ThreadLocalBackportTest extends DesugaredLibraryTestBase {
     testForR8(parameters.getBackend())
         .addLibraryFiles(
             parameters.isCfRuntime()
-                ? ToolHelper.getJava8RuntimeJar()
+                ? TestDeps.getJava8RuntimeJar()
                 : ToolHelper.getAndroidJar(LATEST))
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)

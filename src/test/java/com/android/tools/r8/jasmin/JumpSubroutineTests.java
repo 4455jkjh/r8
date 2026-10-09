@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotNull;
 
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -58,7 +59,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         R8Command.builder()
             .addProgramFiles(inputJar)
             .setOutput(outputJar, OutputMode.ClassFile)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setDisableTreeShaking(true)
             .setDisableMinification(true)
             .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown())

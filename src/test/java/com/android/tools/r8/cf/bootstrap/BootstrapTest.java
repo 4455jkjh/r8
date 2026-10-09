@@ -142,7 +142,7 @@ public class BootstrapTest extends TestBase {
             Collections.singletonList(r8Jar),
             R8.class.getTypeName(),
             "--lib",
-            ToolHelper.getJava8RuntimeJar().toString(),
+            TestDeps.getJava8RuntimeJar().toString(),
             "--classfile",
             inputJar.toString(),
             "--output",

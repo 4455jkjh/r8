@@ -18,6 +18,7 @@ import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.R8RunArtTestsTest.DexTool;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCondition;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -165,7 +166,7 @@ public abstract class R8RunExamplesTestBase extends TestBase {
               addInputFile(R8Command.builder())
                   .addLibraryFiles(
                       output == Output.CF
-                          ? ToolHelper.getJava8RuntimeJar()
+                          ? TestDeps.getJava8RuntimeJar()
                           : ToolHelper.getMostRecentAndroidJar())
                   .setOutput(getOutputFile(), outputMode)
                   .setMode(mode)

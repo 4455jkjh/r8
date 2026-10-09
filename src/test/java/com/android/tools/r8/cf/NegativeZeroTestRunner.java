@@ -8,6 +8,7 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import java.nio.file.Path;
@@ -26,7 +27,7 @@ public class NegativeZeroTestRunner extends TestBase {
             .setDisableTreeShaking(true)
             .setDisableMinification(true)
             .addClassProgramData(ToolHelper.getClassAsBytes(CLASS), Origin.unknown())
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(new DirectoryConsumer(out))
             .build());
     assert ToolHelper.runJava(out, CLASS.getCanonicalName()).exitCode == 0;

@@ -234,7 +234,7 @@ public abstract class TestBuilder<RR extends TestRunResult<RR>, T extends TestBu
       addLibraryFiles(ToolHelper.getFirstSupportedAndroidJar(parameters.getApiLevel()));
     } else {
       assert parameters.getBackend() == Backend.CF;
-      addLibraryFiles(ToolHelper.getJava8RuntimeJar());
+      addLibraryFiles(TestDeps.getJava8RuntimeJar());
     }
     return self();
   }

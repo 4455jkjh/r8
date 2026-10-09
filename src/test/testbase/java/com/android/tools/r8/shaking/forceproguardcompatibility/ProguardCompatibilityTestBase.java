@@ -13,6 +13,7 @@ import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
@@ -192,7 +193,7 @@ public class ProguardCompatibilityTestBase extends TestBase {
       builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
     } else {
       assert backend == Backend.CF;
-      builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
+      builder.addLibraryFiles(TestDeps.getJava8RuntimeJar());
       builder.setProgramConsumer(ClassFileConsumer.emptyConsumer());
     }
     return ToolHelper.runR8(builder.build(), configure);

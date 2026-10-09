@@ -99,7 +99,7 @@ public class ProguardTestBuilder
         command.add("-libraryjars");
         // TODO(sgjesse): Add support for running with Android Jar.
         // command.add(ToolHelper.getAndroidJar(AndroidApiLevel.P).toString());
-        command.add(ToolHelper.getJava8RuntimeJar().toString());
+        command.add(TestDeps.getJava8RuntimeJar().toString());
       }
       command.add("-include");
       command.add(configFile.toString());

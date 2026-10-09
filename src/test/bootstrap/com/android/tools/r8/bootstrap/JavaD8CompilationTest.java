@@ -12,6 +12,7 @@ import static junit.framework.TestCase.fail;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.cf.CfVersion;
@@ -60,7 +61,7 @@ public class JavaD8CompilationTest extends TestBase {
     Assume.assumeTrue(JavaBootstrapUtils.exists(r8WithRelocatedDeps));
     testForD8()
         .addProgramFiles(r8WithRelocatedDeps)
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .compile()
         .inspect(JavaD8CompilationTest::assertNoNests);
   }
@@ -71,7 +72,7 @@ public class JavaD8CompilationTest extends TestBase {
     D8TestCompileResult compileResult =
         testForD8(Backend.CF)
             .addProgramFiles(r8WithRelocatedDeps)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .collectSyntheticItems()
             .setMinApi(AndroidApiLevel.B)
             .compile()

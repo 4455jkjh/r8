@@ -10,9 +10,9 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.DumpInputFlags;
 import com.android.tools.r8.utils.ZipUtils;
@@ -46,7 +46,7 @@ public class DumpInputsD8Test extends TestBase {
     Path dump = temp.newFolder().toPath().resolve("dump.zip");
     testForD8(parameters)
         .addProgramClasses(TestClass.class)
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addOptionsModification(
             options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))
         .compileWithExpectedDiagnostics(
@@ -64,7 +64,7 @@ public class DumpInputsD8Test extends TestBase {
     FileUtils.writeTextFile(proguardMapInputFile, proguardMapInputFileContent);
     testForD8(parameters)
         .addProgramClasses(TestClass.class)
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .apply(
             b ->
                 b.asD8TestBuilder()
@@ -88,7 +88,7 @@ public class DumpInputsD8Test extends TestBase {
     FileUtils.writeTextFile(apiDatabaseFile, apiDatabaseContent);
     testForD8(parameters)
         .addProgramClasses(TestClass.class)
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .setApiDatabasePath(apiDatabaseFile)
         .addOptionsModification(
             options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))

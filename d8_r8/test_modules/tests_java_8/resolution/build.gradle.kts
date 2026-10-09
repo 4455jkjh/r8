@@ -7,3 +7,8 @@ java {
     java.srcDir(getRoot().resolveAll("src", "test", "java8", "resolution"))
   }
 }
+
+dependencies {
+  runtimeOnlyData(project(":third_party", "java8Runtime"))
+  runtimeOnlyData(project(":third_party", "proguard7_0_0"))
+}

@@ -76,7 +76,7 @@ public class Jdk11ObjectsTests extends TestBase {
     if (parameters.isDexRuntime()) {
       libraryJar = ToolHelper.getAndroidJar(parameters.getRuntime().asDex().getMinApiLevel());
     } else {
-      libraryJar = ToolHelper.getJava8RuntimeJar();
+      libraryJar = TestDeps.getJava8RuntimeJar();
     }
     testForR8(parameters.getBackend())
         .addLibraryFiles(libraryJar)

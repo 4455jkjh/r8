@@ -16,6 +16,7 @@ import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.L8TestBuilder;
 import com.android.tools.r8.PartialCompilationTestParameters;
 import com.android.tools.r8.R8;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestState;
@@ -30,7 +31,6 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.Test;
@@ -77,10 +77,6 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
     this.libraryDesugaringSpecification = libraryDesugaringSpecification;
   }
 
-  private static String commandLinePathFor(String string) {
-    return Paths.get(string).toAbsolutePath().toString();
-  }
-
   private Path writeHelloProgramJar() throws IOException {
     return writeClassesToJar(HELLO_CLASS);
   }
@@ -100,7 +96,7 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
             "--output",
             helloOutput.toString(),
             "--lib",
-            commandLinePathFor(ToolHelper.JAVA_8_RUNTIME),
+            TestDeps.getJava8RuntimeJar().toString(),
             "--pg-conf",
             keepRules.toString(),
             helloInput.toString())
@@ -121,7 +117,7 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
             "--output",
             helloOutput.toString(),
             "--lib",
-            commandLinePathFor(ToolHelper.JAVA_8_RUNTIME),
+            TestDeps.getJava8RuntimeJar().toString(),
             helloInput.toString())
         .assertSuccess();
     verifyResult(helloOutput);

@@ -104,7 +104,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
   @Test
   public void defaultOutIsCwd() throws Throwable {
     Path working = temp.getRoot().toPath();
-    Path input = TestDeps.getExamplesPath("arithmetic.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     Path output = working.resolve("classes.dex");
     assertFalse(Files.exists(output));
     assertEquals(0, ToolHelper.forkD8(working, input.toString()).exitCode);
@@ -115,7 +115,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
   public void flagsFile() throws Throwable {
     Path working = temp.getRoot().toPath();
     Path flagsFile = working.resolve("flags.txt");
-    Path input = TestDeps.getExamplesPath("arithmetic.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     Path output = working.resolve("output.zip");
     FileUtils.writeTextFile(
         flagsFile, "--output", "output.zip", "--min-api", "24", input.toString());
@@ -147,7 +147,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     Path working = temp.getRoot().toPath();
     Path flagsFile = working.resolve("flags.txt");
     Path recursiveFlagsFile = working.resolve("recursive_flags.txt");
-    Path input = TestDeps.getExamplesPath("arithmetic.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("arithmetic.jar");
     FileUtils.writeTextFile(recursiveFlagsFile, "--output", "output.zip");
     FileUtils.writeTextFile(
         flagsFile, "--min-api", "24", input.toString(), "@" + recursiveFlagsFile);

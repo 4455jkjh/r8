@@ -795,7 +795,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
   }
 
   private ProcessResult runR8OnShaking1(Path additionalProguardConfiguration) throws Throwable {
-    Path input = TestDeps.getExamplesPath("shaking1.jar").toAbsolutePath();
+    Path input = TestDeps.getExamplesPath("shaking1.jar");
     Path proguardConfiguration =
         Paths.get(ToolHelper.EXAMPLES_DIR, "shaking1", "keep-rules.txt").toAbsolutePath();
     return ToolHelper.forkR8(temp.getRoot().toPath(),

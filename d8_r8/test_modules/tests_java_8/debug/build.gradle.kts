@@ -9,4 +9,5 @@ java {
 dependencies {
   runtimeOnlyData(project(":third_party", "examples"))
   runtimeOnlyData(project(":third_party", "examplesAndroidN"))
+  runtimeOnlyData(project(":third_party", "java8Runtime"))
 }

@@ -197,13 +197,11 @@ public class ToolHelper {
   public static final String BUILD_DIR = getProjectRoot() + "build/";
   public static final String LIBS_DIR = BUILD_DIR + "libs/";
   public static final String THIRD_PARTY_DIR = getProjectRoot() + "third_party/";
-  public static final String DEPENDENCIES = THIRD_PARTY_DIR + "dependencies/";
   public static final String PROTO_DIR = THIRD_PARTY_DIR + "proto/";
   public static final String PROTO_RUNTIME_DIR = PROTO_DIR + "runtime/";
   public static final String PROTO_TEST_DIR = PROTO_DIR + "test/";
   public static final String TOOLS_DIR = getProjectRoot() + "tools/";
   public static final String TESTS_DIR = getProjectRoot() + "src/test/";
-  public static final String ART_TESTS_ROOT = getProjectRoot() + "tests/";
   public static final String TESTS_SOURCE_DIR = TESTS_DIR + "java/";
   public static final String EXAMPLES_DIR = TESTS_DIR + "examples/";
   public static final String EXAMPLES_ANDROID_O_DIR = TESTS_DIR + "examplesAndroidO/";
@@ -225,9 +223,6 @@ public class ToolHelper {
   private static final String ANDROID_API_VERSIONS_XML_PATTERN =
       THIRD_PARTY_DIR + "android_jar/lib-v%s/api-versions.xml";
   private static final AndroidApiLevel DEFAULT_MIN_SDK = AndroidApiLevel.I;
-
-  public static final String OPEN_JDK_DIR = THIRD_PARTY_DIR + "openjdk/";
-  public static final String JAVA_8_RUNTIME = OPEN_JDK_DIR + "openjdk-rt-1.8/rt.jar";
 
   public static final String PROGUARD_SETTINGS_FOR_INTERNAL_APPS =
       THIRD_PARTY_DIR + "proguardsettings/";
@@ -261,9 +256,6 @@ public class ToolHelper {
     assert System.getProperty("R8_SWISS_ARMY_KNIFE") != null;
     return Paths.get(System.getProperty("R8_SWISS_ARMY_KNIFE"));
   }
-
-  public static final String DESUGARED_LIB_RELEASES_DIR =
-      OPEN_JDK_DIR + "desugar_jdk_libs_releases/";
 
   public static boolean isLocalDevelopment() {
     return System.getProperty("local_development", "0").equals("1");
@@ -1236,10 +1228,6 @@ public class ToolHelper {
       throw new IllegalStateException("Does not support running with dex vm: " + version);
     }
     return binary;
-  }
-
-  public static Path getJava8RuntimeJar() {
-    return Paths.get(JAVA_8_RUNTIME);
   }
 
   @Deprecated

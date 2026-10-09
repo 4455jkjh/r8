@@ -25,5 +25,6 @@ tasks {
 
 dependencies {
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
+  runtimeOnlyData(project(":third_party", "java8Runtime"))
   runtimeOnlyData(project(":third_party", "kotlinxCoroutines"))
 }

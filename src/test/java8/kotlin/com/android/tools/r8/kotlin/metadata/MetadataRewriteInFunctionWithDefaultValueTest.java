@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.kotlin.metadata;
 
-import static com.android.tools.r8.ToolHelper.getJava8RuntimeJar;
+import static com.android.tools.r8.TestDeps.getJava8RuntimeJar;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isExtensionFunction;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndNotRenamed;
@@ -52,7 +52,8 @@ public class MetadataRewriteInFunctionWithDefaultValueTest extends KotlinMetadat
   }
 
   private static final KotlinCompileMemoizer defaultValueLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_lib", "lib"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_lib", "lib"));
 
   @Test
   public void smokeTest() throws Exception {
@@ -61,7 +62,8 @@ public class MetadataRewriteInFunctionWithDefaultValueTest extends KotlinMetadat
     Path output =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -94,7 +96,8 @@ public class MetadataRewriteInFunctionWithDefaultValueTest extends KotlinMetadat
     Path output =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 

@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.desugar.desugaredlibrary.test;
 
-import static com.android.tools.r8.ToolHelper.DESUGARED_LIB_RELEASES_DIR;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LATEST;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LEGACY;
 
@@ -181,20 +180,25 @@ public class LibraryDesugaringSpecification {
           JDK11_LEGACY_DESCRIPTOR,
           LEGACY);
   public static final LibraryDesugaringSpecification RELEASED_1_0_9 =
-      new LibraryDesugaringSpecification("1.0.9", AndroidApiLevel.P);
+      new LibraryDesugaringSpecification(
+          "1.0.9", TestDeps::getDesugarLibraryRelease1_0_9Dir, AndroidApiLevel.P);
   public static final LibraryDesugaringSpecification RELEASED_1_0_10 =
-      new LibraryDesugaringSpecification("1.0.10", AndroidApiLevel.P);
+      new LibraryDesugaringSpecification(
+          "1.0.10", TestDeps::getDesugarLibraryRelease1_0_10Dir, AndroidApiLevel.P);
   public static final LibraryDesugaringSpecification RELEASED_1_1_0 =
-      new LibraryDesugaringSpecification("1.1.0", AndroidApiLevel.P);
+      new LibraryDesugaringSpecification(
+          "1.1.0", TestDeps::getDesugarLibraryRelease1_1_0Dir, AndroidApiLevel.P);
   public static final LibraryDesugaringSpecification RELEASED_1_1_1 =
-      new LibraryDesugaringSpecification("1.1.1", AndroidApiLevel.P);
+      new LibraryDesugaringSpecification(
+          "1.1.1", TestDeps::getDesugarLibraryRelease1_1_1Dir, AndroidApiLevel.P);
   public static final LibraryDesugaringSpecification RELEASED_1_1_5 =
-      new LibraryDesugaringSpecification("1.1.5", AndroidApiLevel.P);
+      new LibraryDesugaringSpecification(
+          "1.1.5", TestDeps::getDesugarLibraryRelease1_1_5Dir, AndroidApiLevel.P);
 
   private final String name;
   private final Set<Supplier<Path>> desugarJdkLibsProvider;
   private Set<Path> desugarJdkLibs;
-  private final Path specification;
+  private final Supplier<Path> specification;
   private final Set<Path> libraryFiles;
   private final Descriptor descriptor;
   private final String extraKeepRules;
@@ -217,7 +221,7 @@ public class LibraryDesugaringSpecification {
       Set<Path> libraryFiles,
       Descriptor descriptor,
       String extraKeepRules) {
-    this(name, null, desugarJdkLibs, specification, libraryFiles, descriptor, extraKeepRules);
+    this(name, null, desugarJdkLibs, () -> specification, libraryFiles, descriptor, extraKeepRules);
   }
 
   private LibraryDesugaringSpecification(
@@ -232,7 +236,7 @@ public class LibraryDesugaringSpecification {
         ImmutableSet.of(
             desugarJdkLibsSupplier, () -> TestDeps.getDesugarLibraryConversions(legacy)),
         null,
-        Paths.get(ToolHelper.LIBRARY_DESUGAR_SOURCE_DIR + specificationPath),
+        () -> Paths.get(ToolHelper.LIBRARY_DESUGAR_SOURCE_DIR + specificationPath),
         ImmutableSet.of(ToolHelper.getAndroidJar(androidJarLevel)),
         descriptor,
         "");
@@ -242,7 +246,7 @@ public class LibraryDesugaringSpecification {
       String name,
       Set<Supplier<Path>> desugarJdkLibsSuppliers,
       Set<Path> desugarJdkLibs,
-      Path specification,
+      Supplier<Path> specification,
       Set<Path> libraryFiles,
       Descriptor descriptor,
       String extraKeepRules) {
@@ -255,13 +259,15 @@ public class LibraryDesugaringSpecification {
     this.extraKeepRules = extraKeepRules;
   }
 
-  private LibraryDesugaringSpecification(String version, AndroidApiLevel androidJarLevel) {
+  private LibraryDesugaringSpecification(
+      String version, Supplier<Path> releaseDirSupplier, AndroidApiLevel androidJarLevel) {
     this(
         "RELEASED_" + version,
         ImmutableSet.of(
-            Paths.get(DESUGARED_LIB_RELEASES_DIR, version, "desugar_jdk_libs.jar"),
-            Paths.get(DESUGARED_LIB_RELEASES_DIR, version, "desugar_jdk_libs_configuration.jar")),
-        Paths.get(DESUGARED_LIB_RELEASES_DIR, version, "desugar.json"),
+            () -> releaseDirSupplier.get().resolve("desugar_jdk_libs.jar"),
+            () -> releaseDirSupplier.get().resolve("desugar_jdk_libs_configuration.jar")),
+        null,
+        () -> releaseDirSupplier.get().resolve("desugar.json"),
         ImmutableSet.of(ToolHelper.getAndroidJar(androidJarLevel)),
         JDK8_DESCRIPTOR,
         "");
@@ -284,7 +290,7 @@ public class LibraryDesugaringSpecification {
   }
 
   public Path getSpecification() {
-    return specification;
+    return specification.get();
   }
 
   public Set<Path> getLibraryFiles() {

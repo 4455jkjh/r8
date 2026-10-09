@@ -7,16 +7,18 @@ package com.android.tools.r8;
 import static com.android.tools.r8.ToolHelper.isWindows;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.function.Supplier;
 
 public enum ProguardVersion {
-  V7_0_0("7.0.0"),
-  V7_7_0("7.7.0");
+  V7_0_0("7.0.0", TestDeps::getProguard7_0_0Dir),
+  V7_7_0("7.7.0", TestDeps::getProguard7_7_0Dir);
 
   private final String version;
+  private final Supplier<Path> dir;
 
-  ProguardVersion(String version) {
+  ProguardVersion(String version, Supplier<Path> dir) {
     this.version = version;
+    this.dir = dir;
   }
 
   public static ProguardVersion getLatest() {
@@ -36,13 +38,7 @@ public enum ProguardVersion {
   }
 
   private Path getScriptDirectory() {
-    Path scriptDirectory = Paths.get(ToolHelper.THIRD_PARTY_DIR).resolve("proguard");
-    if (version.startsWith("7.")) {
-      scriptDirectory = scriptDirectory.resolve("proguard-" + version).resolve("bin");
-    } else {
-      scriptDirectory = scriptDirectory.resolve("proguard" + version).resolve("bin");
-    }
-    return scriptDirectory;
+    return dir.get().resolve("bin");
   }
 
   public String getVersion() {

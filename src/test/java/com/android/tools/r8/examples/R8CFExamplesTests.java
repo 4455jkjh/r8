@@ -9,8 +9,8 @@ import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
-import com.android.tools.r8.R8RunArtTestsTest;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.cf.LambdaTest;
@@ -19,7 +19,6 @@ import com.google.common.io.ByteStreams;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;
@@ -31,7 +30,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class R8CFExamplesTests extends TestBase {
 
-  private static final Path ART_TESTS_DIR = Paths.get(R8RunArtTestsTest.ART_TESTS_DIR, "dx");
   private final TestMode testMode;
   private final CompilationMode compilationMode;
 
@@ -58,7 +56,7 @@ public class R8CFExamplesTests extends TestBase {
 
   @Test
   public void testConstMethodHandle() throws Exception {
-    Path testDirectory = ART_TESTS_DIR.resolve("979-const-method-handle/classes");
+    Path testDirectory = TestDeps.getArtTestsPath("dx", "979-const-method-handle", "classes");
     String classNames[] = {
       "constmethodhandle.ConstTest", "Main",
     };
@@ -110,7 +108,7 @@ public class R8CFExamplesTests extends TestBase {
     Path outputJar = temp.getRoot().toPath().resolve(outputName);
     ToolHelper.runR8(
         R8Command.builder()
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setMode(mode)
             .setDisableTreeShaking(true)
             .setDisableMinification(true)

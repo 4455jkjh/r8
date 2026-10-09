@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.cf.code.CfLabel;
 import com.android.tools.r8.cf.code.CfTryCatch;
@@ -51,7 +52,7 @@ public class IdenticalCatchHandlerTest extends TestBase {
     AndroidApp inputApp =
         AndroidApp.builder()
             .addClassProgramData(inputBytes, Origin.unknown())
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .build();
     assertEquals(2, countCatchHandlers(inputApp));
     AndroidApp outputDexApp =

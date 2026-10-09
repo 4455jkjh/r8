@@ -153,8 +153,6 @@ third_party/jdwp-tests
 third_party/jdwp-tests.tar.gz
 third_party/jsr223-api-1.0
 third_party/jsr223-api-1.0.tar.gz
-third_party/junit
-third_party/junit.tar.gz
 third_party/kotlin/kotlin-compiler-1.3.11.tar.gz
 third_party/kotlin/kotlin-compiler-1.3.11
 third_party/kotlin/kotlin-compiler-1.3.41.tar.gz
@@ -200,8 +198,6 @@ third_party/openjdk/desugar_jdk_libs
 third_party/openjdk/desugar_jdk_libs.tar.gz
 third_party/openjdk/desugar_jdk_libs_11
 third_party/openjdk/desugar_jdk_libs_11.tar.gz
-third_party/openjdk/desugar_jdk_libs_legacy
-third_party/openjdk/desugar_jdk_libs_legacy.tar.gz
 third_party/openjdk/desugar_jdk_libs_releases/1.0.9
 third_party/openjdk/desugar_jdk_libs_releases/1.0.9.tar.gz
 third_party/openjdk/desugar_jdk_libs_releases/1.0.10
