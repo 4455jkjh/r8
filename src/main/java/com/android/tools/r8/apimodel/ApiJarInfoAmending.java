@@ -15,54 +15,56 @@ import com.android.tools.r8.references.ClassReference;
 
 public class ApiJarInfoAmending {
 
-  public static void amendJar(ApiJarInfo jarInfo, JarAmendments jarAmendments)
+  public static void amendJar(
+      ApiJarInfo jarInfo, JarAmendments jarAmendments, AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
     for (ClassAmendment classAmendment : jarAmendments.getClasses()) {
-      amendJarClass(jarInfo, classAmendment);
+      amendJarClass(jarInfo, classAmendment, listener);
     }
     for (JarAmendments.InterfaceAmendment interfaceAmendment : jarAmendments.getInterfaces()) {
-      amendJarInterface(jarInfo, interfaceAmendment);
+      amendJarInterface(jarInfo, interfaceAmendment, listener);
     }
     for (MethodAmendment methodAmendment : jarAmendments.getMethods()) {
-      amendJarMethod(jarInfo, methodAmendment);
+      amendJarMethod(jarInfo, methodAmendment, listener);
     }
     for (FieldAmendment fieldAmendment : jarAmendments.getFields()) {
-      amendJarField(jarInfo, fieldAmendment);
+      amendJarField(jarInfo, fieldAmendment, listener);
     }
   }
 
-  private static void amendJarClass(ApiJarInfo jarInfo, ClassAmendment classAmendment)
-      throws ApiDatabaseGeneratorException {
+  private static void amendJarClass(
+      ApiJarInfo jarInfo, ClassAmendment classAmendment, AmendmentListener listener) {
     ClassReference classRef = classAmendment.getClassReference();
     if (jarInfo.hasClass(classRef)) {
-      throw new ApiDatabaseGeneratorException(
-          "Hidden jar class " + classRef + " already exists in JAR info");
+      listener.onAlreadyPresentJarClass(classAmendment);
+    } else {
+      String superClassBin =
+          classAmendment.getSuperClass() != null
+              ? classAmendment.getSuperClass().getBinaryName()
+              : null;
+
+      ApiClassInfo classInfo = new ApiClassInfo(classRef.getBinaryName(), superClassBin, false);
+      classInfo.addInterfaces(classAmendment.getInterfaces(), ClassReference::getBinaryName);
+      jarInfo.addClass(classInfo);
+      listener.onAmendJarClass(classAmendment);
     }
-
-    String superClassBin =
-        classAmendment.getSuperClass() != null
-            ? classAmendment.getSuperClass().getBinaryName()
-            : null;
-
-    ApiClassInfo classInfo = new ApiClassInfo(classRef.getBinaryName(), superClassBin, false);
-    classInfo.addInterfaces(classAmendment.getInterfaces(), ClassReference::getBinaryName);
-    jarInfo.addClass(classInfo);
   }
 
-  private static void amendJarInterface(ApiJarInfo jarInfo, InterfaceAmendment interfaceAmendment)
-      throws ApiDatabaseGeneratorException {
+  private static void amendJarInterface(
+      ApiJarInfo jarInfo, InterfaceAmendment interfaceAmendment, AmendmentListener listener) {
     ClassReference ifaceRef = interfaceAmendment.getInterfaceReference();
     if (jarInfo.hasClass(ifaceRef)) {
-      throw new ApiDatabaseGeneratorException(
-          "Hidden jar interface " + ifaceRef + " already exists in JAR info");
+      listener.onAlreadyPresentJarInterface(interfaceAmendment);
+    } else {
+      ApiClassInfo classInfo = new ApiClassInfo(ifaceRef.getBinaryName(), null, true);
+      classInfo.addInterfaces(interfaceAmendment.getInterfaces(), ClassReference::getBinaryName);
+      jarInfo.addClass(classInfo);
+      listener.onAmendJarInterface(interfaceAmendment);
     }
-
-    ApiClassInfo classInfo = new ApiClassInfo(ifaceRef.getBinaryName(), null, true);
-    classInfo.addInterfaces(interfaceAmendment.getInterfaces(), ClassReference::getBinaryName);
-    jarInfo.addClass(classInfo);
   }
 
-  private static void amendJarMethod(ApiJarInfo jarInfo, MethodAmendment methodAmendment)
+  private static void amendJarMethod(
+      ApiJarInfo jarInfo, MethodAmendment methodAmendment, AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
     ClassReference holderRef = methodAmendment.getHolder();
     ApiClassInfo holder = jarInfo.getClassInfo(holderRef);
@@ -75,18 +77,16 @@ public class ApiJarInfoAmending {
               + " does not exist");
     }
     if (holder.hasMethod(methodAmendment.getName(), methodAmendment.getDescriptor())) {
-      throw new ApiDatabaseGeneratorException(
-          "Hidden jar method "
-              + methodAmendment.getName()
-              + methodAmendment.getDescriptor()
-              + " already exists in holder "
-              + holderRef);
+      listener.onAlreadyPresentJarMethod(methodAmendment);
+    } else {
+      holder.addMethod(
+          methodAmendment.getName(), methodAmendment.getDescriptor(), methodAmendment.isStatic());
+      listener.onAmendJarMethod(methodAmendment);
     }
-    holder.addMethod(
-        methodAmendment.getName(), methodAmendment.getDescriptor(), methodAmendment.isStatic());
   }
 
-  private static void amendJarField(ApiJarInfo jarInfo, FieldAmendment fieldAmendment)
+  private static void amendJarField(
+      ApiJarInfo jarInfo, FieldAmendment fieldAmendment, AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
     ClassReference holderRef = fieldAmendment.getHolder();
     ApiClassInfo holder = jarInfo.getClassInfo(holderRef);
@@ -99,12 +99,10 @@ public class ApiJarInfoAmending {
               + " does not exist");
     }
     if (holder.hasField(fieldAmendment.getName())) {
-      throw new ApiDatabaseGeneratorException(
-          "Hidden jar field "
-              + fieldAmendment.getName()
-              + " already exists in holder "
-              + holderRef);
+      listener.onAlreadyPresentJarField(fieldAmendment);
+    } else {
+      holder.addField(fieldAmendment.getName());
+      listener.onAmendJarField(fieldAmendment);
     }
-    holder.addField(fieldAmendment.getName());
   }
 }

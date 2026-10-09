@@ -33,6 +33,11 @@ public class JarAmendments {
     public List<ClassReference> getInterfaces() {
       return interfaces;
     }
+
+    @Override
+    public String toString() {
+      return "JAR class " + classReference;
+    }
   }
 
   public static class InterfaceAmendment {
@@ -50,6 +55,11 @@ public class JarAmendments {
 
     public List<ClassReference> getInterfaces() {
       return interfaces;
+    }
+
+    @Override
+    public String toString() {
+      return "JAR interface " + interfaceReference;
     }
   }
 
@@ -82,6 +92,11 @@ public class JarAmendments {
     public boolean isStatic() {
       return isStatic;
     }
+
+    @Override
+    public String toString() {
+      return "JAR method " + holder.getDescriptor() + name + descriptor;
+    }
   }
 
   public static class FieldAmendment {
@@ -99,6 +114,11 @@ public class JarAmendments {
 
     public String getName() {
       return name;
+    }
+
+    @Override
+    public String toString() {
+      return "JAR field " + holder.getDescriptor() + name;
     }
   }
 

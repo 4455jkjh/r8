@@ -28,6 +28,11 @@ public class ApiAmendments {
     public AndroidApiLevel getApiLevel() {
       return apiLevel;
     }
+
+    @Override
+    public String toString() {
+      return "API class " + classReference + " (api " + apiLevel.getNumericString() + ")";
+    }
   }
 
   public static class MethodAmendment {
@@ -46,6 +51,11 @@ public class ApiAmendments {
     public AndroidApiLevel getApiLevel() {
       return apiLevel;
     }
+
+    @Override
+    public String toString() {
+      return "API method " + methodReference + " (api " + apiLevel.getNumericString() + ")";
+    }
   }
 
   public static class FieldAmendment {
@@ -63,6 +73,11 @@ public class ApiAmendments {
 
     public AndroidApiLevel getApiLevel() {
       return apiLevel;
+    }
+
+    @Override
+    public String toString() {
+      return "API field " + fieldReference + " (api " + apiLevel.getNumericString() + ")";
     }
   }
 
