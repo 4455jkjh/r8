@@ -10,7 +10,7 @@ import java.util.Set;
 
 public class DexIndexedSizeConsumer implements DexIndexedConsumer {
 
-  private int size = 0;
+  private long size = 0;
   private boolean finished = false;
 
   @Override
@@ -24,7 +24,7 @@ public class DexIndexedSizeConsumer implements DexIndexedConsumer {
     finished = true;
   }
 
-  public int size() {
+  public long size() {
     assert finished;
     return size;
   }

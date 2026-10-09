@@ -22,11 +22,11 @@ message LibraryAnalyzerResult {
 }
 
 message D8CompileResult {
-  int32 dex_size_bytes = 1;
+  int64 dex_size_bytes = 1;
 }
 
 message R8CompileResult {
-  int32 dex_size_bytes = 1;
+  int64 dex_size_bytes = 1;
   // Information about the R8 configuration, specifically the keep rules.
   ConfigurationSummary configuration = 2;
   // Information about the library's classes and how they are hit by keep rules.
