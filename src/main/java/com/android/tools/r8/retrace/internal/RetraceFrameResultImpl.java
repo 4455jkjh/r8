@@ -93,8 +93,7 @@ class RetraceFrameResultImpl implements RetraceFrameResult {
               List<MemberNamingWithMappedRangesOfName> memberNamingWithMappedRangesOfNames =
                   mappedRangeData.getMemberNamingWithMappedRanges();
               OptionalInt position = mappedRangeData.getPosition();
-              if (memberNamingWithMappedRangesOfNames == null
-                  || memberNamingWithMappedRangesOfNames.isEmpty()) {
+              if (memberNamingWithMappedRangesOfNames.isEmpty()) {
                 return Stream.of(
                     new ElementImpl(
                         this,
@@ -258,7 +257,7 @@ class RetraceFrameResultImpl implements RetraceFrameResult {
   public boolean isEmpty() {
     List<MemberNamingWithMappedRangesOfName> mappedRangesOfNames =
         mappedRanges.get(0).getMemberNamingWithMappedRanges();
-    return mappedRangesOfNames == null || mappedRangesOfNames.isEmpty();
+    return mappedRangesOfNames.isEmpty();
   }
 
   public static class ElementImpl implements RetraceFrameElement {

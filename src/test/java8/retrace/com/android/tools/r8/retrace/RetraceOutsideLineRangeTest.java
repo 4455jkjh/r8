@@ -6,7 +6,6 @@ package com.android.tools.r8.retrace;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -83,12 +82,7 @@ public class RetraceOutsideLineRangeTest extends TestBase {
     RetraceFrameResult retraceFrameResult =
         retraceMethodResult.narrowByPosition(RetraceStackTraceContext.empty(), OptionalInt.of(6));
     assertEquals(isEmpty, retraceFrameResult.isEmpty());
-    if (isEmpty) {
-      // TODO(b/571653213): Should not fail with AssertionError/IndexOutOfBoundsException.
-      assertThrows(AssertionError.class, retraceFrameResult::isAmbiguous);
-    } else {
-      assertFalse(retraceFrameResult.isAmbiguous());
-    }
+    assertFalse(retraceFrameResult.isAmbiguous());
     List<RetraceFrameElement> classResultFrames =
         retraceFrameResult.stream().collect(Collectors.toList());
     assertEquals(frameCount, classResultFrames.size());
