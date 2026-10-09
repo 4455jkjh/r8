@@ -13,6 +13,8 @@ public class LebUtils {
   private static final int PAYLOAD_MASK = 0x7f;
   private static final int MORE_DATA_TAG_BIT = 0x80;
   private static final int MAX_BYTES_PER_VALUE = 5;
+  private static final int ULEB128_3BYTE_THRESHOLD = 0x004000;
+  private static final int ULEB128_4BYTE_THRESHOLD = 0x200000;
 
   public interface ByteSupplier {
     byte getAsByte();
@@ -79,6 +81,11 @@ public class LebUtils {
   public static int sizeAsUleb128(int value) {
     return Math.max(
         1, (Integer.SIZE - Integer.numberOfLeadingZeros(value) + 6) / BITS_PER_ENCODED_BYTE);
+  }
+
+  public static boolean crossesUleb128SizeBoundary(int start, long end) {
+    return (start < ULEB128_3BYTE_THRESHOLD && end > ULEB128_3BYTE_THRESHOLD)
+        || (start < ULEB128_4BYTE_THRESHOLD && end > ULEB128_4BYTE_THRESHOLD);
   }
 
   public static int parseSleb128(BinaryReader reader) {

@@ -2357,6 +2357,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableClassToDexDistributionRefinementInDebugMode =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementInDebug", false);
+    public boolean enableCodeItemSizePerReferenceLayout =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableCodeItemSizePerReferenceLayout", true);
 
     // TODO(b/569861570): Remove this flag when optimization has been enabled in Android Platform.
     public boolean enableAndWithDefiniteBitsOptimization =

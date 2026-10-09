@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.dex;
 
+import com.android.tools.r8.dex.FileWriter.Layout;
 import com.android.tools.r8.dex.FileWriter.MixedSectionOffsets;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
@@ -16,12 +17,16 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.DexWritableCode;
 import com.android.tools.r8.graph.DexWritableCode.DexWritableCacheKey;
+import com.android.tools.r8.graph.ObjectToOffsetMapping;
 import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.naming.MemberNaming.Signature;
+import com.android.tools.r8.utils.LebUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -33,11 +38,18 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
 
   final AppView<?> appView;
   final MixedSectionOffsets mixedSectionOffsets;
+  final VirtualFile virtualFile;
+  final Layout layout;
 
   public DefaultMixedSectionLayoutStrategy(
-      AppView<?> appView, MixedSectionOffsets mixedSectionOffsets) {
+      AppView<?> appView,
+      MixedSectionOffsets mixedSectionOffsets,
+      VirtualFile virtualFile,
+      Layout layout) {
     this.appView = appView;
     this.mixedSectionOffsets = mixedSectionOffsets;
+    this.virtualFile = virtualFile;
+    this.layout = layout;
   }
 
   @Override
@@ -73,30 +85,29 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
   private static class DeduplicatedCodeCounts {
     private Map<DexWritableCacheKey, Integer> counts;
     private final AppView<?> appView;
+    private long totalCodeSize = 0;
 
     private DeduplicatedCodeCounts(AppView<?> appView) {
       this.appView = appView;
     }
 
-    void addCode(DexWritableCode code, ProgramMethod method) {
+    void recordCode(DexWritableCode code, ProgramMethod method, int alignedSize) {
+      if (!code.canBeCanonicalized(appView.options()) || addCode(code, method)) {
+        totalCodeSize += alignedSize;
+      }
+    }
+
+    private boolean addCode(DexWritableCode code, ProgramMethod method) {
       assert appView.options().canUseCanonicalizedCodeObjects();
       if (counts == null) {
         counts = new HashMap<>();
       }
       DexWritableCacheKey cacheKey = code.getCacheLookupKey(method, appView.dexItemFactory());
-      if (!counts.containsKey(cacheKey)) {
-        counts.put(cacheKey, 1);
-      } else {
-        counts.put(cacheKey, counts.get(cacheKey) + 1);
-      }
+      Integer previous = counts.put(cacheKey, counts.getOrDefault(cacheKey, 0) + 1);
+      return previous == null;
     }
 
     int getCount(ProgramMethod method) {
-      if (counts == null) {
-        assert !appView.options().canUseCanonicalizedCodeObjects()
-            || method.getDefinition().getDexWritableCodeOrNull() == null;
-        return 1;
-      }
       DexWritableCode code = method.getDefinition().getCode().asDexWritableCode();
       if (!code.canBeCanonicalized(appView.options())) {
         return 1;
@@ -105,10 +116,16 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
       assert counts.containsKey(cacheLookupKey);
       return counts.get(cacheLookupKey);
     }
+
+    long getTotalCodeSize() {
+      return totalCodeSize;
+    }
   }
 
   final Collection<ProgramMethod> getCodeLayoutForClasses(Collection<DexProgramClass> classes) {
+    ObjectToOffsetMapping mapping = virtualFile.getObjectMapping();
     ProgramMethodMap<String> codeToDexSortingKeyMap = ProgramMethodMap.create();
+    Reference2IntMap<DexEncodedMethod> codeToAlignedSizeMap = new Reference2IntOpenHashMap<>();
     List<ProgramMethod> codesSorted = new ArrayList<>();
     DeduplicatedCodeCounts codeCounts = new DeduplicatedCodeCounts(appView);
     for (DexProgramClass clazz : classes) {
@@ -118,9 +135,10 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
             DexWritableCode code = method.getDefinition().getDexWritableCodeOrNull();
             assert code != null || method.getDefinition().shouldNotHaveCode();
             if (code != null) {
-              if (code.canBeCanonicalized(appView.options())) {
-                codeCounts.addCode(code, method);
-              }
+              int alignedSize =
+                  FileWriter.alignSize(4, FileWriter.sizeOfCodeItem(code, appView, mapping));
+              codeToAlignedSizeMap.put(method.getDefinition(), alignedSize);
+              codeCounts.recordCode(code, method, alignedSize);
               codesSorted.add(method);
               codeToDexSortingKeyMap.put(
                   method, getKeyForDexCodeSorting(method, appView.app().getProguardMap()));
@@ -129,13 +147,46 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
     }
     Comparator<ProgramMethod> defaultCodeSorting =
         Comparator.comparing(codeToDexSortingKeyMap::get);
-    if (appView.options().canUseCanonicalizedCodeObjects()) {
+    int codesOffset = layout.getCodesOffset();
+    if (appView.options().getTestingOptions().enableCodeItemSizePerReferenceLayout
+        && LebUtils.crossesUleb128SizeBoundary(
+            codesOffset, codesOffset + codeCounts.getTotalCodeSize())) {
+      // Sort by code size per reference (aligned size / number of methods sharing the code) so
+      // that more code_off entries in the class data fit in fewer ULEB128 bytes.
+      Reference2IntMap<DexEncodedMethod> codeToCountMap =
+          computeCodeCounts(codesSorted, codeCounts);
+      Comparator<ProgramMethod> codeSizePerReference =
+          (m1, m2) ->
+              Long.compare(
+                  (long) codeToAlignedSizeMap.getInt(m1.getDefinition())
+                      * codeToCountMap.getInt(m2.getDefinition()),
+                  (long) codeToAlignedSizeMap.getInt(m2.getDefinition())
+                      * codeToCountMap.getInt(m1.getDefinition()));
       codesSorted.sort(
-          Comparator.comparingInt(codeCounts::getCount).thenComparing(defaultCodeSorting));
+          codeSizePerReference
+              .thenComparingInt(method -> codeToCountMap.getInt(method.getDefinition()))
+              .thenComparing(defaultCodeSorting));
+    } else if (appView.options().canUseCanonicalizedCodeObjects()) {
+      Reference2IntMap<DexEncodedMethod> codeToCountMap =
+          computeCodeCounts(codesSorted, codeCounts);
+      codesSorted.sort(
+          Comparator.<ProgramMethod>comparingInt(
+                  method -> codeToCountMap.getInt(method.getDefinition()))
+              .thenComparing(defaultCodeSorting));
     } else {
       codesSorted.sort(defaultCodeSorting);
     }
     return codesSorted;
+  }
+
+  private static Reference2IntMap<DexEncodedMethod> computeCodeCounts(
+      List<ProgramMethod> methods, DeduplicatedCodeCounts codeCounts) {
+    Reference2IntMap<DexEncodedMethod> codeToCountMap =
+        new Reference2IntOpenHashMap<>(methods.size());
+    for (ProgramMethod method : methods) {
+      codeToCountMap.put(method.getDefinition(), codeCounts.getCount(method));
+    }
+    return codeToCountMap;
   }
 
   private static String getKeyForDexCodeSorting(ProgramMethod method, ClassNameMapper proguardMap) {

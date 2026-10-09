@@ -228,7 +228,7 @@ public class FileWriter {
       // Sort the codes first, as their order might impact size due to alignment constraints.
       mixedSectionLayoutStrategy =
           MixedSectionLayoutStrategy.create(
-              appView, mixedSectionOffsets, virtualFile, startupProfileForWriting);
+              appView, mixedSectionOffsets, virtualFile, startupProfileForWriting, layout);
       Collection<ProgramMethod> codes = mixedSectionLayoutStrategy.getCodeLayout();
 
       // Output the debug_info_items first, as they have no dependencies.
@@ -498,6 +498,12 @@ public class FileWriter {
   }
 
   private int sizeOfCodeItem(DexWritableCode code) {
+    return sizeOfCodeItem(code, appView, mapping);
+  }
+
+  static int sizeOfCodeItem(
+      DexWritableCode code, AppView<?> appView, ObjectToOffsetMapping mapping) {
+    GraphLens graphLens = appView.graphLens();
     GraphLens codeLens = code.getCodeLens(appView);
     int result = 16;
     int insnSize = code.codeSizeInBytes();
@@ -936,7 +942,7 @@ public class FileWriter {
     dexOutputBuffer.putInt((int) adler.getValue());
   }
 
-  private static int alignSize(int bytes, int value) {
+  static int alignSize(int bytes, int value) {
     int mask = bytes - 1;
     return (value + mask) & ~mask;
   }

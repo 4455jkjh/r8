@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.dex;
 
+import com.android.tools.r8.dex.FileWriter.Layout;
 import com.android.tools.r8.dex.FileWriter.MixedSectionOffsets;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
@@ -25,7 +26,8 @@ public abstract class MixedSectionLayoutStrategy {
       AppView<?> appView,
       MixedSectionOffsets mixedSectionOffsets,
       VirtualFile virtualFile,
-      Supplier<StartupProfile> startupProfileForWritingSupplier) {
+      Supplier<StartupProfile> startupProfileForWritingSupplier,
+      Layout layout) {
     StartupProfile startupProfileForWriting;
     if (virtualFile.getStartupProfile().isEmpty()) {
       startupProfileForWriting = StartupProfile.empty();
@@ -37,9 +39,10 @@ public abstract class MixedSectionLayoutStrategy {
     }
     MixedSectionLayoutStrategy mixedSectionLayoutStrategy =
         startupProfileForWriting.isEmpty()
-            ? new DefaultMixedSectionLayoutStrategy(appView, mixedSectionOffsets)
+            ? new DefaultMixedSectionLayoutStrategy(
+                appView, mixedSectionOffsets, virtualFile, layout)
             : new StartupMixedSectionLayoutStrategy(
-                appView, mixedSectionOffsets, startupProfileForWriting, virtualFile);
+                appView, mixedSectionOffsets, startupProfileForWriting, virtualFile, layout);
     return wrapForTesting(appView, mixedSectionLayoutStrategy, virtualFile);
   }
 

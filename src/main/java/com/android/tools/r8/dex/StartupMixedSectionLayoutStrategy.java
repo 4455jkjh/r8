@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.dex;
 
+import com.android.tools.r8.dex.FileWriter.Layout;
 import com.android.tools.r8.dex.FileWriter.MixedSectionOffsets;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
@@ -52,8 +53,9 @@ public class StartupMixedSectionLayoutStrategy extends DefaultMixedSectionLayout
       AppView<?> appView,
       MixedSectionOffsets mixedSectionOffsets,
       StartupProfile startupProfileForWriting,
-      VirtualFile virtualFile) {
-    super(appView, mixedSectionOffsets);
+      VirtualFile virtualFile,
+      Layout layout) {
+    super(appView, mixedSectionOffsets, virtualFile, layout);
     this.startupProfileForWriting = startupProfileForWriting;
 
     // Initialize startup layouts.
