@@ -20,16 +20,19 @@ java {
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val distSwissArmyKnife = project(":swissarmyknife").tasks.getByName("jar")
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig by
-  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
+val sharedDepsInternalScope = configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig =
+  configurations.resolvable("sharedDepsInternalConfig") {
+    extendsFrom(sharedDepsInternalScope.get())
+  }
 
-val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
-val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
+val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
+val distDepsFiles =
+  configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
@@ -37,9 +40,9 @@ dependencies {
   distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
 }
 
-val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
-val keepAnnoClassesConfig by
-  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
+val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig =
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
 
 dependencies {
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
@@ -64,7 +67,7 @@ tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
     dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife, distDepsFiles)
-    systemProperty("R8_DEPS", distDepsFiles.asPath)
+    systemProperty("R8_DEPS", distDepsFiles.get().asPath)
     systemProperty(
       "TEST_DATA_LOCATION",
       layout.buildDirectory.dir("classes/java/test").get().toString(),
@@ -84,7 +87,7 @@ tasks {
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
     systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)
@@ -108,11 +111,6 @@ tasks {
   }
 }
 
-val testJar by configurations.consumable("testJar")
+configurations.consumable("testJar") { outgoing.artifact(tasks.named("assembleTestJar")) }
 
-val depsJar by configurations.consumable("depsJar")
-
-artifacts {
-  add(testJar.name, tasks.named("assembleTestJar"))
-  add(depsJar.name, tasks.named("assembleDepsJar"))
-}
+configurations.consumable("depsJar") { outgoing.artifact(tasks.named("assembleDepsJar")) }

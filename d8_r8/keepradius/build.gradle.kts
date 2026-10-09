@@ -43,18 +43,13 @@ tasks {
   }
 }
 
-val keepradiusWithoutProtoJar by
-  configurations.consumable("keepradiusWithoutProtoJar") {
-    outgoing.artifact(tasks.named<Jar>("jar"))
-  }
+configurations.consumable("keepradiusWithoutProtoJar") {
+  outgoing.artifact(tasks.named<Jar>("jar"))
+}
 
-val keepradiusProtoJar by
-  configurations.consumable("keepradiusProtoJar") {
-    outgoing.artifact(tasks.named<Jar>("protoJar"))
-  }
+configurations.consumable("keepradiusProtoJar") { outgoing.artifact(tasks.named<Jar>("protoJar")) }
 
-val keepradiusJar by
-  configurations.consumable("keepradiusJar") {
-    outgoing.artifact(tasks.named<Jar>("jar"))
-    outgoing.artifact(tasks.named<Jar>("protoJar"))
-  }
+configurations.consumable("keepradiusJar") {
+  outgoing.artifact(tasks.named<Jar>("jar"))
+  outgoing.artifact(tasks.named<Jar>("protoJar"))
+}

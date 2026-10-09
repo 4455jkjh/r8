@@ -13,8 +13,6 @@ plugins {
   id("com.google.protobuf")
 }
 
-tasks.named("generateProto") { dependsOn(sharedDepsConfig) }
-
 java {
   sourceSets.main.configure {
     java.srcDir(getRoot().resolveAll("src", "keepanno", "java"))
@@ -22,9 +20,11 @@ java {
   }
 }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
+
+tasks.named("generateProto") { dependsOn(sharedDepsConfig) }
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
@@ -137,33 +137,27 @@ tasks {
   }
 }
 
-val keepannoJar by
-  configurations.consumable("keepannoJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
+configurations.consumable("keepannoJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
 
-val keepannoDepsJarExceptAsm by
-  configurations.consumable("keepannoDepsJarExceptAsm") {
-    outgoing.artifact(tasks.named<Jar>("depsJarExceptAsm"))
-  }
+configurations.consumable("keepannoDepsJarExceptAsm") {
+  outgoing.artifact(tasks.named<Jar>("depsJarExceptAsm"))
+}
 
-val keepannoToolsJar by
-  configurations.consumable("keepannoToolsJar") { outgoing.artifact(tasks.named<Jar>("toolsJar")) }
+configurations.consumable("keepannoToolsJar") { outgoing.artifact(tasks.named<Jar>("toolsJar")) }
 
-val keepannoAndroidXAnnotationsJar by
-  configurations.consumable("keepannoAndroidXAnnotationsJar") {
-    outgoing.artifact(tasks.named<Jar>("keepAnnoAndroidXAnnotationsJar"))
-  }
+configurations.consumable("keepannoAndroidXAnnotationsJar") {
+  outgoing.artifact(tasks.named<Jar>("keepAnnoAndroidXAnnotationsJar"))
+}
 
-val keepannoDepsJarOnlyAsm by
-  configurations.consumable("keepannoDepsJarOnlyAsm") {
-    outgoing.artifact(tasks.named<Jar>("depsJarOnlyAsm"))
-  }
+configurations.consumable("keepannoDepsJarOnlyAsm") {
+  outgoing.artifact(tasks.named<Jar>("depsJarOnlyAsm"))
+}
 
-val keepannoClasses by
-  configurations.consumable("keepannoClasses") {
-    outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-    outgoing.artifact(
-      tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin").map {
-        it.destinationDirectory
-      }
-    )
-  }
+configurations.consumable("keepannoClasses") {
+  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+  outgoing.artifact(
+    tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin").map {
+      it.destinationDirectory
+    }
+  )
+}

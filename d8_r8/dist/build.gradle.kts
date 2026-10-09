@@ -9,7 +9,6 @@ import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.Callable
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.kotlin.dsl.provideDelegate
 import org.spdx.sbom.gradle.SpdxSbomTask
 import org.spdx.sbom.gradle.extensions.DefaultSpdxSbomTaskExtension
 
@@ -25,8 +24,8 @@ if (project.hasProperty("spdxVersion")) {
 }
 
 // We need all the runtime deps for SPDX generation.
-val r8Deps by
-  configurations.creating {
+val r8Deps =
+  configurations.create("r8Deps") {
     isCanBeConsumed = false
     isCanBeResolved = true
   }
@@ -69,31 +68,35 @@ spdxSbom {
   }
 }
 
-val keepRadiusProtoJarScope by configurations.dependencyScope("keepRadiusProtoJarScope")
-val keepRadiusProtoJarConfig by
-  configurations.resolvable("keepRadiusProtoJarConfig") { extendsFrom(keepRadiusProtoJarScope) }
-val keepAnnoDepsJarExceptAsmScope by configurations.dependencyScope("keepAnnoDepsJarExceptAsmScope")
-val keepAnnoDepsJarExceptAsmConfig by
-  configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
-    extendsFrom(keepAnnoDepsJarExceptAsmScope)
+val keepRadiusProtoJarScope = configurations.dependencyScope("keepRadiusProtoJarScope")
+val keepRadiusProtoJarConfig =
+  configurations.resolvable("keepRadiusProtoJarConfig") {
+    extendsFrom(keepRadiusProtoJarScope.get())
   }
-val keepAnnoToolsJarScope by configurations.dependencyScope("keepAnnoToolsJarScope")
-val keepAnnoToolsJarConfig by
-  configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope) }
+val keepAnnoDepsJarExceptAsmScope = configurations.dependencyScope("keepAnnoDepsJarExceptAsmScope")
+val keepAnnoDepsJarExceptAsmConfig =
+  configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
+    extendsFrom(keepAnnoDepsJarExceptAsmScope.get())
+  }
+val keepAnnoToolsJarScope = configurations.dependencyScope("keepAnnoToolsJarScope")
+val keepAnnoToolsJarConfig =
+  configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope.get()) }
 
-val libanalyzerProtoJarScope by configurations.dependencyScope("libanalyzerProtoJarScope")
-val libanalyzerProtoJarConfig by
-  configurations.resolvable("libanalyzerProtoJarConfig") { extendsFrom(libanalyzerProtoJarScope) }
+val libanalyzerProtoJarScope = configurations.dependencyScope("libanalyzerProtoJarScope")
+val libanalyzerProtoJarConfig =
+  configurations.resolvable("libanalyzerProtoJarConfig") {
+    extendsFrom(libanalyzerProtoJarScope.get())
+  }
 
-val mainJarScope by configurations.dependencyScope("mainJarScope")
-val mainJarConfig by configurations.resolvable("mainJarConfig") { extendsFrom(mainJarScope) }
-val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
-val mainResourcesConfig by
-  configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope) }
-val swissArmyKnifeScope by configurations.dependencyScope("swissArmyKnifeScope")
-val swissArmyKnifeConfig by
+val mainJarScope = configurations.dependencyScope("mainJarScope")
+val mainJarConfig = configurations.resolvable("mainJarConfig") { extendsFrom(mainJarScope.get()) }
+val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
+val mainResourcesConfig =
+  configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope.get()) }
+val swissArmyKnifeScope = configurations.dependencyScope("swissArmyKnifeScope")
+val swissArmyKnifeConfig =
   configurations.resolvable("swissArmyKnifeConfig") {
-    extendsFrom(swissArmyKnifeScope)
+    extendsFrom(swissArmyKnifeScope.get())
     isTransitive = false
   }
 
@@ -107,24 +110,24 @@ dependencies {
   swissArmyKnifeScope(project(":swissarmyknife"))
 }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig by
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
+val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig =
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
   sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
 }
 
-val depsJarFilesScope by configurations.dependencyScope("depsJarFilesScope")
+val depsJarFilesScope = configurations.dependencyScope("depsJarFilesScope")
 
-val depsJarFiles by configurations.consumable("depsJarFiles") { extendsFrom(depsJarFilesScope) }
+configurations.consumable("depsJarFiles") { extendsFrom(depsJarFilesScope.get()) }
 
-val depsFiles by configurations.consumable("depsFiles") { extendsFrom(depsJarFilesScope) }
+val depsFiles = configurations.consumable("depsFiles") { extendsFrom(depsJarFilesScope.get()) }
 
 fun relocateDepsExceptAsm(pkg: String): List<String> {
   return listOf(
@@ -264,7 +267,7 @@ tasks {
     register<Zip>("threadingModuleBlockingJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       dependsOn(mainJarConfig)
-      from(mainJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } })
+      from(mainJarConfig.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
       include("com/android/tools/r8/threading/providers/blocking/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-blocking.jar")
@@ -274,7 +277,7 @@ tasks {
     register<Zip>("threadingModuleSingleThreadedJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       dependsOn(mainJarConfig)
-      from(mainJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } })
+      from(mainJarConfig.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
       include("com/android/tools/r8/threading/providers/singlethreaded/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-single-threaded.jar")
@@ -287,21 +290,18 @@ tasks {
     add(depsJarFilesScope.name, files(threadingModuleSingleThreadedJar))
   }
 
-  val filteredDepsJarConfig by configurations.consumable("filteredDepsJarConfig")
+  configurations.consumable("filteredDepsJarConfig") { outgoing.artifact(filteredDepsJar) }
 
-  artifacts {
-    add(depsFiles.name, consolidatedLicense)
-    add(filteredDepsJarConfig.name, filteredDepsJar)
-  }
+  artifacts { add(depsFiles.name, consolidatedLicense) }
 
-  val depsJarFilesConfig by
-    configurations.resolvable("depsJarFilesConfig") { extendsFrom(depsJarFilesScope) }
+  val depsJarFilesConfig =
+    configurations.resolvable("depsJarFilesConfig") { extendsFrom(depsJarFilesScope.get()) }
 
   // Jar containing all 3p deps, plus R8 threading modules.
   val depsJar =
     register<Zip>("depsJar") {
       dependsOn(depsJarFilesConfig)
-      from(Callable { depsJarFilesConfig.files.map(::zipTree) })
+      from(Callable { depsJarFilesConfig.get().files.map(::zipTree) })
       from(consolidatedLicense)
       include("**/*.class")
       include("META-INF/services/kotlin.metadata.internal.extensions.MetadataExtensions")
@@ -323,8 +323,16 @@ tasks {
     register<Zip>("protoJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       dependsOn(keepRadiusProtoJarConfig, libanalyzerProtoJarConfig)
-      from(keepRadiusProtoJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } })
-      from(libanalyzerProtoJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } })
+      from(
+        keepRadiusProtoJarConfig
+          .flatMap { it.elements }
+          .map { it.map { injected.arcOps.zipTree(it) } }
+      )
+      from(
+        libanalyzerProtoJarConfig
+          .flatMap { it.elements }
+          .map { it.map { injected.arcOps.zipTree(it) } }
+      )
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")
       destinationDirectory.set(File(getRootDir(), "build/libs"))

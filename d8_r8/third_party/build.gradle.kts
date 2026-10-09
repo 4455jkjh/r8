@@ -247,34 +247,28 @@ val internalTestTasks =
 
 tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
-val sharedDepsFiles by
-  configurations.consumable("sharedDepsFiles") {
-    publicTasks.forEach { taskProvider -> outgoing.artifact(taskProvider.flatMap { it.outputDir }) }
-  }
+configurations.consumable("sharedDepsFiles") {
+  publicTasks.forEach { taskProvider -> outgoing.artifact(taskProvider.flatMap { it.outputDir }) }
+}
 
 tasks.register("downloadTestDeps") { dependsOn(publicTestTasks) }
 
-val sharedTestDepsFiles by
-  configurations.consumable("sharedTestDepsFiles") {
-    publicTestTasks.forEach { taskProvider ->
-      outgoing.artifact(taskProvider.flatMap { it.outputDir })
-    }
+configurations.consumable("sharedTestDepsFiles") {
+  publicTestTasks.forEach { taskProvider ->
+    outgoing.artifact(taskProvider.flatMap { it.outputDir })
   }
+}
 
 tasks.register("downloadDepsInternal") { dependsOn(internalTasks) }
 
-val sharedDepsInternalFiles by
-  configurations.consumable("sharedDepsInternalFiles") {
-    internalTasks.forEach { taskProvider ->
-      outgoing.artifact(taskProvider.flatMap { it.outputDir })
-    }
-  }
+configurations.consumable("sharedDepsInternalFiles") {
+  internalTasks.forEach { taskProvider -> outgoing.artifact(taskProvider.flatMap { it.outputDir }) }
+}
 
 tasks.register("downloadTestDepsInternal") { dependsOn(internalTestTasks) }
 
-val sharedTestDepsInternalFiles by
-  configurations.consumable("sharedTestDepsInternalFiles") {
-    internalTestTasks.forEach { taskProvider ->
-      outgoing.artifact(taskProvider.flatMap { it.outputDir })
-    }
+configurations.consumable("sharedTestDepsInternalFiles") {
+  internalTestTasks.forEach { taskProvider ->
+    outgoing.artifact(taskProvider.flatMap { it.outputDir })
   }
+}

@@ -17,10 +17,8 @@ dependencies {
 
 java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) } }
 
-val isolatedJar by configurations.consumable("isolatedJar")
-val isolatedClasses by configurations.consumable("isolatedClasses")
+configurations.consumable("isolatedJar") { outgoing.artifact(tasks.named("jar")) }
 
-artifacts {
-  add(isolatedJar.name, tasks.named("jar"))
-  add(isolatedClasses.name, tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+configurations.consumable("isolatedClasses") {
+  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
 }

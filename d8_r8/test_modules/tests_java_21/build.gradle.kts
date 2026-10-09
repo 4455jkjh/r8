@@ -15,15 +15,16 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
-val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
+val assistantClassesScope = configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
-  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
+  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope.get()) }
 
-val mainClassesScope by configurations.dependencyScope("mainClassesScope")
+val mainClassesScope = configurations.dependencyScope("mainClassesScope")
 val mainClassesOutput =
-  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
-val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
-val mainResources = configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope) }
+  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope.get()) }
+val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
+val mainResources =
+  configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
 
 dependencies {
   assistantClassesScope(project(":assistant", "assistantJar"))

@@ -12,9 +12,11 @@ plugins {
 
 val root = getRoot()
 
-val partialTestClassesScope by configurations.dependencyScope("partialTestClassesScope")
-val partialTestClassesConfig by
-  configurations.resolvable("partialTestClassesConfig") { extendsFrom(partialTestClassesScope) }
+val partialTestClassesScope = configurations.dependencyScope("partialTestClassesScope")
+val partialTestClassesConfig =
+  configurations.resolvable("partialTestClassesConfig") {
+    extendsFrom(partialTestClassesScope.get())
+  }
 
 java {
   sourceSets.test.configure { java { srcDir(root.resolveAll("src", "test", "java")) } }
@@ -27,32 +29,36 @@ java {
 
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
-val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
-val keepAnnoClassesConfig by
-  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
-val resourceShrinkerClassesScope by configurations.dependencyScope("resourceShrinkerClassesScope")
-val resourceShrinkerClassesConfig by
+val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig =
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
+val resourceShrinkerClassesScope = configurations.dependencyScope("resourceShrinkerClassesScope")
+val resourceShrinkerClassesConfig =
   configurations.resolvable("resourceShrinkerClassesConfig") {
-    extendsFrom(resourceShrinkerClassesScope)
+    extendsFrom(resourceShrinkerClassesScope.get())
   }
-val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
+val assistantClassesScope = configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
-  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
-val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
-val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
-val mainClassesScope by configurations.dependencyScope("mainClassesScope")
+  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope.get()) }
+val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
+val distDepsFiles =
+  configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
+val mainClassesScope = configurations.dependencyScope("mainClassesScope")
 val mainClassesOutput =
-  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
-val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
-val mainResources = configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope) }
+  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope.get()) }
+val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
+val mainResources =
+  configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig by
-  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
+val sharedDepsInternalScope = configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig =
+  configurations.resolvable("sharedDepsInternalConfig") {
+    extendsFrom(sharedDepsInternalScope.get())
+  }
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
@@ -184,21 +190,19 @@ tasks {
   register<JavaExec>("generateApiAmendments") {
     dependsOn(partialTestClassesConfig)
     mainClass.set("com.android.tools.r8.androidapi.GenerateApiAmendments")
-    classpath = sourceSets.test.get().runtimeClasspath + partialTestClassesConfig
+    classpath = sourceSets.test.get().runtimeClasspath + partialTestClassesConfig.get()
     // The output is deliberately not Gradle tracked since its a circular dependency.
   }
 
   register<JavaExec>("generateApiDatabase") {
     dependsOn(partialTestClassesConfig)
     mainClass.set("com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGeneratorTest")
-    classpath = sourceSets.test.get().runtimeClasspath + partialTestClassesConfig
+    classpath = sourceSets.test.get().runtimeClasspath + partialTestClassesConfig.get()
     // The output is deliberately not Gradle tracked since its a circular dependency.
   }
 }
 
-val testJar by configurations.consumable("testJar")
-
-artifacts { add(testJar.name, tasks.named("assembleTestJar")) }
+configurations.consumable("testJar") { outgoing.artifact(tasks.named("assembleTestJar")) }
 
 fun Test.setupTestTask() {
   TestingState.setUpTestingState(this)
@@ -224,7 +228,7 @@ fun Test.setupTestTask() {
   }
   systemProperty(
     "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-    extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
+    extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
   )
   // This path is set when compiling examples jar task in DependenciesPlugin.
   val r8RuntimePath =
@@ -240,20 +244,19 @@ fun Test.setupTestTask() {
       .asPath
   systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
   systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
-  systemProperty("R8_DEPS", distDepsFiles.asPath)
+  systemProperty("R8_DEPS", distDepsFiles.get().asPath)
   systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
 }
 
 tasks.withType<Test> { setupTestTask() }
 
-val testAll by
-  tasks.register("testAll") {
-    // Added child dependencies to Test directly would force all child tests to run before the
-    // parent tests. This task runs all test tasks as siblings, allowing concurrent execution of all
-    // tests.
-    dependsOn(tasks.withType<Test>())
-    childProjects.values.forEach { childProject -> dependsOn("${childProject.path}:test") }
-  }
+tasks.register("testAll") {
+  // Added child dependencies to Test directly would force all child tests to run before the
+  // parent tests. This task runs all test tasks as siblings, allowing concurrent execution of all
+  // tests.
+  dependsOn(tasks.withType<Test>())
+  childProjects.values.forEach { childProject -> dependsOn("${childProject.path}:test") }
+}
 
 // Setup child-project boilerplate, only requiring them to set their java source set.
 subprojects {
@@ -266,9 +269,9 @@ subprojects {
     toolchain { languageVersion = JavaLanguageVersion.of(11) }
   }
 
-  val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-  val sharedDepsConfig by
-    configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+  val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+  val sharedDepsConfig =
+    configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
   dependencies {
     add(sharedDepsScope.name, project(":third_party", "sharedDepsFiles"))
@@ -285,13 +288,11 @@ subprojects {
 
   tasks.withType<Test> { setupTestTask() }
 
-  val partialTestClasses by configurations.consumable("partialTestClasses")
-
-  artifacts {
-    add(partialTestClasses.name, layout.buildDirectory.dir("classes/java/test")) {
+  configurations.consumable("partialTestClasses") {
+    outgoing.artifact(layout.buildDirectory.dir("classes/java/test")) {
       builtBy(tasks.named("compileTestJava"))
     }
-    add(partialTestClasses.name, layout.buildDirectory.dir("resources/test")) {
+    outgoing.artifact(layout.buildDirectory.dir("resources/test")) {
       builtBy(tasks.named("processTestResources"))
     }
   }

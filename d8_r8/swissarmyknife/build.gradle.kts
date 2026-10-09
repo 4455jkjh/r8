@@ -14,8 +14,8 @@ interface InjectedArcOps {
   @get:Inject val arcOps: ArchiveOperations
 }
 
-val bundleScope by configurations.dependencyScope("bundleScope")
-val bundleConfig by configurations.resolvable("bundleConfig") { extendsFrom(bundleScope) }
+val bundleScope = configurations.dependencyScope("bundleScope")
+val bundleConfig = configurations.resolvable("bundleConfig") { extendsFrom(bundleScope.get()) }
 
 dependencies {
   bundleScope(project(":assistant", "assistantJar"))
@@ -30,21 +30,23 @@ tasks {
   named<Jar>("jar") {
     val injected = project.objects.newInstance<InjectedArcOps>()
     from(
-      bundleConfig.elements.map {
-        it.map {
-          injected.arcOps.zipTree(it).matching {
-            exclude("com/android/tools/r8/threading/providers/**")
-            exclude("META-INF/*.kotlin_module")
-            exclude("**/*.kotlin_metadata")
-            exclude("keepradius.proto")
-            exclude("keepspec.proto")
-            exclude("LICENSE")
-            exclude("androidx/")
-            exclude("androidx/annotation/")
-            exclude("androidx/annotation/keep/**")
+      bundleConfig
+        .flatMap { it.elements }
+        .map {
+          it.map {
+            injected.arcOps.zipTree(it).matching {
+              exclude("com/android/tools/r8/threading/providers/**")
+              exclude("META-INF/*.kotlin_module")
+              exclude("**/*.kotlin_metadata")
+              exclude("keepradius.proto")
+              exclude("keepspec.proto")
+              exclude("LICENSE")
+              exclude("androidx/")
+              exclude("androidx/annotation/")
+              exclude("androidx/annotation/keep/**")
+            }
           }
         }
-      }
     )
     from(File(getRootDir(), "LICENSE"))
     entryCompression = ZipEntryCompression.STORED

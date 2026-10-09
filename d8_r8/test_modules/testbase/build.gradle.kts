@@ -20,21 +20,21 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
 
-val keepAnnoJarScope by configurations.dependencyScope("keepAnnoJarScope")
-val keepAnnoJarConfig by
-  configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope) }
-val resourceShrinkerDepsJarScope by configurations.dependencyScope("resourceShrinkerDepsJarScope")
-val resourceShrinkerDepsJarConfig by
+val keepAnnoJarScope = configurations.dependencyScope("keepAnnoJarScope")
+val keepAnnoJarConfig =
+  configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope.get()) }
+val resourceShrinkerDepsJarScope = configurations.dependencyScope("resourceShrinkerDepsJarScope")
+val resourceShrinkerDepsJarConfig =
   configurations.resolvable("resourceShrinkerDepsJarConfig") {
-    extendsFrom(resourceShrinkerDepsJarScope)
+    extendsFrom(resourceShrinkerDepsJarScope.get())
   }
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig by
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
+val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig =
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
@@ -123,8 +123,8 @@ tasks {
     dependsOn(sharedDepsConfig)
     dependsOn(sharedTestDepsConfig)
     from(Callable { testDependencies().map(::zipTree) })
-    from(keepAnnoJarConfig.map(::zipTree))
-    from(resourceShrinkerDepsJarConfig.map(::zipTree))
+    from(keepAnnoJarConfig.map { it.map(::zipTree) })
+    from(resourceShrinkerDepsJarConfig.map { it.map(::zipTree) })
     exclude("com/android/tools/r8/keepanno/annotations/**")
     exclude("androidx/annotation/keep/**")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -132,11 +132,6 @@ tasks {
   }
 }
 
-val testJar by configurations.consumable("testJar")
+configurations.consumable("testJar") { outgoing.artifact(tasks.named("assembleTestJar")) }
 
-val depsJar by configurations.consumable("depsJar")
-
-artifacts {
-  add(testJar.name, tasks.named("assembleTestJar"))
-  add(depsJar.name, tasks.named("assembleDepsJar"))
-}
+configurations.consumable("depsJar") { outgoing.artifact(tasks.named("assembleDepsJar")) }

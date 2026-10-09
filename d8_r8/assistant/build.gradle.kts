@@ -19,4 +19,4 @@ val jarTask =
     archiveFileName.set("assistant.jar")
   }
 
-val assistantJar by configurations.consumable("assistantJar") { outgoing.artifact(jarTask) }
+configurations.consumable("assistantJar") { outgoing.artifact(jarTask) }
