@@ -24,19 +24,12 @@ val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig =
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-val sharedDepsInternalScope = configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig =
-  configurations.resolvable("sharedDepsInternalConfig") {
-    extendsFrom(sharedDepsInternalScope.get())
-  }
-
 val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles =
   configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
   distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
 }
 
@@ -103,9 +96,6 @@ tasks {
 
   register<Jar>("assembleDepsJar") {
     dependsOn(sharedDepsConfig)
-    if (!project.hasProperty("no_internal")) {
-      dependsOn(sharedDepsInternalConfig)
-    }
     from(testDependencies().map(::zipTree))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("deps.jar")

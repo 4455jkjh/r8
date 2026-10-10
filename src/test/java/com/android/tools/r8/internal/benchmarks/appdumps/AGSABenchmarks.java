@@ -7,6 +7,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.R8FullTestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
@@ -15,8 +16,6 @@ import com.android.tools.r8.benchmarks.appdumps.AbortBenchmarkException;
 import com.android.tools.r8.benchmarks.appdumps.AppDumpBenchmarkBuilder;
 import com.android.tools.r8.errors.CheckEnumUnboxedDiagnostic;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,9 +24,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public abstract class AGSABenchmarks extends BenchmarkBase {
-
-  private static final Path dir =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "closedsource-apps/agsa/20250412-v16.14.47");
 
   protected AGSABenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
@@ -82,7 +78,7 @@ public abstract class AGSABenchmarks extends BenchmarkBase {
   protected static AppDumpBenchmarkBuilder builder(String name) {
     return AppDumpBenchmarkBuilder.builder()
         .setName(name)
-        .setDumpDependencyPath(dir)
+        .setDumpDependencyPath(TestDeps::getAgsaDir)
         .setWarmupIterations(0);
   }
 

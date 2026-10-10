@@ -4,10 +4,10 @@
 package com.android.tools.r8.internal;
 
 import com.android.tools.r8.Disassemble;
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestDeps;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,8 +18,6 @@ import org.junit.runners.Parameterized.Parameters;
 // Invoke R8 on the dex files extracted from GMSCore.apk to disassemble the dex code.
 @RunWith(Parameterized.class)
 public class GMSCoreV10DisassemblerTest extends GMSCoreCompilationTestBase {
-
-  private static final String APP_DIR = ToolHelper.THIRD_PARTY_DIR + "gmscore/gmscore_v10/";
 
   @Parameters(name = "deobfuscate: {0} smali: {1}")
   public static Iterable<Object[]> data() {
@@ -35,6 +33,7 @@ public class GMSCoreV10DisassemblerTest extends GMSCoreCompilationTestBase {
 
   @Test
   public void testDisassemble() throws Exception {
+    Path appDir = TestDeps.getGmscoreV10Dir();
     // This test only ensures that we do not break disassembling of dex code. It does not
     // check the generated code. To make it fast, we get rid of the output.
     PrintStream originalOut = System.out;
@@ -51,9 +50,9 @@ public class GMSCoreV10DisassemblerTest extends GMSCoreCompilationTestBase {
       Disassemble.DisassembleCommand.Builder builder = Disassemble.DisassembleCommand.builder();
       builder.setUseSmali(smali);
       if (deobfuscate) {
-        builder.setProguardMapFile(Paths.get(APP_DIR, PG_MAP));
+        builder.setProguardMapFile(appDir.resolve(PG_MAP));
       }
-      builder.addProgramFiles(Paths.get(APP_DIR).resolve(RELEASE_APK_X86));
+      builder.addProgramFiles(appDir.resolve(RELEASE_APK_X86));
       Disassemble.DisassembleCommand command = builder.build();
       Disassemble.disassemble(command);
     } finally {

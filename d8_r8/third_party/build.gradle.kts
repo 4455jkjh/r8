@@ -20,6 +20,7 @@ val downloadLimitService =
 private fun registerDependency(dep: ThirdPartyDependency): TaskProvider<DownloadDependency> {
   // Task name must be unique and safe. packageNames should be unique.
   val taskName = "download_${dep.packageName}"
+  val noInternal = providers.gradleProperty("no_internal")
   return tasks.register(taskName, DownloadDependency::class) {
     sha1File.set(getRoot().resolve(dep.sha1File))
     outputDir.set(getRoot().resolve(dep.path))
@@ -27,15 +28,27 @@ private fun registerDependency(dep: ThirdPartyDependency): TaskProvider<Download
     successFile.set(getRoot().resolve(dep.successFile))
     dependencyType.set(dep.type)
     usesService(downloadLimitService)
+    if (dep.type == DependencyType.X20) {
+      onlyIf { !noInternal.isPresent }
+    }
   }
 }
 
 val publicTasks = allPublicDependencies().map { registerDependency(it) }
 val publicTestTasks = allPublicTestDependencies().map { registerDependency(it) }
+val internalTestTasks = allInternalTestDependencies().map { registerDependency(it) }
 
-private fun registerTestDepArtifact(configurationName: String, artifact: Any, propName: String) {
+private fun registerTestDepArtifact(
+  configurationName: String,
+  artifact: Any,
+  propName: String,
+  isInternal: Boolean = false,
+) {
   configurations.consumable(configurationName) {
-    attributes { attribute(TEST_DEP_PROP, propName) }
+    attributes {
+      attribute(TEST_DEP_PROP, propName)
+      attribute(TEST_DEP_INTERNAL, isInternal)
+    }
     outgoing.artifact(artifact)
   }
 }
@@ -46,7 +59,12 @@ private fun registerTestDep(
   propName: String,
 ) {
   val taskProvider = tasks.named<DownloadDependency>("download_${dep.packageName}")
-  registerTestDepArtifact(configurationName, taskProvider.flatMap { it.outputDir }, propName)
+  registerTestDepArtifact(
+    configurationName,
+    taskProvider.flatMap { it.outputDir },
+    propName,
+    dep.type == DependencyType.X20,
+  )
 }
 
 private fun registerTestDep(configurationName: String, dir: File, propName: String) {
@@ -59,6 +77,8 @@ registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencie
 
 registerTestDep("aapt2", ThirdPartyDeps.aapt2, "AAPT2")
 
+registerTestDep("agsa", ThirdPartyDeps.agsa, "AGSA")
+
 registerTestDep("apiDatabase", ThirdPartyDeps.apiDatabase, "API_DATABASE")
 
 registerTestDep("artTests", ThirdPartyDeps.artTests, "ART_TESTS")
@@ -69,9 +89,13 @@ registerTestDep("bookstory", ThirdPartyDeps.bookstory, "BOOKSTORY")
 
 registerTestDep("bundletool", ThirdPartyDeps.bundletool, "BUNDLETOOL")
 
+registerTestDep("chrome", ThirdPartyDeps.chrome, "CHROME")
+
 registerTestDep("chromeBenchmark", ThirdPartyDeps.chromeBenchmark, "CHROME_BENCHMARK")
 
 registerTestDep("chromeHeadless", ThirdPartyDeps.chromeHeadless, "CHROME_HEADLESS")
+
+registerTestDep("clank", ThirdPartyDeps.clank, "CLANK")
 
 registerTestDep("compilerApi", ThirdPartyDeps.compilerApi, "COMPILER_API")
 
@@ -191,6 +215,12 @@ registerTestDep("feeder", ThirdPartyDeps.feeder, "FEEDER")
 
 registerTestDep("fossifyFileManager", ThirdPartyDeps.fossifyFileManager, "FOSSIFY_FILE_MANAGER")
 
+registerTestDep("framework", ThirdPartyDeps.framework, "FRAMEWORK")
+
+registerTestDep("gmscoreLatest", ThirdPartyDeps.gmscoreLatest, "GMSCORE_LATEST")
+
+registerTestDep("gmscoreV10", ThirdPartyDeps.gmscoreV10, "GMSCORE_V10")
+
 registerTestDep("googleJavaFormat", ThirdPartyDeps.googleJavaFormat, "GOOGLE_JAVA_FORMAT")
 
 registerTestDep("googleKotlinFormat", ThirdPartyDeps.googleKotlinFormat, "GOOGLE_KOTLIN_FORMAT")
@@ -198,6 +228,12 @@ registerTestDep("googleKotlinFormat", ThirdPartyDeps.googleKotlinFormat, "GOOGLE
 registerTestDep("gson", ThirdPartyDeps.gson, "GSON")
 
 registerTestDep("guavaJre", ThirdPartyDeps.guavaJre, "GUAVA_JRE")
+
+registerTestDep(
+  "internalIssue127524985",
+  ThirdPartyDeps.internalIssue127524985,
+  "INTERNAL_ISSUE_127524985",
+)
 
 registerTestDep("jacoco", ThirdPartyDeps.jacoco, "JACOCO")
 
@@ -223,6 +259,8 @@ registerTestDep("kotlinxCoroutines", ThirdPartyDeps.kotlinxCoroutines, "KOTLINX_
 
 registerTestDep("multidex", ThirdPartyDeps.multidex, "MULTIDEX")
 
+registerTestDep("nest", ThirdPartyDeps.nest, "NEST")
+
 registerTestDep("newpipe", ThirdPartyDeps.newpipe, "NEWPIPE")
 
 registerTestDep("nowinandroid", ThirdPartyDeps.nowinandroid, "NOWINANDROID")
@@ -240,6 +278,26 @@ registerTestDep(
 registerTestDep("proguard7_0_0", ThirdPartyDeps.proguard7_0_0, "PROGUARD_7_0_0")
 
 registerTestDep("proguard7_7_0", ThirdPartyDeps.proguard7_7_0, "PROGUARD_7_7_0")
+
+registerTestDep("proguardsettings", ThirdPartyDeps.proguardsettings, "PROGUARD_SETTINGS")
+
+registerTestDep(
+  "protoRuntimeEdition2023",
+  ThirdPartyDeps.protoRuntimeEdition2023,
+  "PROTO_RUNTIME_EDITION2023",
+)
+
+registerTestDep("protoRuntimeLegacy", ThirdPartyDeps.protoRuntimeLegacy, "PROTO_RUNTIME_LEGACY")
+
+registerTestDep(
+  "protoTestEdition2023",
+  ThirdPartyDeps.protoTestEdition2023,
+  "PROTO_TEST_EDITION2023",
+)
+
+registerTestDep("protoTestProto2", ThirdPartyDeps.protoTestProto2, "PROTO_TEST_PROTO2")
+
+registerTestDep("protoTestProto3", ThirdPartyDeps.protoTestProto3, "PROTO_TEST_PROTO3")
 
 registerTestDep("r8", ThirdPartyDeps.r8, "R8")
 
@@ -261,6 +319,8 @@ registerTestDep(
   "RETRACE_BINARY_COMPATIBILITY",
 )
 
+registerTestDep("retraceInternal", ThirdPartyDeps.retraceInternal, "RETRACE_INTERNAL")
+
 registerTestDep(
   "retracePartitionFormats",
   ThirdPartyDeps.retracePartitionFormats,
@@ -273,23 +333,13 @@ registerTestDep("rhinoAndroid", ThirdPartyDeps.rhinoAndroid, "RHINO_ANDROID")
 
 registerTestDep("smali", ThirdPartyDeps.smali, "SMALI")
 
+registerTestDep("systemUI", ThirdPartyDeps.systemUI, "SYSTEM_UI")
+
 registerTestDep("tivi", ThirdPartyDeps.tivi, "TIVI")
 
 registerTestDep("tusky", ThirdPartyDeps.tusky, "TUSKY")
 
-val internalTasks =
-  if (!providers.gradleProperty("no_internal").isPresent) {
-    allInternalDependencies().map { registerDependency(it) }
-  } else {
-    emptyList()
-  }
-
-val internalTestTasks =
-  if (!providers.gradleProperty("no_internal").isPresent) {
-    allInternalTestDependencies().map { registerDependency(it) }
-  } else {
-    emptyList()
-  }
+registerTestDep("youtube2140", ThirdPartyDeps.youtube2140, "YOUTUBE_21_40")
 
 tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
@@ -305,16 +355,4 @@ configurations.consumable("sharedTestDepsFiles") {
   }
 }
 
-tasks.register("downloadDepsInternal") { dependsOn(internalTasks) }
-
-configurations.consumable("sharedDepsInternalFiles") {
-  internalTasks.forEach { taskProvider -> outgoing.artifact(taskProvider.flatMap { it.outputDir }) }
-}
-
 tasks.register("downloadTestDepsInternal") { dependsOn(internalTestTasks) }
-
-configurations.consumable("sharedTestDepsInternalFiles") {
-  internalTestTasks.forEach { taskProvider ->
-    outgoing.artifact(taskProvider.flatMap { it.outputDir })
-  }
-}

@@ -5,15 +5,13 @@ package com.android.tools.r8.internal.benchmarks.appdumps;
 
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.benchmarks.appdumps.AbortBenchmarkException;
 import com.android.tools.r8.benchmarks.appdumps.AppDumpBenchmarkBuilder;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
@@ -22,9 +20,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public abstract class SystemUIBenchmarks extends BenchmarkBase {
-
-  private static final Path dir =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "closedsource-apps/systemui");
 
   protected SystemUIBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
@@ -82,7 +77,7 @@ public abstract class SystemUIBenchmarks extends BenchmarkBase {
   protected static AppDumpBenchmarkBuilder builder(String name) {
     return AppDumpBenchmarkBuilder.builder()
         .setName(name)
-        .setDumpDependencyPath(dir)
+        .setDumpDependencyPath(TestDeps::getSystemUIDir)
         .setEnableResourceShrinking(true)
         .setFromRevision(16457);
   }

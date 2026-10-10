@@ -3,25 +3,25 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.internal.proto;
 
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 public enum ProtoTestSources {
-  EDITION2023("edition2023"),
-  PROTO2("proto2"),
-  PROTO3("proto3");
+  EDITION2023(TestDeps::getProtoTestEdition2023Dir),
+  PROTO2(TestDeps::getProtoTestProto2Dir),
+  PROTO3(TestDeps::getProtoTestProto3Dir);
 
-  private final String testName;
+  private final Supplier<Path> testDirSupplier;
 
-  ProtoTestSources(String testName) {
-    this.testName = testName;
+  ProtoTestSources(Supplier<Path> testDirSupplier) {
+    this.testDirSupplier = testDirSupplier;
   }
 
   public static Collection<ProtoTestSources> getEdition2023AndProto2() {
@@ -69,7 +69,7 @@ public enum ProtoTestSources {
   }
 
   public Path getTestDir() {
-    return Paths.get(ToolHelper.PROTO_TEST_DIR, testName);
+    return testDirSupplier.get();
   }
 
   public boolean isProto2() {

@@ -7,12 +7,11 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.hamcrest.Matcher;
 
@@ -22,34 +21,27 @@ public abstract class ChromeCompilationBase extends CompilationTestBase {
   static final String PROGRAM_JAR = "program.jar";
   static final String PROGUARD_CONFIG = "proguard.config";
 
-  final String base;
-
   public ChromeCompilationBase(int version, boolean minimal) {
-    this.base =
-        ToolHelper.THIRD_PARTY_DIR
-            + "chrome/"
-            + (minimal ? "monochrome_public_minimal_apks/" : "")
-            + "chrome_"
-            + version
-            + "/";
+    assert version == 200430;
+    assert !minimal;
   }
 
   protected List<Path> getKeepRuleFiles() {
     ImmutableList.Builder<Path> builder = ImmutableList.builder();
-    builder.add(Paths.get(base).resolve(PROGUARD_CONFIG));
+    builder.add(TestDeps.getChrome200430Dir().resolve(PROGUARD_CONFIG));
     return builder.build();
   }
 
   protected List<Path> getLibraryFiles() throws IOException {
     assert verifyNoLibraryJarsInProguardConfig();
-    List<Path> result = ImmutableList.of(Paths.get(base).resolve(LIBRARY_JAR));
+    List<Path> result = ImmutableList.of(TestDeps.getChrome200430Dir().resolve(LIBRARY_JAR));
     assert result.stream().allMatch(path -> path.toFile().exists());
     return result;
   }
 
   protected List<Path> getProgramFiles() throws IOException {
     assert verifyNoInJarsInProguardConfig();
-    List<Path> result = ImmutableList.of(Paths.get(base).resolve(PROGRAM_JAR));
+    List<Path> result = ImmutableList.of(TestDeps.getChrome200430Dir().resolve(PROGRAM_JAR));
     assert result.stream().allMatch(path -> path.toFile().exists());
     return result;
   }

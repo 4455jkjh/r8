@@ -61,23 +61,9 @@ val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
 val sharedTestDepsConfig =
   configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
 
-val sharedDepsInternalScope = configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig =
-  configurations.resolvable("sharedDepsInternalConfig") {
-    extendsFrom(sharedDepsInternalScope.get())
-  }
-
-val sharedTestDepsInternalScope = configurations.dependencyScope("sharedTestDepsInternalScope")
-val sharedTestDepsInternalConfig =
-  configurations.resolvable("sharedTestDepsInternalConfig") {
-    extendsFrom(sharedTestDepsInternalScope.get())
-  }
-
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
   sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
-  sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
-  sharedTestDepsInternalScope(project(":third_party", "sharedTestDepsInternalFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
@@ -657,10 +643,6 @@ tasks {
     if (!project.hasProperty("use_prebuilt_lib")) {
       dependsOn(sharedDepsConfig)
       dependsOn(sharedTestDepsConfig)
-      if (!project.hasProperty("no_internal")) {
-        dependsOn(sharedDepsInternalConfig)
-        dependsOn(sharedTestDepsInternalConfig)
-      }
       // Build processkeepruleslib.jar when running with --only_internal.
       if (project.hasProperty("only_internal")) {
         dependsOn(processKeepRulesLibWithRelocatedDepsTask)

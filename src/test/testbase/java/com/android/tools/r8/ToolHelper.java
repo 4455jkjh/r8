@@ -197,9 +197,6 @@ public class ToolHelper {
   public static final String BUILD_DIR = getProjectRoot() + "build/";
   public static final String LIBS_DIR = BUILD_DIR + "libs/";
   public static final String THIRD_PARTY_DIR = getProjectRoot() + "third_party/";
-  public static final String PROTO_DIR = THIRD_PARTY_DIR + "proto/";
-  public static final String PROTO_RUNTIME_DIR = PROTO_DIR + "runtime/";
-  public static final String PROTO_TEST_DIR = PROTO_DIR + "test/";
   public static final String TOOLS_DIR = getProjectRoot() + "tools/";
   public static final String TESTS_DIR = getProjectRoot() + "src/test/";
   public static final String TESTS_SOURCE_DIR = TESTS_DIR + "java/";
@@ -223,9 +220,6 @@ public class ToolHelper {
   private static final String ANDROID_API_VERSIONS_XML_PATTERN =
       THIRD_PARTY_DIR + "android_jar/lib-v%s/api-versions.xml";
   private static final AndroidApiLevel DEFAULT_MIN_SDK = AndroidApiLevel.I;
-
-  public static final String PROGUARD_SETTINGS_FOR_INTERNAL_APPS =
-      THIRD_PARTY_DIR + "proguardsettings/";
 
   // TODO(b/270105162): These should be removed when finished transitioning.
   public static final Path R8_WITH_RELOCATED_DEPS_17_JAR =

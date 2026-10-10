@@ -359,10 +359,6 @@ public class TestConfigurationHelper {
           }
         }
 
-      if (project.hasProperty("no_internal")) {
-        test.exclude("com/android/tools/r8/internal/**")
-      }
-
       if (project.hasProperty("only_internal")) {
         test.include("com/android/tools/r8/internal/**")
       }
