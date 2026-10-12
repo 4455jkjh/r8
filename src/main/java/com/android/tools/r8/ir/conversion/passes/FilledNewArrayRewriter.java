@@ -23,6 +23,7 @@ import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InstructionList;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
@@ -39,6 +40,8 @@ import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -297,6 +300,81 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       return false;
     }
 
+    // The new-array is moved before other instructions, so it must not throw where it did not.
+    private boolean canHoistNewArrayEmpty(IRCode code, NewArrayEmpty newArrayEmpty) {
+      return !options.debug
+          && !newArrayEmpty.outValue().hasLocalInfo()
+          && newArrayEmpty.getDebugValues().isEmpty()
+          && !newArrayEmpty.instructionInstanceCanThrow(appView, code.context());
+    }
+
+    // Numbers the instructions from the first of the given definitions up to stopInstruction. The
+    // elements cannot be used before they are defined, so the instructions before are irrelevant.
+    @SuppressWarnings("ReferenceEquality")
+    private Reference2IntMap<Instruction> buildInstructionOrder(
+        Set<Instruction> definitions, Instruction stopInstruction) {
+      Instruction first = stopInstruction;
+      for (int remaining = definitions.size(); remaining > 0; ) {
+        first = first.getPrev();
+        if (definitions.contains(first)) {
+          remaining--;
+        }
+      }
+      Reference2IntMap<Instruction> instructionOrder = new Reference2IntOpenHashMap<>();
+      instructionOrder.defaultReturnValue(-1);
+      int order = 0;
+      for (Instruction instruction = first;
+          instruction != stopInstruction;
+          instruction = instruction.getNext()) {
+        instructionOrder.put(instruction, order++);
+      }
+      return instructionOrder;
+    }
+
+    @SuppressWarnings("ReferenceEquality")
+    private boolean isNewInstanceOrInvokeMethodInBlock(Value value, BasicBlock block) {
+      return !value.isPhi()
+          && value.getBlock() == block
+          && (value.getDefinition().isNewInstance() || value.getDefinition().isInvokeMethod());
+    }
+
+    // Returns the instruction after which the array put of elementValue can be inserted, i.e., the
+    // last instruction in the block before the array that defines or uses the element, or null if
+    // the element cannot be stored early. Storing early is safe as the new array is not yet
+    // visible.
+    private Instruction getReadyInstructionForArrayPut(
+        Value elementValue,
+        BasicBlock block,
+        TypeElement arrayElementType,
+        Reference2IntMap<Instruction> instructionOrder) {
+      if (!isNewInstanceOrInvokeMethodInBlock(elementValue, block)
+          || elementValue.hasLocalInfo()
+          || elementValue.hasPhiUsers()) {
+        return null;
+      }
+      // The array put must not throw an ArrayStoreException, which the original code would not
+      // have thrown yet.
+      if (!arrayElementType.isPrimitiveType()
+          && !elementValue.getType().lessThanOrEqualUpToNullability(arrayElementType, appView)) {
+        return null;
+      }
+      Instruction readyInstruction = elementValue.getDefinition();
+      int readyOrder = instructionOrder.getInt(readyInstruction);
+      assert readyOrder >= 0;
+      for (Instruction user : elementValue.uniqueUsers()) {
+        // Users after the array or in other blocks are not in instructionOrder.
+        int userOrder = instructionOrder.getInt(user);
+        if (userOrder < 0) {
+          return null;
+        }
+        if (userOrder > readyOrder) {
+          readyInstruction = user;
+          readyOrder = userOrder;
+        }
+      }
+      return readyInstruction;
+    }
+
     private boolean canStoreElementInNewArrayFilled(TypeElement valueType, DexType elementType) {
       if (elementType.isIdenticalTo(dexItemFactory.objectType)) {
         return true;
@@ -432,6 +510,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       return result;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void rewriteToArrayPuts(
         IRCode code,
         BasicBlockIterator blockIterator,
@@ -442,6 +521,61 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
 
       ConstantMaterializingInstructionCache constantMaterializingInstructionCache =
           new ConstantMaterializingInstructionCache(rewriteArrayOptions, newArrayFilled);
+
+      BasicBlock block = instructionIterator.getBlock();
+      // When possible, store each non-constant element right after it is ready instead of at the
+      // end of the block, so that the elements are not all live at the same time. This requires
+      // moving the new-array before the first such element.
+      Instruction[] insertBefore = null;
+      if (!block.hasCatchHandlers() && canHoistNewArrayEmpty(code, newArrayEmpty)) {
+        Instruction sizeInstruction = newArrayEmpty.getPrev();
+        assert sizeInstruction == newArrayEmpty.size().getDefinition();
+        List<Value> inValues = newArrayFilled.inValues();
+        Set<Instruction> definitions = SetUtils.newIdentityHashSet();
+        for (Value value : inValues) {
+          if (isNewInstanceOrInvokeMethodInBlock(value, block)) {
+            definitions.add(value.getDefinition());
+          }
+        }
+        if (!definitions.isEmpty()) {
+          Reference2IntMap<Instruction> instructionOrder =
+              buildInstructionOrder(definitions, sizeInstruction);
+          TypeElement arrayElementType = newArrayEmpty.getOutType().asArrayType().getMemberType();
+          Instruction earliestReady = null;
+          int earliestOrder = Integer.MAX_VALUE;
+          insertBefore = new Instruction[inValues.size()];
+          for (int i = 0; i < inValues.size(); i++) {
+            Instruction ready =
+                getReadyInstructionForArrayPut(
+                    inValues.get(i), block, arrayElementType, instructionOrder);
+            if (ready != null) {
+              insertBefore[i] = ready;
+              int order = instructionOrder.getInt(ready);
+              if (order < earliestOrder) {
+                earliestOrder = order;
+                earliestReady = ready;
+              }
+            }
+          }
+          if (earliestReady != null) {
+            if (earliestReady.getNext() != sizeInstruction) {
+              InstructionList instructionList = block.getInstructions();
+              instructionList.removeIgnoreValues(sizeInstruction);
+              instructionList.removeIgnoreValues(newArrayEmpty);
+              Instruction afterEarliestReady = earliestReady.getNext();
+              instructionList.addBefore(sizeInstruction, afterEarliestReady);
+              instructionList.addBefore(newArrayEmpty, afterEarliestReady);
+            }
+            // Repeatedly inserting before the same instruction preserves the index order.
+            for (int i = 0; i < insertBefore.length; i++) {
+              Instruction ready = insertBefore[i];
+              if (ready != null) {
+                insertBefore[i] = (ready == earliestReady ? newArrayEmpty : ready).getNext();
+              }
+            }
+          }
+        }
+      }
 
       Set<Value> repeatedElements = getRepeatedElements(newArrayFilled);
       int index = 0;
@@ -461,9 +595,24 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
           blockIterator.positionAfterPreviousBlock(splitBlock);
           splitBlock = instructionIterator.splitCopyCatchHandlers(code, blockIterator, options);
           instructionIterator = splitBlock.listIterator();
-          addArrayPut(code, instructionIterator, newArrayEmpty, index, putValue);
+          addArrayPut(
+              code,
+              instructionIterator,
+              newArrayEmpty,
+              index,
+              putValue,
+              newArrayEmpty.getPosition());
           blockIterator.positionAfterPreviousBlock(splitBlock);
           mayHaveRedundantBlocks = true;
+        } else if (insertBefore != null && insertBefore[index] != null) {
+          Position position = elementValue.getDefinition().getPosition();
+          addArrayPut(
+              code,
+              block.listIterator(insertBefore[index]),
+              newArrayEmpty,
+              index,
+              elementValue,
+              position.isNone() ? newArrayEmpty.getPosition() : position);
         } else {
           Value putValue =
               getPutValue(
@@ -473,7 +622,13 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
                   newArrayEmpty,
                   elementValue,
                   constantMaterializingInstructionCache);
-          addArrayPut(code, instructionIterator, newArrayEmpty, index, putValue);
+          addArrayPut(
+              code,
+              instructionIterator,
+              newArrayEmpty,
+              index,
+              putValue,
+              newArrayEmpty.getPosition());
         }
         index++;
       }
@@ -573,13 +728,14 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
         BasicBlockInstructionListIterator instructionIterator,
         NewArrayEmpty newArrayEmpty,
         int index,
-        Value elementValue) {
+        Value elementValue,
+        Position position) {
       // Load the array index before the ArrayPut instruction.
       ConstNumber constNumber =
           ConstNumber.builder()
               .setFreshOutValue(code, TypeElement.getInt())
               .setValue(index)
-              .setPosition(options.debug ? newArrayEmpty.getPosition() : Position.none())
+              .setPosition(options.debug ? position : Position.none())
               .build();
       instructionIterator.add(constNumber);
 
@@ -589,7 +745,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       ArrayPut arrayPut =
           ArrayPut.create(
               memberType, newArrayEmpty.outValue(), constNumber.outValue(), elementValue);
-      arrayPut.setPosition(newArrayEmpty.getPosition());
+      arrayPut.setPosition(position);
       instructionIterator.add(arrayPut);
     }
   }
