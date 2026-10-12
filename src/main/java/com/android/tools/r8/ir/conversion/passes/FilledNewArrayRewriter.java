@@ -38,6 +38,7 @@ import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -189,56 +190,52 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       }
       if (newArrayFilled.hasUnusedOutValue()) {
         instructionIterator.removeOrReplaceByDebugLocalRead();
-      } else if (canUseNewArrayFilledData(code, newArrayFilled)) {
-        rewriteToNewArrayFilledData(code, blockIterator, instructionIterator, newArrayFilled);
       } else if (newArrayFilled.outValue().hasSingleUniqueUser()
           && newArrayFilled.outValue().singleUniqueUser().isNewArrayFilled()
-          && isNewArrayFilledOfConstants(newArrayFilled)) {
-        if (canUseNewArrayFilled(
-            code, newArrayFilled.outValue().singleUniqueUser().asNewArrayFilled())) {
-          // The NewArrayFilled user is supported, so rewrite here.
-          rewriteToArrayPuts(code, blockIterator, instructionIterator, newArrayFilled);
-        } else {
-          // The NewArrayFilled user is not supported so leave for rewriting after that.
-          //
-          // The effect of this is that when the user of this NewArrayFilled is rewritten to puts,
-          // the NewArrayFilled construction is copied to the use site
-          //
-          //  Input:
-          //
-          //   v0 <-  Const X
-          //   v1 <-  NewArrayFilled(v0)
-          //   v2 <-  Const Y
-          //   v3 <-  NewArrayFilled(v2)
-          //   v4 <-  NewArrayFilled(v1, v3)
-          //
-          // After rewriting the user (v0 - v3 are unused and removed):
-          //
-          //   v4 <-  NewArrayEmpty(...)
-          //   v5 <-  Const X
-          //   v6 <-  NewArrayFilled(v5)
-          //          APut v4, <Const 0>, v6
-          //   v7 <-  Const Y
-          //   v8 <-  NewArrayFilled(v7)
-          //          APut v4, <Const 1>, v8
-          //
-          // Setting pending rewrites cause the copied NewArrayFilled to be rewritten in their new
-          // location in the fixpoint:
-          //
-          //   v4 <-  NewArrayEmpty(...)
-          //   v9 <-  NewArrayEmpty(...)
-          //   v10 <- Const X
-          //          APut v9, <Const 0>, v10
-          //          APut v4, <Const 0>, v9
-          //   v11 <- NewArrayEmpty(...)
-          //   v12 <- Const Y
-          //          APut v11, <Const 0>, v12
-          //          APut v4, <Const 1>, v11
-          //
-          // If the NewArrayFilled which gets moved is supported then the second rewriting in the
-          // fixpoint does not happen.
-          pendingRewrites.set(true);
-        }
+          && isNewArrayFilledOfConstants(newArrayFilled)
+          && !canUseNewArrayFilled(
+              code, newArrayFilled.outValue().singleUniqueUser().asNewArrayFilled())) {
+        // The NewArrayFilled user is not supported so leave for rewriting after that.
+        //
+        // The effect of this is that when the user of this NewArrayFilled is rewritten to puts,
+        // the NewArrayFilled construction is copied to the use site
+        //
+        //  Input:
+        //
+        //   v0 <-  Const X
+        //   v1 <-  NewArrayFilled(v0)
+        //   v2 <-  Const Y
+        //   v3 <-  NewArrayFilled(v2)
+        //   v4 <-  NewArrayFilled(v1, v3)
+        //
+        // After rewriting the user (v0 - v3 are unused and removed):
+        //
+        //   v4 <-  NewArrayEmpty(...)
+        //   v5 <-  Const X
+        //   v6 <-  NewArrayFilled(v5)
+        //          APut v4, <Const 0>, v6
+        //   v7 <-  Const Y
+        //   v8 <-  NewArrayFilled(v7)
+        //          APut v4, <Const 1>, v8
+        //
+        // Setting pending rewrites cause the copied NewArrayFilled to be rewritten in their new
+        // location in the fixpoint:
+        //
+        //   v4 <-  NewArrayEmpty(...)
+        //   v9 <-  NewArrayEmpty(...)
+        //   v10 <- Const X
+        //          APut v9, <Const 0>, v10
+        //          APut v4, <Const 0>, v9
+        //   v11 <- NewArrayEmpty(...)
+        //   v12 <- Const Y
+        //          APut v11, <Const 0>, v12
+        //          APut v4, <Const 1>, v11
+        //
+        // If the NewArrayFilled which gets moved is supported then the second rewriting in the
+        // fixpoint does not happen.
+        pendingRewrites.set(true);
+      } else if (canUseNewArrayFilledData(code, newArrayFilled)) {
+        rewriteToNewArrayFilledData(code, blockIterator, instructionIterator, newArrayFilled);
       } else {
         rewriteToArrayPuts(code, blockIterator, instructionIterator, newArrayFilled);
       }
@@ -446,6 +443,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       ConstantMaterializingInstructionCache constantMaterializingInstructionCache =
           new ConstantMaterializingInstructionCache(rewriteArrayOptions, newArrayFilled);
 
+      Set<Value> repeatedElements = getRepeatedElements(newArrayFilled);
       int index = 0;
       for (Value elementValue : newArrayFilled.inValues()) {
         if (instructionIterator.getBlock().hasCatchHandlers()) {
@@ -456,6 +454,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
               getPutValue(
                   code,
                   instructionIterator,
+                  repeatedElements,
                   newArrayEmpty,
                   elementValue,
                   constantMaterializingInstructionCache);
@@ -470,6 +469,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
               getPutValue(
                   code,
                   instructionIterator,
+                  repeatedElements,
                   newArrayEmpty,
                   elementValue,
                   constantMaterializingInstructionCache);
@@ -481,9 +481,34 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       assert constantMaterializingInstructionCache.checkAllOccurrenceProcessed();
     }
 
+    // A nested constant array is recreated at its array put. This preserves the identity of the
+    // array only if it is stored once and is not moved into another block (e.g., into a loop).
+    @SuppressWarnings("ReferenceEquality")
+    private boolean canRecreateArrayAtPut(
+        Value elementValue, Set<Value> repeatedElements, BasicBlock block) {
+      return !block.hasCatchHandlers()
+          && elementValue.getBlock() == block
+          && !repeatedElements.contains(elementValue);
+    }
+
+    // Linear in the number of elements, which is bounded by maxSizeForFilledArrayData
+    // (8 * 1024 = 8192 elements), since ArrayConstructionSimplifier only creates NewArrayFilled
+    // instructions up to that size.
+    private Set<Value> getRepeatedElements(NewArrayFilled newArrayFilled) {
+      Set<Value> seen = Sets.newIdentityHashSet();
+      Set<Value> repeated = Sets.newIdentityHashSet();
+      for (Value elementValue : newArrayFilled.inValues()) {
+        if (!seen.add(elementValue)) {
+          repeated.add(elementValue);
+        }
+      }
+      return repeated;
+    }
+
     private Value getPutValue(
         IRCode code,
         BasicBlockInstructionListIterator instructionIterator,
+        Set<Value> repeatedElements,
         NewArrayEmpty newArrayEmpty,
         Value elementValue,
         ConstantMaterializingInstructionCache constantMaterializingInstructionCache) {
@@ -494,7 +519,8 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
               || elementValue.isConstClass()
               || elementValue.isDefinedByInstructionSatisfying(Instruction::isStaticGet)
               || (isDefinedByNewArrayFilledOfConstants(elementValue)
-                  && !instructionIterator.getBlock().hasCatchHandlers()))) {
+                  && canRecreateArrayAtPut(
+                      elementValue, repeatedElements, instructionIterator.getBlock())))) {
         return elementValue;
       }
 

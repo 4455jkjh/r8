@@ -42,14 +42,20 @@ public class ArrayOfIntArraysTest extends TestBase {
 
   private static final String EXPECTED_OUTPUT =
       StringUtils.lines(
-          "[[1, 2], [3, 4], [5, 6, 7], [8, 9, 10]]", "[[10, 9, 8], [7, 6, 5], [4, 3], [2, 1]]");
+          "[[1, 2], [3, 4], [5, 6, 7], [8, 9, 10]]",
+          "[[10, 9, 8], [7, 6, 5], [4, 3], [2, 1]]",
+          "[[1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18],"
+              + " [19, 20, 21, 22, 23, 24]]",
+          "[[24, 23, 22, 21, 20, 19], [18, 17, 16, 15, 14, 13], [12, 11, 10, 9, 8, 7],"
+              + " [6, 5, 4, 3, 2, 1]]");
 
-  private void inspect(MethodSubject method, int dexFilledNewArray, int cfMaxLocals) {
+  private void inspect(
+      MethodSubject method, int dexFilledNewArray, int dexMaxRegisters, int cfMaxLocals) {
     if (parameters.isDexRuntime()) {
       assertEquals(
           dexFilledNewArray,
           method.streamInstructions().filter(InstructionSubject::isFilledNewArray).count());
-
+      assertEquals(dexMaxRegisters, method.getMethod().getCode().asDexCode().registerSize);
     } else {
       assertEquals(
           0, method.streamInstructions().filter(InstructionSubject::isFilledNewArray).count());
@@ -58,24 +64,36 @@ public class ArrayOfIntArraysTest extends TestBase {
   }
 
   private void inspect(CodeInspector inspector) {
-    // This test use smaller int arrays, where filled-new-array is preferred over filled-array-data.
     int canUseObjects = canUseFilledNewArrayOfNonStringObjects(parameters) ? 1 : 0;
+    // m1 and m2 use smaller int arrays, where filled-new-array is preferred over filled-array-data.
     inspect(
         inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m1"),
         4 + 1 * canUseObjects,
+        6,
         1);
     inspect(
         inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m2"),
         4 + 1 * canUseObjects,
+        canUseObjects == 1 ? 5 : 9,
+        4);
+    // m3 and m4 use larger int arrays, where filled-array-data is preferred over filled-new-array.
+    inspect(
+        inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m3"),
+        1 * canUseObjects,
+        4,
+        1);
+    inspect(
+        inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m4"),
+        1 * canUseObjects,
+        canUseObjects == 1 ? 4 : 6,
         4);
   }
 
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    testForD8(parameters.getBackend())
+    testForD8(parameters)
         .addInnerClasses(getClass())
-        .setMinApi(parameters)
         .setMode(compilationMode)
         .run(parameters.getRuntime(), TestClass.class)
         .inspect(this::inspect)
@@ -85,10 +103,9 @@ public class ArrayOfIntArraysTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)
-        .setMinApi(parameters)
         .setMode(compilationMode)
         .enableInliningAnnotations()
         .addDontObfuscate()
@@ -112,6 +129,32 @@ public class ArrayOfIntArraysTest extends TestBase {
       try {
         int[][] array = {
           new int[] {10, 9, 8}, new int[] {7, 6, 5}, new int[] {4, 3}, new int[] {2, 1}
+        };
+        printArray(array);
+      } catch (Exception e) {
+        throw new RuntimeException();
+      }
+    }
+
+    @NeverInline
+    public static void m3() {
+      int[][] array = {
+        new int[] {1, 2, 3, 4, 5, 6},
+        new int[] {7, 8, 9, 10, 11, 12},
+        new int[] {13, 14, 15, 16, 17, 18},
+        new int[] {19, 20, 21, 22, 23, 24}
+      };
+      printArray(array);
+    }
+
+    @NeverInline
+    public static void m4() {
+      try {
+        int[][] array = {
+          new int[] {24, 23, 22, 21, 20, 19},
+          new int[] {18, 17, 16, 15, 14, 13},
+          new int[] {12, 11, 10, 9, 8, 7},
+          new int[] {6, 5, 4, 3, 2, 1}
         };
         printArray(array);
       } catch (Exception e) {
@@ -146,6 +189,8 @@ public class ArrayOfIntArraysTest extends TestBase {
     public static void main(String[] args) {
       m1();
       m2();
+      m3();
+      m4();
     }
   }
 }
