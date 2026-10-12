@@ -51,7 +51,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
    * com.android.tools.r8.ApiDatabaseGenerator} changes. This can be because of changes to
    * amendments or changes to the underlying format.
    */
-  public static final int DATABASE_FORMAT_VERSION = 2;
+  public static final int DATABASE_FORMAT_VERSION = 3;
 
   public static class GenerationException extends Exception {
     public GenerationException(String message) {
@@ -319,7 +319,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
           || pair.getSecond() == AndroidApiLevel.EXTENSION) {
         throw new GenerationException("Invalid API level for database entry: " + pair.getSecond());
       }
-      temp.write(pair.getSecond().serializeAsByte());
+      temp.write(AndroidApiDataAccess.serializeApiLevel(pair.getSecond()));
     }
     byte[] tempArray = temp.toByteArray();
     payload.write(tempArray);

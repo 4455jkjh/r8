@@ -33,7 +33,7 @@ public class MissingClassJoinsToObjectTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevels().build();
+    return getTestParameters().withAllRuntimesWithout17_2().withAllApiLevels().build();
   }
 
   public MissingClassJoinsToObjectTest(TestParameters parameters) {

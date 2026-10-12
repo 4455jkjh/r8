@@ -490,8 +490,7 @@ public abstract class AndroidApiDataAccess {
         int startPosition = currentOffset + PAYLOAD_LENGTH_SIZE;
         if (value.length == lengthOfEntry
             && payloadHasConstantPoolValue(startPosition, lengthOfEntry, value)) {
-          return AndroidApiLevel.deserializeFromByte(
-              mappedByteBuffer.get(startPosition + lengthOfEntry));
+          return deserializeApiLevel(mappedByteBuffer.get(startPosition + lengthOfEntry));
         }
         // Advance our current position + length of entry + api level.
         currentOffset = startPosition + lengthOfEntry + 1;
@@ -545,12 +544,29 @@ public abstract class AndroidApiDataAccess {
         int startIndex = index + PAYLOAD_LENGTH_SIZE;
         int endIndex = startIndex + lengthOfEntry;
         if (payloadHasConstantPoolValue(startIndex, lengthOfEntry, value)) {
-          return AndroidApiLevel.deserializeFromByte(data[endIndex]);
+          return deserializeApiLevel(data[endIndex]);
         }
         index = endIndex + 1;
       }
       return null;
     }
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  public static byte serializeApiLevel(AndroidApiLevel apiLevel) {
+    if (apiLevel == AndroidApiLevel.EXTENSION) {
+      return Byte.MAX_VALUE;
+    }
+    int serialized = AndroidApiLevel.getAndroidApiLevelsSorted().indexOf(apiLevel) + 1;
+    assert 0 < serialized && serialized < Byte.MAX_VALUE;
+    return (byte) serialized;
+  }
+
+  public static AndroidApiLevel deserializeApiLevel(byte b) {
+    if (b == Byte.MAX_VALUE) {
+      return AndroidApiLevel.EXTENSION;
+    }
+    return AndroidApiLevel.getAndroidApiLevelsSorted().get(b - 1);
   }
 
   public static class AndroidApiDataAccessNoBacking extends AndroidApiDataAccess {

@@ -102,7 +102,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
           DexVm.Version.V15_0_0,
           DexVm.Version.V16_0_0,
           DexVm.Version.V17_0_0,
-          DexVm.Version.V17_1_0);
+          DexVm.Version.V17_1_0,
+          DexVm.Version.V17_2_0);
 
   private static final TestCondition beforeAndroidN =
       TestCondition.match(
@@ -497,6 +498,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
   static {
     ImmutableMap.Builder<DexVm.Version, List<String>> builder = ImmutableMap.builder();
     builder
+        .put(DexVm.Version.V17_2_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V17_1_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V17_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V16_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
@@ -848,7 +850,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
                           DexVm.Version.V15_0_0,
                           DexVm.Version.V16_0_0,
                           DexVm.Version.V17_0_0,
-                          DexVm.Version.V17_1_0)),
+                          DexVm.Version.V17_1_0,
+                          DexVm.Version.V17_2_0)),
                   TestCondition.match(
                       compilers(
                           CompilerUnderTest.R8,
@@ -881,7 +884,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
                       DexVm.Version.V15_0_0,
                       DexVm.Version.V16_0_0,
                       DexVm.Version.V17_0_0,
-                      DexVm.Version.V17_1_0)))
+                      DexVm.Version.V17_1_0,
+                      DexVm.Version.V17_2_0)))
           .put("454-get-vreg", TestCondition.match(TestCondition.R8DEX_COMPILER))
           // Fails: regs_jni.cc:42] Check failed: GetVReg(m, 0, kIntVReg, &value)
           // The R8/D8 code does not put values in the same registers as the tests expects.
@@ -903,7 +907,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
                       DexVm.Version.V15_0_0,
                       DexVm.Version.V16_0_0,
                       DexVm.Version.V17_0_0,
-                      DexVm.Version.V17_1_0)))
+                      DexVm.Version.V17_1_0,
+                      DexVm.Version.V17_2_0)))
           .put("457-regs", TestCondition.match(TestCondition.R8DEX_COMPILER))
           // Class not found.
           .put("529-checker-unresolved", TestCondition.any())

@@ -328,6 +328,8 @@ public class ToolHelper {
     ART_17_0_0_HOST(Version.V17_0_0, Kind.HOST),
     ART_17_1_0_TARGET(Version.V17_1_0, Kind.TARGET),
     ART_17_1_0_HOST(Version.V17_1_0, Kind.HOST),
+    ART_17_2_0_TARGET(Version.V17_2_0, Kind.TARGET),
+    ART_17_2_0_HOST(Version.V17_2_0, Kind.HOST),
     ART_MASTER_TARGET(Version.MASTER, Kind.TARGET),
     ART_MASTER_HOST(Version.MASTER, Kind.HOST);
 
@@ -353,6 +355,7 @@ public class ToolHelper {
       V16_0_0("16.0.0"),
       V17_0_0("17.0.0"),
       V17_1_0("17.1.0"),
+      V17_2_0("17.2.0"),
       MASTER("master");
 
       /** This should generally be the latest DEX VM fully supported. */
@@ -427,7 +430,7 @@ public class ToolHelper {
       }
 
       public static Version last() {
-        return V17_1_0;
+        return V17_2_0;
       }
 
       public static Version master() {
@@ -995,6 +998,7 @@ public class ToolHelper {
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "art")
           .put(DexVm.ART_MASTER_HOST, "host/art-master")
+          .put(DexVm.ART_17_2_0_HOST, "host/art-17.2.0")
           .put(DexVm.ART_17_1_0_HOST, "host/art-17.1.0")
           .put(DexVm.ART_17_0_0_HOST, "host/art-17.0.0-beta4")
           .put(DexVm.ART_16_0_0_HOST, "host/art-16.0.0")
@@ -1015,6 +1019,7 @@ public class ToolHelper {
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "bin/art")
           .put(DexVm.ART_MASTER_HOST, "bin/art")
+          .put(DexVm.ART_17_2_0_HOST, "bin/art")
           .put(DexVm.ART_17_1_0_HOST, "bin/art")
           .put(DexVm.ART_17_0_0_HOST, "bin/art")
           .put(DexVm.ART_16_0_0_HOST, "bin/art")
@@ -1035,6 +1040,7 @@ public class ToolHelper {
   private static final Map<DexVm, String> ART_BINARY_VERSIONS_X64 =
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "bin/art")
+          .put(DexVm.ART_17_2_0_HOST, "bin/art")
           .put(DexVm.ART_17_1_0_HOST, "bin/art")
           .put(DexVm.ART_17_0_0_HOST, "bin/art")
           .put(DexVm.ART_16_0_0_HOST, "bin/art")
@@ -1074,6 +1080,7 @@ public class ToolHelper {
     ImmutableMap.Builder<DexVm, List<String>> builder = ImmutableMap.builder();
     builder
         .put(DexVm.ART_DEFAULT, ART_7_TO_10_BOOT_LIBS)
+        .put(DexVm.ART_17_2_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_17_1_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_17_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_16_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
@@ -1098,6 +1105,7 @@ public class ToolHelper {
     ImmutableMap.Builder<DexVm, String> builder = ImmutableMap.builder();
     builder
         .put(DexVm.ART_DEFAULT, "angler")
+        .put(DexVm.ART_17_2_0_HOST, "akita")
         .put(DexVm.ART_17_1_0_HOST, "akita")
         .put(DexVm.ART_17_0_0_HOST, "akita")
         .put(DexVm.ART_16_0_0_HOST, "akita")
@@ -1139,6 +1147,7 @@ public class ToolHelper {
       case V16_0_0:
       case V17_0_0:
       case V17_1_0:
+      case V17_2_0:
       case MASTER:
         return base.resolve("host").resolve("art-" + version);
       default:
@@ -1176,6 +1185,7 @@ public class ToolHelper {
       case V16_0_0:
       case V17_0_0:
       case V17_1_0:
+      case V17_2_0:
       case MASTER:
         return "arm64";
       case V12_0_0:
@@ -1427,6 +1437,8 @@ public class ToolHelper {
     switch (dexVm.version) {
       case MASTER:
         return AndroidApiLevel.MAIN;
+      case V17_2_0:
+        return AndroidApiLevel.CINNAMON_BUN_2;
       case V17_1_0:
         return AndroidApiLevel.CINNAMON_BUN_1;
       case V17_0_0:
@@ -1467,6 +1479,7 @@ public class ToolHelper {
   static final Map<AndroidApiLevel, DexVm.Version> apiLevelToDexVmVersion =
       ImmutableMap.<AndroidApiLevel, DexVm.Version>builder()
           .put(AndroidApiLevel.MAIN, DexVm.Version.MASTER)
+          .put(AndroidApiLevel.CINNAMON_BUN_2, DexVm.Version.V17_2_0)
           .put(AndroidApiLevel.CINNAMON_BUN_1, DexVm.Version.V17_1_0)
           .put(AndroidApiLevel.CINNAMON_BUN, DexVm.Version.V17_0_0)
           .put(AndroidApiLevel.BAKLAVA_1, DexVm.Version.V16_0_0)
@@ -2553,6 +2566,7 @@ public class ToolHelper {
   // Checked in VMs for which dex2oat should work specified in decreasing order.
   private static final List<DexVm> SUPPORTED_DEX2OAT_VMS =
       ImmutableList.of(
+          DexVm.ART_17_2_0_HOST,
           DexVm.ART_17_1_0_HOST,
           DexVm.ART_17_0_0_HOST,
           DexVm.ART_16_0_0_HOST,
@@ -2626,7 +2640,9 @@ public class ToolHelper {
       versionString = "35.14";
     } else if (vm.version == DexVm.Version.V16_0_0) {
       versionString = "36.0";
-    } else if (vm.version == DexVm.Version.V17_0_0 || vm.version == DexVm.Version.V17_1_0) {
+    } else if (vm.version == DexVm.Version.V17_0_0
+        || vm.version == DexVm.Version.V17_1_0
+        || vm.version == DexVm.Version.V17_2_0) {
       versionString = "head";
     } else {
       throw new Unreachable();

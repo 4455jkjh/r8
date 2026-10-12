@@ -51,11 +51,12 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         ImmutableList.of(getTestRunner()));
 
     // android.os.Build$VERSION.SDK_INT_FULL is on API 36.
-    assert AndroidApiLevel.CINNAMON_BUN_1 == AndroidApiLevel.LATEST;
+    assert AndroidApiLevel.CINNAMON_BUN_2 == AndroidApiLevel.LATEST;
     registerFieldTarget(BAKLAVA, 36);
     registerFieldTarget(AndroidApiLevel.BAKLAVA_1, 37);
     registerFieldTarget(AndroidApiLevel.CINNAMON_BUN, 38);
     registerFieldTarget(AndroidApiLevel.CINNAMON_BUN_1, 39);
+    registerFieldTarget(AndroidApiLevel.CINNAMON_BUN_2, 40);
   }
 
   @Override
@@ -114,7 +115,7 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         parameters.frameworkHasBuildVersionCodesFull(), versionCodesFullClass.isPresent());
     if (parameters.frameworkHasBuildVersionCodesFull()) {
       // Update test when more version codes full are added.
-      assert AndroidApiLevel.CINNAMON_BUN_1 == AndroidApiLevel.LATEST;
+      assert AndroidApiLevel.CINNAMON_BUN_2 == AndroidApiLevel.LATEST;
       int expectedCount;
       if (parameters.getApiLevel().isEqualTo(BAKLAVA)) {
         expectedCount = 36;
@@ -122,9 +123,11 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         expectedCount = 37;
       } else if (parameters.getApiLevel().isEqualTo(AndroidApiLevel.CINNAMON_BUN)) {
         expectedCount = 38;
-      } else {
-        assert parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.CINNAMON_BUN_1);
+      } else if (parameters.getApiLevel().isEqualTo(AndroidApiLevel.CINNAMON_BUN_1)) {
         expectedCount = 39;
+      } else {
+        assert parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.CINNAMON_BUN_2);
+        expectedCount = 40;
       }
       Assert.assertEquals(expectedCount, versionCodesFullClass.allFields().size());
       // Copied from BackportedMethodRewriter.
@@ -168,6 +171,7 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         {"BAKLAVA_1", 3600_001},
         {"CINNAMON_BUN", 3700_000},
         {"CINNAMON_BUN_1", 3700_001},
+        {"CINNAMON_BUN_2", 3700_002},
       };
       for (Object[] versionCodeFull : versionCodesFull) {
         if ((Integer) versionCodeFull[1]
@@ -230,6 +234,7 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
     public static /* final */ int BAKLAVA_1 = -37;
     public static /* final */ int CINNAMON_BUN = -38;
     public static /* final */ int CINNAMON_BUN_1 = -39;
+    public static /* final */ int CINNAMON_BUN_2 = -40;
   }
 
   public static class TestRunner extends MiniAssert {
@@ -316,6 +321,7 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
       assertEquals(minSdkFull < 3600_001 ? 3600_001 : -37, VERSION_CODES_FULL.BAKLAVA_1);
       assertEquals(minSdkFull < 3700_000 ? 3700_000 : -38, VERSION_CODES_FULL.CINNAMON_BUN);
       assertEquals(minSdkFull < 3700_001 ? 3700_001 : -39, VERSION_CODES_FULL.CINNAMON_BUN_1);
+      assertEquals(minSdkFull < 3700_002 ? 3700_002 : -40, VERSION_CODES_FULL.CINNAMON_BUN_2);
     }
   }
 }

@@ -121,7 +121,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       // If this assert fails then check these things before updating the assert:
       //   * Check if the below Atomic*FieldUpdater methods have changed implementation.
       //     * If so, verify/correct the static checks to match the runtime checks.
-      assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_1);
+      assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_2);
 
       if (invokedMethod.isIdenticalTo(dexItemFactory.atomicReferenceUpdaterMethods.compareAndSet)) {
         if (visitCompareAndSet(

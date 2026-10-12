@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThrows;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.androidapi.AndroidApiDataAccess;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,16 +36,18 @@ public class AndroidApiLevelTest extends TestBase {
     assertSame(AndroidApiLevel.BAKLAVA_1, AndroidApiLevel.getAndroidApiLevel(36, 1));
     assertSame(AndroidApiLevel.CINNAMON_BUN, AndroidApiLevel.getAndroidApiLevel(37, 0));
     assertSame(AndroidApiLevel.CINNAMON_BUN_1, AndroidApiLevel.getAndroidApiLevel(37, 1));
+    assertSame(AndroidApiLevel.CINNAMON_BUN_2, AndroidApiLevel.getAndroidApiLevel(37, 2));
   }
 
   @Test
   public void testSerializationForAPIDatabase() {
     for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
-      assert apiLevel.serializeAsByte() > 0;
-      assert apiLevel == AndroidApiLevel.deserializeFromByte(apiLevel.serializeAsByte());
+      byte serialized = AndroidApiDataAccess.serializeApiLevel(apiLevel);
+      assert serialized > 0;
+      assert apiLevel == AndroidApiDataAccess.deserializeApiLevel(serialized);
       for (AndroidApiLevel apiLevel2 : AndroidApiLevel.getAndroidApiLevelsSorted()) {
         if (apiLevel != apiLevel2) {
-          assert apiLevel.serializeAsByte() != apiLevel2.serializeAsByte();
+          assert serialized != AndroidApiDataAccess.serializeApiLevel(apiLevel2);
         }
       }
     }
@@ -54,6 +57,6 @@ public class AndroidApiLevelTest extends TestBase {
   public void testIllegal() {
     assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(35, 1));
     assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(36, 2));
-    assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(37, 2));
+    assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(37, 3));
   }
 }

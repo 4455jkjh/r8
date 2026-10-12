@@ -376,7 +376,7 @@ public class AndroidApiLevelDatabaseTestHelper {
     //     * If so, add the new methods here
     //       (and to SunMiscUnsafeApiTest but it will fail if you don't).
     //   * Verify that no existing methods have been removed.
-    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_1);
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN_2);
 
     TypeReference intType = Reference.primitiveFromDescriptor("I");
     TypeReference longType = Reference.primitiveFromDescriptor("J");

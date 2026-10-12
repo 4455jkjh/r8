@@ -379,7 +379,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   @Test
   public void testEntrySize() throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = computeEntries(loadParsedApiClasses());
-    assertEquals(245_212, databaseEntries.size());
+    assertEquals(248_720, databaseEntries.size());
   }
 
   /** If this test fails, use {@link #testDumpDatabase} to diff the content in a readable format. */

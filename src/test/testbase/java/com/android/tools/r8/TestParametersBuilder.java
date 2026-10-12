@@ -75,6 +75,11 @@ public class TestParametersBuilder {
     return withCfRuntimes().withDexRuntimesEndingAtExcluding(DexVm.Version.V17_1_0);
   }
 
+  // TODO(b/572733116): Fix tests on ART 17.2.0.
+  public TestParametersBuilder withAllRuntimesWithout17_2() {
+    return withCfRuntimes().withDexRuntimesEndingAtExcluding(DexVm.Version.V17_2_0);
+  }
+
   public TestParametersBuilder withAllRuntimesAndApiLevels() {
     return withCfRuntimes().withDexRuntimes().withAllApiLevels();
   }
