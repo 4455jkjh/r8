@@ -382,8 +382,9 @@ public class PackageSplitPopulator {
     if (options.testing.classToDexDistributionRefinementPasses > 0
         && options.testing.classToDexDistributionRefinementLegRoomPercentage > 0) {
       // Leave a bit of room for the refinement to be more effective.
-      maxEntries -=
-          maxEntries * (options.testing.classToDexDistributionRefinementLegRoomPercentage / 100);
+      double legRoomFraction =
+          options.testing.classToDexDistributionRefinementLegRoomPercentage / 100.0;
+      maxEntries -= (int) (maxEntries * legRoomFraction);
     }
     return current.isFull(maxEntries);
   }
