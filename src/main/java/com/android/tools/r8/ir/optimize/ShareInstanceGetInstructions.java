@@ -46,8 +46,13 @@ public class ShareInstanceGetInstructions extends CodeRewriterPass<AppInfo> {
       // TODO(b/448586591: We should also be able to handle catch handlers by splitting the block we
       // hoist into.
       if (successors.size() == 2 && !block.hasCatchHandlers()) {
-        InstanceGet firstInstanceGet = findFirstInstanceGetInstruction(code, successors.get(0));
-        InstanceGet secondInstanceGet = findFirstInstanceGetInstruction(code, successors.get(1));
+        BasicBlock firstSuccessor = successors.get(0);
+        BasicBlock secondSuccessor = successors.get(1);
+        if (firstSuccessor.hasCatchHandlers() || secondSuccessor.hasCatchHandlers()) {
+          continue;
+        }
+        InstanceGet firstInstanceGet = findFirstInstanceGetInstruction(code, firstSuccessor);
+        InstanceGet secondInstanceGet = findFirstInstanceGetInstruction(code, secondSuccessor);
         if (firstInstanceGet == null || secondInstanceGet == null) {
           continue;
         }
