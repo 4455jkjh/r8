@@ -39,6 +39,8 @@ import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.UncheckedApiLevel;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -79,8 +81,16 @@ public class UnrepresentableInDexInstructionRemover implements CfInstructionDesu
       if (reported.add(context.getReference())) {
         UnsupportedFeatureDiagnostic diagnostic =
             makeDiagnostic(context.getOrigin(), MethodPosition.create(context));
-        assert (diagnostic.getSupportedApiLevel() == -1 && supportedApiLevel == null)
-            || (diagnostic.getSupportedApiLevel() == supportedApiLevel.getMajor());
+        if (AssertionUtils.assertionsEnabled()) {
+          var diagnosticApi =
+              diagnostic.getSupportedApiLevelMajor() != -1
+                  ? new UncheckedApiLevel(
+                      diagnostic.getSupportedApiLevelMajor(),
+                      diagnostic.getSupportedApiLevelMinor())
+                  : null;
+          assert (diagnosticApi == null && supportedApiLevel == null)
+              || supportedApiLevel.asUnchecked().equals(diagnosticApi);
+        }
         appView.reporter().warning(diagnostic);
       }
     }

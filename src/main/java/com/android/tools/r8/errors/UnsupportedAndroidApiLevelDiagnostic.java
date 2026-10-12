@@ -9,18 +9,15 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 
 @KeepForApi
 public class UnsupportedAndroidApiLevelDiagnostic implements Diagnostic {
 
-  private final int apiLevelMajor;
-  private final int apiLevelMinor;
+  private final UncheckedApiLevel apiLevel;
 
   public UnsupportedAndroidApiLevelDiagnostic(int apiLevelMajor, int apiLevelMinor) {
-    assert apiLevelMajor > 0;
-    assert apiLevelMinor >= 0;
-    this.apiLevelMajor = apiLevelMajor;
-    this.apiLevelMinor = apiLevelMinor;
+    apiLevel = new UncheckedApiLevel(apiLevelMajor, apiLevelMinor);
   }
 
   @Override
@@ -36,10 +33,9 @@ public class UnsupportedAndroidApiLevelDiagnostic implements Diagnostic {
   @Override
   public String getDiagnosticMessage() {
     return "An API level of "
-        + apiLevelMajor
-        + ((apiLevelMinor != 0) ? "." + apiLevelMinor : "")
+        + apiLevel
         + " is not supported by this compiler. Please use an API level of "
-        + AndroidApiLevel.LATEST.getMajor()
+        + AndroidApiLevel.LATEST.getNumericString()
         + " or earlier)";
   }
 }

@@ -9,6 +9,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 
 @KeepForApi
 public class IgnoredBackportMethodDiagnostic implements DesugarDiagnostic {
@@ -16,14 +17,25 @@ public class IgnoredBackportMethodDiagnostic implements DesugarDiagnostic {
   private final DexMember<?, ?> backport;
   private final Origin origin;
   private final Position position;
-  private final int minApiLevel;
+  private final UncheckedApiLevel minApiLevel;
 
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   public IgnoredBackportMethodDiagnostic(
       DexMember<?, ?> backport, Origin origin, Position position, int minApiLevel) {
+    this(backport, origin, position, minApiLevel, 0);
+  }
+
+  public IgnoredBackportMethodDiagnostic(
+      DexMember<?, ?> backport,
+      Origin origin,
+      Position position,
+      int minApiLevelMajor,
+      int minApiLevelMinor) {
     this.backport = backport;
     this.origin = origin;
     this.position = position;
-    this.minApiLevel = minApiLevel;
+    this.minApiLevel = new UncheckedApiLevel(minApiLevelMajor, minApiLevelMinor);
   }
 
   public MethodReference getIgnoredBackportMethod() {
@@ -34,8 +46,18 @@ public class IgnoredBackportMethodDiagnostic implements DesugarDiagnostic {
     return backport.isDexField() ? backport.asDexField().asFieldReference() : null;
   }
 
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   public int getConfiguredMinApiLevel() {
-    return minApiLevel;
+    return minApiLevel.getMajor();
+  }
+
+  public int getConfiguredMinApiLevelMajor() {
+    return minApiLevel.getMajor();
+  }
+
+  public int getConfiguredMinApiLevelMinor() {
+    return minApiLevel.getMinor();
   }
 
   @Override

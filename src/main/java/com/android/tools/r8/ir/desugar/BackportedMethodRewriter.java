@@ -268,7 +268,8 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
                     provider.member,
                     context.getOrigin(),
                     MethodPosition.create(context),
-                    appView.options().getMinApiLevel().getMajor()));
+                    appView.options().getMinApiLevel().getMajor(),
+                    appView.options().getMinApiLevel().getMinor()));
       }
       return null;
     }
