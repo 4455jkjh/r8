@@ -3405,7 +3405,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   // The art verifier incorrectly propagates type information for instance-of instructions that
-  // always evaluate to false (b/288273207, b/335663487).
+  // always evaluate to false (b/288273207, b/335663487, b/572278427).
   //
   // Type t = new Type()
   // Object o = t
