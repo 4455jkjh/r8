@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.HeapUtils;
+import com.android.tools.r8.utils.internal.HeapUtils;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;

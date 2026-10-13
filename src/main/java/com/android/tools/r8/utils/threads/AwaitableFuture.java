@@ -5,6 +5,7 @@
 package com.android.tools.r8.utils.threads;
 
 import com.android.tools.r8.threading.ThreadingModule;
+import com.android.tools.r8.utils.internal.threads.Awaitable;
 import com.google.common.util.concurrent.Futures;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;

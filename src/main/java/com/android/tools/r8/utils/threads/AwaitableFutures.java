@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.utils.threads;
 
+import com.android.tools.r8.utils.internal.threads.Awaitable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
