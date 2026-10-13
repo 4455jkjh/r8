@@ -6,8 +6,6 @@ package com.android.tools.r8.workaround;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -60,10 +58,7 @@ public class InvalidVerifierTypePropagationAfterInstanceOfPhiTest extends TestBa
         .addInnerClasses(getClass())
         .addKeepClassAndMembersRules(Main.class)
         .run(parameters.getRuntime(), Main.class)
-        .applyIfDexRuntime(
-            version -> !version.isDalvik() && version.isOlderThan(Version.V15_0_0),
-            rr -> rr.assertFailureWithErrorThatThrows(VerifyError.class),
-            TestRunResult::assertSuccessWithEmptyOutput);
+        .assertSuccessWithEmptyOutput();
   }
 
   static class Main {
