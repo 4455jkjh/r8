@@ -30,9 +30,9 @@ fun jarDependencies(): FileCollection {
     })
 }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
@@ -57,16 +57,13 @@ tasks {
   }
 }
 
-val resourceshrinkerJar by
-  configurations.consumable("resourceshrinkerJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
+configurations.consumable("resourceshrinkerJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
 
-val resourceshrinkerDepsJar by
-  configurations.consumable("resourceshrinkerDepsJar") {
-    outgoing.artifact(tasks.named<Jar>("depsJar"))
-  }
+configurations.consumable("resourceshrinkerDepsJar") {
+  outgoing.artifact(tasks.named<Jar>("depsJar"))
+}
 
-val resourceshrinkerClasses by
-  configurations.consumable("resourceshrinkerClasses") {
-    outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-    outgoing.artifact(tasks.named<KotlinCompile>("compileKotlin").map { it.destinationDirectory })
-  }
+configurations.consumable("resourceshrinkerClasses") {
+  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+  outgoing.artifact(tasks.named<KotlinCompile>("compileKotlin").map { it.destinationDirectory })
+}

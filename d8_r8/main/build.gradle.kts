@@ -23,18 +23,18 @@ java {
   }
 }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
 dependencies { sharedDepsScope(project(":third_party", "sharedDepsFiles")) }
 
-val internalJarScope by configurations.dependencyScope("internalJarScope")
-val internalJarResolvable by
-  configurations.resolvable("internalJarResolvable") { extendsFrom(internalJarScope) }
-val internalClassesScope by configurations.dependencyScope("internalClassesScope")
-val internalClassesResolvable by
-  configurations.resolvable("internalClassesResolvable") { extendsFrom(internalClassesScope) }
+val internalJarScope = configurations.dependencyScope("internalJarScope")
+val internalJarResolvable =
+  configurations.resolvable("internalJarResolvable") { extendsFrom(internalJarScope.get()) }
+val internalClassesScope = configurations.dependencyScope("internalClassesScope")
+val internalClassesResolvable =
+  configurations.resolvable("internalClassesResolvable") { extendsFrom(internalClassesScope.get()) }
 
 dependencies {
   internalJarScope(project(":utils", "isolatedJar"))
@@ -65,22 +65,19 @@ tasks.named("sourcesJar") { dependsOn(sharedDepsConfig) }
 tasks.withType<ProcessResources> { dependsOn(sharedDepsConfig) }
 
 // Contains both :main jar and :utils jar but not third party dependencies.
-val mainJar by configurations.consumable("mainJar") { extendsFrom(internalJarResolvable) }
+configurations.consumable("mainJar") {
+  extendsFrom(internalJarResolvable.get())
+  outgoing.artifact(tasks.named("jar"))
+}
+
 // Contains partial class files of :main and all class files of :utils but not third party
 // dependencies.
-val mainClassesOutput by
-  configurations.consumable("mainClassesOutput") { extendsFrom(internalClassesResolvable) }
-// Contains partial class files of :main but not :utils nor third party dependencies.
-val mainResources by configurations.consumable("mainResources")
+configurations.consumable("mainClassesOutput") {
+  extendsFrom(internalClassesResolvable.get())
+  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+}
 
-artifacts {
-  add(mainJar.name, tasks.named("jar"))
-  add(
-    mainClassesOutput.name,
-    tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory },
-  )
-  add(
-    mainResources.name,
-    tasks.named<ProcessResources>("processResources").map { it.destinationDir },
-  )
+// Contains partial class files of :main but not :utils nor third party dependencies.
+configurations.consumable("mainResources") {
+  outgoing.artifact(tasks.named<ProcessResources>("processResources").map { it.destinationDir })
 }

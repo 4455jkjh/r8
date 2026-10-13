@@ -4,9 +4,9 @@
 package com.android.tools.r8.benchmarks.desugaredlib;
 
 import com.android.tools.r8.L8TestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestState;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.benchmarks.BenchmarkDependency;
@@ -16,7 +16,6 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpeci
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,10 +26,7 @@ public class L8Benchmark extends BenchmarkBase {
 
   private static final BenchmarkDependency ANDROID_JAR = BenchmarkDependency.getAndroidJar30();
   private static final BenchmarkDependency LEGACY_CONF =
-      new BenchmarkDependency(
-          "legacyConf",
-          "2.0.3",
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "desugar_jdk_libs_releases"));
+      new BenchmarkDependency("legacyConf", TestDeps::getDesugarLibraryRelease2_0_3Dir);
 
   public L8Benchmark(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);

@@ -9,9 +9,9 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestAppViewBuilder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -48,7 +48,7 @@ public class KeptTargetsIncompleteDiamondTest extends TestBase {
       Class<?> methodToBeKept, Class<?> classToBeKept) throws Exception {
     return TestAppViewBuilder.builder()
         .addProgramClasses(I.class, J.class, K.class, L.class, A.class, Main.class)
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addKeepRuleBuilder(
             factory ->
                 ImmutableList.<ProguardConfigurationRule>builder()

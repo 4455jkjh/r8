@@ -12,11 +12,11 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collection;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,7 +55,7 @@ public class KotlinClassStaticizerTest extends AbstractR8KotlinTestBase {
             });
   }
 
-  protected R8TestRunResult runTest(String folder, String mainClass) throws Exception {
+  protected R8TestMultiRunResult runTest(String folder, String mainClass) throws Exception {
     return runTest(folder, mainClass, R8TestBuilder::noClassInlining);
   }
 }

@@ -16,6 +16,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.ArchiveClassFileProvider;
 import com.android.tools.r8.ArchiveProgramResourceProvider;
 import com.android.tools.r8.StringResource;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
@@ -167,7 +168,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
     Path directory = temp.newFolder().toPath();
     Path jdkLibJar =
         libraryDesugaringSpecification == JDK8
-            ? ToolHelper.DESUGARED_JDK_8_LIB_JAR
+            ? TestDeps.getDesugarJdkLibs8Jar()
             : LibraryDesugaringSpecification.getTempLibraryJDK11Undesugar();
     GenerateDesugaredLibraryLintFiles.main(
         new String[] {
@@ -212,7 +213,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
   public void testHTML() throws Exception {
     Path jdkLibJar =
         libraryDesugaringSpecification == JDK8
-            ? ToolHelper.DESUGARED_JDK_8_LIB_JAR
+            ? TestDeps.getDesugarJdkLibs8Jar()
             : LibraryDesugaringSpecification.getTempLibraryJDK11Undesugar();
 
     Path directory2 = temp.newFolder().toPath();
@@ -248,7 +249,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
     for (LibraryDesugaringSpecification spec : specs) {
       Path jdkLibJar =
           spec == JDK8
-              ? ToolHelper.DESUGARED_JDK_8_LIB_JAR
+              ? TestDeps.getDesugarJdkLibs8Jar()
               : LibraryDesugaringSpecification.getTempLibraryJDK11Undesugar();
       new GenerateHtmlDoc(
               StringResource.fromFile(spec.getSpecification()),

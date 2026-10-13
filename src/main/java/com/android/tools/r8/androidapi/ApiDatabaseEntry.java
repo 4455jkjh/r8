@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.androidapi;
 
-import static com.android.tools.r8.lightir.ByteUtils.isU2;
+import static com.android.tools.r8.utils.LebUtils.putUleb128;
 
 import com.android.tools.r8.apimodel.FieldTypelessReference;
 import com.android.tools.r8.graph.DexField;
@@ -113,16 +113,6 @@ public abstract class ApiDatabaseEntry {
     return new String(bytes, 0, bytes.length - 1, StandardCharsets.UTF_8);
   }
 
-  private static byte getFirstByteFromShort(int value) {
-    assert isU2(value);
-    return (byte) (value >> 8);
-  }
-
-  private static byte getSecondByteFromShort(int value) {
-    assert isU2(value);
-    return (byte) value;
-  }
-
   /**
    * Represents an entry in the database's constant pool. Wraps the raw UTF-8 bytes of a string
    * (e.g., class descriptor, method name, or type descriptor).
@@ -182,9 +172,10 @@ public abstract class ApiDatabaseEntry {
       if (typeId < 0) {
         return NON_EXISTING_DESCRIPTOR;
       }
-      return new byte[] {
-        TYPE_IDENTIFIER, getFirstByteFromShort(typeId), getSecondByteFromShort(typeId)
-      };
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      baos.write(TYPE_IDENTIFIER);
+      putUleb128(baos, typeId);
+      return baos.toByteArray();
     }
 
     @Override
@@ -230,24 +221,20 @@ public abstract class ApiDatabaseEntry {
       }
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       baos.write(METHOD_IDENTIFIER);
-      baos.write(getFirstByteFromShort(holderId));
-      baos.write(getSecondByteFromShort(holderId));
-      baos.write(getFirstByteFromShort(nameId));
-      baos.write(getSecondByteFromShort(nameId));
+      putUleb128(baos, holderId);
+      putUleb128(baos, nameId);
       for (byte[] parameter : parameters) {
         int parameterId = constantPoolLookup.apply(new ConstantPoolEntry(parameter));
         if (parameterId < 0) {
           return NON_EXISTING_DESCRIPTOR;
         }
-        baos.write(getFirstByteFromShort(parameterId));
-        baos.write(getSecondByteFromShort(parameterId));
+        putUleb128(baos, parameterId);
       }
       int returnTypeId = constantPoolLookup.apply(new ConstantPoolEntry(returnType));
       if (returnTypeId < 0) {
         return NON_EXISTING_DESCRIPTOR;
       }
-      baos.write(getFirstByteFromShort(returnTypeId));
-      baos.write(getSecondByteFromShort(returnTypeId));
+      putUleb128(baos, returnTypeId);
       return baos.toByteArray();
     }
 
@@ -304,13 +291,11 @@ public abstract class ApiDatabaseEntry {
       if (nameId < 0) {
         return NON_EXISTING_DESCRIPTOR;
       }
-      return new byte[] {
-        FIELD_IDENTIFIER,
-        getFirstByteFromShort(holderId),
-        getSecondByteFromShort(holderId),
-        getFirstByteFromShort(nameId),
-        getSecondByteFromShort(nameId)
-      };
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      baos.write(FIELD_IDENTIFIER);
+      putUleb128(baos, holderId);
+      putUleb128(baos, nameId);
+      return baos.toByteArray();
     }
 
     @Override

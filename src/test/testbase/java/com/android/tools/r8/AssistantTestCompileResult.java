@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 public class AssistantTestCompileResult
-    extends TestCompileResult<AssistantTestCompileResult, AssistantTestRunResult> {
+    extends TestCompileResult<AssistantTestCompileResult, AssistantTestMultiRunResult> {
 
   private final Path initialOutput;
 
@@ -50,8 +50,8 @@ public class AssistantTestCompileResult
   }
 
   @Override
-  protected AssistantTestRunResult createRunResult(List<SingleTestRunResult> results) {
-    return new AssistantTestRunResult(app, state, results);
+  protected AssistantTestMultiRunResult createRunResult(List<SingleTestRunResult> results) {
+    return new AssistantTestMultiRunResult(app, state, results);
   }
 
   public <E extends Throwable> AssistantTestCompileResult inspectOriginalDex(

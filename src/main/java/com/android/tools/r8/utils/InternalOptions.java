@@ -2357,6 +2357,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableClassToDexDistributionRefinementInDebugMode =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementInDebug", false);
+    public boolean enableCodeItemSizePerReferenceLayout =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableCodeItemSizePerReferenceLayout", true);
 
     // TODO(b/569861570): Remove this flag when optimization has been enabled in Android Platform.
     public boolean enableAndWithDefiniteBitsOptimization =
@@ -3402,7 +3405,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   // The art verifier incorrectly propagates type information for instance-of instructions that
-  // always evaluate to false (b/288273207, b/335663487).
+  // always evaluate to false (b/288273207, b/335663487, b/572278427).
   //
   // Type t = new Type()
   // Object o = t

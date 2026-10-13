@@ -13,7 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -76,7 +76,7 @@ public class StartupSyntheticWithoutContextTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     LinkedHashSet<ExternalStartupItem> startupList = new LinkedHashSet<>();
-    D8TestRunResult d8RunResult =
+    D8TestMultiRunResult d8RunResult =
         testForD8(parameters.getBackend())
             .addInnerClasses(getClass())
             .apply(

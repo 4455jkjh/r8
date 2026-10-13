@@ -72,7 +72,9 @@ public class PartialDesugaringTest extends DesugaredLibraryTestBase {
         AndroidApiLevel.V,
         AndroidApiLevel.BAKLAVA,
         AndroidApiLevel.BAKLAVA_1,
-        AndroidApiLevel.CINNAMON_BUN);
+        AndroidApiLevel.CINNAMON_BUN,
+        AndroidApiLevel.CINNAMON_BUN_1,
+        AndroidApiLevel.CINNAMON_BUN_2);
   }
 
   // TODO(b/268425188): Fix remaining failures.

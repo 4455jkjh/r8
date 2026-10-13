@@ -14,7 +14,7 @@ import java.util.Collection;
 public class AmendApiFromResources {
 
   public static void applyAmendments(
-      Collection<ParsedApiClass<ApiRange>> classes, ApiJarInfo jarInfo)
+      Collection<ParsedApiClass<ApiRange>> classes, ApiJarInfo jarInfo, AmendmentListener listener)
       throws ApiDatabaseGeneratorException, IOException {
     ApiAmendments missingApi =
         readResource("/resources/missing.api.txt", ApiAmendmentsParser::parseApiAmendments);
@@ -23,9 +23,10 @@ public class AmendApiFromResources {
     JarAmendments jarHidden =
         readResource("/resources/hidden.jar.txt", ApiAmendmentsParser::parseJarAmendments);
 
-    ParsedApiClassAmending.amendApi(classes, missingApi);
-    ParsedApiClassAmending.amendApi(classes, hiddenApi);
-    ApiJarInfoAmending.amendJar(jarInfo, jarHidden);
+    ParsedApiClassAmending.amendApi(classes, missingApi, listener);
+    ParsedApiClassAmending.amendApi(classes, hiddenApi, listener);
+    ApiJarInfoAmending.amendJar(jarInfo, jarHidden, listener);
+    listener.done();
   }
 
   private static <T, E extends Throwable> T readResource(

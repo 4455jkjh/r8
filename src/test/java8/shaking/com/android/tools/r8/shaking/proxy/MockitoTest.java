@@ -9,6 +9,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndNotR
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -27,8 +28,6 @@ import org.junit.runners.Parameterized;
 public class MockitoTest extends TestBase {
   private static final String M_I_PKG = "mockito_interface";
   private static final String M_I = M_I_PKG + ".Interface";
-  private static final Path MOCKITO_INTERFACE_JAR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, M_I_PKG + FileUtils.JAR_EXTENSION);
 
   private final TestParameters parameters;
   private final boolean minify;
@@ -49,7 +48,7 @@ public class MockitoTest extends TestBase {
     Path flagToKeepTestRunner = Paths.get(ToolHelper.EXAMPLES_DIR, M_I_PKG, "keep-rules.txt");
     CodeInspector inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(MOCKITO_INTERFACE_JAR)
+            .addProgramFiles(TestDeps.getExamplesPath(M_I_PKG + FileUtils.JAR_EXTENSION))
             .addKeepRuleFiles(flagToKeepTestRunner)
             .addDontWarn("org.mockito.**")
             .addDontObfuscateUnless(minify)
@@ -68,7 +67,7 @@ public class MockitoTest extends TestBase {
         Paths.get(ToolHelper.EXAMPLES_DIR, M_I_PKG, "keep-rules-conditional-on-mock.txt");
     CodeInspector inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(MOCKITO_INTERFACE_JAR)
+            .addProgramFiles(TestDeps.getExamplesPath(M_I_PKG + FileUtils.JAR_EXTENSION))
             .addKeepRuleFiles(flagToKeepInterfaceConditionally)
             .addDontWarn("org.mockito.**")
             .addDontObfuscateUnless(minify)

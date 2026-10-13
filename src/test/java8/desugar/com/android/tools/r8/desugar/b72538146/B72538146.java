@@ -5,13 +5,12 @@
 package com.android.tools.r8.desugar.b72538146;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,12 +57,7 @@ public class B72538146 extends TestBase {
 
     // Run the classloader test loading the two dex applications.
     testForD8()
-        .addProgramFiles(
-            Paths.get(ToolHelper.THIRD_PARTY_DIR)
-                .resolve("examplesAndroidO")
-                .resolve("classes")
-                .resolve("classloader")
-                .resolve("Runner.class"))
+        .addProgramFiles(TestDeps.getExamplesAndroidOPath("classes", "classloader", "Runner.class"))
         .setMinApi(parameters)
         .compile()
         .run(

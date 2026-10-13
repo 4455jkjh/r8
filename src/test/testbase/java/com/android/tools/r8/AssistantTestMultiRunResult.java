@@ -7,15 +7,15 @@ package com.android.tools.r8;
 import com.android.tools.r8.utils.AndroidApp;
 import java.util.List;
 
-public class AssistantTestRunResult extends MultiTestRunResult<AssistantTestRunResult> {
+public class AssistantTestMultiRunResult extends MultiTestRunResult<AssistantTestMultiRunResult> {
 
-  public AssistantTestRunResult(
+  public AssistantTestMultiRunResult(
       AndroidApp app, TestState state, List<SingleTestRunResult> singleRunResults) {
     super(app, null, state, singleRunResults);
   }
 
   @Override
-  protected AssistantTestRunResult self() {
+  protected AssistantTestMultiRunResult self() {
     return this;
   }
 }

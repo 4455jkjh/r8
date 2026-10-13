@@ -8,6 +8,7 @@ import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.UUID
 import kotlin.reflect.full.declaredMemberProperties
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
@@ -15,11 +16,12 @@ import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
-import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
@@ -42,12 +44,16 @@ public fun DependencyHandler.runtimeOnlyDataScope(dependencyNotation: Any): Depe
   return add("runtimeOnlyDataScope", dependencyNotation)
 }
 
+public class TestDepEntry(
+  @get:Input public val prop: String,
+  @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) public val file: File,
+)
+
 public class TestDepsCommandLineArgumentProvider(
-  @get:InputFiles @get:PathSensitive(PathSensitivity.NONE) public val files: FileCollection,
-  @get:Input public val arguments: Provider<List<String>>,
+  @get:Nested public val entries: Provider<List<TestDepEntry>>
 ) : CommandLineArgumentProvider {
   override fun asArguments(): Iterable<String> {
-    return arguments.get()
+    return entries.get().map { "-DTEST_DEP_${it.prop}=${it.file.absolutePath}" }
   }
 }
 
@@ -70,28 +76,33 @@ public class DependenciesPlugin : Plugin<Project> {
         extendsFrom(runtimeOnlyDataScope.get())
       }
 
-    val testDepsArguments: Provider<List<String>> =
+    val testDepsEntries: Provider<List<TestDepEntry>> =
       runtimeOnlyDataConfig.flatMap { config ->
         config.incoming.artifacts.resolvedArtifacts.map { artifacts ->
-          artifacts
-            .mapNotNull { artifact ->
-              val prop = artifact.variant.attributes.getAttribute(TEST_DEP_PROP)
-              if (prop != null) {
-                "-DTEST_DEP_${prop}=${artifact.file.absolutePath}"
-              } else {
-                null
+          val seenProps = mutableSetOf<String>()
+          artifacts.mapNotNull { artifact ->
+            val prop = artifact.variant.attributes.getAttribute(TEST_DEP_PROP)
+            if (prop != null) {
+              if (!seenProps.add(prop)) {
+                throw GradleException("Duplicate TEST_DEP_PROP: $prop")
               }
+              TestDepEntry(prop, artifact.file)
+            } else {
+              null
             }
-            .distinct()
+          }
         }
       }
-    val testDepsFiles = target.files(runtimeOnlyDataConfig)
 
     target.tasks.withType(Test::class.java).configureEach {
       outputs.doNotCacheIf("Test runs should not and cannot not be cached") { true }
-      jvmArgumentProviders.add(
-        TestDepsCommandLineArgumentProvider(files = testDepsFiles, arguments = testDepsArguments)
-      )
+      dependsOn(runtimeOnlyDataConfig)
+      jvmArgumentProviders.add(TestDepsCommandLineArgumentProvider(entries = testDepsEntries))
+    }
+
+    target.tasks.withType(JavaExec::class.java).configureEach {
+      dependsOn(runtimeOnlyDataConfig)
+      jvmArgumentProviders.add(TestDepsCommandLineArgumentProvider(entries = testDepsEntries))
     }
   }
 
@@ -408,23 +419,23 @@ public object ThirdPartyDeps {
     )
   public val examplesAndroidP: ThirdPartyDependency =
     ThirdPartyDependency("examplesAndroidP", Paths.get("third_party", "examplesAndroidP").toFile())
-  public val examplesAndroidPGenerated: ThirdPartyDependency =
+  public val desugarJdkLibs8: ThirdPartyDependency =
     ThirdPartyDependency(
-      "examplesAndroidPGenerated",
-      Paths.get("third_party", "examplesAndroidPGenerated").toFile(),
-    )
-  public val desugarJdkLibs: ThirdPartyDependency =
-    ThirdPartyDependency(
-      "desugar-jdk-libs",
+      "desugar-jdk-libs-8",
       Paths.get("third_party", "openjdk", "desugar_jdk_libs").toFile(),
     )
-  public val desugarJdkLibsLegacy: ThirdPartyDependency =
-    ThirdPartyDependency(
-      "desugar-jdk-libs-legacy",
-      Paths.get("third_party", "openjdk", "desugar_jdk_libs_legacy").toFile(),
-    )
-  public val desugarLibraryReleases: List<ThirdPartyDependency> =
-    getThirdPartyDesugarLibraryReleases()
+  public val desugarLibraryRelease1_0_9: ThirdPartyDependency =
+    getThirdPartyDesugarLibraryRelease("1.0.9")
+  public val desugarLibraryRelease1_0_10: ThirdPartyDependency =
+    getThirdPartyDesugarLibraryRelease("1.0.10")
+  public val desugarLibraryRelease1_1_0: ThirdPartyDependency =
+    getThirdPartyDesugarLibraryRelease("1.1.0")
+  public val desugarLibraryRelease1_1_1: ThirdPartyDependency =
+    getThirdPartyDesugarLibraryRelease("1.1.1")
+  public val desugarLibraryRelease1_1_5: ThirdPartyDependency =
+    getThirdPartyDesugarLibraryRelease("1.1.5")
+  public val desugarLibraryRelease2_0_3: ThirdPartyDependency =
+    getThirdPartyDesugarLibraryRelease("2.0.3")
   // TODO(b/289363570): This could probably be removed.
   public val framework: ThirdPartyDependency =
     ThirdPartyDependency(
@@ -481,8 +492,6 @@ public object ThirdPartyDeps {
       "float16-test",
       Paths.get("third_party", "openjdk", "float16-test").toFile(),
     )
-  public val junit: ThirdPartyDependency =
-    ThirdPartyDependency("junit", Paths.get("third_party", "junit").toFile())
   public val jdwpTests: ThirdPartyDependency =
     ThirdPartyDependency("jdwp-tests", Paths.get("third_party", "jdwp-tests").toFile())
   public val kotlinCompilers: List<ThirdPartyDependency> = getThirdPartyKotlinCompilers()
@@ -564,7 +573,16 @@ public object ThirdPartyDeps {
       "processkeeprules-binary-compatibility",
       Paths.get("third_party", "processkeeprules", "binary_compatibility").toFile(),
     )
-  public val proguards: List<ThirdPartyDependency> = getThirdPartyProguards()
+  public val proguard7_0_0: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "proguard-7.0.0",
+      Paths.get("third_party", "proguard", "proguard-7.0.0").toFile(),
+    )
+  public val proguard7_7_0: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "proguard-7.7.0",
+      Paths.get("third_party", "proguard", "proguard-7.7.0").toFile(),
+    )
   public val proguardsettings: ThirdPartyDependency =
     ThirdPartyDependency(
       "proguardsettings",
@@ -690,6 +708,8 @@ private fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {
       "lib-v36",
       "lib-v36.1",
       "lib-v37",
+      "lib-v37.1",
+      "lib-v37.2",
     )
     .map(::getThirdPartyAndroidJar)
 }
@@ -709,6 +729,8 @@ private fun getThirdPartyDex2Oat(version: String): ThirdPartyDependency {
 private fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
   return listOf(
       listOf("host", "art-master"),
+      listOf("host", "art-17.2.0"),
+      listOf("host", "art-17.1.0"),
       listOf("host", "art-17.0.0-beta4"),
       listOf("host", "art-16.0.0"),
       listOf("host", "art-15.0.0-beta2"),
@@ -763,12 +785,6 @@ private fun getJdks(): List<ThirdPartyDependency> {
   }
 }
 
-private fun getThirdPartyProguards(): List<ThirdPartyDependency> {
-  return listOf("proguard-7.0.0", "proguard-7.7.0").map {
-    ThirdPartyDependency(it, Paths.get("third_party", "proguard", it).toFile())
-  }
-}
-
 private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
   return listOf(
       "kotlin-compiler-1.3.72",
@@ -788,13 +804,11 @@ private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
     .map { ThirdPartyDependency(it, Paths.get("third_party", "kotlin", it).toFile()) }
 }
 
-private fun getThirdPartyDesugarLibraryReleases(): List<ThirdPartyDependency> {
-  return listOf("1.0.9", "1.0.10", "1.1.0", "1.1.1", "1.1.5", "2.0.3").map {
-    ThirdPartyDependency(
-      "desugar-library-release-$it",
-      Paths.get("third_party", "openjdk", "desugar_jdk_libs_releases", it).toFile(),
-    )
-  }
+private fun getThirdPartyDesugarLibraryRelease(version: String): ThirdPartyDependency {
+  return ThirdPartyDependency(
+    "desugar-library-release-$version",
+    Paths.get("third_party", "openjdk", "desugar_jdk_libs_releases", version).toFile(),
+  )
 }
 
 private fun getInternalIssues(): List<ThirdPartyDependency> {

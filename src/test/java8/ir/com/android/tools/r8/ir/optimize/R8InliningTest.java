@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -74,7 +75,7 @@ public class R8InliningTest extends TestBase {
   }
 
   private Path getInputFile() {
-    return Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, NAME + FileUtils.JAR_EXTENSION);
+    return TestDeps.getExamplesPath(NAME + FileUtils.JAR_EXTENSION);
   }
 
   private Path getGeneratedDexFile() {

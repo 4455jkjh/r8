@@ -10,6 +10,7 @@ import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
@@ -29,7 +30,7 @@ public class NestedExceptionTestRunner extends TestBase {
             .setDisableTreeShaking(true)
             .setDisableMinification(true)
             .addClassProgramData(ToolHelper.getClassAsBytes(CLASS), Origin.unknown())
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(sink.wrapClassFileConsumer(null))
             .build());
     Path out = temp.newFolder().toPath().resolve("test.jar");

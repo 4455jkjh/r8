@@ -13,7 +13,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NeverPropagateValue;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -85,7 +85,7 @@ public class ApplyMappingRepackagingTest extends TestBase {
         new String[] {
           A.class.getTypeName() + " -> baz:", "  int fieldA -> foo", "  void methodA() -> bar"
         };
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addInnerClasses(ApplyMappingRepackagingTest.class)
             .enableInliningAnnotations()

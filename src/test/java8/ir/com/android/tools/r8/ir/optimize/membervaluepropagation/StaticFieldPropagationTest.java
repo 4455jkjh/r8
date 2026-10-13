@@ -10,7 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -41,7 +41,7 @@ public class StaticFieldPropagationTest extends TestBase {
     String expectedOutput =
         StringUtils.lines("TestClass: Hel", "TestClass: lo", "TestClass: wor", "TestClass: ld!");
 
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(Backend.DEX)
             .addProgramClasses(TestClass.class, Log.class)
             .addKeepMainRule(TestClass.class)

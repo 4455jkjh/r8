@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 public class D8TestBuilder
     extends TestCompilerBuilder<
-        D8Command, Builder, D8TestCompileResult, D8TestRunResult, D8TestBuilder> {
+        D8Command, Builder, D8TestCompileResult, D8TestMultiRunResult, D8TestBuilder> {
 
   private D8TestBuilder(TestState state, Builder builder, Backend backend) {
     super(state, builder, backend);

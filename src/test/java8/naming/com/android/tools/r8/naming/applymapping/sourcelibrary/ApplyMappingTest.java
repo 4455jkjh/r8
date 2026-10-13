@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -35,14 +36,17 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ApplyMappingTest extends TestBase {
 
-  private static final Path NAMING001_JAR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "naming001" + FileUtils.JAR_EXTENSION);
+  private static Path getNaming001Jar() {
+    return TestDeps.getExamplesPath("naming001" + FileUtils.JAR_EXTENSION);
+  }
 
-  private static final Path NAMING044_JAR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "naming044" + FileUtils.JAR_EXTENSION);
+  private static Path getNaming044Jar() {
+    return TestDeps.getExamplesPath("naming044" + FileUtils.JAR_EXTENSION);
+  }
 
-  private static final Path APPLYMAPPING044_JAR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "applymapping044" + FileUtils.JAR_EXTENSION);
+  private static Path getApplymapping044Jar() {
+    return TestDeps.getExamplesPath("applymapping044" + FileUtils.JAR_EXTENSION);
+  }
 
   @Parameter(0)
   public TestParameters parameters;
@@ -57,8 +61,8 @@ public class ApplyMappingTest extends TestBase {
     // Make sure the given proguard map is indeed applied.
     CodeInspector inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(APPLYMAPPING044_JAR)
-            .addClasspathFiles(NAMING044_JAR)
+            .addProgramFiles(getApplymapping044Jar())
+            .addClasspathFiles(getNaming044Jar())
             .addKeepRuleFiles(
                 Paths.get(
                     ToolHelper.EXAMPLES_DIR, "applymapping044", "keep-rules-apply-mapping.txt"))
@@ -112,7 +116,7 @@ public class ApplyMappingTest extends TestBase {
     // keep rules to reserve D and E, along with a proguard map.
     CodeInspector inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(NAMING001_JAR)
+            .addProgramFiles(getNaming001Jar())
             .addKeepRuleFiles(Paths.get(ToolHelper.EXAMPLES_DIR, "naming001", "keep-rules-105.txt"))
             .addDontObfuscate()
             .setMinApi(parameters)
@@ -142,7 +146,7 @@ public class ApplyMappingTest extends TestBase {
     // keep rules just to rename E
     CodeInspector inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(NAMING001_JAR)
+            .addProgramFiles(getNaming001Jar())
             .addKeepRuleFiles(Paths.get(ToolHelper.EXAMPLES_DIR, "naming001", "keep-rules-106.txt"))
             .addDontOptimize()
             .addDontShrink()

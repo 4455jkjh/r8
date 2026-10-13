@@ -3,11 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
-
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.DexRuntime;
@@ -48,7 +48,7 @@ public class BreakPointEventsTestRunner extends DebugTestBase {
         R8Command.builder()
             .setMode(CompilationMode.DEBUG)
             .addProgramFiles(getClassFilePath())
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(new ClassFileConsumer.ArchiveConsumer(outCf))
             .build());
     return new CfDebugTestConfig(ToolHelper.getClassPathForTests()).addPaths(outCf);

@@ -6,7 +6,7 @@ package com.android.tools.r8.naming.retrace;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
@@ -54,7 +54,7 @@ public abstract class RetraceTestBase extends TestBase {
   public void runTest(List<String> keepRules, BiConsumer<StackTrace, StackTrace> checker)
       throws Exception {
 
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8Compat(parameters.getBackend(), compat)
             .setMode(mode)
             .addProgramClasses(getClasses())

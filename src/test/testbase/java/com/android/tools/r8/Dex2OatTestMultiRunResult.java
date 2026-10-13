@@ -12,34 +12,34 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-public class Dex2OatTestRunResult extends MultiTestRunResult<Dex2OatTestRunResult> {
+public class Dex2OatTestMultiRunResult extends MultiTestRunResult<Dex2OatTestMultiRunResult> {
 
   private final Path oat;
 
-  public Dex2OatTestRunResult(
+  public Dex2OatTestMultiRunResult(
       AndroidApp app, Path oat, TestState state, List<SingleTestRunResult> singleRunResults) {
     super(app, null, state, singleRunResults);
     this.oat = oat;
   }
 
   @Override
-  protected Dex2OatTestRunResult self() {
+  protected Dex2OatTestMultiRunResult self() {
     return this;
   }
 
-  public Dex2OatTestRunResult assertNoLockVerificationErrors() {
+  public Dex2OatTestMultiRunResult assertNoLockVerificationErrors() {
     return assertInStderr("failed lock verification", false);
   }
 
-  public Dex2OatTestRunResult assertNoVerificationErrors() {
+  public Dex2OatTestMultiRunResult assertNoVerificationErrors() {
     return assertInStderr("Verification error", false);
   }
 
-  public Dex2OatTestRunResult assertSoftVerificationErrors() {
+  public Dex2OatTestMultiRunResult assertSoftVerificationErrors() {
     return assertInStderr("Soft verification failures", true);
   }
 
-  private Dex2OatTestRunResult assertInStderr(String substring, boolean expected) {
+  private Dex2OatTestMultiRunResult assertInStderr(String substring, boolean expected) {
     for (SingleTestRunResult singleResult : getSingleRunResults()) {
       singleResult.assertSuccess();
       assertEquals(expected, singleResult.getStdErr().contains(substring));

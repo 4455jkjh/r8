@@ -46,7 +46,7 @@ public class RenameSourceFileAttributeCompatTest extends TestBase {
   }
 
   private void checkSourceFileIsRemoved(TestRunResult<?> result) throws Exception {
-    String removalValue = result.isR8TestRunResult() ? "r8-map-id-42" : null;
+    String removalValue = result.isR8TestMultiRunResult() ? "r8-map-id-42" : null;
     checkSourceFile(result, removalValue, removalValue, removalValue);
   }
 

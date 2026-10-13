@@ -11,6 +11,7 @@ import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
@@ -78,7 +79,7 @@ public class MultiDimensionalArrayTest extends TestBase {
 
     AndroidApp app = buildAndroidApp(classes);
     ProgramConsumer programConsumer = ClassFileConsumer.emptyConsumer();
-    Path library = ToolHelper.getJava8RuntimeJar();
+    Path library = TestDeps.getJava8RuntimeJar();
     R8Command.Builder builder =
         ToolHelper.prepareR8CommandBuilder(app, programConsumer).addLibraryFiles(library);
     builder.addProguardConfiguration(

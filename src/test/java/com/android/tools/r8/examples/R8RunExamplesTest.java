@@ -10,11 +10,12 @@ import static com.android.tools.r8.TestCondition.match;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.TestCondition;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -84,8 +85,8 @@ public class R8RunExamplesTest extends R8RunExamplesTestBase {
   }
 
   @Override
-  protected String getExampleDir() {
-    return ToolHelper.EXAMPLES_BUILD_DIR;
+  protected Path getExampleDir() {
+    return TestDeps.getExamplesDir();
   }
 
   @Override

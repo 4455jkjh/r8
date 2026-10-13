@@ -8,10 +8,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -49,7 +49,7 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
             buildInnerClasses(GenericSignatureCorrectnessHelperTests.class)
-                .addLibraryFile(ToolHelper.getJava8RuntimeJar())
+                .addLibraryFile(TestDeps.getJava8RuntimeJar())
                 .build(),
             Timing.empty(),
             factory ->
@@ -193,7 +193,7 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
         computeAppViewWithLiveness(
             buildClasses(classes)
                 .addClassProgramData(transformations)
-                .addLibraryFile(ToolHelper.getJava8RuntimeJar())
+                .addLibraryFile(TestDeps.getJava8RuntimeJar())
                 .build(),
             Timing.empty(),
             factory ->

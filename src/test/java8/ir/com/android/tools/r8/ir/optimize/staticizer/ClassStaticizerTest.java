@@ -13,7 +13,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -129,7 +129,7 @@ public class ClassStaticizerTest extends TestBase {
 
   @Test
   public void testTrivial() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .enableInliningAnnotations()
@@ -251,7 +251,7 @@ public class ClassStaticizerTest extends TestBase {
         HostOkFieldOnly.class,
         CandidateOkFieldOnly.class
     };
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .enableInliningAnnotations()
@@ -288,7 +288,7 @@ public class ClassStaticizerTest extends TestBase {
         CandidateConflictField.class
     };
     String javaOutput = runOnJava(main);
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .enableInliningAnnotations()
@@ -413,7 +413,7 @@ public class ClassStaticizerTest extends TestBase {
         Candidate.class
     };
     String javaOutput = runOnJava(main);
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(classes)
             .enableConstantArgumentAnnotations()

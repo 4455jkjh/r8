@@ -5,10 +5,12 @@ package com.android.tools.r8.shaking.examples;
 
 import static org.junit.Assert.assertFalse;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.TreeShakingTest;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,8 +30,8 @@ public class TreeShaking18Test extends TreeShakingTest {
   }
 
   @Override
-  protected String getName() {
-    return "examples/shaking18";
+  protected Path getProgramFile() {
+    return TestDeps.getExamplesPath("shaking18.jar");
   }
 
   @Override

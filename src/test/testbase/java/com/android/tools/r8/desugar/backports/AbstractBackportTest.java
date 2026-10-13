@@ -13,8 +13,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.D8TestRunResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestCompileResult;
@@ -231,10 +231,10 @@ public abstract class AbstractBackportTest extends TestBase {
 
   @Test
   public void testD8() throws Exception {
-    testD8(D8TestRunResult::assertSuccess);
+    testD8(D8TestMultiRunResult::assertSuccess);
   }
 
-  public void testD8(ThrowingConsumer<D8TestRunResult, RuntimeException> runResultConsumer)
+  public void testD8(ThrowingConsumer<D8TestMultiRunResult, RuntimeException> runResultConsumer)
       throws Exception {
     parameters.assumeDexRuntime();
     testForD8()
@@ -251,10 +251,10 @@ public abstract class AbstractBackportTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    testR8(R8TestRunResult::assertSuccess);
+    testR8(R8TestMultiRunResult::assertSuccess);
   }
 
-  public void testR8(ThrowingConsumer<R8TestRunResult, RuntimeException> runResultConsumer)
+  public void testR8(ThrowingConsumer<R8TestMultiRunResult, RuntimeException> runResultConsumer)
       throws Exception {
     parameters.assumeDexRuntime();
     testForR8(parameters)

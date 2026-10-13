@@ -12,6 +12,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.StringResource;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
@@ -113,7 +114,7 @@ public class DesugaredMethodsListTest extends DesugaredLibraryTestBase {
     Path output = temp.newFile("lint.txt").toPath();
     Path jdkLibJar =
         libraryDesugaringSpecification == JDK8
-            ? ToolHelper.DESUGARED_JDK_8_LIB_JAR
+            ? TestDeps.getDesugarJdkLibs8Jar()
             : LibraryDesugaringSpecification.getTempLibraryJDK11Undesugar();
 
     // TODO(b/b/302508099): Refactor users of parameters.getRuntime().asDex().getMinApiLevel().
@@ -146,7 +147,7 @@ public class DesugaredMethodsListTest extends DesugaredLibraryTestBase {
     Path output = temp.newFolder("lint").toPath();
     Path jdkLibJar =
         libraryDesugaringSpecification == JDK8
-            ? ToolHelper.DESUGARED_JDK_8_LIB_JAR
+            ? TestDeps.getDesugarJdkLibs8Jar()
             : LibraryDesugaringSpecification.getTempLibraryJDK11Undesugar();
 
     GenerateDesugaredLibraryLintFiles.main(

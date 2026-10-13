@@ -12,7 +12,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -58,7 +58,7 @@ public class EnumMinification extends TestBase {
   public void runTest(
       Class<?> mainClass, byte[] enumClass, String enumTypeName, boolean valueOfKept)
       throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         compile(mainClass, enumClass)
             .run(parameters.getRuntime(), mainClass)
             .assertSuccessWithOutput("VALUE1");

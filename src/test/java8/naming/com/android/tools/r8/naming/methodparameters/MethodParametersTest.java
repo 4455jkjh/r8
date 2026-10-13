@@ -10,8 +10,8 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.D8TestRunResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
@@ -56,7 +56,7 @@ public class MethodParametersTest extends TestBase {
 
   @Test
   public void testKeepingMethodParametersR8() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(getTransformedTestClass())
             .addKeepClassAndMembersRulesWithAllowObfuscation(TestClass.class)
@@ -82,7 +82,7 @@ public class MethodParametersTest extends TestBase {
       throws ExecutionException, CompilationFailedException, IOException {
     // In D8 we always output MethodParameters.
     assumeTrue(parameters.getBackend() == Backend.DEX);
-    D8TestRunResult runResult =
+    D8TestMultiRunResult runResult =
         testForD8()
             .addProgramClassFileData(getTransformedTestClass())
             .setMinApi(keepMethodParameters ? AndroidApiLevel.O : AndroidApiLevel.L)

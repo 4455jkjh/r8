@@ -9,7 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.genericsignature.testclasses.Foo;
@@ -18,9 +18,9 @@ import com.android.tools.r8.graph.genericsignature.testclasses.J;
 import com.android.tools.r8.graph.genericsignature.testclasses.K;
 import com.android.tools.r8.graph.genericsignature.testclasses.L;
 import com.android.tools.r8.graph.genericsignature.testclasses.Main;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,7 +63,7 @@ public class GenericSignatureKeepReferencesPruneTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         (isCompat ? testForR8Compat(parameters.getBackend()) : testForR8(parameters.getBackend()))
             .addProgramClasses(I.class, Foo.class, J.class, K.class, L.class)
             .addProgramClassesAndInnerClasses(Main.class)

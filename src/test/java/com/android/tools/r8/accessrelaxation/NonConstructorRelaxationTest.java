@@ -6,7 +6,7 @@ package com.android.tools.r8.accessrelaxation;
 
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.accessrelaxation.privateinstance.Base;
@@ -72,7 +72,7 @@ public final class NonConstructorRelaxationTest extends AccessRelaxationTestBase
     if (B.class.getResource("B$0.class") != null) {
       programFiles.add(ToolHelper.getResourceAsReadOnlyFile(B.class, "B$0.class"));
     }
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramFiles(programFiles.build())
             .addUnusedArgumentAnnotations()
@@ -165,7 +165,7 @@ public final class NonConstructorRelaxationTest extends AccessRelaxationTestBase
 
   private void testInstanceMethodRelaxation(boolean enableVerticalClassMerging) throws Exception {
     Class<?> mainClass = TestMain.class;
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramFiles(
                 ToolHelper.getClassFileForTestClassFromResources(Base.class),

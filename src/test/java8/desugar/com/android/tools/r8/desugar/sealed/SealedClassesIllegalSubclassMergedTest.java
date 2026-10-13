@@ -43,7 +43,7 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
   public static TestParametersCollection data() {
     return getTestParameters()
         .withCfRuntimesStartingFromIncluding(CfVm.JDK17)
-        .withDexRuntimes()
+        .withDexRuntimesWithout17_1()
         .withAllApiLevels()
         .withPartialCompilation()
         .build();

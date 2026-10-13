@@ -6,7 +6,7 @@ package com.android.tools.r8.debuginfo;
 
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -38,7 +38,7 @@ public class OverloadWithNoLineNumberTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClassFileData(
                 transformer(SimpleCallChainClassWithOverloads.class)

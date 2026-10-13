@@ -12,8 +12,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -43,7 +43,6 @@ import org.junit.runners.Parameterized.Parameters;
 public class IdentifierMinifierTest extends TestBase {
 
   private final TestParameters parameters;
-  private final String appFileName;
   private final List<String> keepRulesFiles;
   private final BiConsumer<TestParameters, CodeInspector> inspection;
   private final String test;
@@ -54,7 +53,6 @@ public class IdentifierMinifierTest extends TestBase {
       List<String> keepRulesFiles,
       BiConsumer<TestParameters, CodeInspector> inspection) {
     this.parameters = parameters;
-    this.appFileName = ToolHelper.EXAMPLES_BUILD_DIR + test + FileUtils.JAR_EXTENSION;
     this.keepRulesFiles = keepRulesFiles;
     this.inspection = inspection;
     this.test = test;
@@ -66,7 +64,7 @@ public class IdentifierMinifierTest extends TestBase {
         test.equals("identifiernamestring") && keepRulesFiles.get(0).endsWith("keep-rules-2.txt");
     CodeInspector codeInspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(Paths.get(appFileName))
+            .addProgramFiles(TestDeps.getExamplesPath(test + FileUtils.JAR_EXTENSION))
             .addKeepRuleFiles(ListUtils.map(keepRulesFiles, Paths::get))
             .allowDiagnosticWarningMessages(hasWarning)
             .enableProguardTestOptions()

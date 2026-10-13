@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.tools.r8.androidapi.ApiDatabaseEntry;
+import com.android.tools.r8.apimodel.AmendmentListener;
 import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.references.Reference;
@@ -117,7 +118,8 @@ public class ApiDatabaseGeneratorTest extends TestBase {
 
     Map<ApiDatabaseEntry, AndroidApiLevel> entries =
         AndroidApiHashingDatabaseBuilderGenerator.generateEntries(
-            ApiDatabaseGenerator.generateClasses(command, trimmer -> trimmer));
+            ApiDatabaseGenerator.generateClasses(
+                command, AmendmentListener.empty(), trimmer -> trimmer));
     assertNull(
         entries.get(
             ApiDatabaseEntry.of(

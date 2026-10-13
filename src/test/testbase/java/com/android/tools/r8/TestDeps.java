@@ -16,6 +16,8 @@ import java.util.Map;
  * All reading of external files in tests should be managed by this class, which encloses the
  * untyped interface with the Gradle setup and system properties.
  *
+ * <p>All paths configured for and returned by {@link TestDeps} must be and are absolute.
+ *
  * <p>Even though this code lies in testbase, all dependencies should not be declared in testbase.
  * It is the callers of these accessors that have responsibility to add the respective dependency.
  * E.g. if module A calls {@link #getJunitJar}, module A should declare the runtimeOnlyData
@@ -43,6 +45,9 @@ public class TestDeps {
     dependencies = new HashMap<>();
     dependencies.put("AAPT2", null);
     dependencies.put("API_DATABASE", null);
+    dependencies.put("ART_TESTS", null);
+    dependencies.put("ART_TESTS_LEGACY", null);
+    dependencies.put("BOOKSTORY", null);
     dependencies.put("BUNDLETOOL", null);
     dependencies.put("CHROME_BENCHMARK", null);
     dependencies.put("CHROME_HEADLESS", null);
@@ -59,27 +64,51 @@ public class TestDeps {
     dependencies.put("CORE_LAMBDA_STUBS", null);
     dependencies.put("DAGGER", null);
     dependencies.put("DEPENDENCIES", null);
+    dependencies.put("DESUGAR_JDK_LIBS_11", null);
+    dependencies.put("DESUGAR_JDK_LIBS_8", null);
     dependencies.put("DESUGAR_LIBRARY_CONVERSIONS", null);
+    dependencies.put("DESUGAR_LIBRARY_RELEASE_1_0_9", null);
+    dependencies.put("DESUGAR_LIBRARY_RELEASE_1_0_10", null);
+    dependencies.put("DESUGAR_LIBRARY_RELEASE_1_1_0", null);
+    dependencies.put("DESUGAR_LIBRARY_RELEASE_1_1_1", null);
+    dependencies.put("DESUGAR_LIBRARY_RELEASE_1_1_5", null);
+    dependencies.put("DESUGAR_LIBRARY_RELEASE_2_0_3", null);
+    dependencies.put("EXAMPLES", null);
+    dependencies.put("EXAMPLES_ANDROID_N", null);
+    dependencies.put("EXAMPLES_ANDROID_O", null);
+    dependencies.put("EXAMPLES_ANDROID_O_GENERATED", null);
+    dependencies.put("EXAMPLES_ANDROID_O_LEGACY", null);
+    dependencies.put("EXAMPLES_ANDROID_P", null);
+    dependencies.put("FEEDER", null);
+    dependencies.put("FOSSIFY_FILE_MANAGER", null);
     dependencies.put("GOOGLE_JAVA_FORMAT", null);
     dependencies.put("GOOGLE_KOTLIN_FORMAT", null);
     dependencies.put("GSON", null);
     dependencies.put("GUAVA_JRE", null);
     dependencies.put("JACOCO", null);
+    dependencies.put("JAVA_8_RUNTIME", null);
     dependencies.put("JAVA_BASE_EXTENSION", null);
     dependencies.put("JDK11_TEST", null);
     dependencies.put("JDK21_FLOAT16_TEST", null);
     dependencies.put("JDWP_TESTS", null);
     dependencies.put("JSR223", null);
+    dependencies.put("KEEPASSDX", null);
     dependencies.put("KOTLIN_R8_TEST_RESOURCES", null);
     dependencies.put("KOTLINX_COROUTINES", null);
     dependencies.put("MULTIDEX", null);
+    dependencies.put("NEWPIPE", null);
     dependencies.put("NOWINANDROID", null);
+    dependencies.put("OMNINOTES", null);
+    dependencies.put("OPENTRACKS", null);
     dependencies.put("PROCESS_KEEP_RULES_BINARY_COMPATIBILITY", null);
+    dependencies.put("PROGUARD_7_0_0", null);
+    dependencies.put("PROGUARD_7_7_0", null);
     dependencies.put("R8", null);
     dependencies.put("R8_MAPPINGS", null);
     dependencies.put("R8_V2_0_74", null);
     dependencies.put("R8_V3_2_54", null);
     dependencies.put("R8_V8_0_46", null);
+    dependencies.put("READYOU", null);
     dependencies.put("RETRACE_BENCHMARK", null);
     dependencies.put("RETRACE_BINARY_COMPATIBILITY", null);
     dependencies.put("RETRACE_PARTITION_FORMATS", null);
@@ -87,6 +116,7 @@ public class TestDeps {
     dependencies.put("RHINO_ANDROID", null);
     dependencies.put("SMALI", null);
     dependencies.put("TIVI", null);
+    dependencies.put("TUSKY", null);
   }
 
   private static Path getDependency(String key) {
@@ -99,6 +129,26 @@ public class TestDeps {
 
   public static Path getApiDatabasePath() {
     return getDependencyPath("API_DATABASE", "resources", "api_database.ser");
+  }
+
+  public static Path getArtTestsDir() {
+    return getDependency("ART_TESTS");
+  }
+
+  public static Path getArtTestsPath(String... path) {
+    return getDependencyPath("ART_TESTS", path);
+  }
+
+  public static Path getArtTestsLegacyDir() {
+    return getDependency("ART_TESTS_LEGACY");
+  }
+
+  public static Path getArtTestsLegacyPath(String... path) {
+    return getDependencyPath("ART_TESTS_LEGACY", path);
+  }
+
+  public static Path getBookStoryDir() {
+    return getDependency("BOOKSTORY");
   }
 
   public static Path getBundleToolJar() {
@@ -161,12 +211,88 @@ public class TestDeps {
     return getDependencyPath("DAGGER", path);
   }
 
+  public static Path getDesugarJdkLibs11Jar() {
+    return getDependencyPath("DESUGAR_JDK_LIBS_11", "desugar_jdk_libs.jar");
+  }
+
+  public static Path getDesugarJdkLibs8Jar() {
+    return getDependencyPath("DESUGAR_JDK_LIBS_8", "desugar_jdk_libs.jar");
+  }
+
   public static Path getDesugarLibraryConversionsDir() {
     return getDependency("DESUGAR_LIBRARY_CONVERSIONS");
   }
 
   public static Path getDesugarLibraryConversions(CustomConversionVersion version) {
     return getDependencyPath("DESUGAR_LIBRARY_CONVERSIONS", version.getFileName());
+  }
+
+  public static Path getDesugarLibraryRelease1_0_9Dir() {
+    return getDependency("DESUGAR_LIBRARY_RELEASE_1_0_9");
+  }
+
+  public static Path getDesugarLibraryRelease1_0_10Dir() {
+    return getDependency("DESUGAR_LIBRARY_RELEASE_1_0_10");
+  }
+
+  public static Path getDesugarLibraryRelease1_1_0Dir() {
+    return getDependency("DESUGAR_LIBRARY_RELEASE_1_1_0");
+  }
+
+  public static Path getDesugarLibraryRelease1_1_1Dir() {
+    return getDependency("DESUGAR_LIBRARY_RELEASE_1_1_1");
+  }
+
+  public static Path getDesugarLibraryRelease1_1_5Dir() {
+    return getDependency("DESUGAR_LIBRARY_RELEASE_1_1_5");
+  }
+
+  public static Path getDesugarLibraryRelease2_0_3Dir() {
+    return getDependency("DESUGAR_LIBRARY_RELEASE_2_0_3");
+  }
+
+  public static Path getExamplesDir() {
+    return getDependency("EXAMPLES");
+  }
+
+  public static Path getExamplesPath(String... path) {
+    return getDependencyPath("EXAMPLES", path);
+  }
+
+  public static Path getExamplesAndroidNDir() {
+    return getDependency("EXAMPLES_ANDROID_N");
+  }
+
+  public static Path getExamplesAndroidNPath(String... path) {
+    return getDependencyPath("EXAMPLES_ANDROID_N", path);
+  }
+
+  public static Path getExamplesAndroidOPath(String... path) {
+    return getDependencyPath("EXAMPLES_ANDROID_O", path);
+  }
+
+  public static Path getExamplesAndroidOGeneratedPath(String... path) {
+    return getDependencyPath("EXAMPLES_ANDROID_O_GENERATED", path);
+  }
+
+  public static Path getExamplesAndroidOLegacyDir() {
+    return getDependency("EXAMPLES_ANDROID_O_LEGACY");
+  }
+
+  public static Path getExamplesAndroidOLegacyPath(String... path) {
+    return getDependencyPath("EXAMPLES_ANDROID_O_LEGACY", path);
+  }
+
+  public static Path getExamplesAndroidPPath(String... path) {
+    return getDependencyPath("EXAMPLES_ANDROID_P", path);
+  }
+
+  public static Path getFeederDir() {
+    return getDependency("FEEDER");
+  }
+
+  public static Path getFossifyFileManagerDir() {
+    return getDependency("FOSSIFY_FILE_MANAGER");
   }
 
   public static Path getGoogleJavaFormatJar() {
@@ -197,6 +323,14 @@ public class TestDeps {
     return getDependencyPath("JACOCO", "lib", "jacococli.jar");
   }
 
+  public static Path getJava8RuntimeDir() {
+    return getDependency("JAVA_8_RUNTIME");
+  }
+
+  public static Path getJava8RuntimeJar() {
+    return getDependencyPath("JAVA_8_RUNTIME", "rt.jar");
+  }
+
   public static Path getJavaBaseExtensionJar() {
     return getDependency("JAVA_BASE_EXTENSION");
   }
@@ -211,6 +345,10 @@ public class TestDeps {
 
   public static Path getJsr223RiJar() {
     return getDependencyPath("JSR223", "jsr223-api-1.0.jar");
+  }
+
+  public static Path getKeePassDXDir() {
+    return getDependency("KEEPASSDX");
   }
 
   public static Path getKotlinR8TestResourcesPath(String... path) {
@@ -237,6 +375,10 @@ public class TestDeps {
     return getDependencyPath("MULTIDEX", "multidex-instrumentation-2.0.0.jar");
   }
 
+  public static Path getNewPipeDir() {
+    return getDependency("NEWPIPE");
+  }
+
   public static Path getNowInAndroidDir() {
     return getDependency("NOWINANDROID");
   }
@@ -245,8 +387,24 @@ public class TestDeps {
     return getDependencyPath("NOWINANDROID", "dump_app.zip");
   }
 
+  public static Path getOmniNotesDir() {
+    return getDependency("OMNINOTES");
+  }
+
+  public static Path getOpenTracksDir() {
+    return getDependency("OPENTRACKS");
+  }
+
   public static Path getProcessKeepRulesBinaryCompatibilityJar() {
     return getDependencyPath("PROCESS_KEEP_RULES_BINARY_COMPATIBILITY", "tests.jar");
+  }
+
+  public static Path getProguard7_0_0Dir() {
+    return getDependency("PROGUARD_7_0_0");
+  }
+
+  public static Path getProguard7_7_0Dir() {
+    return getDependency("PROGUARD_7_7_0");
   }
 
   public static Path getR8Jar() {
@@ -271,6 +429,10 @@ public class TestDeps {
 
   public static Path getR8V8_0_46LibJar() {
     return getDependencyPath("R8_V8_0_46", "r8lib.jar");
+  }
+
+  public static Path getReadYouDir() {
+    return getDependency("READYOU");
   }
 
   public static Path getRetraceBenchmarkDir() {
@@ -305,6 +467,10 @@ public class TestDeps {
     return getDependencyPath("TIVI", "dump_app.zip");
   }
 
+  public static Path getTuskyDir() {
+    return getDependency("TUSKY");
+  }
+
   public static Path getJunitJar() {
     return getDependencyPath("DEPENDENCIES", "junit", "junit", "4.13.2", "junit-4.13.2.jar");
   }
@@ -312,6 +478,15 @@ public class TestDeps {
   public static Path getHamcrestJar() {
     return getDependencyPath(
         "DEPENDENCIES", "org", "hamcrest", "hamcrest-core", "1.3", "hamcrest-core-1.3.jar");
+  }
+
+  public static Path getTestNgJar() {
+    return getDependencyPath("DEPENDENCIES", "org", "testng", "testng", "6.10", "testng-6.10.jar");
+  }
+
+  public static Path getJCommanderJar() {
+    return getDependencyPath(
+        "DEPENDENCIES", "com", "beust", "jcommander", "1.48", "jcommander-1.48.jar");
   }
 
   public static Path getJdwpTestsDexJar() {

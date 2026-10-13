@@ -9,7 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.R8TestCompileResultBase;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -45,8 +45,8 @@ public class ConstResourceValueToStaticFieldTest extends TestBase {
         .build(temp);
   }
 
-  private R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> getSharedBuilder()
-      throws Exception {
+  private R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestMultiRunResult, ?>
+      getSharedBuilder() throws Exception {
     return testForR8(parameters)
         .addProgramClasses(FooBar.class)
         .addAndroidResources(getTestResources(temp))

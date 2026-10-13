@@ -12,7 +12,7 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8FullTestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import org.junit.Test;
@@ -32,7 +32,7 @@ public class PinnedClassMemberReferenceTest extends HorizontalClassMergingTestBa
         .setMinApi(parameters);
   }
 
-  private R8TestRunResult runAndAssertOutput(R8FullTestBuilder builder) throws Exception {
+  private R8TestMultiRunResult runAndAssertOutput(R8FullTestBuilder builder) throws Exception {
     return builder
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines(

@@ -7,9 +7,9 @@ package com.android.tools.r8;
 import com.android.tools.r8.utils.AndroidApp;
 import java.util.List;
 
-public class D8TestRunResult extends MultiTestRunResult<D8TestRunResult> {
+public class D8TestMultiRunResult extends MultiTestRunResult<D8TestMultiRunResult> {
 
-  public D8TestRunResult(
+  public D8TestMultiRunResult(
       AndroidApp app,
       String proguardMap,
       TestState state,
@@ -18,7 +18,7 @@ public class D8TestRunResult extends MultiTestRunResult<D8TestRunResult> {
   }
 
   @Override
-  protected D8TestRunResult self() {
+  protected D8TestMultiRunResult self() {
     return this;
   }
 }

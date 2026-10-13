@@ -18,6 +18,7 @@ import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -64,18 +65,20 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class VerticalClassMergerTest extends TestBase {
 
-  private static final Path CF_DIR =
-      Paths.get(ToolHelper.EXAMPLES_BUILD_DIR).resolve("classes/classmerging");
-  private static final Path JAVA8_CF_DIR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR).resolve("examplesAndroidO/classes/classmerging");
-  private static final Path EXAMPLE_JAR = Paths.get(ToolHelper.EXAMPLES_BUILD_DIR)
-      .resolve("classmerging.jar");
   private static final Path EXAMPLE_KEEP = Paths.get(ToolHelper.EXAMPLES_DIR)
       .resolve("classmerging").resolve("keep-rules.txt");
   private static final Path JAVA8_EXAMPLE_KEEP = Paths.get(ToolHelper.EXAMPLES_ANDROID_O_DIR)
       .resolve("classmerging").resolve("keep-rules.txt");
   private static final Path DONT_OPTIMIZE = Paths.get(ToolHelper.EXAMPLES_DIR)
       .resolve("classmerging").resolve("keep-rules-dontoptimize.txt");
+
+  private static Path getCfDir() {
+    return TestDeps.getExamplesPath("classes", "classmerging");
+  }
+
+  private static Path getJava8CfDir() {
+    return TestDeps.getExamplesAndroidOPath("classes", "classmerging");
+  }
 
   private final TestParameters parameters;
 
@@ -97,7 +100,7 @@ public class VerticalClassMergerTest extends TestBase {
       throws IOException, CompilationFailedException {
     inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(EXAMPLE_JAR)
+            .addProgramFiles(TestDeps.getExamplesPath("classmerging.jar"))
             .addKeepRuleFiles(proguardConfig)
             .enableProguardTestOptions()
             .addDontObfuscate()
@@ -137,9 +140,9 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ArrayTypeCollisionTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("ArrayTypeCollisionTest.class"),
-          CF_DIR.resolve("ArrayTypeCollisionTest$A.class"),
-          CF_DIR.resolve("ArrayTypeCollisionTest$B.class")
+          getCfDir().resolve("ArrayTypeCollisionTest.class"),
+          getCfDir().resolve("ArrayTypeCollisionTest$A.class"),
+          getCfDir().resolve("ArrayTypeCollisionTest$B.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -231,9 +234,9 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.CallGraphCycleTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("CallGraphCycleTest.class"),
-          CF_DIR.resolve("CallGraphCycleTest$A.class"),
-          CF_DIR.resolve("CallGraphCycleTest$B.class")
+          getCfDir().resolve("CallGraphCycleTest.class"),
+          getCfDir().resolve("CallGraphCycleTest$A.class"),
+          getCfDir().resolve("CallGraphCycleTest$B.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of("classmerging.CallGraphCycleTest", "classmerging.CallGraphCycleTest$B");
@@ -253,12 +256,12 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ConflictInGeneratedNameTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("NeverPropagateValue.class"),
-          CF_DIR.resolve("NoAccessModification.class"),
-          CF_DIR.resolve("NoRedundantFieldLoadElimination.class"),
-          CF_DIR.resolve("ConflictInGeneratedNameTest.class"),
-          CF_DIR.resolve("ConflictInGeneratedNameTest$A.class"),
-          CF_DIR.resolve("ConflictInGeneratedNameTest$B.class")
+          getCfDir().resolve("NeverPropagateValue.class"),
+          getCfDir().resolve("NoAccessModification.class"),
+          getCfDir().resolve("NoRedundantFieldLoadElimination.class"),
+          getCfDir().resolve("ConflictInGeneratedNameTest.class"),
+          getCfDir().resolve("ConflictInGeneratedNameTest$A.class"),
+          getCfDir().resolve("ConflictInGeneratedNameTest$B.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -327,9 +330,9 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.FieldCollisionTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("FieldCollisionTest.class"),
-          CF_DIR.resolve("FieldCollisionTest$A.class"),
-          CF_DIR.resolve("FieldCollisionTest$B.class")
+          getCfDir().resolve("FieldCollisionTest.class"),
+          getCfDir().resolve("FieldCollisionTest$A.class"),
+          getCfDir().resolve("FieldCollisionTest$B.class")
         };
     ImmutableSet.Builder<String> preservedNamesBuilder = ImmutableSet.builder();
     preservedNamesBuilder.add("classmerging.FieldCollisionTest");
@@ -354,11 +357,11 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ConflictingInterfaceSignaturesTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest.class"),
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest$A.class"),
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest$B.class"),
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest$InterfaceImpl.class"),
-          CF_DIR.resolve("NeverInline.class")
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest.class"),
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest$A.class"),
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest$B.class"),
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest$InterfaceImpl.class"),
+          getCfDir().resolve("NeverInline.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -381,11 +384,11 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.NestedDefaultInterfaceMethodsTest";
     Path[] programFiles =
         new Path[] {
-          JAVA8_CF_DIR.resolve("NestedDefaultInterfaceMethodsTest.class"),
-          JAVA8_CF_DIR.resolve("NestedDefaultInterfaceMethodsTest$A.class"),
-          JAVA8_CF_DIR.resolve("NestedDefaultInterfaceMethodsTest$B.class"),
-          JAVA8_CF_DIR.resolve("NestedDefaultInterfaceMethodsTest$C.class"),
-          JAVA8_CF_DIR.resolve("NeverInline.class")
+          getJava8CfDir().resolve("NestedDefaultInterfaceMethodsTest.class"),
+          getJava8CfDir().resolve("NestedDefaultInterfaceMethodsTest$A.class"),
+          getJava8CfDir().resolve("NestedDefaultInterfaceMethodsTest$B.class"),
+          getJava8CfDir().resolve("NestedDefaultInterfaceMethodsTest$C.class"),
+          getJava8CfDir().resolve("NeverInline.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -406,10 +409,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.NestedDefaultInterfaceMethodsTest";
     Path[] programFiles =
         new Path[] {
-          JAVA8_CF_DIR.resolve("NestedDefaultInterfaceMethodsTest.class"),
-          JAVA8_CF_DIR.resolve("NestedDefaultInterfaceMethodsTest$A.class"),
-          JAVA8_CF_DIR.resolve("NestedDefaultInterfaceMethodsTest$B.class"),
-          JAVA8_CF_DIR.resolve("NeverInline.class")
+          getJava8CfDir().resolve("NestedDefaultInterfaceMethodsTest.class"),
+          getJava8CfDir().resolve("NestedDefaultInterfaceMethodsTest$A.class"),
+          getJava8CfDir().resolve("NestedDefaultInterfaceMethodsTest$B.class"),
+          getJava8CfDir().resolve("NeverInline.class")
         };
     Set<String> preservedClassNames =
         parameters.isCfRuntime()
@@ -438,10 +441,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.PinnedParameterTypesTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("PinnedParameterTypesTest.class"),
-          CF_DIR.resolve("PinnedParameterTypesTest$Interface.class"),
-          CF_DIR.resolve("PinnedParameterTypesTest$InterfaceImpl.class"),
-          CF_DIR.resolve("PinnedParameterTypesTest$TestClass.class")
+          getCfDir().resolve("PinnedParameterTypesTest.class"),
+          getCfDir().resolve("PinnedParameterTypesTest$Interface.class"),
+          getCfDir().resolve("PinnedParameterTypesTest$InterfaceImpl.class"),
+          getCfDir().resolve("PinnedParameterTypesTest$TestClass.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -463,10 +466,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.PinnedArrayParameterTypesTest";
     Path[] programFiles =
         new Path[] {
-            CF_DIR.resolve("PinnedArrayParameterTypesTest.class"),
-            CF_DIR.resolve("PinnedArrayParameterTypesTest$Interface.class"),
-            CF_DIR.resolve("PinnedArrayParameterTypesTest$InterfaceImpl.class"),
-            CF_DIR.resolve("PinnedArrayParameterTypesTest$TestClass.class")
+          getCfDir().resolve("PinnedArrayParameterTypesTest.class"),
+          getCfDir().resolve("PinnedArrayParameterTypesTest$Interface.class"),
+          getCfDir().resolve("PinnedArrayParameterTypesTest$InterfaceImpl.class"),
+          getCfDir().resolve("PinnedArrayParameterTypesTest$TestClass.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -488,10 +491,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ProguardFieldMapTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("ProguardFieldMapTest.class"),
-          CF_DIR.resolve("ProguardFieldMapTest$A.class"),
-          CF_DIR.resolve("ProguardFieldMapTest$B.class"),
-          CF_DIR.resolve("NeverClassInline.class")
+          getCfDir().resolve("ProguardFieldMapTest.class"),
+          getCfDir().resolve("ProguardFieldMapTest$A.class"),
+          getCfDir().resolve("ProguardFieldMapTest$B.class"),
+          getCfDir().resolve("NeverClassInline.class")
         };
     Set<String> preservedClassNamesWithoutClassMerging =
         ImmutableSet.of(
@@ -558,10 +561,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ProguardMethodMapTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("ProguardMethodMapTest.class"),
-          CF_DIR.resolve("ProguardMethodMapTest$A.class"),
-          CF_DIR.resolve("ProguardMethodMapTest$B.class"),
-          CF_DIR.resolve("NeverClassInline.class")
+          getCfDir().resolve("ProguardMethodMapTest.class"),
+          getCfDir().resolve("ProguardMethodMapTest$A.class"),
+          getCfDir().resolve("ProguardMethodMapTest$B.class"),
+          getCfDir().resolve("NeverClassInline.class")
         };
     Set<String> preservedClassNamesWithoutClassMerging =
         ImmutableSet.of(
@@ -636,10 +639,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ProguardMethodMapTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("ProguardMethodMapTest.class"),
-          CF_DIR.resolve("ProguardMethodMapTest$A.class"),
-          CF_DIR.resolve("ProguardMethodMapTest$B.class"),
-          CF_DIR.resolve("NeverClassInline.class")
+          getCfDir().resolve("ProguardMethodMapTest.class"),
+          getCfDir().resolve("ProguardMethodMapTest$A.class"),
+          getCfDir().resolve("ProguardMethodMapTest$B.class"),
+          getCfDir().resolve("NeverClassInline.class")
         };
     Set<String> preservedClassNamesWithoutClassMerging =
         ImmutableSet.of(
@@ -728,10 +731,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.SuperCallRewritingTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("SubClassThatReferencesSuperMethod.class"),
-          CF_DIR.resolve("SuperClassWithReferencedMethod.class"),
-          CF_DIR.resolve("SuperCallRewritingTest.class"),
-          CF_DIR.resolve("NeverInline.class")
+          getCfDir().resolve("SubClassThatReferencesSuperMethod.class"),
+          getCfDir().resolve("SuperClassWithReferencedMethod.class"),
+          getCfDir().resolve("SuperCallRewritingTest.class"),
+          getCfDir().resolve("NeverInline.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -761,9 +764,9 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.SuperCallRewritingTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("SuperClassWithReferencedMethod.class"),
-          CF_DIR.resolve("SuperCallRewritingTest.class"),
-          CF_DIR.resolve("NeverInline.class")
+          getCfDir().resolve("SuperClassWithReferencedMethod.class"),
+          getCfDir().resolve("SuperCallRewritingTest.class"),
+          getCfDir().resolve("NeverInline.class")
         };
 
     // Build SubClassThatReferencesMethod.
@@ -975,11 +978,11 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ConflictingInterfaceSignaturesTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest.class"),
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest$A.class"),
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest$B.class"),
-          CF_DIR.resolve("ConflictingInterfaceSignaturesTest$InterfaceImpl.class"),
-          CF_DIR.resolve("NeverInline.class")
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest.class"),
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest$A.class"),
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest$B.class"),
+          getCfDir().resolve("ConflictingInterfaceSignaturesTest$InterfaceImpl.class"),
+          getCfDir().resolve("NeverInline.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -999,10 +1002,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.MergeDefaultMethodIntoClassTest";
     Path[] programFiles =
         new Path[] {
-          JAVA8_CF_DIR.resolve("MergeDefaultMethodIntoClassTest.class"),
-          JAVA8_CF_DIR.resolve("MergeDefaultMethodIntoClassTest$A.class"),
-          JAVA8_CF_DIR.resolve("MergeDefaultMethodIntoClassTest$B.class"),
-          JAVA8_CF_DIR.resolve("NeverInline.class")
+          getJava8CfDir().resolve("MergeDefaultMethodIntoClassTest.class"),
+          getJava8CfDir().resolve("MergeDefaultMethodIntoClassTest$A.class"),
+          getJava8CfDir().resolve("MergeDefaultMethodIntoClassTest$B.class"),
+          getJava8CfDir().resolve("NeverInline.class")
         };
     ImmutableSet<String> preservedClassNames =
         ImmutableSet.of(
@@ -1040,9 +1043,9 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.ClassWithNativeMethodTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("ClassWithNativeMethodTest.class"),
-          CF_DIR.resolve("ClassWithNativeMethodTest$A.class"),
-          CF_DIR.resolve("ClassWithNativeMethodTest$B.class")
+          getCfDir().resolve("ClassWithNativeMethodTest.class"),
+          getCfDir().resolve("ClassWithNativeMethodTest$A.class"),
+          getCfDir().resolve("ClassWithNativeMethodTest$B.class")
         };
     // Ensures that the class A with a native method has not been merged into its subclass B.
     ImmutableSet<String> preservedClassNames =
@@ -1064,17 +1067,17 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.SimpleInterfaceAccessTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("SimpleInterfaceAccessTest.class"),
-          CF_DIR.resolve("SimpleInterfaceAccessTest$1.class"),
-          CF_DIR.resolve("SimpleInterfaceAccessTest$SimpleInterface.class"),
-          CF_DIR.resolve("SimpleInterfaceAccessTest$OtherSimpleInterface.class"),
-          CF_DIR.resolve("SimpleInterfaceAccessTest$OtherSimpleInterfaceImpl.class"),
-          CF_DIR.resolve("pkg/SimpleInterfaceImplRetriever.class"),
-          CF_DIR.resolve("pkg/SimpleInterfaceImplRetriever$SimpleInterfaceImpl.class"),
-          CF_DIR.resolve("pkg/SimpleInterfaceImplRetriever$1.class"),
-          CF_DIR.resolve("NeverInline.class"),
-          CF_DIR.resolve("NoAccessModification.class"),
-          CF_DIR.resolve("NoHorizontalClassMerging.class")
+          getCfDir().resolve("SimpleInterfaceAccessTest.class"),
+          getCfDir().resolve("SimpleInterfaceAccessTest$1.class"),
+          getCfDir().resolve("SimpleInterfaceAccessTest$SimpleInterface.class"),
+          getCfDir().resolve("SimpleInterfaceAccessTest$OtherSimpleInterface.class"),
+          getCfDir().resolve("SimpleInterfaceAccessTest$OtherSimpleInterfaceImpl.class"),
+          getCfDir().resolve("pkg/SimpleInterfaceImplRetriever.class"),
+          getCfDir().resolve("pkg/SimpleInterfaceImplRetriever$SimpleInterfaceImpl.class"),
+          getCfDir().resolve("pkg/SimpleInterfaceImplRetriever$1.class"),
+          getCfDir().resolve("NeverInline.class"),
+          getCfDir().resolve("NoAccessModification.class"),
+          getCfDir().resolve("NoHorizontalClassMerging.class")
         };
     // SimpleInterface cannot be merged into SimpleInterfaceImpl because SimpleInterfaceImpl
     // is in a different package and is not public.
@@ -1103,10 +1106,10 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.RewritePinnedMethodTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("RewritePinnedMethodTest.class"),
-          CF_DIR.resolve("RewritePinnedMethodTest$A.class"),
-          CF_DIR.resolve("RewritePinnedMethodTest$B.class"),
-          CF_DIR.resolve("RewritePinnedMethodTest$C.class")
+          getCfDir().resolve("RewritePinnedMethodTest.class"),
+          getCfDir().resolve("RewritePinnedMethodTest$A.class"),
+          getCfDir().resolve("RewritePinnedMethodTest$B.class"),
+          getCfDir().resolve("RewritePinnedMethodTest$C.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
@@ -1129,11 +1132,11 @@ public class VerticalClassMergerTest extends TestBase {
     String main = "classmerging.TemplateMethodTest";
     Path[] programFiles =
         new Path[] {
-          CF_DIR.resolve("TemplateMethodTest.class"),
-          CF_DIR.resolve("TemplateMethodTest$1.class"),
-          CF_DIR.resolve("TemplateMethodTest$AbstractClass.class"),
-          CF_DIR.resolve("TemplateMethodTest$AbstractClassImpl.class"),
-          CF_DIR.resolve("NeverInline.class")
+          getCfDir().resolve("TemplateMethodTest.class"),
+          getCfDir().resolve("TemplateMethodTest$1.class"),
+          getCfDir().resolve("TemplateMethodTest$AbstractClass.class"),
+          getCfDir().resolve("TemplateMethodTest$AbstractClassImpl.class"),
+          getCfDir().resolve("NeverInline.class")
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(

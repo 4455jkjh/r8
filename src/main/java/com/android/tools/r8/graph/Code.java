@@ -255,12 +255,9 @@ public abstract class Code extends CachedHashValueDexItem {
         translatedPosition = bestPosition;
       }
       assert translatedPosition != null;
-      // If the caller has outer frames compose them with the translated position.
-      if (callerPosition.hasCallerPosition()) {
-        translatedPosition =
-            translatedPosition.withOutermostCallerPosition(callerPosition.getCallerPosition());
-      }
-      // If the outline has additional inner frames append them as inner frames on the translation.
+      // The translated position from outlineCaller.getOutlinePositions() already includes any
+      // outer caller frames from callerPosition. If the outline itself has additional inner
+      // frames, append them as inner frames on the translation.
       if (calleePosition.hasCallerPosition()) {
         translatedPosition = calleePosition.replacePosition(outermostCallee, translatedPosition);
       }

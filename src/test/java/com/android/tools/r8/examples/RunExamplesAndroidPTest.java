@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.BaseCommand;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -33,7 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -57,7 +57,6 @@ import org.junit.runners.Parameterized.Parameters;
 public abstract class RunExamplesAndroidPTest<
         B extends BaseCommand.Builder<? extends BaseCommand, B>>
     extends TestBase {
-  static final String EXAMPLE_DIR = ToolHelper.EXAMPLES_ANDROID_P_BUILD_DIR;
 
   abstract class TestRunner<C extends TestRunner<C>> {
     final String testName;
@@ -141,7 +140,7 @@ public abstract class RunExamplesAndroidPTest<
     }
 
     Path getInputJar() {
-      return Paths.get(EXAMPLE_DIR, packageName + JAR_EXTENSION);
+      return TestDeps.getExamplesAndroidPPath(packageName + JAR_EXTENSION);
     }
 
     void run() throws Throwable {

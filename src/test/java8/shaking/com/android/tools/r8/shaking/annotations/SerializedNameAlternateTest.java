@@ -10,7 +10,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -76,7 +76,7 @@ public class SerializedNameAlternateTest extends TestBase {
   @Test
   public void testKeepSerializedName()
       throws IOException, CompilationFailedException, ExecutionException {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addInnerClasses(SerializedNameAlternateTest.class)
             .addKeepAttributes("*Annotation*")

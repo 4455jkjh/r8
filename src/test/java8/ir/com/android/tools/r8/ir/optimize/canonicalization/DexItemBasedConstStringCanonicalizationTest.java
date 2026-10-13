@@ -8,8 +8,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.D8TestRunResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ir.optimize.reflection.GetNameTestBase;
@@ -86,7 +86,7 @@ public class DexItemBasedConstStringCanonicalizationTest extends GetNameTestBase
   public void testD8() throws Exception {
     assumeTrue("Only run D8 for Dex backend", parameters.isDexRuntime() && !enableMinification);
 
-    D8TestRunResult result =
+    D8TestMultiRunResult result =
         testForD8()
             .debug()
             .addProgramClasses(MAIN, CanonicalizationTestClass.class)
@@ -109,7 +109,7 @@ public class DexItemBasedConstStringCanonicalizationTest extends GetNameTestBase
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(MAIN, CanonicalizationTestClass.class)
             .addKeepMainRule(MAIN)

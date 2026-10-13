@@ -8,7 +8,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -70,7 +70,7 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
   private void run(
       SmaliBuilder builder, boolean expectFailure, Consumer<CodeInspector> inspectorConsumer)
       throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramDexFileData(builder.compile())
             .addKeepMainRule(CLASS_NAME)

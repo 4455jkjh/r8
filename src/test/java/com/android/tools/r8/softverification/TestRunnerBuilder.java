@@ -7,7 +7,7 @@ package com.android.tools.r8.softverification;
 import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassInternalName;
 
 import com.android.tools.r8.D8TestCompileResult;
-import com.android.tools.r8.Dex2OatTestRunResult;
+import com.android.tools.r8.Dex2OatTestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -192,7 +192,8 @@ public class TestRunnerBuilder extends TestBase {
             .setMinApi(parameters)
             .addProgramFiles(benchmarkJar)
             .compile();
-    Dex2OatTestRunResult dex2OatTestRunResult = compileResult.runDex2Oat(parameters.getRuntime());
+    Dex2OatTestMultiRunResult dex2OatTestRunResult =
+        compileResult.runDex2Oat(parameters.getRuntime());
     dex2OatTestRunResult.assertSoftVerificationErrors();
   }
 

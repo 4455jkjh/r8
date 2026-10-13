@@ -275,19 +275,19 @@ public class TestBase {
     return true;
   }
 
-  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> testForR8(
+  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestMultiRunResult, ?> testForR8(
       TestParameters parameters) {
     return testForR8(parameters.getBackend(), parameters.getPartialCompilationTestParameters())
         .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
   }
 
-  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> testForR8(
+  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestMultiRunResult, ?> testForR8(
       Backend backend, TestParameters parameters) {
     assert parameters.getRuntime().isNone();
     return testForR8(backend, parameters.getPartialCompilationTestParameters());
   }
 
-  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> testForR8(
+  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestMultiRunResult, ?> testForR8(
       Backend backend, PartialCompilationTestParameters parameters) {
     if (parameters.isNone()) {
       return testForR8(backend);
@@ -874,7 +874,7 @@ public class TestBase {
       builder.addLibraryFiles(ToolHelper.getMostRecentAndroidJar());
     } else {
       assert backend == Backend.CF;
-      builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
+      builder.addLibraryFiles(TestDeps.getJava8RuntimeJar());
     }
     return builder.build();
   }
@@ -1748,7 +1748,7 @@ public class TestBase {
       return ToolHelper.getAndroidJar(parameters.getRuntime().asDex().getMinApiLevel());
     } else {
       assert parameters.isCfRuntime();
-      return ToolHelper.getJava8RuntimeJar();
+      return TestDeps.getJava8RuntimeJar();
     }
   }
 
@@ -1758,7 +1758,7 @@ public class TestBase {
       return ToolHelper.getDefaultAndroidJar();
     } else {
       assert backend == Backend.CF;
-      return ToolHelper.getJava8RuntimeJar();
+      return TestDeps.getJava8RuntimeJar();
     }
   }
 

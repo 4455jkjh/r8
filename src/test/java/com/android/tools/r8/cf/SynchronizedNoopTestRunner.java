@@ -10,6 +10,7 @@ import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfMonitor;
@@ -34,7 +35,7 @@ public class SynchronizedNoopTestRunner {
             .setDisableTreeShaking(true)
             .setDisableMinification(true)
             .addClassProgramData(ToolHelper.getClassAsBytes(CLASS), Origin.unknown())
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(a.wrapClassFileConsumer(null))
             .build());
     CodeInspector inspector = new CodeInspector(a.build());

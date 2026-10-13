@@ -13,6 +13,7 @@ import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -138,7 +139,7 @@ public class PhiDefinitionsTestRunner extends TestBase {
             .setProgramConsumer(consumer)
             .addProgramFiles(inputJar);
     if (consumer instanceof ClassFileConsumer) {
-      builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
+      builder.addLibraryFiles(TestDeps.getJava8RuntimeJar());
     } else {
       builder.addLibraryFiles(ToolHelper.getAndroidJar(parameters.asDexRuntime().getMinApiLevel()));
     }

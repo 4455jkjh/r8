@@ -3,10 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.desugar;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.junit.Assume;
@@ -28,7 +29,7 @@ public class LibraryFilesHelper implements Opcodes {
     addStringConcatFactory(builder);
     addVarHandle(builder);
     builder.build();
-    return new Path[] {generatedJar, ToolHelper.getJava8RuntimeJar()};
+    return new Path[] {generatedJar, TestDeps.getJava8RuntimeJar()};
   }
 
   public static Path[] getJdk11LibraryFiles(TemporaryFolder temp) throws Exception {

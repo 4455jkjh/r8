@@ -10,6 +10,7 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
@@ -36,7 +37,7 @@ public class BaseDefaultMethodTestRunner extends TestBase {
     Builder builder =
         R8Command.builder()
             .setMode(CompilationMode.DEBUG)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(new ArchiveConsumer(out))
             .addProguardConfiguration(config, Origin.unknown());
     for (Class<?> c : CLASSES) {

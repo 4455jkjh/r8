@@ -60,9 +60,9 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
           numberOfMethods.increment(apiClass.methodCount());
         });
     // These numbers will change when updating api-versions.xml.
-    assertEquals(6_952, parsedClasses.size());
-    assertEquals(33_574, numberOfFields.get());
-    assertEquals(51_590, numberOfMethods.get());
+    assertEquals(7_135, parsedClasses.size());
+    assertEquals(34_131, numberOfFields.get());
+    assertEquals(52_415, numberOfMethods.get());
   }
 
   @Test

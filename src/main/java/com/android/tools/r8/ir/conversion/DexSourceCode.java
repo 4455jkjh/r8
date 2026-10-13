@@ -169,9 +169,18 @@ public class DexSourceCode implements SourceCode {
   public void buildInstruction(
       IRBuilder builder, int instructionIndex, boolean firstBlockInstruction) {
     updateCurrentCatchHandlers(instructionIndex, builder.appView.dexItemFactory());
-    updateDebugPosition(instructionIndex, builder);
     currentDexInstruction = code.instructions[instructionIndex];
-    currentDexInstruction.buildIR(builder);
+    if (isMoveResult(currentDexInstruction)) {
+      // In DEX, a move-result instruction can have its own debug position entry (see
+      // hasDebugPositionForMoveResult in DexBuilder). In IR, move-result is merged into the
+      // preceding invoke instruction, so we must build the IR for move-result before emitting
+      // the debug position instruction.
+      currentDexInstruction.buildIR(builder);
+      updateDebugPosition(instructionIndex, builder);
+    } else {
+      updateDebugPosition(instructionIndex, builder);
+      currentDexInstruction.buildIR(builder);
+    }
   }
 
   @Override

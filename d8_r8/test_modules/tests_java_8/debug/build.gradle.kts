@@ -3,7 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 
 java {
-  sourceSets.test.configure {
-    java.srcDir(getRoot().resolveAll("src", "test", "java8", "debug"))
-  }
+  sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "debug")) }
+}
+
+dependencies {
+  runtimeOnlyData(project(":third_party", "examples"))
+  runtimeOnlyData(project(":third_party", "examplesAndroidN"))
+  runtimeOnlyData(project(":third_party", "java8Runtime"))
 }

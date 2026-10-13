@@ -18,6 +18,7 @@ import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.R8RunArtTestsTest.DexTool;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCondition;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -30,7 +31,6 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -139,7 +139,7 @@ public abstract class R8RunExamplesTestBase extends TestBase {
   }
 
   public Path getOriginalJarFile(String postFix) {
-    return Paths.get(getExampleDir(), pkg + postFix + JAR_EXTENSION);
+    return getExampleDir().resolve(pkg + postFix + JAR_EXTENSION);
   }
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -166,7 +166,7 @@ public abstract class R8RunExamplesTestBase extends TestBase {
               addInputFile(R8Command.builder())
                   .addLibraryFiles(
                       output == Output.CF
-                          ? ToolHelper.getJava8RuntimeJar()
+                          ? TestDeps.getJava8RuntimeJar()
                           : ToolHelper.getMostRecentAndroidJar())
                   .setOutput(getOutputFile(), outputMode)
                   .setMode(mode)
@@ -266,7 +266,7 @@ public abstract class R8RunExamplesTestBase extends TestBase {
     return condition != null && condition.test(DexTool.NONE, compiler, version, mode);
   }
 
-  protected abstract String getExampleDir();
+  protected abstract Path getExampleDir();
 
   protected abstract Map<String, TestCondition> getFailingRun();
 

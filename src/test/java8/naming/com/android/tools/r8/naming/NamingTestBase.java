@@ -6,6 +6,7 @@ package com.android.tools.r8.naming;
 import static com.android.tools.r8.ToolHelper.getMostRecentAndroidJar;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -15,7 +16,6 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 
 public abstract class NamingTestBase extends TestBase {
 
-  private final String appFileName;
+  private final String test;
   protected final List<String> keepRulesFiles;
   protected final Consumer<NamingLens> inspection;
 
@@ -37,7 +37,7 @@ public abstract class NamingTestBase extends TestBase {
 
   protected NamingTestBase(
       String test, List<String> keepRulesFiles, BiConsumer<DexItemFactory, NamingLens> inspection) {
-    appFileName = ToolHelper.EXAMPLES_BUILD_DIR + test + ".jar";
+    this.test = test;
     this.keepRulesFiles = keepRulesFiles;
     this.inspection = lens -> inspection.accept(dexItemFactory, lens);
   }
@@ -46,7 +46,7 @@ public abstract class NamingTestBase extends TestBase {
     AppView<AppInfoWithLiveness> appView =
         computeAppViewWithLiveness(
             AndroidApp.builder()
-                .addProgramFile(Paths.get(appFileName))
+                .addProgramFile(TestDeps.getExamplesPath(test + ".jar"))
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
             Timing.empty(),

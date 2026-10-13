@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -96,7 +96,7 @@ public class SourceFileTest extends TestBase {
             .setMinApi(parameters)
             .addKeepAttributeSourceFile()
             .compile();
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         addDummyArg
             ? compileResult.run(parameters.getRuntime(), Main.class, "foo")
             : compileResult.run(parameters.getRuntime(), Main.class);

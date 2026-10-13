@@ -10,15 +10,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -55,7 +55,7 @@ public class ProgramAnnotationRemovalTest extends TestBase {
   }
 
   private void runTest(boolean enableCompatMode) throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8Compat(parameters.getBackend(), enableCompatMode)
             .addInnerClasses(ProgramAnnotationRemovalTest.class)
             .addKeepMainRule(TestClass.class)

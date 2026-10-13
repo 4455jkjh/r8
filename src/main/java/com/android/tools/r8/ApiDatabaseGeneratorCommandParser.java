@@ -31,6 +31,7 @@ public class ApiDatabaseGeneratorCommandParser {
             "into an API database file required for compilation.",
             "Multiple inputs of both are supported and any entries not present in both JAR and XML",
             "form is trimmed away.",
+            "Note that the database format is unstable and not backwards compatible.",
             "The options are:");
     CliParser<ParserState> parser = new CliParser<>(usageHeader);
     return parser

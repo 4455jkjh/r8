@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,8 +13,7 @@ import java.util.function.Supplier;
 public class BenchmarkDependency {
 
   public static BenchmarkDependency getRuntimeJarJava8() {
-    return new BenchmarkDependency(
-        "java8rtjar", "openjdk-rt-1.8", Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk"));
+    return new BenchmarkDependency("java8rtjar", TestDeps::getJava8RuntimeDir);
   }
 
   public static BenchmarkDependency getAndroidJar30() {

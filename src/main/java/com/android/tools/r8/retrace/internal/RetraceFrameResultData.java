@@ -19,6 +19,7 @@ class RetraceFrameResultData {
       RetraceClassElementImpl retraceClassElement,
       List<MemberNamingWithMappedRangesOfName> memberNamingWithMappedRanges,
       OptionalInt position) {
+    assert memberNamingWithMappedRanges != null;
     this.retraceClassElement = retraceClassElement;
     this.memberNamingWithMappedRanges = memberNamingWithMappedRanges;
     this.position = position;
@@ -26,13 +27,12 @@ class RetraceFrameResultData {
 
   @SuppressWarnings("ReferenceEquality")
   boolean isAmbiguous() {
-    if (memberNamingWithMappedRanges == null) {
+    if (memberNamingWithMappedRanges.isEmpty()) {
       return false;
     }
     if (memberNamingWithMappedRanges.size() > 1) {
       return true;
     }
-    assert !memberNamingWithMappedRanges.isEmpty();
     List<MappedRange> methodRanges = memberNamingWithMappedRanges.get(0).getMappedRanges();
     if (methodRanges != null && !methodRanges.isEmpty()) {
       MappedRange initialRange = methodRanges.get(0);

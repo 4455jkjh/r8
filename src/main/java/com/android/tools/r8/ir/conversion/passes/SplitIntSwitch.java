@@ -32,7 +32,9 @@ public class SplitIntSwitch extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return code.metadata().mayHaveIntSwitch() && code.getBlocks().size() >= 6;
+    return options.shouldCompileMethodInReleaseMode(appView, code.context())
+        && code.metadata().mayHaveIntSwitch()
+        && code.getBlocks().size() >= 6;
   }
 
   /**

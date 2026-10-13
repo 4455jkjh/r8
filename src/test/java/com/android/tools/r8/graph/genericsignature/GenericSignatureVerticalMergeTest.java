@@ -10,7 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -37,7 +37,7 @@ public class GenericSignatureVerticalMergeTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8Compat(parameters.getBackend())
             .addInnerClasses(getClass())
             .setMinApi(parameters)

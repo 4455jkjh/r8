@@ -243,7 +243,7 @@ public class TestParameters {
   }
 
   public Path getDefaultRuntimeLibrary() {
-    return isCfRuntime() ? ToolHelper.getJava8RuntimeJar() : getDefaultAndroidJar();
+    return isCfRuntime() ? TestDeps.getJava8RuntimeJar() : getDefaultAndroidJar();
   }
 
   public CfRuntime getCfRuntime() {

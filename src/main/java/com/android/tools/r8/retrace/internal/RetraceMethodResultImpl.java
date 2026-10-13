@@ -20,6 +20,7 @@ import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalInt;
@@ -117,7 +118,8 @@ public class RetraceMethodResultImpl implements RetraceMethodResult {
       boolean preamblePosition = position.isEmpty() || position.getAsInt() <= 0;
       for (Pair<RetraceClassElementImpl, List<MemberNamingWithMappedRangesOfName>> mappedRange :
           mappedRanges) {
-        List<MemberNamingWithMappedRangesOfName> memberNamingWithMappedRanges = new ArrayList<>();
+        List<MemberNamingWithMappedRangesOfName> memberNamingWithMappedRanges =
+            Collections.emptyList();
         // If we could find a result, and we have observed a reported preamble position, we create a
         // mapping containing only the member-naming.
         if (mappedRange.getSecond() != null && preamblePosition) {
@@ -153,7 +155,8 @@ public class RetraceMethodResultImpl implements RetraceMethodResult {
       List<RetraceFrameResultData> narrowedRanges) {
     List<MemberNamingWithMappedRangesOfName> memberNamingWithMappedRanges = mappedRange.getSecond();
     if (memberNamingWithMappedRanges == null) {
-      narrowedRanges.add(new RetraceFrameResultData(mappedRange.getFirst(), null, position));
+      narrowedRanges.add(
+          new RetraceFrameResultData(mappedRange.getFirst(), Collections.emptyList(), position));
       return;
     }
     List<MemberNamingWithMappedRangesOfName> newMemberNamingsResult = new ArrayList<>();

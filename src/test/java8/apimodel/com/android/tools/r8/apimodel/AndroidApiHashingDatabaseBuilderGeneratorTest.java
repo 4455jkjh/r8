@@ -63,6 +63,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -112,9 +113,77 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
               .build();
       cachedParsedApiClasses =
           ApiDatabaseGeneratorTestHelper.generateClasses(
-              command, AndroidApiHashingDatabaseBuilderGeneratorTest::addJarAssertions);
+              command,
+              createAmendmentListener(),
+              AndroidApiHashingDatabaseBuilderGeneratorTest::addJarAssertions);
     }
     return cachedParsedApiClasses;
+  }
+
+  private static AmendmentListener createAmendmentListener() {
+    Set<Object> alreadyPresentAmendments = new HashSet<>();
+    return new AmendmentListener() {
+      @Override
+      public void onAmendApiClass(ApiAmendments.ClassAmendment amendment) {}
+
+      @Override
+      public void onAlreadyPresentApiClass(ApiAmendments.ClassAmendment amendment) {
+        alreadyPresentAmendments.add(amendment);
+      }
+
+      @Override
+      public void onAmendApiMethod(ApiAmendments.MethodAmendment amendment) {}
+
+      @Override
+      public void onAlreadyPresentApiMethod(ApiAmendments.MethodAmendment amendment) {
+        alreadyPresentAmendments.add(amendment);
+      }
+
+      @Override
+      public void onAmendApiField(ApiAmendments.FieldAmendment amendment) {}
+
+      @Override
+      public void onAlreadyPresentApiField(ApiAmendments.FieldAmendment amendment) {
+        alreadyPresentAmendments.add(amendment);
+      }
+
+      @Override
+      public void onAmendJarClass(JarAmendments.ClassAmendment amendment) {}
+
+      @Override
+      public void onAlreadyPresentJarClass(JarAmendments.ClassAmendment amendment) {
+        alreadyPresentAmendments.add(amendment);
+      }
+
+      @Override
+      public void onAmendJarInterface(JarAmendments.InterfaceAmendment amendment) {}
+
+      @Override
+      public void onAlreadyPresentJarInterface(JarAmendments.InterfaceAmendment amendment) {
+        alreadyPresentAmendments.add(amendment);
+      }
+
+      @Override
+      public void onAmendJarMethod(JarAmendments.MethodAmendment amendment) {}
+
+      @Override
+      public void onAlreadyPresentJarMethod(JarAmendments.MethodAmendment amendment) {
+        alreadyPresentAmendments.add(amendment);
+      }
+
+      @Override
+      public void onAmendJarField(JarAmendments.FieldAmendment amendment) {}
+
+      @Override
+      public void onAlreadyPresentJarField(JarAmendments.FieldAmendment amendment) {
+        alreadyPresentAmendments.add(amendment);
+      }
+
+      @Override
+      public void done() {
+        assertThat(alreadyPresentAmendments, matchesItemsOneToOne(Collections.emptySet()));
+      }
+    };
   }
 
   private static Trimmer<ApiDatabaseGeneratorException> addJarAssertions(JarTrimmer jarTrimmer) {
@@ -310,7 +379,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   @Test
   public void testEntrySize() throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = computeEntries(loadParsedApiClasses());
-    assertEquals(244_755, databaseEntries.size());
+    assertEquals(248_720, databaseEntries.size());
   }
 
   /** If this test fails, use {@link #testDumpDatabase} to diff the content in a readable format. */
@@ -581,6 +650,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
    * were introduced. Running main will generate a new jar and run tests on it to ensure it is
    * compatible with R8 sources and works as expected.
    *
+   * <p>OBS: This cannot be run via the editor, run it via the matching Gradle task.
+   *
    * <p>The generated jar depends on r8NoManifestWithoutDeps.
    *
    * <p>If the generated jar passes tests it will be moved and overwrite
@@ -602,7 +673,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             .addJarPath(ToolHelper.getAndroidJar(API_LEVEL))
             .setOutputPath(apiLevels)
             .build();
-    ApiDatabaseGenerator.run(command);
+    ApiDatabaseGeneratorTestHelper.run(
+        command,
+        createAmendmentListener(),
+        AndroidApiHashingDatabaseBuilderGeneratorTest::addJarAssertions);
     Path apiDatabase = TestDeps.getApiDatabasePath();
     assertTrue(
         apiDatabase.endsWith(

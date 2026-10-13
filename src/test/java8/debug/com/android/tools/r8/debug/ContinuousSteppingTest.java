@@ -9,10 +9,10 @@ import com.android.tools.r8.KotlinCompilerTool;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.TestRuntime.DexRuntime;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
@@ -26,7 +26,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,8 +52,7 @@ public class ContinuousSteppingTest extends DebugTestBase {
   private static List<Pair<Path, Predicate<Version>>> listOfJars() {
     return new ConfigListBuilder()
         .addAll(
-            findAllJarsIn(Paths.get(ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR)),
-            ContinuousSteppingTest::fromAndroidN)
+            findAllJarsIn(TestDeps.getExamplesAndroidNDir()), ContinuousSteppingTest::fromAndroidN)
         .build();
   }
 

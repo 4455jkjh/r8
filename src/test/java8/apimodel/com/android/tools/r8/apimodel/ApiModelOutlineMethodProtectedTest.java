@@ -13,6 +13,7 @@ import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
@@ -61,7 +62,7 @@ public class ApiModelOutlineMethodProtectedTest extends TestBase {
         .addLibraryClasses(LibraryClass.class)
         .addLibraryFiles(
             parameters.isCfRuntime()
-                ? ToolHelper.getJava8RuntimeJar()
+                ? TestDeps.getJava8RuntimeJar()
                 : ToolHelper.getFirstSupportedAndroidJar(runApiLevel()))
         .addProgramClassFileData(
             transformer(TestClass.class).setClassDescriptor(TESTCLASS_DESCRIPTOR).transform(),

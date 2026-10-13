@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -23,7 +24,6 @@ import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +39,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public abstract class RunExamplesAndroidNTest<B> extends TestBase {
-
-  private static final String EXAMPLE_DIR = ToolHelper.EXAMPLES_ANDROID_N_BUILD_DIR;
 
   abstract class TestRunner {
     final String testName;
@@ -78,7 +76,7 @@ public abstract class RunExamplesAndroidNTest<B> extends TestBase {
 
     void run() throws Throwable {
       String qualifiedMainClass = packageName + "." + mainClass;
-      Path inputFile = Paths.get(EXAMPLE_DIR, packageName + JAR_EXTENSION);
+      Path inputFile = TestDeps.getExamplesAndroidNPath(packageName + JAR_EXTENSION);
       Path out = temp.getRoot().toPath().resolve(testName + ZIP_EXTENSION);
 
       build(inputFile, out);

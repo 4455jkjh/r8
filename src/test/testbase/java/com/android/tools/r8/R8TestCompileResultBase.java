@@ -54,7 +54,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase<CR>>
-    extends TestCompileResult<CR, R8TestRunResult> {
+    extends TestCompileResult<CR, R8TestMultiRunResult> {
 
   private final String proguardConfiguration;
   private final List<ProguardConfigurationRule> syntheticProguardRules;
@@ -337,20 +337,20 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   }
 
   @Override
-  public R8TestRunResult createRunResult(List<SingleTestRunResult> results) {
-    return new R8TestRunResult(app, proguardMap, this::graphInspector, state, results);
+  public R8TestMultiRunResult createRunResult(List<SingleTestRunResult> results) {
+    return new R8TestMultiRunResult(app, proguardMap, this::graphInspector, state, results);
   }
 
   public CR addFeatureSplitsToRunClasspathFiles() {
     return addRunClasspathFiles(features);
   }
 
-  public R8TestRunResult runFeature(TestRuntime runtime, Class<?> mainFeatureClass)
+  public R8TestMultiRunResult runFeature(TestRuntime runtime, Class<?> mainFeatureClass)
       throws IOException {
     return runFeature(runtime, mainFeatureClass, features.get(0));
   }
 
-  public R8TestRunResult runFeature(
+  public R8TestMultiRunResult runFeature(
       TestRuntime runtime, Class<?> mainFeatureClass, Path feature, Path... featureDependencies)
       throws IOException {
     assert getBackend() == runtime.getBackend();
@@ -477,7 +477,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
       throws IOException {
     if (results.isBenchmarkingCodeSize() && !results.hasDex2OatSizeResult()) {
       if (enableDex2Oat) {
-        Dex2OatTestRunResult dex2OatTestRunResult =
+        Dex2OatTestMultiRunResult dex2OatTestRunResult =
             runDex2Oat(new DexRuntime(DexVm.Version.LATEST_DEX2OAT))
                 .assertNoLockVerificationErrors();
         if (enableDex2OatVerification) {

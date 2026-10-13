@@ -10,6 +10,7 @@ import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -50,7 +51,7 @@ public class ArrayDimensionGreaterThanSevenTestRunner extends DebugTestBase {
         R8Command.builder()
             .addClassProgramData(ToolHelper.getClassAsBytes(CLASS), Origin.unknown())
             .setMode(CompilationMode.DEBUG)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setOutput(cfOut, OutputMode.ClassFile)
             .setDisableTreeShaking(true)
             .setDisableMinification(true)

@@ -9,7 +9,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -55,7 +55,7 @@ public class InlinerShouldNotInlineDefinitelyNullTest extends TestBase {
   @Test
   public void ensureThrowNullInliningsHaveInlinePositions()
       throws CompilationFailedException, IOException, ExecutionException {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(Main.class, A.class)
             .addKeepMainRule(Main.class)

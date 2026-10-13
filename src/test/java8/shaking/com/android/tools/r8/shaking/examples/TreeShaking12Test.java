@@ -7,12 +7,14 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.TreeShakingTest;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
@@ -39,8 +41,8 @@ public class TreeShaking12Test extends TreeShakingTest {
   }
 
   @Override
-  protected String getName() {
-    return "examples/shaking12";
+  protected Path getProgramFile() {
+    return TestDeps.getExamplesPath("shaking12.jar");
   }
 
   @Override

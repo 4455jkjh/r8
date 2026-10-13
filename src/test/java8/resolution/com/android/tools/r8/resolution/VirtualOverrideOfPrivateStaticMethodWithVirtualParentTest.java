@@ -6,7 +6,7 @@ package com.android.tools.r8.resolution;
 import static com.android.tools.r8.ToolHelper.getMostRecentAndroidJar;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -134,7 +134,7 @@ public class VirtualOverrideOfPrivateStaticMethodWithVirtualParentTest extends T
 
   @Test
   public void runR8() throws Exception {
-    R8TestRunResult runResult =
+    R8TestMultiRunResult runResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(CLASSES)
             .addProgramClassFileData(getDumps())

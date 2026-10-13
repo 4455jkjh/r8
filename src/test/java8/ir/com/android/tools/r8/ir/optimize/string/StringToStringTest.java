@@ -7,9 +7,9 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -79,7 +79,7 @@ public class StringToStringTest extends TestBase {
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
 
-    D8TestRunResult result =
+    D8TestMultiRunResult result =
         testForD8()
             .debug()
             .addProgramClasses(MAIN)
@@ -100,7 +100,7 @@ public class StringToStringTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addProgramClasses(MAIN)
             .enableInliningAnnotations()

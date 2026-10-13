@@ -742,7 +742,7 @@ public abstract class TestCompileResult<
     return createRunResult(singleRunResults);
   }
 
-  public Dex2OatTestRunResult runDex2Oat(TestRuntime runtime) throws IOException {
+  public Dex2OatTestMultiRunResult runDex2Oat(TestRuntime runtime) throws IOException {
     assert getBackend() == DEX;
     Path dexFile = writeToZip();
     List<DexRuntime> dexRuntimes = runtime.asDexRuntimes();
@@ -758,7 +758,7 @@ public abstract class TestCompileResult<
               dexFile, oatFile, Files.createDirectory(tmp.resolve("other")), vm);
       singleRunResults.add(new SingleTestRunResult(app, dexRuntime, result, state));
     }
-    return new Dex2OatTestRunResult(
+    return new Dex2OatTestMultiRunResult(
         app, dexRuntimes.size() == 1 ? lastOatFile : null, state, singleRunResults);
   }
 

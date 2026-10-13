@@ -10,12 +10,12 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
-import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collection;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +33,8 @@ public class MetadataRewriteKeepPathTest extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer libJars =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/box_primitives_lib", "lib"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/box_primitives_lib", "lib"));
   private static final String LIB_CLASS_NAME = PKG + ".box_primitives_lib.Test";
   private final TestParameters parameters;
   private final boolean keepMetadata;
@@ -73,7 +74,7 @@ public class MetadataRewriteKeepPathTest extends KotlinMetadataTestBase {
     testForR8(parameters.getBackend())
         .addProgramFiles(libJars.getForConfiguration(kotlinParameters))
         .addLibraryFiles(kotlinc.getKotlinStdlibJar(), kotlinc.getKotlinAnnotationJar())
-        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addLibraryFiles(TestDeps.getJava8RuntimeJar())
         .addKeepRules("-keep class " + LIB_CLASS_NAME)
         .addKeepRuntimeVisibleAnnotations()
         .compile()

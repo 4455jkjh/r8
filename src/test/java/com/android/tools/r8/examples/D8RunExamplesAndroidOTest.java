@@ -53,7 +53,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
                   ? BaseCompilerCommandUtils.getUncheckedMinApiLevel(builder)
                   : androidJarVersion.asUnchecked()));
       builder.addProgramFiles(inputFile);
-      visitFiles(getLegacyClassesRoot(inputFile, packageName), builder::addProgramFiles);
+      visitFiles(getLegacyClassesRoot(packageName), builder::addProgramFiles);
       ToolHelper.runD8(builder, this::combinedOptionConsumer);
     }
 

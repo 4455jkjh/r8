@@ -7,6 +7,7 @@ import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder.DiagnosticsConsumer;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersBuilder;
 import com.android.tools.r8.TestRuntime.CfRuntime;
@@ -59,7 +60,7 @@ public abstract class TreeShakingTest extends TestBase {
     return buildParameters(getTestParameters().withAllRuntimesAndApiLevels().build(), minifyModes);
   }
 
-  protected abstract String getName();
+  protected abstract Path getProgramFile();
 
   protected abstract String getMainClass();
 
@@ -161,15 +162,12 @@ public abstract class TreeShakingTest extends TestBase {
       DiagnosticsConsumer diagnosticsConsumer)
       throws Exception {
 
-    String programFile = ToolHelper.THIRD_PARTY_DIR + getName() + ".jar";
+    Path programFile = getProgramFile();
 
     R8FullTestBuilder testBuilder =
         testForR8(parameters.getBackend())
             // Go through app builder to add dex files.
-            .apply(
-                b ->
-                    ToolHelper.getAppBuilder(b.getBuilder())
-                        .addProgramFiles(Paths.get(programFile)))
+            .apply(b -> ToolHelper.getAppBuilder(b.getBuilder()).addProgramFiles(programFile))
             .enableProguardTestOptions()
             .addDontObfuscateUnless(minify.isMinify())
             .setMinApi(parameters)
@@ -177,11 +175,12 @@ public abstract class TreeShakingTest extends TestBase {
                 ListUtils.map(
                     keepRulesFiles,
                     keepRulesFile -> Paths.get(ToolHelper.getProjectRoot(), keepRulesFile)))
-            .addLibraryFiles(Paths.get(ToolHelper.EXAMPLES_BUILD_DIR + "shakinglib.jar"))
+            .addLibraryFiles(TestDeps.getExamplesPath("shakinglib.jar"))
             .addDefaultRuntimeLibrary(parameters)
             .addOptionsModification(
                 options -> {
-                  options.inlinerOptions().enableInlining = programFile.contains("inlining");
+                  options.inlinerOptions().enableInlining =
+                      programFile.toString().contains("inlining");
                   if (optionsConsumer != null) {
                     optionsConsumer.accept(options);
                   }
@@ -194,11 +193,10 @@ public abstract class TreeShakingTest extends TestBase {
             : testBuilder.compileWithExpectedDiagnostics(diagnosticsConsumer);
     Path outJar = compileResult.writeToZip();
     if (parameters.isCfRuntime()) {
-      Path shakinglib = Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "shakinglib.jar");
+      Path shakinglib = TestDeps.getExamplesPath("shakinglib.jar");
       CfRuntime cfRuntime = parameters.getRuntime().asCf();
       ProcessResult resultInput =
-          ToolHelper.runJava(
-              cfRuntime, Arrays.asList(Paths.get(programFile), shakinglib), getMainClass());
+          ToolHelper.runJava(cfRuntime, Arrays.asList(programFile, shakinglib), getMainClass());
       Assert.assertEquals(0, resultInput.exitCode);
       ProcessResult resultOutput =
           ToolHelper.runJava(cfRuntime, Arrays.asList(outJar, shakinglib), getMainClass());
@@ -217,7 +215,7 @@ public abstract class TreeShakingTest extends TestBase {
     }
     Path shakingLib =
         testForD8(Backend.DEX)
-            .addProgramFiles(Paths.get(ToolHelper.EXAMPLES_BUILD_DIR + "shakinglib.jar"))
+            .addProgramFiles(TestDeps.getExamplesPath("shakinglib.jar"))
             .setMinApi(parameters)
             .compile()
             .writeToZip();
@@ -228,7 +226,7 @@ public abstract class TreeShakingTest extends TestBase {
     String d8Output =
         testForD8(Backend.DEX)
             .setMinApi(parameters)
-            .addProgramFiles(Paths.get(programFile))
+            .addProgramFiles(programFile)
             .compile()
             .writeToZip()
             .toString();

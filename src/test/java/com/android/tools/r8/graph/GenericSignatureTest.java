@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -72,7 +73,7 @@ public class GenericSignatureTest extends TestBase {
         AndroidApp.builder(compileResult.getApp())
             .addLibraryFile(
                 parameters.isCfRuntime()
-                    ? ToolHelper.getJava8RuntimeJar()
+                    ? TestDeps.getJava8RuntimeJar()
                     : ToolHelper.getMostRecentAndroidJar())
             .build();
     AppView<AppInfoWithLiveness> appView = computeAppViewWithLiveness(app, Timing.empty());

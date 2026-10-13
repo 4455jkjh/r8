@@ -379,7 +379,7 @@ public abstract class TestCompilerBuilder<
               AndroidApiLevel.getAndroidApiLevel(builder.getUncheckedMinApiLevel())));
     } else {
       assert backend == Backend.CF;
-      return Collections.singletonList(ToolHelper.getJava8RuntimeJar());
+      return Collections.singletonList(TestDeps.getJava8RuntimeJar());
     }
   }
 

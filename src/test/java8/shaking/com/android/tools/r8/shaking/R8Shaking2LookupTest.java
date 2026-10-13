@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -49,7 +50,7 @@ public class R8Shaking2LookupTest extends TestBase {
   public void readApp() throws IOException, ExecutionException {
     DirectMappedDexApplication program =
         ToolHelper.buildApplication(
-            ImmutableList.of(ToolHelper.EXAMPLES_BUILD_DIR + "shaking2.jar"));
+            ImmutableList.of(TestDeps.getExamplesPath("shaking2.jar").toString()));
     dexItemFactory = program.dexItemFactory;
     AppView<AppInfoWithClassHierarchy> appView = AppView.createForR8(program);
     appInfo = appView.appInfo();

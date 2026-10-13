@@ -8,6 +8,7 @@ import static com.android.tools.r8.naming.ClassNameMapper.MissingFileAction.MISS
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime;
@@ -72,7 +73,7 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
       } else {
         assert testParameters.isCfRuntime();
         builder
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setOutput(outjar, OutputMode.ClassFile);
         config = new CfDebugTestConfig(outjar);
       }

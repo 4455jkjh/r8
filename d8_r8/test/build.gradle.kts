@@ -20,54 +20,57 @@ val swissArmyKnifeArtifactName = "r8-full-exclude-deps.jar"
 val packageTestDepsArtifactName = "test_deps_all.jar"
 val rewrittenTestBaseArtifactName = "r8libtestbase-cf.jar"
 
-val testJarsScope by configurations.dependencyScope("testJarsScope")
-val testJars by configurations.resolvable("testJars") { extendsFrom(testJarsScope) }
+val testJarsScope = configurations.dependencyScope("testJarsScope")
+val testJars = configurations.resolvable("testJars") { extendsFrom(testJarsScope.get()) }
 
-val testbaseTestJarsScope by configurations.dependencyScope("testbaseTestJarsScope")
-val testbaseTestJars by
-  configurations.resolvable("testbaseTestJars") { extendsFrom(testbaseTestJarsScope) }
+val testbaseTestJarsScope = configurations.dependencyScope("testbaseTestJarsScope")
+val testbaseTestJars =
+  configurations.resolvable("testbaseTestJars") { extendsFrom(testbaseTestJarsScope.get()) }
 
-val testDepsJarsScope by configurations.dependencyScope("testDepsJarsScope")
-val testDepsJars by configurations.resolvable("testDepsJars") { extendsFrom(testDepsJarsScope) }
+val testDepsJarsScope = configurations.dependencyScope("testDepsJarsScope")
+val testDepsJars =
+  configurations.resolvable("testDepsJars") { extendsFrom(testDepsJarsScope.get()) }
 
-val mainDepsJarFilesScope by configurations.dependencyScope("mainDepsJarFilesScope")
-val mainDepsJarFilesConfig by
-  configurations.resolvable("mainDepsJarFilesConfig") { extendsFrom(mainDepsJarFilesScope) }
+val mainDepsJarFilesScope = configurations.dependencyScope("mainDepsJarFilesScope")
+val mainDepsJarFilesConfig =
+  configurations.resolvable("mainDepsJarFilesConfig") { extendsFrom(mainDepsJarFilesScope.get()) }
 
-val assistantJarScope by configurations.dependencyScope("assistantJarScope")
-val assistantJarConfig by
-  configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
-val keepAnnoAndroidXAnnotationsJarScope by
+val assistantJarScope = configurations.dependencyScope("assistantJarScope")
+val assistantJarConfig =
+  configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope.get()) }
+val keepAnnoAndroidXAnnotationsJarScope =
   configurations.dependencyScope("keepAnnoAndroidXAnnotationsJarScope")
-val keepAnnoAndroidXAnnotationsJarConfig by
+val keepAnnoAndroidXAnnotationsJarConfig =
   configurations.resolvable("keepAnnoAndroidXAnnotationsJarConfig") {
-    extendsFrom(keepAnnoAndroidXAnnotationsJarScope)
+    extendsFrom(keepAnnoAndroidXAnnotationsJarScope.get())
   }
-val keepAnnoDepsJarOnlyAsmScope by configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
-val keepAnnoDepsJarOnlyAsmConfig by
+val keepAnnoDepsJarOnlyAsmScope = configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
+val keepAnnoDepsJarOnlyAsmConfig =
   configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
-    extendsFrom(keepAnnoDepsJarOnlyAsmScope)
+    extendsFrom(keepAnnoDepsJarOnlyAsmScope.get())
   }
-val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
-val keepAnnoClassesConfig by
-  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
+val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig =
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig =
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig by
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
+val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig =
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
 
-val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig by
-  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
+val sharedDepsInternalScope = configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig =
+  configurations.resolvable("sharedDepsInternalConfig") {
+    extendsFrom(sharedDepsInternalScope.get())
+  }
 
-val sharedTestDepsInternalScope by configurations.dependencyScope("sharedTestDepsInternalScope")
-val sharedTestDepsInternalConfig by
+val sharedTestDepsInternalScope = configurations.dependencyScope("sharedTestDepsInternalScope")
+val sharedTestDepsInternalConfig =
   configurations.resolvable("sharedTestDepsInternalConfig") {
-    extendsFrom(sharedTestDepsInternalScope)
+    extendsFrom(sharedTestDepsInternalScope.get())
   }
 
 dependencies {
@@ -128,7 +131,7 @@ tasks {
   val packageTests =
     register<Jar>("packageTests") {
       val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testJars.elements.map { it.map { injected.arcOps.zipTree(it) } })
+      from(testJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8tests.jar")
@@ -137,9 +140,11 @@ tasks {
   val packageTestDeps =
     register<Jar>("packageTestDeps") {
       val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testDepsJars.elements.map { it.map { injected.arcOps.zipTree(it) } })
+      from(testDepsJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
       from(
-        keepAnnoAndroidXAnnotationsJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } }
+        keepAnnoAndroidXAnnotationsJarConfig
+          .flatMap { it.elements }
+          .map { it.map { injected.arcOps.zipTree(it) } }
       )
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -150,7 +155,7 @@ tasks {
   val packageTestBase =
     register<Jar>("packageTestBase") {
       val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testbaseTestJars.elements.map { it.map { injected.arcOps.zipTree(it) } })
+      from(testbaseTestJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8test_base.jar")
@@ -242,7 +247,7 @@ tasks {
     r8compilerClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     inputJar = inputJarProvider
     inputClasspath.from(classpath)
-    replaceInOutputJar = assistantJarConfig.elements.map { it.single().asFile }
+    replaceInOutputJar = assistantJarConfig.flatMap { it.elements }.map { it.single().asFile }
     pgConfigs.from(
       File(rootDir, "src/main/keep.txt"),
       File(rootDir, "src/main/discard.txt"),
@@ -563,9 +568,9 @@ tasks {
 
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
     )
-    systemProperty("R8_DEPS", mainDepsJarFilesConfig.asPath)
+    systemProperty("R8_DEPS", mainDepsJarFilesConfig.get().asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
 
     javaLauncher = getJavaLauncher(Jdk.JDK_25)

@@ -121,7 +121,7 @@ public class ExtractMarkerTest extends TestBase {
     R8.run(
         R8Command.builder()
             .addProgramFiles(CLASS_FILE)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setMode(CompilationMode.DEBUG)
             .setDisableTreeShaking(true)
             .setProgramConsumer(

@@ -86,13 +86,6 @@ public abstract class R8RunArtTestsTest extends TestBase {
     R8CF
   }
 
-  public static final String ART_TESTS_DIR = ToolHelper.ART_TESTS_ROOT + "2017-10-04/art";
-  private static final String ART_LEGACY_TESTS_DIR = ToolHelper.ART_TESTS_ROOT + "2016-12-19/art/";
-  private static final String ART_TESTS_NATIVE_LIBRARY_DIR =
-      ToolHelper.ART_TESTS_ROOT + "2017-10-04/art/lib64";
-  private static final String ART_LEGACY_TESTS_NATIVE_LIBRARY_DIR =
-      ToolHelper.ART_TESTS_ROOT + "2016-12-19/art/lib64";
-
   private static final RuntimeSet LEGACY_RUNTIME =
       TestCondition.runtimes(
           DexVm.Version.V4_0_4,
@@ -108,7 +101,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
           DexVm.Version.V14_0_0,
           DexVm.Version.V15_0_0,
           DexVm.Version.V16_0_0,
-          DexVm.Version.V17_0_0);
+          DexVm.Version.V17_0_0,
+          DexVm.Version.V17_1_0,
+          DexVm.Version.V17_2_0);
 
   private static final TestCondition beforeAndroidN =
       TestCondition.match(
@@ -503,6 +498,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
   static {
     ImmutableMap.Builder<DexVm.Version, List<String>> builder = ImmutableMap.builder();
     builder
+        .put(DexVm.Version.V17_2_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
+        .put(DexVm.Version.V17_1_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V17_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V16_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V15_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
@@ -852,7 +849,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
                           DexVm.Version.V14_0_0,
                           DexVm.Version.V15_0_0,
                           DexVm.Version.V16_0_0,
-                          DexVm.Version.V17_0_0)),
+                          DexVm.Version.V17_0_0,
+                          DexVm.Version.V17_1_0,
+                          DexVm.Version.V17_2_0)),
                   TestCondition.match(
                       compilers(
                           CompilerUnderTest.R8,
@@ -884,7 +883,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
                       DexVm.Version.V14_0_0,
                       DexVm.Version.V15_0_0,
                       DexVm.Version.V16_0_0,
-                      DexVm.Version.V17_0_0)))
+                      DexVm.Version.V17_0_0,
+                      DexVm.Version.V17_1_0,
+                      DexVm.Version.V17_2_0)))
           .put("454-get-vreg", TestCondition.match(TestCondition.R8DEX_COMPILER))
           // Fails: regs_jni.cc:42] Check failed: GetVReg(m, 0, kIntVReg, &value)
           // The R8/D8 code does not put values in the same registers as the tests expects.
@@ -905,7 +906,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
                       DexVm.Version.V14_0_0,
                       DexVm.Version.V15_0_0,
                       DexVm.Version.V16_0_0,
-                      DexVm.Version.V17_0_0)))
+                      DexVm.Version.V17_0_0,
+                      DexVm.Version.V17_1_0,
+                      DexVm.Version.V17_2_0)))
           .put("457-regs", TestCondition.match(TestCondition.R8DEX_COMPILER))
           // Class not found.
           .put("529-checker-unresolved", TestCondition.any())
@@ -1445,8 +1448,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
   private static Map<SpecificationKey, TestSpecification> getTestsMap(
       CompilerUnderTest compilerUnderTest, CompilationMode compilationMode, DexVm dexVm) {
     DexVm.Version version = dexVm.getVersion();
-    File defaultArtTestDir = new File(ART_TESTS_DIR);
-    File legacyArtTestDir = new File(ART_LEGACY_TESTS_DIR);
+    File defaultArtTestDir = TestDeps.getArtTestsDir().toFile();
+    File legacyArtTestDir = TestDeps.getArtTestsLegacyDir().toFile();
     if (!defaultArtTestDir.exists() || !legacyArtTestDir.exists()) {
       // Don't run any tests if the directory does not exist.
       return Collections.emptyMap();
@@ -1602,9 +1605,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
     builder.setMainClass("Main");
     if (specification.nativeLibrary != null) {
       // All the native libraries for all Art tests is in the same directory.
-      File artTestNativeLibraryDir = new File(ART_TESTS_NATIVE_LIBRARY_DIR);
+      File artTestNativeLibraryDir = TestDeps.getArtTestsPath("lib64").toFile();
       if (artVersion != DexVm.ART_DEFAULT) {
-        artTestNativeLibraryDir = new File(ART_LEGACY_TESTS_NATIVE_LIBRARY_DIR);
+        artTestNativeLibraryDir = TestDeps.getArtTestsLegacyPath("lib64").toFile();
       }
       builder.addToJavaLibraryPath(artTestNativeLibraryDir);
       builder.appendProgramArgument(specification.nativeLibrary);
@@ -1821,7 +1824,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
           // Add program files directly to the underlying app to avoid errors on DEX inputs.
           ToolHelper.getAppBuilder(builder).addProgramFiles(ListUtils.map(fileNames, Paths::get));
           if (cfBackend) {
-            builder.addLibraryFiles(ToolHelper.getJava8RuntimeJar());
+            builder.addLibraryFiles(TestDeps.getJava8RuntimeJar());
           } else {
             AndroidApiLevel minSdkVersion = needMinSdkVersion.get(name);
             if (minSdkVersion != null) {

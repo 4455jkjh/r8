@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.kotlin.lambda;
 
-import static com.android.tools.r8.ToolHelper.getJava8RuntimeJar;
+import static com.android.tools.r8.TestDeps.getJava8RuntimeJar;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.KotlinTestBase;

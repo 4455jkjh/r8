@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompiler;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.internal.CompilationTestBase;
@@ -90,7 +91,7 @@ public class KotlinCompilerTreeShakingTest extends CompilationTestBase {
     Path r8ProcessedKotlinc =
         testForR8(parameters.getBackend())
             .addLibraryFiles(libs)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .addProgramFiles(kotlinc.getCompiler())
             .addKeepAttributes("*Annotation*")
             .addKeepClassAndMembersRules(ToolHelper.K2JVMCompiler)

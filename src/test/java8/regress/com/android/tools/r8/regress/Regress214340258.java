@@ -5,7 +5,7 @@ package com.android.tools.r8.regress;
 
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -44,7 +44,7 @@ public class Regress214340258 extends TestBase {
   @Test
   public void testR8() throws Exception {
     Path compiledJumbo = getZipWithJumboString();
-    R8TestRunResult r8TestRunResult =
+    R8TestMultiRunResult r8TestRunResult =
         testForR8(parameters.getBackend())
             .addDontOptimize()
             .addKeepAllClassesRule()
@@ -55,7 +55,7 @@ public class Regress214340258 extends TestBase {
     assertTrue(hasJumboString(r8TestRunResult));
   }
 
-  private boolean hasJumboString(R8TestRunResult r8TestRunResult)
+  private boolean hasJumboString(R8TestMultiRunResult r8TestRunResult)
       throws IOException, ExecutionException {
     for (FoundClassSubject classSubject : r8TestRunResult.inspector().allClasses()) {
       for (FoundMethodSubject foundMethodSubject : classSubject.allMethods()) {

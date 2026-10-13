@@ -36,6 +36,7 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
             "into an API database file required for compilation.",
             "Multiple inputs of both are supported and any entries not present in both JAR and XML",
             "form is trimmed away.",
+            "Note that the database format is unstable and not backwards compatible.",
             "The options are:",
             "  --jar <jar-file>        # Android SDK JAR file (e.g., android.jar).",
             "  --xml <xml-file>        # Android API XML file (e.g., api-versions.xml).",

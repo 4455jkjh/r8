@@ -4,6 +4,7 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.apimodel.AmendApiFromResources;
+import com.android.tools.r8.apimodel.AmendmentListener;
 import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator;
 import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator.GenerationException;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser;
@@ -39,6 +40,14 @@ import java.util.function.Function;
 public class ApiDatabaseGenerator {
 
   public static void run(ApiDatabaseGeneratorCommand command) throws ApiDatabaseGeneratorException {
+    run(command, AmendmentListener.empty(), trimmer -> trimmer);
+  }
+
+  static void run(
+      ApiDatabaseGeneratorCommand command,
+      AmendmentListener amendmentListener,
+      Function<JarTrimmer, Trimmer<ApiDatabaseGeneratorException>> jarTrimmerWrapper)
+      throws ApiDatabaseGeneratorException {
     if (command.isPrintHelp()) {
       System.out.println(ApiDatabaseGeneratorCommandParser.getUsageMessage());
       return;
@@ -49,14 +58,17 @@ public class ApiDatabaseGenerator {
     }
     ExceptionUtils.withDiagnosticsHandler(
         command.getReporter(),
-        () -> runInternal(command),
+        () -> runInternal(command, amendmentListener, jarTrimmerWrapper),
         (message, cause, cancelled) -> new ApiDatabaseGeneratorException(message, cause));
   }
 
-  private static void runInternal(ApiDatabaseGeneratorCommand command)
+  private static void runInternal(
+      ApiDatabaseGeneratorCommand command,
+      AmendmentListener amendmentListener,
+      Function<JarTrimmer, Trimmer<ApiDatabaseGeneratorException>> jarTrimmerWrapper)
       throws ApiDatabaseGeneratorException {
     try {
-      var apiClasses = generateClasses(command, trimmer -> trimmer);
+      var apiClasses = generateClasses(command, amendmentListener, jarTrimmerWrapper);
       var entries = AndroidApiHashingDatabaseBuilderGenerator.generateEntries(apiClasses);
       AndroidApiHashingDatabaseBuilderGenerator.writeEntries(entries, command.getOutputPath());
     } catch (GenerationException e) {
@@ -65,7 +77,9 @@ public class ApiDatabaseGenerator {
   }
 
   static <E extends Throwable> Collection<ParsedApiClass<ApiRange>> generateClasses(
-      ApiDatabaseGeneratorCommand command, Function<JarTrimmer, Trimmer<E>> jarTrimmerWrapper)
+      ApiDatabaseGeneratorCommand command,
+      AmendmentListener amendmentListener,
+      Function<JarTrimmer, Trimmer<E>> jarTrimmerWrapper)
       throws ApiDatabaseGeneratorException, E {
     try {
       Collection<ParsedApiClass<ApiRange>> classes = extractClasses(command);
@@ -75,7 +89,7 @@ public class ApiDatabaseGenerator {
       ApiJarInfo jarInfo = ApiJarMerging.mergeJarInfos(jarInfos);
 
       if (command.shouldAmend()) {
-        amendApiData(classes, jarInfo);
+        amendApiData(classes, jarInfo, amendmentListener);
       }
       Collection<ParsedApiClass<ApiVersionSet>> flattenedClasses = flattenHierarchy(classes);
       classes = ParsedApiClassMapping.map(flattenedClasses, new GreatestEndingRangeMapper());
@@ -99,10 +113,13 @@ public class ApiDatabaseGenerator {
     }
   }
 
-  private static void amendApiData(Collection<ParsedApiClass<ApiRange>> classes, ApiJarInfo jarInfo)
+  private static void amendApiData(
+      Collection<ParsedApiClass<ApiRange>> classes,
+      ApiJarInfo jarInfo,
+      AmendmentListener amendmentListener)
       throws ApiDatabaseGeneratorException, IOException {
     try {
-      AmendApiFromResources.applyAmendments(classes, jarInfo);
+      AmendApiFromResources.applyAmendments(classes, jarInfo, amendmentListener);
     } catch (ApiDatabaseGeneratorException e) {
       throw new ApiDatabaseGeneratorException("Database amendment failed", e);
     } catch (IOException e) {

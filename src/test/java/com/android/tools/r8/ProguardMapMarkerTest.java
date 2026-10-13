@@ -132,7 +132,7 @@ public class ProguardMapMarkerTest extends TestBase {
                     buildIds.fromProgram = marker.getPgMapId();
                   }
                 })
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProguardMapConsumer(
                 ToolHelper.consumeString(
                     proguardMap -> {

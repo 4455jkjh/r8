@@ -51,6 +51,8 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   public static final AndroidApiLevel BAKLAVA;
   public static final AndroidApiLevel BAKLAVA_1;
   public static final AndroidApiLevel CINNAMON_BUN;
+  public static final AndroidApiLevel CINNAMON_BUN_1;
+  public static final AndroidApiLevel CINNAMON_BUN_2;
   public static final AndroidApiLevel MAIN;
   // Used for API modeling of Android extension APIs.
   public static final AndroidApiLevel EXTENSION;
@@ -109,13 +111,15 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     builder.add(BAKLAVA = new AndroidApiLevel(36, 0, "BAKLAVA"));
     builder.add(BAKLAVA_1 = new AndroidApiLevel(36, 1, "BAKLAVA_1"));
     builder.add(CINNAMON_BUN = new AndroidApiLevel(37, 0, "CINNAMON_BUN"));
+    builder.add(CINNAMON_BUN_1 = new AndroidApiLevel(37, 1, "CINNAMON_BUN_1"));
+    builder.add(CINNAMON_BUN_2 = new AndroidApiLevel(37, 2, "CINNAMON_BUN_2"));
     builder.add(MAIN = new AndroidApiLevel(38, 0, "MAIN"));
     builder.add(EXTENSION = new AndroidApiLevel(Integer.MAX_VALUE, 0, "EXTENSION"));
     valuesSorted = builder.build();
-    assert valuesSorted.size() == 40;
+    assert valuesSorted.size() == 42;
     assert checkValuesSorted();
 
-    LATEST = CINNAMON_BUN;
+    LATEST = CINNAMON_BUN_2;
     API_DATABASE_LEVEL = LATEST;
     UNKNOWN = MAIN;
     assert UNKNOWN.isGreaterThan(LATEST);
@@ -230,7 +234,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
    */
   @SuppressWarnings("ReferenceEquality")
   public static AndroidApiLevel getAndroidApiLevel(int major, int minor) {
-    assert CINNAMON_BUN == LATEST; // This has to be updated when new API levels are added.
+    assert CINNAMON_BUN_2 == LATEST; // This has to be updated when new API levels are added.
     switch (major) {
       case 1:
         if (minor == 0) {
@@ -419,6 +423,12 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
         if (minor == 0) {
           return CINNAMON_BUN;
         }
+        if (minor == 1) {
+          return CINNAMON_BUN_1;
+        }
+        if (minor == 2) {
+          return CINNAMON_BUN_2;
+        }
         break;
       case 38:
         if (minor == 0) {
@@ -444,26 +454,6 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
    */
   public static AndroidApiLevel parseAndroidApiLevel(String apiLevel) {
     return getAndroidApiLevel(UncheckedApiLevel.parse(apiLevel));
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  public byte serializeAsByte() {
-    if (this == EXTENSION) {
-      return 0x7f;
-    }
-    assert major < 64;
-    assert minor < 2; // Re-evaluate this when minor can be higher than 1.
-    return (byte) (major << 1 | minor);
-  }
-
-  public static AndroidApiLevel deserializeFromByte(byte b) {
-    if (b == 0x7f) {
-      return EXTENSION;
-    }
-    int i = Byte.toUnsignedInt(b);
-    int major = i >> 1;
-    int minor = i & 0x1;
-    return getAndroidApiLevel(major, minor);
   }
 
   @Override

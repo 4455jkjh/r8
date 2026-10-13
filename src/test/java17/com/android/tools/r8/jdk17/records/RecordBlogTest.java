@@ -9,7 +9,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -136,7 +136,7 @@ public class RecordBlogTest extends TestBase {
     KEEP_RULE_TO_OUTPUT_FORMAT.forEach(
         (kr, outputFormat) -> {
           try {
-            R8TestBuilder<?, R8TestRunResult, ?> builder =
+            R8TestBuilder<?, R8TestMultiRunResult, ?> builder =
                 testForR8(parameters)
                     .addProgramClassesAndInnerClasses(RecordBlog.class)
                     .addKeepRules(kr)

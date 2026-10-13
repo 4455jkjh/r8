@@ -7,6 +7,7 @@ package com.android.tools.r8.ir.optimize;
 import com.android.tools.r8.errors.IllegalInvokeSuperToInterfaceOnDalvikDiagnostic;
 import com.android.tools.r8.errors.dontwarn.DontWarnConfiguration;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
@@ -18,6 +19,7 @@ import com.android.tools.r8.ir.code.AlwaysMaterializingDefinition;
 import com.android.tools.r8.ir.code.AlwaysMaterializingNop;
 import com.android.tools.r8.ir.code.AlwaysMaterializingUser;
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.ir.code.FixedRegisterValue;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InstanceOf;
 import com.android.tools.r8.ir.code.Instruction;
@@ -32,7 +34,10 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.passes.BranchSimplifier;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.LazyBox;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.Collections;
@@ -77,47 +82,53 @@ public class RuntimeWorkaroundCodeRewriter {
     }
   }
 
-  public static boolean workaroundInstanceOfTypeWeakeningInVerifier(
-      AppView<?> appView, IRCode code) {
-    boolean didReplaceInstructions = false;
+  public static void workaroundInstanceOfTypeWeakeningInVerifier(
+      AppView<?> appView, IRCode code, DeadCodeRemover deadCodeRemover, Timing timing) {
     if (!appView.options().canHaveArtFalsyInstanceOfVerifierBug()
         || !code.metadata().mayHaveInstanceOf()) {
-      return didReplaceInstructions;
+      return;
     }
     DexType objectType = appView.dexItemFactory().objectType;
-    for (BasicBlock block : code.getBlocks()) {
-      InstructionListIterator instructionIterator = block.listIterator();
-      while (instructionIterator.hasNext()) {
-        InstanceOf instanceOf = instructionIterator.nextUntil(Instruction::isInstanceOf);
-        if (instanceOf == null) {
-          continue;
-        }
-        TypeElement valueType = instanceOf.value().getType();
+    // Dead code elimination may introduce more cases, so run in a loop. See also b/572278427.
+    boolean changed;
+    do {
+      changed = false;
+      for (BasicBlock block : code.getBlocks()) {
+        InstructionListIterator instructionIterator = block.listIterator();
+        while (instructionIterator.hasNext()) {
+          InstanceOf instanceOf = instructionIterator.nextUntil(Instruction::isInstanceOf);
+          if (instanceOf == null) {
+            continue;
+          }
+          TypeElement valueType = instanceOf.value().getType();
 
-        // Workaround b/288273207.
-        if (valueType.isNullType()) {
-          instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
-          didReplaceInstructions = true;
-          continue;
-        }
-
-        // Workaround b/335663487.
-        if (appView.enableWholeProgramOptimizations()
-            && valueType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))) {
-          TypeElement instanceOfType =
-              instanceOf.getType().toTypeElement(appView, valueType.nullability());
-          if (instanceOfType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))
-              && !instanceOfType.lessThanOrEqual(valueType, appView)
-              && !valueType.lessThanOrEqual(instanceOfType, appView)
-              && !valueType.isBasedOnMissingClass(appView.withClassHierarchy())) {
+          // Workaround b/288273207.
+          if (valueType.isNullType()) {
             instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
-            didReplaceInstructions = true;
+            changed = true;
+            continue;
+          }
+
+          // Workaround b/335663487.
+          if (appView.enableWholeProgramOptimizations()
+              && valueType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))) {
+            TypeElement instanceOfType =
+                instanceOf.getType().toTypeElement(appView, valueType.nullability());
+            if (instanceOfType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))
+                && !instanceOfType.lessThanOrEqual(valueType, appView)
+                && !valueType.lessThanOrEqual(instanceOfType, appView)
+                && !valueType.isBasedOnMissingClass(appView.withClassHierarchy())) {
+              instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
+              changed = true;
+            }
           }
         }
       }
-    }
+      if (changed) {
+        deadCodeRemover.run(code, timing);
+      }
+    } while (changed);
     assert code.isConsistentSSA(appView);
-    return didReplaceInstructions;
   }
 
   public static void workaroundSwitchMaxIntBug(IRCode code, AppView<?> appView) {
@@ -169,17 +180,18 @@ public class RuntimeWorkaroundCodeRewriter {
   }
 
   /**
-   * For each block, we look to see if the header matches:
+   * This runs after register allocation, so the pattern is described in terms of registers. For
+   * each block, we look to see if the header matches:
    *
    * <pre>
    *   pseudo-instructions*
-   *   v2 <- long-{mul,div} v0 v1
+   *   mul-long rA, rB, rC
    *   pseudo-instructions*
-   *   v5 <- long-{add,sub} v3 v4
+   *   {add,sub}-long rD, rE, rF
    * </pre>
    *
-   * where v2 ~=~ v3 or v2 ~=~ v4 (with ~=~ being equal or an alias of) and the block is not a
-   * fallthrough target.
+   * where rE or rF holds the result of the mul-long, either directly or through moves in the
+   * pseudo-instructions, and the block is not a fallthrough target.
    */
   @SuppressWarnings("ReferenceEquality")
   public static void workaroundDex2OatLinkedListBug(IRCode code, InternalOptions options) {
@@ -195,7 +207,9 @@ public class RuntimeWorkaroundCodeRewriter {
                     factory.createString("signum"),
                     factory.intDescriptor,
                     new DexString[] {factory.longDescriptor}));
-    for (BasicBlock block : code.blocks) {
+    ListIterator<BasicBlock> blocks = code.listIterator();
+    while (blocks.hasNext()) {
+      BasicBlock block = blocks.next();
       InstructionListIterator it = block.listIterator();
       Instruction firstMaterializing =
           it.nextUntil(RuntimeWorkaroundCodeRewriter::isNotPseudoInstruction);
@@ -216,11 +230,24 @@ public class RuntimeWorkaroundCodeRewriter {
           it = block.listIterator();
           it.nextUntil(i -> i == firstMaterializing);
           Value longValue = firstMaterializing.inValues().get(0);
+          int register =
+              longValue
+                  .getLiveIntervals()
+                  .getSplitCovering(firstMaterializing.getNumber())
+                  .getRegister();
           InvokeStatic invokeLongSignum =
               new InvokeStatic(
-                  javaLangLangSignum.computeIfAbsent(), null, Collections.singletonList(longValue));
-          ensureThrowingInstructionBefore(code, firstMaterializing, it, invokeLongSignum);
-          return;
+                  javaLangLangSignum.computeIfAbsent(),
+                  null,
+                  Collections.singletonList(new FixedRegisterValue(longValue.getType(), register)));
+          // When the mul-long is the first instruction of the block, its link to the previous
+          // instruction in dex2oat is broken (self-linked), and dex2oat diverges when following it
+          // to apply its Cortex-A53 fixup to the fused long mul and add/sub. The Long.signum call
+          // is effectively a nop (its result is unused, and it reads an already allocated
+          // register) that ensures the mul-long is no longer first in the block. An invoke is used
+          // since a materializing const was not enough to avoid the issue (b/118075510).
+          ensureThrowingInstructionBefore(code, blocks, firstMaterializing, it, invokeLongSignum);
+          break;
         }
       }
     }
@@ -229,6 +256,7 @@ public class RuntimeWorkaroundCodeRewriter {
   // If an exceptional edge could target a conditional-loop header ensure that we have a
   // materializing instruction on that path to work around a bug in some L x86_64 non-emulator VMs.
   // See b/111337896.
+  @SuppressWarnings("ReferenceEquality")
   public static void workaroundExceptionTargetingLoopHeaderBug(
       IRCode code, InternalOptions options) {
     if (!options.canHaveExceptionTargetingLoopHeaderBug()) {
@@ -240,11 +268,32 @@ public class RuntimeWorkaroundCodeRewriter {
           // We conservatively assume that a block with at least two normal predecessors is a loop
           // header. If we ever end up computing exact loop headers, use that here instead.
           // The loop is conditional if it has at least two normal successors.
+          //
+          // Since this runs after register allocation and the post register allocation passes,
+          // the CFG may have been simplified in ways that hide a loop header from these basic
+          // checks, so we additionally accept the following two shapes:
+          //
+          // - The target has a unique normal predecessor, but `block` jumps to it both normally
+          //   and exceptionally. Once the trivial goto blocks of split edges are collapsed, the
+          //   back edge comes directly from `block`, which getNormalPredecessors() does not count
+          //   since it also has the target as a catch successor (e.g., an empty catch handler at
+          //   the end of a loop body).
+          //
+          // - The target has a unique normal successor whose unique predecessor is the target, and
+          //   that successor has at least two normal successors. This happens when identical
+          //   suffixes of the predecessors of the loop header have been shared into a new block
+          //   that becomes the join point and jumps to the block holding the loop condition.
           BasicBlock target = handler.endOfGotoChain();
           if (target != null
               && target.getPredecessors().size() > 1
-              && target.getNormalPredecessors().size() > 1
-              && target.getNormalSuccessors().size() > 1) {
+              && (target.getNormalPredecessors().size() > 1
+                  || (target.hasUniqueNormalPredecessor()
+                      && block.exit().isGoto()
+                      && block.exit().asGoto().getTarget() == target))
+              && (target.getNormalSuccessors().size() > 1
+                  || (target.hasUniqueNormalSuccessorWithUniquePredecessor()
+                      && target.getUniqueNormalSuccessor().getNormalSuccessors().size() > 1))
+              && !(handler.entry() instanceof AlwaysMaterializingNop)) {
             Instruction fixit = new AlwaysMaterializingNop();
             fixit.setPosition(handler.getPosition());
             handler.getInstructions().addFirst(fixit);
@@ -370,13 +419,29 @@ public class RuntimeWorkaroundCodeRewriter {
 
   @SuppressWarnings("ReferenceEquality")
   private static void ensureThrowingInstructionBefore(
-      IRCode code, Instruction addBefore, InstructionListIterator it, Instruction instruction) {
+      IRCode code,
+      ListIterator<BasicBlock> blocks,
+      Instruction addBefore,
+      InstructionListIterator it,
+      Instruction instruction) {
     Instruction check = it.previous();
     assert addBefore == check;
     BasicBlock block = check.getBlock();
     if (block.hasCatchHandlers()) {
       // Split so the existing instructions retain their handlers and the new instruction has none.
-      BasicBlock split = it.split(code);
+      // The new instruction is not given the handlers, since a new exceptional edge from before
+      // the split point could reach a handler with registers that are not yet written.
+      BasicBlock split = it.split(code, blocks);
+      if (block.getLocalsAtEntry() != null) {
+        Int2ReferenceMap<DebugLocalInfo> locals =
+            new Int2ReferenceOpenHashMap<>(block.getLocalsAtEntry());
+        for (Instruction insn : block.getInstructions()) {
+          if (insn.isDebugLocalsChange()) {
+            insn.asDebugLocalsChange().apply(locals);
+          }
+        }
+        split.setLocalsAtEntry(locals);
+      }
       assert split.hasCatchHandlers();
       assert !block.hasCatchHandlers();
       it = block.listIterator(block.getInstructions().size() - 1);

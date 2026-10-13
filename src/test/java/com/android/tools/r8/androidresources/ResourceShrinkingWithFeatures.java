@@ -9,7 +9,7 @@ import static org.junit.Assert.fail;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.R8TestCompileResultBase;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
@@ -102,7 +102,7 @@ public class ResourceShrinkingWithFeatures extends TestBase {
     Assume.assumeTrue(optimized || parameters.getPartialCompilationTestParameters().isNone());
     TemporaryFolder featureSplitTemp = ToolHelper.getTemporaryFolderForTest();
     featureSplitTemp.create();
-    R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> r8FullTestBuilder =
+    R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestMultiRunResult, ?> r8FullTestBuilder =
         testForR8(parameters).addProgramClasses(Base.class);
     if (referenceFromBase) {
       r8FullTestBuilder.addProgramClasses(FeatureSplit.FeatureSplitMain.class);

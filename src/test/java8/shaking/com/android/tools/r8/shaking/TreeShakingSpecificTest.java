@@ -4,7 +4,6 @@
 package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
-import static com.android.tools.r8.ToolHelper.EXAMPLES_BUILD_DIR;
 import static com.android.tools.r8.ToolHelper.EXAMPLES_DIR;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -13,6 +12,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.mappingcompose.ComposeTestHelpers;
@@ -44,7 +44,7 @@ public class TreeShakingSpecificTest extends TestBase {
   }
 
   private Path getProgramFiles(String test) {
-    return Paths.get(EXAMPLES_BUILD_DIR, test + ".jar");
+    return TestDeps.getExamplesPath(test + ".jar");
   }
 
   @Test

@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.partial;
 
-import static com.android.tools.r8.ToolHelper.DESUGARED_JDK_11_LIB_JAR;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
@@ -283,7 +282,8 @@ public class PartialCompilationDemoTest extends TestBase {
     AndroidApiLevel apiLevel = AndroidApiLevel.N;
     Path path = tempDir.resolve("desugared_library.jar");
     Path dd =
-        DesugaredLibraryJDK11Undesugarer.undesugaredJarJDK11(tempDir, DESUGARED_JDK_11_LIB_JAR);
+        DesugaredLibraryJDK11Undesugarer.undesugaredJarJDK11(
+            tempDir, TestDeps.getDesugarJdkLibs11Jar());
     L8Command.Builder commandBuilder =
         L8Command.builder()
             .setMinApiLevel(apiLevel.getMajor())

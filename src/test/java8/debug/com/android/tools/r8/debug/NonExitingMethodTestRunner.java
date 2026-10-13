@@ -7,6 +7,7 @@ import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -58,7 +59,7 @@ public class NonExitingMethodTestRunner extends DebugTestBase {
                 ImmutableList.of("-keepattributes SourceFile,LineNumberTable"), Origin.unknown())
             .addProgramFiles(getClassFilePath())
             .setProgramConsumer(new ClassFileConsumer.ArchiveConsumer(path))
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .build());
     return new CfDebugTestConfig().addPaths(path);
   }

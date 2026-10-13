@@ -10,7 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ir.optimize.inliner.testclasses.InliningIntoVisibilityBridgeTestClasses;
@@ -47,7 +47,7 @@ public class InliningIntoVisibilityBridgeTest extends TestBase {
   public void test() throws Exception {
     String expectedOutput = StringUtils.times(StringUtils.lines("Hello world"), 6);
 
-    R8TestRunResult result =
+    R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
             .addInnerClasses(InliningIntoVisibilityBridgeTest.class)
             .addInnerClasses(InliningIntoVisibilityBridgeTestClasses.class)

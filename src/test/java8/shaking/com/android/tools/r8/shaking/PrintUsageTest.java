@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.shaking.PrintUsageTest.PrintUsageInspector.ClassSubject;
@@ -42,7 +43,6 @@ public class PrintUsageTest extends TestBase {
 
   private final TestParameters parameters;
   private final String test;
-  private final String programFile;
   private final List<String> keepRulesFiles;
   private final Consumer<PrintUsageInspector> inspection;
 
@@ -53,7 +53,6 @@ public class PrintUsageTest extends TestBase {
       Consumer<PrintUsageInspector> inspection) {
     this.parameters = parameters;
     this.test = test;
-    this.programFile = ToolHelper.EXAMPLES_BUILD_DIR + test + ".jar";
     this.keepRulesFiles = keepRulesFiles;
     this.inspection = inspection;
   }
@@ -62,7 +61,7 @@ public class PrintUsageTest extends TestBase {
   public void runR8andGetPrintUsage() throws Exception {
     Path out = temp.getRoot().toPath();
     testForR8(parameters.getBackend())
-        .addProgramFiles(Paths.get(programFile))
+        .addProgramFiles(TestDeps.getExamplesPath(test + ".jar"))
         .addKeepRuleFiles(ListUtils.map(keepRulesFiles, Paths::get))
         .addKeepRules("-printusage " + out.resolve(test + PRINT_USAGE_FILE_SUFFIX))
         .applyIf(

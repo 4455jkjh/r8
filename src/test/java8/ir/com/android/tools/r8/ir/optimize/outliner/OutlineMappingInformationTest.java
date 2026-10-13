@@ -66,8 +66,6 @@ public class OutlineMappingInformationTest extends TestBase {
         testForR8(parameters.getBackend())
             .addProgramClasses(TestClass.class, TestClass2.class, Greeter.class)
             .addKeepMainRule(TestClass.class)
-            // TODO(b/463934388): Repackaging should not break retracing.
-            .addDontRepackage()
             .addOptionsModification(
                 options -> {
                   options.outline.threshold = 2;

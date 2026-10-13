@@ -45,10 +45,9 @@ val protoJarTask =
     destinationDirectory.set(layout.buildDirectory.dir("sub-libs"))
   }
 
-val libanalyzerJar by configurations.consumable("libanalyzer-jar") { outgoing.artifact(jarTask) }
+configurations.consumable("libanalyzer-jar") { outgoing.artifact(jarTask) }
 
-val libanalyzerProtoJar by
-  configurations.consumable("libanalyzer-proto-jar") { outgoing.artifact(protoJarTask) }
+configurations.consumable("libanalyzer-proto-jar") { outgoing.artifact(protoJarTask) }
 
 val compileJavaJarTask =
   tasks.register<Jar>("compileJavaJar") {
@@ -57,5 +56,4 @@ val compileJavaJarTask =
     destinationDirectory.set(project.layout.buildDirectory.dir("sub-libs"))
   }
 
-val libanalyzerCompileJava by
-  configurations.consumable("libanalyzer-compile-java") { outgoing.artifact(compileJavaJarTask) }
+configurations.consumable("libanalyzer-compile-java") { outgoing.artifact(compileJavaJarTask) }

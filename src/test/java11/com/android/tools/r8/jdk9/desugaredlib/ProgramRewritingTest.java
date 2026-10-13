@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.jdk9.desugaredlib;
 
-import static com.android.tools.r8.ToolHelper.DESUGARED_JDK_8_LIB_JAR;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LATEST;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LEGACY;
@@ -64,7 +63,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
         new LibraryDesugaringSpecification(
             "JDK8_CL",
             ImmutableSet.of(
-                DESUGARED_JDK_8_LIB_JAR,
+                TestDeps.getDesugarJdkLibs8Jar(),
                 TestDeps.getDesugarLibraryConversions(LEGACY),
                 TestDeps.getCoreLambdaStubsJar()),
             JDK8.getSpecification(),

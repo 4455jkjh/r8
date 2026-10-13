@@ -3,9 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.examples;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.TreeShakingTest;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,8 +27,8 @@ public class TreeShakingMemberrebinding2Test extends TreeShakingTest {
   }
 
   @Override
-  protected String getName() {
-    return "examples/memberrebinding2";
+  protected Path getProgramFile() {
+    return TestDeps.getExamplesPath("memberrebinding2.jar");
   }
 
   @Override

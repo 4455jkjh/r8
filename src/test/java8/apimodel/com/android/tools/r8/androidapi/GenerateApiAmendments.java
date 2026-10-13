@@ -66,6 +66,7 @@ public class GenerateApiAmendments extends TestBase {
         FileUtils.readTextFile(outputDir.resolve(JAR_HIDDEN_FILE), CHARSET), generateJarHidden());
   }
 
+  /** OBS: This cannot be run via the editor, run it via the matching Gradle task. */
   public static void main(String[] args) throws IOException {
     // ----------------------------------------- IMPORTANT -----------------------------------------
     // When these amendments are semantically changed (i.e. a format change doesn't matter)

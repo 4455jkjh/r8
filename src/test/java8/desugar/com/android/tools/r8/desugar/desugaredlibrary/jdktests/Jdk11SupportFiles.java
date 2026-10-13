@@ -7,6 +7,7 @@ package com.android.tools.r8.desugar.desugaredlibrary.jdktests;
 import static com.android.tools.r8.TestBase.descriptor;
 import static com.android.tools.r8.TestBase.transformer;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -49,11 +50,11 @@ public class Jdk11SupportFiles {
   }
 
   public static Path testNGPath() {
-    return Paths.get(ToolHelper.DEPENDENCIES + "org/testng/testng/6.10/testng-6.10.jar");
+    return TestDeps.getTestNgJar();
   }
 
   public static Path jcommanderPath() {
-    return Paths.get(ToolHelper.DEPENDENCIES + "com/beust/jcommander/1.48/jcommander-1.48.jar");
+    return TestDeps.getJCommanderJar();
   }
 
   public static byte[] getTestNGMainRunner() throws Exception {

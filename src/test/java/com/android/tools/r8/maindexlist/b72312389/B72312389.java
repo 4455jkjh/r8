@@ -16,6 +16,7 @@ import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.GenerateMainDexList;
 import com.android.tools.r8.GenerateMainDexListCommand;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -26,7 +27,6 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,12 +42,8 @@ public class B72312389 extends TestBase {
     builder
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.O))
         .addProgramFiles(
-            Paths.get(
-                ToolHelper.THIRD_PARTY_DIR,
-                "examplesAndroidO",
-                "classes",
-                "instrumentationtest",
-                "InstrumentationTest.class"))
+            TestDeps.getExamplesAndroidOPath(
+                "classes", "instrumentationtest", "InstrumentationTest.class"))
         .addProgramFiles(ToolHelper.getFrameworkJunitJarPath(DexVm.ART_7_0_0_HOST));
   }
 

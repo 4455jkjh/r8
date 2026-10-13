@@ -10,7 +10,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
-import com.android.tools.r8.R8TestRunResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
@@ -85,7 +85,7 @@ public class CrossPackageInvokeSuperToPackagePrivateMethodTest extends TestBase 
                 .transform());
   }
 
-  private void inspectRunResult(R8TestRunResult runResult) {
+  private void inspectRunResult(R8TestMultiRunResult runResult) {
     runResult.applyIfDexRuntime(
         parameters.isCfRuntime(),
         r -> r.assertSuccessWithOutputLines("A", "B", "A", "C", "D", "C"),

@@ -19,7 +19,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-public class D8TestCompileResult extends TestCompileResult<D8TestCompileResult, D8TestRunResult> {
+public class D8TestCompileResult
+    extends TestCompileResult<D8TestCompileResult, D8TestMultiRunResult> {
 
   private final D8BuildMetadata buildMetadata;
   private final String proguardMap;
@@ -85,8 +86,8 @@ public class D8TestCompileResult extends TestCompileResult<D8TestCompileResult, 
   }
 
   @Override
-  public D8TestRunResult createRunResult(List<SingleTestRunResult> results) {
-    return new D8TestRunResult(app, proguardMap, state, results);
+  public D8TestMultiRunResult createRunResult(List<SingleTestRunResult> results) {
+    return new D8TestMultiRunResult(app, proguardMap, state, results);
   }
 
   @Override

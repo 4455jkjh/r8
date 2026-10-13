@@ -8,6 +8,7 @@ import static org.junit.Assume.assumeFalse;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -17,7 +18,6 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.stream.Stream;
 import org.apache.harmony.jpda.tests.framework.TestErrorException;
 import org.apache.harmony.jpda.tests.framework.jdwp.exceptions.TimeoutException;
@@ -62,7 +62,7 @@ public class ExamplesDebugTest extends DebugTestBase {
     ToolHelper.runR8(
         R8Command.builder()
             .addProgramFiles(input)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setMode(CompilationMode.DEBUG)
             .setOutput(output, OutputMode.ClassFile)
             .setDisableTreeShaking(true)
@@ -127,8 +127,7 @@ public class ExamplesDebugTest extends DebugTestBase {
             + " because debug tests are not yet supported on Windows",
         !ToolHelper.isWindows());
     clazzName = pkg + "." + clazz;
-    inputJar =
-        Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, pkg + "_debuginfo_all" + FileUtils.JAR_EXTENSION);
+    inputJar = TestDeps.getExamplesPath(pkg + "_debuginfo_all" + FileUtils.JAR_EXTENSION);
     return new DebugStreamComparator();
   }
 }

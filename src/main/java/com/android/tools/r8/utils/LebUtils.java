@@ -5,6 +5,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.dex.BinaryReader;
 import com.android.tools.r8.dex.DexOutputBuffer;
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
 public class LebUtils {
@@ -12,18 +13,33 @@ public class LebUtils {
   private static final int PAYLOAD_MASK = 0x7f;
   private static final int MORE_DATA_TAG_BIT = 0x80;
   private static final int MAX_BYTES_PER_VALUE = 5;
+  private static final int ULEB128_3BYTE_THRESHOLD = 0x004000;
+  private static final int ULEB128_4BYTE_THRESHOLD = 0x200000;
+
+  public interface ByteSupplier {
+    byte getAsByte();
+  }
 
   public static int parseUleb128(BinaryReader reader) {
+    return parseUleb128((ByteSupplier) reader::get);
+  }
+
+  public static int parseUleb128(ByteSupplier reader) {
     int result = 0;
     byte b;
     int shift = 0;
+    int maxShift = MAX_BYTES_PER_VALUE * BITS_PER_ENCODED_BYTE;
     do {
-      b = reader.get();
+      if (shift >= maxShift) {
+        throw new IllegalArgumentException("Invalid ULEB128 sequence: exceeds 5 bytes");
+      }
+      b = reader.getAsByte();
       result |= (b & (byte) PAYLOAD_MASK) << shift;
       shift += BITS_PER_ENCODED_BYTE;
     } while ((b & ~(byte) PAYLOAD_MASK) == ~(byte) PAYLOAD_MASK);
-    assert shift <= MAX_BYTES_PER_VALUE * BITS_PER_ENCODED_BYTE; // At most five bytes are used.
-    assert result >= 0; // Ensure the java int didn't overflow.
+    if (result < 0) {
+      throw new IllegalArgumentException("Invalid ULEB128 sequence: integer overflow");
+    }
     return result;
   }
 
@@ -52,9 +68,24 @@ public class LebUtils {
     outputBuffer.putByte((byte) (value & PAYLOAD_MASK));
   }
 
+  public static void putUleb128(ByteArrayOutputStream out, int value) {
+    int remaining = value >>> BITS_PER_ENCODED_BYTE;
+    while (remaining != 0) {
+      out.write((byte) ((value & PAYLOAD_MASK) | MORE_DATA_TAG_BIT));
+      value = remaining;
+      remaining >>>= BITS_PER_ENCODED_BYTE;
+    }
+    out.write((byte) (value & PAYLOAD_MASK));
+  }
+
   public static int sizeAsUleb128(int value) {
     return Math.max(
         1, (Integer.SIZE - Integer.numberOfLeadingZeros(value) + 6) / BITS_PER_ENCODED_BYTE);
+  }
+
+  public static boolean crossesUleb128SizeBoundary(int start, long end) {
+    return (start < ULEB128_3BYTE_THRESHOLD && end > ULEB128_3BYTE_THRESHOLD)
+        || (start < ULEB128_4BYTE_THRESHOLD && end > ULEB128_4BYTE_THRESHOLD);
   }
 
   public static int parseSleb128(BinaryReader reader) {

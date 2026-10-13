@@ -13,18 +13,18 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 public abstract class AndroidApiLevelCompute {
 
-  // Known API levels indexed by AndroidApiLevel.serializeAsByte().
-  private final KnownApiLevel[] knownApiLevelCache;
+  private final Map<AndroidApiLevel, KnownApiLevel> knownApiLevelCache = new IdentityHashMap<>();
 
   @SuppressWarnings("ReferenceEquality")
   public AndroidApiLevelCompute() {
-    knownApiLevelCache = new KnownApiLevel[128];
     for (AndroidApiLevel value : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       if (value != AndroidApiLevel.MAIN && value != AndroidApiLevel.EXTENSION) {
-        knownApiLevelCache[value.serializeAsByte()] = new KnownApiLevel(value);
+        knownApiLevelCache.put(value, new KnownApiLevel(value));
       }
     }
   }
@@ -37,7 +37,7 @@ public abstract class AndroidApiLevelCompute {
     if (apiLevel == AndroidApiLevel.EXTENSION) {
       return ComputedApiLevel.extension();
     }
-    return knownApiLevelCache[apiLevel.serializeAsByte()];
+    return knownApiLevelCache.get(apiLevel);
   }
 
   public abstract ComputedApiLevel computeApiLevelForLibraryReference(

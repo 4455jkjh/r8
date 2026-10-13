@@ -11,6 +11,7 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import java.nio.file.Path;
@@ -69,7 +70,7 @@ public class UnneededLoadStoreDebugInfoTest extends TestBase {
             .setDisableTreeShaking(true)
             .setDisableMinification(true)
             .addProgramFiles(inputJar)
-            .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(new ArchiveConsumer(outputJar))
             .build());
     ProcessResult runOutput = ToolHelper.runJava(outputJar, CLASS_NAME);
