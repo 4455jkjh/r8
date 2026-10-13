@@ -180,17 +180,18 @@ public class RuntimeWorkaroundCodeRewriter {
   }
 
   /**
-   * For each block, we look to see if the header matches:
+   * This runs after register allocation, so the pattern is described in terms of registers. For
+   * each block, we look to see if the header matches:
    *
    * <pre>
    *   pseudo-instructions*
-   *   v2 <- long-{mul,div} v0 v1
+   *   mul-long rA, rB, rC
    *   pseudo-instructions*
-   *   v5 <- long-{add,sub} v3 v4
+   *   {add,sub}-long rD, rE, rF
    * </pre>
    *
-   * where v2 ~=~ v3 or v2 ~=~ v4 (with ~=~ being equal or an alias of) and the block is not a
-   * fallthrough target.
+   * where rE or rF holds the result of the mul-long, either directly or through moves in the
+   * pseudo-instructions, and the block is not a fallthrough target.
    */
   @SuppressWarnings("ReferenceEquality")
   public static void workaroundDex2OatLinkedListBug(IRCode code, InternalOptions options) {
@@ -239,6 +240,12 @@ public class RuntimeWorkaroundCodeRewriter {
                   javaLangLangSignum.computeIfAbsent(),
                   null,
                   Collections.singletonList(new FixedRegisterValue(longValue.getType(), register)));
+          // When the mul-long is the first instruction of the block, its link to the previous
+          // instruction in dex2oat is broken (self-linked), and dex2oat diverges when following it
+          // to apply its Cortex-A53 fixup to the fused long mul and add/sub. The Long.signum call
+          // is effectively a nop (its result is unused, and it reads an already allocated
+          // register) that ensures the mul-long is no longer first in the block. An invoke is used
+          // since a materializing const was not enough to avoid the issue (b/118075510).
           ensureThrowingInstructionBefore(code, blocks, firstMaterializing, it, invokeLongSignum);
           break;
         }
