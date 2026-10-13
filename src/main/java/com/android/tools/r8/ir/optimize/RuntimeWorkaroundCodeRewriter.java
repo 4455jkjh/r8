@@ -32,6 +32,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.passes.BranchSimplifier;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.LazyBox;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -77,47 +78,53 @@ public class RuntimeWorkaroundCodeRewriter {
     }
   }
 
-  public static boolean workaroundInstanceOfTypeWeakeningInVerifier(
-      AppView<?> appView, IRCode code) {
-    boolean didReplaceInstructions = false;
+  public static void workaroundInstanceOfTypeWeakeningInVerifier(
+      AppView<?> appView, IRCode code, DeadCodeRemover deadCodeRemover, Timing timing) {
     if (!appView.options().canHaveArtFalsyInstanceOfVerifierBug()
         || !code.metadata().mayHaveInstanceOf()) {
-      return didReplaceInstructions;
+      return;
     }
     DexType objectType = appView.dexItemFactory().objectType;
-    for (BasicBlock block : code.getBlocks()) {
-      InstructionListIterator instructionIterator = block.listIterator();
-      while (instructionIterator.hasNext()) {
-        InstanceOf instanceOf = instructionIterator.nextUntil(Instruction::isInstanceOf);
-        if (instanceOf == null) {
-          continue;
-        }
-        TypeElement valueType = instanceOf.value().getType();
+    // Dead code elimination may introduce more cases, so run in a loop. See also b/572278427.
+    boolean changed;
+    do {
+      changed = false;
+      for (BasicBlock block : code.getBlocks()) {
+        InstructionListIterator instructionIterator = block.listIterator();
+        while (instructionIterator.hasNext()) {
+          InstanceOf instanceOf = instructionIterator.nextUntil(Instruction::isInstanceOf);
+          if (instanceOf == null) {
+            continue;
+          }
+          TypeElement valueType = instanceOf.value().getType();
 
-        // Workaround b/288273207.
-        if (valueType.isNullType()) {
-          instructionIterator.replaceCurrentInstructionWithConstFalse(code);
-          didReplaceInstructions = true;
-          continue;
-        }
-
-        // Workaround b/335663487.
-        if (appView.enableWholeProgramOptimizations()
-            && valueType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))) {
-          TypeElement instanceOfType =
-              instanceOf.type().toTypeElement(appView, valueType.nullability());
-          if (instanceOfType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))
-              && !instanceOfType.lessThanOrEqual(valueType, appView)
-              && !valueType.lessThanOrEqual(instanceOfType, appView)
-              && !valueType.isBasedOnMissingClass(appView.withClassHierarchy())) {
+          // Workaround b/288273207.
+          if (valueType.isNullType()) {
             instructionIterator.replaceCurrentInstructionWithConstFalse(code);
-            didReplaceInstructions = true;
+            changed = true;
+            continue;
+          }
+
+          // Workaround b/335663487.
+          if (appView.enableWholeProgramOptimizations()
+              && valueType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))) {
+            TypeElement instanceOfType =
+                instanceOf.type().toTypeElement(appView, valueType.nullability());
+            if (instanceOfType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))
+                && !instanceOfType.lessThanOrEqual(valueType, appView)
+                && !valueType.lessThanOrEqual(instanceOfType, appView)
+                && !valueType.isBasedOnMissingClass(appView.withClassHierarchy())) {
+              instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+              changed = true;
+            }
           }
         }
       }
-    }
+      if (changed) {
+        deadCodeRemover.run(code, timing);
+      }
+    } while (changed);
     assert code.isConsistentSSA(appView);
-    return didReplaceInstructions;
   }
 
   public static void workaroundSwitchMaxIntBug(IRCode code, AppView<?> appView) {
