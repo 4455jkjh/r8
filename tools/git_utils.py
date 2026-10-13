@@ -66,6 +66,90 @@ def VersionCommitMessage(version, description=None, bugs=None):
 version_commit_message = VersionCommitMessage
 
 
+def get_head_ref(checkout_dir=utils.REPO_ROOT):
+    try:
+        branch = subprocess.check_output(
+            ['git', 'symbolic-ref', '-q', '--short', 'HEAD'],
+            cwd=checkout_dir,
+            stderr=subprocess.PIPE,
+            text=True).strip()
+        if branch:
+            return branch
+    except subprocess.CalledProcessError:
+        pass
+    return GetHeadRevision(checkout_dir)
+
+
+def resolve_revision(revision, checkout_dir=utils.REPO_ROOT):
+    return subprocess.check_output(['git', 'rev-parse', '--verify', revision],
+                                   cwd=checkout_dir,
+                                   stderr=subprocess.PIPE,
+                                   text=True).strip()
+
+
+def is_working_tree_clean(checkout_dir=utils.REPO_ROOT):
+    out = subprocess.check_output(
+        ['git', 'status', '--porcelain', '--untracked-files=no'],
+        cwd=checkout_dir,
+        stderr=subprocess.PIPE,
+        text=True).strip()
+    return not out
+
+
+def is_unmerged_commit(revision,
+                       base_ref='origin/main',
+                       checkout_dir=utils.REPO_ROOT):
+    return subprocess.call(
+        ['git', 'merge-base', '--is-ancestor', revision, base_ref],
+        cwd=checkout_dir,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL) == 1
+
+
+def _get_change_id(revision, checkout_dir=utils.REPO_ROOT):
+    out = subprocess.check_output([
+        'git', 'log', '-1', '--format=%(trailers:key=Change-Id,valueonly=true)',
+        revision
+    ],
+                                  cwd=checkout_dir,
+                                  stderr=subprocess.PIPE,
+                                  text=True).strip()
+    lines = [line.strip() for line in out.splitlines() if line.strip()]
+    return lines[-1] if lines else None
+
+
+def get_previous_cl_commit(checkout_dir=utils.REPO_ROOT):
+    try:
+        rev_list = subprocess.check_output(
+            ['git', 'rev-list', '--parents', '-n', '1', 'HEAD'],
+            cwd=checkout_dir,
+            stderr=subprocess.PIPE,
+            text=True).strip().split()
+        if len(rev_list) != 2:
+            return None
+        head_sha, parent_sha = rev_list
+        if not is_unmerged_commit(parent_sha, checkout_dir=checkout_dir):
+            return None
+        try:
+            cherry_out = subprocess.check_output(
+                ['git', 'cherry', 'origin/main', parent_sha, f'{parent_sha}~1'],
+                cwd=checkout_dir,
+                stderr=subprocess.PIPE,
+                text=True).strip()
+            if cherry_out.startswith('-'):
+                return None
+        except subprocess.CalledProcessError:
+            pass
+        head_change_id = _get_change_id(head_sha, checkout_dir)
+        parent_change_id = _get_change_id(parent_sha, checkout_dir)
+        if head_change_id and parent_change_id and (head_change_id
+                                                    == parent_change_id):
+            return None
+        return parent_sha
+    except subprocess.CalledProcessError:
+        return None
+
+
 def get_candidate_main_commits(explicit_base_hash=None,
                                exclude_sha=None,
                                max_count=25):
@@ -75,6 +159,7 @@ def get_candidate_main_commits(explicit_base_hash=None,
         try:
             merge_base_cmd = ['git', 'merge-base', 'HEAD', 'origin/main']
             start_ref = subprocess.check_output(merge_base_cmd,
+                                                cwd=utils.REPO_ROOT,
                                                 stderr=subprocess.PIPE,
                                                 text=True).strip()
         except subprocess.CalledProcessError:
@@ -89,6 +174,7 @@ def get_candidate_main_commits(explicit_base_hash=None,
             '--pretty=format:%H',
         ]
         commits = subprocess.check_output(log_cmd,
+                                          cwd=utils.REPO_ROOT,
                                           text=True).strip().splitlines()
         res = [
             c.strip()
