@@ -165,10 +165,11 @@ public class SupportedClassesGenerator {
       return;
     }
     // The first difference should be at 18 so we're safe starting at J and not B.
-    for (int api = AndroidApiLevel.J.getMajor();
-        api <= MAX_TESTED_ANDROID_API_LEVEL.getMajor();
-        api++) {
-      AndroidApiLevel androidApiLevel = AndroidApiLevel.getAndroidApiLevel(api);
+    for (AndroidApiLevel androidApiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
+      if (androidApiLevel.isLessThan(AndroidApiLevel.J)
+          || androidApiLevel.isGreaterThan(MAX_TESTED_ANDROID_API_LEVEL)) {
+        continue;
+      }
       MachineDesugaredLibrarySpecification machineSpecification =
           getMachineSpecification(androidApiLevel, specification);
       options.setMinApiLevel(androidApiLevel);
@@ -186,7 +187,6 @@ public class SupportedClassesGenerator {
       List<DexMethod> backports = new ArrayList<>();
       generateListOfBackportedMethodsAndFields(backports::add, f -> {});
 
-      int finalApi = api;
       builder.forEachClassAndMethod(
           (clazz, encodedMethod) -> {
             DexMethod dexMethod = encodedMethod.getReference();
@@ -227,11 +227,13 @@ public class SupportedClassesGenerator {
                     "API database does not recognize the method "
                         + encodedMethod.getReference().toSourceString());
               }
-              builder.annotateMethod(dexMethod, MethodAnnotation.createMissingInMinApi(finalApi));
+              builder.annotateMethod(
+                  dexMethod, MethodAnnotation.createMissingInMinApi(androidApiLevel.asUnchecked()));
               return;
             }
-            if (finalApi < computedApiLevel.asKnownApiLevel().getApiLevel().getMajor()) {
-              builder.annotateMethod(dexMethod, MethodAnnotation.createMissingInMinApi(finalApi));
+            if (androidApiLevel.isLessThan(computedApiLevel.asKnownApiLevel().getApiLevel())) {
+              builder.annotateMethod(
+                  dexMethod, MethodAnnotation.createMissingInMinApi(androidApiLevel.asUnchecked()));
             }
           });
 
@@ -258,14 +260,16 @@ public class SupportedClassesGenerator {
                     "API database does not recognize the field "
                         + encodedField.getReference().toSourceString());
               }
-              if (finalApi < computedApiLevel.asKnownApiLevel().getApiLevel().getMajor()) {
+              if (androidApiLevel.isLessThan(computedApiLevel.asKnownApiLevel().getApiLevel())) {
                 builder.annotateField(
-                    encodedField.getReference(), FieldAnnotation.createMissingInMinApi(finalApi));
+                    encodedField.getReference(),
+                    FieldAnnotation.createMissingInMinApi(androidApiLevel.asUnchecked()));
               }
             } else {
               assert fieldResolutionResult.isFailedResolution();
               builder.annotateField(
-                  encodedField.getReference(), FieldAnnotation.createMissingInMinApi(finalApi));
+                  encodedField.getReference(),
+                  FieldAnnotation.createMissingInMinApi(androidApiLevel.asUnchecked()));
             }
           });
     }

@@ -10,6 +10,8 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.ApiLevelRange;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.TriConsumer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
@@ -363,10 +365,11 @@ public class SupportedClasses {
 
   public abstract static class MemberAnnotation {
     final boolean unsupportedInMinApiRange;
-    final int minRange;
-    final int maxRange;
+    final UncheckedApiLevel minRange;
+    final UncheckedApiLevel maxRange;
 
-    MemberAnnotation(boolean unsupportedInMinApiRange, int minRange, int maxRange) {
+    MemberAnnotation(
+        boolean unsupportedInMinApiRange, UncheckedApiLevel minRange, UncheckedApiLevel maxRange) {
       this.unsupportedInMinApiRange = unsupportedInMinApiRange;
       this.minRange = minRange;
       this.maxRange = maxRange;
@@ -376,52 +379,45 @@ public class SupportedClasses {
       return unsupportedInMinApiRange;
     }
 
-    public int getMinRange() {
+    public UncheckedApiLevel getMinRange() {
       return minRange;
     }
 
-    public int getMaxRange() {
+    public UncheckedApiLevel getMaxRange() {
       return maxRange;
     }
 
-    int combineRange(MemberAnnotation other) {
-      int newMin, newMax;
+    private static boolean isContiguous(UncheckedApiLevel prev, UncheckedApiLevel next) {
+      return (prev.getMajor() == next.getMajor() && prev.getMinor() + 1 == next.getMinor())
+          || (prev.getMajor() + 1 == next.getMajor() && next.getMinor() == 0);
+    }
+
+    ApiLevelRange combineRange(MemberAnnotation other) {
       if (!unsupportedInMinApiRange && !other.unsupportedInMinApiRange) {
-        newMin = newMax = -1;
-      } else if (!unsupportedInMinApiRange || !other.unsupportedInMinApiRange) {
-        newMin = unsupportedInMinApiRange ? minRange : other.minRange;
-        newMax = unsupportedInMinApiRange ? maxRange : other.maxRange;
-      } else {
-        // Merge ranges if contiguous or throw.
-        if (maxRange == other.minRange - 1) {
-          newMin = minRange;
-          newMax = other.maxRange;
-        } else if (other.maxRange == minRange - 1) {
-          newMin = other.minRange;
-          newMax = maxRange;
-        } else {
-          // 20 is missing, so if maxRange or minRange are 19 the following is 21.
-          if (maxRange == 19 && other.minRange == 21) {
-            newMin = minRange;
-            newMax = other.maxRange;
-          } else if (other.maxRange == 19 && minRange == 21) {
-            newMin = other.minRange;
-            newMax = maxRange;
-          } else {
-            throw new RuntimeException("Cannot merge ranges.");
-          }
-        }
+        return null;
       }
-      assert newMax < (1 << 15) && newMin < (1 << 15);
-      return (newMax << 16) + newMin;
+      if (!unsupportedInMinApiRange || !other.unsupportedInMinApiRange) {
+        return unsupportedInMinApiRange
+            ? new ApiLevelRange(maxRange, minRange)
+            : new ApiLevelRange(other.maxRange, other.minRange);
+      }
+      // Merge ranges if contiguous or throw.
+      if (isContiguous(maxRange, other.minRange)) {
+        return new ApiLevelRange(other.maxRange, minRange);
+      }
+      if (isContiguous(other.maxRange, minRange)) {
+        return new ApiLevelRange(maxRange, other.minRange);
+      }
+      throw new RuntimeException("Cannot merge ranges.");
     }
   }
 
   public static class FieldAnnotation extends MemberAnnotation {
 
-    private static final FieldAnnotation DEFAULT = new FieldAnnotation(false, -1, -1);
+    private static final FieldAnnotation DEFAULT = new FieldAnnotation(false, null, null);
 
-    FieldAnnotation(boolean unsupportedInMinApiRange, int minRange, int maxRange) {
+    FieldAnnotation(
+        boolean unsupportedInMinApiRange, UncheckedApiLevel minRange, UncheckedApiLevel maxRange) {
       super(unsupportedInMinApiRange, minRange, maxRange);
     }
 
@@ -429,7 +425,7 @@ public class SupportedClasses {
       return DEFAULT;
     }
 
-    public static FieldAnnotation createMissingInMinApi(int api) {
+    public static FieldAnnotation createMissingInMinApi(UncheckedApiLevel api) {
       return new FieldAnnotation(true, api, api);
     }
 
@@ -441,24 +437,24 @@ public class SupportedClasses {
       if (other == getDefault()) {
         return this;
       }
-      int newRange = combineRange(other);
-      int newMax = newRange >> 16;
-      int newMin = newRange & 0xFF;
+      ApiLevelRange newRange = combineRange(other);
       return new FieldAnnotation(
-          unsupportedInMinApiRange || other.unsupportedInMinApiRange, newMin, newMax);
+          unsupportedInMinApiRange || other.unsupportedInMinApiRange,
+          newRange == null ? null : newRange.getApiLevelGreaterOrEqual(),
+          newRange == null ? null : newRange.getApiLevelBelowOrEqual());
     }
   }
 
   public static class MethodAnnotation extends MemberAnnotation {
 
     private static final MethodAnnotation COVARIANT_RETURN_SUPPORTED =
-        new MethodAnnotation(false, false, true, false, -1, -1);
+        new MethodAnnotation(false, false, true, false, null, null);
     private static final MethodAnnotation DEFAULT =
-        new MethodAnnotation(false, false, false, false, -1, -1);
+        new MethodAnnotation(false, false, false, false, null, null);
     private static final MethodAnnotation PARALLEL_STREAM_METHOD =
-        new MethodAnnotation(true, false, false, false, -1, -1);
+        new MethodAnnotation(true, false, false, false, null, null);
     private static final MethodAnnotation MISSING_FROM_LATEST_ANDROID_JAR =
-        new MethodAnnotation(false, true, false, false, -1, -1);
+        new MethodAnnotation(false, true, false, false, null, null);
 
     // ParallelStream methods are not supported when the runtime api level is strictly below 21.
     final boolean parallelStreamMethod;
@@ -472,8 +468,8 @@ public class SupportedClasses {
         boolean missingFromLatestAndroidJar,
         boolean covariantReturnSupported,
         boolean unsupportedInMinApiRange,
-        int minRange,
-        int maxRange) {
+        UncheckedApiLevel minRange,
+        UncheckedApiLevel maxRange) {
       super(unsupportedInMinApiRange, minRange, maxRange);
       this.parallelStreamMethod = parallelStreamMethod;
       this.missingFromLatestAndroidJar = missingFromLatestAndroidJar;
@@ -496,7 +492,7 @@ public class SupportedClasses {
       return MISSING_FROM_LATEST_ANDROID_JAR;
     }
 
-    public static MethodAnnotation createMissingInMinApi(int api) {
+    public static MethodAnnotation createMissingInMinApi(UncheckedApiLevel api) {
       return new MethodAnnotation(false, false, false, true, api, api);
     }
 
@@ -512,16 +508,14 @@ public class SupportedClasses {
       if (other == getDefault()) {
         return this;
       }
-      int newRange = combineRange(other);
-      int newMax = newRange >> 16;
-      int newMin = newRange & 0xFF;
+      ApiLevelRange newRange = combineRange(other);
       return new MethodAnnotation(
           parallelStreamMethod || other.parallelStreamMethod,
           missingFromLatestAndroidJar || other.missingFromLatestAndroidJar,
           covariantReturnSupported || other.covariantReturnSupported,
           unsupportedInMinApiRange || other.unsupportedInMinApiRange,
-          newMin,
-          newMax);
+          newRange == null ? null : newRange.getApiLevelGreaterOrEqual(),
+          newRange == null ? null : newRange.getApiLevelBelowOrEqual());
     }
   }
 }

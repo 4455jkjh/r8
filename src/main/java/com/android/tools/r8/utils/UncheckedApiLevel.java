@@ -43,6 +43,10 @@ public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
     return major;
   }
 
+  public int getMajorCeiling() {
+    return minor != 0 ? major + 1 : major;
+  }
+
   public int getMinor() {
     return minor;
   }

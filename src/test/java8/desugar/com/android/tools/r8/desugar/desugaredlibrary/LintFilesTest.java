@@ -178,7 +178,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
           // TODO(b/289365156): Should probably not be hardcoded on U.
           ToolHelper.THIRD_PARTY_DIR
               + "android_jar/lib-v"
-              + AndroidApiLevel.U.getMajor()
+              + AndroidApiLevel.U.getNumericString()
               + "/android.jar"
         });
     InternalOptions options = new InternalOptions(new DexItemFactory(), new Reporter());
@@ -192,13 +192,13 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
 
     AndroidApiLevel requiredCompilationApiLevel =
         desugaredLibrarySpecification.getRequiredCompilationApiLevel();
-    Path compileApiLevelDirectory =
-        directory.resolve("compile_api_level_" + requiredCompilationApiLevel.getMajor());
+    int req = requiredCompilationApiLevel.asUnchecked().getMajorCeiling();
+    Path compileApiLevelDirectory = directory.resolve("compile_api_level_" + req);
 
     assertTrue(Files.exists(compileApiLevelDirectory));
     for (AndroidApiLevel minApiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       String desugaredApisBaseName =
-          "desugared_apis_" + requiredCompilationApiLevel.getMajor() + "_" + minApiLevel.getMajor();
+          "desugared_apis_" + req + "_" + minApiLevel.asUnchecked().getMajorCeiling();
       if (minApiLevel == AndroidApiLevel.L || minApiLevel == AndroidApiLevel.B) {
         assertTrue(Files.exists(compileApiLevelDirectory.resolve(desugaredApisBaseName + ".txt")));
         checkFileContent(

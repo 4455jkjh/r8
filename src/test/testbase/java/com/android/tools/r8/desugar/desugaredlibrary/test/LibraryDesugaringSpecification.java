@@ -145,9 +145,7 @@ public class LibraryDesugaringSpecification {
           "JDK11",
           LibraryDesugaringSpecification::ensureUndesugaredJdk11LibJarForTesting,
           "jdk11/desugar_jdk_libs.json",
-          // TODO(b/518618585): Change to AndroidApiLevel.BAKLAVA_1 once desugared library supports
-          //  minor api levels.
-          AndroidApiLevel.CINNAMON_BUN,
+          AndroidApiLevel.BAKLAVA_1,
           JDK11_DESCRIPTOR,
           LATEST);
   public static LibraryDesugaringSpecification JDK11_MINIMAL =
@@ -163,9 +161,7 @@ public class LibraryDesugaringSpecification {
           "JDK11_PATH",
           LibraryDesugaringSpecification::ensureUndesugaredJdk11LibJarForTesting,
           "jdk11/desugar_jdk_libs_nio.json",
-          // TODO(b/518618585): Change to AndroidApiLevel.BAKLAVA_1 once desugared library supports
-          //  minor api levels.
-          AndroidApiLevel.CINNAMON_BUN,
+          AndroidApiLevel.BAKLAVA_1,
           JDK11_PATH_DESCRIPTOR,
           LATEST);
 
@@ -396,9 +392,7 @@ public class LibraryDesugaringSpecification {
     if (this == JDK8 || this == JDK11_LEGACY) {
       return parameters.getApiLevel().isLessThan(AndroidApiLevel.N);
     }
-    // TODO(b/518618585): Change to AndroidApiLevel.BAKLAVA_1 once desugared library supports
-    //  minor api levels.
-    return parameters.getApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN);
+    return parameters.getApiLevel().isLessThan(AndroidApiLevel.BAKLAVA_1);
   }
 
   public boolean hasNioFileDesugaring(TestParameters parameters) {

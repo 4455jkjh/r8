@@ -5,38 +5,46 @@
 package com.android.tools.r8.ir.desugar.desugaredlibrary;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import java.util.Objects;
 
 public class ApiLevelRange {
 
-  private final AndroidApiLevel apiLevelBelowOrEqual;
-  private final AndroidApiLevel apiLevelGreaterOrEqual;
+  private final UncheckedApiLevel apiLevelBelowOrEqual;
+  private final UncheckedApiLevel apiLevelGreaterOrEqual;
 
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   public ApiLevelRange(int apiLevelBelowOrEqual) {
-    this(AndroidApiLevel.getAndroidApiLevel(apiLevelBelowOrEqual), null);
+    this(new UncheckedApiLevel(apiLevelBelowOrEqual), null);
   }
 
-  public ApiLevelRange(int apiLevelBelowOrEqual, int apiLevelGreaterOrEqual) {
-    this(
-        AndroidApiLevel.getAndroidApiLevel(apiLevelBelowOrEqual),
-        AndroidApiLevel.getAndroidApiLevel(apiLevelGreaterOrEqual));
+  public ApiLevelRange(UncheckedApiLevel apiLevelBelowOrEqual) {
+    this(apiLevelBelowOrEqual, null);
   }
 
   public ApiLevelRange(
-      AndroidApiLevel apiLevelBelowOrEqual, AndroidApiLevel apiLevelGreaterOrEqual) {
+      UncheckedApiLevel apiLevelBelowOrEqual, UncheckedApiLevel apiLevelGreaterOrEqual) {
     assert apiLevelGreaterOrEqual == null
         || apiLevelBelowOrEqual.isGreaterThanOrEqualTo(apiLevelGreaterOrEqual);
     this.apiLevelBelowOrEqual = apiLevelBelowOrEqual;
     this.apiLevelGreaterOrEqual = apiLevelGreaterOrEqual;
   }
 
-  public int getApiLevelBelowOrEqualAsInt() {
-    return apiLevelBelowOrEqual.getMajor();
+  public ApiLevelRange(
+      AndroidApiLevel apiLevelBelowOrEqual, AndroidApiLevel apiLevelGreaterOrEqual) {
+    this(
+        apiLevelBelowOrEqual.asUnchecked(),
+        apiLevelGreaterOrEqual == null ? null : apiLevelGreaterOrEqual.asUnchecked());
   }
 
-  public int getApiLevelGreaterOrEqualAsInt() {
-    return apiLevelGreaterOrEqual.getMajor();
+  public UncheckedApiLevel getApiLevelBelowOrEqual() {
+    return apiLevelBelowOrEqual;
+  }
+
+  public UncheckedApiLevel getApiLevelGreaterOrEqual() {
+    return apiLevelGreaterOrEqual;
   }
 
   public boolean hasApiLevelGreaterOrEqual() {
@@ -44,10 +52,12 @@ public class ApiLevelRange {
   }
 
   public boolean overlap(ApiLevelRange other) {
-    AndroidApiLevel start =
-        apiLevelGreaterOrEqual == null ? AndroidApiLevel.B : apiLevelGreaterOrEqual;
-    AndroidApiLevel otherStart =
-        other.apiLevelGreaterOrEqual == null ? AndroidApiLevel.B : other.apiLevelGreaterOrEqual;
+    UncheckedApiLevel start =
+        apiLevelGreaterOrEqual == null ? AndroidApiLevel.B.asUnchecked() : apiLevelGreaterOrEqual;
+    UncheckedApiLevel otherStart =
+        other.apiLevelGreaterOrEqual == null
+            ? AndroidApiLevel.B.asUnchecked()
+            : other.apiLevelGreaterOrEqual;
     return start.isLessThanOrEqualTo(other.apiLevelBelowOrEqual)
         && otherStart.isLessThanOrEqualTo(apiLevelBelowOrEqual);
   }
