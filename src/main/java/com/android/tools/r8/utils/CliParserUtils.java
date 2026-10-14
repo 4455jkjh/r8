@@ -175,12 +175,123 @@ public class CliParserUtils {
     }
   }
 
-  public static <B> Consumer<CliParser<B>> addVersionOption(Consumer<B> action) {
-    return parser -> parser.option0("--version", "Print version.", action, "-v");
+  public static <T, C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      Consumer<CliParser<T>> addForceAssertionOptions(
+          Function<T, B> getBuilder, Function<T, Origin> getOrigin) {
+    return parser ->
+        parser
+            .prefix0(
+                "--force-enable-assertions",
+                "[:[<class name>|<package name>...]]",
+                "Forcefully enable javac generated assertion code.",
+                (state, suffix) -> {
+                  B builder = getBuilder.apply(state);
+                  String scope = parseAssertionScope(builder, suffix, getOrigin.apply(state));
+                  addAssertionTransformation(
+                      builder, AssertionTransformationType.ENABLE, null, scope);
+                },
+                "--force-ea")
+            .prefix0(
+                "--force-disable-assertions",
+                "[:[<class name>|<package name>...]]",
+                "Forcefully disable javac generated assertion code. This is the default handling of"
+                    + " javac assertion code when generating DEX file format.",
+                (state, suffix) -> {
+                  B builder = getBuilder.apply(state);
+                  String scope = parseAssertionScope(builder, suffix, getOrigin.apply(state));
+                  addAssertionTransformation(
+                      builder, AssertionTransformationType.DISABLE, null, scope);
+                },
+                "--force-da")
+            .prefix0(
+                "--force-passthrough-assertions",
+                "[:[<class name>|<package name>...]]",
+                "Don't change javac generated assertion code. This is the default handling of"
+                    + " javac assertion code when generating class file format.",
+                (state, suffix) -> {
+                  B builder = getBuilder.apply(state);
+                  String scope = parseAssertionScope(builder, suffix, getOrigin.apply(state));
+                  addAssertionTransformation(
+                      builder, AssertionTransformationType.PASSTHROUGH, null, scope);
+                },
+                "--force-pa")
+            .prefix0(
+                "--force-assertions-handler",
+                ":<handler method>[:[<class name>|<package name>...]]",
+                "Change javac and kotlinc generated assertion code to invoke the method <handler"
+                    + " method> with each assertion error instead of throwing it. The <handler"
+                    + " method> is specified as a class name followed by a dot and the method name."
+                    + " The handler method must take a single argument of type java.lang.Throwable"
+                    + " and have return type void.",
+                (state, suffix) -> {
+                  B builder = getBuilder.apply(state);
+                  Pair<MethodReference, String> handlerAndScope =
+                      parseAssertionHandler(builder, suffix, getOrigin.apply(state));
+                  addAssertionTransformation(
+                      builder,
+                      AssertionTransformationType.HANDLER,
+                      handlerAndScope.getFirst(),
+                      handlerAndScope.getSecond());
+                },
+                "--force-ah");
   }
 
   public static <B> Consumer<CliParser<B>> addHelpOption(Consumer<B> action) {
     return parser -> parser.option0("--help", "Print usage information.", action, "-h");
+  }
+
+  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
+      BiConsumer<B, DiagnosticsMapping> action,
+      BiConsumer<B, Diagnostic> errorHandler,
+      Function<B, Origin> getOrigin) {
+    return parser ->
+        parser.prefix2(
+            "--map-diagnostics",
+            "[:<type>]",
+            "<from-level>",
+            "<to-level>",
+            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
+                + " <from-level> and <to-level> are one of 'none', 'info', 'warning', or 'error',"
+                + " and the optional <type> is either the simple or fully qualified Java type name"
+                + " of a diagnostic. If <type> is unspecified, all diagnostics at <from-level> will"
+                + " be mapped. Note that fatal compiler errors cannot be mapped.",
+            (state, suffix, fromLevel, toLevel) -> {
+              Consumer<Diagnostic> errorHandler1 = error -> errorHandler.accept(state, error);
+              Origin origin = getOrigin.apply(state);
+              String diagnosticsClassName = "";
+              if (!suffix.isEmpty()) {
+                if (suffix.length() == 1 || suffix.charAt(0) != ':') {
+                  errorHandler1.accept(
+                      new StringDiagnostic(
+                          "Invalid diagnostics type specification --map-diagnostics" + suffix + ".",
+                          origin));
+                  return;
+                }
+                diagnosticsClassName = suffix.substring(1);
+              }
+              DiagnosticsLevel fromLevel1 = parseDiagnosticsLevel(fromLevel, errorHandler1, origin);
+              DiagnosticsLevel toLevel1 = parseDiagnosticsLevel(toLevel, errorHandler1, origin);
+              if (fromLevel1 != null && toLevel1 != null) {
+                if (fromLevel1 == DiagnosticsLevel.NONE) {
+                  errorHandler1.accept(
+                      new StringDiagnostic("Cannot map from diagnostics level 'none'.", origin));
+                  return;
+                }
+                action.accept(
+                    state, new DiagnosticsMapping(diagnosticsClassName, fromLevel1, toLevel1));
+              }
+            });
+  }
+
+  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
+      Function<B, Reporter> getReporter, Function<B, Origin> getOrigin) {
+    return addMapDiagnosticsOption(
+        (state, mapping) ->
+            getReporter
+                .apply(state)
+                .addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
+        (state, error) -> getReporter.apply(state).error(error),
+        getOrigin);
   }
 
   /**
@@ -241,119 +352,8 @@ public class CliParserUtils {
                                     getOrigin.apply(state1)))));
   }
 
-  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
-      BiConsumer<B, DiagnosticsMapping> action,
-      BiConsumer<B, Diagnostic> errorHandler,
-      Function<B, Origin> getOrigin) {
-    return parser ->
-        parser.prefix2(
-            "--map-diagnostics",
-            "[:<type>]",
-            "<from-level>",
-            "<to-level>",
-            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
-                + " <from-level> and <to-level> are one of 'none', 'info', 'warning', or 'error',"
-                + " and the optional <type> is either the simple or fully qualified Java type name"
-                + " of a diagnostic. If <type> is unspecified, all diagnostics at <from-level> will"
-                + " be mapped. Note that fatal compiler errors cannot be mapped.",
-            (state, suffix, fromLevel, toLevel) -> {
-              Consumer<Diagnostic> errorHandler1 = error -> errorHandler.accept(state, error);
-              Origin origin = getOrigin.apply(state);
-              String diagnosticsClassName = "";
-              if (!suffix.isEmpty()) {
-                if (suffix.length() == 1 || suffix.charAt(0) != ':') {
-                  errorHandler1.accept(
-                      new StringDiagnostic(
-                          "Invalid diagnostics type specification --map-diagnostics" + suffix + ".",
-                          origin));
-                  return;
-                }
-                diagnosticsClassName = suffix.substring(1);
-              }
-              DiagnosticsLevel fromLevel1 = parseDiagnosticsLevel(fromLevel, errorHandler1, origin);
-              DiagnosticsLevel toLevel1 = parseDiagnosticsLevel(toLevel, errorHandler1, origin);
-              if (fromLevel1 != null && toLevel1 != null) {
-                if (fromLevel1 == DiagnosticsLevel.NONE) {
-                  errorHandler1.accept(
-                      new StringDiagnostic("Cannot map from diagnostics level 'none'.", origin));
-                  return;
-                }
-                action.accept(
-                    state, new DiagnosticsMapping(diagnosticsClassName, fromLevel1, toLevel1));
-              }
-            });
-  }
-
-  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
-      Function<B, Reporter> getReporter, Function<B, Origin> getOrigin) {
-    return addMapDiagnosticsOption(
-        (state, mapping) ->
-            getReporter
-                .apply(state)
-                .addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
-        (state, error) -> getReporter.apply(state).error(error),
-        getOrigin);
-  }
-
-  public static <T, C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
-      Consumer<CliParser<T>> addForceAssertionOptions(
-          Function<T, B> getBuilder, Function<T, Origin> getOrigin) {
-    return parser ->
-        parser
-            .prefix0(
-                "--force-enable-assertions",
-                "[:[<class name>|<package name>...]]",
-                "Forcefully enable javac generated assertion code.",
-                (state, suffix) -> {
-                  B builder = getBuilder.apply(state);
-                  String scope = parseAssertionScope(builder, suffix, getOrigin.apply(state));
-                  addAssertionTransformation(
-                      builder, AssertionTransformationType.ENABLE, null, scope);
-                },
-                "--force-ea")
-            .prefix0(
-                "--force-disable-assertions",
-                "[:[<class name>|<package name>...]]",
-                "Forcefully disable javac generated assertion code. This is the default handling of"
-                    + " javac assertion code when generating DEX file format.",
-                (state, suffix) -> {
-                  B builder = getBuilder.apply(state);
-                  String scope = parseAssertionScope(builder, suffix, getOrigin.apply(state));
-                  addAssertionTransformation(
-                      builder, AssertionTransformationType.DISABLE, null, scope);
-                },
-                "--force-da")
-            .prefix0(
-                "--force-passthrough-assertions",
-                "[:[<class name>|<package name>...]]",
-                "Don't change javac generated assertion code. This is the default handling of"
-                    + " javac assertion code when generating class file format.",
-                (state, suffix) -> {
-                  B builder = getBuilder.apply(state);
-                  String scope = parseAssertionScope(builder, suffix, getOrigin.apply(state));
-                  addAssertionTransformation(
-                      builder, AssertionTransformationType.PASSTHROUGH, null, scope);
-                },
-                "--force-pa")
-            .prefix0(
-                "--force-assertions-handler",
-                ":<handler method>[:[<class name>|<package name>...]]",
-                "Change javac and kotlinc generated assertion code to invoke the method <handler"
-                    + " method> with each assertion error instead of throwing it. The <handler"
-                    + " method> is specified as a class name followed by a dot and the method name."
-                    + " The handler method must take a single argument of type java.lang.Throwable"
-                    + " and have return type void.",
-                (state, suffix) -> {
-                  B builder = getBuilder.apply(state);
-                  Pair<MethodReference, String> handlerAndScope =
-                      parseAssertionHandler(builder, suffix, getOrigin.apply(state));
-                  addAssertionTransformation(
-                      builder,
-                      AssertionTransformationType.HANDLER,
-                      handlerAndScope.getFirst(),
-                      handlerAndScope.getSecond());
-                },
-                "--force-ah");
+  public static <B> Consumer<CliParser<B>> addVersionOption(Consumer<B> action) {
+    return parser -> parser.option0("--version", "Print version.", action, "-v");
   }
 
   private enum AssertionTransformationType {
