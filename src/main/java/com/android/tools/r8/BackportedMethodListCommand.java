@@ -14,7 +14,6 @@ import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.UncheckedApiLevel;
-import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
@@ -123,52 +122,63 @@ public class BackportedMethodListCommand {
     return new Builder(diagnosticsHandler);
   }
 
+  private static class ParserState {
+    final Builder builder;
+    boolean hasDefinedApiLevel = false;
+    boolean hasSetOutputPath = false;
+
+    ParserState(Builder builder) {
+      this.builder = builder;
+    }
+  }
+
   public static Builder parse(String[] args) {
     Builder builder = builder();
-    createParser().parse(args, builder, err -> builder.error(new StringDiagnostic(err)));
+    ParserState state = new ParserState(builder);
+    createParser().parse(args, state, err -> builder.error(new StringDiagnostic(err)));
     return builder;
   }
 
-  private static CliParser<Builder> createParser() {
-    BooleanBox hasDefinedApiLevel = new BooleanBox(false);
-    BooleanBox hasSetOutputPath = new BooleanBox(false);
+  private static CliParser<ParserState> createParser() {
     var parser =
-        new CliParser<Builder>(
+        new CliParser<ParserState>(
             StringUtils.lines("Usage: BackportedMethodList [options]", " Options are:"));
     parser
         .apply(
             CliParserUtils.addOutputOption(
-                b -> hasSetOutputPath.get(),
-                (b, path) -> {
-                  b.setOutputPath(path);
-                  hasSetOutputPath.set(true);
+                state -> state.hasSetOutputPath,
+                (state, path) -> {
+                  state.builder.setOutputPath(path);
+                  state.hasSetOutputPath = true;
                 },
-                (b, error) -> b.reporter.error(new StringDiagnostic(error)),
+                (state, error) -> state.builder.reporter.error(new StringDiagnostic(error)),
                 CliParserUtils.OutputOptionType.FILE))
         .apply(
             CliParserUtils.addMinApiOption(
-                b -> hasDefinedApiLevel.get(),
-                (b, apiLevel) -> {
-                  b.setMinApiLevel(apiLevel);
-                  hasDefinedApiLevel.set(true);
+                state -> state.hasDefinedApiLevel,
+                (state, apiLevel) -> {
+                  state.builder.setMinApiLevel(apiLevel);
+                  state.hasDefinedApiLevel = true;
                 },
-                (b, err) -> b.error(new StringDiagnostic(err))))
+                (state, err) -> state.builder.error(new StringDiagnostic(err))))
         .option1(
             "--desugared-lib",
             "<file>",
             "Desugared library configuration (JSON from the configuration).",
-            (b, arg) -> b.addDesugaredLibraryConfiguration(StringResource.fromFile(Paths.get(arg))))
+            (state, arg) ->
+                state.builder.addDesugaredLibraryConfiguration(
+                    StringResource.fromFile(Paths.get(arg))))
         .option1(
             "--lib",
             "<file>",
             "The compilation SDK library (android.jar).",
-            (b, arg) -> b.addLibraryFiles(Paths.get(arg)))
+            (state, arg) -> state.builder.addLibraryFiles(Paths.get(arg)))
         .option0(
             "--android-platform-build",
             "Compilation of platform code.",
-            b -> b.setAndroidPlatformBuild(true))
-        .apply(CliParserUtils.addVersionOption(b -> b.setPrintVersion(true)))
-        .apply(CliParserUtils.addHelpOption(b -> b.setPrintHelp(true)));
+            state -> state.builder.setAndroidPlatformBuild(true))
+        .apply(CliParserUtils.addVersionOption(state -> state.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(state -> state.builder.setPrintHelp(true)));
     return parser;
   }
 
