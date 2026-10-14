@@ -5,9 +5,11 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.BaseCompilerCommand;
+import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.DiagnosticsLevel;
+import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.ParseFlagInfo;
 import com.android.tools.r8.ParseFlagInfoImpl;
 import com.android.tools.r8.ParseFlagPrinter;
@@ -22,6 +24,8 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -240,6 +244,52 @@ public class CliParserUtils {
 
   public static <B> Consumer<CliParser<B>> addHelpOption(Consumer<B> action) {
     return parser -> parser.option0("--help", "Print usage information.", action, "-h");
+  }
+
+  public static <B> Consumer<CliParser<B>> addLibOption(
+      BiConsumer<B, ClassFileResourceProvider> providerConsumer,
+      BiConsumer<B, Path> fileConsumer,
+      Function<B, Origin> getOrigin,
+      Function<B, ? extends DiagnosticsHandler> getDiagnosticsHandler) {
+    return parser ->
+        parser.option1(
+            "--lib",
+            "<path>",
+            "Add <path> as a library resource. <path> must be a jar/zip file or a JDK home"
+                + " directory.",
+            (state, arg) -> {
+              Path path = Paths.get(arg);
+              if (isJdkHome(path)) {
+                try {
+                  providerConsumer.accept(state, JdkClassFileProvider.fromJdkHome(path));
+                } catch (IOException e) {
+                  getDiagnosticsHandler
+                      .apply(state)
+                      .error(new ExceptionDiagnostic(e, getOrigin.apply(state)));
+                }
+              } else {
+                fileConsumer.accept(state, path);
+              }
+            });
+  }
+
+  /**
+   * This method must match the lookup in {@link
+   * com.android.tools.r8.JdkClassFileProvider#fromJdkHome}.
+   */
+  private static boolean isJdkHome(Path home) {
+    Path jrtFsJar = home.resolve("lib").resolve("jrt-fs.jar");
+    if (Files.exists(jrtFsJar)) {
+      return true;
+    }
+    // JDK has rt.jar in jre/lib/rt.jar.
+    Path rtJar = home.resolve("jre").resolve("lib").resolve("rt.jar");
+    if (Files.exists(rtJar)) {
+      return true;
+    }
+    // JRE has rt.jar in lib/rt.jar.
+    rtJar = home.resolve("lib").resolve("rt.jar");
+    return Files.exists(rtJar);
   }
 
   public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(

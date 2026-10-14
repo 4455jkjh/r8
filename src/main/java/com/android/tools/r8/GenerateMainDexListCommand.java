@@ -165,11 +165,12 @@ public class GenerateMainDexListCommand extends BaseCommand {
             " and options are:");
     var parser = new CliParser<GenerateMainDexListCommand.Builder>(header);
     return parser
-        .option1(
-            "--lib",
-            "<file>",
-            "Add <file> as a library resource.",
-            (b, arg) -> b.addLibraryFiles(Paths.get(arg)))
+        .apply(
+            CliParserUtils.addLibOption(
+                (b, provider) -> b.addLibraryResourceProvider(provider),
+                (b, path) -> b.addLibraryFiles(path),
+                b -> Origin.unknown(),
+                b -> b.getReporter()))
         .option1(
             "--main-dex-rules",
             "<file>",

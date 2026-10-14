@@ -101,13 +101,13 @@ public class R8CommandParser {
                 (state, path) -> state.outputPath = path,
                 (state, error) -> state.builder.error(new StringDiagnostic(error, state.origin)),
                 CliParserUtils.OutputOptionType.ZIP_OR_EXISTING_DIR))
-        .option1(
-            "--lib",
-            "<file|jdk-home>",
-            "Add <file|jdk-home> as a library resource.",
-            (state, arg) ->
-                CompilerCommandParserUtils.addLibraryArgument(
-                    state.builder.getAppBuilder(), arg, state.origin, state.builder.getReporter()))
+        .apply(
+            CliParserUtils.addLibOption(
+                (state, provider) ->
+                    state.builder.getAppBuilder().addLibraryResourceProvider(provider),
+                (state, path) -> state.builder.getAppBuilder().addLibraryFiles(path),
+                state -> state.origin,
+                state -> state.builder.getReporter()))
         .option1(
             "--classpath",
             "<file>",

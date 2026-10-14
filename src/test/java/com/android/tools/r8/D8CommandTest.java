@@ -189,7 +189,9 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
                 + " existing directory or",
             "                          # a non-existent zip archive.",
             "  --ignore-globals        # Ignore global synthetics.",
-            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --classpath <file>      # Add <file> as a classpath resource.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",

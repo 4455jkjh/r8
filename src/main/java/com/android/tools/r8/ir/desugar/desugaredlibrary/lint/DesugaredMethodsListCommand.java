@@ -12,6 +12,7 @@ import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.CliParserUtils;
@@ -25,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 @KeepForApi
@@ -202,6 +204,23 @@ public class DesugaredMethodsListCommand {
       return this;
     }
 
+    Builder addLibraryFiles(Path... files) {
+      return addLibraryFiles(Arrays.asList(files));
+    }
+
+    Builder addLibraryFiles(Collection<Path> files) {
+      for (Path path : files) {
+        try {
+          addLibrary(new ArchiveClassFileProvider(path));
+        } catch (IOException e) {
+          reporter.error(new ExceptionDiagnostic(e, new PathOrigin(path)));
+        } catch (UncheckedIOException e) {
+          reporter.error(new ExceptionDiagnostic(e.getCause(), new PathOrigin(path)));
+        }
+      }
+      return this;
+    }
+
     public Builder setHelp() {
       this.help = true;
       return this;
@@ -287,21 +306,12 @@ public class DesugaredMethodsListCommand {
                   },
                   (state, error) -> state.builder.reporter.error(new StringDiagnostic(error)),
                   CliParserUtils.OutputOptionType.FILE))
-          .option1(
-              "--lib",
-              "<file|jdk-home>",
-              "Add <file|jdk-home> as a library resource.",
-              (state, arg) -> {
-                try {
-                  state.builder.addLibrary(new ArchiveClassFileProvider(Paths.get(arg)));
-                } catch (IOException e) {
-                  state.builder.reporter.error(
-                      new ExceptionDiagnostic(e, new PathOrigin(Paths.get(arg))));
-                } catch (UncheckedIOException e) {
-                  state.builder.reporter.error(
-                      new ExceptionDiagnostic(e.getCause(), new PathOrigin(Paths.get(arg))));
-                }
-              })
+          .apply(
+              CliParserUtils.addLibOption(
+                  (state, provider) -> state.builder.addLibrary(provider),
+                  (state, path) -> state.builder.addLibraryFiles(path),
+                  state -> Origin.unknown(),
+                  state -> state.builder.reporter))
           .apply(
               CliParserUtils.addMinApiOption(
                   state -> state.hasDefinedApiLevel,

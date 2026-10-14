@@ -60,11 +60,12 @@ public class GlobalSyntheticsGeneratorCommandParser {
                   b.hasDefinedApiLevel = true;
                 },
                 (b, err) -> b.builder.error(new StringDiagnostic(err, b.origin))))
-        .option1(
-            "--lib",
-            "<file|jdk-home>",
-            "Add <file|jdk-home> as a library resource.",
-            (b, arg) -> b.builder.addLibraryFiles(Paths.get(arg)))
+        .apply(
+            CliParserUtils.addLibOption(
+                (b, provider) -> b.builder.addLibraryResourceProvider(provider),
+                (b, path) -> b.builder.addLibraryFiles(path),
+                b -> b.origin,
+                b -> b.builder.getReporter()))
         .apply(
             CliParserUtils.addOutputOption(
                 b -> b.outputPath != null,

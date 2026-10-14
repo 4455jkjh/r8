@@ -374,7 +374,9 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
             "  --output <path>         # Output result in <path>. <path> must be a zip file or"
                 + " an existing",
             "                          # directory.",
-            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --classpath <file>      # Add <file> as a classpath resource.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",

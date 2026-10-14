@@ -168,11 +168,12 @@ public class BackportedMethodListCommand {
             (state, arg) ->
                 state.builder.addDesugaredLibraryConfiguration(
                     StringResource.fromFile(Paths.get(arg))))
-        .option1(
-            "--lib",
-            "<file>",
-            "The compilation SDK library (android.jar).",
-            (state, arg) -> state.builder.addLibraryFiles(Paths.get(arg)))
+        .apply(
+            CliParserUtils.addLibOption(
+                (state, provider) -> state.builder.addLibraryResourceProvider(provider),
+                (state, path) -> state.builder.addLibraryFiles(path),
+                state -> Origin.unknown(),
+                state -> state.builder.getReporter()))
         .option0(
             "--android-platform-build",
             "Compilation of platform code.",
@@ -205,6 +206,10 @@ public class BackportedMethodListCommand {
     private Builder(DiagnosticsHandler diagnosticsHandler) {
       this.app = AndroidApp.builder();
       this.reporter = new Reporter(diagnosticsHandler);
+    }
+
+    Reporter getReporter() {
+      return reporter;
     }
 
     /**
