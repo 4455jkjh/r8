@@ -389,6 +389,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         }
       }
     }
+    removeConstantsSpilledAtDefinition();
     clearUserInfo();
     clearState();
   }
@@ -691,6 +692,19 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
     localsChange.setPosition(position);
     return localsChange;
+  }
+
+  // Constants that are spilled at their definition are rematerialized at their uses. Their
+  // spill register is not counted as used (see addRegisterIfUsed), so their definition must be
+  // removed.
+  private void removeConstantsSpilledAtDefinition() {
+    for (LiveIntervals intervals : liveIntervals) {
+      if (intervals.isConstantNumberInterval() && intervals.isSpilledAndRematerializable()) {
+        Instruction definition = intervals.getValue().getDefinition();
+        assert intervals.getStart() == definition.getNumber();
+        definition.removeIgnoreValues();
+      }
+    }
   }
 
   private void clearState() {

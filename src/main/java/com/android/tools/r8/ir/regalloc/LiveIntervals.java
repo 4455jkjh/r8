@@ -155,7 +155,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return true;
   }
 
-  public boolean isSpilledAndRematerializable() {
+  boolean isSpilledAndRematerializable() {
     return isSpilled() && splitParent.isRematerializable();
   }
 
