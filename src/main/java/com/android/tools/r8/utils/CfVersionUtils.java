@@ -6,7 +6,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import java.util.List;
 
 public class CfVersionUtils {

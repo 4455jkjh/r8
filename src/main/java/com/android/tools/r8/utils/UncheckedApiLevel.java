@@ -5,7 +5,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.utils.internal.ObjectUtils;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 
 public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
 

@@ -5,7 +5,7 @@ package com.android.tools.r8.naming;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.naming.mappinginformation.MapVersionMappingInformation;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 
 @KeepForApi
 public enum MapVersion implements Ordered<MapVersion> {

@@ -5,6 +5,7 @@ package com.android.tools.r8.utils.structural;
 
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 
 /** Specified types must implement methods to determine equality, hashing and order. */
 public interface StructuralItem<T extends StructuralItem<T>> extends Ordered<T> {

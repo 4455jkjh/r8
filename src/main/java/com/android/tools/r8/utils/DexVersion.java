@@ -5,7 +5,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;

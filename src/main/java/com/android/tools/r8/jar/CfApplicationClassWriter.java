@@ -44,7 +44,7 @@ import com.android.tools.r8.utils.AsmUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ComparatorUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import java.io.PrintWriter;

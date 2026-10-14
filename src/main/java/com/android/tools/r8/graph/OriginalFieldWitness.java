@@ -6,8 +6,8 @@ package com.android.tools.r8.graph;
 
 import com.android.tools.r8.lightir.LirConstant;
 import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.structural.Equatable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
-import com.android.tools.r8.utils.structural.Equatable;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
