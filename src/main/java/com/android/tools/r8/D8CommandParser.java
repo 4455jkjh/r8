@@ -176,20 +176,12 @@ public class D8CommandParser {
                 state.compilationMode = CompilationMode.RELEASE;
               }
             })
-        .option1(
-            "--output",
-            "<file>",
-            "Output result in <file>. <file> must be an existing directory or a zip file.",
-            (state, arg) -> {
-              if (state.outputPath != null) {
-                state.builder.error(
-                    new StringDiagnostic(
-                        "Cannot output both to '" + state.outputPath + "' and '" + arg + "'",
-                        state.origin));
-              } else {
-                state.outputPath = Paths.get(arg);
-              }
-            })
+        .apply(
+            CliParserUtils.addOutputOption(
+                state -> state.outputPath != null,
+                (state, path) -> state.outputPath = path,
+                (state, error) -> state.builder.error(new StringDiagnostic(error, state.origin)),
+                CliParserUtils.OutputOptionType.ZIP_OR_EXISTING_DIR))
         .option1(
             "--globals",
             "<file>",

@@ -177,9 +177,9 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             " and options are:",
             "  --debug                 # Compile with debugging information (default).",
             "  --release               # Compile without debugging information.",
-            "  --output <file>         # Output result in <file>. <file> must be an existing"
-                + " directory or a zip",
-            "                          # file.",
+            "  --output <path>         # Output result in <path>. <path> must be a zip file or"
+                + " an existing",
+            "                          # directory.",
             "  --globals <file>        # Global synthetics <file> from a previous intermediate"
                 + " compilation. The",
             "                          # <file> may be either a zip-archive of global"

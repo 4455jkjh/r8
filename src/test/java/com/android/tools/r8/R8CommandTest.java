@@ -371,9 +371,9 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
             "  --debug                 # Compile with debugging information.",
             "  --dex                   # Compile program to DEX file format (default).",
             "  --classfile             # Compile program to Java classfile format.",
-            "  --output <file>         # Output result in <file>. <file> must be an existing"
-                + " directory or a zip",
-            "                          # file.",
+            "  --output <path>         # Output result in <path>. <path> must be a zip file or"
+                + " an existing",
+            "                          # directory.",
             "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
             "  --classpath <file>      # Add <file> as a classpath resource.",
             "  --min-api <number>[.<number>]",

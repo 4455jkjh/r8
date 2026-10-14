@@ -267,6 +267,7 @@ public class DesugaredMethodsListCommand {
     private static class ParserState {
       final DesugaredMethodsListCommand.Builder builder;
       boolean hasDefinedApiLevel = false;
+      Path outputPath = null;
 
       ParserState(DesugaredMethodsListCommand.Builder builder) {
         this.builder = builder;
@@ -277,11 +278,15 @@ public class DesugaredMethodsListCommand {
       var header = "Usage: desugaredmethods [options] where  options are:";
       var parser = new CliParser<ParserState>(header);
       return parser
-          .option1(
-              "--output",
-              "<file>",
-              "Output result in <file>. <file> must be an existing directory or a zip file.",
-              (state, arg) -> state.builder.setOutputPath(Paths.get(arg)))
+          .apply(
+              CliParserUtils.addOutputOption(
+                  state -> state.outputPath != null,
+                  (state, path) -> {
+                    state.outputPath = path;
+                    state.builder.setOutputPath(path);
+                  },
+                  (state, error) -> state.builder.reporter.error(new StringDiagnostic(error)),
+                  CliParserUtils.OutputOptionType.FILE))
           .option1(
               "--lib",
               "<file|jdk-home>",

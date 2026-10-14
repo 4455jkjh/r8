@@ -131,15 +131,20 @@ public class BackportedMethodListCommand {
 
   private static CliParser<Builder> createParser() {
     BooleanBox hasDefinedApiLevel = new BooleanBox(false);
+    BooleanBox hasSetOutputPath = new BooleanBox(false);
     var parser =
         new CliParser<Builder>(
             StringUtils.lines("Usage: BackportedMethodList [options]", " Options are:"));
     parser
-        .option1(
-            "--output",
-            "<file>",
-            "Output result in <file>.",
-            (b, arg) -> b.setOutputPath(Paths.get(arg)))
+        .apply(
+            CliParserUtils.addOutputOption(
+                b -> hasSetOutputPath.get(),
+                (b, path) -> {
+                  b.setOutputPath(path);
+                  hasSetOutputPath.set(true);
+                },
+                (b, error) -> b.reporter.error(new StringDiagnostic(error)),
+                CliParserUtils.OutputOptionType.FILE))
         .apply(
             CliParserUtils.addMinApiOption(
                 b -> hasDefinedApiLevel.get(),

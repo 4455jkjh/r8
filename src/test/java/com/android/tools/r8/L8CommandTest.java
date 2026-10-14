@@ -95,9 +95,9 @@ public class L8CommandTest extends CommandTestBase<L8Command> {
             " and options are:",
             "  --debug                 # Compile with debugging information (default).",
             "  --release               # Compile without debugging information.",
-            "  --output <file>         # Output result in <file>. <file> must be an existing"
-                + " directory or a zip",
-            "                          # file.",
+            "  --output <path>         # Output result in <path>. <path> must be a zip file or"
+                + " an existing",
+            "                          # directory.",
             "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",

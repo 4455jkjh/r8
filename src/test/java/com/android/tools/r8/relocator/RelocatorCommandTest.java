@@ -56,7 +56,9 @@ public class RelocatorCommandTest extends TestBase {
             "  --input <file>          # Input file to remap, class, zip or jar.",
             "  --input-no-res <file>   # Input file to remap, zip or jar. Only .class file entries"
                 + " are included.",
-            "  --output <file>         # Output result in <outfile>.",
+            "  --output <path>         # Output result in <path>. <path> must be a zip file or"
+                + " an existing",
+            "                          # directory.",
             "  --map <from->to>        # Registers a mapping.",
             "  --map-diagnostics[:<type>] <from-level> <to-level>",
             "                          # Map diagnostics of <type> (default any) reported as"
@@ -170,8 +172,7 @@ public class RelocatorCommandTest extends TestBase {
                   .build();
             });
     assertThat(
-        exception.getCause().getMessage(),
-        containsString("Cannot output both to 'first_output.zip' and 'another_output.zip'"));
+        exception.getCause().getMessage(), containsString("Cannot set multiple --output options"));
   }
 
   @Test

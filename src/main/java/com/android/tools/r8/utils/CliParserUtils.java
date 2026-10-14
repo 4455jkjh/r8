@@ -22,6 +22,8 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -325,6 +327,39 @@ public class CliParserUtils {
                     arg,
                     apiLevel -> action.accept(state, apiLevel),
                     error -> errorHandler.accept(state, "Invalid argument to --min-api: " + error));
+              }
+            });
+  }
+
+  public enum OutputOptionType {
+    ZIP_OR_EXISTING_DIR(
+        "<path>", "Output result in <path>. <path> must be a zip file or an existing directory."),
+    FILE("<file>", "Output result in <file>.");
+
+    private final String paramLabel;
+    private final String description;
+
+    OutputOptionType(String paramLabel, String description) {
+      this.paramLabel = paramLabel;
+      this.description = description;
+    }
+  }
+
+  public static <B> Consumer<CliParser<B>> addOutputOption(
+      Predicate<B> hasSetOutputPathAlready,
+      BiConsumer<B, Path> action,
+      BiConsumer<B, String> errorHandler,
+      OutputOptionType outputOptionType) {
+    return parser ->
+        parser.option1(
+            "--output",
+            outputOptionType.paramLabel,
+            outputOptionType.description,
+            (state, arg) -> {
+              if (hasSetOutputPathAlready.test(state)) {
+                errorHandler.accept(state, "Cannot set multiple --output options");
+              } else {
+                action.accept(state, Paths.get(arg));
               }
             });
   }

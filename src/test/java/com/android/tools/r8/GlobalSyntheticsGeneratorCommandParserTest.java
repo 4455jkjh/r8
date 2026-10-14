@@ -35,7 +35,7 @@ public class GlobalSyntheticsGeneratorCommandParserTest extends TestBase {
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",
             "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
-            "  --output <globals-file> # Output result in <globals-file>.",
+            "  --output <file>         # Output result in <file>.",
             "  --classfile             # Generate globals for only classfile to classfile"
                 + " desugaring. (By default",
             "                          # globals for both classfile and dex desugaring are"
