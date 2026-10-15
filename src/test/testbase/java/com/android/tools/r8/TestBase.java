@@ -318,6 +318,12 @@ public class TestBase {
     return testForR8Partial(temp);
   }
 
+  public R8CompatTestBuilder testForR8Compat(TestParameters parameters) {
+    assert parameters.getPartialCompilationTestParameters().isNone();
+    return testForR8Compat(parameters.getBackend())
+        .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
+  }
+
   public R8CompatTestBuilder testForR8Compat(Backend backend) {
     return testForR8Compat(backend, true);
   }

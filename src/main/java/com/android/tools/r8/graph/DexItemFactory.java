@@ -673,11 +673,6 @@ public class DexItemFactory {
   public final DexType kotlinJvmInternalIntrinsicsType =
       createStaticallyKnownType(kotlinJvmInternalIntrinsicsDescriptor);
 
-  public final DexType kotlinEnumEntriesList =
-      createStaticallyKnownType("Lkotlin/enums/EnumEntriesList;");
-  public final DexMethod kotlinEnumEntriesListInit =
-      createInstanceInitializer(kotlinEnumEntriesList, enumType.toArrayType(this));
-
   public final DexType javaIoFileType = createStaticallyKnownType("Ljava/io/File;");
   public final DexType javaMathBigIntegerType = createStaticallyKnownType("Ljava/math/BigInteger;");
   public final DexType javaNioByteOrderType = createStaticallyKnownType("Ljava/nio/ByteOrder;");

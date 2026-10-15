@@ -34,7 +34,11 @@ public class ContextSensitiveInstanceInitializerInfoCollection
 
   @Override
   public InstanceInitializerInfo get(InvokeDirect invoke) {
-    assert infos.keySet().stream().filter(context -> context.isSatisfiedBy(invoke)).count() <= 1;
+    // The always-true context is a fallback, which is used if no other context is satisfied.
+    assert infos.keySet().stream()
+            .filter(context -> !context.isAlwaysTrue() && context.isSatisfiedBy(invoke))
+            .count()
+        <= 1;
     for (Entry<InstanceInitializerInfoContext, NonTrivialInstanceInitializerInfo> entry :
         infos.entrySet()) {
       if (entry.getKey().isSatisfiedBy(invoke)) {
@@ -53,10 +57,21 @@ public class ContextSensitiveInstanceInitializerInfoCollection
   public InstanceInitializerInfoCollection fixupAfterParametersChanged(
       AppView<AppInfoWithLiveness> appView, ArgumentInfoCollection argumentInfoCollection) {
     Builder builder = builder();
-    infos.forEach(
-        (context, info) ->
-            builder.put(
-                context, info.fixupAfterParametersChanged(appView, argumentInfoCollection)));
+    for (Entry<InstanceInitializerInfoContext, NonTrivialInstanceInitializerInfo> entry :
+        infos.entrySet()) {
+      InstanceInitializerInfoContext context =
+          entry.getKey().fixupAfterParametersChanged(appView, argumentInfoCollection);
+      if (context == null) {
+        // The context can no longer be satisfied.
+        continue;
+      }
+      builder.put(
+          context, entry.getValue().fixupAfterParametersChanged(appView, argumentInfoCollection));
+      if (context.isAlwaysTrue()) {
+        // The contexts are tried in order by get(), so the remaining contexts are unreachable.
+        break;
+      }
+    }
     return builder.build();
   }
 
