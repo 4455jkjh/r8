@@ -10,7 +10,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoFieldTypeStrengthening;
 import com.android.tools.r8.NoHorizontalClassMerging;
+import com.android.tools.r8.NoReturnTypeStrengthening;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -46,7 +48,9 @@ public class PutObjectWithFinalizeTest extends TestBase {
         .addInnerClasses(PutObjectWithFinalizeTest.class)
         .addKeepMainRule(TestClass.class)
         .enableInliningAnnotations()
+        .enableNoFieldTypeStrengtheningAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
+        .enableNoReturnTypeStrengtheningAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .setMinApi(parameters)
         .compile()
@@ -85,6 +89,7 @@ public class PutObjectWithFinalizeTest extends TestBase {
                       "directInstanceWithoutFinalizer",
                       "otherDirectInstanceWithoutFinalizer",
                       "indirectInstanceWithoutFinalizer",
+                      "indirectInstanceWithoutFinalizerOfImpreciseStaticType",
                       "arrayWithoutFinalizer");
               for (String name : absentFields) {
                 assertThat(classSubject.uniqueFieldWithOriginalName(name), not(isPresent()));
@@ -104,6 +109,10 @@ public class PutObjectWithFinalizeTest extends TestBase {
     static A indirectInstanceWithDirectFinalizer = createA();
     static A indirectInstanceWithIndirectFinalizer = createB();
     static Object indirectInstanceWithoutFinalizer = createC();
+
+    @NoFieldTypeStrengthening
+    static Object indirectInstanceWithoutFinalizerOfImpreciseStaticType = createCAsObject();
+
     static Object otherIndirectInstanceWithoutFinalizer = createObject();
 
     static A[] arrayWithDirectFinalizer = new A[42];
@@ -127,6 +136,12 @@ public class PutObjectWithFinalizeTest extends TestBase {
 
     @NeverInline
     static C createC() {
+      return new C();
+    }
+
+    @NeverInline
+    @NoReturnTypeStrengthening
+    static Object createCAsObject() {
       return new C();
     }
 
