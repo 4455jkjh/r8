@@ -68,7 +68,7 @@ public abstract class UnsupportedFeatureDiagnostic implements Diagnostic {
    */
   @Deprecated
   public int getSupportedApiLevel() {
-    return supportedApiLevel == null ? -1 : supportedApiLevel.getMajor();
+    return supportedApiLevel == null ? -1 : supportedApiLevel.asUnchecked().getMajorCeiling();
   }
 
   /**
