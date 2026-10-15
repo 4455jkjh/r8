@@ -73,6 +73,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ReachabilitySensitiveValue;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.io.ByteStreams;
@@ -1049,9 +1050,8 @@ public class DexParser<T extends DexClass> {
       }
       result.add(new DexSection(type, unused, size, offset));
     }
-    for (int i = 0; i < mapSize - 1; i++) {
-      result.get(i).setEnd(result.get(i + 1).offset);
-    }
+    IterableUtils.forEachWithPrevious(
+        result, (previous, current) -> previous.setEnd(current.offset));
     result.get(mapSize - 1).setEnd(dexReader.end());
     return result;
   }

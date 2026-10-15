@@ -18,6 +18,7 @@ import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Arrays;
 import java.util.List;
@@ -97,11 +98,11 @@ public class StringConcat extends Instruction {
   }
 
   private boolean hasAdjacentConstants() {
-    DexString prev = null;
-    for (DexString str : argConstants) {
-      assert str == null || prev == null : "Adjacent Constants: " + str + ", " + prev;
-      prev = str;
-    }
+    IterableUtils.forEachWithPrevious(
+        argConstants,
+        (prev, str) -> {
+          assert str == null || prev == null : "Adjacent Constants: " + str + ", " + prev;
+        });
     return false;
   }
 

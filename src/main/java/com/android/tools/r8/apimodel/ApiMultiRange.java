@@ -5,6 +5,7 @@
 package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -51,15 +52,14 @@ public final class ApiMultiRange extends ApiVersionSet {
   private boolean verifyInvariants() {
     assert ranges != null;
     assert ranges.size() >= 2;
-    ApiRange prev = null;
-    for (var current : ranges) {
-      assert current != null;
-      if (prev != null) {
-        assert prev.removed != null;
-        assert prev.removed.isLessThan(current.intro);
-      }
-      prev = current;
-    }
+    IterableUtils.forEachWithPrevious(
+        ranges,
+        (prev, current) -> {
+          assert prev != null;
+          assert current != null;
+          assert prev.removed != null;
+          assert prev.removed.isLessThan(current.intro);
+        });
     return true;
   }
 

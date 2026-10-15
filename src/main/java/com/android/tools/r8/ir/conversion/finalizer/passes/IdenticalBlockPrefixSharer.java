@@ -13,6 +13,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
@@ -303,14 +304,9 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
     }
 
     // Only try to share instructions if the normal successors have the same locals state on entry.
-    BasicBlock firstNormalSuccessor = normalSuccessors.get(0);
-    for (int i = 1; i < normalSuccessors.size(); i++) {
-      BasicBlock otherNormalSuccessor = normalSuccessors.get(i);
-      if (!Objects.equals(
-          firstNormalSuccessor.getLocalsAtEntry(), otherNormalSuccessor.getLocalsAtEntry())) {
-        return false;
-      }
-    }
-    return true;
+    return IterableUtils.allWithPrevious(
+        normalSuccessors,
+        (previous, current) ->
+            Objects.equals(previous.getLocalsAtEntry(), current.getLocalsAtEntry()));
   }
 }
