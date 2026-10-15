@@ -7,6 +7,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecificationParser;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
@@ -124,18 +125,24 @@ public class BackportedMethodListCommand {
 
   private static class ParserState {
     final Builder builder;
+    final Origin origin;
     boolean hasDefinedApiLevel = false;
     boolean hasSetOutputPath = false;
 
-    ParserState(Builder builder) {
+    ParserState(Builder builder, Origin origin) {
       this.builder = builder;
+      this.origin = origin;
     }
   }
 
   public static Builder parse(String[] args) {
+    return parse(args, CommandLineOrigin.INSTANCE);
+  }
+
+  static Builder parse(String[] args, Origin origin) {
     Builder builder = builder();
-    ParserState state = new ParserState(builder);
-    createParser().parse(args, state, err -> builder.error(new StringDiagnostic(err)));
+    ParserState state = new ParserState(builder, origin);
+    createParser().parse(args, state, err -> builder.error(new StringDiagnostic(err, origin)));
     return builder;
   }
 
@@ -151,7 +158,8 @@ public class BackportedMethodListCommand {
                   state.builder.setOutputPath(path);
                   state.hasSetOutputPath = true;
                 },
-                (state, error) -> state.builder.reporter.error(new StringDiagnostic(error)),
+                (state, error) ->
+                    state.builder.reporter.error(new StringDiagnostic(error, state.origin)),
                 CliParserUtils.OutputOptionType.FILE))
         .apply(
             CliParserUtils.addMinApiOption(
@@ -160,7 +168,7 @@ public class BackportedMethodListCommand {
                   state.builder.setMinApiLevel(apiLevel);
                   state.hasDefinedApiLevel = true;
                 },
-                (state, err) -> state.builder.error(new StringDiagnostic(err))))
+                (state, err) -> state.builder.error(new StringDiagnostic(err, state.origin))))
         .option1(
             "--desugared-lib",
             "<file>",
@@ -172,7 +180,7 @@ public class BackportedMethodListCommand {
             CliParserUtils.addLibOption(
                 (state, provider) -> state.builder.addLibraryResourceProvider(provider),
                 (state, path) -> state.builder.addLibraryFiles(path),
-                state -> Origin.unknown(),
+                state -> state.origin,
                 state -> state.builder.getReporter()))
         .option0(
             "--android-platform-build",

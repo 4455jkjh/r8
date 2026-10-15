@@ -12,6 +12,7 @@ import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -285,11 +286,13 @@ public class DesugaredMethodsListCommand {
 
     private static class ParserState {
       final DesugaredMethodsListCommand.Builder builder;
+      final Origin origin;
       boolean hasDefinedApiLevel = false;
       Path outputPath = null;
 
-      ParserState(DesugaredMethodsListCommand.Builder builder) {
+      ParserState(DesugaredMethodsListCommand.Builder builder, Origin origin) {
         this.builder = builder;
+        this.origin = origin;
       }
     }
 
@@ -304,13 +307,14 @@ public class DesugaredMethodsListCommand {
                     state.outputPath = path;
                     state.builder.setOutputPath(path);
                   },
-                  (state, error) -> state.builder.reporter.error(new StringDiagnostic(error)),
+                  (state, error) ->
+                      state.builder.reporter.error(new StringDiagnostic(error, state.origin)),
                   CliParserUtils.OutputOptionType.FILE))
           .apply(
               CliParserUtils.addLibOption(
                   (state, provider) -> state.builder.addLibrary(provider),
                   (state, path) -> state.builder.addLibraryFiles(path),
-                  state -> Origin.unknown(),
+                  state -> state.origin,
                   state -> state.builder.reporter))
           .apply(
               CliParserUtils.addMinApiOption(
@@ -319,7 +323,8 @@ public class DesugaredMethodsListCommand {
                     state.builder.setMinApi(apiLevel);
                     state.hasDefinedApiLevel = true;
                   },
-                  (state, err) -> state.builder.reporter.error(new StringDiagnostic(err))))
+                  (state, err) ->
+                      state.builder.reporter.error(new StringDiagnostic(err, state.origin))))
           .option1(
               "--desugared-lib",
               "<file>",
@@ -345,9 +350,14 @@ public class DesugaredMethodsListCommand {
     }
 
     public DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler) {
+      return parse(args, handler, CommandLineOrigin.INSTANCE);
+    }
+
+    DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler, Origin origin) {
       DesugaredMethodsListCommand.Builder builder = DesugaredMethodsListCommand.builder(handler);
-      ParserState state = new ParserState(builder);
-      createParser().parse(args, state, err -> builder.reporter.error(new StringDiagnostic(err)));
+      ParserState state = new ParserState(builder, origin);
+      createParser()
+          .parse(args, state, err -> builder.reporter.error(new StringDiagnostic(err, origin)));
       return builder.build();
     }
   }
