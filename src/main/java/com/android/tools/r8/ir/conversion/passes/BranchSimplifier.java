@@ -13,6 +13,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.equivalence.BasicBlockBehavioralSubsumption;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.ConstantOrNonConstantNumberValue;
@@ -225,10 +226,10 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
   private boolean simplifyIfZeroTest(IRCode code, BasicBlock block, If theIf) {
     Value lhs = theIf.lhs();
     Value lhsRoot = lhs.getAliasedValue();
-    AbstractValue lhsAbstractValue = lhs.getAbstractValue(appView, code.context());
-    if (lhsAbstractValue.isSingleNumberValue()) {
-      int lhsValue = lhsAbstractValue.asSingleNumberValue().getIntValue();
-      simplifyIfWithKnownCondition(block, theIf, Integer.signum(lhsValue));
+    if (lhsRoot.isConstNumber()) {
+      ConstNumber cond = lhsRoot.getConstInstruction().asConstNumber();
+      BasicBlock target = theIf.targetFromCondition(cond);
+      simplifyIfWithKnownCondition(block, theIf, target);
       return true;
     }
 
@@ -247,6 +248,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     }
 
     if (theIf.getType().isEqualsOrNotEquals()) {
+      AbstractValue lhsAbstractValue = lhs.getAbstractValue(appView, code.context());
       if (lhsAbstractValue.isConstantOrNonConstantNumberValue()
           && !lhsAbstractValue.asConstantOrNonConstantNumberValue().maybeContainsInt(0)) {
         // Value doesn't contain zero at all.
@@ -354,18 +356,18 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       return true;
     }
 
-    AbstractValue lhsAbstractValue = lhs.getAbstractValue(appView, code.context());
-    AbstractValue rhsAbstractValue = rhs.getAbstractValue(appView, code.context());
-    if (lhsAbstractValue.isSingleNumberValue() && rhsAbstractValue.isSingleNumberValue()) {
-      // Comparison between two values that are both known to be a single number.
-      // The operands of an If are 32-bit values (int, float bits, or null).
-      int lhsValue = lhsAbstractValue.asSingleNumberValue().getIntValue();
-      int rhsValue = rhsAbstractValue.asSingleNumberValue().getIntValue();
-      simplifyIfWithKnownCondition(block, theIf, Integer.compare(lhsValue, rhsValue));
+    if (lhsRoot.isConstNumber() && rhsRoot.isConstNumber()) {
+      // Zero test with a constant of comparison between between two constants.
+      ConstNumber left = lhsRoot.getConstInstruction().asConstNumber();
+      ConstNumber right = rhsRoot.getConstInstruction().asConstNumber();
+      BasicBlock target = theIf.targetFromCondition(left, right);
+      simplifyIfWithKnownCondition(block, theIf, target);
       return true;
     }
 
     if (theIf.getType().isEqualsOrNotEquals()) {
+      AbstractValue lhsAbstractValue = lhs.getAbstractValue(appView, code.context());
+      AbstractValue rhsAbstractValue = rhs.getAbstractValue(appView, code.context());
       if (lhsAbstractValue.isConstantOrNonConstantNumberValue()
           && rhsAbstractValue.isConstantOrNonConstantNumberValue()) {
         ConstantOrNonConstantNumberValue lhsNumberValue =
@@ -423,11 +425,14 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     }
 
     if (theIf.getType().isEqualsOrNotEquals()) {
-      if (lhsAbstractValue.isSingleConstClassValue()) {
-        if (rhsAbstractValue.isSingleConstClassValue()) {
-          SingleConstClassValue singleConstClassValue = lhsAbstractValue.asSingleConstClassValue();
+      ProgramMethod context = code.context();
+      AbstractValue abstractValue = lhs.getAbstractValue(appView, context);
+      if (abstractValue.isSingleConstClassValue()) {
+        AbstractValue otherAbstractValue = rhs.getAbstractValue(appView, context);
+        if (otherAbstractValue.isSingleConstClassValue()) {
+          SingleConstClassValue singleConstClassValue = abstractValue.asSingleConstClassValue();
           SingleConstClassValue otherSingleConstClassValue =
-              rhsAbstractValue.asSingleConstClassValue();
+              otherAbstractValue.asSingleConstClassValue();
           simplifyIfWithKnownCondition(
               block,
               theIf,
@@ -438,10 +443,11 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
         return false;
       }
 
-      if (lhsAbstractValue.isSingleFieldValue()) {
-        if (rhsAbstractValue.isSingleFieldValue()) {
-          SingleFieldValue singleFieldValue = lhsAbstractValue.asSingleFieldValue();
-          SingleFieldValue otherSingleFieldValue = rhsAbstractValue.asSingleFieldValue();
+      if (abstractValue.isSingleFieldValue()) {
+        AbstractValue otherAbstractValue = rhs.getAbstractValue(appView, context);
+        if (otherAbstractValue.isSingleFieldValue()) {
+          SingleFieldValue singleFieldValue = abstractValue.asSingleFieldValue();
+          SingleFieldValue otherSingleFieldValue = otherAbstractValue.asSingleFieldValue();
           if (singleFieldValue.getField() == otherSingleFieldValue.getField()) {
             simplifyIfWithKnownCondition(block, theIf, 0);
             return true;
