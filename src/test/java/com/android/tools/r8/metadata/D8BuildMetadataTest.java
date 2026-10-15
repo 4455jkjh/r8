@@ -87,7 +87,7 @@ public class D8BuildMetadataTest extends TestBase {
             "--lib",
             ToolHelper.getMostRecentAndroidJar().toString(),
             "--min-api",
-            Integer.toString(parameters.getApiLevel().getMajor()),
+            parameters.getApiLevel().getNumericString(),
             "--release",
             ToolHelper.getClassFileForTestClass(Main.class).toString());
     if (parameters.canUseNativeMultidex()) {
@@ -133,6 +133,12 @@ public class D8BuildMetadataTest extends TestBase {
     assertEquals(
         parameters.isCfRuntime() ? null : Integer.toString(parameters.getApiLevel().getMajor()),
         buildMetadata.getOptionsMetadata().getMinApiLevel());
+    assertEquals(
+        parameters.isCfRuntime() ? -1 : parameters.getApiLevel().getMajor(),
+        buildMetadata.getOptionsMetadata().getMinApiLevelMajor());
+    assertEquals(
+        parameters.isCfRuntime() ? -1 : parameters.getApiLevel().getMinor(),
+        buildMetadata.getOptionsMetadata().getMinApiLevelMinor());
     assertFalse(buildMetadata.getOptionsMetadata().isDebugModeEnabled());
     // Options metadata (library desugaring).
     D8LibraryDesugaringMetadata libraryDesugaringMetadata =
