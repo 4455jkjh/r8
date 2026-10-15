@@ -215,9 +215,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             "                          # with their originating class.",
             "  --classfile             # Compile program to Java classfile format.",
             "  --no-desugaring         # Force disable desugaring.",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --main-dex-rules <file> # Proguard keep rules for classes to place in the primary"
                 + " dex file.",
             "  --main-dex-list <file>  # List of classes to place in the primary dex file.",

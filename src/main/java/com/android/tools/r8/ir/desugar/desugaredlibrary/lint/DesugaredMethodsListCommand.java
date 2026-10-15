@@ -325,14 +325,9 @@ public class DesugaredMethodsListCommand {
                   },
                   (state, err) ->
                       state.builder.reporter.error(new StringDiagnostic(err, state.origin))))
-          .option1(
-              "--desugared-lib",
-              "<file>",
-              "Specify desugared library configuration. <file> is a desugared library configuration"
-                  + " (json).",
-              (state, arg) ->
-                  state.builder.setDesugarLibrarySpecification(
-                      StringResource.fromFile(Paths.get(arg))))
+          .apply(
+              CliParserUtils.addDesugaredLibOption(
+                  (state, resource) -> state.builder.setDesugarLibrarySpecification(resource)))
           .option0(
               "--android-platform-build",
               "Compile as a platform build where the runtime/bootclasspath is assumed to be the"

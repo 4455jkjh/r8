@@ -107,9 +107,7 @@ public class L8CommandTest extends CommandTestBase<L8Command> {
             "  --pg-map-output <file>  # Output the resulting name and line mapping to <file>.",
             "  --partition-map-output <file>",
             "                          # Output the resulting mapping to <file>.",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --force-enable-assertions[:[<class name>|<package name>...]]",
             "  --force-ea[:[<class name>|<package name>...]]",
             "                          # Forcefully enable javac generated assertion code.",

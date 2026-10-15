@@ -18,7 +18,6 @@ import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -169,13 +168,9 @@ public class BackportedMethodListCommand {
                   state.hasDefinedApiLevel = true;
                 },
                 (state, err) -> state.builder.error(new StringDiagnostic(err, state.origin))))
-        .option1(
-            "--desugared-lib",
-            "<file>",
-            "Desugared library configuration (JSON from the configuration).",
-            (state, arg) ->
-                state.builder.addDesugaredLibraryConfiguration(
-                    StringResource.fromFile(Paths.get(arg))))
+        .apply(
+            CliParserUtils.addDesugaredLibOption(
+                (state, resource) -> state.builder.addDesugaredLibraryConfiguration(resource)))
         .apply(
             CliParserUtils.addLibOption(
                 (state, provider) -> state.builder.addLibraryResourceProvider(provider),

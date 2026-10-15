@@ -395,9 +395,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
             "  --pg-map-output <file>  # Output the resulting name and line mapping to <file>.",
             "  --partition-map-output <file>",
             "                          # Output the resulting mapping to <file>.",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --no-tree-shaking       # Force disable tree shaking of unreachable classes.",
             "  --no-minification       # Force disable minification of names.",
             "  --no-data-resources     # Ignore all data resources.",

@@ -132,14 +132,9 @@ public class L8CommandParser {
             "<file>",
             "Output the resulting mapping to <file>.",
             (state, arg) -> state.builder.setPartitionMapOutputPath(Paths.get(arg)))
-        .option1(
-            "--desugared-lib",
-            "<file>",
-            "Specify desugared library configuration. <file> is a desugared library configuration"
-                + " (json).",
-            (state, arg) ->
-                state.builder.addDesugaredLibraryConfiguration(
-                    StringResource.fromFile(Paths.get(arg))))
+        .apply(
+            CliParserUtils.addDesugaredLibOption(
+                (state, resource) -> state.builder.addDesugaredLibraryConfiguration(resource)))
         .apply(
             CliParserUtils.addForceAssertionOptions(state -> state.builder, state -> state.origin))
         .apply(

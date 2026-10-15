@@ -13,6 +13,7 @@ import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.ParseFlagInfo;
 import com.android.tools.r8.ParseFlagInfoImpl;
 import com.android.tools.r8.ParseFlagPrinter;
+import com.android.tools.r8.StringResource;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
@@ -179,6 +180,16 @@ public class CliParserUtils {
       this.from = from;
       this.to = to;
     }
+  }
+
+  public static <B> Consumer<CliParser<B>> addDesugaredLibOption(
+      BiConsumer<B, StringResource> action) {
+    return parser ->
+        parser.option1(
+            "--desugared-lib",
+            "<file>",
+            "Specify a JSON desugared library configuration <file>.",
+            (state, arg) -> action.accept(state, StringResource.fromFile(Paths.get(arg))));
   }
 
   public static <T, C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>

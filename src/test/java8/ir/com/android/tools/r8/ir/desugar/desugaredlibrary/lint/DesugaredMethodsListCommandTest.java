@@ -46,9 +46,7 @@ public class DesugaredMethodsListCommandTest extends TestBase {
             "                          # home directory.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --android-platform-build",
             "                          # Compile as a platform build where the"
                 + " runtime/bootclasspath is assumed to",

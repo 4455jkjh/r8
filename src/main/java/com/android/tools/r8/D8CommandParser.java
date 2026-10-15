@@ -316,14 +316,9 @@ public class D8CommandParser {
             "--no-desugaring",
             "Force disable desugaring.",
             state -> state.builder.setDisableDesugaring(true))
-        .option1(
-            "--desugared-lib",
-            "<file>",
-            "Specify desugared library configuration. <file> is a desugared library configuration"
-                + " (json).",
-            (state, arg) ->
-                state.builder.addDesugaredLibraryConfiguration(
-                    StringResource.fromFile(Paths.get(arg))))
+        .apply(
+            CliParserUtils.addDesugaredLibOption(
+                (state, resource) -> state.builder.addDesugaredLibraryConfiguration(resource)))
         .option1(
             "--main-dex-rules",
             "<file>",

@@ -168,14 +168,9 @@ public class R8CommandParser {
             "<file>",
             "Output the resulting mapping to <file>.",
             (state, arg) -> state.builder.setPartitionMapOutputPath(Paths.get(arg)))
-        .option1(
-            "--desugared-lib",
-            "<file>",
-            "Specify desugared library configuration. <file> is a desugared library configuration"
-                + " (json).",
-            (state, arg) ->
-                state.builder.addDesugaredLibraryConfiguration(
-                    StringResource.fromFile(Paths.get(arg))))
+        .apply(
+            CliParserUtils.addDesugaredLibOption(
+                (state, resource) -> state.builder.addDesugaredLibraryConfiguration(resource)))
         .option0(
             "--no-tree-shaking",
             "Force disable tree shaking of unreachable classes.",
