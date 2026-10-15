@@ -19,6 +19,7 @@ import com.android.tools.r8.verticalclassmerging.policies.NoInterfacesWithUnknow
 import com.android.tools.r8.verticalclassmerging.policies.NoInvokeSuperNoSuchMethodErrorsPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoKeptClassesPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoLockMergingPolicy;
+import com.android.tools.r8.verticalclassmerging.policies.NoMethodHandleFromLambdaPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoMethodResolutionChangesPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoNestedMergingPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoNonSerializableClassIntoSerializableClassPolicy;
@@ -40,6 +41,7 @@ public class VerticalClassMergerPolicyScheduler {
         new NoDirectlyInstantiatedClassesPolicy(appView),
         new NoInterfacesWithUnknownSubtypesPolicy(appView),
         new NoKeptClassesPolicy(appView),
+        new NoMethodHandleFromLambdaPolicy(appView),
         new SameFeatureSplitPolicy(appView),
         new SameStartupPartitionPolicy(appView),
         new NoServiceInterfacesPolicy(appView),
