@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.switches;
 
-import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0;
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V16_1_0;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
@@ -37,7 +37,7 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
         .addInnerClasses(SwitchMapInvalidOrdinalTest.class)
         .run(parameters.getRuntime(), Main.class)
         .applyIfDexRuntime(
-            version -> version.isNewerThanOrEqual(V17_0_0),
+            version -> version.isNewerThanOrEqual(V16_1_0),
             r -> r.assertFailureWithErrorThatThrows(IllegalAccessException.class),
             r -> r.assertSuccessWithOutputLines("a", "b", "0", "a"));
   }
@@ -60,7 +60,7 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
         // initialized based on the values in the enum at this point creating a mapping ordinal to
         // switch map entry. Here D and X have 3 as ordinal.
         .applyIfDexRuntime(
-            version -> version.isNewerThanOrEqual(V17_0_0),
+            version -> version.isNewerThanOrEqual(V16_1_0),
             r -> r.assertFailureWithErrorThatThrows(IllegalAccessException.class),
             r -> r.assertSuccessWithOutputLines("a", "b", "0", "a"));
   }

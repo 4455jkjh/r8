@@ -318,6 +318,8 @@ public class ToolHelper {
     ART_15_0_0_HOST(Version.V15_0_0, Kind.HOST),
     ART_16_0_0_TARGET(Version.V16_0_0, Kind.TARGET),
     ART_16_0_0_HOST(Version.V16_0_0, Kind.HOST),
+    ART_16_1_0_TARGET(Version.V16_1_0, Kind.TARGET),
+    ART_16_1_0_HOST(Version.V16_1_0, Kind.HOST),
     ART_17_0_0_TARGET(Version.V17_0_0, Kind.TARGET),
     ART_17_0_0_HOST(Version.V17_0_0, Kind.HOST),
     ART_17_1_0_TARGET(Version.V17_1_0, Kind.TARGET),
@@ -347,6 +349,7 @@ public class ToolHelper {
       V14_0_0("14.0.0"),
       V15_0_0("15.0.0"),
       V16_0_0("16.0.0"),
+      V16_1_0("16.1.0"),
       V17_0_0("17.0.0"),
       V17_1_0("17.1.0"),
       V17_2_0("17.2.0"),
@@ -995,6 +998,7 @@ public class ToolHelper {
           .put(DexVm.ART_17_2_0_HOST, "host/art-17.2.0")
           .put(DexVm.ART_17_1_0_HOST, "host/art-17.1.0")
           .put(DexVm.ART_17_0_0_HOST, "host/art-17.0.0-beta4")
+          .put(DexVm.ART_16_1_0_HOST, "host/art-16.1.0")
           .put(DexVm.ART_16_0_0_HOST, "host/art-16.0.0")
           .put(DexVm.ART_15_0_0_HOST, "host/art-15.0.0-beta2")
           .put(DexVm.ART_14_0_0_HOST, "host/art-14.0.0-beta3")
@@ -1016,6 +1020,7 @@ public class ToolHelper {
           .put(DexVm.ART_17_2_0_HOST, "bin/art")
           .put(DexVm.ART_17_1_0_HOST, "bin/art")
           .put(DexVm.ART_17_0_0_HOST, "bin/art")
+          .put(DexVm.ART_16_1_0_HOST, "bin/art")
           .put(DexVm.ART_16_0_0_HOST, "bin/art")
           .put(DexVm.ART_15_0_0_HOST, "bin/art")
           .put(DexVm.ART_14_0_0_HOST, "bin/art")
@@ -1037,6 +1042,7 @@ public class ToolHelper {
           .put(DexVm.ART_17_2_0_HOST, "bin/art")
           .put(DexVm.ART_17_1_0_HOST, "bin/art")
           .put(DexVm.ART_17_0_0_HOST, "bin/art")
+          .put(DexVm.ART_16_1_0_HOST, "bin/art")
           .put(DexVm.ART_16_0_0_HOST, "bin/art")
           .put(DexVm.ART_15_0_0_HOST, "bin/art")
           .put(DexVm.ART_14_0_0_HOST, "bin/art")
@@ -1077,6 +1083,7 @@ public class ToolHelper {
         .put(DexVm.ART_17_2_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_17_1_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_17_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
+        .put(DexVm.ART_16_1_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_16_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_15_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_14_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
@@ -1102,6 +1109,7 @@ public class ToolHelper {
         .put(DexVm.ART_17_2_0_HOST, "akita")
         .put(DexVm.ART_17_1_0_HOST, "akita")
         .put(DexVm.ART_17_0_0_HOST, "akita")
+        .put(DexVm.ART_16_1_0_HOST, "akita")
         .put(DexVm.ART_16_0_0_HOST, "akita")
         .put(DexVm.ART_15_0_0_HOST, "akita")
         .put(DexVm.ART_14_0_0_HOST, "redfin")
@@ -1139,6 +1147,7 @@ public class ToolHelper {
       case V14_0_0:
       case V15_0_0:
       case V16_0_0:
+      case V16_1_0:
       case V17_0_0:
       case V17_1_0:
       case V17_2_0:
@@ -1177,6 +1186,7 @@ public class ToolHelper {
       case V14_0_0:
       case V15_0_0:
       case V16_0_0:
+      case V16_1_0:
       case V17_0_0:
       case V17_1_0:
       case V17_2_0:
@@ -1437,6 +1447,8 @@ public class ToolHelper {
         return AndroidApiLevel.CINNAMON_BUN_1;
       case V17_0_0:
         return AndroidApiLevel.CINNAMON_BUN;
+      case V16_1_0:
+        return AndroidApiLevel.BAKLAVA_1;
       case V16_0_0:
         return AndroidApiLevel.BAKLAVA;
       case V15_0_0:
@@ -1476,7 +1488,7 @@ public class ToolHelper {
           .put(AndroidApiLevel.CINNAMON_BUN_2, DexVm.Version.V17_2_0)
           .put(AndroidApiLevel.CINNAMON_BUN_1, DexVm.Version.V17_1_0)
           .put(AndroidApiLevel.CINNAMON_BUN, DexVm.Version.V17_0_0)
-          .put(AndroidApiLevel.BAKLAVA_1, DexVm.Version.V16_0_0)
+          .put(AndroidApiLevel.BAKLAVA_1, DexVm.Version.V16_1_0)
           .put(AndroidApiLevel.BAKLAVA, DexVm.Version.V16_0_0)
           .put(AndroidApiLevel.V, DexVm.Version.V15_0_0)
           .put(AndroidApiLevel.U, DexVm.Version.V14_0_0)
@@ -2563,6 +2575,7 @@ public class ToolHelper {
           DexVm.ART_17_2_0_HOST,
           DexVm.ART_17_1_0_HOST,
           DexVm.ART_17_0_0_HOST,
+          DexVm.ART_16_1_0_HOST,
           DexVm.ART_16_0_0_HOST,
           DexVm.ART_15_0_0_HOST,
           DexVm.ART_13_0_0_HOST,
@@ -2632,7 +2645,7 @@ public class ToolHelper {
       versionString = "33.10";
     } else if (vm.version == DexVm.Version.V15_0_0) {
       versionString = "35.14";
-    } else if (vm.version == DexVm.Version.V16_0_0) {
+    } else if (vm.version == DexVm.Version.V16_0_0 || vm.version == DexVm.Version.V16_1_0) {
       versionString = "36.0";
     } else if (vm.version == DexVm.Version.V17_0_0
         || vm.version == DexVm.Version.V17_1_0

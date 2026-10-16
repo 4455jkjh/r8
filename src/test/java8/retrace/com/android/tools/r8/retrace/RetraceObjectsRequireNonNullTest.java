@@ -4,10 +4,10 @@
 
 package com.android.tools.r8.retrace;
 
-import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0;
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V16_1_0;
 import static com.android.tools.r8.naming.retrace.StackTrace.isSame;
 import static com.android.tools.r8.naming.retrace.StackTrace.isSameExceptForLineNumbers;
-import static com.android.tools.r8.utils.AndroidApiLevel.CINNAMON_BUN;
+import static com.android.tools.r8.utils.AndroidApiLevel.BAKLAVA_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase;
@@ -133,7 +133,7 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
     runResult
         .assertFailureWithErrorThatThrows(NullPointerException.class)
         .applyIfDexRuntime(
-            version -> version.isNewerThanOrEqual(V17_0_0),
+            version -> version.isNewerThanOrEqual(V16_1_0),
             r ->
                 r.inspectStackTrace(
                     stackTrace ->
@@ -159,13 +159,13 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
       boolean includeObjectsFrame,
       boolean includeJvmModule,
       boolean doNotCheckLines,
-      boolean isDexV17OrNewer) {
+      boolean isDexV16_1OrNewer) {
     StackTrace.Builder builder = StackTrace.builder();
     if (includeObjectsFrame) {
       ClassReference objects = Reference.classFromClass(Objects.class);
       String objectsFrameFormat = (includeJvmModule ? "java.base/" : "") + objects.getTypeName();
-      if (isDexV17OrNewer && parameters.getApiLevel().isGreaterThanOrEqualTo(CINNAMON_BUN)) {
-        // libcore in ART 17 added a frame in this case.
+      if (isDexV16_1OrNewer && parameters.getApiLevel().isGreaterThanOrEqualTo(BAKLAVA_1)) {
+        // libcore in ART 16.1+ added a frame in this case.
         builder.add(
             StackTraceLine.builder()
                 .setFileName("Objects.java")

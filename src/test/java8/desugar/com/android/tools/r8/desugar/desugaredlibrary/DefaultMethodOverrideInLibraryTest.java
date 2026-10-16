@@ -123,7 +123,7 @@ public class DefaultMethodOverrideInLibraryTest extends DesugaredLibraryTestBase
       return ALT_EXPECTED;
     }
     if (libraryDesugaringSpecification == JDK11
-        && parameters.getApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN)) {
+        && parameters.getApiLevel().isLessThan(AndroidApiLevel.BAKLAVA_1)) {
       return ALT_EXPECTED;
     }
     return EXPECTED;

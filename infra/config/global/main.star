@@ -768,6 +768,12 @@ r8_tester_with_default(
     release_trigger = ["branch-gitiles-9.0-forward"],
 )
 r8_tester_with_default(
+    "linux-android-16.1",
+    ["--dex_vm=16.1.0", "--all_tests", "--command_cache_dir=.ccache"],
+    dimensions = get_dimensions(tester = True),
+    release_trigger = ["branch-gitiles-9.6-forward"],
+)
+r8_tester_with_default(
     "linux-android-17",
     ["--dex_vm=17.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),

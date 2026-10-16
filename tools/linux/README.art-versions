@@ -152,6 +152,35 @@ by the script for running Art.
   (cd tools/linux/host; upload_to_google_storage.py -a --bucket r8-deps art-17.0.0-beta4)
 
 
+art-16.1.0 (Android Baklava 1)
+------------------------------
+Build branch 25Q4-release. Art at 1690c6912a7972c9e62c39b48c706de9b8b18b4a
+
+export BRANCH=25Q4-release
+mkdir ${BRANCH}
+cd ${BRANCH}
+export ANDROID_CHECKOUT=$(pwd)
+repo init -u https://android.googlesource.com/platform/manifest -b ${BRANCH}
+repo sync -cq -j48
+source build/envsetup.sh
+lunch aosp_akita-trunk_staging-userdebug
+m clean
+m -j
+art/tools/art_build.py --build-art-host-gtests --build-art-host-run-tests libjavacrypto-host
+repo manifest -r -o build_spec.xml
+
+Collected into tools/linux/host/art-16.1.0. The "host" path element is checked
+by the script for running Art.
+
+  cd <r8 checkout>
+  scripts/update-host-art.sh \
+     --android-checkout $ANDROID_CHECKOUT \
+     --art-dir host/art-16.1.0 \
+     --android-product akita
+
+  (cd tools/linux/host; upload_to_google_storage.py -a --bucket r8-deps art-16.1.0)
+
+
 art-16 (Android Baklava)
 ------------------------
 Build branch 25Q2-release. Art at 4a203afc54cfc93b525849fe6dd9aeb9a95f7a06
