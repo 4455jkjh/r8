@@ -198,6 +198,20 @@ def main(argv, temp):
     if not options.no_build:
         gradle.run_gradle(buildTargets + ['-Pno_internal'])
 
+    if 'AGSA' in options.benchmark:
+        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
+                                               'closedsource-apps', 'agsa',
+                                               '20250412-v16.14.47'),
+                                  quiet=options.quiet)
+    elif 'SystemUI' in options.benchmark:
+        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
+                                               'closedsource-apps', 'systemui'),
+                                  quiet=options.quiet)
+    elif 'YouTube' in options.benchmark:
+        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY, 'youtube',
+                                               'youtube.android_21.40'),
+                                  quiet=options.quiet)
+
     # Change the working directory to be in 'temp'.
     # This is hard to do properly within the JVM so we do it here.
     with utils.ChangedWorkingDirectory(temp):
@@ -256,6 +270,7 @@ def run(options, r8jar, testjars):
     cmd.extend([
         f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
         f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',
+        f'-DTEST_DEP_AGSA={utils.THIRD_PARTY}/closedsource-apps/agsa/20250412-v16.14.47',
         f'-DTEST_DEP_BOOKSTORY={utils.OPENSOURCE_DUMPS_DIR}/android/bookstory',
         f'-DTEST_DEP_CHROME_BENCHMARK={utils.OPENSOURCE_DUMPS_DIR}/chrome',
         f'-DTEST_DEP_COMPOSE_SAMPLES_CRANE={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/crane',
@@ -277,8 +292,10 @@ def run(options, r8jar, testjars):
         f'-DTEST_DEP_OPENTRACKS={utils.OPENSOURCE_DUMPS_DIR}/android/opentracks',
         f'-DTEST_DEP_READYOU={utils.OPENSOURCE_DUMPS_DIR}/android/readyou',
         f'-DTEST_DEP_RETRACE_BENCHMARK={utils.THIRD_PARTY}/retrace_benchmark',
+        f'-DTEST_DEP_SYSTEM_UI={utils.THIRD_PARTY}/closedsource-apps/systemui',
         f'-DTEST_DEP_TIVI={utils.OPENSOURCE_DUMPS_DIR}/tivi',
         f'-DTEST_DEP_TUSKY={utils.OPENSOURCE_DUMPS_DIR}/android/tusky',
+        f'-DTEST_DEP_YOUTUBE_21_40={utils.THIRD_PARTY}/youtube/youtube.android_21.40',
     ])
     if options.iterations is not None:
         if options.iterations == 0:
