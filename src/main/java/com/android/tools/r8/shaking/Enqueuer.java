@@ -4196,7 +4196,7 @@ public class Enqueuer {
     @SuppressWarnings("JdkObsolete")
     private final List<ProgramMethod> desugaredMethods = new LinkedList<>();
 
-    private final Map<DexMethod, ProgramMethod> liveMethods = new ConcurrentHashMap<>();
+    private final ProgramMethodSet liveMethods = ProgramMethodSet.createConcurrent();
 
     private final ProgramMethodMap<KeepMethodInfo.Joiner> minimumSyntheticKeepInfo =
         ProgramMethodMap.createConcurrent();
@@ -4229,14 +4229,13 @@ public class Enqueuer {
       assert old == null || old == clazz;
     }
 
-    public Set<DexMethod> getNewlyLiveMethods() {
-      return liveMethods.keySet();
+    public boolean isNewlyLiveMethod(DexMethod method) {
+      return liveMethods.contains(method);
     }
 
     public void addLiveMethod(ProgramMethod method) {
-      DexMethod signature = method.getDefinition().getReference();
-      ProgramMethod old = liveMethods.put(signature, method);
-      assert old == null;
+      boolean added = liveMethods.add(method);
+      assert added;
     }
 
     public void addMethodWithDesugaredCodeForTracing(ProgramMethod method) {
@@ -4264,7 +4263,7 @@ public class Enqueuer {
       for (ProgramMethod desugaredMethod : desugaredMethods) {
         enqueuer.worklist.enqueueProcessCodeBeforeTracingAction(desugaredMethod);
       }
-      for (ProgramMethod liveMethod : liveMethods.values()) {
+      for (ProgramMethod liveMethod : liveMethods) {
         assert !enqueuer.targetedMethods.contains(liveMethod.getDefinition());
         enqueuer.markMethodAsTargeted(liveMethod, fakeReason);
         enqueuer.worklist.enqueueMarkMethodLiveAction(liveMethod, liveMethod, fakeReason);

@@ -8,25 +8,17 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramField;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
-public class ProgramFieldSet implements Iterable<ProgramField> {
+public class ProgramFieldSet extends DexClassAndFieldSetBase<ProgramField> {
 
   private static final ProgramFieldSet EMPTY = new ProgramFieldSet(ImmutableMap.of());
 
-  private Map<DexField, ProgramField> backing;
-
   private ProgramFieldSet(Map<DexField, ProgramField> backing) {
-    this.backing = backing;
+    super(backing);
   }
 
   public static ProgramFieldSet create() {
@@ -41,6 +33,7 @@ public class ProgramFieldSet implements Iterable<ProgramField> {
     return EMPTY;
   }
 
+  @Override
   public boolean add(ProgramField field) {
     ProgramField existing = backing.put(field.getReference(), field);
     assert existing == null || existing.isStructurallyEqualTo(field);
@@ -55,64 +48,7 @@ public class ProgramFieldSet implements Iterable<ProgramField> {
     backing.putAll(fields.backing);
   }
 
-  public boolean allMatch(Predicate<? super ProgramField> predicate) {
-    return Iterables.all(this, predicate);
-  }
-
   public boolean createAndAdd(DexProgramClass clazz, DexEncodedField definition) {
     return add(new ProgramField(clazz, definition));
-  }
-
-  public boolean contains(DexEncodedField field) {
-    return backing.containsKey(field.getReference());
-  }
-
-  public boolean contains(ProgramField field) {
-    return backing.containsKey(field.getReference());
-  }
-
-  public void clear() {
-    backing.clear();
-  }
-
-  public boolean isEmpty() {
-    return backing.isEmpty();
-  }
-
-  @Override
-  public Iterator<ProgramField> iterator() {
-    return backing.values().iterator();
-  }
-
-  public boolean remove(DexField field) {
-    ProgramField existing = backing.remove(field);
-    return existing != null;
-  }
-
-  public boolean remove(DexEncodedField field) {
-    return remove(field.getReference());
-  }
-
-  public boolean remove(ProgramField field) {
-    return remove(field.getReference());
-  }
-
-  public boolean removeIf(Predicate<? super ProgramField> predicate) {
-    return backing.values().removeIf(predicate);
-  }
-
-  public int size() {
-    return backing.size();
-  }
-
-  public Stream<ProgramField> stream() {
-    return backing.values().stream();
-  }
-
-  public Set<DexEncodedField> toDefinitionSet() {
-    assert backing instanceof IdentityHashMap;
-    Set<DexEncodedField> definitions = Sets.newIdentityHashSet();
-    forEach(field -> definitions.add(field.getDefinition()));
-    return definitions;
   }
 }

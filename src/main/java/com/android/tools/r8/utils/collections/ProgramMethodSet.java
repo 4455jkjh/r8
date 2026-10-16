@@ -22,28 +22,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class ProgramMethodSet extends DexClassAndMethodSetBase<ProgramMethod> {
+public class ProgramMethodSet extends DexClassAndMethodSetBase<ProgramMethod> {
 
-  private static final ProgramMethodSet EMPTY = new EmptyProgramMethodSet();
-
-  ProgramMethodSet() {
-    super();
-  }
+  private static final ProgramMethodSet EMPTY = new ProgramMethodSet(ImmutableMap.of());
 
   ProgramMethodSet(Map<DexMethod, ProgramMethod> backing) {
     super(backing);
   }
 
-  ProgramMethodSet(int capacity) {
-    super(capacity);
-  }
-
   public static ProgramMethodSet create() {
-    return new IdentityProgramMethodSet();
+    return new ProgramMethodSet(new IdentityHashMap<>());
   }
 
   public static ProgramMethodSet create(int capacity) {
-    return new IdentityProgramMethodSet(capacity);
+    return new ProgramMethodSet(new IdentityHashMap<>(capacity));
   }
 
   public static ProgramMethodSet create(ProgramMethod element) {
@@ -129,8 +121,9 @@ public abstract class ProgramMethodSet extends DexClassAndMethodSetBase<ProgramM
       }
     }
     if (rewrittenMethods != null) {
-      rewrittenMethods.trimCapacityIfSizeLessThan(size());
-      return rewrittenMethods;
+      return rewrittenMethods.size() < size()
+          ? ProgramMethodSet.create(rewrittenMethods)
+          : rewrittenMethods;
     } else {
       if (elementsToRemove != null) {
         removeAll(elementsToRemove);
@@ -146,48 +139,8 @@ public abstract class ProgramMethodSet extends DexClassAndMethodSetBase<ProgramM
 
   public static class ConcurrentProgramMethodSet extends ProgramMethodSet {
 
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking() {
-      return new ConcurrentHashMap<>();
-    }
-
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking(int capacity) {
-      return new ConcurrentHashMap<>(capacity);
-    }
-  }
-
-  private static class EmptyProgramMethodSet extends ProgramMethodSet {
-
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking() {
-      return ImmutableMap.of();
-    }
-
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking(int capacity) {
-      return ImmutableMap.of();
-    }
-  }
-
-  private static class IdentityProgramMethodSet extends ProgramMethodSet {
-
-    IdentityProgramMethodSet() {
-      super();
-    }
-
-    IdentityProgramMethodSet(int capacity) {
-      super(capacity);
-    }
-
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking() {
-      return new IdentityHashMap<>();
-    }
-
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking(int capacity) {
-      return new IdentityHashMap<>(capacity);
+    private ConcurrentProgramMethodSet() {
+      super(new ConcurrentHashMap<>());
     }
   }
 }

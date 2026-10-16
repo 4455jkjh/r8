@@ -18,16 +18,17 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-public abstract class SortedProgramMethodSet extends ProgramMethodSet {
+public class SortedProgramMethodSet extends ProgramMethodSet {
 
-  private static final SortedProgramMethodSet EMPTY = new EmptySortedProgramMethodSet();
+  private static final SortedProgramMethodSet EMPTY =
+      new SortedProgramMethodSet(Collections.emptyMap());
 
-  private SortedProgramMethodSet() {
-    super();
+  private SortedProgramMethodSet(Map<DexMethod, ProgramMethod> backing) {
+    super(backing);
   }
 
   public static SortedProgramMethodSet create() {
-    return new TreeSortedProgramMethodSet();
+    return new SortedProgramMethodSet(new TreeMap<>(DexMethod::compareTo));
   }
 
   public static SortedProgramMethodSet create(ProgramMethod method) {
@@ -44,11 +45,6 @@ public abstract class SortedProgramMethodSet extends ProgramMethodSet {
 
   public static SortedProgramMethodSet empty() {
     return EMPTY;
-  }
-
-  @Override
-  Map<DexMethod, ProgramMethod> createBacking(int capacity) {
-    return createBacking();
   }
 
   @Override
@@ -72,25 +68,8 @@ public abstract class SortedProgramMethodSet extends ProgramMethodSet {
 
   public static class ConcurrentSortedProgramMethodSet extends SortedProgramMethodSet {
 
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking() {
-      return new ConcurrentSkipListMap<>(DexMethod::compareTo);
-    }
-  }
-
-  private static class EmptySortedProgramMethodSet extends SortedProgramMethodSet {
-
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking() {
-      return Collections.emptyMap();
-    }
-  }
-
-  private static class TreeSortedProgramMethodSet extends SortedProgramMethodSet {
-
-    @Override
-    Map<DexMethod, ProgramMethod> createBacking() {
-      return new TreeMap<>(DexMethod::compareTo);
+    ConcurrentSortedProgramMethodSet() {
+      super(new ConcurrentSkipListMap<>(DexMethod::compareTo));
     }
   }
 }

@@ -69,7 +69,6 @@ public class DesugaredLibraryApiCallbackSynthesizerPostProcessor
     try (Timing t0 = timing.begin("Desugared library API callback synthesizer")) {
       ProcessorContext processorContext = appView.createProcessorContext();
       MainThreadContext mainThreadContext = processorContext.createMainThreadContext();
-      Set<DexMethod> newlyLiveMethods = eventConsumer.getNewlyLiveMethods();
       assert noPendingWrappersOrConversions();
       for (DexProgramClass clazz : programClasses) {
         if (!appView.isAlreadyLibraryDesugared(clazz)) {
@@ -78,7 +77,7 @@ public class DesugaredLibraryApiCallbackSynthesizerPostProcessor
           // always be live in R8.
           for (ProgramMethod virtualProgramMethod : clazz.virtualProgramMethods()) {
             if (shouldRegisterCallback(virtualProgramMethod)) {
-              if (!isLiveMethod(virtualProgramMethod, newlyLiveMethods)) {
+              if (!isLiveMethod(virtualProgramMethod, eventConsumer)) {
                 // This happens for live non instantiated types, library overrides are not live
                 // there.
                 continue;
@@ -105,10 +104,10 @@ public class DesugaredLibraryApiCallbackSynthesizerPostProcessor
   }
 
   private boolean isLiveMethod(
-      ProgramMethod virtualProgramMethod, Set<DexMethod> newlyLiveMethods) {
+      ProgramMethod virtualProgramMethod, CfPostProcessingDesugaringEventConsumer eventConsumer) {
     return enqueuer == null
         || enqueuer.isMethodLive(virtualProgramMethod)
-        || newlyLiveMethods.contains(virtualProgramMethod.getReference());
+        || eventConsumer.isNewlyLiveMethod(virtualProgramMethod.getReference());
   }
 
   private boolean noPendingWrappersOrConversions() {

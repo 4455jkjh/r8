@@ -12,24 +12,24 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class DexClassAndFieldSet extends DexClassAndFieldSetBase<DexClassAndField> {
+public class DexClassAndFieldSet extends DexClassAndFieldSetBase<DexClassAndField> {
 
-  private static final DexClassAndFieldSet EMPTY = new EmptyDexClassAndFieldSet();
+  private static final DexClassAndFieldSet EMPTY = new DexClassAndFieldSet(ImmutableMap.of());
 
-  DexClassAndFieldSet() {
-    super();
+  private DexClassAndFieldSet(Map<DexField, DexClassAndField> backing) {
+    super(backing);
   }
 
   public static DexClassAndFieldSet create() {
-    return new IdentityDexClassAndFieldSet();
+    return new DexClassAndFieldSet(new IdentityHashMap<>());
   }
 
   public static DexClassAndFieldSet createConcurrent() {
-    return new ConcurrentDexClassAndFieldSet();
+    return new DexClassAndFieldSet(new ConcurrentHashMap<>());
   }
 
   public static DexClassAndFieldSet createLinked() {
-    return new LinkedDexClassAndFieldSet();
+    return new DexClassAndFieldSet(new LinkedHashMap<>());
   }
 
   public static DexClassAndFieldSet empty() {
@@ -38,57 +38,5 @@ public abstract class DexClassAndFieldSet extends DexClassAndFieldSetBase<DexCla
 
   public void addAll(DexClassAndFieldSet fields) {
     backing.putAll(fields.backing);
-  }
-
-  private static class ConcurrentDexClassAndFieldSet extends DexClassAndFieldSet {
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking() {
-      return new ConcurrentHashMap<>();
-    }
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking(int capacity) {
-      return new ConcurrentHashMap<>(capacity);
-    }
-  }
-
-  private static class EmptyDexClassAndFieldSet extends DexClassAndFieldSet {
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking() {
-      return ImmutableMap.of();
-    }
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking(int capacity) {
-      return ImmutableMap.of();
-    }
-  }
-
-  private static class IdentityDexClassAndFieldSet extends DexClassAndFieldSet {
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking() {
-      return new IdentityHashMap<>();
-    }
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking(int capacity) {
-      return new IdentityHashMap<>(capacity);
-    }
-  }
-
-  private static class LinkedDexClassAndFieldSet extends DexClassAndFieldSet {
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking() {
-      return new LinkedHashMap<>();
-    }
-
-    @Override
-    Map<DexField, DexClassAndField> createBacking(int capacity) {
-      return new LinkedHashMap<>(capacity);
-    }
   }
 }
