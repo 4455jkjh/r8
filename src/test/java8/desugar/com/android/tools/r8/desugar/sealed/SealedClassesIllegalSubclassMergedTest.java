@@ -37,7 +37,7 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
   static final Matcher<String> EXPECTED_FROM_JDK25 =
       containsString("Failed listed permitted subclass check");
   static final String EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE_OR_FIXED_ATTRIBUTE =
-      StringUtils.lines("Sub1", "Sub2");
+      StringUtils.lines("Sub1", "Sub2", "AnotherSub1", "AnotherSub2", "AnotherSub3", "AnotherSub4");
 
   @Parameters(name = "{0}, keepPermittedSubclasses = {1}")
   public static TestParametersCollection data() {
@@ -51,8 +51,22 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
 
   private void addTestClasses(TestBuilder<?, ?> builder) throws Exception {
     builder
-        .addProgramClasses(TestClass.class, Sub1.class, Sub2.class)
-        .addProgramClassFileData(getTransformedClasses());
+        .addProgramClasses(
+            TestClass.class,
+            Sub1.class,
+            Sub2.class,
+            AnotherSub1.class,
+            AnotherSub2.class,
+            AnotherSub3.class,
+            AnotherSub4.class)
+        .addProgramClassFileData(getTransformedSuper())
+        .addProgramClassFileData(getTransformedAnotherSuper());
+  }
+
+  private Matcher<String> illegalPermittedSubclassesMatcher() {
+    return parameters.isCfRuntime() && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)
+        ? EXPECTED_BEFORE_JDK25
+        : EXPECTED_FROM_JDK25;
   }
 
   @Test
@@ -62,10 +76,7 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
     testForJvm(parameters)
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertFailureWithErrorThatMatches(
-            parameters.isCfRuntime() && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)
-                ? EXPECTED_BEFORE_JDK25
-                : EXPECTED_FROM_JDK25);
+        .assertFailureWithErrorThatMatches(illegalPermittedSubclassesMatcher());
   }
 
   private void inspect(CodeInspector inspector) {
@@ -86,23 +97,34 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
         .apply(this::addTestClasses)
         .addKeepAttributePermittedSubclasses()
         .addKeepClassRulesWithAllowObfuscation(Super.class)
+        .addKeepClassRulesWithAllowObfuscation(AnotherSuper.class)
         .addKeepMainRule(TestClass.class)
         .addHorizontallyMergedClassesInspectorIf(
             !parameters.isRandomPartialCompilation(),
             inspector ->
                 inspector
-                    .assertIsCompleteMergeGroup(Sub2.class, Sub1.class)
+                    .assertIsCompleteMergeGroup(AnotherSub1.class, AnotherSub2.class)
+                    .assertIsCompleteMergeGroup(AnotherSub3.class, AnotherSub4.class)
                     .assertNoOtherClassesMerged())
         .compile()
         .inspectIf(!parameters.isRandomPartialCompilation(), this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        // On JDK 17 the class merging also prevents "cannot inherit from sealed class".
-        .assertSuccessWithOutput(
-            EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE_OR_FIXED_ATTRIBUTE);
+        .applyIf(
+            parameters.isCfRuntime(),
+            r -> r.assertFailureWithErrorThatMatches(illegalPermittedSubclassesMatcher()),
+            r ->
+                r.assertSuccessWithOutput(
+                    EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE_OR_FIXED_ATTRIBUTE));
   }
 
-  public byte[] getTransformedClasses() throws Exception {
+  public byte[] getTransformedSuper() throws Exception {
     return transformer(Super.class).setPermittedSubclasses(Super.class, Sub1.class).transform();
+  }
+
+  public byte[] getTransformedAnotherSuper() throws Exception {
+    return transformer(AnotherSuper.class)
+        .setPermittedSubclasses(AnotherSuper.class, AnotherSub1.class, AnotherSub2.class)
+        .transform();
   }
 
   static class TestClass {
@@ -110,6 +132,10 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
     public static void main(String[] args) {
       System.out.println(new Sub1());
       System.out.println(new Sub2());
+      System.out.println(new AnotherSub1());
+      System.out.println(new AnotherSub2());
+      System.out.println(new AnotherSub3());
+      System.out.println(new AnotherSub4());
     }
   }
 
@@ -128,6 +154,40 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
     @Override
     public String toString() {
       return "Sub2";
+    }
+  }
+
+  abstract static class AnotherSuper /* permits AnotherSub1, AnotherSub2 */ {}
+
+  static class AnotherSub1 extends AnotherSuper {
+
+    @Override
+    public String toString() {
+      return "AnotherSub1";
+    }
+  }
+
+  static class AnotherSub2 extends AnotherSuper {
+
+    @Override
+    public String toString() {
+      return "AnotherSub2";
+    }
+  }
+
+  static class AnotherSub3 extends AnotherSuper {
+
+    @Override
+    public String toString() {
+      return "AnotherSub3";
+    }
+  }
+
+  static class AnotherSub4 extends AnotherSuper {
+
+    @Override
+    public String toString() {
+      return "AnotherSub4";
     }
   }
 }
