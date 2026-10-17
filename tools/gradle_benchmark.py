@@ -124,7 +124,8 @@ def upload_run(benchmark_name, warmups, iterations, outdir):
         if utils.is_bot():
             meta_file = os.path.join(temp, "meta")
             with open(meta_file, 'w') as f:
-                f.write("Produced by: " + os.environ.get('SWARMING_BOT_ID'))
+                f.write("Produced by: " + (os.environ.get('SWARMING_BOT_ID') or
+                                           os.environ.get('KOKORO_BUILD_ID')))
             meta_dest = perf.GetArtifactLocation(benchmark=benchmark_name,
                                                  target=target_name,
                                                  version=None,
