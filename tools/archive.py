@@ -117,13 +117,12 @@ def get_upload_destination(version_or_path, file_name, is_main):
 
 
 def get_url(version_or_path, file_name, is_main):
-    return get_storage_destination('https://storage.googleapis.com/',
+    return get_storage_destination(utils.CLOUD_STORAGE_URL + '/',
                                    version_or_path, file_name, is_main)
 
 
 def get_maven_url(is_main):
-    return get_version_destination('https://storage.googleapis.com/', '',
-                                   is_main)
+    return get_version_destination(utils.CLOUD_STORAGE_URL + '/', '', is_main)
 
 
 def set_r_limit_to_max():

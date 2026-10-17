@@ -110,7 +110,7 @@ def main():
         version = VERSION
 
     print(f"Using Chrome version: {version}")
-    base_url = f"https://storage.googleapis.com/chrome-for-testing-public/{version}"
+    base_url = f"{utils.CLOUD_STORAGE_URL}/chrome-for-testing-public/{version}"
 
     urls = {
         "linux":

@@ -162,7 +162,8 @@ ANDROID_HOME_ENVIROMENT_NAME = "ANDROID_HOME"
 ANDROID_TOOLS_VERSION_ENVIRONMENT_NAME = "ANDROID_TOOLS_VERSION"
 USER_HOME = os.path.expanduser('~')
 
-R8_DEPS_URL = 'https://storage.googleapis.com/r8-deps'
+CLOUD_STORAGE_URL = 'https://storage.googleapis.com'
+R8_DEPS_URL = '%s/r8-deps' % CLOUD_STORAGE_URL
 R8_INTERNAL_DEPS_BUCKET = 'gs://r8-internal-deps'
 R8_TEST_RESULTS_BUCKET = 'r8-test-results'
 R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'

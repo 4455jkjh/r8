@@ -107,7 +107,10 @@ def Main():
             # Run tests with JDK-21.
             custom_env = os.environ.copy()
             custom_env["JAVA_HOME"] = jdk.GetJdk21Home()
-            subprocess.check_call(['./gradlew', 'test', ], env=custom_env)
+            subprocess.check_call([
+                './gradlew',
+                'test',
+            ], env=custom_env)
 
             # Build release to local Maven repository compiling with JDK-11.
             m2 = os.path.join(temp, 'm2')
@@ -118,7 +121,8 @@ def Main():
                 '-Dmaven.repo.local=%s' % m2,
                 'release',
                 'publishToMavenLocal',
-            ], env=custom_env)
+            ],
+                                  env=custom_env)
             base = os.path.join('com', 'android', 'tools', 'smali')
 
             # Check that the local maven repository only has the single version directory in
@@ -148,9 +152,11 @@ def Main():
 
             # Extract the LUCI invocation_id.
             luci_invocation_id = luci_utils.get_luci_invocation_id(
-                force_invocation_id = 'invocations/fake-12345678' if options.dry_run else None)
+                force_invocation_id='invocations/fake-12345678' if options.
+                dry_run else None)
             luci_invocation_id_file = os.path.join('luci_invocation_id')
-            with open(luci_invocation_id_file, 'w') as luci_invocation_id_writer:
+            with open(luci_invocation_id_file,
+                      'w') as luci_invocation_id_writer:
                 luci_invocation_id_writer.write(luci_invocation_id + '\n')
 
             # Copy artifacts.
@@ -184,8 +190,8 @@ def Main():
                         raise Exception('Target %s already exists' %
                                         destination)
                     utils.upload_file_to_cloud_storage(file, destination)
-                public_url = 'https://storage.googleapis.com/%s/smali/%s' % (
-                    ARCHIVE_BUCKET, version)
+                public_url = '%s/%s/smali/%s' % (utils.CLOUD_STORAGE_URL,
+                                                 ARCHIVE_BUCKET, version)
                 # Copy Maven ZIP for LUCI recipie to find it.
                 shutil.copyfile(
                     maven_release_archive,

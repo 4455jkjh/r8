@@ -424,9 +424,9 @@ def download_file(version, file, dst):
             print(f"WARNING: no file found for {src}. Skipping.")
         return
     dir = 'raw' if len(version) != 40 else 'raw/main'
-    urllib.request.urlretrieve(
-        ('https://storage.googleapis.com/r8-releases/%s/%s/%s' %
-         (dir, version, file)), dst)
+    urllib.request.urlretrieve(('%s/r8-releases/%s/%s/%s' %
+                                (utils.CLOUD_STORAGE_URL, dir, version, file)),
+                               dst)
 
 
 def download_gfile(gfile, dst):
@@ -435,7 +435,7 @@ def download_gfile(gfile, dst):
         sys.exit(1)
 
     urllib.request.urlretrieve(
-        'https://storage.googleapis.com/%s' % gfile[len('/bigstore/'):], dst)
+        '%s/%s' % (utils.CLOUD_STORAGE_URL, gfile[len('/bigstore/'):]), dst)
 
 
 def blaze_run(target):

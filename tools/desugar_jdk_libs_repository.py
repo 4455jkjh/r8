@@ -232,9 +232,9 @@ def run(args):
             # Download the already built and undesugared library from release archive.
             undesugared_if_needed = join(tmp_dir, implementation_maven_zip)
             urllib.request.urlretrieve(
-                ('https://storage.googleapis.com/r8-releases/raw/%s/%s/%s' %
-                 (release_archive_location, version, implementation_maven_zip)),
-                undesugared_if_needed)
+                ('%s/r8-releases/raw/%s/%s/%s' %
+                 (utils.CLOUD_STORAGE_URL, release_archive_location, version,
+                  implementation_maven_zip)), undesugared_if_needed)
 
         unzip_dir = join(tmp_dir, 'desugar_jdk_libs_unzipped')
         cmd = ['unzip', '-q', undesugared_if_needed, '-d', unzip_dir]
