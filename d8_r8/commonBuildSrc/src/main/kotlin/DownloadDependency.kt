@@ -59,23 +59,11 @@ public abstract class DownloadWorkAction : WorkAction<DownloadWorkParameters> {
 
   @Throws(IOException::class, InterruptedException::class)
   private fun downloadFromGoogleStorage(sha1File: File, root: File) {
-    val args = listOf("-n", "-b", "r8-deps", "-s", "-u", sha1File.toString())
-    if (OperatingSystem.current().isWindows) {
-      val command: MutableList<String> = ArrayList()
-      command.add("download_from_google_storage.bat")
-      command.addAll(args)
-      runProcess(ProcessBuilder().command(command), root)
-    } else {
-      runProcess(
-        ProcessBuilder()
-          .command(
-            "bash",
-            "-c",
-            "download_from_google_storage " + java.lang.String.join(" ", args),
-          ),
-        root,
-      )
-    }
+    val python = if (OperatingSystem.current().isWindows) "python" else "python3"
+    runProcess(
+      ProcessBuilder().command(python, "tools/download_from_gcs.py", sha1File.toString()),
+      root,
+    )
   }
 
   @Throws(IOException::class, InterruptedException::class)
@@ -83,7 +71,10 @@ public abstract class DownloadWorkAction : WorkAction<DownloadWorkParameters> {
     if (OperatingSystem.current().isWindows) {
       throw RuntimeException("Downloading from x20 unsupported on windows")
     }
-    runProcess(ProcessBuilder().command("bash", "-c", "tools/download_from_x20.py $sha1File"), root)
+    runProcess(
+      ProcessBuilder().command("python3", "tools/download_from_x20.py", sha1File.toString()),
+      root,
+    )
   }
 
   @Throws(IOException::class, InterruptedException::class)

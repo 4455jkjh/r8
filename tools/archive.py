@@ -204,6 +204,7 @@ def rsync_dir(src_dir, version_or_path, dst_dir, is_main, options):
             print(
                 f'Dry run, not actually syncing. Copying to {dry_run_destination}'
             )
+            os.makedirs(os.path.dirname(dry_run_destination), exist_ok=True)
             shutil.copytree(src_dir, dry_run_destination)
         else:
             print('Dry run, not actually uploading')
@@ -224,6 +225,7 @@ def upload_dir(src_dir, version_or_path, dst_dir, is_main, options):
             print(
                 f'Dry run, not actually uploading. Copying to {dry_run_destination}'
             )
+            os.makedirs(os.path.dirname(dry_run_destination), exist_ok=True)
             shutil.copytree(src_dir, dry_run_destination)
         else:
             print('Dry run, not actually uploading')
@@ -232,6 +234,26 @@ def upload_dir(src_dir, version_or_path, dst_dir, is_main, options):
         print(
             f'Directory available at: {get_url(version_or_path, dst_dir, is_main)}'
         )
+
+
+def upload_file(src_file, version_or_path, dst_file, is_main, options):
+    destination = get_upload_destination(version_or_path, dst_file, is_main)
+    print(f'Uploading {src_file} to {destination}')
+    if options.dry_run:
+        if options.dry_run_output:
+            dry_run_destination = os.path.join(options.dry_run_output,
+                                               version_or_path, dst_file)
+            print(
+                f'Dry run, not actually uploading. Copying to {dry_run_destination}'
+            )
+            os.makedirs(os.path.dirname(dry_run_destination), exist_ok=True)
+            shutil.copyfile(src_file, dry_run_destination)
+        else:
+            print('Dry run, not actually uploading')
+    else:
+        utils.upload_file_to_cloud_storage(src_file, destination)
+        print(
+            f'File available at: {get_url(version_or_path, dst_file, is_main)}')
 
 
 def main():
@@ -267,21 +289,24 @@ def run(options):
     with utils.TempDir() as temp:
         # Extract the LUCI invocation_id.
         luci_invocation_id = luci_utils.get_luci_invocation_id(
-            force_invocation_id='invocations/fake-12345678' if options.
-            dry_run else None)
+            force_invocation_id='invocations/fake-12345678' if (
+                options.dry_run or 'KOKORO_BUILD_ID' in os.environ) else None)
 
         timing.begin("Generate r8 maven zip")
         version_file = os.path.join(temp, 'r8-version.properties')
         with open(version_file, 'w') as version_writer:
             version_writer.write('version.sha=' + get_git_hash() + '\n')
             version_writer.write('version.version=' + version + '\n')
-            if not os.environ.get('SWARMING_BOT_ID') and not options.dry_run:
-                raise Exception('Environment variable SWARMING_BOT_ID not set')
+            bot_id = os.environ.get('SWARMING_BOT_ID') or os.environ.get(
+                'KOKORO_BUILD_ID')
+            if not bot_id and not options.dry_run:
+                raise Exception(
+                    'Environment variable SWARMING_BOT_ID or KOKORO_BUILD_ID not set'
+                )
 
-            releaser = \
-                ("releaser=<local developer build>\n" if options.dry_run
-                  else 'releaser=go/r8bot ('
-                      + (os.environ.get('SWARMING_BOT_ID') or 'foo') + ')\n')
+            releaser = ("releaser=<local developer build>\n" if
+                        (options.dry_run and not bot_id) else
+                        'releaser=go/r8bot (' + (bot_id or 'foo') + ')\n')
             version_writer.write(releaser)
             version_writer.write('luci_invocation_id=' + luci_invocation_id +
                                  '\n')
@@ -405,36 +430,16 @@ def run(options):
                     '.jar') and not file_name.endswith('-src.jar'):
                 with zipfile.ZipFile(tagged_jar, 'a') as f:
                     f.write(version_file, os.path.basename(version_file))
-            destination = get_upload_destination(version, file_name, is_main)
-            print('Uploading %s to %s' % (tagged_jar, destination))
-            if options.dry_run:
-                if options.dry_run_output:
-                    dry_run_destination = os.path.join(options.dry_run_output,
-                                                       version, file_name)
-                    print('Dry run, not actually uploading. Copying to ' +
-                          dry_run_destination)
-                    shutil.copyfile(tagged_jar, dry_run_destination)
-                else:
-                    print('Dry run, not actually uploading')
-            else:
-                utils.upload_file_to_cloud_storage(tagged_jar, destination)
-                print('File available at: %s' %
-                      get_url(version, file_name, is_main))
+            upload_file(tagged_jar, version, file_name, is_main, options)
 
             # Upload R8 to a maven compatible location.
             if file == utils.R8_JAR:
-                maven_dst = get_upload_destination(
-                    utils.get_maven_path('r8', version), 'r8-%s.jar' % version,
-                    is_main)
-                maven_pom_dst = get_upload_destination(
-                    utils.get_maven_path('r8', version), 'r8-%s.pom' % version,
-                    is_main)
-                if options.dry_run:
-                    print('Dry run, not actually creating maven repo for R8')
-                else:
-                    utils.upload_file_to_cloud_storage(tagged_jar, maven_dst)
-                    utils.upload_file_to_cloud_storage(default_pom_file,
-                                                       maven_pom_dst)
+                maven_path = utils.get_maven_path('r8', version)
+                upload_file(tagged_jar, maven_path, 'r8-%s.jar' % version,
+                            is_main, options)
+                upload_file(default_pom_file, maven_path, 'r8-%s.pom' % version,
+                            is_main, options)
+                if not options.dry_run:
                     print('Maven repo root available at: %s' %
                           get_maven_url(is_main))
 
@@ -442,21 +447,15 @@ def run(options):
             if (version.endswith('-dev') and
                 (file == utils.R8LIB_JAR or
                  file == utils.KEEPANNO_ANNOTATIONS_JAR)):
-                latest_dst = get_upload_destination('latest-dev', file_name,
-                                                    is_main)
-                print('Uploading %s to %s' % (tagged_jar, latest_dst))
-                if options.dry_run:
-                    print('Dry run, not actually uploading')
-                else:
-                    utils.upload_file_to_cloud_storage(tagged_jar, latest_dst)
+                upload_file(tagged_jar, 'latest-dev', file_name, is_main,
+                            options)
 
             # Upload desugar_jdk_libs configuration to a maven compatible location.
             if file == utils.DESUGAR_CONFIGURATION:
                 jar_basename = 'desugar_jdk_libs_configuration.jar'
                 jar_version_name = 'desugar_jdk_libs_configuration-%s.jar' % version
-                maven_dst = get_upload_destination(
-                    utils.get_maven_path('desugar_jdk_libs_configuration',
-                                         version), jar_version_name, is_main)
+                maven_path = utils.get_maven_path(
+                    'desugar_jdk_libs_configuration', version)
 
                 with utils.TempDir() as tmp_dir:
                     desugar_jdk_libs_configuration_jar = os.path.join(
@@ -467,33 +466,22 @@ def run(options):
                         utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP,
                         desugar_jdk_libs_configuration_jar)
 
-                    if options.dry_run:
-                        print('Dry run, not actually creating maven repo for ' +
-                              'desugar configuration.')
-                        if options.dry_run_output:
-                            shutil.copyfile(
-                                desugar_jdk_libs_configuration_jar,
-                                os.path.join(options.dry_run_output,
-                                             jar_version_name))
-                    else:
-                        utils.upload_file_to_cloud_storage(
-                            desugar_jdk_libs_configuration_jar, maven_dst)
+                    upload_file(desugar_jdk_libs_configuration_jar, maven_path,
+                                jar_version_name, is_main, options)
+                    if not options.dry_run:
                         print('Maven repo root available at: %s' %
                               get_maven_url(is_main))
-                        # Also archive the jar as non maven destination for Google3
-                        jar_destination = get_upload_destination(
-                            version, jar_basename, is_main)
-                        utils.upload_file_to_cloud_storage(
-                            desugar_jdk_libs_configuration_jar, jar_destination)
+                    # Also archive the jar as non maven destination for Google3
+                    upload_file(desugar_jdk_libs_configuration_jar, version,
+                                jar_basename, is_main, options)
 
             # TODO(b/237636871): Refactor this to avoid the duplication of what is above.
             # Upload desugar_jdk_libs JDK-11 legacyconfiguration to a maven compatible location.
             if file == utils.DESUGAR_CONFIGURATION_JDK11_LEGACY:
                 jar_basename = 'desugar_jdk_libs_configuration.jar'
                 jar_version_name = 'desugar_jdk_libs_configuration-%s-jdk11-legacy.jar' % version
-                maven_dst = get_upload_destination(
-                    utils.get_maven_path('desugar_jdk_libs_configuration',
-                                         version), jar_version_name, is_main)
+                maven_path = utils.get_maven_path(
+                    'desugar_jdk_libs_configuration', version)
 
                 with utils.TempDir() as tmp_dir:
                     desugar_jdk_libs_configuration_jar = os.path.join(
@@ -504,24 +492,14 @@ def run(options):
                         utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP,
                         desugar_jdk_libs_configuration_jar)
 
-                    if options.dry_run:
-                        print('Dry run, not actually creating maven repo for ' +
-                              'desugar configuration.')
-                        if options.dry_run_output:
-                            shutil.copyfile(
-                                desugar_jdk_libs_configuration_jar,
-                                os.path.join(options.dry_run_output,
-                                             jar_version_name))
-                    else:
-                        utils.upload_file_to_cloud_storage(
-                            desugar_jdk_libs_configuration_jar, maven_dst)
+                    upload_file(desugar_jdk_libs_configuration_jar, maven_path,
+                                jar_version_name, is_main, options)
+                    if not options.dry_run:
                         print('Maven repo root available at: %s' %
                               get_maven_url(is_main))
-                        # Also archive the jar as non maven destination for Google3
-                        jar_destination = get_upload_destination(
-                            version, jar_basename, is_main)
-                        utils.upload_file_to_cloud_storage(
-                            desugar_jdk_libs_configuration_jar, jar_destination)
+                    # Also archive the jar as non maven destination for Google3
+                    upload_file(desugar_jdk_libs_configuration_jar, version,
+                                jar_basename, is_main, options)
 
         # Write the archive details JSON (for the LUCI recipie to read).
         archive_details = {
