@@ -162,6 +162,8 @@ ANDROID_HOME_ENVIROMENT_NAME = "ANDROID_HOME"
 ANDROID_TOOLS_VERSION_ENVIRONMENT_NAME = "ANDROID_TOOLS_VERSION"
 USER_HOME = os.path.expanduser('~')
 
+R8_DEPS_URL = 'https://storage.googleapis.com/r8-deps'
+R8_INTERNAL_DEPS_BUCKET = 'gs://r8-internal-deps'
 R8_TEST_RESULTS_BUCKET = 'r8-test-results'
 R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'
 
@@ -406,12 +408,10 @@ def run_download(sha1, output_dir, success_file, internal, quiet=False):
     if internal:
         download_script = os.path.join(REPO_ROOT, 'tools',
                                        'download_from_x20.py')
-        cmd = [download_script, sha1]
     else:
-        suffix = '.bat' if IsWindows() else ''
-        script = 'download_from_google_storage%s' % suffix
-        cmd = [script]
-        cmd.extend(['-b', 'r8-deps', '-u', '-s', sha1])
+        download_script = os.path.join(REPO_ROOT, 'tools',
+                                       'download_from_gcs.py')
+    cmd = [sys.executable, download_script, sha1]
 
     if not quiet:
         PrintCmd(cmd)
@@ -741,15 +741,34 @@ def makedirs_if_needed(path):
             raise
 
 
+# TODO(b/542096534): Remove gsutil fallback once all bots use gcloud.
 def get_gsutil():
-    return 'gsutil.py' if os.name != 'nt' else 'gsutil.py.bat'
+    return 'gsutil.py.bat' if IsWindows() else 'gsutil.py'
+
+
+def get_gcloud():
+    return 'gcloud.cmd' if IsWindows() else 'gcloud'
+
+
+def use_gcloud():
+    return 'SWARMING_BOT_ID' not in os.environ and shutil.which(
+        get_gcloud()) is not None
 
 
 def upload_file_to_cloud_storage(source, destination, header=None):
-    cmd = [get_gsutil()]
-    if header:
-        cmd.extend(['-h', header])
-    cmd.extend(['cp', source, destination])
+    if use_gcloud():
+        cmd = [get_gcloud(), 'storage', 'cp']
+        if header:
+            if header.lower().startswith('cache-control:'):
+                cmd.append('--cache-control=' + header.split(':', 1)[1].strip())
+            else:
+                cmd.extend(['--custom-metadata=' + header.replace(':', '=')])
+        cmd.extend([source, destination])
+    else:
+        cmd = [get_gsutil()]
+        if header:
+            cmd.extend(['-h', header])
+        cmd.extend(['cp', source, destination])
     PrintCmd(cmd)
     subprocess.check_call(cmd)
 
@@ -771,40 +790,60 @@ def check_dir_args(source, destination):
 
 def upload_directory_to_cloud_storage(source, destination, parallel=True):
     destination_parent = check_dir_args(source, destination)
-    cmd = [get_gsutil()]
-    if parallel:
-        cmd += ['-m']
-    cmd += ['cp', '-R']
-    cmd += [source, destination_parent + '/']
+    if use_gcloud():
+        cmd = [
+            get_gcloud(), 'storage', 'cp', '--recursive', source,
+            destination_parent + '/'
+        ]
+    else:
+        cmd = [get_gsutil()]
+        if parallel:
+            cmd += ['-m']
+        cmd += ['cp', '-R']
+        cmd += [source, destination_parent + '/']
     PrintCmd(cmd)
     subprocess.check_call(cmd)
 
 
 def rsync_directory_to_cloud_storage(source, destination, parallel=True):
     check_dir_args(source, destination)
-    cmd = [get_gsutil()]
-    if parallel:
-        cmd += ['-m']
-    cmd += ['rsync', '-R']
-    cmd += [source, destination]
+    if use_gcloud():
+        cmd = [
+            get_gcloud(), 'storage', 'rsync', '--recursive', source, destination
+        ]
+    else:
+        cmd = [get_gsutil()]
+        if parallel:
+            cmd += ['-m']
+        cmd += ['rsync', '-R']
+        cmd += [source, destination]
     PrintCmd(cmd)
     subprocess.check_call(cmd)
 
 
 def delete_file_from_cloud_storage(destination):
-    cmd = [get_gsutil(), 'rm', destination]
+    if use_gcloud():
+        cmd = [get_gcloud(), 'storage', 'rm', destination]
+    else:
+        cmd = [get_gsutil(), 'rm', destination]
     PrintCmd(cmd)
     subprocess.check_call(cmd)
 
 
 def ls_files_on_cloud_storage(destination):
-    cmd = [get_gsutil(), 'ls', destination]
+    if use_gcloud():
+        cmd = [get_gcloud(), 'storage', 'ls', destination]
+    else:
+        cmd = [get_gsutil(), 'ls', destination]
     PrintCmd(cmd)
     return subprocess.check_output(cmd).decode('utf-8')
 
 
 def cat_file_on_cloud_storage(destination, ignore_errors=False):
-    cmd = [get_gsutil(), 'cat', destination]
+    if use_gcloud():
+        cmd = [get_gcloud(), 'storage', 'cat', destination]
+    else:
+        cmd = [get_gsutil(), 'cat', destination]
     PrintCmd(cmd)
     try:
         return subprocess.check_output(cmd).decode('utf-8').strip()
@@ -816,7 +855,10 @@ def cat_file_on_cloud_storage(destination, ignore_errors=False):
 
 
 def file_exists_on_cloud_storage(destination):
-    cmd = [get_gsutil(), 'ls', destination]
+    if use_gcloud():
+        cmd = [get_gcloud(), 'storage', 'ls', destination]
+    else:
+        cmd = [get_gsutil(), 'ls', destination]
     PrintCmd(cmd)
     return subprocess.call(cmd) == 0
 
@@ -827,15 +869,23 @@ def download_file_from_cloud_storage(source,
                                      flags=None,
                                      printcmd=True,
                                      quiet=False):
-    cmd = [get_gsutil()]
-    if concurrent:
-        cmd.append('-m')
-    if quiet:
-        cmd.append('-q')
-    cmd.append('cp')
-    if flags:
-        cmd.extend(flags)
-    cmd.extend([source, destination])
+    if use_gcloud():
+        cmd = [get_gcloud(), 'storage', 'cp']
+        if quiet:
+            cmd.extend(['--quiet', '--no-user-output-enabled'])
+        if flags:
+            cmd.extend(flags)
+        cmd.extend([source, destination])
+    else:
+        cmd = [get_gsutil()]
+        if concurrent:
+            cmd.append('-m')
+        if quiet:
+            cmd.append('-q')
+        cmd.append('cp')
+        if flags:
+            cmd.extend(flags)
+        cmd.extend([source, destination])
     PrintCmd(cmd, quiet=not printcmd)
     subprocess.check_call(cmd)
 
@@ -865,6 +915,32 @@ def unpack_archive(filename):
         tar.extractall(path=dirname)
 
 
+def ensure_sha1_archive(sha1_file, download_fn):
+    dest = sha1_file[:-5]
+    print('Ensuring %s' % dest)
+    with open(sha1_file, 'r') as input_sha:
+        sha1 = input_sha.readline().strip()
+    dest_dir = extract_dir(dest)
+    if os.path.exists(dest) and get_sha1(dest) == sha1:
+        print('sha1 matches, not downloading')
+        if os.path.exists(dest_dir):
+            print('destination directory exists, no extraction')
+        else:
+            unpack_archive(dest)
+        return
+    if os.path.exists(dest):
+        os.remove(dest)
+    if os.path.exists(dest_dir):
+        shutil.rmtree(dest_dir)
+    download_fn(sha1, dest)
+    actual_sha1 = get_sha1(dest)
+    if actual_sha1 != sha1:
+        os.remove(dest)
+        raise Exception('SHA1 mismatch for %s: expected %s, got %s' %
+                        (dest, sha1, actual_sha1))
+    unpack_archive(dest)
+
+
 def check_gcert():
     status = subprocess.call(['gcertstatus'])
     if status != 0:
@@ -875,7 +951,10 @@ def check_gcert():
 # This is not a problem in our case, but don't ever use this method
 # for synchronization.
 def cloud_storage_exists(destination):
-    cmd = [get_gsutil(), 'ls', destination]
+    if use_gcloud():
+        cmd = [get_gcloud(), 'storage', 'ls', destination]
+    else:
+        cmd = [get_gsutil(), 'ls', destination]
     PrintCmd(cmd)
     exit_code = subprocess.call(cmd)
     return exit_code == 0
@@ -1083,7 +1162,7 @@ def get_android_jar(api_level_major, api_level_minor):
 
 
 def is_bot():
-    return 'SWARMING_BOT_ID' in os.environ
+    return 'SWARMING_BOT_ID' in os.environ or 'KOKORO_BUILD_ID' in os.environ
 
 
 def uncompressed_size(path):

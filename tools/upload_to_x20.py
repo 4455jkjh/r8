@@ -39,6 +39,9 @@ def main():
     sha1 = utils.get_sha1(filename)
     dest = os.path.join(GMS_CORE_DEPS, sha1)
     upload_file(filename, dest)
+    gcs_dest = '%s/%s' % (utils.R8_INTERNAL_DEPS_BUCKET, sha1)
+    print('Uploading to %s' % gcs_dest)
+    utils.upload_file_to_cloud_storage(filename, gcs_dest)
     sha1_file = '%s.sha1' % filename
     with open(sha1_file, 'w') as output:
         output.write(sha1)

@@ -19,39 +19,27 @@ def parse_options():
     return optparse.OptionParser().parse_args()
 
 
-def download(src, dest):
-    print('Downloading %s to %s' % (src, dest))
-    if os.path.exists(dest):
-        os.remove(dest)
-    dest_dir = utils.extract_dir(dest)
-    if os.path.exists(dest_dir):
-        shutil.rmtree(dest_dir)
-    shutil.copyfile(src, dest)
-    utils.unpack_archive(dest)
+def download(sha1, dest):
+    src = os.path.join(GMSCORE_DEPS, sha1)
+    if os.path.exists(src):
+        print('Downloading %s to %s' % (src, dest))
+        shutil.copyfile(src, dest)
+        return
+    gcs_src = '%s/%s' % (utils.R8_INTERNAL_DEPS_BUCKET, sha1)
+    print('Downloading %s to %s' % (gcs_src, dest))
+    utils.download_file_from_cloud_storage(gcs_src, dest)
 
 
 def Main():
     (options, args) = parse_options()
     assert len(args) == 1
-    sha1_file = args[0]
-    dest = sha1_file[:-5]
-    print('Ensuring %s' % dest)
-    with open(sha1_file, 'r') as input_sha:
-        sha1 = input_sha.readline()
-    if os.path.exists(dest) and utils.get_sha1(dest) == sha1:
-        print('sha1 matches, not downloading')
-        dest_dir = utils.extract_dir(dest)
-        if os.path.exists(dest_dir):
-            print('destination directory exists, no extraction')
-        else:
-            utils.unpack_archive(dest)
-        return
-    src = os.path.join(GMSCORE_DEPS, sha1)
-    if not os.path.exists(src):
-        print('File (%s) does not exist on x20' % src)
+    try:
+        utils.ensure_sha1_archive(args[0], download)
+    except Exception:
+        print('File in %s or %s does not exist for %s' %
+              (GMSCORE_DEPS, utils.R8_INTERNAL_DEPS_BUCKET, args[0]))
         print('Maybe pass -Pno_internal to your gradle invocation')
         return 42
-    download(src, dest)
 
 
 if __name__ == '__main__':
