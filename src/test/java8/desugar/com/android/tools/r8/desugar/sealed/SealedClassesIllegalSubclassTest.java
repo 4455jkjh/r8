@@ -51,7 +51,7 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters()
-            .withAllRuntimesWithout17_1()
+            .withAllRuntimes()
             .withAllApiLevelsAlsoForCf()
             .withPartialCompilation()
             .build(),
@@ -86,7 +86,21 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
             DesugarTestConfiguration::isNotJavac,
-            r -> r.assertSuccessWithOutput(EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE),
+            r -> {
+              if (parameters.isDexRuntime() && parameters.hasSealedClassesRuntimeCheck()) {
+                r.assertFailureWithErrorThatThrows(VerifyError.class)
+                    .assertFailureWithErrorThatMatches(
+                        containsString(
+                            "Verifier rejected class "
+                                + Sub3.class.getTypeName()
+                                + ": parent class "
+                                + Super.class.getTypeName()
+                                + " defines permitted subclasses, but does not permit the current"
+                                + " class."));
+              } else {
+                r.assertSuccessWithOutput(EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE);
+              }
+            },
             c -> parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK25),
             r -> r.assertFailureWithErrorThatMatches(EXPECTED_FROM_JDK25),
             c -> parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
@@ -104,7 +118,7 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
     assertThat(sub2, isPresentAndNotRenamed());
     assertThat(sub3, isPresentAndNotRenamed());
     assertEquals(
-        parameters.hasSealedClassesSupport() && keepPermittedSubclassesAttribute
+        parameters.hasSealedClassesReflectionSupport() && keepPermittedSubclassesAttribute
             ? ImmutableList.of(sub1.asTypeSubject(), sub2.asTypeSubject())
             : ImmutableList.of(),
         clazz.getFinalPermittedSubclassAttributes());
@@ -128,6 +142,12 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
         .inspectIf(!parameters.isRandomPartialCompilation(), this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
+            parameters.isRandomPartialCompilation() && !keepPermittedSubclassesAttribute,
+            r -> {
+              // For random partial compilation not keeping the PermittedSubclasses attribute
+              // the class with the attribute might end up in the D8 split keeping the attribute
+              // anyway. Runtime result depends on that.
+            },
             parameters.isDexRuntime()
                 || (!keepPermittedSubclassesAttribute
                     && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)),

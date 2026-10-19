@@ -152,11 +152,6 @@ public class TestParametersBuilder {
     return withDexRuntimeFilter(vm -> true);
   }
 
-  // TODO(b/571432276): Fix tests on ART 17.1.0.
-  public TestParametersBuilder withDexRuntimesWithout17_1() {
-    return withDexRuntimesEndingAtExcluding(DexVm.Version.V17_1_0);
-  }
-
   public TestParametersBuilder withDexRuntimesAndAllApiLevels() {
     return withDexRuntimes().withAllApiLevels();
   }

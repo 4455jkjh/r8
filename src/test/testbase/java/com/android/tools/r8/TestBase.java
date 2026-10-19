@@ -1930,8 +1930,14 @@ public class TestBase {
     throw new Unreachable();
   }
 
-  public static AndroidApiLevel apiLevelWithSealedClassesSupport() {
+  // The reflection methods for looking at PermittedSubclasses was added to ART in U.
+  public static AndroidApiLevel apiLevelWithSealedClassesReflectionSupport() {
     return AndroidApiLevel.U;
+  }
+
+  // The runtime enforcement of PermittedSubclasses was added to ART in CINNAMON_BUN_1.
+  public static AndroidApiLevel apiLevelWithSealedClassesRuntimeCheck() {
+    return AndroidApiLevel.CINNAMON_BUN_1;
   }
 
   public static boolean isRecordsFullyDesugaredForD8(TestParameters parameters) {

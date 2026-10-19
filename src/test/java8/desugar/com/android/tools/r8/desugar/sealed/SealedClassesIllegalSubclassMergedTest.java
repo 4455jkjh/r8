@@ -32,6 +32,8 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
+  static final Matcher<String> EXPECTED_ART =
+      containsString("defines permitted subclasses, but does not permit the current class");
   static final Matcher<String> EXPECTED_BEFORE_JDK25 =
       containsString("cannot inherit from sealed class");
   static final Matcher<String> EXPECTED_FROM_JDK25 =
@@ -39,11 +41,11 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
   static final String EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE_OR_FIXED_ATTRIBUTE =
       StringUtils.lines("Sub1", "Sub2", "AnotherSub1", "AnotherSub2", "AnotherSub3", "AnotherSub4");
 
-  @Parameters(name = "{0}, keepPermittedSubclasses = {1}")
+  @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters()
         .withCfRuntimesStartingFromIncluding(CfVm.JDK17)
-        .withDexRuntimesWithout17_1()
+        .withDexRuntimes()
         .withAllApiLevels()
         .withPartialCompilation()
         .build();
@@ -64,9 +66,11 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
   }
 
   private Matcher<String> illegalPermittedSubclassesMatcher() {
-    return parameters.isCfRuntime() && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)
-        ? EXPECTED_BEFORE_JDK25
-        : EXPECTED_FROM_JDK25;
+    return parameters.isDexRuntime()
+        ? EXPECTED_ART
+        : (parameters.isCfRuntime() && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)
+            ? EXPECTED_BEFORE_JDK25
+            : EXPECTED_FROM_JDK25);
   }
 
   @Test
@@ -85,10 +89,25 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
     ClassSubject sub1 = inspector.clazz(Sub1.class);
     assertThat(sub1, isPresentAndRenamed());
     assertEquals(
-        parameters.hasSealedClassesSupport()
+        parameters.hasSealedClassesReflectionSupport()
             ? ImmutableList.of(sub1.asTypeSubject())
             : ImmutableList.of(),
         clazz.getFinalPermittedSubclassAttributes());
+  }
+
+  @Test
+  public void testD8() throws Exception {
+    parameters.assumeDexRuntime();
+    parameters.assumeNoPartialCompilation();
+    testForD8(parameters)
+        .apply(this::addTestClasses)
+        .run(parameters.getRuntime(), TestClass.class)
+        .applyIf(
+            parameters.hasSealedClassesRuntimeCheck(),
+            r -> r.assertFailureWithErrorThatMatches(illegalPermittedSubclassesMatcher()),
+            r ->
+                r.assertSuccessWithOutput(
+                    EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE_OR_FIXED_ATTRIBUTE));
   }
 
   @Test
@@ -110,7 +129,7 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
         .inspectIf(!parameters.isRandomPartialCompilation(), this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
-            parameters.isCfRuntime(),
+            parameters.hasSealedClassesRuntimeCheck(),
             r -> r.assertFailureWithErrorThatMatches(illegalPermittedSubclassesMatcher()),
             r ->
                 r.assertSuccessWithOutput(
