@@ -7,8 +7,10 @@ package com.android.tools.r8.ir.conversion.finalizer.passes;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.ir.code.DebugPosition;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.If;
+import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Switch;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
@@ -49,6 +51,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     BasicBlock block = iterator.next();
     BasicBlock nextBlock;
 
+    removeRedundantDebugPositions(code);
     do {
       nextBlock = iterator.hasNext() ? iterator.next() : null;
       if (block.isTrivialGoto()) {
@@ -64,7 +67,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     } while (nextBlock != null);
     code.removeBlocks(blocksToRemove);
     // Get rid of gotos to the next block.
-    while (!blocksToRemove.isEmpty()) {
+    while (removeRedundantDebugPositions(code) || !blocksToRemove.isEmpty()) {
       blocksToRemove = new ArrayList<>();
       iterator = code.listIterator();
       block = iterator.next();
@@ -115,6 +118,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     BasicBlock nextBlock;
     do {
       nextBlock = iterator.hasNext() ? iterator.next() : null;
+      assert !isRedundantDebugPositionGoto(code, block);
       // Trivial goto block are only kept if they are self-targeting or are targeted by
       // fallthroughs.
       BasicBlock blk = block; // Additional local for lambda below.
@@ -160,6 +164,46 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
       blocksToRemove.add(block);
       unlinkTrivialGotoBlock(block, target);
     }
+  }
+
+  // Removes the redundant DebugPositions, see isRedundantDebugPositionGoto. Returns true if any was
+  // removed.
+  private static boolean removeRedundantDebugPositions(IRCode code) {
+    if (!code.metadata().mayHaveDebugPosition()) {
+      return false;
+    }
+    boolean changed = false;
+    for (BasicBlock block : code.blocks) {
+      if (isRedundantDebugPositionGoto(code, block)) {
+        block.removeInstruction(block.entry());
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  // In debug mode, a block can hold a DebugPosition and a Goto where the position is already active
+  // at the exit of all predecessors. Removing the redundant DebugPosition makes it a trivial goto.
+  // Loop latches are left untouched, as they are never trivial gotos.
+  @SuppressWarnings("ReferenceEquality")
+  public static boolean isRedundantDebugPositionGoto(IRCode code, BasicBlock block) {
+    if (block.size() != 2
+        || block == code.entryBlock()
+        || !block.exit().isGoto()
+        || block.exit().isBackTo()) {
+      return false;
+    }
+    DebugPosition debugPosition = block.entry().asDebugPosition();
+    if (debugPosition == null || debugPosition.getPosition().isNone()) {
+      return false;
+    }
+    Position position = debugPosition.getPosition();
+    for (BasicBlock pred : block.getPredecessors()) {
+      if (pred == block || !position.equals(pred.exit().getPosition())) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @SuppressWarnings("ReferenceEquality")

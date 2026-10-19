@@ -83,7 +83,6 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -91,9 +90,6 @@ import java.util.Set;
 
 /** Builder object for constructing dex bytecode from the high-level IR. */
 public class DexBuilder {
-
-  // Removing trivial goto blocks is expected to reach a fixed point in at most two iterations.
-  private static final int EXPECTED_MAX_TRIVIAL_GOTO_BLOCK_ITERATIONS = 2;
 
   public final AppView<?> appView;
 
@@ -196,6 +192,10 @@ public class DexBuilder {
    * the concrete instructions.
    */
   public DexCode build() {
+    // The TrivialGotosCollapser has removed the redundant debug position of blocks that only hold a
+    // debug position and a goto. With these removed it is sound for removeRedundantDebugPositions
+    // to judge if a goto materializes based on the fallthrough.
+    assert assertNoTrivialDebugPositionGotoBlock(ir);
     int numberOfInstructions;
     int offset;
 
@@ -365,85 +365,11 @@ public class DexBuilder {
         && !previousBlock.hasCatchSuccessor(currentBlock);
   }
 
-  @SuppressWarnings("ReferenceEquality")
-  private static boolean removeTrivialGotoBlocks(IRCode code) {
-    boolean changed = false;
-    for (int blockIndex = 1; blockIndex < code.blocks.size(); blockIndex++) {
-      // We skip checking the entry block as it has no predecessors and must define the initial
-      // position. Any subsequent block must be statically reachable and thus have predecessors.
-      BasicBlock currentBlock = code.blocks.get(blockIndex);
-      assert !currentBlock.getPredecessors().isEmpty();
-      if (currentBlock.size() != 2) {
-        continue;
-      }
-      DebugPosition debugPosition = currentBlock.entry().asDebugPosition();
-      Goto exit = currentBlock.exit().asGoto();
-      // The BackTo of a loop latch must remain, as removing the latch would turn the forward
-      // branches to it into backward branches.
-      if (debugPosition == null
-          || exit == null
-          || exit.isBackTo()
-          || debugPosition.getPosition().isNone()) {
-        continue;
-      }
-      boolean allMatch = true;
-      Position position = debugPosition.getPosition();
-      for (BasicBlock pred : currentBlock.getPredecessors()) {
-        // If the block is a trivial loop it must remain.
-        if (pred == currentBlock) {
-          allMatch = false;
-          break;
-        }
-        // If the position is already active on each predecessor exit it can be safely removed
-        // (except for if/switch fallthrough cases guarded below).
-        Position predExit = pred.exit().getPosition();
-        if (!position.equals(predExit)) {
-          allMatch = false;
-          break;
-        }
-        // If this is a required fallthrough, we can only remove it if it targets the next block.
-        // Note that this could fail for a given block but then become valid after an intermediate
-        // block is removed. See the reset of blockIndex below for dealing with that case.
-        if (isFallthroughTargetToNonFallthroughTarget(pred, currentBlock, blockIndex, code)) {
-          allMatch = false;
-          break;
-        }
-      }
-      if (allMatch) {
-        currentBlock.removeInstruction(debugPosition);
-        TrivialGotosCollapser.unlinkTrivialGotoBlock(currentBlock, exit.getTarget());
-        code.removeBlocks(Collections.singleton(currentBlock));
-        changed = true;
-        // Having removed the block at blockIndex, the previous block may now be a trivial
-        // fallthrough from an if/switch. Rewind to that point and retry.
-        blockIndex = Math.max(0, blockIndex - 2);
-      }
+  private static boolean assertNoTrivialDebugPositionGotoBlock(IRCode code) {
+    for (BasicBlock block : code.blocks) {
+      assert !TrivialGotosCollapser.isRedundantDebugPositionGoto(code, block);
     }
-    return changed;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  private static boolean isFallthroughTargetToNonFallthroughTarget(
-      BasicBlock pred, BasicBlock current, int blockIndex, IRCode code) {
-    JumpInstruction exit = pred.exit();
-    BasicBlock fallthrough;
-    if (exit.isIf()) {
-      fallthrough = exit.asIf().fallthroughBlock();
-    } else if (exit.isSwitch()) {
-      fallthrough = exit.asSwitch().fallthroughBlock();
-    } else {
-      return false;
-    }
-    if (fallthrough != current) {
-      return false;
-    }
-    if (blockIndex + 1 >= code.blocks.size()) {
-      // The current block is a if/switch fallthrough target and there is no next-block.
-      // The current jump is thus to a non-fallthrough block.
-      return true;
-    }
-    BasicBlock nextBlock = code.blocks.get(blockIndex + 1);
-    return current.exit().asGoto().getTarget() != nextBlock;
+    return true;
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -455,25 +381,6 @@ public class DexBuilder {
     if (appView.options().shouldCompileMethodInReleaseMode(appView, code.context())
         || !code.metadata().mayHaveDebugPosition()) {
       return;
-    }
-
-    // We must start by removing any blocks that are already trivial fallthrough blocks with no
-    // position change. With these removed it is then sound to make the fallthrough judgement when
-    // determining if a goto will materialize or not.
-    //
-    // Removing a block rewires the predecessors of its goto target, which can turn blocks that the
-    // index based iteration has already passed into removable blocks. Iterate to a fixed point.
-    // This terminates as every iteration that reports a change removes at least one block.
-    int iterations = 0;
-    while (removeTrivialGotoBlocks(code)) {
-      iterations++;
-    }
-    if (iterations > EXPECTED_MAX_TRIVIAL_GOTO_BLOCK_ITERATIONS) {
-      // A single iteration removes all blocks for virtually all methods, and two iterations is the
-      // most that has been observed. Assert if that assumption no longer holds, as it points at a
-      // pathological case worth looking into.
-      assert false
-          : "Unexpected number of iterations (" + iterations + ") removing trivial goto blocks.";
     }
 
     // Compute the set of all positions that can be removed.

@@ -16,6 +16,7 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstNumber;
+import com.android.tools.r8.ir.code.DebugPosition;
 import com.android.tools.r8.ir.code.Goto;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IRMetadata;
@@ -199,5 +200,107 @@ public class TrivialGotoEliminationTest extends TestBase {
     assertTrue(block0.getInstructions().getFirst().getNext().isIf());
     assertEquals(block1, block0.getInstructions().getFirst().getNext().asIf().fallthroughBlock());
     assertTrue(blocks.containsAll(ImmutableList.of(block0, block1, block2, block3)));
+  }
+
+  @Test
+  public void redundantDebugPositionGotos() throws Exception {
+    AppView<AppInfo> appView = computeAppView(AndroidApp.builder().build());
+    InternalOptions options = appView.options();
+    // Setup block structure:
+    // block0:
+    //   v0 <- argument
+    //   if eq v0 block4
+    //
+    // block1:
+    //   debug-position
+    //   goto block3
+    //
+    // block2:
+    //   return
+    //
+    // block3:
+    //   debug-position
+    //   goto block2
+    //
+    // block4:
+    //   return
+    //
+    // The positions are already active at the exit of all predecessors, so block1 and block3 can be
+    // removed. Block1 is a fallthrough, so it can only be removed once block3 is removed and it
+    // targets the next block.
+    final NumberGenerator basicBlockNumberGenerator = new NumberGenerator();
+    Position position = SyntheticPosition.builder().setLine(0).disableMethodCheck().build();
+    BasicBlock block0 = new BasicBlock(metadata);
+    BasicBlock block1 = new BasicBlock(metadata);
+    BasicBlock block2 = new BasicBlock(metadata);
+    BasicBlock block3 = new BasicBlock(metadata);
+    BasicBlock block4 = new BasicBlock(metadata);
+    for (BasicBlock block : ImmutableList.of(block0, block1, block2, block3, block4)) {
+      block.setNumber(basicBlockNumberGenerator.next());
+    }
+
+    Value value =
+        new Value(
+            0,
+            TypeElement.fromDexType(
+                options.itemFactory.throwableType, Nullability.definitelyNotNull(), appView),
+            null);
+    Instruction instruction = new Argument(value, 0, false);
+    instruction.setPosition(position);
+    block0.add(instruction, metadata);
+    instruction = new If(IfType.EQ, value);
+    instruction.setPosition(position);
+    block0.add(instruction, metadata);
+    block0.getMutableSuccessors().add(block4);
+    block0.getMutableSuccessors().add(block1);
+    block0.setFilledForTesting();
+
+    addDebugPositionAndGoto(block1, block3, position);
+    addDebugPositionAndGoto(block3, block2, position);
+
+    for (BasicBlock block : ImmutableList.of(block2, block4)) {
+      instruction = new Return();
+      instruction.setPosition(position);
+      block.add(instruction, metadata);
+      block.setFilledForTesting();
+    }
+
+    block1.getMutablePredecessors().add(block0);
+    block2.getMutablePredecessors().add(block3);
+    block3.getMutablePredecessors().add(block1);
+    block4.getMutablePredecessors().add(block0);
+
+    LinkedList<BasicBlock> blocks = new LinkedList<>();
+    blocks.add(block0);
+    blocks.add(block1);
+    blocks.add(block2);
+    blocks.add(block3);
+    blocks.add(block4);
+    options.debug = true;
+    IRCode code =
+        new IRCode(
+            options,
+            null,
+            Position.none(),
+            blocks,
+            new NumberGenerator(),
+            basicBlockNumberGenerator,
+            IRMetadata.unknown(),
+            MethodConversionOptions.forD8(appView));
+    new TrivialGotosCollapser(appView).run(code, null, Timing.empty());
+    assertEquals(ImmutableList.of(block0, block2, block4), blocks);
+    assertEquals(block4, block0.exit().asIf().getTrueTarget());
+    assertEquals(block2, block0.exit().asIf().fallthroughBlock());
+  }
+
+  private void addDebugPositionAndGoto(BasicBlock block, BasicBlock target, Position position) {
+    DebugPosition debugPosition = new DebugPosition();
+    debugPosition.setPosition(position);
+    block.add(debugPosition, metadata);
+    Instruction instruction = new Goto();
+    instruction.setPosition(position);
+    block.add(instruction, metadata);
+    block.getMutableSuccessors().add(target);
+    block.setFilledForTesting();
   }
 }
