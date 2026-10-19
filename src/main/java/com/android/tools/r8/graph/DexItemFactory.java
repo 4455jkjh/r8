@@ -694,6 +694,8 @@ public class DexItemFactory {
   public final DexType javaUtilMapType = createStaticallyKnownType(mapDescriptor);
   public final DexType javaUtilSetType = createStaticallyKnownType(setDescriptor);
   public final DexType javaUtilArrayListType = createStaticallyKnownType("Ljava/util/ArrayList;");
+  public final DexType javaUtilHashMapType = createStaticallyKnownType("Ljava/util/HashMap;");
+  public final DexType javaUtilHashSetType = createStaticallyKnownType("Ljava/util/HashSet;");
   public final DexType javaUtilLinkedListType = createStaticallyKnownType("Ljava/util/LinkedList;");
   public final DexType comGoogleCommonCollectImmutableListType =
       createStaticallyKnownType("Lcom/google/common/collect/ImmutableList;");
@@ -1329,6 +1331,9 @@ public class DexItemFactory {
               javaUtilConcurrentTimeUnitType,
               javaUtilConcurrentTimeoutExceptionType,
               javaUtilConcurrentModificationExceptionType,
+              javaUtilArrayListType,
+              javaUtilHashMapType,
+              javaUtilHashSetType,
               javaUtilNoSuchElementExceptionType,
               objectType,
               stringBufferType,
@@ -1395,6 +1400,9 @@ public class DexItemFactory {
           javaUtilConcurrentTimeUnitType,
           javaUtilConcurrentTimeoutExceptionType,
           javaUtilConcurrentModificationExceptionType,
+          javaUtilArrayListType,
+          javaUtilHashMapType,
+          javaUtilHashSetType,
           javaUtilNoSuchElementExceptionType,
           objectType,
           stringBufferType,
