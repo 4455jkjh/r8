@@ -3,13 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.regalloc;
 
-import static org.junit.Assert.assertTrue;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,27 +35,20 @@ public class B573664753Test extends TestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    AssertUtils.assertFailsCompilation(
-        () -> testForD8(parameters).addInnerClasses(getClass()).release().compile(),
-        exception -> {
-          assertTrue(exception instanceof CompilationFailedException);
-          assertTrue(exception.getCause() instanceof AssertionError);
-        });
+    testForD8(parameters)
+        .addInnerClasses(getClass())
+        .release()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("1, 4, 10, 20, 2");
   }
 
   @Test
   public void testR8() throws Exception {
-    parameters.assumeDexRuntime();
-    AssertUtils.assertFailsCompilation(
-        () ->
-            testForR8(parameters)
-                .addInnerClasses(getClass())
-                .addKeepClassAndMembersRules(Main.class)
-                .compile(),
-        exception -> {
-          assertTrue(exception instanceof CompilationFailedException);
-          assertTrue(exception.getCause() instanceof AssertionError);
-        });
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepClassAndMembersRules(Main.class)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("1, 4, 10, 20, 2");
   }
 
   static class Main {

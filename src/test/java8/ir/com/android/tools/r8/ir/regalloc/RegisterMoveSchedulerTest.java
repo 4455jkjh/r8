@@ -231,8 +231,7 @@ public class RegisterMoveSchedulerTest extends TestBase {
     }
 
     @Override
-    public BasicBlock split(IRCode code, int instructions,
-        ListIterator<BasicBlock> blockIterator) {
+    public BasicBlock split(IRCode code, int instructions, ListIterator<BasicBlock> blockIterator) {
       throw new Unimplemented();
     }
 
@@ -641,13 +640,39 @@ public class RegisterMoveSchedulerTest extends TestBase {
     assertEquals(2, scheduler.getUsedTempRegisters());
   }
 
+  @Test
+  public void regressionTestBug573664753() {
+    CollectMovesIterator moves = new CollectMovesIterator();
+    int temp = 42;
+    RegisterMoveScheduler scheduler = new RegisterMoveScheduler(moves, temp);
+    scheduler.addMove(new RegisterMove(23, 31, TypeElement.getInt()));
+    scheduler.addMove(new RegisterMove(24, 29, TypeElement.getLong()));
+    scheduler.addMove(new RegisterMove(26, 2, TypeElement.getLong()));
+    scheduler.addMove(new RegisterMove(28, 4, TypeElement.getLong()));
+    scheduler.addMove(new RegisterMove(30, 25, TypeElement.getLong()));
+    scheduler.schedule();
+    assertEquals(6, moves.size());
+    assertEquals("23 <- 31", toString(moves.get(0)));
+    assertEquals("42 <- 25", toString(moves.get(1)));
+    assertEquals("26 <- 2", toString(moves.get(2)));
+    assertEquals("24 <- 29", toString(moves.get(3)));
+    assertEquals("28 <- 4", toString(moves.get(4)));
+    assertEquals("30 <- 42", toString(moves.get(5)));
+    assertEquals(2, scheduler.getUsedTempRegisters());
+  }
+
   // Debugging aid.
   private void printMoves(List<Instruction> moves) {
     System.out.println("Generated moves:");
     System.out.println("----------------");
     for (Instruction move : moves) {
-      System.out.println(move.asMove().dest().asFixedRegisterValue().getRegister() + " <- " +
-          move.asMove().src().asFixedRegisterValue().getRegister() + " (" + move.outType() + ")");
+      System.out.println(
+          move.asMove().dest().asFixedRegisterValue().getRegister()
+              + " <- "
+              + move.asMove().src().asFixedRegisterValue().getRegister()
+              + " ("
+              + move.outType()
+              + ")");
     }
     System.out.println("----------------");
   }

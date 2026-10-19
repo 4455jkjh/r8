@@ -251,6 +251,8 @@ public class RegisterMoveScheduler {
   }
 
   private void createMoveDestToTemp(RegisterMove move) {
+    removeFromFreeRegistersUntilAssigned(move.dst, move.isWide(), emptyIntConsumer());
+
     // In order to unblock this move we might have to move more than one value to temporary
     // registers if we are unlucky with the overlap for values that use two registers.
     List<RegisterMove> movesWithSrc = findMovesWithSrc(move.dst, move.type);
