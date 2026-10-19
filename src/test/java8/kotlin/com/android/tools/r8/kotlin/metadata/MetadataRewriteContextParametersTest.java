@@ -76,7 +76,7 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
               kotlinc ->
                   kotlinc
                       .addSourceFilesWithNonKtExtension(getStaticTemp(), LIB_FILE)
-                      .enableExperimentalContextParameters());
+                      .enableContextParameters());
 
   @Test
   public void smokeTest() throws Exception {
@@ -85,7 +85,7 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
             .addClasspathFiles(libJars.getForConfiguration(kotlinParameters))
             .addSourceFilesWithNonKtExtension(temp, MAIN_FILE)
             .setOutputPath(temp.newFolder().toPath())
-            .enableExperimentalContextParameters()
+            .enableContextParameters()
             .compile();
     testForJvm(parameters)
         .addRunClasspathFiles(
@@ -126,7 +126,7 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
             .addClasspathFiles(libJar)
             .addSourceFilesWithNonKtExtension(temp, MAIN_FILE)
             .setOutputPath(temp.newFolder().toPath())
-            .enableExperimentalContextParameters()
+            .enableContextParameters()
             .compile();
     testForJvm(parameters)
         .addRunClasspathFiles(kotlinc.getKotlinStdlibJar(), kotlinc.getKotlinReflectJar(), libJar)
@@ -185,7 +185,7 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
             .addClasspathFiles(libJar)
             .addSourceFiles(newSource)
             .setOutputPath(temp.newFolder().toPath())
-            .enableExperimentalContextParameters()
+            .enableContextParameters()
             .compile();
 
     testForJvm(parameters)
