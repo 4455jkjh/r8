@@ -45,8 +45,7 @@ public class B573234894 extends TestBase {
         .enableInliningAnnotations()
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/569861570): Should be "Hello, world!".
-        .assertSuccessWithOutputLines("null");
+        .assertSuccessWithOutputLines("Hello, world!");
   }
 
   private static Collection<byte[]> getProgramClassFileData() {
