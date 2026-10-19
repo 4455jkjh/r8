@@ -19,6 +19,7 @@ if tools_dir not in sys.path:
     sys.path.insert(0, tools_dir)
 
 from tools import fmt_diff
+from tools import utils
 
 
 def CheckDoNotMerge(input_api, output_api):
@@ -127,6 +128,32 @@ def CheckForAddedHeadful(input_api, output_api):
     return results
 
 
+def CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api, branch):
+    while not branch.startswith('refs/remotes/origin/'):
+        try:
+            branch = (check_output([
+                'git', 'rev-parse', '--symbolic-full-name',
+                branch + '@{upstream}'
+            ]).decode('utf-8').strip().replace('refs/heads/', ''))
+        except CalledProcessError:
+            break
+    branch = branch.replace('refs/remotes/origin/', '').replace('origin/', '')
+    if branch == 'main':
+        return []
+    semver = utils.check_basic_semver_version(
+        branch, ', release branch version should be x.y', components=2)
+    if semver.larger_than(utils.SemanticVersion(9, 5, None, None)):
+        return []
+    results = []
+    for (file, line_nr, line) in input_api.RightHandSideLines():
+        if IsTestFile(file) and '.withoutCollapsedDexRuntimes()' in line:
+            results.append(
+                output_api.PresubmitError(
+                    'Test call to withoutCollapsedDexRuntimes is not allowed before branch 9.6 (current branch %s)\n%s:%s %s'
+                    % (branch, file.LocalPath(), line_nr, line)))
+    return results
+
+
 def is_allow_old_copyright_set(input_api=None):
     val = os.environ.get('ALLOW_OLD_COPYRIGHT')
     if val is None and input_api and hasattr(input_api, 'environ'):
@@ -225,6 +252,8 @@ def CheckChange(input_api, output_api):
     results.extend(CheckForAddedAllowXxxxxxMessages(input_api, output_api))
     results.extend(CheckForAddedPartialDebug(input_api, output_api))
     results.extend(CheckForAddedHeadful(input_api, output_api))
+    results.extend(
+        CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api, branch))
     results.extend(CheckForCopyright(input_api, output_api, branch))
     results.extend(CheckLucicfg(input_api, output_api))
     return results
