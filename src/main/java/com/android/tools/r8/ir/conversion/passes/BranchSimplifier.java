@@ -274,8 +274,23 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
             && (ushr.rightValue().getConstInt() & 0x1f) == 31) {
           // ifeqz (a >>> 31) => ifgez a
           // ifnez (a >>> 31) => ifltz a
+          Value leftValue = ushr.leftValue();
+          Value leftRoot = leftValue.getAliasedValue();
           IfType newIfType = theIf.getType() == IfType.EQ ? IfType.GE : IfType.LT;
-          block.replaceLastInstruction(new If(newIfType, ushr.leftValue()));
+          if (leftRoot.isDefinedByInstructionSatisfying(Instruction::isNot)) {
+            leftValue = leftRoot.getDefinition().asNot().source();
+            newIfType = newIfType.inverted();
+          } else if (leftRoot.isDefinedByInstructionSatisfying(Instruction::isXor)) {
+            Xor xor = leftRoot.getDefinition().asXor();
+            if (xor.leftValue().isConstNumber(-1)) {
+              leftValue = xor.rightValue();
+              newIfType = newIfType.inverted();
+            } else if (xor.rightValue().isConstNumber(-1)) {
+              leftValue = xor.leftValue();
+              newIfType = newIfType.inverted();
+            }
+          }
+          block.replaceLastInstruction(new If(newIfType, leftValue));
           return true;
         }
       }
