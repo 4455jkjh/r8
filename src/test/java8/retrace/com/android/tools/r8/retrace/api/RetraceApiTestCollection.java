@@ -45,7 +45,7 @@ public class RetraceApiTestCollection
           RetraceApiProxyFrameWithSourceFileTest.ApiTest.class);
 
   public static List<Class<? extends RetraceApiBinaryTest>> CLASSES_PENDING_BINARY_COMPATIBILITY =
-      ImmutableList.of();
+      ImmutableList.of(RetraceApiStackTraceContextSerializeTest.ApiTest.class);
 
   private final TemporaryFolder temp;
 
