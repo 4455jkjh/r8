@@ -16,8 +16,8 @@ import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.diagnostic.internal.DefinitionClassContextImpl;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -52,7 +52,7 @@ public class MissingClassReferencedFromPermittedSubclassesAttributeTest
     // the class file version, so for testing JDK's below 17 the PermittedSubclasses attributes is
     // still present (the code will not run, but the tests does not run the code).
     assertEquals(
-        parameters.hasSealedClassesSupport() || parameters.isCfRuntime()
+        parameters.hasSealedClassesReflectionSupport() || parameters.isCfRuntime()
             ? ImmutableList.of(
                 inspector.clazz(Sub.class).asTypeSubject(),
                 inspector.getTypeSubject(MissingSub.class.getTypeName()))
