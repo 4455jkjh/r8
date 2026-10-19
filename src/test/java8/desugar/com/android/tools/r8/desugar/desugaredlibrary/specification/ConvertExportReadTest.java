@@ -150,7 +150,13 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
 
     // Validate converted machine spec is identical to the written one.
     for (AndroidApiLevel api :
-        new AndroidApiLevel[] {AndroidApiLevel.B, AndroidApiLevel.N, AndroidApiLevel.O}) {
+        new AndroidApiLevel[] {
+          AndroidApiLevel.B,
+          AndroidApiLevel.N,
+          AndroidApiLevel.O,
+          AndroidApiLevel.BAKLAVA,
+          AndroidApiLevel.BAKLAVA_1
+        }) {
       MachineDesugaredLibrarySpecification machineSpecParsed =
           new MachineDesugaredLibrarySpecificationParser(
                   options.dexItemFactory(), options.reporter, true, api.asUnchecked())
@@ -197,7 +203,13 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
         machineSpec1, (string, handler) -> json2.set(string));
 
     for (AndroidApiLevel api :
-        new AndroidApiLevel[] {AndroidApiLevel.B, AndroidApiLevel.N, AndroidApiLevel.O}) {
+        new AndroidApiLevel[] {
+          AndroidApiLevel.B,
+          AndroidApiLevel.N,
+          AndroidApiLevel.O,
+          AndroidApiLevel.BAKLAVA,
+          AndroidApiLevel.BAKLAVA_1
+        }) {
       MachineDesugaredLibrarySpecification machineSpecParsed =
           new MachineDesugaredLibrarySpecificationParser(
                   options.dexItemFactory(), options.reporter, true, api.asUnchecked())
@@ -313,8 +325,8 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
     assertEquals(kr1, kr2);
     assertEquals(topLevelFlags1.getIdentifier(), topLevelFlags2.getIdentifier());
     assertEquals(
-        topLevelFlags1.getRequiredCompilationApiLevel().getMajor(),
-        topLevelFlags2.getRequiredCompilationApiLevel().getMajor());
+        topLevelFlags1.getRequiredCompilationApiLevel(),
+        topLevelFlags2.getRequiredCompilationApiLevel());
     assertEquals(
         topLevelFlags1.getSynthesizedLibraryClassesPackagePrefix(),
         topLevelFlags2.getSynthesizedLibraryClassesPackagePrefix());
@@ -325,8 +337,8 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
     assertEquals(topLevelFlags1.getExtraKeepRules(), topLevelFlags2.getExtraKeepRules());
     assertEquals(topLevelFlags1.getIdentifier(), topLevelFlags2.getIdentifier());
     assertEquals(
-        topLevelFlags1.getRequiredCompilationAPILevel().getMajor(),
-        topLevelFlags2.getRequiredCompilationAPILevel().getMajor());
+        topLevelFlags1.getRequiredCompilationAPILevel(),
+        topLevelFlags2.getRequiredCompilationAPILevel());
     assertEquals(
         topLevelFlags1.getSynthesizedLibraryClassesPackagePrefix(),
         topLevelFlags2.getSynthesizedLibraryClassesPackagePrefix());

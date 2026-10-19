@@ -389,6 +389,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         }
       }
     }
+    removeConstantsSpilledAtDefinition();
     clearUserInfo();
     clearState();
   }
@@ -691,6 +692,19 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
     localsChange.setPosition(position);
     return localsChange;
+  }
+
+  // Constants that are spilled at their definition are rematerialized at their uses. Their
+  // spill register is not counted as used (see addRegisterIfUsed), so their definition must be
+  // removed.
+  private void removeConstantsSpilledAtDefinition() {
+    for (LiveIntervals intervals : liveIntervals) {
+      if (intervals.isConstantNumberInterval() && intervals.isSpilledAndRematerializable()) {
+        Instruction definition = intervals.getValue().getDefinition();
+        assert intervals.getStart() == definition.getNumber();
+        definition.removeIgnoreValues();
+      }
+    }
   }
 
   private void clearState() {
@@ -1166,9 +1180,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
       // Advance the state before allocating the registers of the invoke/range arguments below, so
       // that the registers of the intervals that expired before this interval are free.
-      if (options().getTestingOptions().enableFreeExpiredRegistersBeforeInvokeRangeAllocation) {
-        advanceStateToLiveIntervals(unhandledInterval);
-      }
+      timing.begin("Advance state");
+      advanceStateToLiveIntervals(unhandledInterval);
+      timing.end();
 
       // If this interval value has an invoke/rangerange user, then fix the registers for the
       // consecutive arguments now and add hints to the live intervals leading up to this
@@ -1181,10 +1195,6 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         // The value itself is in the chain that has now gotten registers allocated.
         expiredHere.clear();
         continue;
-      }
-
-      if (!options().getTestingOptions().enableFreeExpiredRegistersBeforeInvokeRangeAllocation) {
-        advanceStateToLiveIntervals(unhandledInterval);
       }
 
       // Perform the actual allocation.
@@ -1323,7 +1333,6 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   }
 
   private void advanceStateToLiveIntervals(LiveIntervals unhandledInterval) {
-    timing.begin("Advance state");
     int start = unhandledInterval.getStart();
     // Check for active intervals that expired or became inactive.
     active.removeIf(
@@ -1367,7 +1376,6 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
           }
           return false;
         });
-    timing.end();
   }
 
   private boolean invariantsHold(ArgumentReuseMode mode) {
@@ -1464,11 +1472,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       return;
     }
     Value value = unhandledInterval.getValue();
-    if (value.isDefinedByInstructionSatisfying(
-        i ->
-            i.isArithmeticBinop()
-                || (options().getTestingOptions().enable2AddrHintsForLogicalBinop
-                    && i.isLogicalBinop()))) {
+    if (value.isDefinedByInstructionSatisfying(i -> i.isArithmeticBinop() || i.isLogicalBinop())) {
       Binop binop = value.getDefinition().asBinop();
       Value left = binop.leftValue();
       if (left.getLiveIntervals() != null && !left.getLiveIntervals().overlaps(unhandledInterval)) {

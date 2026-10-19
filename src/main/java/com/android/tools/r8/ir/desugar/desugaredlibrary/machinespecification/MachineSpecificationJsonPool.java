@@ -7,6 +7,10 @@ package com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification;
 public class MachineSpecificationJsonPool {
 
   static final String REQUIRED_COMPILATION_API_LEVEL_KEY = "required_compilation_api_level";
+  static final String REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY =
+      "required_compilation_api_major_level";
+  static final String REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY =
+      "required_compilation_api_minor_level";
   static final String SYNTHESIZED_LIBRARY_CLASSES_PACKAGE_PREFIX_KEY =
       "synthesized_library_classes_package_prefix";
   static final String IDENTIFIER_KEY = "identifier";
@@ -18,7 +22,11 @@ public class MachineSpecificationJsonPool {
   static final String PROGRAM_FLAGS_KEY = "program_flags";
 
   static final String API_LEVEL_BELOW_OR_EQUAL_KEY = "api_level_below_or_equal";
+  static final String API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY = "api_level_major_below_or_equal";
+  static final String API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY = "api_level_minor_below_or_equal";
   static final String API_LEVEL_GREATER_OR_EQUAL_KEY = "api_level_greater_or_equal";
+  static final String API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY = "api_level_major_greater_or_equal";
+  static final String API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY = "api_level_minor_greater_or_equal";
 
   static final String REWRITE_TYPE_KEY = "rewrite_type";
   static final String MAINTAIN_TYPE_KEY = "maintain_type";

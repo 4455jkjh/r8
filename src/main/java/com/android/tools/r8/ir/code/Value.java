@@ -1556,7 +1556,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
 
   public final AbstractValue getAbstractValue(
       AppView<?> appView, ProgramMethod context, AbstractValueSupplier abstractValueSupplier) {
-    if (hasLocalInfo()) {
+    if (!appView.enableWholeProgramOptimizations()) {
       return UnknownValue.getInstance();
     }
 
@@ -1565,7 +1565,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     }
 
     Value root = getAliasedValue();
-    if (root.isPhi() || root.hasLocalInfo()) {
+    if (root.isPhi()) {
       return UnknownValue.getInstance();
     }
 

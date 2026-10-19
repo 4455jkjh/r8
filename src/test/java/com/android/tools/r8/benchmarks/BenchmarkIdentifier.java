@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks;
 
-import com.android.tools.r8.utils.structural.Equatable;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Equatable;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import java.util.Comparator;
 import java.util.Objects;
 

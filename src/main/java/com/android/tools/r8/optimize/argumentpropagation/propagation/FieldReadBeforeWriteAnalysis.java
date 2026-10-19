@@ -24,6 +24,7 @@ import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.internal.LazyBox;
+import com.google.common.collect.Iterables;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -72,9 +73,13 @@ class FieldReadBeforeWriteAnalysis {
     }
     InstanceInitializerInfo instanceInitializerInfo =
         context.getOptimizationInfo().getContextInsensitiveInstanceInitializerInfo();
+    Iterable<BasicBlock> exitBlocks =
+        instanceInitializerInfo.receiverMayEscapeOutsideConstructorChain()
+            ? Iterables.filter(code.blocks, block -> block.getSuccessors().isEmpty())
+            : returnBlocks;
     return !isFieldMaybeReadBeforeInstructionInInitializer(
             field, instanceInitializerInfo, instancePut)
-        && lazyDominatorTree.computeIfAbsent().dominatesAllOf(instancePut.getBlock(), returnBlocks);
+        && lazyDominatorTree.computeIfAbsent().dominatesAllOf(instancePut.getBlock(), exitBlocks);
   }
 
   private boolean isFieldMaybeReadBeforeInstructionInInitializer(

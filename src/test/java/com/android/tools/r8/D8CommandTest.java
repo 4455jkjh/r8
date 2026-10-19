@@ -177,9 +177,9 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             " and options are:",
             "  --debug                 # Compile with debugging information (default).",
             "  --release               # Compile without debugging information.",
-            "  --output <file>         # Output result in <file>. <file> must be an existing"
-                + " directory or a zip",
-            "                          # file.",
+            "  --output <path>         # Output result in <path>. <path> must be a zip file or"
+                + " an existing",
+            "                          # directory.",
             "  --globals <file>        # Global synthetics <file> from a previous intermediate"
                 + " compilation. The",
             "                          # <file> may be either a zip-archive of global"
@@ -189,7 +189,9 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
                 + " existing directory or",
             "                          # a non-existent zip archive.",
             "  --ignore-globals        # Ignore global synthetics.",
-            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --classpath <file>      # Add <file> as a classpath resource.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",
@@ -213,9 +215,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             "                          # with their originating class.",
             "  --classfile             # Compile program to Java classfile format.",
             "  --no-desugaring         # Force disable desugaring.",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --main-dex-rules <file> # Proguard keep rules for classes to place in the primary"
                 + " dex file.",
             "  --main-dex-list <file>  # List of classes to place in the primary dex file.",

@@ -95,27 +95,19 @@ public class R8CommandParser {
               }
               state.outputMode = OutputMode.ClassFile;
             })
-        .option1(
-            "--output",
-            "<file>",
-            "Output result in <file>. <file> must be an existing directory or a zip file.",
-            (state, arg) -> {
-              if (state.outputPath != null) {
-                StringDiagnostic diagnostic =
-                    new StringDiagnostic(
-                        "Cannot output both to '" + state.outputPath + "' and '" + arg + "'",
-                        state.origin);
-                state.builder.error(diagnostic);
-              }
-              state.outputPath = Paths.get(arg);
-            })
-        .option1(
-            "--lib",
-            "<file|jdk-home>",
-            "Add <file|jdk-home> as a library resource.",
-            (state, arg) ->
-                CompilerCommandParserUtils.addLibraryArgument(
-                    state.builder.getAppBuilder(), arg, state.origin, state.builder.getReporter()))
+        .apply(
+            CliParserUtils.addOutputOption(
+                state -> state.outputPath != null,
+                (state, path) -> state.outputPath = path,
+                (state, error) -> state.builder.error(new StringDiagnostic(error, state.origin)),
+                CliParserUtils.OutputOptionType.ZIP_OR_EXISTING_DIR))
+        .apply(
+            CliParserUtils.addLibOption(
+                (state, provider) ->
+                    state.builder.getAppBuilder().addLibraryResourceProvider(provider),
+                (state, path) -> state.builder.getAppBuilder().addLibraryFiles(path),
+                state -> state.origin,
+                state -> state.builder.getReporter()))
         .option1(
             "--classpath",
             "<file>",
@@ -176,14 +168,9 @@ public class R8CommandParser {
             "<file>",
             "Output the resulting mapping to <file>.",
             (state, arg) -> state.builder.setPartitionMapOutputPath(Paths.get(arg)))
-        .option1(
-            "--desugared-lib",
-            "<file>",
-            "Specify desugared library configuration. <file> is a desugared library configuration"
-                + " (json).",
-            (state, arg) ->
-                state.builder.addDesugaredLibraryConfiguration(
-                    StringResource.fromFile(Paths.get(arg))))
+        .apply(
+            CliParserUtils.addDesugaredLibOption(
+                (state, resource) -> state.builder.addDesugaredLibraryConfiguration(resource)))
         .option0(
             "--no-tree-shaking",
             "Force disable tree shaking of unreachable classes.",

@@ -5,12 +5,12 @@ package com.android.tools.r8.internal;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -20,8 +20,10 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class D8Framework14082017DesugaredVerificationTest extends CompilationTestBase {
   private static final int MIN_SDK = AndroidApiLevel.N.getMajor();
-  private static final String JAR =
-      ToolHelper.THIRD_PARTY_DIR + "framework/framework_14082017_desugared.jar";
+
+  private static Path getJar() {
+    return TestDeps.getFrameworkPath("framework_14082017_desugared.jar");
+  }
 
   @Parameter(0)
   public TestParameters parameters;
@@ -33,23 +35,25 @@ public class D8Framework14082017DesugaredVerificationTest extends CompilationTes
 
   @Test
   public void verifyDebugBuild() throws Exception {
+    Path jar = getJar();
     runAndCheckVerification(
         D8Command.builder()
-            .addProgramFiles(Paths.get(JAR))
+            .addProgramFiles(jar)
             .setMode(CompilationMode.DEBUG)
             .setMinApiLevel(MIN_SDK),
-        JAR,
+        jar.toString(),
         parameters.getDexVm());
   }
 
   @Test
   public void verifyReleaseBuild() throws Exception {
+    Path jar = getJar();
     runAndCheckVerification(
         D8Command.builder()
-            .addProgramFiles(Paths.get(JAR))
+            .addProgramFiles(jar)
             .setMode(CompilationMode.RELEASE)
             .setMinApiLevel(MIN_SDK),
-        JAR,
+        jar.toString(),
         parameters.getDexVm());
   }
 }

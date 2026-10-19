@@ -7,7 +7,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.utils.Int2StructuralItemArrayMap;
-import com.android.tools.r8.utils.structural.Equatable;
+import com.android.tools.r8.utils.internal.structural.Equatable;
 import com.android.tools.r8.utils.structural.HashCodeVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;

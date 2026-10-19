@@ -262,6 +262,16 @@ public final class GlobalSyntheticsGeneratorCommand {
       return this;
     }
 
+    Reporter getReporter() {
+      return reporter;
+    }
+
+    /** Add library file resources. */
+    Builder addLibraryResourceProvider(ClassFileResourceProvider provider) {
+      guard(() -> appBuilder.addLibraryResourceProvider(provider));
+      return this;
+    }
+
     /** Add library file resources. */
     public Builder addLibraryFiles(Path... files) {
       addLibraryFiles(Arrays.asList(files));

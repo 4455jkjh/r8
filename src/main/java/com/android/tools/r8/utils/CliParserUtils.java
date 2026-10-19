@@ -5,12 +5,15 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.BaseCompilerCommand;
+import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.DiagnosticsLevel;
+import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.ParseFlagInfo;
 import com.android.tools.r8.ParseFlagInfoImpl;
 import com.android.tools.r8.ParseFlagPrinter;
+import com.android.tools.r8.StringResource;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
@@ -22,6 +25,10 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -175,124 +182,14 @@ public class CliParserUtils {
     }
   }
 
-  public static <B> Consumer<CliParser<B>> addVersionOption(Consumer<B> action) {
-    return parser -> parser.option0("--version", "Print version.", action, "-v");
-  }
-
-  public static <B> Consumer<CliParser<B>> addHelpOption(Consumer<B> action) {
-    return parser -> parser.option0("--help", "Print usage information.", action, "-h");
-  }
-
-  /**
-   * Adds the {@code --min-api} option using {@link AndroidApiLevel#getDefault()} as the default API
-   * level listed in the option description.
-   */
-  public static <B> Consumer<CliParser<B>> addMinApiOption(
-      Predicate<B> hasDefinedApiLevel,
-      BiConsumer<B, UncheckedApiLevel> action,
-      BiConsumer<B, String> errorHandler) {
-    return addMinApiOption(hasDefinedApiLevel, action, errorHandler, AndroidApiLevel.getDefault());
-  }
-
-  public static <B> Consumer<CliParser<B>> addMinApiOption(
-      Predicate<B> hasDefinedApiLevel,
-      BiConsumer<B, UncheckedApiLevel> action,
-      BiConsumer<B, String> errorHandler,
-      AndroidApiLevel defaultApiLevel) {
+  public static <B> Consumer<CliParser<B>> addDesugaredLibOption(
+      BiConsumer<B, StringResource> action) {
     return parser ->
         parser.option1(
-            "--min-api",
-            "<number>[.<number>]",
-            "Minimum Android API level compatibility (default: "
-                + defaultApiLevel.getNumericString()
-                + ").",
-            (state, arg) -> {
-              if (hasDefinedApiLevel.test(state)) {
-                errorHandler.accept(state, "Cannot set multiple --min-api options");
-              } else {
-                parseUncheckedApiLevel(
-                    arg,
-                    apiLevel -> action.accept(state, apiLevel),
-                    error -> errorHandler.accept(state, "Invalid argument to --min-api: " + error));
-              }
-            });
-  }
-
-  public static <B> Consumer<CliParser<B>> addThreadCountOption(
-      BiConsumer<B, Integer> action,
-      Function<B, ? extends DiagnosticsHandler> getDiagnosticsHandler,
-      Function<B, Origin> getOrigin) {
-    return parser ->
-        parser.option1(
-            "--thread-count",
-            "<number>",
-            "Use <number> of threads. If not specified the number will be based on heuristics"
-                + " taking the number of cores into account.",
-            (state1, arg) ->
-                parsePositiveInt(
-                    arg,
-                    threadCount -> action.accept(state1, threadCount),
-                    error1 ->
-                        getDiagnosticsHandler
-                            .apply(state1)
-                            .error(
-                                new StringDiagnostic(
-                                    "Invalid argument to --thread-count: " + error1,
-                                    getOrigin.apply(state1)))));
-  }
-
-  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
-      BiConsumer<B, DiagnosticsMapping> action,
-      BiConsumer<B, Diagnostic> errorHandler,
-      Function<B, Origin> getOrigin) {
-    return parser ->
-        parser.prefix2(
-            "--map-diagnostics",
-            "[:<type>]",
-            "<from-level>",
-            "<to-level>",
-            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
-                + " <from-level> and <to-level> are one of 'none', 'info', 'warning', or 'error',"
-                + " and the optional <type> is either the simple or fully qualified Java type name"
-                + " of a diagnostic. If <type> is unspecified, all diagnostics at <from-level> will"
-                + " be mapped. Note that fatal compiler errors cannot be mapped.",
-            (state, suffix, fromLevel, toLevel) -> {
-              Consumer<Diagnostic> errorHandler1 = error -> errorHandler.accept(state, error);
-              Origin origin = getOrigin.apply(state);
-              String diagnosticsClassName = "";
-              if (!suffix.isEmpty()) {
-                if (suffix.length() == 1 || suffix.charAt(0) != ':') {
-                  errorHandler1.accept(
-                      new StringDiagnostic(
-                          "Invalid diagnostics type specification --map-diagnostics" + suffix + ".",
-                          origin));
-                  return;
-                }
-                diagnosticsClassName = suffix.substring(1);
-              }
-              DiagnosticsLevel fromLevel1 = parseDiagnosticsLevel(fromLevel, errorHandler1, origin);
-              DiagnosticsLevel toLevel1 = parseDiagnosticsLevel(toLevel, errorHandler1, origin);
-              if (fromLevel1 != null && toLevel1 != null) {
-                if (fromLevel1 == DiagnosticsLevel.NONE) {
-                  errorHandler1.accept(
-                      new StringDiagnostic("Cannot map from diagnostics level 'none'.", origin));
-                  return;
-                }
-                action.accept(
-                    state, new DiagnosticsMapping(diagnosticsClassName, fromLevel1, toLevel1));
-              }
-            });
-  }
-
-  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
-      Function<B, Reporter> getReporter, Function<B, Origin> getOrigin) {
-    return addMapDiagnosticsOption(
-        (state, mapping) ->
-            getReporter
-                .apply(state)
-                .addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
-        (state, error) -> getReporter.apply(state).error(error),
-        getOrigin);
+            "--desugared-lib",
+            "<file>",
+            "Specify a JSON desugared library configuration <file>.",
+            (state, arg) -> action.accept(state, StringResource.fromFile(Paths.get(arg))));
   }
 
   public static <T, C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
@@ -354,6 +251,205 @@ public class CliParserUtils {
                       handlerAndScope.getSecond());
                 },
                 "--force-ah");
+  }
+
+  public static <B> Consumer<CliParser<B>> addHelpOption(Consumer<B> action) {
+    return parser -> parser.option0("--help", "Print usage information.", action, "-h");
+  }
+
+  public static <B> Consumer<CliParser<B>> addLibOption(
+      BiConsumer<B, ClassFileResourceProvider> providerConsumer,
+      BiConsumer<B, Path> fileConsumer,
+      Function<B, Origin> getOrigin,
+      Function<B, ? extends DiagnosticsHandler> getDiagnosticsHandler) {
+    return parser ->
+        parser.option1(
+            "--lib",
+            "<path>",
+            "Add <path> as a library resource. <path> must be a jar/zip file or a JDK home"
+                + " directory.",
+            (state, arg) -> {
+              Path path = Paths.get(arg);
+              if (isJdkHome(path)) {
+                try {
+                  providerConsumer.accept(state, JdkClassFileProvider.fromJdkHome(path));
+                } catch (IOException e) {
+                  getDiagnosticsHandler
+                      .apply(state)
+                      .error(new ExceptionDiagnostic(e, getOrigin.apply(state)));
+                }
+              } else {
+                fileConsumer.accept(state, path);
+              }
+            });
+  }
+
+  /**
+   * This method must match the lookup in {@link
+   * com.android.tools.r8.JdkClassFileProvider#fromJdkHome}.
+   */
+  private static boolean isJdkHome(Path home) {
+    Path jrtFsJar = home.resolve("lib").resolve("jrt-fs.jar");
+    if (Files.exists(jrtFsJar)) {
+      return true;
+    }
+    // JDK has rt.jar in jre/lib/rt.jar.
+    Path rtJar = home.resolve("jre").resolve("lib").resolve("rt.jar");
+    if (Files.exists(rtJar)) {
+      return true;
+    }
+    // JRE has rt.jar in lib/rt.jar.
+    rtJar = home.resolve("lib").resolve("rt.jar");
+    return Files.exists(rtJar);
+  }
+
+  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
+      BiConsumer<B, DiagnosticsMapping> action,
+      BiConsumer<B, Diagnostic> errorHandler,
+      Function<B, Origin> getOrigin) {
+    return parser ->
+        parser.prefix2(
+            "--map-diagnostics",
+            "[:<type>]",
+            "<from-level>",
+            "<to-level>",
+            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
+                + " <from-level> and <to-level> are one of 'none', 'info', 'warning', or 'error',"
+                + " and the optional <type> is either the simple or fully qualified Java type name"
+                + " of a diagnostic. If <type> is unspecified, all diagnostics at <from-level> will"
+                + " be mapped. Note that fatal compiler errors cannot be mapped.",
+            (state, suffix, fromLevel, toLevel) -> {
+              Consumer<Diagnostic> errorHandler1 = error -> errorHandler.accept(state, error);
+              Origin origin = getOrigin.apply(state);
+              String diagnosticsClassName = "";
+              if (!suffix.isEmpty()) {
+                if (suffix.length() == 1 || suffix.charAt(0) != ':') {
+                  errorHandler1.accept(
+                      new StringDiagnostic(
+                          "Invalid diagnostics type specification --map-diagnostics" + suffix + ".",
+                          origin));
+                  return;
+                }
+                diagnosticsClassName = suffix.substring(1);
+              }
+              DiagnosticsLevel fromLevel1 = parseDiagnosticsLevel(fromLevel, errorHandler1, origin);
+              DiagnosticsLevel toLevel1 = parseDiagnosticsLevel(toLevel, errorHandler1, origin);
+              if (fromLevel1 != null && toLevel1 != null) {
+                if (fromLevel1 == DiagnosticsLevel.NONE) {
+                  errorHandler1.accept(
+                      new StringDiagnostic("Cannot map from diagnostics level 'none'.", origin));
+                  return;
+                }
+                action.accept(
+                    state, new DiagnosticsMapping(diagnosticsClassName, fromLevel1, toLevel1));
+              }
+            });
+  }
+
+  public static <B> Consumer<CliParser<B>> addMapDiagnosticsOption(
+      Function<B, Reporter> getReporter, Function<B, Origin> getOrigin) {
+    return addMapDiagnosticsOption(
+        (state, mapping) ->
+            getReporter
+                .apply(state)
+                .addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
+        (state, error) -> getReporter.apply(state).error(error),
+        getOrigin);
+  }
+
+  /**
+   * Adds the {@code --min-api} option using {@link AndroidApiLevel#getDefault()} as the default API
+   * level listed in the option description.
+   */
+  public static <B> Consumer<CliParser<B>> addMinApiOption(
+      Predicate<B> hasDefinedApiLevel,
+      BiConsumer<B, UncheckedApiLevel> action,
+      BiConsumer<B, String> errorHandler) {
+    return addMinApiOption(hasDefinedApiLevel, action, errorHandler, AndroidApiLevel.getDefault());
+  }
+
+  public static <B> Consumer<CliParser<B>> addMinApiOption(
+      Predicate<B> hasDefinedApiLevel,
+      BiConsumer<B, UncheckedApiLevel> action,
+      BiConsumer<B, String> errorHandler,
+      AndroidApiLevel defaultApiLevel) {
+    return parser ->
+        parser.option1(
+            "--min-api",
+            "<number>[.<number>]",
+            "Minimum Android API level compatibility (default: "
+                + defaultApiLevel.getNumericString()
+                + ").",
+            (state, arg) -> {
+              if (hasDefinedApiLevel.test(state)) {
+                errorHandler.accept(state, "Cannot set multiple --min-api options");
+              } else {
+                parseUncheckedApiLevel(
+                    arg,
+                    apiLevel -> action.accept(state, apiLevel),
+                    error -> errorHandler.accept(state, "Invalid argument to --min-api: " + error));
+              }
+            });
+  }
+
+  public enum OutputOptionType {
+    ZIP_OR_EXISTING_DIR(
+        "<path>", "Output result in <path>. <path> must be a zip file or an existing directory."),
+    FILE("<file>", "Output result in <file>.");
+
+    private final String paramLabel;
+    private final String description;
+
+    OutputOptionType(String paramLabel, String description) {
+      this.paramLabel = paramLabel;
+      this.description = description;
+    }
+  }
+
+  public static <B> Consumer<CliParser<B>> addOutputOption(
+      Predicate<B> hasSetOutputPathAlready,
+      BiConsumer<B, Path> action,
+      BiConsumer<B, String> errorHandler,
+      OutputOptionType outputOptionType) {
+    return parser ->
+        parser.option1(
+            "--output",
+            outputOptionType.paramLabel,
+            outputOptionType.description,
+            (state, arg) -> {
+              if (hasSetOutputPathAlready.test(state)) {
+                errorHandler.accept(state, "Cannot set multiple --output options");
+              } else {
+                action.accept(state, Paths.get(arg));
+              }
+            });
+  }
+
+  public static <B> Consumer<CliParser<B>> addThreadCountOption(
+      BiConsumer<B, Integer> action,
+      Function<B, ? extends DiagnosticsHandler> getDiagnosticsHandler,
+      Function<B, Origin> getOrigin) {
+    return parser ->
+        parser.option1(
+            "--thread-count",
+            "<number>",
+            "Use <number> of threads. If not specified the number will be based on heuristics"
+                + " taking the number of cores into account.",
+            (state1, arg) ->
+                parsePositiveInt(
+                    arg,
+                    threadCount -> action.accept(state1, threadCount),
+                    error1 ->
+                        getDiagnosticsHandler
+                            .apply(state1)
+                            .error(
+                                new StringDiagnostic(
+                                    "Invalid argument to --thread-count: " + error1,
+                                    getOrigin.apply(state1)))));
+  }
+
+  public static <B> Consumer<CliParser<B>> addVersionOption(Consumer<B> action) {
+    return parser -> parser.option0("--version", "Print version.", action, "-v");
   }
 
   private enum AssertionTransformationType {

@@ -12,6 +12,8 @@ import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.CliParserUtils;
@@ -25,6 +27,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 @KeepForApi
@@ -202,6 +205,23 @@ public class DesugaredMethodsListCommand {
       return this;
     }
 
+    Builder addLibraryFiles(Path... files) {
+      return addLibraryFiles(Arrays.asList(files));
+    }
+
+    Builder addLibraryFiles(Collection<Path> files) {
+      for (Path path : files) {
+        try {
+          addLibrary(new ArchiveClassFileProvider(path));
+        } catch (IOException e) {
+          reporter.error(new ExceptionDiagnostic(e, new PathOrigin(path)));
+        } catch (UncheckedIOException e) {
+          reporter.error(new ExceptionDiagnostic(e.getCause(), new PathOrigin(path)));
+        }
+      }
+      return this;
+    }
+
     public Builder setHelp() {
       this.help = true;
       return this;
@@ -266,10 +286,13 @@ public class DesugaredMethodsListCommand {
 
     private static class ParserState {
       final DesugaredMethodsListCommand.Builder builder;
+      final Origin origin;
       boolean hasDefinedApiLevel = false;
+      Path outputPath = null;
 
-      ParserState(DesugaredMethodsListCommand.Builder builder) {
+      ParserState(DesugaredMethodsListCommand.Builder builder, Origin origin) {
         this.builder = builder;
+        this.origin = origin;
       }
     }
 
@@ -277,26 +300,22 @@ public class DesugaredMethodsListCommand {
       var header = "Usage: desugaredmethods [options] where  options are:";
       var parser = new CliParser<ParserState>(header);
       return parser
-          .option1(
-              "--output",
-              "<file>",
-              "Output result in <file>. <file> must be an existing directory or a zip file.",
-              (state, arg) -> state.builder.setOutputPath(Paths.get(arg)))
-          .option1(
-              "--lib",
-              "<file|jdk-home>",
-              "Add <file|jdk-home> as a library resource.",
-              (state, arg) -> {
-                try {
-                  state.builder.addLibrary(new ArchiveClassFileProvider(Paths.get(arg)));
-                } catch (IOException e) {
-                  state.builder.reporter.error(
-                      new ExceptionDiagnostic(e, new PathOrigin(Paths.get(arg))));
-                } catch (UncheckedIOException e) {
-                  state.builder.reporter.error(
-                      new ExceptionDiagnostic(e.getCause(), new PathOrigin(Paths.get(arg))));
-                }
-              })
+          .apply(
+              CliParserUtils.addOutputOption(
+                  state -> state.outputPath != null,
+                  (state, path) -> {
+                    state.outputPath = path;
+                    state.builder.setOutputPath(path);
+                  },
+                  (state, error) ->
+                      state.builder.reporter.error(new StringDiagnostic(error, state.origin)),
+                  CliParserUtils.OutputOptionType.FILE))
+          .apply(
+              CliParserUtils.addLibOption(
+                  (state, provider) -> state.builder.addLibrary(provider),
+                  (state, path) -> state.builder.addLibraryFiles(path),
+                  state -> state.origin,
+                  state -> state.builder.reporter))
           .apply(
               CliParserUtils.addMinApiOption(
                   state -> state.hasDefinedApiLevel,
@@ -304,15 +323,11 @@ public class DesugaredMethodsListCommand {
                     state.builder.setMinApi(apiLevel);
                     state.hasDefinedApiLevel = true;
                   },
-                  (state, err) -> state.builder.reporter.error(new StringDiagnostic(err))))
-          .option1(
-              "--desugared-lib",
-              "<file>",
-              "Specify desugared library configuration. <file> is a desugared library configuration"
-                  + " (json).",
-              (state, arg) ->
-                  state.builder.setDesugarLibrarySpecification(
-                      StringResource.fromFile(Paths.get(arg))))
+                  (state, err) ->
+                      state.builder.reporter.error(new StringDiagnostic(err, state.origin))))
+          .apply(
+              CliParserUtils.addDesugaredLibOption(
+                  (state, resource) -> state.builder.setDesugarLibrarySpecification(resource)))
           .option0(
               "--android-platform-build",
               "Compile as a platform build where the runtime/bootclasspath is assumed to be the"
@@ -330,9 +345,14 @@ public class DesugaredMethodsListCommand {
     }
 
     public DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler) {
+      return parse(args, handler, CommandLineOrigin.INSTANCE);
+    }
+
+    DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler, Origin origin) {
       DesugaredMethodsListCommand.Builder builder = DesugaredMethodsListCommand.builder(handler);
-      ParserState state = new ParserState(builder);
-      createParser().parse(args, state, err -> builder.reporter.error(new StringDiagnostic(err)));
+      ParserState state = new ParserState(builder, origin);
+      createParser()
+          .parse(args, state, err -> builder.reporter.error(new StringDiagnostic(err, origin)));
       return builder.build();
     }
   }

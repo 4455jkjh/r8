@@ -10,6 +10,10 @@ import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecificat
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.API_GENERIC_TYPES_CONVERSION_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.API_LEVEL_BELOW_OR_EQUAL_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.API_LEVEL_GREATER_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.COMMON_FLAGS_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.COVARIANT_RETARGET_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.CUSTOM_CONVERSION_KEY;
@@ -25,6 +29,8 @@ import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecificat
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.PACKAGE_MAP_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.PROGRAM_FLAGS_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.REQUIRED_COMPILATION_API_LEVEL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.REWRITE_DERIVED_TYPE_ONLY_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.REWRITE_TYPE_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSpecificationJsonPool.SHRINKER_CONFIG_KEY;
@@ -42,6 +48,7 @@ import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.ApiLevelRange;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.gson.Gson;
 import java.util.ArrayList;
@@ -90,9 +97,12 @@ public class MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter {
 
   private void exportTopLevelFlags(MachineTopLevelFlags topLevelFlags, Map<String, Object> toJson) {
     toJson.put(IDENTIFIER_KEY, topLevelFlags.getIdentifier());
+    AndroidApiLevel requiredCompilationApiLevel = topLevelFlags.getRequiredCompilationApiLevel();
     toJson.put(
         REQUIRED_COMPILATION_API_LEVEL_KEY,
-        topLevelFlags.getRequiredCompilationApiLevel().getMajor());
+        requiredCompilationApiLevel.asUnchecked().getMajorCeiling());
+    toJson.put(REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY, requiredCompilationApiLevel.getMajor());
+    toJson.put(REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY, requiredCompilationApiLevel.getMinor());
     toJson.put(
         SYNTHESIZED_LIBRARY_CLASSES_PACKAGE_PREFIX_KEY,
         topLevelFlags.getSynthesizedLibraryClassesPackagePrefix());
@@ -109,9 +119,16 @@ public class MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter {
     for (ApiLevelRange range : apis) {
       MachineRewritingFlags flags = rewritingFlagsMap.get(range);
       HashMap<String, Object> toJson = new LinkedHashMap<>();
-      toJson.put(API_LEVEL_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqualAsInt());
+      toJson.put(API_LEVEL_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqual().getMajor());
+      toJson.put(API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqual().getMajor());
+      toJson.put(API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqual().getMinor());
       if (range.hasApiLevelGreaterOrEqual()) {
-        toJson.put(API_LEVEL_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqualAsInt());
+        toJson.put(
+            API_LEVEL_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqual().getMajorCeiling());
+        toJson.put(
+            API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqual().getMajor());
+        toJson.put(
+            API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqual().getMinor());
       }
       writeFlags(flags, toJson);
       list.add(toJson);

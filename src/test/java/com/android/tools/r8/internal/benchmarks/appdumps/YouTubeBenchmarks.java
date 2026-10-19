@@ -7,6 +7,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.R8FullTestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
@@ -14,8 +15,6 @@ import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.benchmarks.appdumps.AppDumpBenchmarkBuilder;
 import com.android.tools.r8.errors.CheckEnumUnboxedDiagnostic;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,9 +23,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class YouTubeBenchmarks extends BenchmarkBase {
-
-  private static final Path dir =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "youtube/youtube.android_21.40");
 
   public YouTubeBenchmarks(BenchmarkConfig config, TestParameters parameters) {
     super(config, parameters);
@@ -44,7 +40,7 @@ public class YouTubeBenchmarks extends BenchmarkBase {
   private static BenchmarkConfig config() {
     return AppDumpBenchmarkBuilder.builder()
         .setName("YouTubeApp")
-        .setDumpDependencyPath(dir)
+        .setDumpDependencyPath(TestDeps::getYouTube2140Dir)
         .setWarmupIterations(0)
         .buildR8(YouTubeBenchmarks::configure);
   }

@@ -40,15 +40,13 @@ public class DesugaredMethodsListCommandTest extends TestBase {
     assertEquals(
         StringUtils.lines(
             "Usage: desugaredmethods [options] where  options are:",
-            "  --output <file>         # Output result in <file>. <file> must be an existing"
-                + " directory or a zip",
-            "                          # file.",
-            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --output <file>         # Output result in <file>.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --android-platform-build",
             "                          # Compile as a platform build where the"
                 + " runtime/bootclasspath is assumed to",

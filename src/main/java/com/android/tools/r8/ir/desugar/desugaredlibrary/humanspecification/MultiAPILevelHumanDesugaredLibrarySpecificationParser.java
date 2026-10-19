@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.ApiLevelRange;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.HashMap;
@@ -42,11 +43,10 @@ public class MultiAPILevelHumanDesugaredLibrarySpecificationParser
     Map<ApiLevelRange, HumanRewritingFlags> flags = new HashMap<>();
     for (JsonElement jsonFlagSet : jsonFlags.getAsJsonArray()) {
       JsonObject flag = jsonFlagSet.getAsJsonObject();
-      int apiLevelBelowOrEqual = required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt();
+      UncheckedApiLevel apiLevelBelowOrEqual = parseApiLevelBelowOrEqual(flag);
       ApiLevelRange range =
-          flag.has(API_LEVEL_GREATER_OR_EQUAL_KEY)
-              ? new ApiLevelRange(
-                  apiLevelBelowOrEqual, flag.get(API_LEVEL_GREATER_OR_EQUAL_KEY).getAsInt())
+          hasApiLevelGreaterOrEqual(flag)
+              ? new ApiLevelRange(apiLevelBelowOrEqual, parseApiLevelGreaterOrEqual(flag))
               : new ApiLevelRange(apiLevelBelowOrEqual);
       HumanRewritingFlags.Builder builder =
           flags.containsKey(range)

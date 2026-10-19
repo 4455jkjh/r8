@@ -12,23 +12,19 @@ import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.OptionalBool;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class GMSCoreV10Test extends GMSCoreCompilationTestBase {
-
-  private static final Path base = Paths.get(ToolHelper.THIRD_PARTY_DIR + "gmscore/gmscore_v10/");
 
   private static Path sanitizedLibrary;
   private static Path sanitizedProguardConfiguration;
@@ -44,14 +40,15 @@ public class GMSCoreV10Test extends GMSCoreCompilationTestBase {
     this.parameters = parameters;
   }
 
-  @BeforeClass
-  public static void setup() throws Exception {
-    LibrarySanitizer librarySanitizer =
-        new LibrarySanitizer(getStaticTemp())
-            .addProguardConfigurationFiles(base.resolve(PG_CONF))
-            .sanitize();
-    sanitizedLibrary = librarySanitizer.getSanitizedLibrary();
-    sanitizedProguardConfiguration = librarySanitizer.getSanitizedProguardConfiguration();
+  private static synchronized void ensureSanitizedLibrary() throws Exception {
+    if (sanitizedLibrary == null) {
+      LibrarySanitizer librarySanitizer =
+          new LibrarySanitizer(getStaticTemp())
+              .addProguardConfigurationFiles(TestDeps.getGmscoreV10Dir().resolve(PG_CONF))
+              .sanitize();
+      sanitizedLibrary = librarySanitizer.getSanitizedLibrary();
+      sanitizedProguardConfiguration = librarySanitizer.getSanitizedProguardConfiguration();
+    }
   }
 
   @Test
@@ -79,7 +76,7 @@ public class GMSCoreV10Test extends GMSCoreCompilationTestBase {
   private D8TestCompileResult compileWithD8(ThrowableConsumer<D8TestBuilder> configuration)
       throws Exception {
     return testForD8()
-        .addProgramFiles(base.resolve(DEPLOY_JAR))
+        .addProgramFiles(TestDeps.getGmscoreV10Dir().resolve(DEPLOY_JAR))
         .addOptionsModification(
             options -> {
               assertTrue(options.getBottomUpOutlinerOptions().enable.isTrue());
@@ -92,6 +89,7 @@ public class GMSCoreV10Test extends GMSCoreCompilationTestBase {
 
   private R8TestCompileResult compileWithR8(ThrowableConsumer<R8FullTestBuilder> configuration)
       throws Exception {
+    ensureSanitizedLibrary();
     // Program files are included in Proguard configuration.
     return testForR8(Backend.DEX)
         .addLibraryFiles(sanitizedLibrary)

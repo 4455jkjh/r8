@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Assume;
 
 /**
  * All reading of external files in tests should be managed by this class, which encloses the
@@ -22,6 +23,11 @@ import java.util.Map;
  * It is the callers of these accessors that have responsibility to add the respective dependency.
  * E.g. if module A calls {@link #getJunitJar}, module A should declare the runtimeOnlyData
  * dependency on Junit.
+ *
+ * <p>Never call {@link TestDeps} accessors during class initialization (e.g., in {@code static}
+ * fields) or {@code @Parameters} evaluation, as unavailable dependencies (such as internal
+ * dependencies with {@code --no-internal}) skip tests via {@link Assume#assumeTrue} and must only
+ * be evaluated during test execution.
  */
 public class TestDeps {
 
@@ -31,6 +37,9 @@ public class TestDeps {
     if (value == null) {
       throw new RuntimeException("Required test dependency system property not set: " + prop);
     }
+    Assume.assumeTrue(
+        "Internal test dependency is not available (--no-internal): " + prop,
+        !value.equals("None"));
     Path path = Paths.get(value);
     if (!Files.exists(path)) {
       throw new RuntimeException("Required test dependency does not exit: " + prop + "=" + path);
@@ -44,13 +53,16 @@ public class TestDeps {
     // This list serves as a list of required properties to match in Gradle.
     dependencies = new HashMap<>();
     dependencies.put("AAPT2", null);
+    dependencies.put("AGSA", null);
     dependencies.put("API_DATABASE", null);
     dependencies.put("ART_TESTS", null);
     dependencies.put("ART_TESTS_LEGACY", null);
     dependencies.put("BOOKSTORY", null);
     dependencies.put("BUNDLETOOL", null);
+    dependencies.put("CHROME", null);
     dependencies.put("CHROME_BENCHMARK", null);
     dependencies.put("CHROME_HEADLESS", null);
+    dependencies.put("CLANK", null);
     dependencies.put("COMPILER_API", null);
     dependencies.put("COMPOSE_EXAMPLES_CHANGED_BITWISE_VALUE_PROPAGATION", null);
     dependencies.put("COMPOSE_SAMPLES_CRANE", null);
@@ -81,10 +93,14 @@ public class TestDeps {
     dependencies.put("EXAMPLES_ANDROID_P", null);
     dependencies.put("FEEDER", null);
     dependencies.put("FOSSIFY_FILE_MANAGER", null);
+    dependencies.put("FRAMEWORK", null);
+    dependencies.put("GMSCORE_LATEST", null);
+    dependencies.put("GMSCORE_V10", null);
     dependencies.put("GOOGLE_JAVA_FORMAT", null);
     dependencies.put("GOOGLE_KOTLIN_FORMAT", null);
     dependencies.put("GSON", null);
     dependencies.put("GUAVA_JRE", null);
+    dependencies.put("INTERNAL_ISSUE_127524985", null);
     dependencies.put("JACOCO", null);
     dependencies.put("JAVA_8_RUNTIME", null);
     dependencies.put("JAVA_BASE_EXTENSION", null);
@@ -96,6 +112,7 @@ public class TestDeps {
     dependencies.put("KOTLIN_R8_TEST_RESOURCES", null);
     dependencies.put("KOTLINX_COROUTINES", null);
     dependencies.put("MULTIDEX", null);
+    dependencies.put("NEST", null);
     dependencies.put("NEWPIPE", null);
     dependencies.put("NOWINANDROID", null);
     dependencies.put("OMNINOTES", null);
@@ -103,6 +120,12 @@ public class TestDeps {
     dependencies.put("PROCESS_KEEP_RULES_BINARY_COMPATIBILITY", null);
     dependencies.put("PROGUARD_7_0_0", null);
     dependencies.put("PROGUARD_7_7_0", null);
+    dependencies.put("PROGUARD_SETTINGS", null);
+    dependencies.put("PROTO_RUNTIME_EDITION2023", null);
+    dependencies.put("PROTO_RUNTIME_LEGACY", null);
+    dependencies.put("PROTO_TEST_EDITION2023", null);
+    dependencies.put("PROTO_TEST_PROTO2", null);
+    dependencies.put("PROTO_TEST_PROTO3", null);
     dependencies.put("R8", null);
     dependencies.put("R8_MAPPINGS", null);
     dependencies.put("R8_V2_0_74", null);
@@ -111,12 +134,15 @@ public class TestDeps {
     dependencies.put("READYOU", null);
     dependencies.put("RETRACE_BENCHMARK", null);
     dependencies.put("RETRACE_BINARY_COMPATIBILITY", null);
+    dependencies.put("RETRACE_INTERNAL", null);
     dependencies.put("RETRACE_PARTITION_FORMATS", null);
     dependencies.put("RHINO", null);
     dependencies.put("RHINO_ANDROID", null);
     dependencies.put("SMALI", null);
+    dependencies.put("SYSTEM_UI", null);
     dependencies.put("TIVI", null);
     dependencies.put("TUSKY", null);
+    dependencies.put("YOUTUBE_21_40", null);
   }
 
   private static Path getDependency(String key) {
@@ -125,6 +151,10 @@ public class TestDeps {
 
   public static Path getAapt2() {
     return getDependencyPath("AAPT2", "aapt2");
+  }
+
+  public static Path getAgsaDir() {
+    return getDependency("AGSA");
   }
 
   public static Path getApiDatabasePath() {
@@ -155,12 +185,20 @@ public class TestDeps {
     return getDependencyPath("BUNDLETOOL", "bundletool-all-1.11.0.jar");
   }
 
+  public static Path getChrome200430Dir() {
+    return getDependency("CHROME");
+  }
+
   public static Path getChromeBenchmarkDir() {
     return getDependency("CHROME_BENCHMARK");
   }
 
   public static Path getChromeHeadlessDir() {
     return getDependency("CHROME_HEADLESS");
+  }
+
+  public static Path getClankDir() {
+    return getDependency("CLANK");
   }
 
   public static Path getCompilerApiBinaryCompatibilityJar() {
@@ -295,6 +333,18 @@ public class TestDeps {
     return getDependency("FOSSIFY_FILE_MANAGER");
   }
 
+  public static Path getFrameworkPath(String... path) {
+    return getDependencyPath("FRAMEWORK", path);
+  }
+
+  public static Path getGmscoreLatestDir() {
+    return getDependency("GMSCORE_LATEST");
+  }
+
+  public static Path getGmscoreV10Dir() {
+    return getDependency("GMSCORE_V10");
+  }
+
   public static Path getGoogleJavaFormatJar() {
     return getDependencyPath("GOOGLE_JAVA_FORMAT", "google-java-format-1.24.0-all-deps.jar");
   }
@@ -313,6 +363,10 @@ public class TestDeps {
 
   public static Path getGuavaJreJar() {
     return getDependencyPath("GUAVA_JRE", "guava-32.1.2-jre.jar");
+  }
+
+  public static Path getInternalIssue127524985Jar() {
+    return getDependencyPath("INTERNAL_ISSUE_127524985", "issue-127524985.jar");
   }
 
   public static Path getJacocoAgentJar() {
@@ -375,6 +429,10 @@ public class TestDeps {
     return getDependencyPath("MULTIDEX", "multidex-instrumentation-2.0.0.jar");
   }
 
+  public static Path getNestDir() {
+    return getDependency("NEST");
+  }
+
   public static Path getNewPipeDir() {
     return getDependency("NEWPIPE");
   }
@@ -405,6 +463,26 @@ public class TestDeps {
 
   public static Path getProguard7_7_0Dir() {
     return getDependency("PROGUARD_7_7_0");
+  }
+
+  public static Path getProtoRuntimeEdition2023Dir() {
+    return getDependency("PROTO_RUNTIME_EDITION2023");
+  }
+
+  public static Path getProtoRuntimeLegacyDir() {
+    return getDependency("PROTO_RUNTIME_LEGACY");
+  }
+
+  public static Path getProtoTestEdition2023Dir() {
+    return getDependency("PROTO_TEST_EDITION2023");
+  }
+
+  public static Path getProtoTestProto2Dir() {
+    return getDependency("PROTO_TEST_PROTO2");
+  }
+
+  public static Path getProtoTestProto3Dir() {
+    return getDependency("PROTO_TEST_PROTO3");
   }
 
   public static Path getR8Jar() {
@@ -443,6 +521,10 @@ public class TestDeps {
     return getDependencyPath("RETRACE_BINARY_COMPATIBILITY", "tests.jar");
   }
 
+  public static Path getRetraceInternalDir() {
+    return getDependency("RETRACE_INTERNAL");
+  }
+
   public static Path getRetracePartitionFormatsDir() {
     return getDependency("RETRACE_PARTITION_FORMATS");
   }
@@ -459,6 +541,10 @@ public class TestDeps {
     return getDependencyPath("SMALI", path);
   }
 
+  public static Path getSystemUIDir() {
+    return getDependency("SYSTEM_UI");
+  }
+
   public static Path getTiviDir() {
     return getDependency("TIVI");
   }
@@ -469,6 +555,10 @@ public class TestDeps {
 
   public static Path getTuskyDir() {
     return getDependency("TUSKY");
+  }
+
+  public static Path getYouTube2140Dir() {
+    return getDependency("YOUTUBE_21_40");
   }
 
   public static Path getJunitJar() {

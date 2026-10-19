@@ -57,5 +57,16 @@ public class ApiLevelRangeTest extends TestBase {
     // Full overlap.
     assertTrue(ir.overlap(op));
     assertTrue(op.overlap(ir));
+
+    // Minor API level ranges.
+    ApiLevelRange baklava = new ApiLevelRange(AndroidApiLevel.BAKLAVA, AndroidApiLevel.N);
+    ApiLevelRange baklava1 =
+        new ApiLevelRange(AndroidApiLevel.BAKLAVA_1, AndroidApiLevel.BAKLAVA_1);
+    ApiLevelRange baklavaToBaklava1 =
+        new ApiLevelRange(AndroidApiLevel.BAKLAVA_1, AndroidApiLevel.BAKLAVA);
+    assertFalse(baklava.overlap(baklava1));
+    assertFalse(baklava1.overlap(baklava));
+    assertTrue(baklava.overlap(baklavaToBaklava1));
+    assertTrue(baklava1.overlap(baklavaToBaklava1));
   }
 }

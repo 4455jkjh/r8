@@ -31,7 +31,6 @@ import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockRemover
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.RedundantInstructionsRemover;
 import com.android.tools.r8.ir.regalloc.LinearScanRegisterAllocator;
-import com.android.tools.r8.ir.regalloc.LiveIntervals;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;
@@ -64,17 +63,6 @@ public class ConstantRemovalTest extends TestBase {
     }
   }
 
-  private static class MockLiveIntervals extends LiveIntervals {
-    MockLiveIntervals(Value value) {
-      super(value);
-    }
-
-    @Override
-    public LiveIntervals getSplitCovering(int i) {
-      return this;
-    }
-  }
-
   @Test
   public void removeConstantsTest() {
     // Produce a basic block representing the code:
@@ -102,14 +90,12 @@ public class ConstantRemovalTest extends TestBase {
 
     Value v3 = new Value(3, TypeElement.getLong(), null);
     v3.setNeedsRegister(true);
-    new MockLiveIntervals(v3);
     Instruction instruction = new ConstNumber(v3, 0);
     instruction.setPosition(position);
     block.add(instruction, metadata);
 
     Value v0 = new Value(0, TypeElement.getLong(), null);
     v0.setNeedsRegister(true);
-    new MockLiveIntervals(v0);
     instruction = new ConstNumber(v0, 10);
     instruction.setPosition(position);
     block.add(instruction, metadata);
@@ -120,15 +106,13 @@ public class ConstantRemovalTest extends TestBase {
 
     Value v2 = new Value(2, TypeElement.getInt(), null);
     v2.setNeedsRegister(true);
-    new MockLiveIntervals(v2);
     instruction = new ConstNumber(v2, 10);
     instruction.setPosition(position);
     block.add(instruction, metadata);
 
     Value v1 = new Value(1, TypeElement.getInt(), null);
     v1.setNeedsRegister(true);
-    new MockLiveIntervals(v1);
-    instruction = new Move(v1 ,v2);
+    instruction = new Move(v1, v2);
     instruction.setPosition(position);
     block.add(instruction, metadata);
 
@@ -138,7 +122,6 @@ public class ConstantRemovalTest extends TestBase {
 
     Value v0_2 = new Value(0, TypeElement.getLong(), null);
     v0_2.setNeedsRegister(true);
-    new MockLiveIntervals(v0_2);
     instruction = new ConstNumber(v0_2, 10);
     instruction.setPosition(position);
     block.add(instruction, metadata);
@@ -181,7 +164,6 @@ public class ConstantRemovalTest extends TestBase {
 
     // Check that all four constant number instructions remain.
     assertEquals(
-        4,
-        code.entryBlock().getInstructions().stream().filter(Instruction::isConstNumber).count());
+        4, code.entryBlock().getInstructions().stream().filter(Instruction::isConstNumber).count());
   }
 }

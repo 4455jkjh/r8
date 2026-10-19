@@ -78,7 +78,9 @@ public class TraceReferencesCommandTest extends TestBase {
             "  --natives               # EXPERIMENTAL.",
             " and each <argfile> is a file containing additional options (one per line)",
             " and options are:",
-            "  --lib <file|jdk-home>   # Add <file|jdk-home> runtime library.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --source <file>         # Add <file> as a source for tracing references.",
             "  --target <file>         # Add <file> as a target for tracing references. When target"
                 + " is not specified",

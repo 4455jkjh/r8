@@ -30,7 +30,9 @@ public class GenerateMainDexListCommandParserTest extends TestBase {
             "Usage: maindex [options] <input-files>",
             " where <input-files> are JAR files",
             " and options are:",
-            "  --lib <file>            # Add <file> as a library resource.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --main-dex-rules <file> # Proguard keep rules for classes to place in the primary"
                 + " dex file.",
             "  --main-dex-list <file>  # List of classes to place in the primary dex file.",

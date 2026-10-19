@@ -22,6 +22,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Nested
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
@@ -36,6 +37,9 @@ import org.gradle.process.CommandLineArgumentProvider
 public val TEST_DEP_PROP: Attribute<String> =
   Attribute.of("com.android.tools.r8.testdep.prop", String::class.java)
 
+public val TEST_DEP_INTERNAL: Attribute<Boolean> =
+  Attribute.of("com.android.tools.r8.testdep.internal", Boolean::class.javaObjectType)
+
 public fun DependencyHandler.runtimeOnlyData(dependencyNotation: Any): Dependency? {
   return add("runtimeOnlyDataScope", dependencyNotation)
 }
@@ -46,14 +50,18 @@ public fun DependencyHandler.runtimeOnlyDataScope(dependencyNotation: Any): Depe
 
 public class TestDepEntry(
   @get:Input public val prop: String,
-  @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) public val file: File,
+  @get:Input public val isNone: Boolean,
+  @get:Optional @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) public val file: File?,
 )
 
 public class TestDepsCommandLineArgumentProvider(
   @get:Nested public val entries: Provider<List<TestDepEntry>>
 ) : CommandLineArgumentProvider {
   override fun asArguments(): Iterable<String> {
-    return entries.get().map { "-DTEST_DEP_${it.prop}=${it.file.absolutePath}" }
+    return entries.get().map { entry ->
+      val value = if (entry.isNone) "None" else entry.file!!.absolutePath
+      "-DTEST_DEP_${entry.prop}=$value"
+    }
   }
 }
 
@@ -76,9 +84,11 @@ public class DependenciesPlugin : Plugin<Project> {
         extendsFrom(runtimeOnlyDataScope.get())
       }
 
+    val noInternal = target.providers.gradleProperty("no_internal")
     val testDepsEntries: Provider<List<TestDepEntry>> =
       runtimeOnlyDataConfig.flatMap { config ->
         config.incoming.artifacts.resolvedArtifacts.map { artifacts ->
+          val skipInternal = noInternal.isPresent
           val seenProps = mutableSetOf<String>()
           artifacts.mapNotNull { artifact ->
             val prop = artifact.variant.attributes.getAttribute(TEST_DEP_PROP)
@@ -86,7 +96,10 @@ public class DependenciesPlugin : Plugin<Project> {
               if (!seenProps.add(prop)) {
                 throw GradleException("Duplicate TEST_DEP_PROP: $prop")
               }
-              TestDepEntry(prop, artifact.file)
+              val isInternal = artifact.variant.attributes.getAttribute(TEST_DEP_INTERNAL) == true
+              val isNone = isInternal && skipInternal
+              val file = if (isNone) null else artifact.file
+              TestDepEntry(prop, isNone, file)
             } else {
               null
             }
@@ -471,8 +484,27 @@ public object ThirdPartyDeps {
       "desugar-jdk-libs-11",
       Paths.get("third_party", "openjdk", "desugar_jdk_libs_11").toFile(),
     )
-  public val gmscoreVersions: List<ThirdPartyDependency> = getGmsCoreVersions()
-  public val internalIssues: List<ThirdPartyDependency> = getInternalIssues()
+  public val gmscoreLatest: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "gmscore-version-latest",
+      Paths.get("third_party", "gmscore", "latest").toFile(),
+      testOnly = true,
+      type = DependencyType.X20,
+    )
+  public val gmscoreV10: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "gmscore-version-gmscore_v10",
+      Paths.get("third_party", "gmscore", "gmscore_v10").toFile(),
+      testOnly = true,
+      type = DependencyType.X20,
+    )
+  public val internalIssue127524985: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "internal-issue-127524985",
+      Paths.get("third_party", "internal", "issue-127524985").toFile(),
+      testOnly = true,
+      type = DependencyType.X20,
+    )
   public val jacoco: ThirdPartyDependency =
     ThirdPartyDependency("jacoco", Paths.get("third_party", "jacoco", "0.8.6").toFile())
   public val jasmin: ThirdPartyDependency =
@@ -811,28 +843,6 @@ private fun getThirdPartyDesugarLibraryRelease(version: String): ThirdPartyDepen
   )
 }
 
-private fun getInternalIssues(): List<ThirdPartyDependency> {
-  return listOf("issue-127524985").map {
-    ThirdPartyDependency(
-      "internal-$it",
-      Paths.get("third_party", "internal", it).toFile(),
-      testOnly = true,
-      type = DependencyType.X20,
-    )
-  }
-}
-
-private fun getGmsCoreVersions(): List<ThirdPartyDependency> {
-  return listOf("gmscore_v10", "latest").map {
-    ThirdPartyDependency(
-      "gmscore-version-$it",
-      Paths.get("third_party", "gmscore", it).toFile(),
-      testOnly = true,
-      type = DependencyType.X20,
-    )
-  }
-}
-
 private fun allDependencies(): List<ThirdPartyDependency> {
   val allDeps = mutableListOf<ThirdPartyDependency>()
   ThirdPartyDeps::class.declaredMemberProperties.forEach {
@@ -858,10 +868,6 @@ public fun allPublicDependencies(): List<ThirdPartyDependency> {
 
 public fun allPublicTestDependencies(): List<ThirdPartyDependency> {
   return allDependencies().filter { x -> x.testOnly && x.type == DependencyType.GOOGLE_STORAGE }
-}
-
-public fun allInternalDependencies(): List<ThirdPartyDependency> {
-  return allDependencies().filter { x -> !x.testOnly && x.type == DependencyType.X20 }
 }
 
 public fun allInternalTestDependencies(): List<ThirdPartyDependency> {

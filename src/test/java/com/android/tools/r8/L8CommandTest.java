@@ -95,19 +95,19 @@ public class L8CommandTest extends CommandTestBase<L8Command> {
             " and options are:",
             "  --debug                 # Compile with debugging information (default).",
             "  --release               # Compile without debugging information.",
-            "  --output <file>         # Output result in <file>. <file> must be an existing"
-                + " directory or a zip",
-            "                          # file.",
-            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --output <path>         # Output result in <path>. <path> must be a zip file or"
+                + " an existing",
+            "                          # directory.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",
             "  --pg-conf <file>        # Proguard configuration <file>.",
             "  --pg-map-output <file>  # Output the resulting name and line mapping to <file>.",
             "  --partition-map-output <file>",
             "                          # Output the resulting mapping to <file>.",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --force-enable-assertions[:[<class name>|<package name>...]]",
             "  --force-ea[:[<class name>|<package name>...]]",
             "                          # Forcefully enable javac generated assertion code.",

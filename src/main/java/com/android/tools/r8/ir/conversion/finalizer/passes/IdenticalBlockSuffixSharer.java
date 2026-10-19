@@ -18,16 +18,18 @@ import com.android.tools.r8.ir.code.InstructionList;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
+import com.android.tools.r8.utils.internal.LazyBox;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -64,14 +66,17 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
     Set<BasicBlock> blocksToRemove = Sets.newIdentityHashSet();
     Collection<BasicBlock> blocks = code.blocks;
     do {
-      Map<BasicBlock, BasicBlock> newBlocks = new IdentityHashMap<>();
+      // Use insertion ordered maps, so that the blocks are processed in a deterministic order.
+      Map<BasicBlock, BasicBlock> newBlocks = new LinkedHashMap<>();
+      LazyBox<Reference2IntMap<BasicBlock>> blockIndices =
+          new LazyBox<>(() -> computeBlockIndices(code));
       InstructionEquivalence equivalence = new InstructionEquivalence(allocator, code);
       for (BasicBlock block : blocks) {
         if (blocksToRemove.contains(block) || block.getPredecessors().size() < 2) {
           continue;
         }
         // Group interesting predecessor blocks by their last instruction.
-        Map<Wrapper<Instruction>, List<BasicBlock>> lastInstructionToBlocks = new HashMap<>();
+        Map<Wrapper<Instruction>, List<BasicBlock>> lastInstructionToBlocks = new LinkedHashMap<>();
         for (BasicBlock pred : block.getPredecessors()) {
           if (pred.exit().isGoto()
               && pred.getSuccessors().size() == 1
@@ -113,11 +118,14 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
                   allocator,
                   blocksToRemove);
           // Insert the new block after a predecessor that keeps some instructions, so that it falls
-          // through to the new block instead of being removed.
+          // through to the new block instead of being removed. In case of a tie, use the last such
+          // predecessor in the block order, so that the result does not depend on the order of the
+          // predecessors.
           BasicBlock predBeforeNewBlock =
               Collections.max(
                   predsWithSameLastInstruction,
-                  Comparator.comparingInt(pred -> pred.getInstructions().size()));
+                  Comparator.comparingInt((BasicBlock pred) -> pred.getInstructions().size())
+                      .thenComparingInt(pred -> blockIndices.computeIfAbsent().getInt(pred)));
           newBlocks.put(predBeforeNewBlock, newBlock);
           hasChanged = true;
         }
@@ -134,6 +142,14 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
     } while (!blocks.isEmpty());
     code.removeBlocks(blocksToRemove);
     return CodeRewriterResult.hasChanged(hasChanged);
+  }
+
+  private static Reference2IntMap<BasicBlock> computeBlockIndices(IRCode code) {
+    Reference2IntMap<BasicBlock> blockIndices = new Reference2IntOpenHashMap<>();
+    for (BasicBlock block : code.blocks) {
+      blockIndices.put(block, blockIndices.size());
+    }
+    return blockIndices;
   }
 
   @SuppressWarnings("ReferenceEquality")

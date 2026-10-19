@@ -21,7 +21,7 @@ public abstract class UnsupportedFeatureDiagnostic implements Diagnostic {
                 + " are only supported starting with "
                 + minApiLevel.getName()
                 + " (--min-api "
-                + minApiLevel.getMajor()
+                + minApiLevel.getNumericString()
                 + ")");
     message = (sourceString != null) ? message + ": " + sourceString : message;
     return message;
@@ -66,7 +66,32 @@ public abstract class UnsupportedFeatureDiagnostic implements Diagnostic {
    *
    * @return Supported level or -1 if unsupported at all API levels known to the compiler.
    */
+  @Deprecated
   public int getSupportedApiLevel() {
     return supportedApiLevel == null ? -1 : supportedApiLevel.getMajor();
+  }
+
+  /**
+   * Get the major API level at which this feature is supported (see {@link
+   * #getSupportedApiLevelMinor}).
+   *
+   * <p>This must always be used with {@link #getSupportedApiLevelMinor} to get the full version. If
+   * this function returns {@code 36} that does not necessarily mean that the feature is supported
+   * from {@code 36.0}, since {@link #getSupportedApiLevelMinor} might return {@code 1}.
+   *
+   * @return Supported level or -1 if unsupported at all API levels known to the compiler.
+   */
+  public int getSupportedApiLevelMajor() {
+    return supportedApiLevel == null ? -1 : supportedApiLevel.getMajor();
+  }
+
+  /**
+   * Get the minor API level at which this feature is supported (see {@link
+   * #getSupportedApiLevelMajor}).
+   *
+   * @return Supported level or -1 if unsupported at all API levels known to the compiler.
+   */
+  public int getSupportedApiLevelMinor() {
+    return supportedApiLevel == null ? -1 : supportedApiLevel.getMinor();
   }
 }

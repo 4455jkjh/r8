@@ -41,6 +41,10 @@ public class HumanDesugaredLibrarySpecificationParser {
 
   static final String IDENTIFIER_KEY = "identifier";
   static final String REQUIRED_COMPILATION_API_LEVEL_KEY = "required_compilation_api_level";
+  static final String REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY =
+      "required_compilation_api_major_level";
+  static final String REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY =
+      "required_compilation_api_minor_level";
   static final String SYNTHESIZED_LIBRARY_CLASSES_PACKAGE_PREFIX_KEY =
       "synthesized_library_classes_package_prefix";
 
@@ -49,7 +53,11 @@ public class HumanDesugaredLibrarySpecificationParser {
   static final String PROGRAM_FLAGS_KEY = "program_flags";
 
   static final String API_LEVEL_BELOW_OR_EQUAL_KEY = "api_level_below_or_equal";
+  static final String API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY = "api_level_major_below_or_equal";
+  static final String API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY = "api_level_minor_below_or_equal";
   static final String API_LEVEL_GREATER_OR_EQUAL_KEY = "api_level_greater_or_equal";
+  static final String API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY = "api_level_major_greater_or_equal";
+  static final String API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY = "api_level_minor_greater_or_equal";
   static final String API_GENERIC_TYPES_CONVERSION = "api_generic_types_conversion";
   static final String REWRITTEN_TYPE_KEY = "rewrittenType";
   static final String EMULATED_METHODS_KEY = "emulatedMethods";
@@ -209,10 +217,7 @@ public class HumanDesugaredLibrarySpecificationParser {
     builder.setSynthesizedLibraryClassesPackagePrefix(
         required(jsonConfig, SYNTHESIZED_LIBRARY_CLASSES_PACKAGE_PREFIX_KEY).getAsString());
 
-    int required_compilation_api_level =
-        required(jsonConfig, REQUIRED_COMPILATION_API_LEVEL_KEY).getAsInt();
-    builder.setRequiredCompilationAPILevel(
-        AndroidApiLevel.getAndroidApiLevel(required_compilation_api_level));
+    builder.setRequiredCompilationAPILevel(parseRequiredCompilationApiLevel());
     if (jsonConfig.has(SHRINKER_CONFIG_KEY)) {
       JsonArray jsonKeepRules = jsonConfig.get(SHRINKER_CONFIG_KEY).getAsJsonArray();
       List<String> extraKeepRules = new ArrayList<>(jsonKeepRules.size());
@@ -233,16 +238,54 @@ public class HumanDesugaredLibrarySpecificationParser {
     return builder.build();
   }
 
+  private AndroidApiLevel parseRequiredCompilationApiLevel() {
+    if (!jsonConfig.has(REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY)
+        && !jsonConfig.has(REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY)
+        && jsonConfig.has(REQUIRED_COMPILATION_API_LEVEL_KEY)) {
+      return AndroidApiLevel.getAndroidApiLevel(
+          jsonConfig.get(REQUIRED_COMPILATION_API_LEVEL_KEY).getAsInt(), 0);
+    }
+    int major = required(jsonConfig, REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY).getAsInt();
+    int minor = required(jsonConfig, REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY).getAsInt();
+    return AndroidApiLevel.getAndroidApiLevel(major, minor);
+  }
+
+  UncheckedApiLevel parseApiLevelBelowOrEqual(JsonObject flag) {
+    if (!flag.has(API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY)
+        && !flag.has(API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY)
+        && flag.has(API_LEVEL_BELOW_OR_EQUAL_KEY)) {
+      return new UncheckedApiLevel(flag.get(API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt(), 0);
+    }
+    int major = required(flag, API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY).getAsInt();
+    int minor = required(flag, API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY).getAsInt();
+    return new UncheckedApiLevel(major, minor);
+  }
+
+  boolean hasApiLevelGreaterOrEqual(JsonObject flag) {
+    return flag.has(API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY)
+        || flag.has(API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY)
+        || flag.has(API_LEVEL_GREATER_OR_EQUAL_KEY);
+  }
+
+  UncheckedApiLevel parseApiLevelGreaterOrEqual(JsonObject flag) {
+    if (!flag.has(API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY)
+        && !flag.has(API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY)
+        && flag.has(API_LEVEL_GREATER_OR_EQUAL_KEY)) {
+      return new UncheckedApiLevel(flag.get(API_LEVEL_GREATER_OR_EQUAL_KEY).getAsInt(), 0);
+    }
+    int major = required(flag, API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY).getAsInt();
+    int minor = required(flag, API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY).getAsInt();
+    return new UncheckedApiLevel(major, minor);
+  }
+
   private void parseFlagsList(JsonArray jsonFlags, HumanRewritingFlags.Builder builder) {
     for (JsonElement jsonFlagSet : jsonFlags) {
       JsonObject flag = jsonFlagSet.getAsJsonObject();
-      UncheckedApiLevel api_level_below_or_equal =
-          new UncheckedApiLevel(required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt());
-      if (minApiLevel.isLessThanOrEqualTo(api_level_below_or_equal)) {
-        if (flag.has(API_LEVEL_GREATER_OR_EQUAL_KEY)) {
-          UncheckedApiLevel api_level_greater_or_equal =
-              new UncheckedApiLevel(flag.get(API_LEVEL_GREATER_OR_EQUAL_KEY).getAsInt());
-          if (minApiLevel.isGreaterThanOrEqualTo(api_level_greater_or_equal)) {
+      UncheckedApiLevel apiLevelBelowOrEqual = parseApiLevelBelowOrEqual(flag);
+      if (minApiLevel.isLessThanOrEqualTo(apiLevelBelowOrEqual)) {
+        if (hasApiLevelGreaterOrEqual(flag)) {
+          UncheckedApiLevel apiLevelGreaterOrEqual = parseApiLevelGreaterOrEqual(flag);
+          if (minApiLevel.isGreaterThanOrEqualTo(apiLevelGreaterOrEqual)) {
             parseFlags(flag, builder);
           }
         } else {

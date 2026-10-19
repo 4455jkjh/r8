@@ -430,20 +430,12 @@ public class RelocatorCommand {
                           s.origin));
                 }
               })
-          .option1(
-              "--output",
-              "<file>",
-              "Output result in <outfile>.",
-              (s, arg) -> {
-                if (s.outputPath != null) {
-                  s.builder.error(
-                      new StringDiagnostic(
-                          "Cannot output both to '" + s.outputPath + "' and '" + arg + "'",
-                          s.origin));
-                } else {
-                  s.outputPath = Paths.get(arg);
-                }
-              })
+          .apply(
+              CliParserUtils.addOutputOption(
+                  s -> s.outputPath != null,
+                  (s, path) -> s.outputPath = path,
+                  (s, error) -> s.builder.error(new StringDiagnostic(error, s.origin)),
+                  CliParserUtils.OutputOptionType.ZIP_OR_EXISTING_DIR))
           .option1(
               "--map",
               "<from->to>",

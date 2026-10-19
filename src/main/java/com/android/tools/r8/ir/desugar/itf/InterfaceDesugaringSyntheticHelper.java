@@ -50,7 +50,7 @@ import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableList;
 import java.util.function.Predicate;
 

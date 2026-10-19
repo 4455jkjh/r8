@@ -54,15 +54,8 @@ val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig =
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-val sharedDepsInternalScope = configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig =
-  configurations.resolvable("sharedDepsInternalConfig") {
-    extendsFrom(sharedDepsInternalScope.get())
-  }
-
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
 
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
@@ -81,10 +74,13 @@ dependencies {
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":third_party", "agsa"))
   runtimeOnlyData(project(":third_party", "artTests"))
   runtimeOnlyData(project(":third_party", "bookstory"))
   runtimeOnlyData(project(":third_party", "bundletool"))
+  runtimeOnlyData(project(":third_party", "chrome"))
   runtimeOnlyData(project(":third_party", "chromeBenchmark"))
+  runtimeOnlyData(project(":third_party", "clank"))
   runtimeOnlyData(project(":third_party", "compilerApi"))
   runtimeOnlyData(project(":third_party", "composeExamplesChangedBitwiseValuePropagation"))
   runtimeOnlyData(project(":third_party", "composeSamplesCrane"))
@@ -106,13 +102,18 @@ dependencies {
   runtimeOnlyData(project(":third_party", "examplesAndroidP"))
   runtimeOnlyData(project(":third_party", "feeder"))
   runtimeOnlyData(project(":third_party", "fossifyFileManager"))
+  runtimeOnlyData(project(":third_party", "framework"))
+  runtimeOnlyData(project(":third_party", "gmscoreLatest"))
+  runtimeOnlyData(project(":third_party", "gmscoreV10"))
   runtimeOnlyData(project(":third_party", "gson"))
   runtimeOnlyData(project(":third_party", "guavaJre"))
+  runtimeOnlyData(project(":third_party", "internalIssue127524985"))
   runtimeOnlyData(project(":third_party", "jacoco"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))
   runtimeOnlyData(project(":third_party", "jdwpTests"))
   runtimeOnlyData(project(":third_party", "jsr223"))
   runtimeOnlyData(project(":third_party", "keepassdx"))
+  runtimeOnlyData(project(":third_party", "nest"))
   runtimeOnlyData(project(":third_party", "newpipe"))
   runtimeOnlyData(project(":third_party", "nowinandroid"))
   runtimeOnlyData(project(":third_party", "omninotes"))
@@ -120,6 +121,11 @@ dependencies {
   runtimeOnlyData(project(":third_party", "processKeepRulesBinaryCompatibility"))
   runtimeOnlyData(project(":third_party", "proguard7_0_0"))
   runtimeOnlyData(project(":third_party", "proguard7_7_0"))
+  runtimeOnlyData(project(":third_party", "protoRuntimeEdition2023"))
+  runtimeOnlyData(project(":third_party", "protoRuntimeLegacy"))
+  runtimeOnlyData(project(":third_party", "protoTestEdition2023"))
+  runtimeOnlyData(project(":third_party", "protoTestProto2"))
+  runtimeOnlyData(project(":third_party", "protoTestProto3"))
   runtimeOnlyData(project(":third_party", "r8"))
   runtimeOnlyData(project(":third_party", "r8v3_2_54"))
   runtimeOnlyData(project(":third_party", "readyou"))
@@ -127,8 +133,10 @@ dependencies {
   runtimeOnlyData(project(":third_party", "rhino"))
   runtimeOnlyData(project(":third_party", "rhinoAndroid"))
   runtimeOnlyData(project(":third_party", "smali"))
+  runtimeOnlyData(project(":third_party", "systemUI"))
   runtimeOnlyData(project(":third_party", "tivi"))
   runtimeOnlyData(project(":third_party", "tusky"))
+  runtimeOnlyData(project(":third_party", "youtube2140"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->
@@ -228,9 +236,6 @@ fun Test.setupTestTask() {
   )
   dependsOn(distDepsFiles)
   dependsOn(sharedDepsConfig)
-  if (!project.hasProperty("no_internal")) {
-    dependsOn(sharedDepsInternalConfig)
-  }
   systemProperty(
     "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
     extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),

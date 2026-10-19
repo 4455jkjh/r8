@@ -5,7 +5,6 @@ package com.android.tools.r8.tracereferences;
 
 import com.android.tools.r8.ClassConflictResolver;
 import com.android.tools.r8.DiagnosticsHandler;
-import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.StringConsumer.FileConsumer;
 import com.android.tools.r8.StringConsumer.WriterConsumer;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;
@@ -14,7 +13,6 @@ import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.tracereferences.internal.TraceReferencesNativesPrinter;
 import com.android.tools.r8.utils.CliParserUtils;
-import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ZipUtils;
@@ -24,7 +22,6 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -78,11 +75,12 @@ class TraceReferencesCommandParser {
             StringUtils.joinLines(
                 " and each <argfile> is a file containing additional options (one per line)",
                 " and options are:"))
-        .option1(
-            "--lib",
-            "<file|jdk-home>",
-            "Add <file|jdk-home> runtime library.",
-            (state, arg) -> addLibraryArgument(state.builder, state.origin, arg))
+        .apply(
+            CliParserUtils.addLibOption(
+                (state, provider) -> state.builder.addLibraryResourceProvider(provider),
+                (state, path) -> state.builder.addLibraryFiles(path),
+                state -> state.origin,
+                state -> state.builder.getReporter()))
         .option1(
             "--source",
             "<file>",
@@ -223,42 +221,6 @@ class TraceReferencesCommandParser {
         throw new Unreachable();
     }
     return builder;
-  }
-
-  /**
-   * This method must match the lookup in {@link
-   * com.android.tools.r8.JdkClassFileProvider#fromJdkHome}.
-   */
-  private static boolean isJdkHome(Path home) {
-    Path jrtFsJar = home.resolve("lib").resolve("jrt-fs.jar");
-    if (Files.exists(jrtFsJar)) {
-      return true;
-    }
-    // JDK has rt.jar in jre/lib/rt.jar.
-    Path rtJar = home.resolve("jre").resolve("lib").resolve("rt.jar");
-    if (Files.exists(rtJar)) {
-      return true;
-    }
-    // JRE has rt.jar in lib/rt.jar.
-    rtJar = home.resolve("lib").resolve("rt.jar");
-    if (Files.exists(rtJar)) {
-      return true;
-    }
-    return false;
-  }
-
-  static void addLibraryArgument(
-      TraceReferencesCommand.Builder builder, Origin origin, String arg) {
-    Path path = Paths.get(arg);
-    if (isJdkHome(path)) {
-      try {
-        builder.addLibraryResourceProvider(JdkClassFileProvider.fromJdkHome(path));
-      } catch (IOException e) {
-        builder.error(new ExceptionDiagnostic(e, origin));
-      }
-    } else {
-      builder.addLibraryFiles(path);
-    }
   }
 
   private static class TrivialClassConflictResolver implements ClassConflictResolver {

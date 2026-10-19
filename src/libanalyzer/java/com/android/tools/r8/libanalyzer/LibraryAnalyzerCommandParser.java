@@ -4,7 +4,6 @@
 package com.android.tools.r8.libanalyzer;
 
 import com.android.tools.r8.ByteArrayConsumer;
-import com.android.tools.r8.CompilerCommandParserUtils;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathBasedMavenOrigin;
@@ -121,13 +120,13 @@ public class LibraryAnalyzerCommandParser {
               state.flushPendingPath();
               state.pendingPath = Pair.create(jarPath, PathType.Jar);
             })
-        .option1(
-            "--lib",
-            "<path>",
-            "Path to file or JDK home to use as a library resource.",
-            (state, arg) ->
-                CompilerCommandParserUtils.addLibraryArgument(
-                    state.builder.getAppBuilder(), arg, state.origin, state.reporter))
+        .apply(
+            CliParserUtils.addLibOption(
+                (state, provider) ->
+                    state.builder.getAppBuilder().addLibraryResourceProvider(provider),
+                (state, path) -> state.builder.getAppBuilder().addLibraryFiles(path),
+                state -> state.origin,
+                state -> state.reporter))
         .option1(
             "--maven-coord",
             "<x:y:z>",

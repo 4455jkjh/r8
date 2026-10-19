@@ -10,6 +10,10 @@ import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecificatio
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.API_GENERIC_TYPES_CONVERSION;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.API_LEVEL_BELOW_OR_EQUAL_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.API_LEVEL_GREATER_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.BACKPORT_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.COMMON_FLAGS_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.CURRENT_HUMAN_CONFIGURATION_FORMAT_VERSION;
@@ -24,6 +28,8 @@ import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecificatio
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.NEVER_OUTLINE_API_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.PROGRAM_FLAGS_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.REQUIRED_COMPILATION_API_LEVEL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY;
+import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.RETARGET_METHOD_EMULATED_DISPATCH_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.RETARGET_METHOD_KEY;
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecificationParser.RETARGET_STATIC_FIELD_KEY;
@@ -44,6 +50,7 @@ import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.ApiLevelRange;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.gson.Gson;
 import java.util.ArrayList;
@@ -68,9 +75,13 @@ public class MultiAPILevelHumanDesugaredLibrarySpecificationJsonExporter {
     HashMap<String, Object> toJson = new LinkedHashMap<>();
     toJson.put(IDENTIFIER_KEY, humanSpec.getTopLevelFlags().getIdentifier());
     toJson.put(CONFIGURATION_FORMAT_VERSION_KEY, CURRENT_HUMAN_CONFIGURATION_FORMAT_VERSION);
+    AndroidApiLevel requiredCompilationAPILevel =
+        humanSpec.getTopLevelFlags().getRequiredCompilationAPILevel();
     toJson.put(
         REQUIRED_COMPILATION_API_LEVEL_KEY,
-        humanSpec.getTopLevelFlags().getRequiredCompilationAPILevel().getMajor());
+        requiredCompilationAPILevel.asUnchecked().getMajorCeiling());
+    toJson.put(REQUIRED_COMPILATION_API_MAJOR_LEVEL_KEY, requiredCompilationAPILevel.getMajor());
+    toJson.put(REQUIRED_COMPILATION_API_MINOR_LEVEL_KEY, requiredCompilationAPILevel.getMinor());
     toJson.put(
         SYNTHESIZED_LIBRARY_CLASSES_PACKAGE_PREFIX_KEY,
         humanSpec.getTopLevelFlags().getSynthesizedLibraryClassesPackagePrefix().replace('/', '.'));
@@ -97,9 +108,16 @@ public class MultiAPILevelHumanDesugaredLibrarySpecificationJsonExporter {
     for (ApiLevelRange range : apis) {
       HumanRewritingFlags flags = rewritingFlagsMap.get(range);
       HashMap<String, Object> toJson = new LinkedHashMap<>();
-      toJson.put(API_LEVEL_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqualAsInt());
+      toJson.put(API_LEVEL_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqual().getMajor());
+      toJson.put(API_LEVEL_MAJOR_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqual().getMajor());
+      toJson.put(API_LEVEL_MINOR_BELOW_OR_EQUAL_KEY, range.getApiLevelBelowOrEqual().getMinor());
       if (range.hasApiLevelGreaterOrEqual()) {
-        toJson.put(API_LEVEL_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqualAsInt());
+        toJson.put(
+            API_LEVEL_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqual().getMajorCeiling());
+        toJson.put(
+            API_LEVEL_MAJOR_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqual().getMajor());
+        toJson.put(
+            API_LEVEL_MINOR_GREATER_OR_EQUAL_KEY, range.getApiLevelGreaterOrEqual().getMinor());
       }
       if (!flags.getRewritePrefix().isEmpty()) {
         toJson.put(REWRITE_PREFIX_KEY, new TreeMap<>(flags.getRewritePrefix()));

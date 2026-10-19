@@ -5,7 +5,7 @@
 package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 

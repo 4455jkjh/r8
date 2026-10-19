@@ -60,25 +60,18 @@ public class GlobalSyntheticsGeneratorCommandParser {
                   b.hasDefinedApiLevel = true;
                 },
                 (b, err) -> b.builder.error(new StringDiagnostic(err, b.origin))))
-        .option1(
-            "--lib",
-            "<file|jdk-home>",
-            "Add <file|jdk-home> as a library resource.",
-            (b, arg) -> b.builder.addLibraryFiles(Paths.get(arg)))
-        .option1(
-            "--output",
-            "<globals-file>",
-            "Output result in <globals-file>.",
-            (b, arg) -> {
-              if (b.outputPath != null) {
-                StringDiagnostic diagnostic =
-                    new StringDiagnostic(
-                        "Cannot output both to '" + b.outputPath + "' and '" + arg + "'", b.origin);
-                b.builder.error(diagnostic);
-              } else {
-                b.outputPath = Paths.get(arg);
-              }
-            })
+        .apply(
+            CliParserUtils.addLibOption(
+                (b, provider) -> b.builder.addLibraryResourceProvider(provider),
+                (b, path) -> b.builder.addLibraryFiles(path),
+                b -> b.origin,
+                b -> b.builder.getReporter()))
+        .apply(
+            CliParserUtils.addOutputOption(
+                b -> b.outputPath != null,
+                (b, path) -> b.outputPath = path,
+                (b, error) -> b.builder.error(new StringDiagnostic(error, b.origin)),
+                CliParserUtils.OutputOptionType.FILE))
         .option0(
             "--classfile",
             "Generate globals for only classfile to classfile desugaring. (By default globals for"

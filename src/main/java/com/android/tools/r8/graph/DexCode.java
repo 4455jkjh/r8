@@ -43,7 +43,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import com.android.tools.r8.utils.structural.Equatable;
+import com.android.tools.r8.utils.internal.structural.Equatable;
 import com.android.tools.r8.utils.structural.HashCodeVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;

@@ -39,7 +39,7 @@ import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Map;

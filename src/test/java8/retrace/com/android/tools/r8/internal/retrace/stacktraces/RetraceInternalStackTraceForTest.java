@@ -4,29 +4,27 @@
 
 package com.android.tools.r8.internal.retrace.stacktraces;
 
-import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.retrace.stacktraces.StackTraceForTest;
 import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class RetraceInternalStackTraceForTest implements StackTraceForTest {
 
-  private static final Path retraceInternal =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR).resolve("retrace_internal");
-  private final Path obfuscatedPath;
-  private final Path deobfuscatedPath;
+  private final String obfuscatedFile;
+  private final String deobfuscatedFile;
 
   public RetraceInternalStackTraceForTest(String obfuscatedFile, String deobfuscatedFile) {
-    this.obfuscatedPath = retraceInternal.resolve(obfuscatedFile);
-    this.deobfuscatedPath = retraceInternal.resolve(deobfuscatedFile);
+    this.obfuscatedFile = obfuscatedFile;
+    this.deobfuscatedFile = deobfuscatedFile;
   }
 
   @Override
   public List<String> obfuscatedStackTrace() {
+    Path obfuscatedPath = TestDeps.getRetraceInternalDir().resolve(obfuscatedFile);
     try {
       return FileUtils.readAllLines(obfuscatedPath);
     } catch (IOException e) {
@@ -37,7 +35,7 @@ public class RetraceInternalStackTraceForTest implements StackTraceForTest {
 
   @Override
   public String mapping() {
-    Path mappingPath = retraceInternal.resolve("mapping.txt");
+    Path mappingPath = TestDeps.getRetraceInternalDir().resolve("mapping.txt");
     try {
       return new String(Files.readAllBytes(mappingPath));
     } catch (IOException e) {
@@ -48,6 +46,7 @@ public class RetraceInternalStackTraceForTest implements StackTraceForTest {
 
   @Override
   public List<String> retracedStackTrace() {
+    Path deobfuscatedPath = TestDeps.getRetraceInternalDir().resolve(deobfuscatedFile);
     try {
       return FileUtils.readAllLines(deobfuscatedPath);
     } catch (IOException e) {

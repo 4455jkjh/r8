@@ -43,7 +43,9 @@ public class LibraryAnalyzerCommandParserTest extends TestBase {
             "  --keep-radius-output <path>",
             "                          # Path where to write keep radius result (protobuf).",
             "  --jar <path>            # Path to Java Archive (JAR) that should be analyzed.",
-            "  --lib <path>            # Path to file or JDK home to use as a library resource.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --maven-coord <x:y:z>   # Set the Maven coordinate of the previous --aar/--jar.",
             "  --min-api <major|major.minor>",
             "                          # Minimum API level to use for analysis.",

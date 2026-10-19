@@ -5,7 +5,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.utils.internal.ObjectUtils;
-import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 
 public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
 
@@ -41,6 +41,10 @@ public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
 
   public int getMajor() {
     return major;
+  }
+
+  public int getMajorCeiling() {
+    return minor != 0 ? major + 1 : major;
   }
 
   public int getMinor() {

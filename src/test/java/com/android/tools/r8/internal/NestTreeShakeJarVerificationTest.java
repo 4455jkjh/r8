@@ -9,9 +9,11 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
@@ -33,13 +35,14 @@ public class NestTreeShakeJarVerificationTest extends NestCompilationBase {
 
   @Test
   public void buildAndTreeShakeFromDeployJar() throws Exception {
+    Path base = TestDeps.getNestDir();
     runAndCheckVerification(
         CompilerUnderTest.R8,
         CompilationMode.RELEASE,
         null,
-        ImmutableList.of(BASE + PG_CONF, BASE + PG_CONF_NO_OPT),
+        ImmutableList.of(base.resolve(PG_CONF).toString(), base.resolve(PG_CONF_NO_OPT).toString()),
         null,
-        ImmutableList.of(BASE + DEPLOY_JAR),
+        ImmutableList.of(base.resolve(DEPLOY_JAR).toString()),
         parameters.getDexVm());
     assertEquals(0, filterKotlinMetadata(handler.warnings).count());
     // TODO(b/155536535): We find bad descriptors. See if we can still resolve them.

@@ -13,7 +13,6 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
-import com.android.tools.r8.ir.regalloc.LiveIntervals;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,16 +56,8 @@ public class RedundantInstructionsRemover extends FinalizerRewriterPass<AppInfo>
           hasChanged = true;
         } else if (current.outValue() != null && current.outValue().needsRegister()) {
           Value outValue = current.outValue();
-          int instructionNumber = current.getNumber();
+          int outRegister = allocator.getRegisterForValue(outValue, current.getNumber());
           if (outValue.isConstant() && current.isConstNumber()) {
-            if (constantSpilledAtDefinition(current.asConstNumber())) {
-              // Remove constant instructions that are spilled at their definition and are
-              // therefore unused.
-              iterator.removeInstructionIgnoreOutValue();
-              hasChanged = true;
-              continue;
-            }
-            int outRegister = allocator.getRegisterForValue(outValue, instructionNumber);
             ConstNumber numberInRegister = registerToNumber.get(outRegister);
             if (numberInRegister != null
                 && numberInRegister.identicalNonValueNonPositionParts(current)) {
@@ -86,7 +77,6 @@ public class RedundantInstructionsRemover extends FinalizerRewriterPass<AppInfo>
           } else {
             // This instruction writes registers with a non-constant value. Remove the registers
             // from the mapping.
-            int outRegister = allocator.getRegisterForValue(outValue, instructionNumber);
             for (int i = 0; i < outValue.requiredRegisters(); i++) {
               registerToNumber.remove(outRegister + i);
             }
@@ -106,14 +96,5 @@ public class RedundantInstructionsRemover extends FinalizerRewriterPass<AppInfo>
     if (number != null && number.outType().isWide()) {
       registerToNumber.remove(register - 1);
     }
-  }
-
-  private static boolean constantSpilledAtDefinition(ConstNumber constNumber) {
-    if (constNumber.outValue().isFixedRegisterValue()) {
-      return false;
-    }
-    LiveIntervals definitionIntervals =
-        constNumber.outValue().getLiveIntervals().getSplitCovering(constNumber.getNumber());
-    return definitionIntervals.isSpilledAndRematerializable();
   }
 }

@@ -12,13 +12,12 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,16 +35,12 @@ public class ClankDepsTest extends TestBase {
     parameters.assertNoneRuntime();
   }
 
-  private static final Path DIR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "chrome", "clank_google3_prebuilt");
-  private static final Path CLASSES = DIR.resolve("classes.jar");
-  private static final Path CONFIG = DIR.resolve("proguard.txt");
-
   @Test
   public void test() throws Exception {
+    Path dir = TestDeps.getClankDir();
     testForR8(Backend.DEX)
-        .addProgramFiles(CLASSES)
-        .addKeepRuleFiles(CONFIG)
+        .addProgramFiles(dir.resolve("classes.jar"))
+        .addKeepRuleFiles(dir.resolve("proguard.txt"))
         .addDontWarn("androidx.**")
         .addDontWarnJavax()
         .addDontWarn("dalvik.system.VMStack")

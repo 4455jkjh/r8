@@ -371,10 +371,12 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
             "  --debug                 # Compile with debugging information.",
             "  --dex                   # Compile program to DEX file format (default).",
             "  --classfile             # Compile program to Java classfile format.",
-            "  --output <file>         # Output result in <file>. <file> must be an existing"
-                + " directory or a zip",
-            "                          # file.",
-            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --output <path>         # Output result in <path>. <path> must be a zip file or"
+                + " an existing",
+            "                          # directory.",
+            "  --lib <path>            # Add <path> as a library resource. <path> must be a"
+                + " jar/zip file or a JDK",
+            "                          # home directory.",
             "  --classpath <file>      # Add <file> as a classpath resource.",
             "  --min-api <number>[.<number>]",
             "                          # Minimum Android API level compatibility (default: 1).",
@@ -393,9 +395,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
             "  --pg-map-output <file>  # Output the resulting name and line mapping to <file>.",
             "  --partition-map-output <file>",
             "                          # Output the resulting mapping to <file>.",
-            "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
-                + " desugared library",
-            "                          # configuration (json).",
+            "  --desugared-lib <file>  # Specify a JSON desugared library configuration <file>.",
             "  --no-tree-shaking       # Force disable tree shaking of unreachable classes.",
             "  --no-minification       # Force disable minification of names.",
             "  --no-data-resources     # Ignore all data resources.",

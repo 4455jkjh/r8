@@ -412,9 +412,11 @@ public class MethodOptimizationInfoCollector {
                 if (builder.hasParent() && builder.getParent() != singleTarget.getReference()) {
                   return null;
                 }
-                // java.lang.Enum.<init>() and java.lang.Object.<init>() are considered trivial.
+                // java.lang.Enum.<init>(), java.lang.Object.<init>(), and java.lang.Record.<init>()
+                // are considered trivial.
                 if (invokedMethod == dexItemFactory.enumMembers.constructor
-                    || invokedMethod == dexItemFactory.objectMembers.constructor) {
+                    || invokedMethod == dexItemFactory.objectMembers.constructor
+                    || invokedMethod == dexItemFactory.recordMembers.constructor) {
                   builder.setParent(invokedMethod);
                   break;
                 }
