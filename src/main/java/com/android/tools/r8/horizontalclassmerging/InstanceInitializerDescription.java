@@ -87,7 +87,8 @@ public class InstanceInitializerDescription {
     return instanceFieldAssignmentsPre.equals(description.instanceFieldAssignmentsPre)
         && instanceFieldAssignmentsPost.equals(description.instanceFieldAssignmentsPost)
         && parentConstructor == description.parentConstructor
-        && parentConstructorArguments.equals(description.parentConstructorArguments);
+        && parentConstructorArguments.equals(description.parentConstructorArguments)
+        && relaxedParameters.equals(description.relaxedParameters);
   }
 
   @Override
