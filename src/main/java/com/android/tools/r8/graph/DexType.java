@@ -332,6 +332,25 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
     return descriptor.getFirstByteAsChar();
   }
 
+  public int getPrimitiveTypeSizeInBytes() {
+    switch (asPrimitiveTypeDescriptorChar()) {
+      case 'Z': // boolean
+      case 'B': // byte
+        return 1;
+      case 'S': // short
+      case 'C': // char
+        return 2;
+      case 'I': // int
+      case 'F': // float
+        return 4;
+      case 'J': // long
+      case 'D': // double
+        return 8;
+      default:
+        throw new Unreachable("Not a primitive type '" + descriptor + "'");
+    }
+  }
+
   public boolean isVoidType() {
     return descriptor.getFirstByteAsChar() == 'V';
   }

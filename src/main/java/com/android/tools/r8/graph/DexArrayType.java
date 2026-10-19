@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-
 public class DexArrayType extends DexType {
 
   private final DexType baseType;
@@ -55,22 +53,7 @@ public class DexArrayType extends DexType {
 
   public int getElementSizeForPrimitiveArrayType() {
     assert isPrimitiveArrayType();
-    switch (baseType.getDescriptor().getFirstByteAsChar()) {
-      case 'Z': // boolean
-      case 'B': // byte
-        return 1;
-      case 'S': // short
-      case 'C': // char
-        return 2;
-      case 'I': // int
-      case 'F': // float
-        return 4;
-      case 'J': // long
-      case 'D': // double
-        return 8;
-      default:
-        throw new Unreachable("Not array of primitives '" + descriptor + "'");
-    }
+    return baseType.getPrimitiveTypeSizeInBytes();
   }
 
   @Override
