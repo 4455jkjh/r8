@@ -20,6 +20,10 @@ public enum NumericType {
     return this == INT;
   }
 
+  public boolean isLong() {
+    return this == LONG;
+  }
+
   public DexType toDexType(DexItemFactory factory) {
     switch (this) {
       case BYTE:
