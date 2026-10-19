@@ -121,9 +121,11 @@ public class RegisterMove implements Comparable<RegisterMove> {
     int mappedSrc = scheduler.valueMap.get(src);
     assert mappedSrc != dst;
     if (mappedSrc == dst - 1 && scheduler.activeTempRegisters.contains(dst)) {
+      assert !scheduler.activeTempRegisters.contains(dst + 1);
       return true;
     }
     if (mappedSrc == dst + 1 && scheduler.activeTempRegisters.contains(dst + 1)) {
+      assert !scheduler.activeTempRegisters.contains(dst);
       return true;
     }
     return false;
