@@ -532,8 +532,6 @@ tasks {
         unzipRewrittenTests,
         unzipTests,
         unzipTestBase,
-        sharedDepsConfig,
-        sharedTestDepsConfig,
       )
       val r8LibJar = r8Lib.flatMap { it.outputJar }
       val r8LibPartitionMapFile = r8Lib.flatMap { it.outputPartitionMap }

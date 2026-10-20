@@ -384,9 +384,7 @@ public class TestConfigurationHelper {
       val hasUpdateTestTimestamp = project.hasProperty("update_test_timestamp")
       val rootDir = project.getRoot()
       val printObfuscatedStacktraces = project.hasProperty("print_obfuscated_stacktraces")
-      val isCiServer =
-        System.getenv().containsKey("SWARMING_BOT_ID") ||
-          System.getenv().containsKey("KOKORO_BUILD_ID")
+      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
 
       if (isR8Lib || oneLinePerTest || hasUpdateTestTimestamp) {
         val updateTestTimestampPath =
@@ -539,10 +537,8 @@ public class TestConfigurationHelper {
 
       val retry = test.extensions.getByType(TestRetryTaskExtension::class.java)
       if (isCiServer) {
-        if (resultSinkInfo != null) {
-          test.reports.html.required.set(false)
-          test.reports.junitXml.required.set(false)
-        }
+        test.reports.html.required.set(false)
+        test.reports.junitXml.required.set(false)
         retry.maxRetries.set(2)
         // High maxFailures so parameterized tests aren't aborted from retries.
         retry.maxFailures.set(200)

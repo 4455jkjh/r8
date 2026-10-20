@@ -125,9 +125,8 @@ class GitCommit(object):
 def git_commit_from_hash(hash):
     # If there is a tag for the given commit then the commit timestamp is on the
     # last line.
-    commit_timestamp_cmd = [
-        'git', 'show', '--no-patch', '--no-notes', '--pretty=%ct', hash
-    ]
+    commit_timestamp_cmd = ['git', 'show', '--no-patch', '--no-notes', '--pretty=%ct',
+             hash]
     try:
         commit_timestamp_raw = subprocess.check_output(commit_timestamp_cmd)
     except subprocess.CalledProcessError as e:
@@ -137,8 +136,7 @@ def git_commit_from_hash(hash):
         except subprocess.CalledProcessError as e:
             return None
         commit_timestamp_raw = subprocess.check_output(commit_timestamp_cmd)
-    commit_timestamp_str = commit_timestamp_raw.decode(
-        'utf-8').strip().splitlines()[-1]
+    commit_timestamp_str = commit_timestamp_raw.decode('utf-8').strip().splitlines()[-1]
     commit_timestamp = int(commit_timestamp_str)
     destination_dir = '%s/%s/' % (MASTER_COMMITS, hash)
     destination = '%s%s' % (destination_dir, 'r8.jar')
@@ -162,7 +160,8 @@ def enumerate_git_commits(top, bottom):
 
 
 def get_available_commits(commits):
-    cloud_commits = utils.ls_files_on_cloud_storage(MASTER_COMMITS).splitlines()
+    cloud_commits = subprocess.check_output(['gsutil.py', 'ls', MASTER_COMMITS
+                                            ]).decode().splitlines()
     available_commits = []
     for commit in commits:
         if commit.destination_dir in cloud_commits:
