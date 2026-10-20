@@ -302,6 +302,14 @@ class MethodNameMinifier {
                   frontier,
                   reservationStates.getOrDefault(clazz.superType, rootReservationState));
             });
+    for (DexMethod method : appView.appInfo().getFailedMethodResolutionTargets()) {
+      DexType holder = method.holder;
+      DexType frontier = frontiers.getOrDefault(holder, holder);
+      MethodReservationState<?> reservationState = reservationStates.get(frontier);
+      if (reservationState != null) {
+        reservationState.reserveName(method.name, method);
+      }
+    }
   }
 
   private void allocateReservationStateAndReserve(

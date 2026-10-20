@@ -4,12 +4,10 @@
 package com.android.tools.r8.naming;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.references.Reference;
@@ -53,6 +51,14 @@ public class ReservedStaticMethodNamesFromUnresolvedReferencesTest extends TestB
     }
   }
 
+  public interface LibraryInterface {}
+
+  public static class LibrarySuperClass {}
+
+  public interface ProgramInterface extends LibraryInterface {
+    void foo();
+  }
+
   public static class ClassWithUnresolvedReferenceToMethodNamedA {
     @NeverInline
     @NoMethodStaticizing
@@ -80,69 +86,77 @@ public class ReservedStaticMethodNamesFromUnresolvedReferencesTest extends TestB
     }
   }
 
-  @Test
-  public void test() throws Exception {
+  private byte[] getClassWithUnresolvedReferenceToMethodNamedA() throws Exception {
     // Rewrite ClassWithUnresolvedReferenceToMethodNamedA to reference RuntimeClass instead of
     // CompileTimeClass, including the unresolved reference RuntimeClass.a()
     String runtimeClassDescriptor = Reference.classFromClass(RuntimeClass.class).getDescriptor();
-    byte[] classWithUnresolvedReferenceToMethodNamedABytes =
-        transformer(ClassWithUnresolvedReferenceToMethodNamedA.class)
+    return transformer(ClassWithUnresolvedReferenceToMethodNamedA.class)
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(CompileTimeClass.class), runtimeClassDescriptor)
+        .replaceClassDescriptorInMembers(descriptor(CompileTimeClass.class), runtimeClassDescriptor)
+        .addMethodTransformer(
+            new MethodTransformer() {
+              @Override
+              public void visitMethodInsn(
+                  int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                super.visitMethodInsn(
+                    opcode, owner, name.equals("dummy") ? "a" : name, descriptor, isInterface);
+              }
+            })
+        .transform();
+  }
+
+  @Test
+  public void test() throws Exception {
+    testForR8(parameters.getBackend())
+        .addProgramClasses(Main.class, RuntimeClass.class)
+        .addProgramClassFileData(getClassWithUnresolvedReferenceToMethodNamedA())
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToMethodNamedA.class)
+        .addKeepRules(
+            "-keepclassmembers,allowobfuscation class "
+                + RuntimeClass.class.getTypeName()
+                + " { *; }")
+        .enableInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
+        .setMinApi(parameters)
+        .run(parameters.getRuntime(), Main.class)
+        .inspect(
+            inspector -> {
+              ClassSubject runtimeClass = inspector.clazz(RuntimeClass.class);
+              MethodSubject existingMethod =
+                  runtimeClass.uniqueMethodWithOriginalName("existingMethod");
+              assertEquals("b", existingMethod.getFinalName());
+            })
+        .assertSuccessWithOutputLines("Could not call callA()", "2");
+  }
+
+  @Test
+  public void testLibrary() throws Exception {
+    byte[] runtimeClassBytes =
+        transformer(RuntimeClass.class)
+            .setSuper(descriptor(LibrarySuperClass.class))
             .replaceClassDescriptorInMethodInstructions(
-                descriptor(CompileTimeClass.class), runtimeClassDescriptor)
-            .replaceClassDescriptorInMembers(
-                descriptor(CompileTimeClass.class), runtimeClassDescriptor)
-            .addMethodTransformer(
-                new MethodTransformer() {
-                  @Override
-                  public void visitMethodInsn(
-                      int opcode,
-                      String owner,
-                      String name,
-                      String descriptor,
-                      boolean isInterface) {
-                    if (name.equals("dummy")) {
-                      super.visitMethodInsn(opcode, owner, "a", descriptor, isInterface);
-                    } else {
-                      super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                    }
-                  }
-                })
+                descriptor(Object.class), descriptor(LibrarySuperClass.class))
+            .setImplements(LibraryInterface.class)
             .transform();
 
-    TestCompileResult<?, ?> result =
-        testForR8(parameters.getBackend())
-            .addProgramClasses(Main.class, RuntimeClass.class)
-            .addProgramClassFileData(classWithUnresolvedReferenceToMethodNamedABytes)
-            .addKeepMainRule(Main.class)
-            .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToMethodNamedA.class)
-            .addKeepRules(
-                "-keepclassmembers,allowobfuscation class "
-                    + RuntimeClass.class.getTypeName()
-                    + " { *; }")
-            .enableInliningAnnotations()
-            .enableNoMethodStaticizingAnnotations()
-            .setMinApi(parameters)
-            .compile()
-            // Can't inspect on DEX, as the generated DEX is invalid.
-            .inspectIf(
-                parameters.isCfRuntime(),
-                inspector -> {
-                  ClassSubject runtimeClass = inspector.clazz(RuntimeClass.class);
-                  MethodSubject existingMethod =
-                      runtimeClass.uniqueMethodWithOriginalName("existingMethod");
-                  // TODO(b/533167364): Renaming existingMethod to a makes the unresolved method a
-                  //  in the input resolve.
-                  assertEquals("a", existingMethod.getFinalName());
-                });
-    if (parameters.isCfRuntime()) {
-      result
-          .run(parameters.getRuntime(), Main.class)
-          // Should be assertSuccessWithOutputLines("Could not call callA()", "2")
-          .assertSuccessWithOutputLines("2", "2");
-    } else {
-      // Running on Art hits an AssertionError when loading the DEX into the inspector to
-      // check for the final name of the main class.
-      assertThrows(AssertionError.class, () -> result.run(parameters.getRuntime(), Main.class));
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(Main.class, ProgramInterface.class)
+        .addProgramClassFileData(getClassWithUnresolvedReferenceToMethodNamedA())
+        .addLibraryClasses(LibraryInterface.class, LibrarySuperClass.class)
+        .addLibraryClassFileData(runtimeClassBytes)
+        .addDefaultRuntimeLibrary(parameters)
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToMethodNamedA.class)
+        .addKeepClassAndMembersRulesWithAllowObfuscation(ProgramInterface.class)
+        .enableInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
+        .setMinApi(parameters)
+        .compile()
+        .addRunClasspathClasses(LibraryInterface.class, LibrarySuperClass.class)
+        .addRunClasspathClassFileData(runtimeClassBytes)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Could not call callA()", "2");
   }
 }
