@@ -2657,8 +2657,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean disableRecordApplicationReaderMap = false;
     public boolean trackDesugaredApiConversions = false;
     public boolean enumUnboxingRewriteJavaCGeneratedMethod = false;
-    // TODO(b/154793333): Enable assertions always when resolved.
-    public boolean assertConsistentRenamingOfSignature = false;
     public boolean allowStaticInterfaceMethodsForPreNApiLevel = false;
     public int verificationSizeLimitInBytesOverride = -1;
     public boolean forceIRForCfToCfDesugar =

@@ -71,16 +71,6 @@ public class GenericSignatureRenamingTest extends TestBase {
     test(testForR8(parameters.getBackend()).addKeepRules("-dontobfuscate"));
   }
 
-  @Test
-  public void testR8WithAssertEnabled() throws Exception {
-    test(
-        testForR8(parameters.getBackend())
-            .addKeepRules("-dontobfuscate")
-            .addOptionsModification(
-                internalOptions ->
-                    internalOptions.testing.assertConsistentRenamingOfSignature = true));
-  }
-
   private void test(R8TestBuilder<?, ?, ?> builder) throws Exception {
     builder
         .addKeepRules("-dontoptimize")
