@@ -19,6 +19,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -240,8 +241,17 @@ public final class GlobalSyntheticsGeneratorCommand {
 
     /** Set the min api level. */
     public Builder setMinApiLevel(int minMajorApiLevel, int minMinorApiLevel) {
-      this.minMajorApiLevel = minMajorApiLevel;
-      this.minMinorApiLevel = minMinorApiLevel;
+      if (minMajorApiLevel <= 0 || minMinorApiLevel < 0) {
+        reporter.error("Invalid minApiLevel: " + minMajorApiLevel + "." + minMinorApiLevel);
+      } else {
+        BaseCommand.validateMinApiLevel(
+            new UncheckedApiLevel(minMajorApiLevel, minMinorApiLevel),
+            reporter,
+            level -> {
+              this.minMajorApiLevel = level.getMajor();
+              this.minMinorApiLevel = level.getMinor();
+            });
+      }
       return this;
     }
 

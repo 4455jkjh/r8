@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.desugar.desugaredlibrary.lint;
 
 import com.android.tools.r8.ArchiveClassFileProvider;
 import com.android.tools.r8.ArchiveProgramResourceProvider;
+import com.android.tools.r8.BaseCompilerCommandUtils;
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.ProgramResourceProvider;
@@ -168,7 +169,8 @@ public class DesugaredMethodsListCommand {
 
     /** See {@link DesugaredMethodsListCommandUtils#setMinApiLevel} for a public bridge. */
     Builder setMinApi(UncheckedApiLevel minApiLevel) {
-      this.minApiLevel = minApiLevel;
+      BaseCompilerCommandUtils.validateMinApiLevel(
+          minApiLevel, reporter, level -> this.minApiLevel = level);
       return this;
     }
 

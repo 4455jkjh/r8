@@ -155,6 +155,10 @@ import org.objectweb.asm.ClassVisitor;
 
 public class TestBase {
 
+  static {
+    InternalOptions.allowMinApiMinorLevels = true;
+  }
+
   public static Iterable<?> allRuntimesAndApiLevelsSource() {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }

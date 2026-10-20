@@ -163,6 +163,12 @@ import org.objectweb.asm.Opcodes;
 
 public class InternalOptions implements GlobalKeepInfoConfiguration {
 
+  public static final String ALLOW_MIN_API_MINOR_LEVELS_PROPERTY_KEY =
+      "com.android.tools.r8.allowMinApiMinorLevels";
+
+  public static boolean allowMinApiMinorLevels =
+      parseSystemPropertyOrDefault(ALLOW_MIN_API_MINOR_LEVELS_PROPERTY_KEY, false);
+
   // Set to true to run compilation in a single thread and without randomly shuffling the input.
   // This makes life easier when running R8 in a debugger.
   public static final boolean DETERMINISTIC_DEBUGGING =
