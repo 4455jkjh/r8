@@ -137,6 +137,16 @@ def ParseOptions():
                       help='Whether this is a try run',
                       default=False,
                       action='store_true')
+    result.add_option('--kokoro',
+                      help='Run the internal tests once on Kokoro, streaming '
+                      'the output instead of archiving it to GCS.',
+                      default=False,
+                      action='store_true')
+    result.add_option('--perf-outdir',
+                      '--perf_outdir',
+                      help='With --kokoro, store the perf results in this '
+                      'directory instead of uploading them.',
+                      default=None)
     return result.parse_args()
 
 
@@ -398,19 +408,31 @@ def run_once(archive, try_run):
     return failed
 
 
+# Runs the same commands as run_once with the default number of test forks, and
+# leaves logs and status to Kokoro.
+def run_kokoro(perf_outdir):
+    failed = False
+    for cmd in get_default_test_commands(perf_outdir):
+        cmd = [sys.executable] + cmd
+        utils.PrintCmd(cmd)
+        if subprocess.call(cmd) != 0:
+            failed = True
+    return 1 if failed else 0
+
+
 # Bot timeout in seconds.
 def get_bot_timeout():
     return RUN_TIMEOUT * len(get_default_test_commands())
 
 
-def get_default_test_commands():
+def get_default_test_commands(perf_outdir=None):
     # Run test.py internal testing.
     cmds = [[
         'tools/test.py', '--only_internal', '--slow_tests',
         '--java_max_memory_size=8G'
     ]]
     # Run internal benchmarks.
-    cmds.extend(get_perf_test_commands(False))
+    cmds.extend(get_perf_test_commands(False, perf_outdir))
     # Ensure that all internal apps compile.
     cmds.append(
         ['tools/run_on_app.py', '--run-all', '--out=out', '--workers', '3'])
@@ -428,14 +450,14 @@ def get_test_commands(try_run):
     return test_commands
 
 
-def get_perf_test_commands(try_run):
+def get_perf_test_commands(try_run, perf_outdir=None):
     return [
-        get_perf_test_command(3, False, try_run),
-        get_perf_test_command(1, True, try_run)
+        get_perf_test_command(3, False, try_run, perf_outdir),
+        get_perf_test_command(1, True, try_run, perf_outdir)
     ]
 
 
-def get_perf_test_command(iterations, slow, try_run):
+def get_perf_test_command(iterations, slow, try_run, perf_outdir=None):
     cmd = [
         'tools/perf.py', '--internal-slow' if slow else '--internal',
         '--iterations-inner',
@@ -447,6 +469,8 @@ def get_perf_test_command(iterations, slow, try_run):
         # cloud bucket. We don't currently use the patch ref in perf.py
         # other than to determine that this is a try run, however.
         cmd.extend(['--patch-ref', 'N/A'])
+    if perf_outdir:
+        cmd.append('--outdir=%s' % perf_outdir)
     return cmd
 
 
@@ -458,6 +482,8 @@ def Main():
         return run_bot()
     elif options.print_logs:
         return fetch_and_print_logs(options.print_logs)
+    elif options.kokoro:
+        return run_kokoro(options.perf_outdir)
     else:
         return run_once(options.archive, options.try_run)
 
