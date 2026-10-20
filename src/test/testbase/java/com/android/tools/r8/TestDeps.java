@@ -37,9 +37,15 @@ public class TestDeps {
     if (value == null) {
       throw new RuntimeException("Required test dependency system property not set: " + prop);
     }
-    Assume.assumeTrue(
-        "Internal test dependency is not available (--no-internal): " + prop,
-        !value.equals("None"));
+    if (value.startsWith("None:")) {
+      Assume.assumeTrue(
+          "Test property missing with reason: "
+              + value.substring("None:".length())
+              + " ("
+              + prop
+              + ")",
+          false);
+    }
     Path path = Paths.get(value);
     if (!Files.exists(path)) {
       throw new RuntimeException("Required test dependency does not exit: " + prop + "=" + path);
@@ -104,8 +110,15 @@ public class TestDeps {
     dependencies.put("JACOCO", null);
     dependencies.put("JAVA_8_RUNTIME", null);
     dependencies.put("JAVA_BASE_EXTENSION", null);
+    dependencies.put("JDK_8", null);
+    dependencies.put("JDK_9", null);
+    dependencies.put("JDK_11", null);
     dependencies.put("JDK11_TEST", null);
+    dependencies.put("JDK_17", null);
+    dependencies.put("JDK_21", null);
     dependencies.put("JDK21_FLOAT16_TEST", null);
+    dependencies.put("JDK_25", null);
+    dependencies.put("JDK_27", null);
     dependencies.put("JDWP_TESTS", null);
     dependencies.put("JSR223", null);
     dependencies.put("KEEPASSDX", null);
@@ -389,12 +402,40 @@ public class TestDeps {
     return getDependency("JAVA_BASE_EXTENSION");
   }
 
+  public static Path getJdk8Dir() {
+    return getDependency("JDK_8");
+  }
+
+  public static Path getJdk9Dir() {
+    return getDependency("JDK_9");
+  }
+
+  public static Path getJdk11Dir() {
+    return getDependency("JDK_11");
+  }
+
   public static Path getJdk11TestPath(String... path) {
     return getDependencyPath("JDK11_TEST", path);
   }
 
+  public static Path getJdk17Dir() {
+    return getDependency("JDK_17");
+  }
+
+  public static Path getJdk21Dir() {
+    return getDependency("JDK_21");
+  }
+
   public static Path getJdk21Float16TestPath(String... path) {
     return getDependencyPath("JDK21_FLOAT16_TEST", path);
+  }
+
+  public static Path getJdk25Dir() {
+    return getDependency("JDK_25");
+  }
+
+  public static Path getJdk27Dir() {
+    return getDependency("JDK_27");
   }
 
   public static Path getJsr223RiJar() {

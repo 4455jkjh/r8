@@ -31,6 +31,7 @@ dependencies {
   mainClassesScope(project(":main", "mainClassesOutput"))
   mainResourcesScope(project(":main", "mainResources"))
   implementation(project(":assistant", "assistantJar"))
+  runtimeOnlyData(project(":third_party", "jdk21"))
   runtimeOnlyData(project(":third_party", "jdk21Float16Test"))
 }
 

@@ -4,6 +4,7 @@
 
 import DependenciesPlugin.Companion.computeRoot
 import java.io.File
+import java.io.Serializable
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.UUID
@@ -40,6 +41,9 @@ public val TEST_DEP_PROP: Attribute<String> =
 public val TEST_DEP_INTERNAL: Attribute<Boolean> =
   Attribute.of("com.android.tools.r8.testdep.internal", Boolean::class.javaObjectType)
 
+public val TEST_DEP_MISSING_ON_WINDOWS: Attribute<Boolean> =
+  Attribute.of("com.android.tools.r8.testdep.missing_on_windows", Boolean::class.javaObjectType)
+
 public fun DependencyHandler.runtimeOnlyData(dependencyNotation: Any): Dependency? {
   return add("runtimeOnlyDataScope", dependencyNotation)
 }
@@ -48,9 +52,21 @@ public fun DependencyHandler.runtimeOnlyDataScope(dependencyNotation: Any): Depe
   return add("runtimeOnlyDataScope", dependencyNotation)
 }
 
+public sealed class DependencyPresence : Serializable {
+  public object Present : DependencyPresence()
+
+  public data class Missing(public val reason: String) : DependencyPresence() {
+    init {
+      require(reason.isNotEmpty() && reason.all { it in 'a'..'z' || it in 'A'..'Z' || it == '_' }) {
+        "Invalid missing reason '$reason': must only contain ASCII letters and underscores"
+      }
+    }
+  }
+}
+
 public class TestDepEntry(
   @get:Input public val prop: String,
-  @get:Input public val isNone: Boolean,
+  @get:Input public val presence: DependencyPresence,
   @get:Optional @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) public val file: File?,
 )
 
@@ -59,7 +75,11 @@ public class TestDepsCommandLineArgumentProvider(
 ) : CommandLineArgumentProvider {
   override fun asArguments(): Iterable<String> {
     return entries.get().map { entry ->
-      val value = if (entry.isNone) "None" else entry.file!!.absolutePath
+      val value =
+        when (entry.presence) {
+          is DependencyPresence.Present -> entry.file!!.absolutePath
+          is DependencyPresence.Missing -> "None:${entry.presence.reason}"
+        }
       "-DTEST_DEP_${entry.prop}=$value"
     }
   }
@@ -89,6 +109,7 @@ public class DependenciesPlugin : Plugin<Project> {
       runtimeOnlyDataConfig.flatMap { config ->
         config.incoming.artifacts.resolvedArtifacts.map { artifacts ->
           val skipInternal = noInternal.isPresent
+          val isWindows = DefaultNativePlatform.getCurrentOperatingSystem().isWindows
           val seenProps = mutableSetOf<String>()
           artifacts.mapNotNull { artifact ->
             val prop = artifact.variant.attributes.getAttribute(TEST_DEP_PROP)
@@ -97,9 +118,17 @@ public class DependenciesPlugin : Plugin<Project> {
                 throw GradleException("Duplicate TEST_DEP_PROP: $prop")
               }
               val isInternal = artifact.variant.attributes.getAttribute(TEST_DEP_INTERNAL) == true
-              val isNone = isInternal && skipInternal
-              val file = if (isNone) null else artifact.file
-              TestDepEntry(prop, isNone, file)
+              val isMissingOnWindows =
+                artifact.variant.attributes.getAttribute(TEST_DEP_MISSING_ON_WINDOWS) == true
+              val presence =
+                when {
+                  isInternal && skipInternal -> DependencyPresence.Missing("no_internal")
+                  isMissingOnWindows && isWindows ->
+                    DependencyPresence.Missing("missing_on_windows")
+                  else -> DependencyPresence.Present
+                }
+              val file = if (presence is DependencyPresence.Present) artifact.file else null
+              TestDepEntry(prop, presence, file)
             } else {
               null
             }
@@ -159,14 +188,12 @@ public enum class Jdk(public val folder: String, public val version: Int) {
       subFolder = if (isJdk8()) "darwin-x86" else "osx"
     } else {
       assert(os.isWindows)
-      if (isJdk8()) {
-        throw RuntimeException("No Jdk8 on Windows")
-      }
       subFolder = "windows"
     }
     return ThirdPartyDependency(
       name,
       Paths.get("third_party", "openjdk", folder, subFolder).toFile(),
+      missingOnWindows = isJdk8(),
     )
   }
 }
@@ -516,7 +543,13 @@ public object ThirdPartyDeps {
       "openjdk-rt-1.8",
       Paths.get("third_party", "openjdk", "openjdk-rt-1.8").toFile(),
     )
-  public val jdks: List<ThirdPartyDependency> = getJdks()
+  public val jdk8: ThirdPartyDependency = Jdk.JDK_8.getThirdPartyDependency()
+  public val jdk9: ThirdPartyDependency = Jdk.JDK_9.getThirdPartyDependency()
+  public val jdk11: ThirdPartyDependency = Jdk.JDK_11.getThirdPartyDependency()
+  public val jdk17: ThirdPartyDependency = Jdk.JDK_17.getThirdPartyDependency()
+  public val jdk21: ThirdPartyDependency = Jdk.JDK_21.getThirdPartyDependency()
+  public val jdk25: ThirdPartyDependency = Jdk.JDK_25.getThirdPartyDependency()
+  public val jdk27: ThirdPartyDependency = Jdk.JDK_27.getThirdPartyDependency()
   public val jdk11Test: ThirdPartyDependency =
     ThirdPartyDependency("jdk-11-test", Paths.get("third_party", "openjdk", "jdk-11-test").toFile())
   public val jdk21Float16Test: ThirdPartyDependency =
@@ -807,15 +840,6 @@ private fun getThirdPartyChromeHeadless(): ThirdPartyDependency {
     Paths.get("third_party", "chrome_headless", subFolder).toFile(),
     testOnly = true,
   )
-}
-
-private fun getJdks(): List<ThirdPartyDependency> {
-  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
-  if (os.isLinux || os.isMacOsX) {
-    return Jdk.values().map { it.getThirdPartyDependency() }
-  } else {
-    return Jdk.values().filter { !it.isJdk8() }.map { it.getThirdPartyDependency() }
-  }
 }
 
 private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
