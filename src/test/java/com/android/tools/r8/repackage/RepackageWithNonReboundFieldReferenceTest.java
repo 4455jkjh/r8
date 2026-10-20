@@ -6,12 +6,10 @@ package com.android.tools.r8.repackage;
 
 import static com.android.tools.r8.shaking.ProguardConfigurationParser.FLATTEN_PACKAGE_HIERARCHY;
 import static com.android.tools.r8.shaking.ProguardConfigurationParser.REPACKAGE_CLASSES;
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.repackage.testclasses.RepackagingWithNonReboundFieldReferenceTestClasses;
 import com.android.tools.r8.repackage.testclasses.RepackagingWithNonReboundFieldReferenceTestClasses.B;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -22,23 +20,16 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class RepackageWithNonReboundFieldReferenceTest extends RepackageTestBase {
 
-  private final boolean alwaysUseExistingAccessInfoCollectionsInMemberRebinding;
-
-  @Parameters(name = "{2}, use access info collections: {0}, kind: {1}")
+  @Parameters(name = "{1}, kind: {0}")
   public static List<Object[]> data() {
     return buildParameters(
-        BooleanUtils.values(),
         ImmutableList.of(FLATTEN_PACKAGE_HIERARCHY, REPACKAGE_CLASSES),
         getTestParameters().withAllRuntimesAndApiLevels().build());
   }
 
   public RepackageWithNonReboundFieldReferenceTest(
-      boolean alwaysUseExistingAccessInfoCollectionsInMemberRebinding,
-      String flattenPackageHierarchyOrRepackageClasses,
-      TestParameters parameters) {
+      String flattenPackageHierarchyOrRepackageClasses, TestParameters parameters) {
     super(flattenPackageHierarchyOrRepackageClasses, parameters);
-    this.alwaysUseExistingAccessInfoCollectionsInMemberRebinding =
-        alwaysUseExistingAccessInfoCollectionsInMemberRebinding;
   }
 
   @Test
@@ -46,12 +37,6 @@ public class RepackageWithNonReboundFieldReferenceTest extends RepackageTestBase
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass(), RepackagingWithNonReboundFieldReferenceTestClasses.class)
         .addKeepMainRule(TestClass.class)
-        .addOptionsModification(
-            options -> {
-              assertTrue(options.testing.alwaysUseExistingAccessInfoCollectionsInMemberRebinding);
-              options.testing.alwaysUseExistingAccessInfoCollectionsInMemberRebinding =
-                  alwaysUseExistingAccessInfoCollectionsInMemberRebinding;
-            })
         .apply(this::configureRepackaging)
         .enableMemberValuePropagationAnnotations()
         .enableNoVerticalClassMergingAnnotations()

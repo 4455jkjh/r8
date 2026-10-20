@@ -907,7 +907,6 @@ public final class R8Command extends BaseCompilerCommand {
     }
 
     R8Command makeR8Command(DexItemFactory factory, ProguardConfiguration configuration) {
-      long created = System.nanoTime();
       Reporter reporter = getReporter();
       List<ProguardConfigurationRule> mainDexKeepRules =
           ProguardConfigurationParser.parseMainDex(mainDexRules, factory, reporter);
@@ -976,8 +975,7 @@ public final class R8Command extends BaseCompilerCommand {
               keepSpecifications,
               buildMetadataConsumer,
               partialCompilationConfiguration,
-              getApiDatabasePath(),
-              created);
+              getApiDatabasePath());
 
       if (inputDependencyGraphConsumer != null) {
         inputDependencyGraphConsumer.finished();
@@ -1252,7 +1250,6 @@ public final class R8Command extends BaseCompilerCommand {
   private final ResourceShrinkerConfiguration resourceShrinkerConfiguration;
   private final Consumer<? super R8BuildMetadata> buildMetadataConsumer;
   private final R8PartialCompilationConfiguration partialCompilationConfiguration;
-  private final long created;
 
   /** Get a new {@link R8Command.Builder}. */
   public static Builder builder() {
@@ -1358,8 +1355,7 @@ public final class R8Command extends BaseCompilerCommand {
       List<KeepSpecificationSource> keepSpecifications,
       Consumer<? super R8BuildMetadata> buildMetadataConsumer,
       R8PartialCompilationConfiguration partialCompilationConfiguration,
-      Path apiDatabasePath,
-      long created) {
+      Path apiDatabasePath) {
     super(
         inputApp,
         mode,
@@ -1415,7 +1411,6 @@ public final class R8Command extends BaseCompilerCommand {
     this.resourceShrinkerConfiguration = resourceShrinkerConfiguration;
     this.buildMetadataConsumer = buildMetadataConsumer;
     this.partialCompilationConfiguration = partialCompilationConfiguration;
-    this.created = created;
   }
 
   private R8Command(boolean printHelp, boolean printVersion) {
@@ -1449,7 +1444,6 @@ public final class R8Command extends BaseCompilerCommand {
     resourceShrinkerConfiguration = null;
     buildMetadataConsumer = null;
     partialCompilationConfiguration = null;
-    created = -1;
   }
 
   public DexItemFactory getDexItemFactory() {
@@ -1474,7 +1468,6 @@ public final class R8Command extends BaseCompilerCommand {
   @Override
   InternalOptions getInternalOptions() {
     InternalOptions internal = new InternalOptions(getMode(), proguardConfiguration, getReporter());
-    internal.created = created;
     assert !internal.testing.allowOutlinerInterfaceArrayArguments; // Only allow in tests.
     internal.programConsumer = getProgramConsumer();
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));

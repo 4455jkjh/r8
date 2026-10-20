@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.naming.signature;
 
-
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;

@@ -85,7 +85,6 @@ import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
-import com.android.tools.r8.optimize.compose.JetpackComposeOptions;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInlinerOptions;
 import com.android.tools.r8.origin.Origin;
@@ -201,8 +200,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
-  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V27;
-
   public CfVersion getSupportedCfVersion() {
     if (getTestingOptions().supportedCfVersionForTesting != null) {
       return getTestingOptions().supportedCfVersionForTesting;
@@ -281,7 +278,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return proguardConfiguration;
   }
 
-  public long created = -1;
   private final ProguardConfiguration proguardConfiguration;
   public final Reporter reporter;
 
@@ -513,7 +509,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableSimpleInliningConstraints = true;
   public final int simpleInliningConstraintThreshold = 1;
   public boolean enableClassInlining = true;
-  public boolean enableClassStaticizer = true;
   public boolean enableInitializedClassesAnalysis = true;
   public boolean enableSideEffectAnalysis = true;
   public boolean enableDeterminismAnalysis = true;
@@ -570,12 +565,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   // Number of threads to use while processing the dex files.
   public int threadCount = DETERMINISTIC_DEBUGGING ? 1 : ThreadUtils.NOT_SPECIFIED;
-  // Print smali disassembly.
-  public boolean useSmaliSyntax = false;
   // Verbose output.
   public boolean verbose = false;
-  // Silencing output.
-  public boolean quiet = false;
   // Throw exception if there is a warning about invalid debug info.
   public boolean invalidDebugInfoFatal = false;
   // Don't gracefully recover from invalid debug info.
@@ -1163,7 +1154,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean forceProguardCompatibility = false;
   public boolean protectApiSurface = false;
   public AssertionConfigurationWithDefault assertionsConfiguration = null;
-  public boolean configurationDebugging = false;
 
   // Don't convert Code objects to IRCode.
   public boolean skipIR = false;
@@ -1199,7 +1189,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final InlinerOptions inlinerOptions = new InlinerOptions(this);
   private final SingleCallerInlinerOptions singleCallerInlinerOptions =
       new SingleCallerInlinerOptions(this);
-  private final JetpackComposeOptions jetpackComposeOptions = new JetpackComposeOptions(this);
   private final HorizontalClassMergerOptions horizontalClassMergerOptions =
       new HorizontalClassMergerOptions();
   private final VerticalClassMergerOptions verticalClassMergerOptions =
@@ -1263,10 +1252,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public HorizontalClassMergerOptions horizontalClassMergerOptions() {
     return horizontalClassMergerOptions;
-  }
-
-  public JetpackComposeOptions getJetpackComposeOptions() {
-    return jetpackComposeOptions;
   }
 
   public LibraryDesugaringOptions getLibraryDesugaringOptions() {
@@ -1539,8 +1524,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   /** A set of dexitems we have reported missing to dedupe warnings. */
   private final Set<DexItem> reportedMissingForDesugaring = SetUtils.newConcurrentHashSet();
 
-  private final AtomicBoolean reportedErrorReadingKotlinMetadataReflectively =
-      new AtomicBoolean(false);
   private final Set<DexItem> invalidLibraryClasses = SetUtils.newConcurrentHashSet();
 
   public RuntimeException errorMissingNestHost(DexClass clazz) {
@@ -1634,16 +1617,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
               classToDesugar == implementing
                   ? null
                   : Reference.classFromDescriptor(implementing.getType().toDescriptorString())));
-    }
-  }
-
-  public void warningReadingKotlinMetadataReflective() {
-    if (reportedErrorReadingKotlinMetadataReflectively.compareAndSet(false, true)) {
-      reporter.warning(
-          new StringDiagnostic(
-              "Could not read the kotlin metadata message reflectively which indicates the"
-                  + " compiler running in the context of a Security Manager. Not being able to"
-                  + " read the kotlin metadata will have a negative effect oncode size"));
     }
   }
 
@@ -2593,7 +2566,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean allowInvokeErrors = false;
     public boolean allowUnnecessaryDontWarnWildcards = true;
     public boolean allowUnusedDontWarnRules = true;
-    public boolean alwaysUseExistingAccessInfoCollectionsInMemberRebinding = true;
     public boolean alwaysUsePessimisticRegisterAllocation = false;
     public boolean applyIfRulesToLibrary =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
@@ -2656,7 +2628,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.testing.dontReportFailingCheckDiscarded") != null;
     public boolean disableRecordApplicationReaderMap = false;
     public boolean trackDesugaredApiConversions = false;
-    public boolean enumUnboxingRewriteJavaCGeneratedMethod = false;
     public boolean allowStaticInterfaceMethodsForPreNApiLevel = false;
     public int verificationSizeLimitInBytesOverride = -1;
     public boolean forceIRForCfToCfDesugar =
