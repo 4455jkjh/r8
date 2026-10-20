@@ -32,6 +32,7 @@ import com.android.tools.r8.ir.code.InstructionList;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.IntSwitch;
 import com.android.tools.r8.ir.code.InvokeStatic;
+import com.android.tools.r8.ir.code.Not;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Position;
@@ -273,8 +274,23 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
             && (ushr.rightValue().getConstInt() & 0x1f) == 31) {
           // ifeqz (a >>> 31) => ifgez a
           // ifnez (a >>> 31) => ifltz a
+          Value leftValue = ushr.leftValue();
+          Value leftRoot = leftValue.getAliasedValue();
           IfType newIfType = theIf.getType() == IfType.EQ ? IfType.GE : IfType.LT;
-          block.replaceLastInstruction(new If(newIfType, ushr.leftValue()));
+          if (leftRoot.isDefinedByInstructionSatisfying(Instruction::isNot)) {
+            leftValue = leftRoot.getDefinition().asNot().source();
+            newIfType = newIfType.inverted();
+          } else if (leftRoot.isDefinedByInstructionSatisfying(Instruction::isXor)) {
+            Xor xor = leftRoot.getDefinition().asXor();
+            if (xor.leftValue().isConstNumber(-1)) {
+              leftValue = xor.rightValue();
+              newIfType = newIfType.inverted();
+            } else if (xor.rightValue().isConstNumber(-1)) {
+              leftValue = xor.leftValue();
+              newIfType = newIfType.inverted();
+            }
+          }
+          block.replaceLastInstruction(new If(newIfType, leftValue));
           return true;
         }
       }
@@ -710,12 +726,16 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       if (geZeroInt == 1 && ltZeroInt == 0) {
         // `lhs >= 0 ? 1 : 0` -> `(~lhs) >>> 31` (3 DEX code units: `not-int` (1) +
         // `ushr-int/lit8` (2)).
-        ConstNumber constMinus1 = code.createIntConstant(-1);
-        constMinus1.setPosition(phiPosition);
-        instructions.addBefore(constMinus1, prevHead);
         Value notValue = code.createValue(phi.getType());
-        Instruction notInstruction =
-            Xor.create(NumericType.INT, notValue, lhs, constMinus1.outValue());
+        Instruction notInstruction;
+        if (options.canUseNotInstruction()) {
+          notInstruction = new Not(NumericType.INT, notValue, lhs);
+        } else {
+          ConstNumber constMinus1 = code.createIntConstant(-1);
+          constMinus1.setPosition(phiPosition);
+          instructions.addBefore(constMinus1, prevHead);
+          notInstruction = Xor.create(NumericType.INT, notValue, lhs, constMinus1.outValue());
+        }
         notInstruction.setPosition(phiPosition);
         instructions.addBefore(notInstruction, prevHead);
         ConstNumber const31 = code.createIntConstant(31);

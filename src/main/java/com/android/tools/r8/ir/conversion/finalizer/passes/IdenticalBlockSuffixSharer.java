@@ -79,6 +79,7 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
         Map<Wrapper<Instruction>, List<BasicBlock>> lastInstructionToBlocks = new LinkedHashMap<>();
         for (BasicBlock pred : block.getPredecessors()) {
           if (pred.exit().isGoto()
+              && !pred.exit().isBackTo()
               && pred.getSuccessors().size() == 1
               && pred.getInstructions().size() > 1) {
             Instruction lastInstruction = pred.getLastInstruction().getPrev();
@@ -117,15 +118,12 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
                   block,
                   allocator,
                   blocksToRemove);
-          // Insert the new block after a predecessor that keeps some instructions, so that it falls
-          // through to the new block instead of being removed. In case of a tie, use the last such
-          // predecessor in the block order, so that the result does not depend on the order of the
-          // predecessors.
+          // Insert the new block after the last predecessor in the block order, so that all jumps
+          // to and from the new block are forward jumps.
           BasicBlock predBeforeNewBlock =
               Collections.max(
                   predsWithSameLastInstruction,
-                  Comparator.comparingInt((BasicBlock pred) -> pred.getInstructions().size())
-                      .thenComparingInt(pred -> blockIndices.computeIfAbsent().getInt(pred)));
+                  Comparator.comparingInt(pred -> blockIndices.computeIfAbsent().getInt(pred)));
           newBlocks.put(predBeforeNewBlock, newBlock);
           hasChanged = true;
         }

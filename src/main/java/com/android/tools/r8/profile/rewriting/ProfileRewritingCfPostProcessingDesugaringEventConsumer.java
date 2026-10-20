@@ -22,7 +22,6 @@ import com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringSyntheticHelper;
 import com.android.tools.r8.profile.AbstractProfileMethodRule;
 import com.android.tools.r8.profile.art.ArtProfileOptions;
 import com.android.tools.r8.utils.internal.BooleanBox;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class ProfileRewritingCfPostProcessingDesugaringEventConsumer
@@ -163,8 +162,8 @@ public class ProfileRewritingCfPostProcessingDesugaringEventConsumer
   }
 
   @Override
-  public Set<DexMethod> getNewlyLiveMethods() {
-    return parent.getNewlyLiveMethods();
+  public boolean isNewlyLiveMethod(DexMethod method) {
+    return parent.isNewlyLiveMethod(method);
   }
 
   @Override

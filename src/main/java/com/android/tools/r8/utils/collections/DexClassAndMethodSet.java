@@ -12,24 +12,24 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class DexClassAndMethodSet extends DexClassAndMethodSetBase<DexClassAndMethod> {
+public class DexClassAndMethodSet extends DexClassAndMethodSetBase<DexClassAndMethod> {
 
-  private static final DexClassAndMethodSet EMPTY = new EmptyDexClassAndMethodSet();
+  private static final DexClassAndMethodSet EMPTY = new DexClassAndMethodSet(ImmutableMap.of());
 
-  DexClassAndMethodSet() {
-    super();
+  private DexClassAndMethodSet(Map<DexMethod, DexClassAndMethod> backing) {
+    super(backing);
   }
 
   public static DexClassAndMethodSet create() {
-    return new IdentityDexClassAndMethodSet();
+    return new DexClassAndMethodSet(new IdentityHashMap<>());
   }
 
   public static DexClassAndMethodSet createConcurrent() {
-    return new ConcurrentDexClassAndMethodSet();
+    return new DexClassAndMethodSet(new ConcurrentHashMap<>());
   }
 
   public static DexClassAndMethodSet createLinked() {
-    return new LinkedDexClassAndMethodSet();
+    return new DexClassAndMethodSet(new LinkedHashMap<>());
   }
 
   public static DexClassAndMethodSet empty() {
@@ -38,57 +38,5 @@ public abstract class DexClassAndMethodSet extends DexClassAndMethodSetBase<DexC
 
   public void addAll(DexClassAndMethodSet methods) {
     backing.putAll(methods.backing);
-  }
-
-  private static class ConcurrentDexClassAndMethodSet extends DexClassAndMethodSet {
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking() {
-      return new ConcurrentHashMap<>();
-    }
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking(int capacity) {
-      return new ConcurrentHashMap<>(capacity);
-    }
-  }
-
-  private static class EmptyDexClassAndMethodSet extends DexClassAndMethodSet {
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking() {
-      return ImmutableMap.of();
-    }
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking(int capacity) {
-      return ImmutableMap.of();
-    }
-  }
-
-  private static class IdentityDexClassAndMethodSet extends DexClassAndMethodSet {
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking() {
-      return new IdentityHashMap<>();
-    }
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking(int capacity) {
-      return new IdentityHashMap<>(capacity);
-    }
-  }
-
-  private static class LinkedDexClassAndMethodSet extends DexClassAndMethodSet {
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking() {
-      return new LinkedHashMap<>();
-    }
-
-    @Override
-    Map<DexMethod, DexClassAndMethod> createBacking(int capacity) {
-      return new LinkedHashMap<>(capacity);
-    }
   }
 }

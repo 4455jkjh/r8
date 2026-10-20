@@ -92,6 +92,7 @@ public class InvalidTypesTest extends JasminTestBase {
               case V14_0_0:
               case V15_0_0:
               case V16_0_0:
+              case V16_1_0:
               case V17_0_0:
               case V17_1_0:
               case V17_2_0:

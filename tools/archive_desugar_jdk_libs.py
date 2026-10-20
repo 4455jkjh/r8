@@ -142,9 +142,8 @@ def Upload(options, file_name, destination, is_main):
             print('Dry run, not actually uploading')
     else:
         utils.upload_file_to_cloud_storage(file_name, destination)
-        print(
-            'File available at: %s' %
-            destination.replace('gs://', 'https://storage.googleapis.com/', 1))
+        print('File available at: %s' %
+              destination.replace('gs://', utils.CLOUD_STORAGE_URL + '/', 1))
 
 
 def CloneDesugaredLibrary(github_account, checkout_dir, desugar_jdk_libs_hash):

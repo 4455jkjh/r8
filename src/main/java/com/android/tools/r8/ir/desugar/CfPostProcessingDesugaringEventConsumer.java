@@ -26,9 +26,6 @@ import com.android.tools.r8.profile.rewriting.ProfileRewritingCfPostProcessingDe
 import com.android.tools.r8.shaking.Enqueuer.SyntheticAdditions;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet.ConcurrentProgramMethodSet;
-import com.android.tools.r8.utils.internal.SetUtils;
-import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
@@ -76,7 +73,7 @@ public abstract class CfPostProcessingDesugaringEventConsumer
         appView, profileCollectionAdditions, eventConsumer);
   }
 
-  public abstract Set<DexMethod> getNewlyLiveMethods();
+  public abstract boolean isNewlyLiveMethod(DexMethod method);
 
   public abstract void finalizeDesugaring() throws ExecutionException;
 
@@ -159,8 +156,8 @@ public abstract class CfPostProcessingDesugaringEventConsumer
     }
 
     @Override
-    public Set<DexMethod> getNewlyLiveMethods() {
-      return Collections.emptySet();
+    public boolean isNewlyLiveMethod(DexMethod method) {
+      return false;
     }
 
     @Override
@@ -227,10 +224,10 @@ public abstract class CfPostProcessingDesugaringEventConsumer
     }
 
     @Override
-    public Set<DexMethod> getNewlyLiveMethods() {
+    public boolean isNewlyLiveMethod(DexMethod method) {
       // Note: this answers the newly live methods up until the point where this is called.
       // This has to be called in between post processing to be deterministic.
-      return additions.getNewlyLiveMethods();
+      return additions.isNewlyLiveMethod(method);
     }
 
     @Override
@@ -373,8 +370,8 @@ public abstract class CfPostProcessingDesugaringEventConsumer
     }
 
     @Override
-    public Set<DexMethod> getNewlyLiveMethods() {
-      return synthesizedMethods.toReferenceSet(SetUtils::newIdentityHashSet);
+    public boolean isNewlyLiveMethod(DexMethod method) {
+      return synthesizedMethods.contains(method);
     }
 
     @Override

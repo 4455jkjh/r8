@@ -1293,7 +1293,11 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   }
 
   public Phi createPhi(BasicBlock block, TypeElement type) {
-    return new Phi(valueNumberGenerator.next(), block, type, null, RegisterReadType.NORMAL);
+    return createPhi(block, type, null);
+  }
+
+  public Phi createPhi(BasicBlock block, TypeElement type, DebugLocalInfo local) {
+    return new Phi(valueNumberGenerator.next(), block, type, local, RegisterReadType.NORMAL);
   }
 
   public final int getNextBlockNumber() {

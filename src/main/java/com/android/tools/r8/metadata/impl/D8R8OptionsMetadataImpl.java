@@ -36,6 +36,14 @@ abstract class D8R8OptionsMetadataImpl<
   private final String minApiLevel;
 
   @Expose
+  @SerializedName("minApiLevelMajor")
+  private final Integer minApiLevelMajor;
+
+  @Expose
+  @SerializedName("minApiLevelMinor")
+  private final Integer minApiLevelMinor;
+
+  @Expose
   @SerializedName("isDebugModeEnabled")
   private final boolean isDebugModeEnabled;
 
@@ -45,8 +53,15 @@ abstract class D8R8OptionsMetadataImpl<
       InternalOptions options) {
     this.apiModelingMetadata = apiModelingMetadata;
     this.libraryDesugaringMetadata = libraryDesugaringMetadata;
-    this.minApiLevel =
-        options.isGeneratingDex() ? Integer.toString(options.getMinApiLevel().getMajor()) : null;
+    if (options.isGeneratingDex()) {
+      this.minApiLevel = Integer.toString(options.getMinApiLevel().getMajor());
+      this.minApiLevelMajor = options.getMinApiLevel().getMajor();
+      this.minApiLevelMinor = options.getMinApiLevel().getMinor();
+    } else {
+      this.minApiLevel = null;
+      this.minApiLevelMajor = null;
+      this.minApiLevelMinor = null;
+    }
     this.isDebugModeEnabled = options.debug;
   }
 
@@ -61,8 +76,25 @@ abstract class D8R8OptionsMetadataImpl<
   }
 
   @Override
+  @Deprecated
   public String getMinApiLevel() {
     return minApiLevel;
+  }
+
+  @Override
+  public int getMinApiLevelMajor() {
+    if (minApiLevelMajor == null && minApiLevel != null) {
+      return Integer.parseInt(minApiLevel);
+    }
+    return minApiLevelMajor != null ? minApiLevelMajor : -1;
+  }
+
+  @Override
+  public int getMinApiLevelMinor() {
+    if (minApiLevelMinor == null && minApiLevel != null) {
+      return 0;
+    }
+    return minApiLevelMinor != null ? minApiLevelMinor : -1;
   }
 
   @Override

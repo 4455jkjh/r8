@@ -372,6 +372,11 @@ public abstract class RunExamplesAndroidOTest<
                 // TODO(b/120402963): Triage.
                 "invokecustom", "invokecustom2"))
         .put(
+            Version.V16_1_0,
+            ImmutableList.of(
+                // TODO(b/120402963): Triage.
+                "invokecustom", "invokecustom2"))
+        .put(
             Version.V17_0_0,
             ImmutableList.of(
                 // TODO(b/120402963): Triage.

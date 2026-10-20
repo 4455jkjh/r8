@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableList;
@@ -139,9 +140,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   }
 
   private static boolean checkValuesSorted() {
-    for (int i = 1; i < valuesSorted.size(); i++) {
-      assert valuesSorted.get(i - 1).isLessThan(valuesSorted.get(i));
-    }
+    assert IterableUtils.allWithPrevious(valuesSorted, Ordered::isLessThan);
     return true;
   }
 

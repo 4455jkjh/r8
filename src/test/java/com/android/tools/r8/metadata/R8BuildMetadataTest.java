@@ -209,6 +209,12 @@ public class R8BuildMetadataTest extends TestBase {
     assertEquals(
         parameters.isCfRuntime() ? null : Integer.toString(parameters.getApiLevel().getMajor()),
         buildMetadata.getOptionsMetadata().getMinApiLevel());
+    assertEquals(
+        parameters.isCfRuntime() ? -1 : parameters.getApiLevel().getMajor(),
+        buildMetadata.getOptionsMetadata().getMinApiLevelMajor());
+    assertEquals(
+        parameters.isCfRuntime() ? -1 : parameters.getApiLevel().getMinor(),
+        buildMetadata.getOptionsMetadata().getMinApiLevelMinor());
     assertFalse(buildMetadata.getOptionsMetadata().isDebugModeEnabled());
     // Options metadata (library desugaring).
     R8LibraryDesugaringMetadata libraryDesugaringMetadata =

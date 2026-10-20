@@ -29,7 +29,14 @@ public interface R8OptionsMetadata {
    */
   R8LibraryDesugaringMetadata getLibraryDesugaringMetadata();
 
+  @Deprecated
   String getMinApiLevel();
+
+  /** Returns the minimum major API level, or -1 if not compiling to dex. */
+  int getMinApiLevelMajor();
+
+  /** Returns the minimum minor API level, or -1 if not compiling to dex. */
+  int getMinApiLevelMinor();
 
   boolean hasObfuscationDictionary();
 

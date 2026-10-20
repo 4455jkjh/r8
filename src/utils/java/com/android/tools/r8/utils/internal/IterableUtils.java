@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -41,14 +42,39 @@ public class IterableUtils {
 
   public static <T> boolean allWithPrevious(
       Iterable<? extends T> iterable, BiPredicate<? super T, ? super T> predicate) {
-    T previous = null;
-    for (T element : iterable) {
-      if (!predicate.test(element, previous)) {
+    Iterator<? extends T> iterator = iterable.iterator();
+    if (!iterator.hasNext()) {
+      return true;
+    }
+    T previous = iterator.next();
+    while (iterator.hasNext()) {
+      T current = iterator.next();
+      if (!predicate.test(previous, current)) {
         return false;
       }
-      previous = element;
+      previous = current;
     }
     return true;
+  }
+
+  public static <T> void forEachWithPrevious(
+      Iterable<? extends T> iterable, BiConsumer<? super T, ? super T> consumer) {
+    forEachWithPreviousThrowing(iterable, consumer::accept);
+  }
+
+  public static <T, E extends Throwable> void forEachWithPreviousThrowing(
+      Iterable<? extends T> iterable, ThrowingBiConsumer<? super T, ? super T, E> consumer)
+      throws E {
+    Iterator<? extends T> iterator = iterable.iterator();
+    if (!iterator.hasNext()) {
+      return;
+    }
+    T previous = iterator.next();
+    while (iterator.hasNext()) {
+      T current = iterator.next();
+      consumer.accept(previous, current);
+      previous = current;
+    }
   }
 
   public static <S, T> boolean any(

@@ -568,7 +568,8 @@ def main():
                     meta_file = os.path.join(temp, "meta")
                     with open(meta_file, 'w') as f:
                         f.write("Produced by: " +
-                                os.environ.get('SWARMING_BOT_ID'))
+                                (os.environ.get('SWARMING_BOT_ID') or
+                                 os.environ.get('KOKORO_BUILD_ID')))
                     ArchiveOutputFile(meta_file,
                                       GetArtifactLocation(
                                           benchmark,

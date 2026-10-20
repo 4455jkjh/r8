@@ -69,13 +69,24 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
         continue;
       }
       BasicBlock otherBlock = seenBlocks.putIfAbsent(equivalence.wrap(block), block);
-      if (otherBlock != null) {
+      if (otherBlock != null && !isLoopHeader(block)) {
         hasChanged = true;
         mergeBlocks(otherBlock, block, allocator, equivalence, seenBlocks, blocksToRemove);
       }
     }
     code.removeBlocks(blocksToRemove);
     return CodeRewriterResult.hasChanged(hasChanged);
+  }
+
+  // The block is merged into a later block. If it is a loop header, the BackTo to it would become a
+  // forward branch.
+  private static boolean isLoopHeader(BasicBlock block) {
+    for (BasicBlock predecessor : block.getPredecessors()) {
+      if (predecessor.exit().isBackTo()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private static void mergeBlocks(
@@ -86,6 +97,7 @@ public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
       Map<Wrapper<BasicBlock>, BasicBlock> seenBlocks,
       Set<BasicBlock> blocksToRemove) {
     assert !allocator.options().debug || Objects.equals(removed.getPosition(), kept.getPosition());
+    assert !removed.exit().isBackTo() || kept.exit().isBackTo();
     allocator.mergeBlocks(kept, removed);
     removed.clearCatchHandlers();
     removed.getInstructions().clear();

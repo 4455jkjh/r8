@@ -15,9 +15,9 @@ import com.android.tools.r8.dex.code.DexGoto;
 import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.dex.code.DexThrow;
 import com.android.tools.r8.graph.DexCode;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,20 +56,16 @@ public class DexBuilderTryCatchThrowWorkaroundTest extends TestBase {
               DexCode.Try tryItem = code.tries[0];
               int tryEnd = tryItem.startAddress + tryItem.instructionCount;
 
-              if (parameters.getApiLevel().isLessThan(AndroidApiLevel.L)) {
-                // The dalvik tracing JIT workaround rewrote:
-                //   throw vN (at N)
-                // to:
-                //   goto +2 (at N); throw vN (at N+1); goto -1 (at N+2)
-                assertTrue(instructions[instructions.length - 1] instanceof DexGoto);
-                assertTrue(instructions[instructions.length - 2] instanceof DexThrow);
-                DexInstruction throwInsn = instructions[instructions.length - 2];
-                assertTrue(throwInsn.getOffset() < tryEnd);
-              } else {
-                assertTrue(instructions[instructions.length - 1] instanceof DexThrow);
-                DexInstruction throwInsn = instructions[instructions.length - 1];
-                assertTrue(throwInsn.getOffset() < tryEnd);
-              }
+              // The method ends with the loop back edge, so the throw is never the last instruction
+              // and the dalvik tracing JIT workaround does not apply. The throw is still covered by
+              // the try.
+              assertTrue(instructions[instructions.length - 1] instanceof DexGoto);
+              DexInstruction throwInsn =
+                  Arrays.stream(instructions)
+                      .filter(instruction -> instruction instanceof DexThrow)
+                      .findFirst()
+                      .get();
+              assertTrue(throwInsn.getOffset() < tryEnd);
             })
         .run(parameters.getRuntime(), C.class)
         .assertSuccessWithOutputLines("CAUGHT");

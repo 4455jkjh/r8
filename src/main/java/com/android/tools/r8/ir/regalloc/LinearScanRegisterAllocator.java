@@ -1591,10 +1591,8 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     boolean consecutiveArguments =
         IterableUtils.allWithPrevious(
             intervalsList,
-            (current, previous) ->
-                previous == null
-                    || current.getSplitParent().getPreviousConsecutive()
-                        == previous.getSplitParent());
+            (previous, current) ->
+                current.getSplitParent().getPreviousConsecutive() == previous.getSplitParent());
     boolean consecutivePinnedArguments =
         consecutiveArguments && Iterables.all(intervalsList, this::isPinnedArgumentRegister);
     timing.end();
@@ -3650,15 +3648,11 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
   }
 
-  @SuppressWarnings("AssignmentExpression")
   private void linkArgumentValuesAndIntervals(List<Value> arguments) {
     if (!arguments.isEmpty()) {
-      Value last = firstArgumentValue = arguments.get(0);
-      for (int i = 1; i < arguments.size(); ++i) {
-        Value next = arguments.get(i);
-        last.getLiveIntervals().link(next.getLiveIntervals());
-        last = next;
-      }
+      firstArgumentValue = arguments.get(0);
+      IterableUtils.forEachWithPrevious(
+          arguments, (last, next) -> last.getLiveIntervals().link(next.getLiveIntervals()));
     }
   }
 

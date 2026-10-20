@@ -51,13 +51,28 @@ public class Not extends Unop {
     if (sourceLattice.isSingleNumberValue()) {
       SingleNumberValue sourceConst = sourceLattice.asSingleNumberValue();
       long newConst;
-      if (this.type == NumericType.INT) {
+      if (type.isInt()) {
         newConst = ~sourceConst.getIntValue();
       } else {
-        assert this.type == NumericType.LONG;
+        assert type.isLong();
         newConst = ~sourceConst.getLongValue();
       }
       return appView.abstractValueFactory().createSingleNumberValue(newConst, getOutType());
+    }
+    if (sourceLattice.hasDefinitelySetAndUnsetBitsInformation()) {
+      if (type.isInt()) {
+        return appView
+            .abstractValueFactory()
+            .createDefiniteBitsIntNumberValue(
+                sourceLattice.getDefinitelyUnsetIntBits(), sourceLattice.getDefinitelySetIntBits());
+      } else {
+        assert type.isLong();
+        return appView
+            .abstractValueFactory()
+            .createDefiniteBitsLongNumberValue(
+                sourceLattice.getDefinitelyUnsetLongBits(),
+                sourceLattice.getDefinitelySetLongBits());
+      }
     }
     return AbstractValue.unknown();
   }

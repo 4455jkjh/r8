@@ -161,6 +161,8 @@ public class R8RunSmaliTestsTest extends TestBase {
           art13PlusExpectations,
           Version.V16_0_0,
           art13PlusExpectations,
+          Version.V16_1_0,
+          art13PlusExpectations,
           Version.V17_0_0,
           art13PlusExpectations,
           Version.V17_1_0,

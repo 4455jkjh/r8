@@ -764,6 +764,7 @@ private fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
       listOf("host", "art-17.2.0"),
       listOf("host", "art-17.1.0"),
       listOf("host", "art-17.0.0-beta4"),
+      listOf("host", "art-16.1.0"),
       listOf("host", "art-16.0.0"),
       listOf("host", "art-15.0.0-beta2"),
       listOf("host", "art-14.0.0-beta3"),

@@ -101,6 +101,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
           DexVm.Version.V14_0_0,
           DexVm.Version.V15_0_0,
           DexVm.Version.V16_0_0,
+          DexVm.Version.V16_1_0,
           DexVm.Version.V17_0_0,
           DexVm.Version.V17_1_0,
           DexVm.Version.V17_2_0);
@@ -501,6 +502,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
         .put(DexVm.Version.V17_2_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V17_1_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V17_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
+        .put(DexVm.Version.V16_1_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V16_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V15_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
         .put(DexVm.Version.V14_0_0, ImmutableList.of("543-env-long-ref", "518-null-array-get"))
@@ -849,6 +851,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
                           DexVm.Version.V14_0_0,
                           DexVm.Version.V15_0_0,
                           DexVm.Version.V16_0_0,
+                          DexVm.Version.V16_1_0,
                           DexVm.Version.V17_0_0,
                           DexVm.Version.V17_1_0,
                           DexVm.Version.V17_2_0)),
@@ -883,6 +886,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
                       DexVm.Version.V14_0_0,
                       DexVm.Version.V15_0_0,
                       DexVm.Version.V16_0_0,
+                      DexVm.Version.V16_1_0,
                       DexVm.Version.V17_0_0,
                       DexVm.Version.V17_1_0,
                       DexVm.Version.V17_2_0)))
@@ -906,6 +910,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
                       DexVm.Version.V14_0_0,
                       DexVm.Version.V15_0_0,
                       DexVm.Version.V16_0_0,
+                      DexVm.Version.V16_1_0,
                       DexVm.Version.V17_0_0,
                       DexVm.Version.V17_1_0,
                       DexVm.Version.V17_2_0)))

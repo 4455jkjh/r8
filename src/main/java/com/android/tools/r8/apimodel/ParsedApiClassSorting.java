@@ -7,6 +7,7 @@ package com.android.tools.r8.apimodel;
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -77,14 +78,14 @@ public class ParsedApiClassSorting {
       throws ApiDatabaseGeneratorException {
     List<T> sorted = new ArrayList<>(items);
     sorted.sort(comparator);
-    T previous = null;
-    for (T current : sorted) {
-      if (previous != null && comparator.compare(previous, current) == 0) {
-        throw new ApiDatabaseGeneratorException(
-            "Found duplicates for: " + toMessage.apply(current));
-      }
-      previous = current;
-    }
+    IterableUtils.forEachWithPreviousThrowing(
+        sorted,
+        (previous, current) -> {
+          if (comparator.compare(previous, current) == 0) {
+            throw new ApiDatabaseGeneratorException(
+                "Found duplicates for: " + toMessage.apply(current));
+          }
+        });
     return sorted;
   }
 

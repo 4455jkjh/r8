@@ -38,7 +38,8 @@ class BasicBlockInstructionsEquivalence extends Equivalence<BasicBlock> {
     Instruction i0 = instructions0.getFirstOrNull();
     Instruction i1 = instructions1.getFirstOrNull();
     while (i0 != null) {
-      if (!i0.identicalAfterRegisterAllocation(i1, allocator, conversionOptions)) {
+      if (!i0.identicalAfterRegisterAllocation(i1, allocator, conversionOptions)
+          && !isGotoAndBackToWithSameTarget(i0, i1)) {
         return false;
       }
       i0 = i0.getNext();
@@ -57,6 +58,17 @@ class BasicBlockInstructionsEquivalence extends Equivalence<BasicBlock> {
     // Normal successors are equal based on equality of the instruction stream. Verify that here.
     assert verifyAllSuccessors(first.getSuccessors(), second.getSuccessors());
     return true;
+  }
+
+  // A block ending with a Goto is placed before the target and a block ending with a BackTo is
+  // placed after the target. The IdenticalBlockRemover keeps the later block, so the merged block
+  // ends with the BackTo and all jumps keep their direction.
+  @SuppressWarnings("ReferenceEquality")
+  private static boolean isGotoAndBackToWithSameTarget(Instruction i0, Instruction i1) {
+    return i0.isGoto()
+        && i1.isGoto()
+        && i0.isBackTo() != i1.isBackTo()
+        && i0.asGoto().getTarget() == i1.asGoto().getTarget();
   }
 
   @SuppressWarnings("ReferenceEquality")

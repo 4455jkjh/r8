@@ -1703,8 +1703,10 @@ public class BasicBlock {
     throw new Unreachable();
   }
 
+  // A block ending with the BackTo of a loop is never a trivial goto block, as removing it would
+  // turn the forward branches to the loop latch into backward branches to the loop header.
   public boolean isTrivialGoto() {
-    return instructions.size() == 1 && exit().isGoto();
+    return instructions.size() == 1 && exit().isGoto() && !exit().isBackTo();
   }
 
   // Go backwards in the control flow graph until a block that is not a trivial goto block is found,

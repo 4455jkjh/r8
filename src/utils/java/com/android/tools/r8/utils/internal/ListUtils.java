@@ -333,12 +333,8 @@ public class ListUtils {
   }
 
   public static <T extends Comparable<T>> boolean verifyListIsOrdered(List<T> list) {
-    for (int i = list.size() - 1; i > 0; i--) {
-      if (list.get(i).compareTo(list.get(i - 1)) < 0) {
-        return false;
-      }
-    }
-    return true;
+    return IterableUtils.allWithPrevious(
+        list, (previous, current) -> previous.compareTo(current) <= 0);
   }
 
   public static <T, R> R fold(Collection<T> items, R identity, BiFunction<R, T, R> acc) {

@@ -193,7 +193,7 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
                             .getApiLevel()
                             .isLessThan(TestBase.apiLevelWithDefaultInterfaceMethodsSupport())))
                 ? EXPECTED_WITHOUT_EMULATED_INTERFACE_ART_BEFORE_O
-                : ((parameters.getApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN)
+                : ((parameters.getApiLevel().isLessThan(AndroidApiLevel.BAKLAVA_1)
                         && libraryDesugaringSpecification == JDK11)
                     ? (compilationSpecification.isCfToCf()
                         ? EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_CIN_CF2CF
