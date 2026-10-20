@@ -3213,7 +3213,7 @@ public class DexItemFactory {
      * field, for the compiler to have a principled way to trigger the initialization of a given
      * class.
      */
-    public final DexField clinitField = createField(objectType, intType, "$r8$clinit");
+    public final DexField clinitField = createField(objectType, booleanType, "$r8$clinit");
 
     public final DexMethod clone;
     public final DexMethod equals =
