@@ -105,13 +105,7 @@ public class KotlinInlineLambdaDebugTest extends KotlinDebugTestBase {
                       .sorted(Comparator.comparingLong(Variable::getCodeIndex))
                       .map(Variable::getName)
                       .collect(Collectors.toList());
-              if (parameters.isCfRuntime()) {
-                assertEquals(ImmutableList.of("p1", "p2", "p3"), lambdaParametersByCodeIndex);
-              } else {
-                // TODO(b/574583375): The order of inlined lambda parameters in DEX is p1, p3, p2
-                // instead of p1, p2, p3.
-                assertEquals(ImmutableList.of("p1", "p3", "p2"), lambdaParametersByCodeIndex);
-              }
+              assertEquals(ImmutableList.of("p1", "p2", "p3"), lambdaParametersByCodeIndex);
             }),
         run());
   }

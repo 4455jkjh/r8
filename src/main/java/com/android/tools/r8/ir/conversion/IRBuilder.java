@@ -1329,13 +1329,14 @@ public class IRBuilder {
       // If the move is writing to a different local we must construct a new value.
       DebugLocalInfo destLocal = getOutgoingLocal(dest);
       if (destLocal != null && destLocal != in.getLocalInfo()) {
-        Value out = writeRegister(dest, in.getType(), ThrowingInfo.NO_THROW);
-        addInstruction(new DebugLocalWrite(out, in));
-        return;
-      }
-      // If this move ends locals, add a DebugLocalRead to make sure the end point
-      // is registered in the right place.
-      if (!debugLocalEnds.isEmpty()) {
+        if (destLocal == getIncomingLocal(dest)) {
+          Value out = writeRegister(dest, in.getType(), ThrowingInfo.NO_THROW);
+          addInstruction(new DebugLocalWrite(out, in));
+          return;
+        }
+      } else if (!debugLocalEnds.isEmpty()) {
+        // If this move ends locals, add a DebugLocalRead to make sure the end point
+        // is registered in the right place.
         addInstruction(new DebugLocalRead());
       }
     }

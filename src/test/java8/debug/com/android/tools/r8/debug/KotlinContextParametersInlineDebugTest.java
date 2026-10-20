@@ -115,15 +115,8 @@ public class KotlinContextParametersInlineDebugTest extends KotlinDebugTestBase 
                       .sorted(Comparator.comparingLong(Variable::getCodeIndex))
                       .map(Variable::getName)
                       .collect(Collectors.toList());
-              if (parameters.isCfRuntime()) {
-                assertEquals(
-                    ImmutableList.of("ctx1$iv", "ctx2$iv", "ctx3$iv"), contextVariablesByCodeIndex);
-              } else {
-                // TODO(b/574583375): The order of context variables in DEX is ctx3$iv, ctx1$iv,
-                // ctx2$iv instead of ctx1$iv, ctx2$iv, ctx3$iv.
-                assertEquals(
-                    ImmutableList.of("ctx3$iv", "ctx1$iv", "ctx2$iv"), contextVariablesByCodeIndex);
-              }
+              assertEquals(
+                  ImmutableList.of("ctx1$iv", "ctx2$iv", "ctx3$iv"), contextVariablesByCodeIndex);
             }),
         run());
   }

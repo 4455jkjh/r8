@@ -108,15 +108,7 @@ public class KotlinInlineFunctionInlineDebugTest extends KotlinDebugTestBase {
                       .sorted(Comparator.comparingLong(Variable::getCodeIndex))
                       .map(Variable::getName)
                       .collect(Collectors.toList());
-              if (parameters.isCfRuntime()) {
-                assertEquals(
-                    ImmutableList.of("a$iv", "b$iv", "c$iv"), inlinedParametersByCodeIndex);
-              } else {
-                // TODO(b/574583375): The order of inlined parameter variables in DEX is c$iv,
-                // b$iv, a$iv instead of a$iv, b$iv, c$iv.
-                assertEquals(
-                    ImmutableList.of("c$iv", "b$iv", "a$iv"), inlinedParametersByCodeIndex);
-              }
+              assertEquals(ImmutableList.of("a$iv", "b$iv", "c$iv"), inlinedParametersByCodeIndex);
             }),
         run());
   }
