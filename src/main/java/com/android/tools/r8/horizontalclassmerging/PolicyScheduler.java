@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.horizontalclassmerging.policies.CheckAbstractClasses;
 import com.android.tools.r8.horizontalclassmerging.policies.CheckSyntheticClasses;
+import com.android.tools.r8.horizontalclassmerging.policies.CoroutineStateMachinePolicy;
 import com.android.tools.r8.horizontalclassmerging.policies.FinalizeMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.policies.LimitClassGroups;
 import com.android.tools.r8.horizontalclassmerging.policies.LimitInterfaceGroups;
@@ -218,7 +219,7 @@ public class PolicyScheduler {
       ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     ImmutableList.Builder<Policy> builder = ImmutableList.builder();
-    addRequiredMultiClassPolicies(appView, runtimeTypeCheckInfo, builder);
+    addRequiredMultiClassPolicies(appView, immediateSubtypingInfo, runtimeTypeCheckInfo, builder);
     if (!appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView)) {
       AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
       addMultiClassPoliciesForMergingNonSyntheticClasses(appViewWithLiveness, builder);
@@ -254,16 +255,18 @@ public class PolicyScheduler {
 
   private static void addRequiredMultiClassPolicies(
       AppView<? extends AppInfoWithClassHierarchy> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       RuntimeTypeCheckInfo runtimeTypeCheckInfo,
       ImmutableList.Builder<Policy> builder) {
-    ImmediateProgramSubtypingInfo immediateSubtypingInfo =
-        ImmediateProgramSubtypingInfo.create(appView);
+    CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates =
+        new CoroutineStateMachineMergeCandidates(appView, immediateSubtypingInfo);
     builder.add(
         new SameFilePolicy(appView),
         new CheckAbstractClasses(appView),
         new SameFeatureSplit(appView),
         new SameStartupPartition(appView),
-        new SameInstanceFields(appView),
+        new CoroutineStateMachinePolicy(appView, coroutineStateMachineMergeCandidates),
+        new SameInstanceFields(appView, coroutineStateMachineMergeCandidates),
         new SameMainDexGroup(appView),
         new SameNestHost(appView),
         new SameParentClass(),

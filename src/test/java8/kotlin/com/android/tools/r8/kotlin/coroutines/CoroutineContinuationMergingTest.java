@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.kotlin.coroutines;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -92,18 +93,15 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
     testForR8WithCoroutines()
         .addHorizontallyMergedClassesInspector(
             inspector ->
-                inspector.assertClassReferencesNotMerged(
-                    TOP_LEVEL_CONTINUATION,
-                    ONE_SUSPEND_CONTINUATION,
-                    TWO_SUSPENDS_CONTINUATION,
-                    TWO_CAPTURES_LAMBDA,
-                    ONE_SUSPEND_LAMBDA,
-                    TWO_SUSPENDS_LAMBDA))
+                inspector
+                    .assertIsCompleteMergeGroup(ONE_SUSPEND_CONTINUATION, TWO_SUSPENDS_CONTINUATION)
+                    .assertIsCompleteMergeGroup(ONE_SUSPEND_LAMBDA, TWO_SUSPENDS_LAMBDA)
+                    .assertClassReferencesNotMerged(TOP_LEVEL_CONTINUATION, TWO_CAPTURES_LAMBDA))
         .compile()
         .inspect(
             inspector -> {
               assertThat(inspector.clazz(ONE_SUSPEND_CONTINUATION), isPresent());
-              assertThat(inspector.clazz(TWO_SUSPENDS_CONTINUATION), isPresent());
+              assertThat(inspector.clazz(TWO_SUSPENDS_CONTINUATION), isAbsent());
               assertThat(inspector.clazz(TOP_LEVEL_CONTINUATION), isPresent());
               assertTrue(
                   inspector
@@ -111,7 +109,7 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
                       .uniqueFieldWithOriginalName("this$0")
                       .isFinal());
               assertThat(inspector.clazz(ONE_SUSPEND_LAMBDA), isPresent());
-              assertThat(inspector.clazz(TWO_SUSPENDS_LAMBDA), isPresent());
+              assertThat(inspector.clazz(TWO_SUSPENDS_LAMBDA), isAbsent());
               assertThat(inspector.clazz(TWO_CAPTURES_LAMBDA), isPresent());
               assertTrue(
                   inspector
