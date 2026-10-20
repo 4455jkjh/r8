@@ -37,7 +37,7 @@ public class CommonSubexpressionEliminationArrayLengthTest extends TestBase {
         .addInnerClasses(getClass())
         .release()
         .compile()
-        .inspect(inspector -> inspect(inspector, true))
+        .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines("6", "6", "0", "NPE");
   }
@@ -49,22 +49,20 @@ public class CommonSubexpressionEliminationArrayLengthTest extends TestBase {
         .addKeepMainRule(TestClass.class)
         .enableInliningAnnotations()
         .compile()
-        .inspect(inspector -> inspect(inspector, false))
+        .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines("6", "6", "0", "NPE");
   }
 
-  private void inspect(CodeInspector inspector, boolean isD8) {
+  private void inspect(CodeInspector inspector) {
     ClassSubject testClass = inspector.clazz(TestClass.class);
-    if (isD8) {
-      assertEquals(
-          1,
-          testClass
-              .uniqueMethodWithOriginalName("noCatch")
-              .streamInstructions()
-              .filter(InstructionSubject::isArrayLength)
-              .count());
-    }
+    assertEquals(
+        1,
+        testClass
+            .uniqueMethodWithOriginalName("noCatch")
+            .streamInstructions()
+            .filter(InstructionSubject::isArrayLength)
+            .count());
     assertEquals(
         1,
         testClass

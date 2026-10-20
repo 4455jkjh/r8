@@ -63,6 +63,9 @@ public class CommonSubexpressionElimination extends CodeRewriterPass<AppInfo> {
             if (candidates.size() > 0) {
               for (Value candidate : candidates) {
                 if (dominatorTree.dominatedBy(block, candidate.definition.getBlock())
+                    && candidate
+                        .getType()
+                        .lessThanOrEqual(instruction.outValue().getType(), appView)
                     && shareCatchHandlers(instruction, candidate.definition)) {
                   instruction.outValue().replaceUsers(candidate);
                   candidate.uniquePhiUsers().forEach(Phi::removeTrivialPhi);
@@ -151,6 +154,8 @@ public class CommonSubexpressionElimination extends CodeRewriterPass<AppInfo> {
     }
 
     private static boolean identicalValue(Value a, Value b) {
+      a = a.getAliasedValue();
+      b = b.getAliasedValue();
       if (a.equals(b)) {
         return true;
       }
@@ -162,6 +167,7 @@ public class CommonSubexpressionElimination extends CodeRewriterPass<AppInfo> {
     }
 
     private static int getHashCode(Value a) {
+      a = a.getAliasedValue();
       if (a.isConstNumber()) {
         // Do not take assumption that constants are canonicalized.
         return Long.hashCode(a.definition.asConstNumber().getRawValue());
