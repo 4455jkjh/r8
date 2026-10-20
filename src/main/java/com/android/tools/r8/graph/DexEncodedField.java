@@ -241,6 +241,10 @@ public class DexEncodedField extends DexEncodedMember<DexEncodedField, DexField>
     return accessFlags.isSynthetic();
   }
 
+  public boolean isTransient() {
+    return accessFlags.isTransient();
+  }
+
   public boolean isVolatile() {
     return accessFlags.isVolatile();
   }

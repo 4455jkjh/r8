@@ -6,6 +6,9 @@
 
 package com.android.tools.r8.classmerging.horizontal;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
@@ -29,8 +32,13 @@ public class FieldsWithDifferentAccessFlagsTest extends HorizontalClassMergingTe
         .enableNeverClassInliningAnnotations()
         .setMinApi(parameters)
         .compile()
+        .inspect(
+            inspector -> {
+              assertTrue(inspector.clazz(C.class).uniqueFieldWithOriginalName("msg").isFinal());
+              assertFalse(inspector.clazz(D.class).uniqueFieldWithOriginalName("msg").isFinal());
+            })
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("A", "B", "C");
+        .assertSuccessWithOutputLines("A", "B", "C", "D", "D2");
   }
 
   @NeverClassInline
@@ -63,9 +71,24 @@ public class FieldsWithDifferentAccessFlagsTest extends HorizontalClassMergingTe
 
   @NeverClassInline
   public static class C {
+    public final String msg;
+
+    @NeverInline
+    public C(String msg) {
+      this.msg = msg;
+    }
+
+    @NeverInline
+    public void foo() {
+      System.out.println(msg);
+    }
+  }
+
+  @NeverClassInline
+  public static class D {
     public String msg;
 
-    public C(String msg) {
+    public D(String msg) {
       this.msg = msg;
     }
 
@@ -80,6 +103,10 @@ public class FieldsWithDifferentAccessFlagsTest extends HorizontalClassMergingTe
       new A(System.currentTimeMillis() > 0 ? "A" : null).foo();
       new B(System.currentTimeMillis() > 0 ? "B" : null).foo();
       new C(System.currentTimeMillis() > 0 ? "C" : null).foo();
+      D d = new D(System.currentTimeMillis() > 0 ? "D" : null);
+      d.foo();
+      d.msg = System.currentTimeMillis() > 0 ? "D2" : null;
+      d.foo();
     }
   }
 }
