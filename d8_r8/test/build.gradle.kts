@@ -6,8 +6,13 @@ import org.gradle.kotlin.dsl.register
 
 plugins {
   `java-library`
+  jacoco
   id("r8-conventions")
   id("dependencies-plugin")
+}
+
+configure<JacocoPluginExtension> {
+  reportsDirectory.set(getRoot().resolveAll("build", "reports", "jacoco"))
 }
 
 val r8LibArtifactName = "r8lib.jar"
@@ -53,6 +58,18 @@ val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope"
 val keepAnnoClassesConfig =
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
 
+val coverageClassesScope = configurations.dependencyScope("coverageClassesScope")
+val coverageClassesConfig =
+  configurations.resolvable("coverageClassesConfig") { extendsFrom(coverageClassesScope.get()) }
+
+val coverageSourcesScope = configurations.dependencyScope("coverageSourcesScope")
+val coverageSourcesConfig =
+  configurations.resolvable("coverageSourcesConfig") { extendsFrom(coverageSourcesScope.get()) }
+
+val coverageExecScope = configurations.dependencyScope("coverageExecScope")
+val coverageExecConfig =
+  configurations.resolvable("coverageExecConfig") { extendsFrom(coverageExecScope.get()) }
+
 val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig =
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
@@ -68,6 +85,24 @@ dependencies {
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
+  coverageClassesScope(project(":assistant", "assistantClasses"))
+  coverageClassesScope(project(":keepanno", "keepannoClasses"))
+  coverageClassesScope(project(":keepradius", "keepradiusClasses"))
+  coverageClassesScope(project(":libanalyzer", "libanalyzerClasses"))
+  coverageClassesScope(project(":main", "mainClassesOutput"))
+  coverageClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
+  coverageSourcesScope(project(":assistant", "assistantSources"))
+  coverageSourcesScope(project(":keepanno", "keepannoSources"))
+  coverageSourcesScope(project(":keepradius", "keepradiusSources"))
+  coverageSourcesScope(project(":libanalyzer", "libanalyzerSources"))
+  coverageSourcesScope(project(":main", "mainSources"))
+  coverageSourcesScope(project(":resourceshrinker", "resourceshrinkerSources"))
+  coverageExecScope(project(":tests_java_8", "jacocoExecElements"))
+  coverageExecScope(project(":tests_java_11", "jacocoExecElements"))
+  coverageExecScope(project(":tests_java_17", "jacocoExecElements"))
+  coverageExecScope(project(":tests_java_21", "jacocoExecElements"))
+  coverageExecScope(project(":tests_java_25", "jacocoExecElements"))
+  coverageExecScope(project(":tests_bootstrap", "jacocoExecElements"))
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
   testJarsScope(project(":tests_java_17", "testJar"))
@@ -639,6 +674,33 @@ tasks {
     archiveClassifier.set("sources")
     archiveFileName.set("r8-src.jar")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+  }
+
+  withType<Test> { extensions.configure<JacocoTaskExtension> { isEnabled = false } }
+
+  named<JacocoReport>("jacocoTestReport") {
+    dependsOn(coverageExecConfig)
+    executionData(
+      coverageExecConfig.map { dirs -> dirs.map { dir -> fileTree(dir) { include("*.exec") } } }
+    )
+    sourceDirectories.setFrom(coverageSourcesConfig)
+    classDirectories.setFrom(
+      coverageClassesConfig.map { config ->
+        config.map { dir ->
+          fileTree(dir) {
+            exclude(
+              "com/android/tools/r8/keepanno/proto/**",
+              "com/android/tools/r8/keepradius/proto/**",
+              "com/android/tools/r8/libanalyzer/proto/**",
+            )
+          }
+        }
+      }
+    )
+    reports {
+      xml.required.set(true)
+      html.required.set(true)
+    }
   }
 
   test {

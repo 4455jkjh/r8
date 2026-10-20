@@ -15,10 +15,14 @@ dependencies {
   compileOnly(libs.fastUtil)
 }
 
-java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) } }
+val srcDir = getRoot().resolveAll("src", "utils", "java")
+
+java { sourceSets.main.configure { java.srcDir(srcDir) } }
 
 configurations.consumable("isolatedJar") { outgoing.artifact(tasks.named("jar")) }
 
 configurations.consumable("isolatedClasses") {
   outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
 }
+
+configurations.consumable("isolatedSources") { outgoing.artifact(srcDir) }

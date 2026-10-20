@@ -12,10 +12,12 @@ plugins {
   id("dependencies-plugin")
 }
 
+val srcDir = getRoot().resolveAll("src", "resourceshrinker", "java")
+
 java {
   sourceSets.main.configure {
-    kotlin.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
-    java.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
+    kotlin.srcDir(srcDir)
+    java.srcDir(srcDir)
   }
 }
 
@@ -67,3 +69,5 @@ configurations.consumable("resourceshrinkerClasses") {
   outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
   outgoing.artifact(tasks.named<KotlinCompile>("compileKotlin").map { it.destinationDirectory })
 }
+
+configurations.consumable("resourceshrinkerSources") { outgoing.artifact(srcDir) }

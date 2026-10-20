@@ -15,9 +15,11 @@ plugins {
 
 tasks.named("generateProto") { dependsOn(":third_party:downloadDeps") }
 
+val srcDir = getRoot().resolveAll("src", "keepradius", "java")
+
 java {
   sourceSets.main.configure {
-    java.srcDir(getRoot().resolveAll("src", "keepradius", "java"))
+    java.srcDir(srcDir)
     proto { srcDir(getRoot().resolveAll("src", "keepradius", "proto")) }
   }
 }
@@ -53,3 +55,9 @@ configurations.consumable("keepradiusJar") {
   outgoing.artifact(tasks.named<Jar>("jar"))
   outgoing.artifact(tasks.named<Jar>("protoJar"))
 }
+
+configurations.consumable("keepradiusClasses") {
+  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+}
+
+configurations.consumable("keepradiusSources") { outgoing.artifact(srcDir) }

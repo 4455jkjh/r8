@@ -465,8 +465,6 @@ def test(options, args):
         gradle_args.append('-Ptest_namespace=%s' % options.test_namespace)
     if options.disable_assertions:
         gradle_args.append('-Pdisable_assertions')
-    if options.with_code_coverage:
-        gradle_args.append('-Pwith_code_coverage')
     if options.print_full_stacktraces:
         gradle_args.append('-Pprint_full_stacktraces')
     if options.print_obfuscated_stacktraces:
@@ -518,6 +516,9 @@ def test(options, args):
             'Inconsistent arguments: both --no-r8lib and --r8lib-no-deps specified.'
         )
         exit(1)
+    if options.with_code_coverage and not options.no_r8lib:
+        print('Can not run code coverage on r8lib, please specify --no-r8lib.')
+        exit(1)
     if options.r8lib_no_deps:
         gradle_args.append('-Pr8lib_no_deps')
     elif not options.no_r8lib:
@@ -556,7 +557,10 @@ def test(options, args):
         return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
         return archive_and_return(return_code, options)
 
-    gradle_args.append(utils.GRADLE_TASK_TEST)
+    if options.with_code_coverage:
+        gradle_args.append(':test:jacocoTestReport')
+    else:
+        gradle_args.append(utils.GRADLE_TASK_TEST)
     gradle_args.append('--stacktrace')
     gradle_args.append('-Pprint_full_stacktraces')
 
@@ -571,18 +575,11 @@ def test(options, args):
         if len(args) == 0:
             print("No failing tests")
             return 0
-    # Test filtering. Must always follow the 'test' task.
-    testFilterProperty = []
-    for testFilter in args:
-        gradle_args.append('--tests')
-        gradle_args.append(testFilter)
-        testFilterProperty.append(testFilter)
-        assert not ("|" in testFilter), "| is used as separating character"
-    if len(testFilterProperty) > 0:
-        gradle_args.append("-Ptestfilter=" + "|".join(testFilterProperty))
-    if options.with_code_coverage:
-        # Create Jacoco report after tests.
-        gradle_args.append('jacocoTestReport')
+    # Test filtering.
+    if len(args) > 0:
+        for testFilter in args:
+            assert not ("|" in testFilter), "| is used as separating character"
+        gradle_args.append("-Ptestfilter=" + "|".join(args))
 
     if options.use_golden_files_in:
         sha1 = '%s' % utils.get_HEAD_sha1()
