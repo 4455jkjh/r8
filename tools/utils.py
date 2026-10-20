@@ -692,8 +692,8 @@ def ensure_x20_download(path, quiet=False):
 
 def get_nth_sha1_from_revision(n, revision):
     result = subprocess.check_output([
-        'git', 'log', revision, f'--skip={n}', '--max-count=1',
-        '--pretty=format:%H'
+        'git', 'log', '--first-parent', revision, f'--skip={n}',
+        '--max-count=1', '--pretty=format:%H'
     ]).decode('utf-8')
     return result.strip()
 
