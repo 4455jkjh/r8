@@ -187,7 +187,8 @@ public class CommonSubexpressionElimination extends CodeRewriterPass<AppInfo> {
     return (instruction.isBinop()
             || instruction.isUnop()
             || instruction.isInstanceOf()
-            || instruction.isCheckCast())
+            || instruction.isCheckCast()
+            || instruction.isArrayLength())
         && instruction.getLocalInfo() == null
         && !instruction.hasInValueWithLocalInfo();
   }
