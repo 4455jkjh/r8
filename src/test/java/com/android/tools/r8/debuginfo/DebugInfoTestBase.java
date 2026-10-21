@@ -17,17 +17,12 @@ import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
-import org.junit.Rule;
 
 public class DebugInfoTestBase extends TestBase {
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   static AndroidApp compileWithD8(Class... classes) throws CompilationFailedException {
     D8Command.Builder builder = D8Command.builder();

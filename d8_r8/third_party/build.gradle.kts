@@ -4,6 +4,7 @@
 
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
   `java-library`
@@ -28,9 +29,10 @@ private fun registerDependency(dep: ThirdPartyDependency): TaskProvider<Download
     successFile.set(getRoot().resolve(dep.successFile))
     dependencyType.set(dep.type)
     usesService(downloadLimitService)
-    if (dep.type == DependencyType.X20) {
-      onlyIf { !noInternal.isPresent }
-    }
+    val isInternal = dep.type == DependencyType.X20
+    val isMissingOnWindows = dep.missingOnWindows
+    val isWindows = DefaultNativePlatform.getCurrentOperatingSystem().isWindows
+    onlyIf { !(isInternal && noInternal.isPresent) && !(isMissingOnWindows && isWindows) }
   }
 }
 
@@ -43,11 +45,13 @@ private fun registerTestDepArtifact(
   artifact: Any,
   propName: String,
   isInternal: Boolean = false,
+  missingOnWindows: Boolean = false,
 ) {
   configurations.consumable(configurationName) {
     attributes {
       attribute(TEST_DEP_PROP, propName)
       attribute(TEST_DEP_INTERNAL, isInternal)
+      attribute(TEST_DEP_MISSING_ON_WINDOWS, missingOnWindows)
     }
     outgoing.artifact(artifact)
   }
@@ -64,6 +68,7 @@ private fun registerTestDep(
     taskProvider.flatMap { it.outputDir },
     propName,
     dep.type == DependencyType.X20,
+    dep.missingOnWindows,
   )
 }
 
@@ -239,9 +244,23 @@ registerTestDep("jacoco", ThirdPartyDeps.jacoco, "JACOCO")
 
 registerTestDep("java8Runtime", ThirdPartyDeps.java8Runtime, "JAVA_8_RUNTIME")
 
+registerTestDep("jdk8", ThirdPartyDeps.jdk8, "JDK_8")
+
+registerTestDep("jdk9", ThirdPartyDeps.jdk9, "JDK_9")
+
+registerTestDep("jdk11", ThirdPartyDeps.jdk11, "JDK_11")
+
 registerTestDep("jdk11Test", ThirdPartyDeps.jdk11Test, "JDK11_TEST")
 
+registerTestDep("jdk17", ThirdPartyDeps.jdk17, "JDK_17")
+
+registerTestDep("jdk21", ThirdPartyDeps.jdk21, "JDK_21")
+
 registerTestDep("jdk21Float16Test", ThirdPartyDeps.jdk21Float16Test, "JDK21_FLOAT16_TEST")
+
+registerTestDep("jdk25", ThirdPartyDeps.jdk25, "JDK_25")
+
+registerTestDep("jdk27", ThirdPartyDeps.jdk27, "JDK_27")
 
 registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
 

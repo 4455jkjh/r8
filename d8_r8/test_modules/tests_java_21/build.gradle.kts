@@ -31,11 +31,13 @@ dependencies {
   mainClassesScope(project(":main", "mainClassesOutput"))
   mainResourcesScope(project(":main", "mainResources"))
   implementation(project(":assistant", "assistantJar"))
+  runtimeOnlyData(project(":third_party", "jdk21"))
   runtimeOnlyData(project(":third_party", "jdk21Float16Test"))
 }
 
 tasks {
   withType<Test> {
+    dependsOn(project(":dist").tasks.named("compileAssistantRuntimeDex"))
     javaLauncher = getJavaLauncher(Jdk.JDK_21)
     systemProperty(
       "BUILD_PROP_R8_RUNTIME_PATH",

@@ -32,7 +32,6 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.OffOrAuto;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
@@ -221,7 +220,7 @@ public abstract class RunExamplesAndroidOTest<
       Box<SyntheticItemsTestUtils> syntheticItemsBox = new Box<>();
       build(inputFile, out, syntheticItemsBox);
 
-      if (!ToolHelper.artSupported() && !ToolHelper.dealsWithGoldenFiles()) {
+      if (!ToolHelper.artSupported()) {
         return;
       }
 
@@ -397,9 +396,6 @@ public abstract class RunExamplesAndroidOTest<
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   boolean failsOn(Map<ToolHelper.DexVm.Version, List<String>> failsOn, String name) {
     Version vmVersion = parameters.getDexRuntimeVersion();
@@ -727,7 +723,7 @@ public abstract class RunExamplesAndroidOTest<
 
   void execute(String testName,
       String qualifiedMainClass, Path[] jars, Path[] dexes, List<String> args) {
-    Assume.assumeTrue(ToolHelper.artSupported() || ToolHelper.compareAgaintsGoldenFiles());
+    Assume.assumeTrue(ToolHelper.artSupported());
     boolean expectedToFail = expectedToFail(testName);
     try {
       String output =
@@ -740,9 +736,7 @@ public abstract class RunExamplesAndroidOTest<
                 }
               },
               parameters.getDexVm());
-      if (!expectedToFail
-          && !skipRunningOnJvm(testName)
-          && !ToolHelper.compareAgaintsGoldenFiles()) {
+      if (!expectedToFail && !skipRunningOnJvm(testName)) {
         ArrayList<String> javaArgs = Lists.newArrayList(args);
         javaArgs.add(0, qualifiedMainClass);
         ToolHelper.ProcessResult javaResult =

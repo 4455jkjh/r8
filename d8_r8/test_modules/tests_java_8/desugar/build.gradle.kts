@@ -43,6 +43,8 @@ dependencies {
   runtimeOnlyData(project(":third_party", "guavaJre"))
   runtimeOnlyData(project(":third_party", "jacoco"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))
+  runtimeOnlyData(project(":third_party", "jdk8"))
+  runtimeOnlyData(project(":third_party", "jdk11"))
   runtimeOnlyData(project(":third_party", "jdk11Test"))
   runtimeOnlyData(project(":third_party", "multidex"))
   runtimeOnlyData(project(":third_party", "r8v2_0_74"))

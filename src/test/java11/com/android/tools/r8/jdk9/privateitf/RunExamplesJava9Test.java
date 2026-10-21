@@ -23,7 +23,6 @@ import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.jdk9.privateitf.privateinterfacemethods.PrivateInterfaceMethods;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -96,7 +95,7 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
 
       build(inputFiles, out);
 
-      if (!ToolHelper.artSupported() && !ToolHelper.dealsWithGoldenFiles()) {
+      if (!ToolHelper.artSupported()) {
         return;
       }
 
@@ -152,9 +151,6 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   private boolean failsOn(Map<DexVm.Version, List<String>> failsOn, String name) {
     DexVm.Version vmVersion = parameters.getDexRuntimeVersion();

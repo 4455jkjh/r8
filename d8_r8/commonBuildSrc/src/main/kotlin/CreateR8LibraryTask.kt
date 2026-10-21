@@ -8,8 +8,11 @@ import java.io.FileOutputStream
 import java.net.URI.create
 import java.net.URLClassLoader
 import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.nio.file.FileSystems.newFileSystem
+import java.nio.file.Files
 import java.nio.file.Files.deleteIfExists
+import java.nio.file.StandardCopyOption
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -27,6 +30,7 @@ import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
@@ -45,6 +49,10 @@ public abstract class CreateR8LibraryTask : DefaultTask() {
   public abstract val inputClasspath: ConfigurableFileCollection
   @get:[Classpath Optional]
   public abstract val replaceInOutputJar: RegularFileProperty
+  @get:[InputFile Optional]
+  public abstract val assistantRuntimeDex: RegularFileProperty
+  @get:[Input Optional]
+  public abstract val mainClass: Property<String>
   @get:InputFiles public abstract val pgConfigs: ConfigurableFileCollection
   @get:Input
   public val enableKeepAnnotations: Property<Boolean> =
@@ -151,6 +159,29 @@ public abstract class CreateR8LibraryTask : DefaultTask() {
       val tempOutFile = File.createTempFile("replaced_", ".jar")
       mergeReplacingContents(outputJarFile, replaceInOutputJar.get().asFile, tempOutFile)
       tempOutFile.toPath().moveTo(outputJarFile.toPath(), true)
+    }
+    if (assistantRuntimeDex.isPresent || mainClass.isPresent) {
+      val uri = create("jar:${outputJarFile.toPath().toUri()}")
+      val env = mapOf("create" to "false")
+      newFileSystem(uri, env).use { zipfs ->
+        if (assistantRuntimeDex.isPresent) {
+          val dexInJar = zipfs.getPath("assistant-runtime.dex")
+          Files.copy(
+            assistantRuntimeDex.get().asFile.toPath(),
+            dexInJar,
+            StandardCopyOption.REPLACE_EXISTING,
+          )
+        }
+        if (mainClass.isPresent) {
+          val manifestPath = zipfs.getPath("META-INF/MANIFEST.MF")
+          Files.createDirectories(manifestPath.parent)
+          Files.write(
+            manifestPath,
+            "Manifest-Version: 1.0\r\nMain-Class: ${mainClass.get()}\r\n\r\n"
+              .toByteArray(StandardCharsets.UTF_8),
+          )
+        }
+      }
     }
   }
 }

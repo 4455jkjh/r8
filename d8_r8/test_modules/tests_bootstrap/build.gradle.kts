@@ -7,6 +7,7 @@ import org.gradle.api.JavaVersion
 plugins {
   `java-library`
   id("dependencies-plugin")
+  id("r8-test-conventions")
 }
 
 val root = getRoot()

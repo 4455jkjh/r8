@@ -13,18 +13,17 @@ import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 // Base class for the runtime structure in the test parameters.
 public abstract class TestRuntime {
@@ -92,99 +91,64 @@ public abstract class TestRuntime {
     }
   }
 
-  private static final Path JDK8_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk8");
-  private static final Path JDK9_PATH =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "openjdk-9.0.4");
-  private static final Path JDK11_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-11");
-  private static final Path JDK17_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-17");
-  private static final Path JDK21_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-21");
-  private static final Path JDK25_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-25");
-  private static final Path JDK27_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-27");
-  private static final Map<CfVm, Path> jdkPaths =
+  private static final Map<CfVm, Supplier<Path>> jdkPaths =
       ImmutableMap.of(
-          CfVm.JDK8, JDK8_PATH,
-          CfVm.JDK9, JDK9_PATH,
-          CfVm.JDK11, JDK11_PATH,
-          CfVm.JDK17, JDK17_PATH,
-          CfVm.JDK21, JDK21_PATH,
-          CfVm.JDK25, JDK25_PATH,
-          CfVm.JDK27, JDK27_PATH);
+          CfVm.JDK8, TestDeps::getJdk8Dir,
+          CfVm.JDK9, TestDeps::getJdk9Dir,
+          CfVm.JDK11, TestDeps::getJdk11Dir,
+          CfVm.JDK17, TestDeps::getJdk17Dir,
+          CfVm.JDK21, TestDeps::getJdk21Dir,
+          CfVm.JDK25, TestDeps::getJdk25Dir,
+          CfVm.JDK27, TestDeps::getJdk27Dir);
 
   public static CfRuntime getCheckedInJdk(CfVm vm) {
-    if (vm == CfVm.JDK8) {
-      return getCheckedInJdk8();
-    }
-    return new CfRuntime(vm, getCheckedInJdkHome(vm));
+    return new CfRuntime(vm, () -> getCheckedInJdkHome(vm));
   }
 
   public static CfRuntime getCheckedInJdk8() {
-    Path home;
-    if (ToolHelper.isLinux()) {
-      home = JDK8_PATH.resolve("linux-x86");
-    } else if (ToolHelper.isMac()) {
-      home = JDK8_PATH.resolve("darwin-x86");
-    } else {
-      assert ToolHelper.isWindows();
-      return null;
-    }
-    return new CfRuntime(CfVm.JDK8, home);
+    return getCheckedInJdk(CfVm.JDK8);
   }
 
   private static Path getCheckedInJdkHome(CfVm vm) {
-    Path path = jdkPaths.get(vm);
+    Supplier<Path> path = jdkPaths.get(vm);
     assert path != null : "No JDK path defined for " + vm;
-    if (ToolHelper.isLinux()) {
-      return path.resolve("linux");
-    } else if (ToolHelper.isMac()) {
-      return vm.lessThanOrEqual(CfVm.JDK9)
-          ? path.resolve("osx")
-          : path.resolve("osx/Contents/Home");
-    } else {
-      assert ToolHelper.isWindows();
-      return path.resolve("windows");
+    if (ToolHelper.isMac() && vm.isGreaterThan(CfVm.JDK9)) {
+      return path.get().resolve("Contents/Home");
     }
+    return path.get();
   }
 
   public static CfRuntime getCheckedInJdk9() {
-    return new CfRuntime(CfVm.JDK9, getCheckedInJdkHome(CfVm.JDK9));
+    return getCheckedInJdk(CfVm.JDK9);
   }
 
   public static CfRuntime getCheckedInJdk11() {
-    return new CfRuntime(CfVm.JDK11, getCheckedInJdkHome(CfVm.JDK11));
+    return getCheckedInJdk(CfVm.JDK11);
   }
 
   public static CfRuntime getCheckedInJdk17() {
-    return new CfRuntime(CfVm.JDK17, getCheckedInJdkHome(CfVm.JDK17));
+    return getCheckedInJdk(CfVm.JDK17);
   }
 
   public static CfRuntime getCheckedInJdk21() {
-    return new CfRuntime(CfVm.JDK21, getCheckedInJdkHome(CfVm.JDK21));
+    return getCheckedInJdk(CfVm.JDK21);
   }
 
   public static CfRuntime getCheckedInJdk25() {
-    return new CfRuntime(CfVm.JDK25, getCheckedInJdkHome(CfVm.JDK25));
+    return getCheckedInJdk(CfVm.JDK25);
   }
 
   public static CfRuntime getCheckedInJdk27() {
-    return new CfRuntime(CfVm.JDK27, getCheckedInJdkHome(CfVm.JDK27));
+    return getCheckedInJdk(CfVm.JDK27);
   }
 
   public static List<CfRuntime> getCheckedInCfRuntimes() {
-    CfRuntime[] jdks =
-        new CfRuntime[] {
-          getCheckedInJdk8(),
-          getCheckedInJdk11(),
-          getCheckedInJdk17(),
-          getCheckedInJdk21(),
-          getCheckedInJdk25()
-        };
-    Builder<CfRuntime> builder = ImmutableList.builder();
-    for (CfRuntime jdk : jdks) {
-      if (jdk != null) {
-        builder.add(jdk);
-      }
-    }
-    return builder.build();
+    return ImmutableList.of(
+        getCheckedInJdk8(),
+        getCheckedInJdk11(),
+        getCheckedInJdk17(),
+        getCheckedInJdk21(),
+        getCheckedInJdk25());
   }
 
   private static List<DexRuntime> getCheckedInDexRuntimes() {
@@ -426,12 +390,16 @@ public abstract class TestRuntime {
   // Wrapper for the CF runtimes.
   public static class CfRuntime extends TestRuntime {
     private final CfVm vm;
-    private final Path home;
+    private final Supplier<Path> home;
 
     public CfRuntime(CfVm vm, Path home) {
+      this(vm, home::toAbsolutePath);
+    }
+
+    public CfRuntime(CfVm vm, Supplier<Path> home) {
       assert vm != null;
       this.vm = vm;
-      this.home = home.toAbsolutePath();
+      this.home = home;
     }
 
     @Override
@@ -440,11 +408,11 @@ public abstract class TestRuntime {
     }
 
     public Path getJavaHome() {
-      return home;
+      return home.get().toAbsolutePath();
     }
 
     public Path getJavaExecutable() {
-      return home.resolve("bin").resolve("java");
+      return getJavaHome().resolve("bin").resolve("java");
     }
 
     @Override
@@ -478,12 +446,12 @@ public abstract class TestRuntime {
         return false;
       }
       CfRuntime cfRuntime = (CfRuntime) obj;
-      return vm == cfRuntime.vm && home.equals(cfRuntime.home);
+      return vm == cfRuntime.vm;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(vm, home);
+      return vm.hashCode();
     }
 
     public boolean isOlderThan(CfVm version) {

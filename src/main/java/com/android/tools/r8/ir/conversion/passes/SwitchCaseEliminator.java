@@ -40,6 +40,12 @@ public class SwitchCaseEliminator {
         && switchCasesToBeRemoved.size() == theSwitch.numberOfKeys();
   }
 
+  private boolean hasSingleLiveSwitchCaseAndDeadFallthrough() {
+    return isFallthroughDead()
+        && switchCasesToBeRemoved != null
+        && switchCasesToBeRemoved.size() == theSwitch.numberOfKeys() - 1;
+  }
+
   boolean canBeOptimized() {
     assert switchCasesToBeRemoved == null || !switchCasesToBeRemoved.isEmpty();
     return switchCasesToBeRemoved != null || hasAlwaysHitCase() || !isFallthroughLive();
@@ -95,7 +101,9 @@ public class SwitchCaseEliminator {
     if (canBeOptimized()) {
       int originalNumberOfSuccessors = block.getSuccessors().size();
       IntList removedSuccessorIndices = unlinkDeadSuccessors();
-      if (hasAlwaysHitCase() || allSwitchCasesMarkedForRemoval()) {
+      if (hasAlwaysHitCase()
+          || allSwitchCasesMarkedForRemoval()
+          || hasSingleLiveSwitchCaseAndDeadFallthrough()) {
         // Replace switch with a simple goto.
         replaceSwitchByGoto();
       } else {

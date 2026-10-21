@@ -8,6 +8,7 @@ import org.gradle.api.tasks.Copy
 plugins {
   `java-library`
   id("dependencies-plugin")
+  id("r8-test-conventions")
 }
 
 val root = getRoot()
@@ -110,6 +111,12 @@ dependencies {
   runtimeOnlyData(project(":third_party", "internalIssue127524985"))
   runtimeOnlyData(project(":third_party", "jacoco"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))
+  runtimeOnlyData(project(":third_party", "jdk8"))
+  runtimeOnlyData(project(":third_party", "jdk11"))
+  runtimeOnlyData(project(":third_party", "jdk17"))
+  runtimeOnlyData(project(":third_party", "jdk21"))
+  runtimeOnlyData(project(":third_party", "jdk25"))
+  runtimeOnlyData(project(":third_party", "jdk27"))
   runtimeOnlyData(project(":third_party", "jdwpTests"))
   runtimeOnlyData(project(":third_party", "jsr223"))
   runtimeOnlyData(project(":third_party", "keepassdx"))
@@ -142,6 +149,7 @@ dependencies {
   childProjects.values.forEach { childProject ->
     partialTestClassesScope(project(childProject.path, "partialTestClasses"))
     runtimeOnlyData(project(childProject.path, "runtimeOnlyDataElements"))
+    add("jacocoExecScope", project(childProject.path, "jacocoExecElements"))
   }
   implementation(libs.playwright)
 }
@@ -236,6 +244,7 @@ fun Test.setupTestTask() {
   )
   dependsOn(distDepsFiles)
   dependsOn(sharedDepsConfig)
+  dependsOn(project(":dist").tasks.named("r8AssistantLib"))
   systemProperty(
     "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
     extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
@@ -264,7 +273,8 @@ tasks.register("testAll") {
   // Added child dependencies to Test directly would force all child tests to run before the
   // parent tests. This task runs all test tasks as siblings, allowing concurrent execution of all
   // tests.
-  dependsOn(tasks.withType<Test>())
+  // Depend specifically on the "test" task by name so we don't also trigger "testCoverage".
+  dependsOn(tasks.named("test"))
   childProjects.values.forEach { childProject -> dependsOn("${childProject.path}:test") }
 }
 
@@ -272,6 +282,7 @@ tasks.register("testAll") {
 subprojects {
   apply(plugin = "java-library")
   apply(plugin = "dependencies-plugin")
+  apply(plugin = "r8-test-conventions")
 
   extensions.configure<JavaPluginExtension> {
     sourceCompatibility = JavaVersion.VERSION_1_8

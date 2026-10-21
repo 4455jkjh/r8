@@ -47,7 +47,7 @@ public class SealedClassesShrinkingTest extends TestBase {
     ClassSubject sub1 = inspector.clazz(UsedSub.class);
     assertThat(sub1, isPresentAndRenamed());
     assertEquals(
-        parameters.hasSealedClassesSupport()
+        parameters.hasSealedClassesReflectionSupport()
             ? ImmutableList.of(sub1.asTypeSubject())
             : ImmutableList.of(),
         clazz.getFinalPermittedSubclassAttributes());

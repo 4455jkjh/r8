@@ -226,9 +226,9 @@ public interface ClassInstanceFieldsMerger {
       if (newField.isSynthetic() && Iterables.any(oldFields, oldField -> !oldField.isSynthetic())) {
         newField.getAccessFlags().demoteFromSynthetic();
       }
-      if (newField.isFinal() && Iterables.any(oldFields, oldField -> !oldField.isFinal())) {
-        newField.getAccessFlags().demoteFromFinal();
-      }
+      assert Iterables.all(oldFields, oldField -> oldField.isFinal() == newField.isFinal());
+      assert Iterables.all(oldFields, oldField -> oldField.isTransient() == newField.isTransient());
+      assert Iterables.all(oldFields, oldField -> oldField.isVolatile() == newField.isVolatile());
     }
 
     @SuppressWarnings("ReferenceEquality")

@@ -81,7 +81,7 @@ public class SealedClassesJdk17CompiledTest extends TestBase {
     assertThat(sub1, isPresentAndRenamed());
     assertThat(sub2, isPresentAndRenamed());
     assertEquals(
-        parameters.hasSealedClassesSupport() && keepPermittedSubclassesAttribute
+        parameters.hasSealedClassesReflectionSupport() && keepPermittedSubclassesAttribute
             ? ImmutableList.of(sub1.asTypeSubject(), sub2.asTypeSubject())
             : ImmutableList.of(),
         clazz.getFinalPermittedSubclassAttributes());

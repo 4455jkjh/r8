@@ -4,7 +4,6 @@
 package com.android.tools.r8.assistant;
 
 import static com.android.tools.r8.utils.SystemPropertyUtils.parsePathFromSystemProperty;
-import static com.android.tools.r8.utils.SystemPropertyUtils.parseSystemPropertyOrDefault;
 
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
@@ -23,9 +22,6 @@ public class AssistantOptions {
   public Path exportFinalKeepInfoCollectionToDirectory =
       parsePathFromSystemProperty("com.android.tools.r8.assistant.exportFinalKeepInfoCollection");
   public Consumer<KeepInfoCollectionExported> finalKeepInfoCollectionConsumer = null;
-
-  public boolean enableAssistantInstrumentation =
-      parseSystemPropertyOrDefault("com.android.tools.r8.assistant.instrumentation", false);
 
   @SuppressWarnings("ReferenceEquality")
   public boolean shouldExitEarly() {

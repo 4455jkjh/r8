@@ -5,7 +5,6 @@ package com.android.tools.r8.desugaring.interfacemethods;
 
 import static com.android.tools.r8.TestRuntime.getCheckedInJdk;
 import static com.android.tools.r8.TestRuntime.getCheckedInJdk11;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -83,10 +82,6 @@ public class MethodParametersTest extends TestBase {
 
   @Test
   public void testDesugar() throws Exception {
-    // JDK8 is not present on Windows.
-    assumeTrue(
-        parameters.isDexRuntime()
-            || getCheckedInJdk(parameters.getRuntime().asCf().getVm()) != null);
     Path interfaceDesugared =
         testForD8(Backend.CF)
             .addProgramFiles(compiledWithParameters.get())

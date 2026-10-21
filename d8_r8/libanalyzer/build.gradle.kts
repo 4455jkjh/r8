@@ -15,9 +15,11 @@ plugins {
 
 tasks.named("generateProto") { dependsOn(":third_party:downloadDeps") }
 
+val srcDir = getRoot().resolveAll("src", "libanalyzer", "java")
+
 java {
   sourceSets.main.configure {
-    java.srcDir(getRoot().resolveAll("src", "libanalyzer", "java"))
+    java.srcDir(srcDir)
     proto { srcDir(getRoot().resolveAll("src", "libanalyzer", "proto")) }
   }
 }
@@ -57,3 +59,14 @@ val compileJavaJarTask =
   }
 
 configurations.consumable("libanalyzer-compile-java") { outgoing.artifact(compileJavaJarTask) }
+
+configurations.consumable("libanalyzerClasses") {
+  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+  outgoing.artifact(
+    tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin").map {
+      it.destinationDirectory
+    }
+  )
+}
+
+configurations.consumable("libanalyzerSources") { outgoing.artifact(srcDir) }

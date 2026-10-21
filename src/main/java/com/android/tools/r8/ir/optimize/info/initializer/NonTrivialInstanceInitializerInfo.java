@@ -246,7 +246,7 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
     }
 
     public boolean mayHaveOtherSideEffectsThanInstanceFieldAssignments() {
-      return (data & ~NO_OTHER_SIDE_EFFECTS_THAN_INSTANCE_FIELD_ASSIGNMENTS) == 0;
+      return (data & NO_OTHER_SIDE_EFFECTS_THAN_INSTANCE_FIELD_ASSIGNMENTS) == 0;
     }
 
     public Builder setMayHaveOtherSideEffectsThanInstanceFieldAssignments() {

@@ -12,6 +12,8 @@ fastdoubleparser = "0.8.0"
 gcpGradlePlugin = "1.0.2"
 gson = "2.14.0"
 guava = "32.1.2-jre"
+# Determined by Gradle, needs to be updated with Gradle upgrades.
+jacoco = "0.8.15"
 javassist = "3.29.2-GA"
 junitJupiter = "5.14.3"
 junitPlatform = "1.14.3"
@@ -53,6 +55,8 @@ fastUtil  = { module = "it.unimi.dsi:fastutil", version.ref = "fastUtil" }
 gcpGradlePlugin = { module = "androidx.build.gradle.gcpbuildcache:androidx.build.gradle.gcpbuildcache.gradle.plugin", version.ref = "gcpGradlePlugin" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 guava  = { module = "com.google.guava:guava", version.ref = "guava" }
+jacocoAgent = { module = "org.jacoco:org.jacoco.agent", version.ref = "jacoco" }
+jacocoAnt = { module = "org.jacoco:org.jacoco.ant", version.ref = "jacoco" }
 javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
 junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
 junitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junitJupiter" }

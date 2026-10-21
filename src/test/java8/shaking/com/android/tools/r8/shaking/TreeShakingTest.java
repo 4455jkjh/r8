@@ -210,7 +210,7 @@ public abstract class TreeShakingTest extends TestBase {
       }
       return;
     }
-    if (!ToolHelper.artSupported() && !ToolHelper.compareAgaintsGoldenFiles()) {
+    if (!ToolHelper.artSupported()) {
       return;
     }
     Path shakingLib =

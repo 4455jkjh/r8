@@ -13,4 +13,10 @@ public interface RetraceStackTraceContext {
   static RetraceStackTraceContext empty() {
     return RetraceStackTraceContextImpl.builder().build();
   }
+
+  static RetraceStackTraceContext deserialize(byte[] bytes) {
+    return RetraceStackTraceContextImpl.deserialize(bytes);
+  }
+
+  byte[] serialize();
 }

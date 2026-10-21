@@ -31,10 +31,6 @@ OOM_EXIT_CODE = 42
 # A negative value -N indicates that the child was terminated by signal N.
 TIMEOUT_KILL_CODE = -9
 
-# Log file names
-FIND_MIN_XMX_FILE = 'find_min_xmx_results'
-FIND_MIN_XMX_DIR = 'find_min_xmx'
-
 
 def ParseOptions(argv):
     result = argparse.ArgumentParser()
@@ -87,10 +83,6 @@ def ParseOptions(argv):
                         help='Setting the size of the acceptable memory range',
                         type=int,
                         default=32)
-    result.add_argument('--find-min-xmx-archive',
-                        help='Archive find-min-xmx results on GCS',
-                        default=False,
-                        action='store_true')
     result.add_argument('--no-extra-pgconf',
                         '--no_extra_pgconf',
                         help='Build without the following extra rules: ' +
@@ -324,35 +316,8 @@ def find_min_xmx(options, args):
             not_working = next_candidate
 
     assert working - not_working <= range
-    found_range = 'Found range: %s - %s' % (not_working, working)
-    print(found_range)
-
-    if options.find_min_xmx_archive:
-        sha = utils.get_HEAD_sha1()
-        (version, _) = get_version_and_data(options)
-        destination = os.path.join(utils.R8_TEST_RESULTS_BUCKET,
-                                   FIND_MIN_XMX_DIR, sha, options.compiler,
-                                   options.compiler_build, options.app, version,
-                                   get_type(options))
-        gs_destination = 'gs://%s' % destination
-        utils.archive_value(FIND_MIN_XMX_FILE, gs_destination,
-                            found_range + '\n')
-
+    print('Found range: %s - %s' % (not_working, working))
     return 0
-
-
-def print_min_xmx_ranges_for_hash(hash, compiler, compiler_build):
-    app_directory = os.path.join(utils.R8_TEST_RESULTS_BUCKET, FIND_MIN_XMX_DIR,
-                                 hash, compiler, compiler_build)
-    gs_base = 'gs://%s' % app_directory
-    for app in utils.ls_files_on_cloud_storage(gs_base).strip().split('\n'):
-        for version in utils.ls_files_on_cloud_storage(app).strip().split('\n'):
-            for type in utils.ls_files_on_cloud_storage(version).strip().split(
-                    '\n'):
-                gs_location = '%s%s' % (type, FIND_MIN_XMX_FILE)
-                value = utils.cat_file_on_cloud_storage(gs_location,
-                                                        ignore_errors=True)
-                print('%s\n' % value)
 
 
 def track_time_in_memory(options, args):

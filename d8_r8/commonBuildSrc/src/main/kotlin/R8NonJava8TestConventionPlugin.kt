@@ -17,6 +17,7 @@ import org.gradle.kotlin.dsl.withType
 
 public class R8NonJava8TestConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
+    target.pluginManager.apply("r8-test-conventions")
     target.dependencies.apply {
       add("implementation", project(":main", "mainClassesOutput"))
       add("implementation", project(":main", "mainResources"))

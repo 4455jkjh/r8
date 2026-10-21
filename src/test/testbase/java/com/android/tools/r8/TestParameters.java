@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_1_0;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -83,10 +84,19 @@ public class TestParameters {
             .isGreaterThanOrEqualTo(TestBase.apiLevelWithDefaultInterfaceMethodsSupport());
   }
 
-  public boolean hasSealedClassesSupport() {
+  public boolean hasSealedClassesReflectionSupport() {
     return (isCfRuntime() && getCfRuntime().hasSealedClassesSupport())
         || (isDexRuntime()
-            && getApiLevel().isGreaterThanOrEqualTo(TestBase.apiLevelWithSealedClassesSupport()));
+            && getApiLevel()
+                .isGreaterThanOrEqualTo(TestBase.apiLevelWithSealedClassesReflectionSupport()));
+  }
+
+  public boolean hasSealedClassesRuntimeCheck() {
+    return (isCfRuntime() && getCfRuntime().hasSealedClassesSupport())
+        || (isDexRuntime()
+            && getApiLevel()
+                .isGreaterThanOrEqualTo(TestBase.apiLevelWithSealedClassesReflectionSupport())
+            && getDexRuntimeVersion().isNewerThanOrEqual(V17_1_0));
   }
 
   public boolean canUseDefaultAndStaticInterfaceMethods() {

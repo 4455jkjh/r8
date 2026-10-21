@@ -9,10 +9,10 @@ plugins {
   id("net.ltgt.errorprone")
 }
 
+val srcDir = getRoot().resolveAll("src", "main", "java")
+
 java {
   sourceSets {
-    val srcDir = getRoot().resolveAll("src", "main", "java")
-
     main {
       resources.srcDirs(
         getRoot().resolveAll("third_party", "api_database", "api_database"),
@@ -35,10 +35,14 @@ val internalJarResolvable =
 val internalClassesScope = configurations.dependencyScope("internalClassesScope")
 val internalClassesResolvable =
   configurations.resolvable("internalClassesResolvable") { extendsFrom(internalClassesScope.get()) }
+val internalSourcesScope = configurations.dependencyScope("internalSourcesScope")
+val internalSourcesResolvable =
+  configurations.resolvable("internalSourcesResolvable") { extendsFrom(internalSourcesScope.get()) }
 
 dependencies {
   internalJarScope(project(":utils", "isolatedJar"))
   internalClassesScope(project(":utils", "isolatedClasses"))
+  internalSourcesScope(project(":utils", "isolatedSources"))
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":keepradius", "keepradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
@@ -75,6 +79,11 @@ configurations.consumable("mainJar") {
 configurations.consumable("mainClassesOutput") {
   extendsFrom(internalClassesResolvable.get())
   outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+}
+
+configurations.consumable("mainSources") {
+  extendsFrom(internalSourcesResolvable.get())
+  outgoing.artifact(srcDir)
 }
 
 // Contains partial class files of :main but not :utils nor third party dependencies.

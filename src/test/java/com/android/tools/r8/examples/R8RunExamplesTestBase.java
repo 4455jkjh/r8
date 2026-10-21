@@ -26,7 +26,6 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
@@ -86,9 +85,6 @@ public abstract class R8RunExamplesTestBase extends TestBase {
     }
     return result;
   }
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   protected final TestParameters parameters;
 
@@ -204,7 +200,7 @@ public abstract class R8RunExamplesTestBase extends TestBase {
       // Return to ensure that this test fails due to the missing exception.
       return;
     }
-    Assume.assumeTrue(ToolHelper.artSupported() || ToolHelper.compareAgaintsGoldenFiles());
+    Assume.assumeTrue(ToolHelper.artSupported());
 
     if (parameters.isDexRuntime()) {
       Assume.assumeFalse(

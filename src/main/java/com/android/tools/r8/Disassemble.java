@@ -272,7 +272,6 @@ public class Disassemble {
     @Override
     InternalOptions getInternalOptions() {
       InternalOptions internal = new InternalOptions();
-      internal.useSmaliSyntax = useSmali;
       internal.readDebugSetFileEvent = true;
       return internal;
     }

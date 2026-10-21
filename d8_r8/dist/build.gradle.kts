@@ -88,6 +88,9 @@ val libanalyzerProtoJarConfig =
     extendsFrom(libanalyzerProtoJarScope.get())
   }
 
+val assistantJarScope = configurations.dependencyScope("assistantJarScope")
+val assistantJarConfig =
+  configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope.get()) }
 val mainJarScope = configurations.dependencyScope("mainJarScope")
 val mainJarConfig = configurations.resolvable("mainJarConfig") { extendsFrom(mainJarScope.get()) }
 val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
@@ -101,6 +104,7 @@ val swissArmyKnifeConfig =
   }
 
 dependencies {
+  assistantJarScope(project(":assistant", "assistantJar"))
   keepRadiusProtoJarScope(project(":keepradius", "keepradiusProtoJar"))
   keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
   keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
@@ -368,6 +372,24 @@ tasks {
         ) + relocateDepsExceptAsm(pkg) + listOf("--map-diagnostics", "warning", "error")
       outputFile = File(getRootDir(), "build/libs/r8.jar")
     }
+
+  val compileAssistantRuntimeDex =
+    register<CompileAssistantRuntimeDexTask>("compileAssistantRuntimeDex") {
+      d8Classpath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
+      assistantJar.from(assistantJarConfig)
+      runtimeDex = File(rootDir, "build/libs/assistant-runtime.dex")
+    }
+
+  register<CreateR8LibraryTask>("r8AssistantLib") {
+    r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
+    inputJar = r8WithRelocatedDeps.flatMap { it.outputFile }
+    assistantRuntimeDex = compileAssistantRuntimeDex.flatMap { it.runtimeDex }
+    mainClass = "com.android.tools.r8.R8Assistant"
+    pgConfigs.from(File(rootDir, "src/main/keep_assistant.txt"))
+    enableKeepAnnotations = false
+
+    setOutputJarFile(File(rootDir, "build/libs/r8-assistantlib.jar"))
+  }
 
   register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
     outputs.doNotCacheIf("Large standalone artifact (~8MB)") { true }

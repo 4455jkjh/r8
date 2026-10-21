@@ -417,6 +417,10 @@ public class AndroidResourceTestingUtils {
         }
         RClassType rClassType = RClassType.fromClass(rClass);
         for (Field declaredField : rClass.getDeclaredFields()) {
+          // Skip synthetic fields (e.g., $jacocoData injected during code coverage runs).
+          if (declaredField.isSynthetic()) {
+            continue;
+          }
           String name = declaredField.getName();
           if (rClassType == RClassType.STRING) {
             addStringValue(name, name);

@@ -315,7 +315,16 @@ public class KotlinCompilerTool {
     return this;
   }
 
-  public KotlinCompilerTool enableExperimentalContextParameters() {
+  public KotlinCompilerTool enableContextParameters() {
+    if (getCompiler().getCompilerVersion().isLessThan(KotlinCompilerVersion.KOTLINC_2_2_0)) {
+      throw new Unimplemented("Context parameters require Kotlin 2.2 or higher");
+    }
+    // Context parameters are stable from Kotlin 2.4.
+    if (getCompiler()
+        .getCompilerVersion()
+        .isGreaterThanOrEqualTo(KotlinCompilerVersion.KOTLINC_2_4_20)) {
+      return this;
+    }
     return addArguments("-Xcontext-parameters");
   }
 
@@ -405,7 +414,8 @@ public class KotlinCompilerTool {
   }
 
   public KotlinCompilerTool setOutputPath(Path file) {
-    assertTrue("Output path must be an existing directory or a non-existing jar file",
+    assertTrue(
+        "Output path must be an existing directory or a non-existing jar file",
         (!Files.exists(file) && FileUtils.isJarFile(file) && Files.exists(file.getParent()))
             || (Files.exists(file) && Files.isDirectory(file)));
     this.output = file;
@@ -522,10 +532,10 @@ public class KotlinCompilerTool {
     cmdline.add(output.toString());
     if (!classpath.isEmpty()) {
       cmdline.add("-cp");
-      cmdline.add(classpath
-          .stream()
-          .map(Path::toString)
-          .collect(Collectors.joining(isWindows() ? ";" : ":")));
+      cmdline.add(
+          classpath.stream()
+              .map(Path::toString)
+              .collect(Collectors.joining(isWindows() ? ";" : ":")));
       for (Path path : classpath) {
         commandLineAndHasherConsumers.hasherConsumers.add(
             hasher -> {

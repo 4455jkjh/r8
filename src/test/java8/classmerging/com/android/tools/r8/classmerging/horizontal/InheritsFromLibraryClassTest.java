@@ -69,6 +69,8 @@ public class InheritsFromLibraryClassTest extends HorizontalClassMergingTestBase
     public C() {}
 
     public void fooB(B b) {
+      // Use the receiver so that the allocation of C is not removed.
+      add(b);
       b.foo();
     }
   }

@@ -10,7 +10,12 @@ plugins {
 
 dependencies { compileOnly(project(":keepanno", "keepannoClasses")) }
 
-java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "assistant", "java")) } }
+val srcDir = getRoot().resolveAll("src", "assistant", "java")
+
+java {
+  sourceSets.main.configure { java.srcDir(srcDir) }
+  tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
+}
 
 val jarTask =
   tasks.named<Jar>("jar") {
@@ -20,3 +25,9 @@ val jarTask =
   }
 
 configurations.consumable("assistantJar") { outgoing.artifact(jarTask) }
+
+configurations.consumable("assistantClasses") {
+  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+}
+
+configurations.consumable("assistantSources") { outgoing.artifact(srcDir) }

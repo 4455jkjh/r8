@@ -14,6 +14,7 @@ public data class ThirdPartyDependency(
   val path: File,
   val testOnly: Boolean = false,
   val type: DependencyType = DependencyType.GOOGLE_STORAGE,
+  val missingOnWindows: Boolean = false,
 ) {
   val tarGzFile: File = path.resolveSibling("${path.name}.tar.gz")
   val sha1File: File = path.resolveSibling("${path.name}.tar.gz.sha1")

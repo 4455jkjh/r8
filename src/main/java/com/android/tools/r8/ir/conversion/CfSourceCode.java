@@ -44,6 +44,7 @@ import com.android.tools.r8.ir.conversion.IRBuilder.BlockInfo;
 import com.android.tools.r8.utils.InternalOutputMode;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap.Entry;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
@@ -186,7 +187,7 @@ public class CfSourceCode implements SourceCode {
           continue;
         }
         if (currentLocals == null) {
-          currentLocals = new Int2ReferenceOpenHashMap<>();
+          currentLocals = new Int2ReferenceLinkedOpenHashMap<>();
         }
         startOffset = Math.max(startOffset, start);
         endOffset = Math.min(endOffset, end);

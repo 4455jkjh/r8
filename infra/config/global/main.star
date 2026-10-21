@@ -259,7 +259,7 @@ common_test_options = [
     "--one_line_per_test",
 ]
 
-default_timeout = time.hour * 6
+default_timeout = time.hour * 12
 
 def get_dimensions(windows = False, internal = False, archive = False, tester = False, jammy = True, coordinator = False, perf = False):
     # We use the following setup:
@@ -362,7 +362,7 @@ def r8_tester(
         priority = None,
         dimensions = None,
         execution_timeout = default_timeout,
-        expiration_timeout = time.hour * 35,
+        expiration_timeout = time.hour * 70,
         max_concurrent_invocations = 1,
         category = None,
         release_trigger = None,
@@ -405,7 +405,7 @@ def r8_tester_with_default(
         category = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
-        execution_timeout = time.hour * 2,
+        execution_timeout = time.hour * 4,
         extra_properties = {}):
     extra_properties = dict(extra_properties)
     env = dict(extra_properties.get("env", {}))
@@ -580,15 +580,15 @@ def perf_size():
             category = "perf",
             dimensions = get_dimensions(tester = True),
             trigger = bucket == "ci",
-            priority = 25 if bucket == "try" else 20,
+            priority = 24 if bucket == "try" else 20,
             # Run for every commit so that each main commit gets a cached baseline.
             triggering_policy = scheduler.policy(
                 kind = scheduler.GREEDY_BATCHING_KIND,
                 max_batch_size = 1,
                 max_concurrent_invocations = 3,
             ) if bucket == "ci" else None,
-            execution_timeout = time.hour * 1,
-            expiration_timeout = time.hour * 35,
+            execution_timeout = time.hour * 2,
+            expiration_timeout = time.hour * 70,
             properties = {
                 "builder_group": "internal.client.r8",
                 "test_options": ["--upload-baseline"] if bucket == "ci" else [],
@@ -621,6 +621,7 @@ r8_tester_with_default(
     "linux-dry-run",
     ["--runtimes=dry-run", "--all_tests", "--command_cache_dir=.ccache"],
     bucket = "try",
+    priority = 24,
     trigger = False,
     dimensions = get_dimensions(tester = True),
 )
@@ -631,7 +632,7 @@ r8_tester_with_default(
     bucket = "try",
     trigger = False,
     dimensions = get_dimensions(coordinator = True),
-    execution_timeout = 12 * time.hour,
+    execution_timeout = 24 * time.hour,
     extra_properties = {
         "testers": ["linux-all", "linux-perf-size"],
         "shard_count": 20,
@@ -642,9 +643,10 @@ r8_tester_with_default(
     "presubmit-dry-run",
     [],
     bucket = "try",
+    priority = 24,
     trigger = False,
     dimensions = get_dimensions(coordinator = True),
-    execution_timeout = 12 * time.hour,
+    execution_timeout = 24 * time.hour,
     extra_properties = {
         "testers": ["linux-dry-run", "linux-perf-size"],
         "shard_count": 3,
@@ -796,7 +798,7 @@ r8_tester_with_default(
     "win",
     ["--all_tests"],
     dimensions = get_dimensions(windows = True),
-    execution_timeout = time.hour * 8,
+    execution_timeout = time.hour * 16,
     trigger = True,
     max_concurrent_invocations = 2,
 )
@@ -817,8 +819,8 @@ def internal():
                 "test_wrapper": "tools/internal_test.py",
                 "builder_group": "internal.client.r8",
             },
-            execution_timeout = time.hour * 12,
-            expiration_timeout = time.hour * 35,
+            execution_timeout = time.hour * 24,
+            expiration_timeout = time.hour * 70,
         )
 
 internal()
@@ -834,8 +836,8 @@ def app_dump():
         r8_builder(
             name,
             dimensions = get_dimensions(),
-            execution_timeout = time.hour * 12,
-            expiration_timeout = time.hour * 35,
+            execution_timeout = time.hour * 24,
+            expiration_timeout = time.hour * 70,
             properties = properties,
         )
 
@@ -859,8 +861,8 @@ def desugared_library():
         "desugared_library-jdk11_head",
         category = "library_desugar",
         dimensions = get_dimensions(),
-        execution_timeout = time.hour * 12,
-        expiration_timeout = time.hour * 35,
+        execution_timeout = time.hour * 24,
+        expiration_timeout = time.hour * 70,
         properties = properties,
     )
 
@@ -870,8 +872,8 @@ r8_builder(
     "linux-dev",
     category = "Kotlin",
     dimensions = get_dimensions(),
-    execution_timeout = time.hour * 12,
-    expiration_timeout = time.hour * 35,
+    execution_timeout = time.hour * 24,
+    expiration_timeout = time.hour * 70,
     properties = {
         "builder_group": "internal.client.r8",
         "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-dev", "--one_line_per_test", "--no-internal", "*kotlin*", "*debug*"],
@@ -882,8 +884,8 @@ r8_builder(
     "linux-old",
     category = "Kotlin",
     dimensions = get_dimensions(),
-    execution_timeout = time.hour * 12,
-    expiration_timeout = time.hour * 35,
+    execution_timeout = time.hour * 24,
+    expiration_timeout = time.hour * 70,
     properties = {
         "builder_group": "internal.client.r8",
         "test_options": ["--runtimes=dex-default:jdk11", "--kotlin-compiler-old", "--one_line_per_test", "--no-internal", "*kotlin*", "*debug*"],

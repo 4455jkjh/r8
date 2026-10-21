@@ -57,6 +57,8 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.DeterminismAnalysis;
 import com.android.tools.r8.ir.analysis.InitializedClassesOnNormalExitAnalysis;
 import com.android.tools.r8.ir.analysis.framework.intraprocedural.DataflowAnalysisResult.SuccessfulDataflowAnalysisResult;
+import com.android.tools.r8.ir.analysis.inlining.AlwaysSimpleInliningConstraint;
+import com.android.tools.r8.ir.analysis.inlining.NeverSimpleInliningConstraint;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraint;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraintAnalysis;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraintWithDepth;
@@ -83,6 +85,7 @@ import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
+import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Return;
@@ -155,14 +158,15 @@ public class MethodOptimizationInfoCollector {
     if (options.enableEnumUnboxing) {
       computeEnumUnboxerMethodClassification(method, code, feedback, methodProcessor, timing);
     }
-    computeSimpleInliningConstraint(method, code, feedback, timing);
+    SimpleInliningConstraint nopInliningConstraint =
+        computeSimpleInliningConstraint(method, code, feedback, timing);
     computeDynamicReturnType(dynamicTypeOptimization, feedback, method, code, timing);
     if (options.enableInitializedClassesAnalysis) {
       computeInitializedClassesOnNormalExit(feedback, definition, code, timing);
     }
     computeInstanceInitializerInfo(
         definition, code, feedback, instanceFieldInitializationInfos, timing);
-    computeMayHaveSideEffects(feedback, definition, code, timing);
+    computeMayHaveSideEffects(feedback, definition, code, nopInliningConstraint, timing);
     computeReturnValueOnlyDependsOnArguments(feedback, definition, code, timing);
     BitSet nonNullParamOrThrow = computeNonNullParamOrThrow(feedback, definition, code, timing);
     computeNonNullParamOnNormalExits(feedback, code, nonNullParamOrThrow, timing);
@@ -866,16 +870,19 @@ public class MethodOptimizationInfoCollector {
     return true;
   }
 
-  private void computeSimpleInliningConstraint(
+  private SimpleInliningConstraint computeSimpleInliningConstraint(
       ProgramMethod method, IRCode code, OptimizationFeedback feedback, Timing timing) {
-    if (appView.options().enableSimpleInliningConstraints) {
-      timing.begin("Compute simple inlining constraint");
-      computeSimpleInliningConstraint(method, code, feedback);
-      timing.end();
+    if (!appView.options().enableSimpleInliningConstraints) {
+      return NeverSimpleInliningConstraint.getInstance();
     }
+    timing.begin("Compute simple inlining constraint");
+    SimpleInliningConstraint nopInliningConstraint =
+        computeSimpleInliningConstraint(method, code, feedback);
+    timing.end();
+    return nopInliningConstraint;
   }
 
-  private void computeSimpleInliningConstraint(
+  private SimpleInliningConstraint computeSimpleInliningConstraint(
       ProgramMethod method, IRCode code, OptimizationFeedback feedback) {
     SimpleInliningConstraintWithDepth simpleInliningConstraintWithDepth =
         new SimpleInliningConstraintAnalysis(appView, method).analyzeCode(code);
@@ -885,6 +892,7 @@ public class MethodOptimizationInfoCollector {
         simpleInliningConstraintWithDepth.getConstraint();
     feedback.setNopInliningConstraint(method, nopInliningConstraint);
     feedback.setSimpleInliningConstraint(method, simpleInliningConstraint);
+    return nopInliningConstraint;
   }
 
   private void computeDynamicReturnType(
@@ -959,14 +967,21 @@ public class MethodOptimizationInfoCollector {
   }
 
   private void computeMayHaveSideEffects(
-      OptimizationFeedback feedback, DexEncodedMethod method, IRCode code, Timing timing) {
+      OptimizationFeedback feedback,
+      DexEncodedMethod method,
+      IRCode code,
+      SimpleInliningConstraint nopInliningConstraint,
+      Timing timing) {
     timing.begin("Compute may have side effects");
-    computeMayHaveSideEffects(feedback, method, code);
+    computeMayHaveSideEffects(feedback, method, code, nopInliningConstraint);
     timing.end();
   }
 
   private void computeMayHaveSideEffects(
-      OptimizationFeedback feedback, DexEncodedMethod method, IRCode code) {
+      OptimizationFeedback feedback,
+      DexEncodedMethod method,
+      IRCode code,
+      SimpleInliningConstraint nopInliningConstraint) {
     // If the method is native, we don't know what could happen.
     assert !method.accessFlags.isNative();
     if (!options.enableSideEffectAnalysis) {
@@ -1000,12 +1015,12 @@ public class MethodOptimizationInfoCollector {
       }
       return;
     }
-    boolean mayHaveSideEffects;
+    SimpleInliningConstraint noSideEffectsConstraint;
     if (method.isSynchronized()) {
       // If the method is synchronized then it acquires a lock.
-      mayHaveSideEffects = true;
+      noSideEffectsConstraint = NeverSimpleInliningConstraint.getInstance();
     } else {
-      mayHaveSideEffects = false;
+      noSideEffectsConstraint = AlwaysSimpleInliningConstraint.getInstance();
       // Otherwise, check if there is an instruction that has side effects.
       for (Instruction instruction : code.instructions()) {
         if (instruction.isInvokeConstructor(appView.dexItemFactory())
@@ -1016,18 +1031,52 @@ public class MethodOptimizationInfoCollector {
                 .isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
           if (instruction.instructionMayHaveSideEffects(
               appView, context, SideEffectAssumption.IGNORE_RECEIVER_FIELD_ASSIGNMENTS)) {
-            mayHaveSideEffects = true;
+            noSideEffectsConstraint = NeverSimpleInliningConstraint.getInstance();
             break;
           }
-        } else if (instruction.instructionMayHaveSideEffects(appView, context)) {
-          mayHaveSideEffects = true;
-          break;
+        } else {
+          noSideEffectsConstraint =
+              noSideEffectsConstraint.meet(
+                  computeConstraintForInstructionNotToHaveSideEffects(instruction, context));
+          if (noSideEffectsConstraint.isNever()) {
+            break;
+          }
         }
       }
     }
-    if (!mayHaveSideEffects) {
+    if (noSideEffectsConstraint.isAlways()) {
       feedback.methodMayNotHaveSideEffects(method);
+    } else if (!noSideEffectsConstraint.isNever()) {
+      // The method only has side effects if the invocation does not satisfy the constraint, e.g.,
+      // kotlin.enums.EnumEntriesKt.enumEntries(entries) only has side effects if entries is null
+      // due to its null check. The nop inlining constraint is only used to determine if an
+      // invocation may have side effects, so this allows removing unused calls to enumEntries.
+      // Join with the nop inlining constraint from the simple inlining constraint analysis, since
+      // satisfying either constraint guarantees that the invocation has no side effects.
+      feedback.setNopInliningConstraint(
+          context, nopInliningConstraint.join(noSideEffectsConstraint));
     }
+  }
+
+  // Returns the constraint on the arguments of the enclosing method under which the given
+  // instruction does not have side effects. In addition to side effect free instructions, this
+  // handles null checks on arguments, which CheckNotNullConverter rewrites to Object.getClass().
+  private SimpleInliningConstraint computeConstraintForInstructionNotToHaveSideEffects(
+      Instruction instruction, ProgramMethod context) {
+    if (!instruction.instructionMayHaveSideEffects(appView, context)) {
+      return AlwaysSimpleInliningConstraint.getInstance();
+    }
+    InvokeVirtual invoke = instruction.asInvokeVirtual();
+    if (invoke != null
+        && invoke.getInvokedMethod().isIdenticalTo(dexItemFactory.objectMembers.getClass)) {
+      Value receiver = invoke.getReceiver().getAliasedValue();
+      if (receiver.isArgument()) {
+        return appView
+            .simpleInliningConstraintFactory()
+            .createNotEqualToNullConstraint(receiver.getDefinition().asArgument().getIndex());
+      }
+    }
+    return NeverSimpleInliningConstraint.getInstance();
   }
 
   private void computeReturnValueOnlyDependsOnArguments(

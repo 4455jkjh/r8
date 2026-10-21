@@ -180,7 +180,9 @@ public abstract class FieldInstruction extends Instruction {
       AppView<AppInfoWithLiveness> appView, DexClassAndField field) {
     assert isFieldPut();
 
-    TypeElement type = value().getType();
+    // Use the dynamic type to be precise when the static type is an interface, e.g., for
+    // `$ENTRIES = EnumEntriesKt.enumEntries(...)` which is known to return an EnumEntriesList.
+    TypeElement type = value().getDynamicUpperBoundType(appView);
     TypeElement baseType = type.isArrayType() ? type.asArrayType().getBaseType() : type;
     if (!baseType.isClassType()) {
       return false;

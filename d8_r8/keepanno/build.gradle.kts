@@ -13,9 +13,11 @@ plugins {
   id("com.google.protobuf")
 }
 
+val srcDir = getRoot().resolveAll("src", "keepanno", "java")
+
 java {
   sourceSets.main.configure {
-    java.srcDir(getRoot().resolveAll("src", "keepanno", "java"))
+    java.srcDir(srcDir)
     proto { srcDir(getRoot().resolveAll("src", "keepanno", "proto")) }
   }
 }
@@ -161,3 +163,5 @@ configurations.consumable("keepannoClasses") {
     }
   )
 }
+
+configurations.consumable("keepannoSources") { outgoing.artifact(srcDir) }

@@ -3,16 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import com.android.tools.r8.assistant.ClassInjectionHelper;
-import com.android.tools.r8.assistant.runtime.EmptyReflectiveOperationReceiver;
-import com.android.tools.r8.assistant.runtime.ReflectiveEventType;
 import com.android.tools.r8.assistant.runtime.ReflectiveOperationJsonLogger;
-import com.android.tools.r8.assistant.runtime.ReflectiveOperationLogger;
-import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver;
-import com.android.tools.r8.assistant.runtime.ReflectiveOracle;
-import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
-import com.android.tools.r8.dex.Marker;
-import com.android.tools.r8.dex.Marker.Backend;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
@@ -21,11 +12,16 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.DumpInputFlags;
+import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.UncheckedApiLevel;
+import com.google.common.io.ByteStreams;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collections;
 
@@ -35,6 +31,8 @@ import java.util.Collections;
  */
 @KeepForApi
 public class R8AssistantCommand extends BaseCompilerCommand {
+
+  private static final String ASSISTANT_RUNTIME_DEX = "assistant-runtime.dex";
 
   private final String reflectiveReceiverDescriptor;
 
@@ -109,11 +107,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
     options.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));
     options.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     options.passthroughDexCode = true;
+    options.enableMainDexListCheck = false;
     options.tool = Tool.R8Assistant;
-    Marker marker = new Marker(Tool.R8Assistant);
-    marker.setBackend(Backend.DEX);
-    marker.setMinApi(getUncheckedMinApiLevel());
-    options.setMarker(marker);
     options.programConsumer = getProgramConsumer();
     return options;
   }
@@ -130,6 +125,7 @@ public class R8AssistantCommand extends BaseCompilerCommand {
   public static class Builder extends BaseCompilerCommand.Builder<R8AssistantCommand, Builder> {
 
     private String reflectiveReceiverDescriptor;
+    private Path assistantRuntimePath;
 
     private Builder() {
       this(new DiagnosticsHandler() {});
@@ -140,14 +136,10 @@ public class R8AssistantCommand extends BaseCompilerCommand {
       if (!(getProgramConsumer() instanceof DexIndexedConsumer)) {
         getReporter().error("R8 assistant does not support CF output.");
       }
-      if (!hasNativeMultidex()) {
-        getReporter().error("R8 assistant requires min api >= 21");
-      }
     }
 
-    public Builder addReflectiveOperationReceiverInput(ProgramResourceProvider provider) {
-      // This code is simply added to the program input, will be called by the ReflectiveOracle.
-      addProgramResourceProvider(provider);
+    public Builder setAssistantRuntime(Path dexPath) {
+      this.assistantRuntimePath = dexPath;
       return self();
     }
 
@@ -179,16 +171,11 @@ public class R8AssistantCommand extends BaseCompilerCommand {
 
     @Override
     R8AssistantCommand makeCommand() {
-      injectClasses(
-          EmptyReflectiveOperationReceiver.class,
-          ReflectiveEventType.class,
-          ReflectiveOperationJsonLogger.class,
-          ReflectiveOperationLogger.class,
-          ReflectiveOperationReceiver.NameLookupType.class,
-          ReflectiveOperationReceiver.ClassFlag.class,
-          ReflectiveOperationReceiver.class,
-          ReflectiveOracle.class,
-          Stack.class);
+      if (reflectiveReceiverDescriptor == null) {
+        reflectiveReceiverDescriptor =
+            DescriptorUtils.javaClassToDescriptor(ReflectiveOperationJsonLogger.class);
+      }
+      injectRuntime();
       return new R8AssistantCommand(
           getAppBuilder().build(),
           getMode(),
@@ -199,13 +186,37 @@ public class R8AssistantCommand extends BaseCompilerCommand {
           getApiDatabasePath());
     }
 
-    private void injectClasses(Class<?>... classes) {
-      ClassInjectionHelper injectionHelper = new ClassInjectionHelper(getReporter());
-      String reason = "Reflective instrumentation";
-      for (Class<?> clazz : classes) {
-        addClassProgramData(
-            injectionHelper.getClassBytes(clazz), new SynthesizedOrigin(reason, clazz));
+    private void injectRuntime() {
+      if (assistantRuntimePath != null) {
+        addProgramFiles(assistantRuntimePath);
+        return;
       }
+      byte[] runtimeDex = loadDefaultRuntimeDex();
+      if (runtimeDex != null) {
+        addDexProgramData(
+            runtimeDex,
+            new SynthesizedOrigin("Reflective instrumentation runtime DEX", R8Assistant.class));
+      } else {
+        getReporter()
+            .error(
+                new StringDiagnostic(
+                    "Could not find assistant runtime DEX: " + ASSISTANT_RUNTIME_DEX));
+      }
+    }
+
+    private byte[] loadDefaultRuntimeDex() {
+      ClassLoader loader = R8AssistantCommand.class.getClassLoader();
+      if (loader == null) {
+        loader = ClassLoader.getSystemClassLoader();
+      }
+      try (InputStream inputStream = loader.getResourceAsStream(ASSISTANT_RUNTIME_DEX)) {
+        if (inputStream != null) {
+          return ByteStreams.toByteArray(inputStream);
+        }
+      } catch (IOException e) {
+        getReporter().error(new ExceptionDiagnostic(e));
+      }
+      return null;
     }
   }
 }

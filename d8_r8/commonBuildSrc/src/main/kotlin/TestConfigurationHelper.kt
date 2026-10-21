@@ -543,9 +543,9 @@ public class TestConfigurationHelper {
           test.reports.html.required.set(false)
           test.reports.junitXml.required.set(false)
         }
-        retry.maxRetries.set(2)
+        retry.maxRetries.set(1)
         // High maxFailures so parameterized tests aren't aborted from retries.
-        retry.maxFailures.set(200)
+        retry.maxFailures.set(30)
       }
       retry.failOnPassedAfterRetry.set(false)
       retry.failOnSkippedAfterRetry.set(false)

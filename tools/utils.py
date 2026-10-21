@@ -52,6 +52,7 @@ GRADLE_TASK_KEEP_ANNO_DOC = ':keepanno:keepAnnoAnnotationsDoc'
 GRADLE_TASK_MAIN_COMPILE = ':main:compileJava'
 GRADLE_TASK_PROCESS_KEEP_RULES_LIB_JAR = ':dist:processKeepRulesLibWithRelocatedDeps'
 GRADLE_TASK_R8 = ':dist:r8WithRelocatedDeps'
+GRADLE_TASK_R8_ASSISTANT = ':dist:r8AssistantLib'
 GRADLE_TASK_R8LIB = ':test:assembleR8LibWithRelocatedDeps'
 GRADLE_TASK_R8LIB_NO_DEPS = ':test:assembleR8LibNoDeps'
 GRADLE_TASK_THREADING_MODULE_BLOCKING = ':dist:threadingModuleBlockingJar'
@@ -76,6 +77,7 @@ R8LIB = 'r8lib'
 ALL_DEPS_JAR = os.path.join(LIBS, 'deps_all.jar')
 PROCESS_KEEP_RULES_LIB_JAR = os.path.join(LIBS, 'processkeepruleslib.jar')
 R8_JAR = os.path.join(LIBS, 'r8.jar')
+R8_ASSISTANT_LIB_JAR = os.path.join(LIBS, 'r8-assistantlib.jar')
 TOOLS_JAR = os.path.join(REPO_ROOT, 'd8_r8', 'tools', 'build', 'libs',
                          'tools.jar')
 R8LIB_JAR = os.path.join(LIBS, 'r8lib.jar')
@@ -165,7 +167,6 @@ USER_HOME = os.path.expanduser('~')
 CLOUD_STORAGE_URL = 'https://storage.googleapis.com'
 R8_DEPS_URL = '%s/r8-deps' % CLOUD_STORAGE_URL
 R8_INTERNAL_DEPS_BUCKET = 'gs://r8-internal-deps'
-R8_TEST_RESULTS_BUCKET = 'r8-test-results'
 R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'
 
 ARCHIVE_DETAILS = os.path.join(BUILD, 'archive_details.json')
@@ -692,8 +693,8 @@ def ensure_x20_download(path, quiet=False):
 
 def get_nth_sha1_from_revision(n, revision):
     result = subprocess.check_output([
-        'git', 'log', revision, f'--skip={n}', '--max-count=1',
-        '--pretty=format:%H'
+        'git', 'log', '--first-parent', revision, f'--skip={n}',
+        '--max-count=1', '--pretty=format:%H'
     ]).decode('utf-8')
     return result.strip()
 

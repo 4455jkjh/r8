@@ -196,6 +196,11 @@ public class DexBuilder {
    * the concrete instructions.
    */
   public DexCode build() {
+    // The TrivialGotosCollapser has removed the redundant debug position of blocks that only hold a
+    // debug position and a goto. With these removed it is sound for removeRedundantDebugPositions
+    // to judge if a goto materializes based on the fallthrough.
+    assert !options.getTestingOptions().enableRemoveRedundantDebugPositionsInTrivialGotosCollapser
+        || assertNoTrivialDebugPositionGotoBlock(ir);
     int numberOfInstructions;
     int offset;
 
@@ -365,6 +370,13 @@ public class DexBuilder {
         && !previousBlock.hasCatchSuccessor(currentBlock);
   }
 
+  private static boolean assertNoTrivialDebugPositionGotoBlock(IRCode code) {
+    for (BasicBlock block : code.blocks) {
+      assert !TrivialGotosCollapser.isRedundantDebugPositionGoto(code, block);
+    }
+    return true;
+  }
+
   @SuppressWarnings("ReferenceEquality")
   private static boolean removeTrivialGotoBlocks(IRCode code) {
     boolean changed = false;
@@ -457,23 +469,28 @@ public class DexBuilder {
       return;
     }
 
-    // We must start by removing any blocks that are already trivial fallthrough blocks with no
-    // position change. With these removed it is then sound to make the fallthrough judgement when
-    // determining if a goto will materialize or not.
-    //
-    // Removing a block rewires the predecessors of its goto target, which can turn blocks that the
-    // index based iteration has already passed into removable blocks. Iterate to a fixed point.
-    // This terminates as every iteration that reports a change removes at least one block.
-    int iterations = 0;
-    while (removeTrivialGotoBlocks(code)) {
-      iterations++;
-    }
-    if (iterations > EXPECTED_MAX_TRIVIAL_GOTO_BLOCK_ITERATIONS) {
-      // A single iteration removes all blocks for virtually all methods, and two iterations is the
-      // most that has been observed. Assert if that assumption no longer holds, as it points at a
-      // pathological case worth looking into.
-      assert false
-          : "Unexpected number of iterations (" + iterations + ") removing trivial goto blocks.";
+    if (!appView
+        .options()
+        .getTestingOptions()
+        .enableRemoveRedundantDebugPositionsInTrivialGotosCollapser) {
+      // We must start by removing any blocks that are already trivial fallthrough blocks with no
+      // position change. With these removed it is then sound to make the fallthrough judgement
+      // when determining if a goto will materialize or not.
+      //
+      // Removing a block rewires the predecessors of its goto target, which can turn blocks that
+      // the index based iteration has already passed into removable blocks. Iterate to a fixed
+      // point. This terminates as every iteration that reports a change removes at least one block.
+      int iterations = 0;
+      while (removeTrivialGotoBlocks(code)) {
+        iterations++;
+      }
+      if (iterations > EXPECTED_MAX_TRIVIAL_GOTO_BLOCK_ITERATIONS) {
+        // A single iteration removes all blocks for virtually all methods, and two iterations is
+        // the most that has been observed. Assert if that assumption no longer holds, as it points
+        // at a pathological case worth looking into.
+        assert false
+            : "Unexpected number of iterations (" + iterations + ") removing trivial goto blocks.";
+      }
     }
 
     // Compute the set of all positions that can be removed.

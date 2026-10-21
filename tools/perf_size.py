@@ -98,9 +98,14 @@ def parse_options(argv=None):
                         action='store_true',
                         default=False)
     parser.add_argument('--base-hash',
-                        help='Explicit main commit hash to compare against.')
+                        help='Explicit commit hash to compare against.')
     parser.add_argument(
         '--base-jar', help='Explicit baseline r8.jar path to compare against.')
+    parser.add_argument(
+        '--compare-to-main',
+        help='Compare against main even if HEAD is part of a CL chain.',
+        action='store_true',
+        default=False)
     parser.add_argument('--summary-output',
                         help='Path to write Markdown summary table.')
     parser.add_argument('--json-output',
@@ -138,6 +143,14 @@ def parse_options(argv=None):
     return options, args
 
 
+def get_gradle_build_args(tasks):
+    build_args = list(tasks) + ['-Pno_internal']
+    utils.append_gradle_user_home_for_worktree(False, True, build_args)
+    if utils.is_bot() and '--no-daemon' not in build_args:
+        build_args.append('--no-daemon')
+    return build_args
+
+
 def ensure_build_artifacts(options):
     gradle.ensure_jdk()
     required_files = [
@@ -156,14 +169,13 @@ def ensure_build_artifacts(options):
     if options.no_build and all(os.path.exists(p) for p in required_files):
         print('Using prebuilt R8 and test artifacts.')
         return
-    build_targets = [
+    build_targets = get_gradle_build_args([
         utils.GRADLE_TASK_R8,
         utils.GRADLE_TASK_KEEP_ANNO_JAR,
         utils.GRADLE_TASK_TEST_DEPS_JAR,
         utils.GRADLE_TASK_TEST_UNZIP_TESTBASE,
         ':test:unzipTests',
-        '-Pno_internal',
-    ]
+    ])
     print('Building R8 and test artifacts for size presubmit...')
     gradle.run_gradle(build_targets)
 
@@ -444,6 +456,25 @@ def try_upload_baseline_to_gcs(commit_hash, items, temp_dir, options):
         print(f'Warning: could not upload size baseline to {gs_loc}: {e}')
 
 
+def compute_commit_baseline(commit_hash, temp_dir, options):
+    if not git_utils.is_working_tree_clean():
+        raise RuntimeError(
+            'Working tree has uncommitted changes to tracked files')
+    orig_ref = git_utils.get_head_ref()
+    try:
+        print(f'Checking out {commit_hash[:8]} to compute baseline...')
+        git_utils.GitCheckout(commit_hash, utils.REPO_ROOT)
+        ensure_dependencies(options)
+        gradle.run_gradle(get_gradle_build_args([utils.GRADLE_TASK_R8]))
+        base_jar = tag_local_r8_jar(utils.R8_JAR,
+                                    commit_hash,
+                                    temp_dir,
+                                    label='base')
+        return run_suite(base_jar, commit_hash, temp_dir, options)
+    finally:
+        git_utils.GitCheckout(orig_ref, utils.REPO_ROOT)
+
+
 def resolve_baseline_results(options,
                              temp_dir,
                              exclude_sha=None,
@@ -456,7 +487,31 @@ def resolve_baseline_results(options,
                                        temp_dir,
                                        label='base')
         items = run_suite(tagged_base, base_hash, temp_dir, options)
-        return base_hash, items
+        return base_hash, items, False
+
+    if (options.base_hash and not cache_only and
+            git_utils.is_unmerged_commit(options.base_hash)):
+        base_sha = git_utils.resolve_revision(options.base_hash)
+        try:
+            items = compute_commit_baseline(base_sha, temp_dir, options)
+            return base_sha, items, True
+        except Exception as e:
+            print(f'Warning: baseline computation failed for {base_sha}: {e}')
+            return base_sha, None, True
+
+    if (not options.base_hash and not options.compare_to_main and
+            not cache_only):
+        previous_cl_hash = git_utils.get_previous_cl_commit()
+        if previous_cl_hash:
+            print(f'CL is part of a chain; computing baseline for previous CL '
+                  f'({previous_cl_hash[:8]})...')
+            try:
+                items = compute_commit_baseline(previous_cl_hash, temp_dir,
+                                                options)
+                return previous_cl_hash, items, True
+            except Exception as e:
+                print(f'Warning: baseline computation failed for previous CL '
+                      f'{previous_cl_hash}, falling back to main: {e}')
 
     candidates = git_utils.get_candidate_main_commits(options.base_hash,
                                                       exclude_sha=exclude_sha)
@@ -465,10 +520,10 @@ def resolve_baseline_results(options,
         cached = try_load_baseline_from_gcs(commit_hash, required_keys,
                                             temp_dir)
         if cached is not None:
-            return commit_hash, cached
+            return commit_hash, cached, False
 
     if cache_only:
-        return candidates[0], None
+        return candidates[0], None, False
 
     # Download prebuilt r8.jar from gs://r8-releases/raw/main/<hash>/r8.jar.
     selected_hash = None
@@ -489,15 +544,15 @@ def resolve_baseline_results(options,
 
     if downloaded_jar is None:
         print('Warning: no cached baseline or archived r8.jar found in GCS')
-        return candidates[0], None
+        return candidates[0], None, False
 
     try:
         items = run_suite(downloaded_jar, selected_hash, temp_dir, options)
-        return selected_hash, items
+        return selected_hash, items, False
     except Exception as e:
         print(
             f'Warning: live baseline fallback failed for {selected_hash}: {e}')
-        return selected_hash, None
+        return selected_hash, None, False
 
 
 def format_bytes(num_bytes):
@@ -556,8 +611,13 @@ def max_abs_pct_change(base_entry, patch_entry, metrics):
     return result
 
 
-def generate_markdown_summary(base_hash, base_items, patch_items):
+def generate_markdown_summary(base_hash,
+                              base_items,
+                              patch_items,
+                              is_chain=False):
     short_base = base_hash[:8] if len(base_hash) >= 8 else base_hash
+    base_label = (f'previous CL @ `{short_base}`'
+                  if is_chain else f'`main` @ `{short_base}`')
     headers = ['Target', 'Type', 'DEX Δ', 'OAT Δ', 'Res Δ']
     metrics = ('dex_size', 'oat_size', 'resource_size')
     ratios = {m: [] for m in metrics}
@@ -598,13 +658,15 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
     dex_gm = fmt_geomean(ratios['dex_size'])
     oat_gm = fmt_geomean(ratios['oat_size'])
     lines = [
-        f'### R8 Size Presubmit Report (vs. `main` @ `{short_base}`) — '
+        f'### R8 Size Presubmit Report (vs. {base_label}) — '
         f'DEX: {dex_gm}, OAT: {oat_gm}'
     ]
     if not base_items:
         lines.append('')
-        lines.append(
-            f'*(No cached baseline available for `main` @ `{short_base}`)*')
+        if is_chain:
+            lines.append(f'*(No baseline available for {base_label})*')
+        else:
+            lines.append(f'*(No cached baseline available for {base_label})*')
         return '\n'.join(lines)
     if not data_rows:
         lines.append('')
@@ -700,8 +762,8 @@ def main(argv=None):
         print(f'Running size suite for HEAD ({head_hash[:8]})...')
         patch_items = run_suite(tagged_r8_jar, 'patch', temp_dir, options)
 
-        print('Resolving main baseline sizes...')
-        base_hash, base_items = resolve_baseline_results(
+        print('Resolving baseline sizes...')
+        base_hash, base_items, is_chain = resolve_baseline_results(
             options,
             temp_dir,
             exclude_sha=head_hash,
@@ -711,7 +773,10 @@ def main(argv=None):
             try_upload_baseline_to_gcs(head_hash, patch_items, temp_dir,
                                        options)
 
-        markdown = generate_markdown_summary(base_hash, base_items, patch_items)
+        markdown = generate_markdown_summary(base_hash,
+                                             base_items,
+                                             patch_items,
+                                             is_chain=is_chain)
         print('\n' + markdown)
 
         if options.summary_output:

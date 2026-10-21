@@ -46,9 +46,7 @@ public class SameInstanceFields extends MultiClassSameReferencePolicy<Multiset<I
 
     private InstanceFieldInfo(FieldAccessFlags accessFlags, DexType type) {
       this.accessFlags =
-          FieldAccessFlags.fromSharedAccessFlags(accessFlags.materialize())
-              .unsetFinal()
-              .unsetSynthetic();
+          FieldAccessFlags.fromSharedAccessFlags(accessFlags.materialize()).unsetSynthetic();
       this.type = type;
     }
 

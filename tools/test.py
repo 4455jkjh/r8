@@ -157,17 +157,6 @@ def ParseOptions():
                         '--shard_number',
                         help='We are running this shard.')
     result.add_argument(
-        '--generate-golden-files-to',
-        '--generate_golden_files_to',
-        help='Store dex files produced by tests in the specified directory.'
-        ' It is aimed to be read on platforms with no host runtime available'
-        ' for comparison.')
-    result.add_argument(
-        '--use-golden-files-in',
-        '--use_golden_files_in',
-        help='Download golden files hierarchy for this commit in the specified'
-        ' location and use them instead of executing on host runtime.')
-    result.add_argument(
         '--no-r8lib',
         '--no_r8lib',
         default=False,
@@ -465,8 +454,6 @@ def test(options, args):
         gradle_args.append('-Ptest_namespace=%s' % options.test_namespace)
     if options.disable_assertions:
         gradle_args.append('-Pdisable_assertions')
-    if options.with_code_coverage:
-        gradle_args.append('-Pwith_code_coverage')
     if options.print_full_stacktraces:
         gradle_args.append('-Pprint_full_stacktraces')
     if options.print_obfuscated_stacktraces:
@@ -501,22 +488,13 @@ def test(options, args):
         gradle_args.append('-Dorg.gradle.java.home=' + options.java_home)
     if options.java_max_memory_size:
         gradle_args.append('-Ptest_xmx=' + options.java_max_memory_size)
-    if options.generate_golden_files_to:
-        gradle_args.append('-Pgenerate_golden_files_to=' +
-                           options.generate_golden_files_to)
-        if not os.path.exists(options.generate_golden_files_to):
-            os.makedirs(options.generate_golden_files_to)
-        gradle_args.append('-PHEAD_sha1=' + utils.get_HEAD_sha1())
-    if options.use_golden_files_in:
-        gradle_args.append('-Puse_golden_files_in=' +
-                           options.use_golden_files_in)
-        if not os.path.exists(options.use_golden_files_in):
-            os.makedirs(options.use_golden_files_in)
-        gradle_args.append('-PHEAD_sha1=' + utils.get_HEAD_sha1())
     if options.r8lib_no_deps and options.no_r8lib:
         print(
             'Inconsistent arguments: both --no-r8lib and --r8lib-no-deps specified.'
         )
+        exit(1)
+    if options.with_code_coverage and not options.no_r8lib:
+        print('Can not run code coverage on r8lib, please specify --no-r8lib.')
         exit(1)
     if options.r8lib_no_deps:
         gradle_args.append('-Pr8lib_no_deps')
@@ -556,7 +534,10 @@ def test(options, args):
         return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
         return archive_and_return(return_code, options)
 
-    gradle_args.append(utils.GRADLE_TASK_TEST)
+    if options.with_code_coverage:
+        gradle_args.append(':test:jacocoTestReport')
+    else:
+        gradle_args.append(utils.GRADLE_TASK_TEST)
     gradle_args.append('--stacktrace')
     gradle_args.append('-Pprint_full_stacktraces')
 
@@ -571,26 +552,11 @@ def test(options, args):
         if len(args) == 0:
             print("No failing tests")
             return 0
-    # Test filtering. Must always follow the 'test' task.
-    testFilterProperty = []
-    for testFilter in args:
-        gradle_args.append('--tests')
-        gradle_args.append(testFilter)
-        testFilterProperty.append(testFilter)
-        assert not ("|" in testFilter), "| is used as separating character"
-    if len(testFilterProperty) > 0:
-        gradle_args.append("-Ptestfilter=" + "|".join(testFilterProperty))
-    if options.with_code_coverage:
-        # Create Jacoco report after tests.
-        gradle_args.append('jacocoTestReport')
-
-    if options.use_golden_files_in:
-        sha1 = '%s' % utils.get_HEAD_sha1()
-        with utils.ChangedWorkingDirectory(options.use_golden_files_in):
-            utils.download_file_from_cloud_storage(
-                'gs://r8-test-results/golden-files/%s.tar.gz' % sha1,
-                '%s.tar.gz' % sha1)
-            utils.unpack_archive('%s.tar.gz' % sha1)
+    # Test filtering.
+    if len(args) > 0:
+        for testFilter in args:
+            assert not ("|" in testFilter), "| is used as separating character"
+        gradle_args.append("-Ptestfilter=" + "|".join(args))
 
     print_stacks_timeout = options.print_hanging_stacks
     if (utils.is_bot() and not utils.IsWindows()) or print_stacks_timeout > -1:
@@ -665,14 +631,6 @@ def test(options, args):
         ],
                                         throw_on_failure=False,
                                         quiet=options.quiet)
-        if options.generate_golden_files_to:
-            sha1 = '%s' % utils.get_HEAD_sha1()
-            with utils.ChangedWorkingDirectory(
-                    options.generate_golden_files_to):
-                archive = utils.create_archive(sha1)
-                utils.upload_file_to_cloud_storage(
-                    archive, 'gs://r8-test-results/golden-files/' + archive)
-
         return archive_and_return(return_code, options)
 
     return 0

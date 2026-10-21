@@ -5,7 +5,6 @@ package com.android.tools.r8;
 
 import static com.android.tools.r8.TestBase.descriptor;
 import static com.android.tools.r8.TestBase.testForD8;
-import static com.android.tools.r8.TestBase.writeClassesToJar;
 
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
@@ -72,6 +71,12 @@ public class AssistantTestBuilder
   }
 
   @Override
+  public AssistantTestBuilder addProgramClassFileData(Collection<byte[]> classes) {
+    initialCompileBuilder.addProgramClassFileData(classes);
+    return self();
+  }
+
+  @Override
   AssistantTestCompileResult internalCompile(
       R8AssistantCommand.Builder builder,
       Consumer<InternalOptions> optionsConsumer,
@@ -80,14 +85,12 @@ public class AssistantTestBuilder
       throws CompilationFailedException {
     Path initialCompilation;
     try {
+      if (!customReflectiveOperationInputClasses.isEmpty()) {
+        initialCompileBuilder.addProgramClasses(customReflectiveOperationInputClasses);
+      }
       initialCompilation = initialCompileBuilder.setMinApi(getMinApiLevel()).compile().writeToZip();
       if (output == null) {
         output = getState().getNewTempFile("assistant_output.jar");
-      }
-      if (!customReflectiveOperationInputClasses.isEmpty()) {
-        builder.addReflectiveOperationReceiverInput(
-            ArchiveProgramResourceProvider.fromArchive(
-                writeClassesToJar(customReflectiveOperationInputClasses)));
       }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -95,6 +98,7 @@ public class AssistantTestBuilder
 
     builder
         .addProgramFiles(initialCompilation)
+        .setAssistantRuntime(ToolHelper.ASSISTANT_RUNTIME_DEX)
         .setOutput(output, OutputMode.DexIndexed)
         .setMinApiLevel(getMinApiLevel());
 

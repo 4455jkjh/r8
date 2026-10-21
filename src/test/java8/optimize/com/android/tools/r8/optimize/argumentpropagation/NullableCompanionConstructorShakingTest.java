@@ -40,7 +40,6 @@ public class NullableCompanionConstructorShakingTest extends TestBase {
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
-        .addOptionsModification(options -> options.enableClassStaticizer = false)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
