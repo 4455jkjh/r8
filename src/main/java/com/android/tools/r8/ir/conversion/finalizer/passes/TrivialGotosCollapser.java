@@ -118,7 +118,11 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     BasicBlock nextBlock;
     do {
       nextBlock = iterator.hasNext() ? iterator.next() : null;
-      assert !isRedundantDebugPositionGoto(code, block);
+      assert !appView
+              .options()
+              .getTestingOptions()
+              .enableRemoveRedundantDebugPositionsInTrivialGotosCollapser
+          || !isRedundantDebugPositionGoto(code, block);
       // Trivial goto block are only kept if they are self-targeting or are targeted by
       // fallthroughs.
       BasicBlock blk = block; // Additional local for lambda below.
@@ -168,8 +172,12 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
 
   // Removes the redundant DebugPositions, see isRedundantDebugPositionGoto. Returns true if any was
   // removed.
-  private static boolean removeRedundantDebugPositions(IRCode code) {
-    if (!code.metadata().mayHaveDebugPosition()) {
+  private boolean removeRedundantDebugPositions(IRCode code) {
+    if (!appView
+            .options()
+            .getTestingOptions()
+            .enableRemoveRedundantDebugPositionsInTrivialGotosCollapser
+        || !code.metadata().mayHaveDebugPosition()) {
       return false;
     }
     boolean changed = false;

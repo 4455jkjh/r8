@@ -2346,6 +2346,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableKnownBooleanShiftDiamondSimplification =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKnownBooleanShiftDiamondSimplification", true);
+    public boolean enableRemoveRedundantDebugPositionsInTrivialGotosCollapser =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableRemoveRedundantDebugPositionsInTrivialGotosCollapser",
+            true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
