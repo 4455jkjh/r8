@@ -22,7 +22,6 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.OffOrAuto;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
@@ -154,7 +153,7 @@ public abstract class RunExamplesAndroidPTest<
 
       build(inputFile, out);
 
-      if (!ToolHelper.artSupported() && !ToolHelper.dealsWithGoldenFiles()) {
+      if (!ToolHelper.artSupported()) {
         return;
       }
 
@@ -214,9 +213,6 @@ public abstract class RunExamplesAndroidPTest<
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   boolean failsOn(Map<DexVm.Version, List<String>> failsOn, String name) {
     DexVm.Version vmVersion = parameters.getDexRuntimeVersion();

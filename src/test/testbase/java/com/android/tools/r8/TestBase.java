@@ -84,7 +84,6 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.PreloadedClassFileProvider;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -591,9 +590,6 @@ public class TestBase {
     }
     return File.createTempFile(prefix, suffix, temp.getRoot());
   }
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   @Rule
   public TestWatcher commandCacheInvalidator =

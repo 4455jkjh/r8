@@ -246,7 +246,7 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
   protected R8TestMultiRunResult runTest(
       String folder, String mainClass, ThrowableConsumer<R8FullTestBuilder> configuration)
       throws Exception {
-    Assume.assumeTrue(ToolHelper.artSupported() || ToolHelper.compareAgaintsGoldenFiles());
+    Assume.assumeTrue(ToolHelper.artSupported());
 
     Path kotlinJarFile =
         getCompileMemoizer(getKotlinFilesInResource(folder), folder)

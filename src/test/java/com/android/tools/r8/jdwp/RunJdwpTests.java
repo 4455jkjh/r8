@@ -21,7 +21,6 @@ import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.io.File;
@@ -35,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import org.junit.Assume;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -325,9 +323,6 @@ public class RunJdwpTests extends TestBase {
 
   private static final Function<DexRuntime, File> d8Out =
       memoizeFunction(RunJdwpTests::compileLibraries);
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   @Parameter(0)
   public TestParameters parameters;

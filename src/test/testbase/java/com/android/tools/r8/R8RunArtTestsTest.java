@@ -21,7 +21,6 @@ import com.android.tools.r8.utils.ArtErrorParser;
 import com.android.tools.r8.utils.ArtErrorParser.ArtErrorInfo;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -1591,9 +1590,6 @@ public abstract class R8RunArtTestsTest extends TestBase {
     return "dx";
   }
 
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
-
   public R8RunArtTestsTest(String name, DexTool toolchain) {
     this.name = name;
     this.toolchain = toolchain;
@@ -2005,8 +2001,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
           new CompilationOptions(specification));
     }
 
-    if (!specification.skipRun
-        && (ToolHelper.artSupported() || ToolHelper.dealsWithGoldenFiles())) {
+    if (!specification.skipRun && ToolHelper.artSupported()) {
       File originalFile;
       File processedFile;
 

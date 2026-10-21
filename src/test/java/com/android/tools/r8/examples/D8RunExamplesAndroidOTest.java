@@ -155,12 +155,10 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     // TODO check compilation warnings are correctly reported
 
     // Missing interface B is causing the wrong code to be executed.
-    if (!ToolHelper.artSupported() && !ToolHelper.compareAgaintsGoldenFiles()) {
+    if (!ToolHelper.artSupported()) {
       return;
     }
-    if (ToolHelper.artSupported() && !ToolHelper.compareAgaintsGoldenFiles()) {
-      thrown.expect(AssertionError.class);
-    }
+    thrown.expect(AssertionError.class);
     execute(
         "testMissingInterfaceDesugared2AndroidK",
         "desugaringwithmissingclasstest2.Main",
@@ -259,12 +257,10 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     Path testDex = test.build();
     // TODO check compilation warnings are correctly reported
 
-    Assume.assumeTrue(ToolHelper.artSupported() || ToolHelper.compareAgaintsGoldenFiles());
+    Assume.assumeTrue(ToolHelper.artSupported());
 
     // Missing interface B is causing the wrong method to be executed.
-    if (ToolHelper.artSupported() && !ToolHelper.compareAgaintsGoldenFiles()) {
-      thrown.expect(AssertionError.class);
-    }
+    thrown.expect(AssertionError.class);
     execute(
         "testCallToMissingSuperInterfaceDesugaredAndroidK",
         "desugaringwithmissingclasstest3.Main",

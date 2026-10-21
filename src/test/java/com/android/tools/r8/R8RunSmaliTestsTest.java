@@ -7,7 +7,6 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -189,9 +188,6 @@ public class R8RunSmaliTestsTest extends TestBase {
       // Contains use of register as both an int and a float.
       "regression/33336471"
   );
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   private final TestParameters parameters;
   private final String directoryName;

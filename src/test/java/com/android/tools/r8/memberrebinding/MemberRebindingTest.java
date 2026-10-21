@@ -11,7 +11,6 @@ import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldAccessInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
@@ -24,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Iterator;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,9 +40,6 @@ public class MemberRebindingTest extends TestBase {
   private final Path programFile;
   private final ThrowingConsumer<CodeInspector, Exception> inspection;
   private final AndroidApiLevel minApiLevel;
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   public MemberRebindingTest(TestConfiguration configuration) {
     this.name = configuration.name;

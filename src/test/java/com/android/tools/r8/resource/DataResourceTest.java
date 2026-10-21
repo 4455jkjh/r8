@@ -8,10 +8,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -82,9 +80,6 @@ public class DataResourceTest extends TestBase {
   public static TestParametersCollection data() {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   @Test
   public void testJvm() throws Exception {

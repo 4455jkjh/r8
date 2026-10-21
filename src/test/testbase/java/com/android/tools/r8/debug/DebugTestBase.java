@@ -21,7 +21,6 @@ import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -157,9 +156,6 @@ public abstract class DebugTestBase extends TestBase {
 
   @Rule
   public TestName testName = new TestName();
-
-  @Rule
-  public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   protected final void runDebugTest(
       DebugTestConfig config, Class<?> debuggeeClass, JUnit3Wrapper.Command... commands)

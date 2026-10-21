@@ -59,10 +59,7 @@ import com.google.common.collect.Lists;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
-import com.google.gson.Gson;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -2230,11 +2227,6 @@ public class ToolHelper {
     return runArtRaw(Collections.singletonList(file), mainClass, null, version, false);
   }
 
-  // Index used to name directory aimed at storing dex files and process result
-  // for one invokation of runArtRaw() in order to avoid conflicts in case of
-  // multiple calls within the same test.
-  private static int testOutputPathIndex = 0;
-
   public static ProcessResult runArtRaw(
       List<String> files,
       String mainClass,
@@ -2253,41 +2245,7 @@ public class ToolHelper {
     for (String arg : args) {
       builder.appendProgramArgument(arg);
     }
-    ProcessResult processResult = null;
-
-    // Whenever we start a new test method we reset the index count.
-    String reset_output_index = System.getProperty("reset_output_index");
-    if (reset_output_index != null) {
-      System.clearProperty("reset_output_index");
-      testOutputPathIndex = 0;
-    } else {
-      assert testOutputPathIndex >= 0;
-      testOutputPathIndex++;
-    }
-
-    String goldenFilesDirInProp = System.getProperty("use_golden_files_in");
-    if (goldenFilesDirInProp != null) {
-      File goldenFileDir = new File(goldenFilesDirInProp);
-      assert goldenFileDir.isDirectory();
-      processResult =
-          compareAgainstGoldenFiles(
-              files.stream().map(File::new).collect(Collectors.toList()), goldenFileDir);
-      if (processResult.exitCode == 0) {
-        processResult = readProcessResult(goldenFileDir);
-      }
-    } else {
-      processResult = runArtProcessRaw(builder);
-    }
-
-    String goldenFilesDirToProp = System.getProperty("generate_golden_files_to");
-    if (goldenFilesDirToProp != null) {
-      File goldenFileDir = new File(goldenFilesDirToProp);
-      assert goldenFileDir.isDirectory();
-      storeAsGoldenFiles(files.stream().map(File::new).collect(Collectors.toList()), goldenFileDir);
-      storeProcessResult(processResult, goldenFileDir);
-    }
-
-    return processResult;
+    return runArtProcessRaw(builder);
   }
 
   public static ProcessResult runJaCoCoInstrument(Path sourceClassFiles, Path outputDirectory)
@@ -2318,150 +2276,6 @@ public class ToolHelper {
     cmdline.add(reportFile.toString());
     ProcessBuilder builder = new ProcessBuilder(cmdline);
     return ToolHelper.runProcess(builder);
-  }
-
-  private static Path findNonConflictingDestinationFilePath(Path testOutputPath) {
-    int index = 0;
-    Path destFilePath;
-    do {
-      destFilePath = Paths.get(testOutputPath.toString(),
-          "classes-" + String.format("%03d", index) + FileUtils.DEX_EXTENSION);
-      index++;
-    } while (destFilePath.toFile().exists());
-
-    return destFilePath;
-  }
-
-  private static Path getTestOutputPath(File destDir) throws IOException {
-    assert destDir.exists();
-    assert destDir.isDirectory();
-
-    String testClassName = System.getProperty("test_class_name");
-    String testName = System.getProperty("test_name");
-    String headSha1 = System.getProperty("test_git_HEAD_sha1");
-
-    assert testClassName != null;
-    assert testName != null;
-    assert headSha1 != null;
-
-    return Files.createDirectories(
-        Paths.get(
-            destDir.getAbsolutePath(),
-            headSha1,
-            testClassName,
-            testName + "-" + String.format("%03d", testOutputPathIndex)));
-  }
-
-  private static List<File> unzipDexFilesArchive(File zipFile) throws IOException {
-    Path base = getR8TempPath();
-    Files.createDirectories(base);
-    File tmpDirFile = Files.createTempDirectory(base, "r8-test-").toFile();
-    tmpDirFile.deleteOnExit();
-    return ZipUtils.unzip(zipFile.getAbsolutePath(), tmpDirFile);
-  }
-
-  private static void storeAsGoldenFiles(List<File> files, File destDir) throws IOException {
-    Path testOutputPath = getTestOutputPath(destDir);
-
-    for (File f : files) {
-      Path filePath = f.toPath();
-      // TODO(jmhenaff): Check it's been produced by D8/R8?
-      List<File> testFiles = Collections.singletonList(f);
-      if (FileUtils.isArchive(filePath)) {
-        testFiles = unzipDexFilesArchive(f);
-      }
-      for (File testFile : testFiles) {
-        Path testFilePath = testFile.toPath();
-        if (FileUtils.isDexFile(testFilePath)) {
-          Path destFile = findNonConflictingDestinationFilePath(testOutputPath);
-          FileUtils.writeToFile(destFile, null, Files.readAllBytes(testFilePath));
-        }
-      }
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  private static void storeProcessResult(ProcessResult processResult, File dest)
-      throws IOException {
-    Gson gson = new Gson();
-    Path testOutputPath = getTestOutputPath(dest);
-    try (FileWriter fw = new FileWriter(new File(testOutputPath.toFile(), "processResult.json"))) {
-      gson.toJson(processResult, ProcessResult.class, fw);
-    }
-  }
-
-  private static ProcessResult readProcessResult(File dest) throws IOException {
-    File processResultFile = new File(getTestOutputPath(dest).toFile(), "processResult.json");
-    Gson gson = new Gson();
-    try (FileReader fr = new FileReader(processResultFile)) {
-      return gson.fromJson(fr, ProcessResult.class);
-    }
-  }
-
-  private static ProcessResult compareAgainstGoldenFiles(List<File> files, File destDir)
-      throws IOException {
-    Path testOutputPath = getTestOutputPath(destDir);
-
-    int index = 0;
-    String stdErr = "";
-    boolean passed = true;
-    for (File f : files) {
-      Path filePath = f.toPath();
-
-      List<File> testFiles = Collections.singletonList(f);
-      if (FileUtils.isArchive(filePath)) {
-        testFiles = unzipDexFilesArchive(f);
-      }
-
-      for (File testFile : testFiles) {
-        Path testFilePath = testFile.toPath();
-        // TODO(jmhenaff): Check it's been produced by D8/R8?
-        if (FileUtils.isDexFile(testFilePath)) {
-          File goldenFile = Paths.get(testOutputPath.toString(),
-              "classes-" + String.format("%03d", index) + FileUtils.DEX_EXTENSION).toFile();
-          if (!goldenFile.exists()) {
-            String fileDesc = "'" + testFile.getAbsolutePath() + "'";
-            if (FileUtils.isZipFile(filePath)) {
-              fileDesc += " (extracted from '" + f.getAbsolutePath() + "')";
-            }
-            stdErr += "Cannot find golden file '" + goldenFile.getAbsolutePath()
-                + "' to compare against test file " + fileDesc + "\n";
-            passed = false;
-          } else if (!com.google.common.io.Files.equal(testFile, goldenFile)) {
-            String fileDesc = "'" + testFile.getAbsolutePath() + "'";
-            if (FileUtils.isZipFile(filePath)) {
-              fileDesc += " (extracted from '" + f.getAbsolutePath() + "')";
-            }
-            stdErr +=
-                "File " + fileDesc + " differs from golden file '" + goldenFile.getAbsolutePath()
-                    + "'\n";
-            passed = false;
-          }
-          index++;
-        }
-      }
-    }
-    // Ensure we processed as many files as there are golden files
-    File goldenFile = Paths.get(testOutputPath.toString(),
-        "classes-" + String.format("%03d", index) + FileUtils.DEX_EXTENSION).toFile();
-    if (goldenFile.exists()) {
-      stdErr += "Less dex files have been produced: there is at least one more golden file ('"
-          + goldenFile.getAbsolutePath() + "'\n";
-      passed = false;
-    }
-    return new ProcessResult(passed ? 0 : -1, "", stdErr);
-  }
-
-  public static boolean dealsWithGoldenFiles() {
-    return compareAgaintsGoldenFiles() || generateGoldenFiles();
-  }
-
-  public static boolean compareAgaintsGoldenFiles() {
-    return System.getProperty("use_golden_files_in") != null;
-  }
-
-  public static boolean generateGoldenFiles() {
-    return System.getProperty("generate_golden_files_to") != null;
   }
 
   public static ProcessResult runArtNoVerificationErrorsRaw(
@@ -2506,7 +2320,7 @@ public class ToolHelper {
   private static final long ART_PROCESS_TIMEOUT_MINUTES = 10;
 
   private static ProcessResult runArtProcessRaw(ArtCommandBuilder builder) throws IOException {
-    Assume.assumeTrue(artSupported() || dealsWithGoldenFiles());
+    Assume.assumeTrue(artSupported());
     ProcessResult cachedResult = builder.getCachedResults();
     if (cachedResult != null) {
       return cachedResult;
