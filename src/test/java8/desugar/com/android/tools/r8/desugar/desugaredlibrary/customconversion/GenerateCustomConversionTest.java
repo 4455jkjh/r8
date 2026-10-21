@@ -66,14 +66,8 @@ public class GenerateCustomConversionTest extends TestBase {
 
       // Assert the file matches the one in third_party.
       Path thirdPartyFile = TestDeps.getDesugarLibraryConversions(version);
-      uploadJarsToCloudStorageIfTestFails(
-          (expected, actual) -> {
-            verifySameFilesInJarInSameOrder(expected, actual);
-            assertProgramsEqual(expected, actual);
-            return filesAreEqual(expected, actual);
-          },
-          thirdPartyFile,
-          newFile);
+      verifySameFilesInJarInSameOrder(thirdPartyFile, newFile);
+      assertProgramsEqual(thirdPartyFile, newFile);
     }
   }
 

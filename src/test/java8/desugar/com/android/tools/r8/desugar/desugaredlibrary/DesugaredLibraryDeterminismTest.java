@@ -87,12 +87,6 @@ public class DesugaredLibraryDeterminismTest extends DesugaredLibraryTestBase {
             .writeToZip();
 
     assertEquals(contextsRoundOne, contextsRoundTwo);
-    uploadJarsToCloudStorageIfTestFails(
-        (file1, file2) -> {
-          assertProgramsEqual(file1, file2);
-          return filesAreEqual(file1, file2);
-        },
-        libDexFile1,
-        libDexFile2);
+    assertProgramsEqual(libDexFile1, libDexFile2);
   }
 }

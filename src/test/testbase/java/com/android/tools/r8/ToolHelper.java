@@ -206,8 +206,6 @@ public class ToolHelper {
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";
   public static final String KEEP_RADIUS_WEB_DIR = getProjectRoot() + "src/keepradius/web/";
 
-  public static final String R8_TEST_BUCKET = "r8-test-results";
-
   public static final String LINE_SEPARATOR = StringUtils.LINE_SEPARATOR;
   public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
 
@@ -3012,36 +3010,6 @@ public class ToolHelper {
       }
     }
     return result;
-  }
-
-  /** This code only works if run with depot_tools on the path */
-  public static String uploadFileToGoogleCloudStorage(String bucket, Path file) throws IOException {
-    ImmutableList.Builder<String> command = new ImmutableList.Builder<>();
-    if (isWindows()) {
-      command.add("python3");
-    }
-    command
-        .add("upload_to_google_storage.py")
-        .add("-f")
-        .add("--bucket")
-        .add(bucket)
-        .add(file.toAbsolutePath().toString());
-    ProcessResult result = ToolHelper.runProcess(new ProcessBuilder(command.build()));
-    if (result.exitCode != 0) {
-      throw new RuntimeException(
-          "Could not upload "
-              + file
-              + " to cloud storage:\n"
-              + result.stdout
-              + "\n"
-              + result.stderr);
-    }
-    // Upload will add a sha1 file at the same location.
-    Path sha1file = file.resolveSibling(file.getFileName() + ".sha1");
-    assert Files.exists(sha1file) : sha1file.toString();
-    List<String> strings = Files.readAllLines(sha1file);
-    assert !strings.isEmpty();
-    return strings.get(0);
   }
 
   public static void setReadEmbeddedRulesFromClasspathAndLibrary(

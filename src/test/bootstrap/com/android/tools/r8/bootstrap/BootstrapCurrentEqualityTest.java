@@ -8,6 +8,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationMode;
@@ -210,7 +211,7 @@ public class BootstrapCurrentEqualityTest extends TestBase {
             .setMode(CompilationMode.RELEASE)
             .compile()
             .outputJar();
-    assert uploadJarsToCloudStorageIfTestFails(TestBase::filesAreEqual, runR81, runR82);
+    assertTrue(filesAreEqual(runR81, runR82));
   }
 
   @Test
@@ -277,8 +278,7 @@ public class BootstrapCurrentEqualityTest extends TestBase {
     assertEquals(result.getStdout(), runR8R8.getStdout());
     assertEquals(result.getStderr(), runR8R8.getStderr());
     // Check that the output jars are the same.
-    uploadJarsToCloudStorageIfTestFails(
-        TestBase::assertProgramsEqual, result.outputJar(), runR8R8.outputJar());
+    assertProgramsEqual(result.outputJar(), runR8R8.outputJar());
   }
 
   private static TemporaryFolder newTempFolder() throws IOException {

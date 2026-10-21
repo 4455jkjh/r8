@@ -167,7 +167,6 @@ USER_HOME = os.path.expanduser('~')
 CLOUD_STORAGE_URL = 'https://storage.googleapis.com'
 R8_DEPS_URL = '%s/r8-deps' % CLOUD_STORAGE_URL
 R8_INTERNAL_DEPS_BUCKET = 'gs://r8-internal-deps'
-R8_TEST_RESULTS_BUCKET = 'r8-test-results'
 R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'
 
 ARCHIVE_DETAILS = os.path.join(BUILD, 'archive_details.json')

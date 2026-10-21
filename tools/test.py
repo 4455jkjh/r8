@@ -157,17 +157,6 @@ def ParseOptions():
                         '--shard_number',
                         help='We are running this shard.')
     result.add_argument(
-        '--generate-golden-files-to',
-        '--generate_golden_files_to',
-        help='Store dex files produced by tests in the specified directory.'
-        ' It is aimed to be read on platforms with no host runtime available'
-        ' for comparison.')
-    result.add_argument(
-        '--use-golden-files-in',
-        '--use_golden_files_in',
-        help='Download golden files hierarchy for this commit in the specified'
-        ' location and use them instead of executing on host runtime.')
-    result.add_argument(
         '--no-r8lib',
         '--no_r8lib',
         default=False,
@@ -499,18 +488,6 @@ def test(options, args):
         gradle_args.append('-Dorg.gradle.java.home=' + options.java_home)
     if options.java_max_memory_size:
         gradle_args.append('-Ptest_xmx=' + options.java_max_memory_size)
-    if options.generate_golden_files_to:
-        gradle_args.append('-Pgenerate_golden_files_to=' +
-                           options.generate_golden_files_to)
-        if not os.path.exists(options.generate_golden_files_to):
-            os.makedirs(options.generate_golden_files_to)
-        gradle_args.append('-PHEAD_sha1=' + utils.get_HEAD_sha1())
-    if options.use_golden_files_in:
-        gradle_args.append('-Puse_golden_files_in=' +
-                           options.use_golden_files_in)
-        if not os.path.exists(options.use_golden_files_in):
-            os.makedirs(options.use_golden_files_in)
-        gradle_args.append('-PHEAD_sha1=' + utils.get_HEAD_sha1())
     if options.r8lib_no_deps and options.no_r8lib:
         print(
             'Inconsistent arguments: both --no-r8lib and --r8lib-no-deps specified.'
@@ -580,14 +557,6 @@ def test(options, args):
         for testFilter in args:
             assert not ("|" in testFilter), "| is used as separating character"
         gradle_args.append("-Ptestfilter=" + "|".join(args))
-
-    if options.use_golden_files_in:
-        sha1 = '%s' % utils.get_HEAD_sha1()
-        with utils.ChangedWorkingDirectory(options.use_golden_files_in):
-            utils.download_file_from_cloud_storage(
-                'gs://r8-test-results/golden-files/%s.tar.gz' % sha1,
-                '%s.tar.gz' % sha1)
-            utils.unpack_archive('%s.tar.gz' % sha1)
 
     print_stacks_timeout = options.print_hanging_stacks
     if (utils.is_bot() and not utils.IsWindows()) or print_stacks_timeout > -1:
@@ -662,14 +631,6 @@ def test(options, args):
         ],
                                         throw_on_failure=False,
                                         quiet=options.quiet)
-        if options.generate_golden_files_to:
-            sha1 = '%s' % utils.get_HEAD_sha1()
-            with utils.ChangedWorkingDirectory(
-                    options.generate_golden_files_to):
-                archive = utils.create_archive(sha1)
-                utils.upload_file_to_cloud_storage(
-                    archive, 'gs://r8-test-results/golden-files/' + archive)
-
         return archive_and_return(return_code, options)
 
     return 0

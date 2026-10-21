@@ -1210,13 +1210,7 @@ def main(argv):
         thread_utils.run_in_parallel(jobs,
                                      number_of_workers=options.workers,
                                      stop_on_first_failure=False)
-        errors = log_results_for_apps(result_per_shrinker_per_app, options)
-        if errors > 0:
-            dest = 'gs://r8-test-results/r8-libs/' + str(int(time.time()))
-            utils.upload_file_to_cloud_storage(
-                os.path.join(temp_dir, 'r8lib.jar'), dest)
-            print('R8lib saved to %s' % dest)
-        return errors
+        return log_results_for_apps(result_per_shrinker_per_app, options)
 
 
 def create_job(app, options, result, temp_dir):

@@ -17,7 +17,6 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.StringResource;
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
@@ -182,8 +181,6 @@ public class R8CompiledThroughDexTest extends DesugaredLibraryTestBase {
               + " differ from the external run which uses "
               + r8jar
               + ". If up-to-date, the likely cause of this error is that R8 is non-deterministic.";
-      uploadJarsToCloudStorageIfTestFails(
-          TestBase::filesAreEqual, outputThroughCf, outputThroughCfExternal);
       assertProgramsEqual(message, outputThroughCf, outputThroughCfExternal);
     }
 

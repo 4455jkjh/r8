@@ -5,7 +5,6 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.TestBuilder.getTestingAnnotations;
-import static com.android.tools.r8.ToolHelper.R8_TEST_BUCKET;
 import static com.android.tools.r8.utils.CfUtils.extractClassDescriptor;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
 import static com.google.common.collect.Lists.cartesianProduct;
@@ -116,7 +115,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2087,70 +2085,6 @@ public class TestBase {
         containsString("The generic super type is not the same as the class super type"));
   }
 
-  public static boolean uploadJarsToCloudStorageIfTestFails(
-      ThrowingBiFunction<Path, Path, Boolean, Exception> test, Path expected, Path actual)
-      throws Exception {
-    boolean filesAreEqual = false;
-    Throwable error = null;
-    try {
-      filesAreEqual = test.apply(expected, actual);
-    } catch (AssertionError | Exception assertionError) {
-      error = assertionError;
-    }
-    if (filesAreEqual) {
-      return true;
-    }
-    uploadFilesToGoogleCloudStorage(expected, actual);
-    if (error != null) {
-      if (error instanceof Exception) {
-        throw (Exception) error;
-      }
-      throw new RuntimeException(error);
-    }
-    return false;
-  }
-
-  private static void uploadFilesToGoogleCloudStorage(Path expected, Path actual) {
-    // Only upload files if we are running on the bots.
-    System.out.println("DIFFERENCE IN FILES DETECTED");
-    if (ToolHelper.isBot()) {
-      try {
-        System.out.println(
-            "***********************************************************************");
-        String expectedSha = ToolHelper.uploadFileToGoogleCloudStorage(R8_TEST_BUCKET, expected);
-        System.out.println("EXPECTED FILE SHA1: " + expectedSha);
-        System.out.println(
-            String.format(
-                "DOWNLOAD BY: `download_from_google_storage.py --bucket %s %s -o %s`",
-                R8_TEST_BUCKET, expectedSha, expected.getFileName()));
-        String actualSha = ToolHelper.uploadFileToGoogleCloudStorage(R8_TEST_BUCKET, actual);
-        System.out.println("ACTUAL FILE SHA1: " + actualSha);
-        System.out.println(
-            String.format(
-                "DOWNLOAD BY: `download_from_google_storage.py --bucket %s %s -o %s`",
-                R8_TEST_BUCKET, expectedSha, actual.getFileName()));
-        System.out.println(
-            "***********************************************************************");
-      } catch (Throwable e) {
-        e.printStackTrace();
-      }
-    } else {
-      System.out.println("Not running on bot, so not uploading files to Google Cloud Storage");
-      System.out.println("The files are:");
-      System.out.println("Expected: " + expected);
-      System.out.println("Actual: " + actual);
-      Path expectedCopy = Paths.get("/tmp", expected.toString().replace("/", "_"));
-      Path actualCopy = Paths.get("/tmp", actual.toString().replace("/", "_"));
-      System.out.println("Copied to: " + expectedCopy + " and " + actualCopy);
-      try {
-        Files.copy(expected, expectedCopy, StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(actual, actualCopy, StandardCopyOption.REPLACE_EXISTING);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-  }
-
   public static boolean assertProgramsEqual(Path expectedJar, Path actualJar) throws IOException {
     return assertProgramsEqual("", expectedJar, actualJar);
   }
@@ -2159,13 +2093,6 @@ public class TestBase {
       throws IOException {
     if (filesAreEqual(expectedJar, actualJar)) {
       return true;
-    }
-    // Attempt to upload files to Google Cloud Storage before checking with inspectors, as the
-    // files are different.
-    try {
-      uploadFilesToGoogleCloudStorage(expectedJar, actualJar);
-    } catch (Throwable ee) {
-      // Ignore.
     }
     assertIdenticalInspectors(new CodeInspector(expectedJar), new CodeInspector(actualJar));
     // The above may not fail but the programs are not equal so force fail in any case.

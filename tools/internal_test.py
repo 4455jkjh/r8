@@ -58,23 +58,6 @@ TIMED_OUT = 'timed_out'
 DEPENDENT_PYTHON_FILES = [gradle, utils, run_on_app]
 
 
-def find_min_xmx_command(app_data):
-    record = app_data.get_memory_data(app_data.get_latest_version())
-    assert record['find-xmx-min'] < record['find-xmx-max']
-    assert record[
-        'find-xmx-range'] < record['find-xmx-max'] - record['find-xmx-min']
-    return [
-        'tools/run_on_app.py', '--compiler=r8', '--compiler-build=lib',
-        '--app=%s' % app_data.get_name(),
-        '--version=%s' % app_data.get_latest_version(), '--no-debug',
-        '--no-build', '--find-min-xmx',
-        '--find-min-xmx-min-memory=%s' % record['find-xmx-min'],
-        '--find-min-xmx-max-memory=%s' % record['find-xmx-max'],
-        '--find-min-xmx-range-size=%s' % record['find-xmx-range'],
-        '--find-min-xmx-archive'
-    ]
-
-
 def compile_with_memory_max_command(app_data):
     factor = 1.15
     record = app_data.get_memory_data(app_data.get_latest_version())
@@ -256,8 +239,6 @@ def fetch_and_print_logs(hash):
                 gs_location = '%s%s' % (entry, to_print)
                 value = utils.cat_file_on_cloud_storage(gs_location)
                 print('\n\n%s had value:\n%s' % (to_print, value))
-    print("\n\nPrinting find-min-xmx ranges for apps")
-    run_on_app.print_min_xmx_ranges_for_hash(hash, 'r8', 'lib')
 
 
 def run_bot():

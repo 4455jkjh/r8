@@ -114,8 +114,7 @@ public class Java17R8BootstrapTest extends TestBase {
       }
       prevRunResult = runResult;
       if (prevGeneratedJar != null) {
-        uploadJarsToCloudStorageIfTestFails(
-            BootstrapCurrentEqualityTest::assertProgramsEqual, prevGeneratedJar, generatedJar);
+        assertProgramsEqual(prevGeneratedJar, generatedJar);
       }
       prevGeneratedJar = generatedJar;
     }
@@ -139,8 +138,7 @@ public class Java17R8BootstrapTest extends TestBase {
               .compile()
               .outputJar();
       if (prevGeneratedJar != null) {
-        uploadJarsToCloudStorageIfTestFails(
-            BootstrapCurrentEqualityTest::assertProgramsEqual, prevGeneratedJar, generatedJar);
+        assertProgramsEqual(prevGeneratedJar, generatedJar);
       }
       prevGeneratedJar = generatedJar;
     }
