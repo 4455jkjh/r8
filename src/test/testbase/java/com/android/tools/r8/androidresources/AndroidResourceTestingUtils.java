@@ -454,7 +454,7 @@ public class AndroidResourceTestingUtils {
     // When set, use final ids for the AAPT resource generation, but remove the final bit in the
     // ASM pass. This will emulate the R classes that AGP generates, where the static fields are
     // set with a static value instead of through <clinit>.
-    AndroidTestResourceBuilder useStaticValueForNonFinalFields() {
+    public AndroidTestResourceBuilder useStaticValueForNonFinalFields() {
       this.useStaticValueForNonFinalFields = true;
       return this;
     }
