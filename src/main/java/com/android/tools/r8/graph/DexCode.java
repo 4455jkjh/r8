@@ -91,19 +91,6 @@ public class DexCode extends Code
         .withItemArray(c -> c.instructions);
   }
 
-  private DexCode(DexCode code) {
-    this(
-        code.registerSize,
-        code.incomingRegisterSize,
-        code.outgoingRegisterSize,
-        code.instructions,
-        code.tries,
-        code.handlers,
-        code.debugInfo,
-        code.metadata);
-    this.debugInfoForWriting = code.debugInfoForWriting;
-  }
-
   public DexCode(int registerSize, int insSize, int outsSize, DexInstruction[] instructions) {
     this(
         registerSize,
@@ -164,21 +151,6 @@ public class DexCode extends Code
     // interpreter cache. See also b/445349082.
     return options.canUseCanonicalizedCodeObjects()
         && ArrayUtils.none(instructions, i -> i.isInvokeSuper() || i.isInvokeSuperRange());
-  }
-
-  public DexCode withCodeLens(GraphLens codeLens) {
-    return new DexCode(this) {
-
-      @Override
-      public boolean hasExplicitCodeLens() {
-        return true;
-      }
-
-      @Override
-      public GraphLens getCodeLens(AppView<?> appView) {
-        return codeLens;
-      }
-    };
   }
 
   public DexCode withNewInstructions(DexInstruction[] newInstructions) {
@@ -264,23 +236,6 @@ public class DexCode extends Code
     }
   }
 
-  public DexCode withoutThisParameter(DexItemFactory factory) {
-    // Note that we assume the original code has a register associated with 'this'
-    // argument of the (former) instance method. We also assume (but do not check)
-    // that 'this' register is never used, so when we decrease incoming register size
-    // by 1, it becomes just a regular register which is never used, and thus will be
-    // gone when we build an IR from this code. Rebuilding IR for methods 'staticized'
-    // this way is highly recommended to improve register allocation.
-    return new DexCode(
-        registerSize,
-        incomingRegisterSize - 1,
-        outgoingRegisterSize,
-        instructions,
-        tries,
-        handlers,
-        debugInfoWithoutFirstParameter(factory));
-  }
-
   @Override
   public boolean isDexCode() {
     return true;
@@ -345,17 +300,6 @@ public class DexCode extends Code
     DexString[] newParameters = new DexString[parameters.length + 1];
     newParameters[0] = factory.createString(fakeThisName);
     System.arraycopy(parameters, 0, newParameters, 1, parameters.length);
-    return new EventBasedDebugInfo(eventBasedInfo.startLine, newParameters, eventBasedInfo.events);
-  }
-
-  public DexDebugInfo debugInfoWithExtraParameters(DexItemFactory factory, int extraParameters) {
-    EventBasedDebugInfo eventBasedInfo = DexDebugInfo.convertToEventBased(this, factory);
-    if (eventBasedInfo == null) {
-      return eventBasedInfo;
-    }
-    DexString[] parameters = eventBasedInfo.parameters;
-    DexString[] newParameters = new DexString[parameters.length + extraParameters];
-    System.arraycopy(parameters, 0, newParameters, 0, parameters.length);
     return new EventBasedDebugInfo(eventBasedInfo.startLine, newParameters, eventBasedInfo.events);
   }
 
@@ -487,20 +431,6 @@ public class DexCode extends Code
     return 0;
   }
 
-  public DexDebugInfo debugInfoWithoutFirstParameter(DexItemFactory factory) {
-    EventBasedDebugInfo eventBasedInfo = DexDebugInfo.convertToEventBased(this, factory);
-    if (eventBasedInfo == null) {
-      return eventBasedInfo;
-    }
-    DexString[] parameters = eventBasedInfo.parameters;
-    if (parameters.length == 0) {
-      return eventBasedInfo;
-    }
-    DexString[] newParameters = new DexString[parameters.length - 1];
-    System.arraycopy(parameters, 1, newParameters, 0, parameters.length - 1);
-    return new EventBasedDebugInfo(eventBasedInfo.startLine, newParameters, eventBasedInfo.events);
-  }
-
   @Override
   public void acceptHashing(HashingVisitor visitor) {
     visitor.visit(this, getStructuralMapping());
@@ -559,7 +489,6 @@ public class DexCode extends Code
   }
 
   @Override
-  @SuppressWarnings("UnusedVariable")
   public IRCode buildInliningIR(
       ProgramMethod context,
       ProgramMethod method,
