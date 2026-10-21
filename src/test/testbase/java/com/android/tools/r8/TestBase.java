@@ -17,6 +17,7 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.DataResourceProvider.Visitor;
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompiler;
+import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinCompilerTool.KotlinLambdaGeneration;
 import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.TestRuntime.CfRuntime;
@@ -502,18 +503,32 @@ public class TestBase {
     return JavaCompilerTool.create(jdk, temp);
   }
 
+  private static CfRuntime getJdkForKotlinc(CfRuntime jdk, KotlinCompiler kotlinCompiler) {
+    boolean isOldKotlinCompiler =
+        kotlinCompiler.getCompilerVersion().isLessThan(KotlinCompilerVersion.MIN_SUPPORTED_VERSION);
+    // TODO(b/227161720): Old Kotlinc versions fail to run on JDK17.
+    if (isOldKotlinCompiler && jdk.isNewerThanOrEqual(CfVm.JDK17)) {
+      return TestRuntime.getCheckedInJdk9();
+    }
+    // Newer Kotlinc versions (2.5+) require at least JDK17 to run.
+    if (!isOldKotlinCompiler && jdk.isOlderThan(CfVm.JDK17)) {
+      return TestRuntime.getCheckedInJdk17();
+    }
+    return jdk;
+  }
+
   public static KotlinCompilerTool kotlinc(
       CfRuntime jdk,
       TemporaryFolder temp,
       KotlinCompiler kotlinCompiler,
       KotlinTargetVersion kotlinTargetVersion,
       KotlinLambdaGeneration lambdaGeneration) {
-    // TODO(b/227161720): Kotlinc fails to run on JDK17.
-    if (jdk.isNewerThanOrEqual(CfVm.JDK17)) {
-      jdk = TestRuntime.getCheckedInJdk9();
-    }
     return KotlinCompilerTool.create(
-        jdk, temp, kotlinCompiler, kotlinTargetVersion, lambdaGeneration);
+        getJdkForKotlinc(jdk, kotlinCompiler),
+        temp,
+        kotlinCompiler,
+        kotlinTargetVersion,
+        lambdaGeneration);
   }
 
   public static KotlinCompilerTool kotlinc(
@@ -521,12 +536,7 @@ public class TestBase {
       KotlinCompiler kotlinCompiler,
       KotlinTargetVersion kotlinTargetVersion,
       KotlinLambdaGeneration lambdaGeneration) {
-    // TODO(b/227161720): Kotlinc fails to run on JDK17.
-    if (jdk.isNewerThanOrEqual(CfVm.JDK17)) {
-      jdk = TestRuntime.getCheckedInJdk9();
-    }
-    return KotlinCompilerTool.create(
-        jdk, staticTemp, kotlinCompiler, kotlinTargetVersion, lambdaGeneration);
+    return kotlinc(jdk, staticTemp, kotlinCompiler, kotlinTargetVersion, lambdaGeneration);
   }
 
   public static KotlinCompilerTool kotlinc(
@@ -534,7 +544,7 @@ public class TestBase {
       KotlinTargetVersion kotlinTargetVersion,
       KotlinLambdaGeneration kotlinLambdaGeneration) {
     return kotlinc(
-        TestRuntime.getCheckedInJdk9(),
+        TestRuntime.getCheckedInJdk17(),
         staticTemp,
         kotlinCompiler,
         kotlinTargetVersion,
@@ -542,10 +552,6 @@ public class TestBase {
   }
 
   public KotlinCompilerTool kotlinc(CfRuntime jdk, KotlinTestParameters testParameters) {
-    // TODO(b/227161720): Kotlinc fails to run on JDK17.
-    if (jdk.isNewerThanOrEqual(CfVm.JDK17)) {
-      jdk = TestRuntime.getCheckedInJdk9();
-    }
     return kotlinc(
         jdk,
         temp,

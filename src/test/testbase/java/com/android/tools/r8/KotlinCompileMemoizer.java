@@ -63,7 +63,7 @@ public class KotlinCompileMemoizer {
   private final Map<CompilerConfigurationKey, Path> compiledPaths = new HashMap<>();
 
   public KotlinCompileMemoizer(Collection<Path> sources) {
-    this(sources, CfRuntime.getCheckedInJdk9(), null);
+    this(sources, CfRuntime.getCheckedInJdk17(), null);
   }
 
   public KotlinCompileMemoizer(
