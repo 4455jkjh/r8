@@ -3,9 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.internal.exceptions;
 
-/**
- * Exception to signal that a not-yet-implemented code path has been hit.
- */
+/** Exception to signal that a not-yet-implemented code path has been hit. */
 public class Unimplemented extends RuntimeException {
 
   public Unimplemented() {}

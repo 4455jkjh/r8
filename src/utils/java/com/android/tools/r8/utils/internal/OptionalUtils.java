@@ -12,5 +12,4 @@ public class OptionalUtils {
   public static OptionalInt map(OptionalInt optional, Supplier<OptionalInt> orElse) {
     return optional.isPresent() ? optional : orElse.get();
   }
-
 }

@@ -5,7 +5,7 @@ package com.android.tools.r8.utils.internal;
 
 public class BooleanUtils {
 
-  private static final Boolean[] VALUES = new Boolean[] { Boolean.TRUE, Boolean.FALSE };
+  private static final Boolean[] VALUES = new Boolean[] {Boolean.TRUE, Boolean.FALSE};
   private static final Boolean[] TRUE_VALUES = new Boolean[] {Boolean.TRUE};
   private static final Boolean[] FALSE_VALUES = new Boolean[] {Boolean.FALSE};
 
