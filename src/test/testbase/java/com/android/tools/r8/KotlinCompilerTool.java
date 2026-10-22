@@ -32,13 +32,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
@@ -78,33 +78,33 @@ public class KotlinCompilerTool {
   }
 
   public enum KotlinCompilerVersion implements Ordered<KotlinCompilerVersion> {
-    KOTLINC_1_3_72("kotlin-compiler-1.3.72", CLASS, JAVA_6),
-    KOTLINC_1_4_20("kotlin-compiler-1.4.20", CLASS, JAVA_6),
+    KOTLINC_1_3_72(TestDeps::getKotlinCompiler1_3_72Dir, CLASS, JAVA_6),
+    KOTLINC_1_4_20(TestDeps::getKotlinCompiler1_4_20Dir, CLASS, JAVA_6),
     // JVM target 1,8 default from Kotlin 1.5.0,
     // https://kotlinlang.org/docs/whatsnew15.html#new-default-jvm-target-1-8
-    KOTLINC_1_5_0("kotlin-compiler-1.5.0", CLASS, JAVA_8),
-    KOTLINC_1_6_0("kotlin-compiler-1.6.0", CLASS, JAVA_8),
-    KOTLINC_1_7_0("kotlin-compiler-1.7.0", CLASS, JAVA_8),
-    KOTLINC_1_8_0("kotlin-compiler-1.8.0", CLASS, JAVA_8),
-    KOTLINC_1_9_21("kotlin-compiler-1.9.21", CLASS, JAVA_8),
-    KOTLINC_2_0_20("kotlin-compiler-2.0.20", INVOKE_DYNAMIC, JAVA_8),
-    KOTLINC_2_1_10("kotlin-compiler-2.1.10", INVOKE_DYNAMIC, JAVA_8),
-    KOTLINC_2_2_0("kotlin-compiler-2.2.0", INVOKE_DYNAMIC, JAVA_8),
-    KOTLINC_2_3_10("kotlin-compiler-2.3.10", INVOKE_DYNAMIC, JAVA_8),
-    KOTLINC_2_4_20("kotlin-compiler-2.4.20", INVOKE_DYNAMIC, JAVA_8),
-    KOTLIN_DEV("kotlin-compiler-dev", INVOKE_DYNAMIC, JAVA_8);
+    KOTLINC_1_5_0(TestDeps::getKotlinCompiler1_5_0Dir, CLASS, JAVA_8),
+    KOTLINC_1_6_0(TestDeps::getKotlinCompiler1_6_0Dir, CLASS, JAVA_8),
+    KOTLINC_1_7_0(TestDeps::getKotlinCompiler1_7_0Dir, CLASS, JAVA_8),
+    KOTLINC_1_8_0(TestDeps::getKotlinCompiler1_8_0Dir, CLASS, JAVA_8),
+    KOTLINC_1_9_21(TestDeps::getKotlinCompiler1_9_21Dir, CLASS, JAVA_8),
+    KOTLINC_2_0_20(TestDeps::getKotlinCompiler2_0_20Dir, INVOKE_DYNAMIC, JAVA_8),
+    KOTLINC_2_1_10(TestDeps::getKotlinCompiler2_1_10Dir, INVOKE_DYNAMIC, JAVA_8),
+    KOTLINC_2_2_0(TestDeps::getKotlinCompiler2_2_0Dir, INVOKE_DYNAMIC, JAVA_8),
+    KOTLINC_2_3_10(TestDeps::getKotlinCompiler2_3_10Dir, INVOKE_DYNAMIC, JAVA_8),
+    KOTLINC_2_4_20(TestDeps::getKotlinCompiler2_4_20Dir, INVOKE_DYNAMIC, JAVA_8),
+    KOTLIN_DEV(TestDeps::getKotlinCompilerDevDir, INVOKE_DYNAMIC, JAVA_8);
 
     public static final KotlinCompilerVersion MIN_SUPPORTED_VERSION = KOTLINC_2_2_0;
     public static final KotlinCompilerVersion MAX_SUPPORTED_VERSION = KOTLINC_2_2_0;
     public static final KotlinCompilerVersion[] DEV_COMPILERS =
         new KotlinCompilerVersion[] {KOTLINC_2_3_10, KOTLINC_2_4_20, KOTLIN_DEV};
 
-    private final String folder;
+    private final Supplier<Path> folder;
     private final KotlinLambdaGeneration defaultLambdaGeneration;
     private final KotlinTargetVersion defaultTargetVersion;
 
     KotlinCompilerVersion(
-        String folder,
+        Supplier<Path> folder,
         KotlinLambdaGeneration defaultLambdaGeneration,
         KotlinTargetVersion defaultTargetVersion) {
       this.folder = folder;
@@ -164,20 +164,19 @@ public class KotlinCompilerTool {
   public static final class KotlinCompiler {
 
     private final String name;
-    private final Path lib;
-    private final Path compiler;
+    private final Supplier<Path> lib;
+    private final Supplier<Path> compiler;
     private final KotlinCompilerVersion compilerVersion;
 
     public KotlinCompiler(KotlinCompilerVersion compilerVersion) {
-      this.lib =
-          Paths.get(ToolHelper.THIRD_PARTY_DIR, "kotlin", compilerVersion.folder, "kotlinc", "lib");
-      this.compiler = lib.resolve("kotlin-compiler.jar");
+      this.lib = () -> compilerVersion.folder.get().resolve("kotlinc").resolve("lib");
+      this.compiler = () -> getFolder().resolve("kotlin-compiler.jar");
       this.compilerVersion = compilerVersion;
       this.name = compilerVersion.name();
     }
 
     public KotlinCompiler(String name, Path compiler, KotlinCompilerVersion compilerVersion) {
-      this.compiler = compiler;
+      this.compiler = () -> compiler;
       this.lib = null;
       this.compilerVersion = compilerVersion;
       this.name = name;
@@ -188,11 +187,11 @@ public class KotlinCompilerTool {
     }
 
     public Path getCompiler() {
-      return compiler;
+      return compiler.get();
     }
 
     public Path getFolder() {
-      return lib;
+      return lib.get();
     }
 
     public boolean is(KotlinCompilerVersion version) {
@@ -242,6 +241,7 @@ public class KotlinCompilerTool {
     }
 
     public void checkClasspath() throws IOException {
+      Path compiler = getCompiler();
       try (ZipFile zipFile = new ZipFile(compiler.toFile(), UTF_8)) {
         Manifest manifest =
             new Manifest(zipFile.getInputStream(zipFile.getEntry("META-INF/MANIFEST.MF")));

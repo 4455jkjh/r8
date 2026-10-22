@@ -122,6 +122,19 @@ public class TestDeps {
     dependencies.put("JDWP_TESTS", null);
     dependencies.put("JSR223", null);
     dependencies.put("KEEPASSDX", null);
+    dependencies.put("KOTLIN_COMPILER_1_3_72", null);
+    dependencies.put("KOTLIN_COMPILER_1_4_20", null);
+    dependencies.put("KOTLIN_COMPILER_1_5_0", null);
+    dependencies.put("KOTLIN_COMPILER_1_6_0", null);
+    dependencies.put("KOTLIN_COMPILER_1_7_0", null);
+    dependencies.put("KOTLIN_COMPILER_1_8_0", null);
+    dependencies.put("KOTLIN_COMPILER_1_9_21", null);
+    dependencies.put("KOTLIN_COMPILER_2_0_20", null);
+    dependencies.put("KOTLIN_COMPILER_2_1_10", null);
+    dependencies.put("KOTLIN_COMPILER_2_2_0", null);
+    dependencies.put("KOTLIN_COMPILER_2_3_10", null);
+    dependencies.put("KOTLIN_COMPILER_2_4_20", null);
+    dependencies.put("KOTLIN_COMPILER_DEV", null);
     dependencies.put("KOTLIN_R8_TEST_RESOURCES", null);
     dependencies.put("KOTLINX_COROUTINES", null);
     dependencies.put("MULTIDEX", null);
@@ -444,6 +457,58 @@ public class TestDeps {
 
   public static Path getKeePassDXDir() {
     return getDependency("KEEPASSDX");
+  }
+
+  public static Path getKotlinCompiler1_3_72Dir() {
+    return getDependency("KOTLIN_COMPILER_1_3_72");
+  }
+
+  public static Path getKotlinCompiler1_4_20Dir() {
+    return getDependency("KOTLIN_COMPILER_1_4_20");
+  }
+
+  public static Path getKotlinCompiler1_5_0Dir() {
+    return getDependency("KOTLIN_COMPILER_1_5_0");
+  }
+
+  public static Path getKotlinCompiler1_6_0Dir() {
+    return getDependency("KOTLIN_COMPILER_1_6_0");
+  }
+
+  public static Path getKotlinCompiler1_7_0Dir() {
+    return getDependency("KOTLIN_COMPILER_1_7_0");
+  }
+
+  public static Path getKotlinCompiler1_8_0Dir() {
+    return getDependency("KOTLIN_COMPILER_1_8_0");
+  }
+
+  public static Path getKotlinCompiler1_9_21Dir() {
+    return getDependency("KOTLIN_COMPILER_1_9_21");
+  }
+
+  public static Path getKotlinCompiler2_0_20Dir() {
+    return getDependency("KOTLIN_COMPILER_2_0_20");
+  }
+
+  public static Path getKotlinCompiler2_1_10Dir() {
+    return getDependency("KOTLIN_COMPILER_2_1_10");
+  }
+
+  public static Path getKotlinCompiler2_2_0Dir() {
+    return getDependency("KOTLIN_COMPILER_2_2_0");
+  }
+
+  public static Path getKotlinCompiler2_3_10Dir() {
+    return getDependency("KOTLIN_COMPILER_2_3_10");
+  }
+
+  public static Path getKotlinCompiler2_4_20Dir() {
+    return getDependency("KOTLIN_COMPILER_2_4_20");
+  }
+
+  public static Path getKotlinCompilerDevDir() {
+    return getDependency("KOTLIN_COMPILER_DEV");
   }
 
   public static Path getKotlinR8TestResourcesPath(String... path) {

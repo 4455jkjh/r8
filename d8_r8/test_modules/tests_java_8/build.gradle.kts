@@ -120,6 +120,7 @@ dependencies {
   runtimeOnlyData(project(":third_party", "jdwpTests"))
   runtimeOnlyData(project(":third_party", "jsr223"))
   runtimeOnlyData(project(":third_party", "keepassdx"))
+  runtimeOnlyData(project(":third_party", "kotlinCompiler1_3_72"))
   runtimeOnlyData(project(":third_party", "nest"))
   runtimeOnlyData(project(":third_party", "newpipe"))
   runtimeOnlyData(project(":third_party", "nowinandroid"))

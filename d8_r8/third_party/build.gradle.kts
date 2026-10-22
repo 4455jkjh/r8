@@ -269,6 +269,60 @@ registerTestDep("jsr223", ThirdPartyDeps.jsr223, "JSR223")
 registerTestDep("keepassdx", ThirdPartyDeps.keepassdx, "KEEPASSDX")
 
 registerTestDep(
+  "kotlinCompiler1_3_72",
+  ThirdPartyDeps.kotlinCompiler1_3_72,
+  "KOTLIN_COMPILER_1_3_72",
+)
+
+registerTestDep(
+  "kotlinCompiler1_4_20",
+  ThirdPartyDeps.kotlinCompiler1_4_20,
+  "KOTLIN_COMPILER_1_4_20",
+)
+
+registerTestDep("kotlinCompiler1_5_0", ThirdPartyDeps.kotlinCompiler1_5_0, "KOTLIN_COMPILER_1_5_0")
+
+registerTestDep("kotlinCompiler1_6_0", ThirdPartyDeps.kotlinCompiler1_6_0, "KOTLIN_COMPILER_1_6_0")
+
+registerTestDep("kotlinCompiler1_7_0", ThirdPartyDeps.kotlinCompiler1_7_0, "KOTLIN_COMPILER_1_7_0")
+
+registerTestDep("kotlinCompiler1_8_0", ThirdPartyDeps.kotlinCompiler1_8_0, "KOTLIN_COMPILER_1_8_0")
+
+registerTestDep(
+  "kotlinCompiler1_9_21",
+  ThirdPartyDeps.kotlinCompiler1_9_21,
+  "KOTLIN_COMPILER_1_9_21",
+)
+
+registerTestDep(
+  "kotlinCompiler2_0_20",
+  ThirdPartyDeps.kotlinCompiler2_0_20,
+  "KOTLIN_COMPILER_2_0_20",
+)
+
+registerTestDep(
+  "kotlinCompiler2_1_10",
+  ThirdPartyDeps.kotlinCompiler2_1_10,
+  "KOTLIN_COMPILER_2_1_10",
+)
+
+registerTestDep("kotlinCompiler2_2_0", ThirdPartyDeps.kotlinCompiler2_2_0, "KOTLIN_COMPILER_2_2_0")
+
+registerTestDep(
+  "kotlinCompiler2_3_10",
+  ThirdPartyDeps.kotlinCompiler2_3_10,
+  "KOTLIN_COMPILER_2_3_10",
+)
+
+registerTestDep(
+  "kotlinCompiler2_4_20",
+  ThirdPartyDeps.kotlinCompiler2_4_20,
+  "KOTLIN_COMPILER_2_4_20",
+)
+
+registerTestDep("kotlinCompilerDev", ThirdPartyDeps.kotlinCompilerDev, "KOTLIN_COMPILER_DEV")
+
+registerTestDep(
   "kotlinR8TestResources",
   ThirdPartyDeps.kotlinR8TestResources,
   "KOTLIN_R8_TEST_RESOURCES",
