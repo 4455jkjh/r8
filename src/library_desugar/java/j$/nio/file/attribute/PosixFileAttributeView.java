@@ -4,5 +4,4 @@
 
 package j$.nio.file.attribute;
 
-public class PosixFileAttributeView extends FileAttributeView {
-}
+public class PosixFileAttributeView extends FileAttributeView {}

@@ -4,5 +4,4 @@
 
 package j$.nio.file.attribute;
 
-public class BasicFileAttributes {
-}
+public class BasicFileAttributes {}
