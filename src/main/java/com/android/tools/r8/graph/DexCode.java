@@ -277,8 +277,9 @@ public class DexCode extends Code
     flushCachedValues();
   }
 
-  public DexDebugInfo debugInfoWithFakeThisParameter(DexItemFactory factory) {
-    EventBasedDebugInfo eventBasedInfo = DexDebugInfo.convertToEventBased(this, factory);
+  public DexDebugInfo debugInfoWithFakeThisParameter(DexMethod method, DexItemFactory factory) {
+    EventBasedDebugInfo eventBasedInfo =
+        DexDebugInfo.convertToEventBased(this, factory, method.getArity());
     if (eventBasedInfo == null) {
       return eventBasedInfo;
     }
@@ -324,7 +325,7 @@ public class DexCode extends Code
       DexMethod caller, DexMethod callee, boolean isCalleeD8R8Synthesized, DexItemFactory factory) {
     Position callerPosition =
         SyntheticPosition.builder().setLine(0).setMethod(caller).setIsD8R8Synthesized(true).build();
-    EventBasedDebugInfo eventBasedInfo = DexDebugInfo.convertToEventBased(this, factory);
+    EventBasedDebugInfo eventBasedInfo = DexDebugInfo.convertToEventBased(this, factory, caller);
     if (eventBasedInfo == null) {
       // If the method has no debug info we generate a preamble position to denote the inlining.
       // This is consistent with the building IR for inlining which will always ensure the method

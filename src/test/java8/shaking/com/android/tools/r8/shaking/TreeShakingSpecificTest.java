@@ -17,6 +17,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.mappingcompose.ComposeTestHelpers;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +25,7 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
@@ -31,16 +33,19 @@ public class TreeShakingSpecificTest extends TestBase {
 
   private static final AndroidApiLevel minApi = AndroidApiLevel.BAKLAVA;
 
-  private final Backend backend;
+  @Parameter(0)
+  public Backend backend;
 
-  @Parameters(name = "Backend: {1}")
+  @Parameter(1)
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
+
+  @Parameter(2)
+  public TestParameters parameters;
+
+  @Parameters(name = "Backend: {0}, share: {1}")
   public static List<Object[]> data() {
-    return buildParameters(getTestParameters().withNoneRuntime().build(), Backend.values());
-  }
-
-  public TreeShakingSpecificTest(TestParameters parameters, Backend backend) {
-    this.backend = backend;
-    parameters.assertNoneRuntime();
+    return buildParameters(
+        Backend.values(), BooleanUtils.values(), getTestParameters().withNoneRuntime().build());
   }
 
   private Path getProgramFiles(String test) {
@@ -55,6 +60,10 @@ public class TreeShakingSpecificTest extends TestBase {
         .addProgramFiles(getProgramFiles(test))
         .addKeepRuleFiles(Paths.get(EXAMPLES_DIR, test, "keep-rules.txt"))
         .addIgnoreWarnings()
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .setMinApi(minApi)
         .compile();
   }
@@ -67,6 +76,10 @@ public class TreeShakingSpecificTest extends TestBase {
         .addProgramFiles(getProgramFiles(test))
         .addLibraryFiles()
         .addKeepRuleFiles(Paths.get(EXAMPLES_DIR, test, "keep-rules.txt"))
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .allowDiagnosticErrorMessages()
         .setMinApi(minApi)
         .compileWithExpectedDiagnostics(
@@ -106,13 +119,18 @@ public class TreeShakingSpecificTest extends TestBase {
     return StringUtils.lines(
         "shaking1.Shaking -> shaking1.Shaking:",
         "# {'id':'sourceFile','fileName':'Shaking.java'}",
-        "    1:2:void main(java.lang.String[]):8:9 -> main",
+        enableShareDebugInfoForDifferentParameterSizes
+            ? StringUtils.joinLines(
+                "    1:7:void main(java.lang.String[]):8:8 -> main",
+                "    8:22:void main(java.lang.String[]):9:9 -> main")
+            : "    1:2:void main(java.lang.String[]):8:9 -> main",
         "shaking1.Used -> a:",
         "# {'id':'sourceFile','fileName':'Used.java'}",
         "    java.lang.String name -> a",
         "    1:3:void <init>(java.lang.String):12:12 -> <init>",
         "    4:6:void <init>(java.lang.String):13:13 -> <init>",
-        "    1:1:java.lang.String method():17:17 -> a",
+        (enableShareDebugInfoForDifferentParameterSizes ? "    1:17" : "    1:1")
+            + ":java.lang.String method():17:17 -> a",
         "    1:3:java.lang.String aMethodThatIsNotUsedButKept():21:21 "
             + "-> aMethodThatIsNotUsedButKept");
   }
@@ -124,7 +142,12 @@ public class TreeShakingSpecificTest extends TestBase {
     testForR8(backend)
         .addProgramFiles(getProgramFiles(test))
         .addKeepRuleFiles(Paths.get(EXAMPLES_DIR, test, "keep-rules.txt"))
-        .addOptionsModification(options -> options.inlinerOptions().enableInlining = false)
+        .addOptionsModification(
+            options -> {
+              options.inlinerOptions().enableInlining = false;
+              options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                  enableShareDebugInfoForDifferentParameterSizes;
+            })
         .setMinApi(minApi)
         .compile()
         .inspectProguardMap(

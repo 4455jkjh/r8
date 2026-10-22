@@ -63,7 +63,8 @@ public class MethodWithRemovedArgumentStackSampleRetraceTest extends StackSample
             "com.android.tools.r8.retrace.stacksamples.MethodWithRemovedArgumentStackSampleRetraceTest$Main"
                 + " -> a:",
             "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithRemovedArgumentStackSampleRetraceTest.java\"}",
-            "    1:1:void test(java.lang.Object):50:50 -> a",
+            (isSharingDebugInfoForDifferentParameterSizes() ? "    1:8" : "    1:1")
+                + ":void test(java.lang.Object):50:50 -> a",
             "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"()V\"}",
             "    1:4:void main(java.lang.String[]):45:45 -> main");
   }

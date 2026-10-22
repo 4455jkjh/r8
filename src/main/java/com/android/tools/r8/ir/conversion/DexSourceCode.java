@@ -81,7 +81,8 @@ public class DexSourceCode implements SourceCode {
     this.method = method;
     DexMethod reference = method.getReference();
     boolean d8R8Synthesized = method.getDefinition().isD8R8Synthesized();
-    EventBasedDebugInfo info = DexDebugInfo.convertToEventBased(code, factory);
+    EventBasedDebugInfo info =
+        DexDebugInfo.convertToEventBased(code, factory, method.getReference());
     if (info != null) {
       debugEntries = info.computeEntries(reference, d8R8Synthesized);
     }

@@ -4,11 +4,14 @@
 
 package com.android.tools.r8.utils.positions;
 
+import static com.android.tools.r8.debuginfo.DebugRepresentation.getParameterCountForPcBasedDebugInfo;
+
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
@@ -45,7 +48,7 @@ public interface PositionToMappedRangeMapper {
       pcBasedDebugInfoRecorder =
           appView.options().canUseNativeDexPcInsteadOfDebugInfo()
               ? new NativePcSupport()
-              : new Pc2PcMappingSupport();
+              : new Pc2PcMappingSupport(appView.options());
       noPcMapper = new DexPositionToNoPcMappedRangeMapper(appView);
       pcMapper = new DexPositionToPcMappedRangeMapper(appView, pcBasedDebugInfoRecorder);
     }
@@ -115,6 +118,11 @@ public interface PositionToMappedRangeMapper {
     }
 
     private final List<UpdateInfo> codesToUpdate = new ArrayList<>();
+    private final InternalOptions options;
+
+    public Pc2PcMappingSupport(InternalOptions options) {
+      this.options = options;
+    }
 
     @Override
     public int getPcEncoding(int pc) {
@@ -125,8 +133,8 @@ public interface PositionToMappedRangeMapper {
     @Override
     public void recordPcMappingFor(ProgramMethod method, int maxEncodingPc) {
       assert method.getDefinition().getCode().isDexCode();
-      int parameterCount = method.getParameters().size();
-      DexCode code = method.getDefinition().getCode().asDexCode();
+      int parameterCount = getParameterCountForPcBasedDebugInfo(method, options);
+      DexCode code = method.getDefinition().getDexCode();
       assert DebugRepresentation.verifyLastExecutableInstructionWithinBound(code, maxEncodingPc);
       UpdateInfo updateInfo = new UpdateInfo(code, parameterCount, maxEncodingPc);
       synchronized (codesToUpdate) {

@@ -243,7 +243,7 @@ public final class InterfaceProcessor {
     if (!definition.isStatic()) {
       code =
           DexEncodedMethod.mutateOrCreateCodeWithFakeThisParameter(
-              code, companion.getReference().getArity(), appView);
+              code, companion.getReference(), appView);
     }
     companion.setCode(code, appView);
     if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {

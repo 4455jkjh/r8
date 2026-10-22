@@ -17,7 +17,9 @@ import com.android.tools.r8.graph.AppServices;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexCode;
+import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexDebugInfo.NativePcBasedDebugInfo;
+import com.android.tools.r8.graph.DexDebugInfo.PcBasedDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -223,7 +225,7 @@ public final class D8 {
       timing.begin("Read input app");
       AppView<AppInfo> appView = readApp(inputApp, options, executor, timing);
       timing.end();
-      materializeMissingDebugInfo(appView, executor, timing);
+      prepareDebugInfo(appView, executor, timing);
       timing.begin("Initialize assume info collection");
       initializeAssumeInfoCollection(appView);
       timing.end();
@@ -355,43 +357,69 @@ public final class D8 {
     consumer.finished();
   }
 
-  private static void materializeMissingDebugInfo(
+  private static void prepareDebugInfo(
       AppView<AppInfo> appView, ExecutorService executor, Timing timing) throws ExecutionException {
-    if (!appView.options().enableDexToDexCodeOptimizations) {
+    if (!appView.appInfo().app().getFlags().hasReadProgramClassFromDex()) {
+      return;
+    }
+    boolean materializeMissingDebugInfo = appView.options().enableDexToDexCodeOptimizations;
+    boolean shareDebugInfoForDifferentParameterSizes =
+        appView
+            .options()
+            .getTestingOptions()
+            .enableShareDebugInfoForDifferentParameterSizes(appView.options());
+    if (!(materializeMissingDebugInfo || shareDebugInfoForDifferentParameterSizes)) {
       return;
     }
     timing.time(
-        "Materialize missing debug info",
+        "Prepare debug info",
         () -> {
-          ConcurrentHashMap<NativePcBasedDebugInfo, NativePcBasedDebugInfo> cache =
-              new ConcurrentHashMap<>();
-          // Methods without debug info is assumed to be native pc encoded debug info.
-          // Rematerialize into NativePcEncodedDebugInfo.
+          ConcurrentMap<NativePcBasedDebugInfo, NativePcBasedDebugInfo> nativePcCache =
+              materializeMissingDebugInfo ? new ConcurrentHashMap<>() : null;
+          ConcurrentMap<Integer, PcBasedDebugInfo> pcBasedCache =
+              shareDebugInfoForDifferentParameterSizes ? new ConcurrentHashMap<>() : null;
           ThreadUtils.processItems(
               appView.appInfo().classes(),
-              clazz -> materializeMissingDebugInfo(clazz, cache),
+              clazz -> {
+                for (DexEncodedMethod method : clazz.methods(DexEncodedMethod::hasDexCode)) {
+                  if (materializeMissingDebugInfo) {
+                    materializeMissingDebugInfo(method, nativePcCache);
+                  }
+                  if (shareDebugInfoForDifferentParameterSizes) {
+                    unsetParameterCountForPcBasedDebugInfo(method, pcBasedCache);
+                  }
+                }
+              },
               appView.options().getThreadingModule(),
               executor);
         });
   }
 
   private static void materializeMissingDebugInfo(
-      DexProgramClass clazz, ConcurrentMap<NativePcBasedDebugInfo, NativePcBasedDebugInfo> cache) {
-    for (DexEncodedMethod method : clazz.methods()) {
-      if (!method.hasCode() || !method.getCode().isDexCode()) {
-        continue;
-      }
-      DexCode code = method.getCode().asDexCode();
-      if (code.getDebugInfo() != null) {
-        continue;
-      }
-      DexInstruction lastInstruction = DebugRepresentation.getLastExecutableInstruction(code);
-      if (lastInstruction == null) {
-        continue;
-      }
-      int parameterCount = method.getParameters().size();
-      NativePcBasedDebugInfo debugInfo = new NativePcBasedDebugInfo(parameterCount);
-      code.setDebugInfo(cache.computeIfAbsent(debugInfo, k -> k));
+      DexEncodedMethod method,
+      ConcurrentMap<NativePcBasedDebugInfo, NativePcBasedDebugInfo> cache) {
+    // Methods without debug info are assumed to be native pc encoded debug info.
+    // Rematerialize into NativePcBasedDebugInfo.
+    DexCode code = method.getDexCode();
+    if (code.getDebugInfo() != null) {
+      return;
+    }
+    DexInstruction lastInstruction = DebugRepresentation.getLastExecutableInstruction(code);
+    if (lastInstruction == null) {
+      return;
+    }
+    int parameterCount = method.getParameters().size();
+    NativePcBasedDebugInfo debugInfo = new NativePcBasedDebugInfo(parameterCount);
+    code.setDebugInfo(cache.computeIfAbsent(debugInfo, k -> k));
+  }
+
+  private static void unsetParameterCountForPcBasedDebugInfo(
+      DexEncodedMethod method, ConcurrentMap<Integer, PcBasedDebugInfo> cache) {
+    DexCode code = method.getDexCode();
+    DexDebugInfo debugInfo = code.getDebugInfo();
+    if (debugInfo != null && debugInfo.isPcBasedInfo() && debugInfo.getParameterCount() > 0) {
+      int maxPc = debugInfo.asPcBasedInfo().getMaxPc();
+      code.setDebugInfo(cache.computeIfAbsent(maxPc, k -> new PcBasedDebugInfo(0, k)));
     }
   }
 

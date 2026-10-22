@@ -2622,6 +2622,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean invertConditionals = false;
     public boolean placeExceptionalBlocksLast = false;
     public boolean forceJumboStringProcessing = false;
+    public boolean enableShareDebugInfoForDifferentParameterSizes =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableShareDebugInfoForDifferentParameterSizes", false);
+
+    public boolean enableShareDebugInfoForDifferentParameterSizes(InternalOptions options) {
+      return enableShareDebugInfoForDifferentParameterSizes
+          && !options.canHaveDebugInfoParameterIteratorBug();
+    }
+
     public boolean forcePcBasedEncoding = false;
     public boolean forcePruneMetaInfManifestMf = false;
     public int pcBasedDebugEncodingOverheadThreshold =
@@ -3598,5 +3607,18 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // it is unclear whether it is strictly related to Unsafe or if it is a coincidence.
   public boolean canHaveBugWithInlinedMethodsContainingUnsafe() {
     return isGeneratingDex() && minApiLevel.isLessThanOrEqualTo(AndroidApiLevel.L_MR1);
+  }
+
+  // Prior to Android 7.0 (API 24), ART's DexFile::DecodeDebugInfo0 used a single pass to decode
+  // both local variable and position information. It iterated over `parameters_size` entries in
+  // the debug_info_item alongside a DexFileParameterIterator for the method prototype, and aborted
+  // before decoding line numbers if the parameter iterator still had remaining parameters
+  // (`if (it.HasNext()) return;`). Therefore, emitting `parameters_size = 0` in shared PC-based
+  // debug info items causes methods with one or more parameters to lose line number information in
+  // stack traces on Android 5 and 6 (API 21-23). In Android 7.0 (API 24), position decoding was
+  // split into DexFile::DecodeDebugPositionInfo, which skips `parameters_size` ULEB128 values
+  // without checking the method prototype.
+  public boolean canHaveDebugInfoParameterIteratorBug() {
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.N);
   }
 }

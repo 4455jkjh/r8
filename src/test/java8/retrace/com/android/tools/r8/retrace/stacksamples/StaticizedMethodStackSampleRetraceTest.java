@@ -64,7 +64,8 @@ public class StaticizedMethodStackSampleRetraceTest extends StackSampleRetraceTe
             "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main"
                 + " -> a:",
             "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
-            "    1:1:void test():50:50 -> a",
+            (isSharingDebugInfoForDifferentParameterSizes() ? "    1:8" : "    1:1")
+                + ":void test():50:50 -> a",
             "    1:4:void main(java.lang.String[]):45:45 -> main");
   }
 

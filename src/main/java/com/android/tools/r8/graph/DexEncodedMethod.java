@@ -990,11 +990,12 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
   }
 
   public static Code mutateOrCreateCodeWithFakeThisParameter(
-      Code code, int arity, AppView<?> appView) {
+      Code code, DexMethod method, AppView<?> appView) {
     if (code.isDexCode()) {
       DexCode dexCode = code.asDexCode();
-      DexDebugInfo newDebugInfo = dexCode.debugInfoWithFakeThisParameter(appView.dexItemFactory());
-      assert (newDebugInfo == null) || (arity == newDebugInfo.getParameterCount());
+      DexDebugInfo newDebugInfo =
+          dexCode.debugInfoWithFakeThisParameter(method, appView.dexItemFactory());
+      assert newDebugInfo == null || method.getArity() == newDebugInfo.getParameterCount();
       dexCode.setDebugInfo(newDebugInfo);
       return dexCode;
     } else if (code.isCfCode()) {

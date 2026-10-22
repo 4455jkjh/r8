@@ -104,7 +104,8 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
             "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
             "    byte HorizontalClassMergingStackSampleRetraceTest$A.$r8$classId -> a",
             "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
-            "    1:1:void HorizontalClassMergingStackSampleRetraceTest$A.<init>(byte):0:0 ->"
+            (isSharingDebugInfoForDifferentParameterSizes() ? "    1:6" : "    1:1")
+                + ":void HorizontalClassMergingStackSampleRetraceTest$A.<init>(byte):0:0 ->"
                 + " <init>",
             "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
             "    1:1:void"

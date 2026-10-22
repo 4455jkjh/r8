@@ -63,7 +63,8 @@ public class Regress216178582Test extends TestBase {
                       code.getDebugInfo() == null
                           ? DexDebugInfo.createEventBasedDebugInfoForNativePc(
                               method.getNumberOfArguments(), code, inspector.getFactory())
-                          : DexDebugInfo.convertToEventBased(code, inspector.getFactory()));
+                          : DexDebugInfo.convertToEventBased(
+                              code, inspector.getFactory(), method.getReference()));
                   List<DexDebugEntry> entries =
                       new DexDebugEntryBuilder(method, inspector.getFactory()).build();
                   Iterator<DexDebugEntry> it = entries.iterator();

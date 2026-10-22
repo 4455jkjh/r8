@@ -365,7 +365,9 @@ public class FoundMethodSubject extends MethodSubject {
   }
 
   private LineNumberTable getDexLineNumberTable(DexCode code) {
-    EventBasedDebugInfo info = DexDebugInfo.convertToEventBased(code, codeInspector.getFactory());
+    EventBasedDebugInfo info =
+        DexDebugInfo.convertToEventBased(
+            code, codeInspector.getFactory(), dexMethod.getReference());
     if (info == null) {
       return null;
     }

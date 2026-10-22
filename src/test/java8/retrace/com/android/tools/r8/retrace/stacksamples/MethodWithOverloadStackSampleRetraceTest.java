@@ -38,13 +38,15 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
 
   static List<byte[]> programClassFileData;
 
-  @Parameter(1)
+  @Parameter(2)
   public boolean keep;
 
-  @Parameters(name = "{0}, keep: {1}")
+  @Parameters(name = "{0}, share: {1}, keep: {2}")
   public static List<Object[]> testData() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        BooleanUtils.values(),
+        BooleanUtils.values());
   }
 
   // Map the line numbers of the Main class so that the line numbers start from 42.

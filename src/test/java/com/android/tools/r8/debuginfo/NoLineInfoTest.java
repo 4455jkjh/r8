@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.IOException;
 import java.util.List;
@@ -34,18 +35,26 @@ public class NoLineInfoTest extends TestBase {
   private static final String DEFAULT_SOURCE_FILE = "r8-map-id-42";
   private static final String UNKNOWN_SOURCE_FILE = "Unknown Source";
 
-  private final TestParameters parameters;
   private final boolean customSourceFile;
+  private final boolean enableShareDebugInfoForDifferentParameterSizes;
+  private final TestParameters parameters;
 
-  @Parameters(name = "{0}, custom-sf:{1}")
+  @Parameters(name = "{2}, custom-sf:{0}, share:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        BooleanUtils.values(),
+        BooleanUtils.values(),
+        getTestParameters().withAllRuntimesAndApiLevels().build());
   }
 
-  public NoLineInfoTest(TestParameters parameters, boolean customSourceFile) {
-    this.parameters = parameters;
+  public NoLineInfoTest(
+      boolean customSourceFile,
+      boolean enableShareDebugInfoForDifferentParameterSizes,
+      TestParameters parameters) {
     this.customSourceFile = customSourceFile;
+    this.enableShareDebugInfoForDifferentParameterSizes =
+        enableShareDebugInfoForDifferentParameterSizes;
+    this.parameters = parameters;
   }
 
   private byte[] getTestClassTransformed() throws IOException {
@@ -69,6 +78,7 @@ public class NoLineInfoTest extends TestBase {
   @Test
   public void testReference() throws Exception {
     assumeFalse(customSourceFile);
+    assumeFalse(enableShareDebugInfoForDifferentParameterSizes);
     testForRuntime(parameters)
         .addProgramClassFileData(getTestClassTransformed())
         .run(parameters.getRuntime(), TestClass.class)
@@ -104,7 +114,12 @@ public class NoLineInfoTest extends TestBase {
         .addKeepAttributeSourceFile()
         .setMapIdTemplate("42")
         .setMinApi(parameters)
-        .addOptionsModification(o -> o.testing.forcePcBasedEncoding = true)
+        .addOptionsModification(
+            o -> {
+              o.testing.enableShareDebugInfoForDifferentParameterSizes =
+                  enableShareDebugInfoForDifferentParameterSizes;
+              o.testing.forcePcBasedEncoding = true;
+            })
         .applyIf(
             customSourceFile,
             b -> b.getBuilder().setSourceFileProvider(environment -> CUSTOM_SOURCE_FILE))
@@ -121,7 +136,15 @@ public class NoLineInfoTest extends TestBase {
                 // If debug info remains it is two canonical items and one null pointer.
                 // The presence of 'null' debug info items is for methods with no actual lines at
                 // all.
-                assertEquals(canDiscardResidualDebugInfo(parameters) ? 1 : 2, debugInfos.size());
+                assertEquals(
+                    canDiscardResidualDebugInfo(parameters)
+                            || (enableShareDebugInfoForDifferentParameterSizes
+                                && parameters
+                                    .getApiLevel()
+                                    .isGreaterThanOrEqualTo(AndroidApiLevel.N))
+                        ? 1
+                        : 2,
+                    debugInfos.size());
                 assertEquals(canDiscardResidualDebugInfo(parameters), debugInfos.contains(null));
               }
             })

@@ -13,7 +13,6 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.ClassReference;
@@ -22,9 +21,11 @@ import com.android.tools.r8.retrace.RetraceClassResult;
 import com.android.tools.r8.retrace.RetraceMethodElement;
 import com.android.tools.r8.retrace.RetraceMethodResult;
 import com.android.tools.r8.retrace.Retracer;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
@@ -44,9 +45,18 @@ public abstract class StackSampleRetraceTestBase extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+  @Parameter(1)
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
+
+  @Parameters(name = "{0}, share: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+  }
+
+  boolean isSharingDebugInfoForDifferentParameterSizes() {
+    return enableShareDebugInfoForDifferentParameterSizes
+        && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
   }
 
   void runTest(ThrowableConsumer<R8TestBuilder<?, ?, ?>> testBuilderConsumer) throws Exception {
@@ -56,6 +66,10 @@ public abstract class StackSampleRetraceTestBase extends TestBase {
             "-keepclassmembers class " + getMainClass().getTypeName() + " {",
             "  public static void main(java.lang.String[]);",
             "}")
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .addHorizontallyMergedClassesInspector(this::inspectHorizontallyMergedClasses)
         .apply(testBuilderConsumer)
         .compile()

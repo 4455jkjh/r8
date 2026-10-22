@@ -111,6 +111,7 @@ public class PcBasedDebugInfoConsolidator {
     }
 
     void record(PcBasedDebugInfo debugInfo, int methodMaxPc) {
+      assert debugInfo.getParameterCount() == paramCount;
       countByMaxPc.addTo(methodMaxPc, 1);
       if (existingMaxPcInfo == null || debugInfo.getMaxPc() > existingMaxPcInfo.getMaxPc()) {
         existingMaxPcInfo = debugInfo;

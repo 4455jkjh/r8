@@ -39,7 +39,8 @@ public class DebugInfoInspector {
   public DebugInfoInspector(DexEncodedMethod method, DexItemFactory factory) {
     this.method = method;
     EventBasedDebugInfo debugInfo =
-        DexDebugInfo.convertToEventBased(method.getCode().asDexCode(), factory);
+        DexDebugInfo.convertToEventBased(
+            method.getCode().asDexCode(), factory, method.getReference());
     if (debugInfo != null) {
       info = debugInfo;
       entries = new DexDebugEntryBuilder(method, factory).build();
@@ -91,9 +92,12 @@ public class DebugInfoInspector {
   }
 
   public int checkLineHasLocal(int line, String name, String type, String... typeParameters) {
-    int lines = checkLines(line, entry -> {
-      checkLocalDefined(entry, name, type, typeParameters);
-    });
+    int lines =
+        checkLines(
+            line,
+            entry -> {
+              checkLocalDefined(entry, name, type, typeParameters);
+            });
     assertTrue(lines > 0);
     return lines;
   }
@@ -132,8 +136,8 @@ public class DebugInfoInspector {
     return found;
   }
 
-  private static DebugLocalInfo checkLocalDefined(DexDebugEntry entry, String name, String type,
-      String... typeParameters) {
+  private static DebugLocalInfo checkLocalDefined(
+      DexDebugEntry entry, String name, String type, String... typeParameters) {
     DebugLocalInfo found = null;
     for (DebugLocalInfo local : entry.locals.values()) {
       if (local.name.toString().equals(name)) {

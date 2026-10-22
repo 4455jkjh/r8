@@ -126,7 +126,13 @@ public class VerticalClassMergingStackSampleRetraceTest extends StackSampleRetra
             "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$Main"
                 + " -> b:",
             "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
-            "    1:4:void main(java.lang.String[]):45:48 -> main");
+            isSharingDebugInfoForDifferentParameterSizes()
+                ? StringUtils.joinLines(
+                    "    1:5:void main(java.lang.String[]):45:45 -> main",
+                    "    6:8:void main(java.lang.String[]):46:46 -> main",
+                    "    9:11:void main(java.lang.String[]):47:47 -> main",
+                    "    12:15:void main(java.lang.String[]):48:48 -> main")
+                : "    1:4:void main(java.lang.String[]):45:48 -> main");
   }
 
   @Override

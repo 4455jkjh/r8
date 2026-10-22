@@ -73,7 +73,7 @@ public class DebugRepresentation {
       }
       VirtualFile file = classMapping.get(method.getHolder());
       DebugRepresentation cutoffs = file.getDebugRepresentation();
-      int maxPc = cutoffs.getDexPcEncodingCutoff(method);
+      int maxPc = cutoffs.getDexPcEncodingCutoff(method, options);
       assert maxPc == NO_PC_ENCODING
           || verifyLastExecutableInstructionWithinBound(
               method.getDefinition().getCode().asDexCode(), maxPc);
@@ -116,15 +116,17 @@ public class DebugRepresentation {
               DexDebugInfo.createEventBasedInfoForMethodWithoutDebugInfo(
                   definition, options.dexItemFactory());
         }
-        assert debugInfo.getParameterCount() == method.getParameters().size();
+        assert debugInfo.getParameterCount() == method.getParameters().size()
+            || (debugInfo.isPcBasedInfo() && debugInfo.getParameterCount() == 0);
         DexInstruction lastInstruction = getLastExecutableInstruction(code);
         if (lastInstruction == null) {
           continue;
         }
         int lastPc = lastInstruction.getOffset();
         int debugInfoCost = estimatedDebugInfoSize(debugInfo);
+        int paramCount = getParameterCountForPcBasedDebugInfo(method, options);
         paramCountToCosts
-            .computeIfAbsent(debugInfo.getParameterCount(), CostSummary::new)
+            .computeIfAbsent(paramCount, CostSummary::new)
             .addCost(lastPc, debugInfoCost);
       }
     }
@@ -138,15 +140,17 @@ public class DebugRepresentation {
     file.setDebugRepresentation(new DebugRepresentation(conversions));
   }
 
-  private int getDexPcEncodingCutoff(ProgramMethod method) {
+  private int getDexPcEncodingCutoff(ProgramMethod method, InternalOptions options) {
     if (paramToInfo.isEmpty()) {
       // This should only be the case if the method has overloads and thus *cannot* use pc encoding.
       assert verifyMethodHasOverloads(method);
       return NO_PC_ENCODING;
     }
-    DexCode code = method.getDefinition().getCode().asDexCode();
-    int paramCount = method.getParameters().size();
-    assert code.getDebugInfo() == null || code.getDebugInfo().getParameterCount() == paramCount;
+    DexCode code = method.getDefinition().getDexCode();
+    int paramCount = getParameterCountForPcBasedDebugInfo(method, options);
+    assert code.getDebugInfo() == null
+        || code.getDebugInfo().getParameterCount() == method.getParameters().size()
+        || (code.getDebugInfo().isPcBasedInfo() && code.getDebugInfo().getParameterCount() == 0);
     ConversionInfo conversionInfo = paramToInfo.get(paramCount);
     if (conversionInfo == null || !conversionInfo.hasConversions()) {
       // We expect all methods calling this to have computed conversion info.
@@ -484,6 +488,13 @@ public class DebugRepresentation {
       }
     }
     return null;
+  }
+
+  public static int getParameterCountForPcBasedDebugInfo(
+      ProgramMethod method, InternalOptions options) {
+    return options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes(options)
+        ? 0
+        : method.getParameters().size();
   }
 
   private static int estimatedDebugInfoSize(DexDebugInfo info) {

@@ -353,7 +353,7 @@ public class NonStartupInStartupOutliner {
                           if (!method.getAccessFlags().isStatic()) {
                             code =
                                 DexEncodedMethod.mutateOrCreateCodeWithFakeThisParameter(
-                                    code, syntheticMethod.getArity(), appView);
+                                    code, syntheticMethod, appView);
                           }
                           return code;
                         }));

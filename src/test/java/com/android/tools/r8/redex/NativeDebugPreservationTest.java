@@ -10,26 +10,30 @@ import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class NativeDebugPreservationTest extends TestBase {
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withNoneRuntime().build();
-  }
+  @Parameter(0)
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
 
-  public NativeDebugPreservationTest(TestParameters parameters) {
-    parameters.assertNoneRuntime();
+  @Parameter(1)
+  public TestParameters parameters;
+
+  @Parameters(name = "{1}, share={0}")
+  public static List<Object[]> data() {
+    return buildParameters(BooleanUtils.values(), getTestParameters().withNoneRuntime().build());
   }
 
   @Test
@@ -55,6 +59,10 @@ public class NativeDebugPreservationTest extends TestBase {
             .setMode(CompilationMode.RELEASE)
             .addProgramClasses(TestClass.class)
             .addKeepMainRule(TestClass.class)
+            .addOptionsModification(
+                options ->
+                    options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                        enableShareDebugInfoForDifferentParameterSizes)
             .compile()
             .inspect(
                 inspector -> {
@@ -71,6 +79,10 @@ public class NativeDebugPreservationTest extends TestBase {
         .setExperimentalReoptimizeDex(true)
         .setMode(CompilationMode.RELEASE)
         .addProgramFiles(r8Output)
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .compile()
         .inspect(
             inspector -> {
