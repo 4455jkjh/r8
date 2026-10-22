@@ -144,6 +144,7 @@ public class CompileDumpTest extends TestBase {
     Path outputJar = compileDumpTemp.resolve("out.jar");
     ProcessBuilder builder =
         new ProcessBuilder(
+            ToolHelper.isWindows() ? "python" : "python3",
             "tools/compiledump.py",
             "-d",
             dumpFile.toString(),
