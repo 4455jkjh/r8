@@ -396,10 +396,7 @@ public final class D8 {
   }
 
   private static void writeApplication(
-      AppView<AppInfo> appView,
-      Marker marker,
-      ExecutorService executor,
-      Timing timing)
+      AppView<AppInfo> appView, Marker marker, ExecutorService executor, Timing timing)
       throws ExecutionException, IOException {
     InternalOptions options = appView.options();
     if (options.partialSubCompilationConfiguration != null) {

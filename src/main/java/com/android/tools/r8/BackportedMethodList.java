@@ -80,9 +80,7 @@ public class BackportedMethodList {
       builder.setAndroidPlatformBuild();
     }
     DesugaredMethodsListCommandUtils.setMinApiLevel(builder, command.getUncheckedMinApiLevel());
-    return builder
-        .setOutputConsumer(command.getBackportedMethodListConsumer())
-        .build();
+    return builder.setOutputConsumer(command.getBackportedMethodListConsumer()).build();
   }
 
   public static void run(String[] args) throws CompilationFailedException {
