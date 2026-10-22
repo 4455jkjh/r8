@@ -83,6 +83,7 @@ import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.InternalMapConsumer;
 import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.naming.mappinginformation.MergedClassesInformation;
 import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
@@ -2741,6 +2742,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return testing.enableExperimentalMapFileVersion
         ? MapVersion.MAP_VERSION_EXPERIMENTAL
         : MapVersion.STABLE;
+  }
+
+  public boolean isMergedClassInformationSupported() {
+    return MergedClassesInformation.isSupported(getMapFileVersion());
   }
 
   @VisibleForTesting

@@ -101,6 +101,7 @@ public class ClassMerger {
   void buildClassIdentifierMap() {
     classIdentifiers.put(group.getTarget().getType(), 0);
     group.forEachSource(clazz -> classIdentifiers.put(clazz.getType(), classIdentifiers.size()));
+    group.setClassIdentifiers(classIdentifiers);
   }
 
   void mergeDirectMethods(
