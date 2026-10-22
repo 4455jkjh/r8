@@ -3022,8 +3022,7 @@ public class KeepEdgeReader implements Opcodes {
         memberBindingReference = (String) value;
         return;
       }
-      if (classDeclaration.tryParse(name, value)
-          || memberDeclaration.tryParse(name, value)) {
+      if (classDeclaration.tryParse(name, value) || memberDeclaration.tryParse(name, value)) {
         return;
       }
     }
