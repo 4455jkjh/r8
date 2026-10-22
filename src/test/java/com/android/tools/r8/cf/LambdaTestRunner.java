@@ -4,31 +4,18 @@
 package com.android.tools.r8.cf;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
-import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.R8;
-import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvokeDynamic;
 import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexEncodedMethod;
-import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.AndroidAppConsumers;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,7 +31,7 @@ public class LambdaTestRunner extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+    return getTestParameters().withCfRuntimes().build();
   }
 
   public LambdaTestRunner(TestParameters parameters) {
@@ -56,43 +43,32 @@ public class LambdaTestRunner extends TestBase {
     // Test that the InvokeDynamic instruction in LambdaTest.main()
     // is not modified by the R8 compilation.
     // First, extract the InvokeDynamic instruction from the input class.
-    byte[] inputClass = ToolHelper.getClassAsBytes(CLASS);
-    AndroidApp inputApp =
-        AndroidApp.builder().addClassProgramData(inputClass, Origin.unknown()).build();
-    CfInvokeDynamic insnInput = findFirstInMethod(inputApp);
-    Assert.assertNotNull("No CfInvokeDynamic found in input", insnInput);
+    CodeInspector inputInspector =
+        testForJvm(parameters)
+            .addProgramClasses(CLASS)
+            .run(parameters.getRuntime(), CLASS)
+            .assertSuccessWithOutputLines("42")
+            .inspector();
+    CfInvokeDynamic insnInput = findFirstInMethod(inputInspector);
+    assertNotNull("No CfInvokeDynamic found in input", insnInput);
     // Compile with R8 and extract the InvokeDynamic instruction from the output class.
-    AndroidAppConsumers appBuilder = new AndroidAppConsumers();
-    Path outPath = temp.getRoot().toPath().resolve("out.jar");
-    R8.run(
-        R8Command.builder()
-            .setMode(CompilationMode.DEBUG)
-            .setDisableTreeShaking(true)
-            .setDisableMinification(true)
-            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
-            .setProgramConsumer(appBuilder.wrapClassFileConsumer(new ArchiveConsumer(outPath)))
-            .addClassProgramData(inputClass, Origin.unknown())
-            .build());
-    AndroidApp outputApp = appBuilder.build();
-    CfInvokeDynamic insnOutput = findFirstInMethod(outputApp);
-    Assert.assertNotNull("No CfInvokeDynamic found in output", insnOutput);
+    CodeInspector outputInspector =
+        testForR8(parameters)
+            .addProgramClasses(CLASS)
+            .debug()
+            .addDontShrink()
+            .addDontObfuscate()
+            .run(parameters.getRuntime(), CLASS)
+            .assertSuccessWithOutputLines("42")
+            .inspector();
+    CfInvokeDynamic insnOutput = findFirstInMethod(outputInspector);
+    assertNotNull("No CfInvokeDynamic found in output", insnOutput);
     // Check that the InvokeDynamic instruction is not modified.
     assertEquals(print(insnInput), print(insnOutput));
-    // Check that execution gives the same output.
-    ProcessResult inputResult =
-        ToolHelper.runJava(
-            parameters.getRuntime().asCf(),
-            ImmutableList.of(ToolHelper.getClassPathForTests()),
-            CLASS.getName());
-    ProcessResult outputResult =
-        ToolHelper.runJava(
-            parameters.getRuntime().asCf(), ImmutableList.of(outPath), CLASS.getName());
-    assertEquals(inputResult.toString(), outputResult.toString());
   }
 
-  private static CfInvokeDynamic findFirstInMethod(AndroidApp app) throws Exception {
+  private static CfInvokeDynamic findFirstInMethod(CodeInspector inspector) {
     String returnType = "void";
-    CodeInspector inspector = new CodeInspector(app);
     List<String> args = Collections.singletonList(String[].class.getTypeName());
     DexEncodedMethod method = inspector.clazz(CLASS).method(returnType, METHOD, args).getMethod();
     CfCode code = method.getCode().asCfCode();

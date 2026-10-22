@@ -3,24 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.cf;
 
-import static org.junit.Assert.assertEquals;
-
-import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
-import com.android.tools.r8.CompilationMode;
-import com.android.tools.r8.R8Command;
-import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.origin.Origin;
-import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,7 +20,7 @@ public class BaseDefaultMethodTestRunner extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+    return getTestParameters().withCfRuntimes().build();
   }
 
   public BaseDefaultMethodTestRunner(TestParameters parameters) {
@@ -44,31 +29,11 @@ public class BaseDefaultMethodTestRunner extends TestBase {
 
   @Test
   public void test() throws Exception {
-    ProcessResult runInput =
-        ToolHelper.runJava(
-            parameters.getRuntime().asCf(),
-            ImmutableList.of(ToolHelper.getClassPathForTests()),
-            CLASS.getCanonicalName());
-    assertEquals(0, runInput.exitCode);
-    List<String> config =
-        Arrays.asList(
-            "-keep public class " + CLASS.getCanonicalName() + " {",
-            "  public static void main(...);",
-            "}");
-    Path out = temp.getRoot().toPath().resolve("out.jar");
-    Builder builder =
-        R8Command.builder()
-            .setMode(CompilationMode.DEBUG)
-            .addLibraryFiles(TestDeps.getJava8RuntimeJar())
-            .setProgramConsumer(new ArchiveConsumer(out))
-            .addProguardConfiguration(config, Origin.unknown());
-    for (Class<?> c : CLASSES) {
-      builder.addClassProgramData(ToolHelper.getClassAsBytes(c), Origin.unknown());
-    }
-    ToolHelper.runR8(builder.build());
-    ProcessResult runOutput =
-        ToolHelper.runJava(
-            parameters.getRuntime().asCf(), ImmutableList.of(out), CLASS.getCanonicalName());
-    assertEquals(runInput.toString(), runOutput.toString());
+    testForR8(parameters)
+        .addProgramClasses(CLASSES)
+        .addKeepMainRule(CLASS)
+        .debug()
+        .run(parameters.getRuntime(), CLASS)
+        .assertSuccessWithEmptyOutput();
   }
 }
