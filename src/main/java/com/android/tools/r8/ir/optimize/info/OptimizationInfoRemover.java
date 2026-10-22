@@ -59,8 +59,10 @@ public class OptimizationInfoRemover {
     optimizationInfo.unsetDynamicType();
     optimizationInfo.unsetInitializedClassesOnNormalExit();
     optimizationInfo.unsetInstanceInitializerInfoCollection();
+    optimizationInfo.unsetIsReturnValueUsed();
     optimizationInfo.unsetNopInliningConstraint();
     optimizationInfo.unsetSimpleInliningConstraint();
+    optimizationInfo.unsetUnusedArguments();
     if (optimizationInfo.isEffectivelyDefault()) {
       method.unsetOptimizationInfo();
     }
