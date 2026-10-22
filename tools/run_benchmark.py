@@ -135,6 +135,22 @@ def parse_options(argv):
     return options, args
 
 
+def ensure_internal_dependencies(benchmark, quiet=False):
+    if 'AGSA' in benchmark:
+        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
+                                               'closedsource-apps', 'agsa',
+                                               '20250412-v16.14.47'),
+                                  quiet=quiet)
+    elif 'SystemUI' in benchmark:
+        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
+                                               'closedsource-apps', 'systemui'),
+                                  quiet=quiet)
+    elif 'YouTube' in benchmark:
+        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY, 'youtube',
+                                               'youtube.android_21.40'),
+                                  quiet=quiet)
+
+
 def main(argv, temp):
     options, args = parse_options(argv)
 
@@ -198,19 +214,7 @@ def main(argv, temp):
     if not options.no_build:
         gradle.run_gradle(buildTargets + ['-Pno_internal'])
 
-    if 'AGSA' in options.benchmark:
-        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
-                                               'closedsource-apps', 'agsa',
-                                               '20250412-v16.14.47'),
-                                  quiet=options.quiet)
-    elif 'SystemUI' in options.benchmark:
-        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
-                                               'closedsource-apps', 'systemui'),
-                                  quiet=options.quiet)
-    elif 'YouTube' in options.benchmark:
-        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY, 'youtube',
-                                               'youtube.android_21.40'),
-                                  quiet=options.quiet)
+    ensure_internal_dependencies(options.benchmark, quiet=options.quiet)
 
     # Change the working directory to be in 'temp'.
     # This is hard to do properly within the JVM so we do it here.
