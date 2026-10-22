@@ -9,7 +9,6 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
@@ -78,14 +77,7 @@ public class MappingFileAfterRepackagingTest extends TestBase {
                       .filter(line -> line.contains("java.lang.String toString()"))
                       .count();
               assertEquals(
-                  (repackage ? 1 : 2 + BooleanUtils.intValue(parameters.isDexRuntime()))
-                      + BooleanUtils.intValue(
-                          canDiscardResidualDebugInfo(parameters)
-                              || (parameters.isDexRuntime()
-                                  && enableShareDebugInfoForDifferentParameterSizes
-                                  && parameters
-                                      .getApiLevel()
-                                      .isGreaterThanOrEqualTo(AndroidApiLevel.N))),
+                  (repackage ? 1 : 2) * (1 + BooleanUtils.intValue(parameters.isDexRuntime())),
                   unqualifiedMatches);
             });
   }

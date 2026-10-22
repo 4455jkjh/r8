@@ -18,6 +18,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.analysis.ClassInitializationAnalysis;
+import com.android.tools.r8.ir.analysis.constant.SparseConditionalConstantPropagation;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
@@ -26,8 +27,17 @@ import com.android.tools.r8.ir.conversion.MethodProcessorEventConsumer;
 import com.android.tools.r8.ir.conversion.OneTimeMethodProcessor;
 import com.android.tools.r8.ir.conversion.callgraph.CallSiteInformation;
 import com.android.tools.r8.ir.conversion.finalizer.IRToLirFinalizer;
+import com.android.tools.r8.ir.conversion.passes.BranchSimplifier;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
+import com.android.tools.r8.ir.conversion.passes.CommonSubexpressionElimination;
+import com.android.tools.r8.ir.conversion.passes.SplitBranch;
+import com.android.tools.r8.ir.conversion.passes.SplitReturnRewriter;
+import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
+import com.android.tools.r8.ir.conversion.passes.TrivialCheckCastAndInstanceOfRemover;
 import com.android.tools.r8.ir.optimize.DefaultInliningOracle;
 import com.android.tools.r8.ir.optimize.Inliner;
+import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination;
+import com.android.tools.r8.ir.optimize.ShareFieldGetInstructions;
 import com.android.tools.r8.ir.optimize.inliner.InliningIRProvider;
 import com.android.tools.r8.ir.optimize.inliner.InliningReasonStrategy;
 import com.android.tools.r8.ir.optimize.inliner.NopWhyAreYouNotInliningReporter;
@@ -128,6 +138,8 @@ public class SingleCallerInliner {
       ExecutorService executorService)
       throws ExecutionException {
     CallSiteInformation callSiteInformation = createCallSiteInformation(singleCallerMethods);
+    CodeRewriterPassCollection cleanUpCodeRewriterPassCollection =
+        createCleanUpCodeRewriterPassCollection();
     Deque<ProgramMethodSet> waves = SingleCallerWaves.buildWaves(appView, singleCallerMethods);
     while (!waves.isEmpty()) {
       ProgramMethodSet wave = waves.removeFirst();
@@ -155,6 +167,13 @@ public class SingleCallerInliner {
                 method, code, getSimpleFeedback(), methodProcessor, Timing.empty())) {
               return;
             }
+            cleanUpCodeRewriterPassCollection.run(
+                code,
+                methodProcessor,
+                methodProcessingContext,
+                Timing.empty(),
+                null,
+                appView.options());
             LirCode<Integer> lirCode =
                 new IRToLirFinalizer(appView)
                     .finalizeCode(code, BytecodeMetadataProvider.empty(), Timing.empty());
@@ -169,6 +188,24 @@ public class SingleCallerInliner {
           executorService);
       inliner.unsetFinalFlagFromInlinedFinalFields();
     }
+  }
+
+  // Run cleanup passes immediately after inlining so that shrinking a caller in the current wave
+  // can bring it below the inlining threshold if it is an inlinee in a subsequent wave.
+  // DeadCodeRemover is omitted: it is by far the slowest pass and saves almost no extra code size,
+  // since inlining and BranchSimplifier clean up dead code and DeadCodeRemover runs at DEX output.
+  private CodeRewriterPassCollection createCleanUpCodeRewriterPassCollection() {
+    assert appView.options().isRelease();
+    return CodeRewriterPassCollection.create(
+        new TrivialCheckCastAndInstanceOfRemover(appView),
+        new CommonSubexpressionElimination(appView),
+        new SparseConditionalConstantPropagation(appView),
+        new ThrowCatchOptimizer(appView),
+        new BranchSimplifier(appView),
+        new SplitBranch(appView),
+        new RedundantLoadAndStoreElimination(appView),
+        new SplitReturnRewriter(appView),
+        new ShareFieldGetInstructions(appView));
   }
 
   private CallSiteInformation createCallSiteInformation(
