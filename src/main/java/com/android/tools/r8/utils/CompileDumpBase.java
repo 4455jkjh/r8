@@ -6,6 +6,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.BaseCompilerCommand;
 import com.android.tools.r8.utils.compiledump.ArtProfileDumpUtils;
+import com.android.tools.r8.utils.compiledump.CompilerCommandDumpUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +14,28 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class CompileDumpBase {
+
+  static int parseMinApiMajor(String minApi) {
+    int dotIndex = minApi.indexOf('.');
+    return Integer.parseInt(dotIndex == -1 ? minApi : minApi.substring(0, dotIndex));
+  }
+
+  static int parseMinApiMinor(String minApi) {
+    int dotIndex = minApi.indexOf('.');
+    return dotIndex == -1 ? 0 : Integer.parseInt(minApi.substring(dotIndex + 1));
+  }
+
+  static void setMinApiLevel(
+      BaseCompilerCommand.Builder<?, ?> builder, int minApiMajor, int minApiMinor) {
+    try {
+      CompilerCommandDumpUtils.setMinApiLevel(builder, minApiMajor, minApiMinor);
+    } catch (NoClassDefFoundError | NoSuchMethodError e) {
+      if (minApiMinor != 0) {
+        System.out.println("Minor API level not supported, falling back to major API level.");
+      }
+      builder.setMinApiLevel(minApiMajor);
+    }
+  }
 
   static void addArtProfilesForRewriting(
       BaseCompilerCommand.Builder<?, ?> builder, Map<Path, Path> artProfileFiles) {

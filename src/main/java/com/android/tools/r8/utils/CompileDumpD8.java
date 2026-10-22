@@ -74,7 +74,8 @@ public class CompileDumpD8 extends CompileDumpBase {
     Path pgMap = null;
     Path pgOutputMap = null;
     Path apiDatabase = null;
-    int minApi = 1;
+    int minApiMajor = 1;
+    int minApiMinor = 0;
     int threads = -1;
     BooleanBox enableMissingLibraryApiModeling = new BooleanBox(false);
     BooleanBox androidPlatformBuild = new BooleanBox(false);
@@ -126,7 +127,8 @@ public class CompileDumpD8 extends CompileDumpBase {
             }
           case "--min-api":
             {
-              minApi = Integer.parseInt(operand);
+              minApiMajor = parseMinApiMajor(operand);
+              minApiMinor = parseMinApiMinor(operand);
               break;
             }
           case "--desugared-lib":
@@ -216,9 +218,12 @@ public class CompileDumpD8 extends CompileDumpBase {
     if (desugaredLibJson != null) {
       commandBuilder.addDesugaredLibraryConfiguration(readAllBytesJava7(desugaredLibJson));
     }
-    commandBuilder.setMinApiLevel(minApi);
+    setMinApiLevel(commandBuilder, minApiMajor, minApiMinor);
     if (pgMap != null) {
-      commandBuilder.setProguardMapInputFile(pgMap);
+      Path pgMapFinal = pgMap;
+      runIgnoreMissing(
+          () -> CompilerCommandDumpUtils.setProguardMapInputFile(commandBuilder, pgMapFinal),
+          "Proguard map input not available.");
     }
     if (pgOutputMap != null) {
       Path pgOutputMapFinal = pgOutputMap;

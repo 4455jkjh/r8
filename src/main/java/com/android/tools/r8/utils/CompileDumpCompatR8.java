@@ -127,7 +127,8 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
     Path androidResourcesOutput = null;
     StringConsumer androidResourcesUsageLogConsumer = null;
     Path apiDatabase = null;
-    int minApi = 1;
+    int minApiMajor = 1;
+    int minApiMinor = 0;
     int threads = -1;
     BooleanBox enableMissingLibraryApiModeling = new BooleanBox(false);
     BooleanBox androidPlatformBuild = new BooleanBox(false);
@@ -192,7 +193,8 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
             }
           case "--min-api":
             {
-              minApi = Integer.parseInt(operand);
+              minApiMajor = parseMinApiMajor(operand);
+              minApiMinor = parseMinApiMinor(operand);
               break;
             }
           case "--pg-conf":
@@ -358,14 +360,13 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
         StringConsumer finalConsumer = androidResourcesUsageLogConsumer;
         runIgnoreMissing(
             () ->
-                commandBuilder.setResourceShrinkerConfiguration(
-                    b ->
-                        b.enableOptimizedShrinkingWithR8().setDebugConsumer(finalConsumer).build()),
+                ResourceShrinkerDumpUtils.enableOptimizedResourceShrinkingAndSetDebugConsumer(
+                    finalConsumer, commandBuilder),
             "Failed setting optimized resource shrinking log consumer.");
       }
     }
     if (outputMode != OutputMode.ClassFile) {
-      commandBuilder.setMinApiLevel(minApi);
+      setMinApiLevel(commandBuilder, minApiMajor, minApiMinor);
     }
     features.forEach(
         (featureInputOutput) ->
