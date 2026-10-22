@@ -243,7 +243,8 @@ public class LibraryAnalyzer {
   }
 
   private static <T> ItemCollectionSummary getItemCollectionSummary(
-      AppInfoWithLiveness appInfo, Function<DexProgramClass, Iterable<T>> getItems,
+      AppInfoWithLiveness appInfo,
+      Function<DexProgramClass, Iterable<T>> getItems,
       Function<T, KeepInfo<?, ?>> getKeepInfo) {
     int itemCount = 0;
     int keptItemCount = 0;
