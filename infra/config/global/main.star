@@ -430,8 +430,6 @@ def archivers():
         "archive",
         "archive_release",
         "lib_desugar-archive-jdk11",
-        "lib_desugar-archive-jdk11-legacy",
-        "lib_desugar-archive-jdk8",
     ]:
         desugar = "desugar" in name
         properties = {
@@ -439,12 +437,7 @@ def archivers():
             "builder_group": "internal.client.r8",
         }
         if desugar:
-            if name.endswith("jdk11"):
-                properties["test_options"] = ["--variant=jdk11_minimal", "--variant=jdk11", "--variant=jdk11_nio"]
-            elif name.endswith("jdk11-legacy"):
-                properties["test_options"] = ["--variant=jdk11_legacy"]
-            else:
-                properties["test_options"] = ["--variant=jdk8"]
+            properties["test_options"] = ["--variant=jdk11_minimal", "--variant=jdk11", "--variant=jdk11_nio"]
         else:
             properties["env"] = {
                 "R8_BOT_ARCHIVE": "1",
@@ -452,7 +445,7 @@ def archivers():
 
         r8_builder(
             name,
-            category = "library_desugar" if desugar else "archive",
+            category = "aux" if desugar else "archive",
             dimensions = get_dimensions(archive = True),
             triggering_policy = scheduler.policy(
                 kind = scheduler.GREEDY_BATCHING_KIND,
