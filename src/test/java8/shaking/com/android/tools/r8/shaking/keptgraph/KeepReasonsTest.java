@@ -5,11 +5,27 @@ package com.android.tools.r8.shaking.keptgraph;
 
 import static org.junit.Assert.assertNotNull;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.experimental.graphinfo.GraphEdgeInfo;
 import com.android.tools.r8.experimental.graphinfo.GraphEdgeInfo.EdgeKind;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class KeepReasonsTest {
+@RunWith(Parameterized.class)
+public class KeepReasonsTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public KeepReasonsTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void testAllReasonsHavePrintInfo() {

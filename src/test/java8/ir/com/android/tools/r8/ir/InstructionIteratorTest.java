@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.ir;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InstructionListIterator;
@@ -18,10 +20,23 @@ import java.util.ListIterator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class InstructionIteratorTest extends SmaliTestBase {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public InstructionIteratorTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   /**
    * Simple test IR, which has three blocks:

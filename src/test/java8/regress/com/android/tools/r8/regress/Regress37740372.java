@@ -14,6 +14,8 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.D8Command.Builder;
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.DiagnosticsHandler;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.origin.EmbeddedOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.smali.SmaliTestBase;
@@ -24,8 +26,21 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.Base64;
 import java.util.Set;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class Regress37740372 extends SmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public Regress37740372(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   /*
     Binary class file data for a java.lang.Object stub implementation. Runnong javap -c on the

@@ -15,6 +15,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -35,8 +37,21 @@ import java.util.List;
 import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class TypeLatticeTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public TypeLatticeTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static final String IO_EXCEPTION = "Ljava/io/IOException;";
   private static final String NOT_FOUND = "Ljava/io/FileNotFoundException;";

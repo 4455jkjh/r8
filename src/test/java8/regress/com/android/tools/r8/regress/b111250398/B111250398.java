@@ -9,6 +9,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexIget;
 import com.android.tools.r8.dex.code.DexIgetObject;
 import com.android.tools.r8.dex.code.DexSget;
@@ -23,6 +25,9 @@ import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 // Copy of javax.inject.Provider.
 interface Provider<T> {
@@ -206,7 +211,17 @@ class C {
   }
 }
 
+@RunWith(Parameterized.class)
 public class B111250398 extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public B111250398(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private void releaseMode(InternalOptions options) {
     options.debug = false;

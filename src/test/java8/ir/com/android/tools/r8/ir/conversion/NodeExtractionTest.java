@@ -8,6 +8,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.ir.conversion.callgraph.CallGraph;
 import com.android.tools.r8.ir.conversion.callgraph.CycleEliminator;
@@ -15,8 +17,21 @@ import com.android.tools.r8.ir.conversion.callgraph.Node;
 import java.util.Set;
 import java.util.TreeSet;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class NodeExtractionTest extends CallGraphTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public NodeExtractionTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   // Note that building a test graph is intentionally repeated to avoid race conditions and/or
   // non-deterministic test results due to cycle elimination.

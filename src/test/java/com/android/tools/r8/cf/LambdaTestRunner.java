@@ -11,6 +11,9 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.cf.code.CfInstruction;
@@ -21,16 +24,32 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class LambdaTestRunner extends TestBase {
 
   private static final Class<?> CLASS = LambdaTest.class;
   private static final String METHOD = "main";
+
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public LambdaTestRunner(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   @Test
   public void test() throws Exception {
@@ -61,8 +80,13 @@ public class LambdaTestRunner extends TestBase {
     assertEquals(print(insnInput), print(insnOutput));
     // Check that execution gives the same output.
     ProcessResult inputResult =
-        ToolHelper.runJava(ToolHelper.getClassPathForTests(), CLASS.getName());
-    ProcessResult outputResult = ToolHelper.runJava(outPath, CLASS.getName());
+        ToolHelper.runJava(
+            parameters.getRuntime().asCf(),
+            ImmutableList.of(ToolHelper.getClassPathForTests()),
+            CLASS.getName());
+    ProcessResult outputResult =
+        ToolHelper.runJava(
+            parameters.getRuntime().asCf(), ImmutableList.of(outPath), CLASS.getName());
     assertEquals(inputResult.toString(), outputResult.toString());
   }
 

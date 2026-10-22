@@ -12,6 +12,9 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.ir.code.SingleConstant;
@@ -26,6 +29,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 class SuperClass {
   SuperClass(double a, double b, Object c) {
@@ -44,7 +50,17 @@ class Main {
   }
 }
 
-public class B68378480 {
+@RunWith(Parameterized.class)
+public class B68378480 extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public B68378480(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private DexCode compileClassesGetSubClassInit(int minApi)
       throws IOException, CompilationFailedException {

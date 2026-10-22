@@ -11,6 +11,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -32,13 +34,23 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class PartialCallGraphTest extends CallGraphTestBase {
   private final AppView<AppInfoWithLiveness> appView;
   private final InternalOptions options;
   private final ExecutorService executorService;
 
-  public PartialCallGraphTest() throws Exception {
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public PartialCallGraphTest(TestParameters parameters) throws Exception {
+    parameters.assertNoneRuntime();
     AndroidApp app =
         AndroidApp.builder(testForD8().addProgramClasses(TestClass.class).compile().getApp())
             .addLibraryFile(getMostRecentAndroidJar())

@@ -8,10 +8,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ClassFileConsumer;
+import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
@@ -21,9 +25,13 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 class ToBeRenamedForMultiDimensionalArrayTest {
   private int counter = 1;
@@ -57,8 +65,19 @@ class MultiDimensionalArrayTestMain {
   }
 }
 
+@RunWith(Parameterized.class)
 public class MultiDimensionalArrayTest extends TestBase {
   List<byte[]> classes;
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public MultiDimensionalArrayTest(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   @Before
   public void setUp() throws Exception {
@@ -91,9 +110,14 @@ public class MultiDimensionalArrayTest extends TestBase {
     AndroidApp processedApp = ToolHelper.runR8(builder.build());
 
     String main = MultiDimensionalArrayTestMain.class.getCanonicalName();
-    ProcessResult javaOutput = runOnJavaRaw(main, classes, ImmutableList.of());
+    ProcessResult javaOutput =
+        ToolHelper.runJava(
+            parameters.getRuntime().asCf(), Collections.singletonList(writeToJar(classes)), main);
     assertEquals(0, javaOutput.exitCode);
-    ProcessResult output = runOnJavaRaw(processedApp, main, ImmutableList.of());
+    Path out = getNewTempFile("junit", ".zip").toPath();
+    processedApp.writeToZipForTesting(out, OutputMode.ClassFile);
+    ProcessResult output =
+        ToolHelper.runJava(parameters.getRuntime().asCf(), Collections.singletonList(out), main);
     assertEquals(0, output.exitCode);
     assertEquals(javaOutput.stdout.trim(), output.stdout.trim());
 

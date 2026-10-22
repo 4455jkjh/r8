@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.code.DexConst16;
 import com.android.tools.r8.dex.code.DexFormat22b;
@@ -20,8 +22,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class BinopLiteralTest extends SmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public BinopLiteralTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   int[] lit8Values = new int[]{
       Constants.S8BIT_MIN,

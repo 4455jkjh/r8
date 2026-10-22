@@ -9,19 +9,37 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.DebuggeeState;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.stream.Stream;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class NopDebugTestRunner extends DebugTestBase {
 
   private final Class<?> CLAZZ = NopTest.class;
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public NopDebugTestRunner(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   @Test
   public void testNop() throws Exception {
@@ -70,9 +88,24 @@ public class NopDebugTestRunner extends DebugTestBase {
             + " because debug tests are not yet supported on Windows",
         !ToolHelper.isWindows());
     new DebugStreamComparator()
-        .add("Input", streamDebugTest(mainClass, new CfDebugTestConfig(inputJar)))
-        .add("R8/CF", streamDebugTest(mainClass, new CfDebugTestConfig(output1)))
-        .add("R8/CF^2", streamDebugTest(mainClass, new CfDebugTestConfig(output2)))
+        .add(
+            "Input",
+            streamDebugTest(
+                mainClass,
+                new CfDebugTestConfig(
+                    parameters.getRuntime().asCf(), Collections.singletonList(inputJar))))
+        .add(
+            "R8/CF",
+            streamDebugTest(
+                mainClass,
+                new CfDebugTestConfig(
+                    parameters.getRuntime().asCf(), Collections.singletonList(output1))))
+        .add(
+            "R8/CF^2",
+            streamDebugTest(
+                mainClass,
+                new CfDebugTestConfig(
+                    parameters.getRuntime().asCf(), Collections.singletonList(output2))))
         .compare();
   }
 

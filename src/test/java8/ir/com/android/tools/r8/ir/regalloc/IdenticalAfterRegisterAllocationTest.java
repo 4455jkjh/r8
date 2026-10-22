@@ -6,6 +6,9 @@ package com.android.tools.r8.ir.regalloc;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -24,8 +27,21 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.utils.InternalOptions;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class IdenticalAfterRegisterAllocationTest {
+@RunWith(Parameterized.class)
+public class IdenticalAfterRegisterAllocationTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public IdenticalAfterRegisterAllocationTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static class MockRegisterAllocator implements RegisterAllocator {
     private final ProgramMethod mockMethod;

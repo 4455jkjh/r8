@@ -10,6 +10,8 @@ import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.dex.code.DexLongToInt;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -20,6 +22,9 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 class TestClass {
   public static void f(long[] a) {
@@ -28,7 +33,17 @@ class TestClass {
   }
 }
 
+@RunWith(Parameterized.class)
 public class B80262475 extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public B80262475(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private boolean overlappingLongToIntInputAndOutput(DexInstruction instruction) {
     if (instruction instanceof DexLongToInt) {

@@ -5,13 +5,28 @@
 package com.android.tools.r8.naming;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /** Regression test for b/123730537. */
+@RunWith(Parameterized.class)
 public class InterfaceMethodNameMinifierTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public InterfaceMethodNameMinifierTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void test() throws Exception {

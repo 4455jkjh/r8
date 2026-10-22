@@ -7,10 +7,27 @@ package com.android.tools.r8.shaking;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexItemFactory;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class ProguardPackageNameMatcherTest {
+@RunWith(Parameterized.class)
+public class ProguardPackageNameMatcherTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public ProguardPackageNameMatcherTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
+
   private DexItemFactory dexItemFactory = new DexItemFactory();
 
   private boolean matches(ProguardPackageNameList matcher, String packageName) {

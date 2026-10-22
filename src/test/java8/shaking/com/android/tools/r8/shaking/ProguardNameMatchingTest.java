@@ -6,6 +6,9 @@ package com.android.tools.r8.shaking;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.shaking.ProguardTypeMatcher.ClassOrType;
@@ -17,8 +20,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class ProguardNameMatchingTest {
+@RunWith(Parameterized.class)
+public class ProguardNameMatchingTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public ProguardNameMatchingTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
+
   private static final String[] BASIC_TYPES = {
       "char", "byte", "short", "int", "long", "float", "double", "boolean"
   };

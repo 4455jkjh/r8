@@ -9,6 +9,9 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompiler;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexAnnotationElement;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -27,10 +30,23 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
-public class JSR45Tests {
+@RunWith(Parameterized.class)
+public class JSR45Tests extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public JSR45Tests(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static final String DEFAULT_MAP_FILENAME = "proguard.map";
   private static final Path INPUT_PATH =

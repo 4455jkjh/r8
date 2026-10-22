@@ -7,13 +7,33 @@ package com.android.tools.r8.regress.b116575775;
 import static junit.framework.TestCase.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class B116575775 extends TestBase {
+
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public B116575775(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   public void runTest(Class<?> clazz) throws Exception {
     CodeInspector inspector =
@@ -91,7 +111,13 @@ public class B116575775 extends TestBase {
         ".catch java/lang/IllegalArgumentException from LabelTryStart to LabelTryEnd using"
             + " LabelCatch");
 
-    assertEquals(0, runOnJavaRaw("Test", builder.buildClasses(), ImmutableList.of()).exitCode);
+    assertEquals(
+        0,
+        ToolHelper.runJava(
+                parameters.getRuntime().asCf(),
+                Collections.singletonList(writeToJar(builder.buildClasses())),
+                "Test")
+            .exitCode);
 
     CodeInspector inspector =
         new CodeInspector(

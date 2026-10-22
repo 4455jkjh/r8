@@ -9,13 +9,32 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class CallLoopTestRunner extends TestBase {
   static final Class<?> CLASS = CallLoopTest.class;
+
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public CallLoopTestRunner(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   @Test
   public void test() throws Exception {
@@ -29,6 +48,9 @@ public class CallLoopTestRunner extends TestBase {
             .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(new DirectoryConsumer(out))
             .build());
-    assert ToolHelper.runJava(out, CLASS.getCanonicalName()).exitCode == 0;
+    assert ToolHelper.runJava(
+                parameters.getRuntime().asCf(), ImmutableList.of(out), CLASS.getCanonicalName())
+            .exitCode
+        == 0;
   }
 }

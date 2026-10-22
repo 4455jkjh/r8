@@ -7,6 +7,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.retrace.RetracePartitionException;
 import com.android.tools.r8.retrace.internal.MetadataAdditionalInfo;
 import com.google.common.collect.ImmutableList;
@@ -17,8 +19,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class MetadataCombineTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public MetadataCombineTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static final List<String> VALID_HEADER_MAIN =
       Arrays.asList(

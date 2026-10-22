@@ -5,13 +5,29 @@ package com.android.tools.r8.utils;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class ListUtilsTest {
+@RunWith(Parameterized.class)
+public class ListUtilsTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public ListUtilsTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private List<Integer> createInputData(int size) {
     List<Integer> input = new ArrayList<>(size);

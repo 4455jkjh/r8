@@ -7,6 +7,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.DexIndexedConsumer;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
@@ -25,13 +27,26 @@ import com.android.tools.r8.utils.timing.Timing;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Regression test to ensure that we do not ignore the exceptional / on-throw value of a
- * throwing instruction in the special case where the exceptional edge and the normal edge target
- * the same block.
+ * Regression test to ensure that we do not ignore the exceptional / on-throw value of a throwing
+ * instruction in the special case where the exceptional edge and the normal edge target the same
+ * block.
  */
+@RunWith(Parameterized.class)
 public class CatchSuccessorFallthroughTest extends SmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public CatchSuccessorFallthroughTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void catchSuccessorFallthroughTest() throws Exception {

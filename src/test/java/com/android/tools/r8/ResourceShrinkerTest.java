@@ -25,12 +25,24 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Tests for resource shrinker analyzer. This is checking that dex files are processed correctly.
  */
+@RunWith(Parameterized.class)
 public class ResourceShrinkerTest extends TestBase {
 
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public ResourceShrinkerTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static class TrackAll implements ResourceShrinker.ReferenceChecker {
     Set<Integer> refIntegers = Sets.newHashSet();

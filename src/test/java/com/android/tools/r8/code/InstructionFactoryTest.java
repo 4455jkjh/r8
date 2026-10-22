@@ -5,16 +5,30 @@ package com.android.tools.r8.code;
 
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.dex.code.DexInstructionFactory;
 import com.android.tools.r8.graph.OffsetToObjectMapping;
 import java.nio.ByteBuffer;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-/**
- * Tests for the InstructionFactory.
- */
-public class InstructionFactoryTest {
+/** Tests for the InstructionFactory. */
+@RunWith(Parameterized.class)
+public class InstructionFactoryTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public InstructionFactoryTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void emptyBuffer() {
