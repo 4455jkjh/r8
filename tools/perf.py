@@ -17,12 +17,6 @@ if utils.is_bot():
 
 # A collection of benchmarks that should be run on the perf bot.
 EXTERNAL_BENCHMARKS = {
-    'BookStoryApp': {
-        'targets': ['r8-full']
-    },
-    'BookStoryAppPartial': {
-        'targets': ['r8-full']
-    },
     'ChromeApp': {
         'targets': ['r8-full']
     },
@@ -30,18 +24,6 @@ EXTERNAL_BENCHMARKS = {
         'targets': ['r8-full']
     },
     'CraneApp': {
-        'targets': ['r8-full']
-    },
-    'FeederApp': {
-        'targets': ['r8-full']
-    },
-    'FeederAppPartial': {
-        'targets': ['r8-full']
-    },
-    'FossifyFileManagerApp': {
-        'targets': ['r8-full']
-    },
-    'FossifyFileManagerAppPartial': {
         'targets': ['r8-full']
     },
     'HelloWorld': {
@@ -74,16 +56,7 @@ EXTERNAL_BENCHMARKS = {
     'JetSnackApp': {
         'targets': ['r8-full']
     },
-    'KeePassDXApp': {
-        'targets': ['r8-full']
-    },
-    'KeePassDXAppPartial': {
-        'targets': ['r8-full']
-    },
     'NewPipeKotlinApp': {
-        'targets': ['r8-full']
-    },
-    'NewPipeKotlinAppPartial': {
         'targets': ['r8-full']
     },
     'NowInAndroidApp': {
@@ -111,18 +84,6 @@ EXTERNAL_BENCHMARKS = {
         'targets': ['d8']
     },
     'NowInAndroidAppPartial': {
-        'targets': ['r8-full']
-    },
-    'OmniNotesApp': {
-        'targets': ['r8-full']
-    },
-    'OmniNotesAppPartial': {
-        'targets': ['r8-full']
-    },
-    'OpenTracksApp': {
-        'targets': ['r8-full']
-    },
-    'OpenTracksAppPartial': {
         'targets': ['r8-full']
     },
     'OwlApp': {
@@ -167,12 +128,6 @@ EXTERNAL_BENCHMARKS = {
     'R8-1GB-PARTITION': {
         'targets': ['retrace']
     },
-    'ReadYouApp': {
-        'targets': ['r8-full']
-    },
-    'ReadYouAppPartial': {
-        'targets': ['r8-full']
-    },
     'ReplyApp': {
         'targets': ['r8-full']
     },
@@ -183,6 +138,54 @@ EXTERNAL_BENCHMARKS = {
         'targets': ['r8-full']
     },
     'TuskyApp': {
+        'targets': ['r8-full']
+    },
+}
+# Additional external benchmarks that should only be run on the release perf bot.
+EXTERNAL_RELEASE_BENCHMARKS = {
+    'BookStoryApp': {
+        'targets': ['r8-full']
+    },
+    'BookStoryAppPartial': {
+        'targets': ['r8-full']
+    },
+    'FeederApp': {
+        'targets': ['r8-full']
+    },
+    'FeederAppPartial': {
+        'targets': ['r8-full']
+    },
+    'FossifyFileManagerApp': {
+        'targets': ['r8-full']
+    },
+    'FossifyFileManagerAppPartial': {
+        'targets': ['r8-full']
+    },
+    'KeePassDXApp': {
+        'targets': ['r8-full']
+    },
+    'KeePassDXAppPartial': {
+        'targets': ['r8-full']
+    },
+    'NewPipeKotlinAppPartial': {
+        'targets': ['r8-full']
+    },
+    'OmniNotesApp': {
+        'targets': ['r8-full']
+    },
+    'OmniNotesAppPartial': {
+        'targets': ['r8-full']
+    },
+    'OpenTracksApp': {
+        'targets': ['r8-full']
+    },
+    'OpenTracksAppPartial': {
+        'targets': ['r8-full']
+    },
+    'ReadYouApp': {
+        'targets': ['r8-full']
+    },
+    'ReadYouAppPartial': {
         'targets': ['r8-full']
     },
     'TuskyAppPartial': {
@@ -270,6 +273,7 @@ BUILD_BENCHMARKS = {
 
 ALL_BENCHMARKS = {}
 ALL_BENCHMARKS.update(EXTERNAL_BENCHMARKS)
+ALL_BENCHMARKS.update(EXTERNAL_RELEASE_BENCHMARKS)
 ALL_BENCHMARKS.update(INTERNAL_BENCHMARKS)
 ALL_BENCHMARKS.update(INTERNAL_SLOW_BENCHMARKS)
 ALL_BENCHMARKS.update(LOCAL_BENCHMARKS)
@@ -319,6 +323,10 @@ def ParseOptions():
     result.add_argument('--patch-ref',
                         help='The patch ref for a try run. '
                         'Should only be used from rex.py.')
+    result.add_argument('--release',
+                        help='Run release benchmarks.',
+                        action='store_true',
+                        default=bool(os.environ.get('R8_BOT_RELEASE')))
     result.add_argument('--skip-if-output-exists',
                         help='Skip if output exists.',
                         action='store_true',
@@ -343,6 +351,10 @@ def ParseOptions():
         options.benchmarks = INTERNAL_BENCHMARKS.keys()
     elif options.internal_slow:
         options.benchmarks = INTERNAL_SLOW_BENCHMARKS.keys()
+    elif options.release:
+        options.benchmarks = sorted(
+            list(EXTERNAL_BENCHMARKS.keys()) +
+            list(EXTERNAL_RELEASE_BENCHMARKS.keys()))
     else:
         options.benchmarks = EXTERNAL_BENCHMARKS.keys()
     options.is_try = options.patch_ref is not None
