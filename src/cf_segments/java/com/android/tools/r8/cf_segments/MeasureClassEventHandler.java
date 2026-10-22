@@ -288,7 +288,6 @@ public class MeasureClassEventHandler extends ResolvingClassEventHandler {
     metrics.stackMapTableFullFrameEntries.increment(1, size);
   }
 
-
   // The instruction handler allows for measuring size on the instruction level. At this point we
   // are calculating the entire code size in beginCodeAttribute. However, to keep track of our how
   // well our load-store insertion works we are tracking the number of loads and stores inserted.
@@ -837,8 +836,11 @@ public class MeasureClassEventHandler extends ResolvingClassEventHandler {
 
     @Override
     public Integer invokeinterface(int index, short count, short zero)
-        throws AbstractMethodError, NullPointerException, IncompatibleClassChangeError,
-            IllegalAccessError, UnsatisfiedLinkError {
+        throws AbstractMethodError,
+            NullPointerException,
+            IncompatibleClassChangeError,
+            IllegalAccessError,
+            UnsatisfiedLinkError {
       return null;
     }
 
