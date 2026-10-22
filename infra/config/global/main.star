@@ -464,7 +464,7 @@ r8_builder(
         max_batch_size = 1,
         max_concurrent_invocations = 1,
     ),
-    priority = 25,
+    priority = 20,
     properties = {
         "test_wrapper": "tools/check-cherry-picks.py",
         "builder_group": "internal.client.r8",
