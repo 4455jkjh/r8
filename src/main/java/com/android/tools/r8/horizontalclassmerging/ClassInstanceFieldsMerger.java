@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
 public interface ClassInstanceFieldsMerger {
 
@@ -200,7 +199,7 @@ public interface ClassInstanceFieldsMerger {
         newField = targetField;
       }
 
-      if (committedFields.contains(newField.getReference())) {
+      if (!isFresh(newField.getReference(), targetField)) {
         newField =
             targetField.toTypeSubstitutedField(
                 appView,
@@ -210,7 +209,7 @@ public interface ClassInstanceFieldsMerger {
                         newField.getHolderType(),
                         newField.getType(),
                         newField.getName().toString(),
-                        Predicate.not(committedFields::contains)));
+                        fieldReference -> isFresh(fieldReference, targetField)));
       }
 
       lensBuilder.recordNewFieldSignature(
@@ -220,6 +219,16 @@ public interface ClassInstanceFieldsMerger {
           targetField.getReference());
 
       return newField;
+    }
+
+    // A relaxed field type could make the merged field collide with another field of the target.
+    private boolean isFresh(DexField fieldReference, DexEncodedField targetField) {
+      if (committedFields.contains(fieldReference)) {
+        return false;
+      }
+      DexEncodedField existingField = group.getTarget().lookupField(fieldReference);
+      return existingField == null
+          || existingField.getReference().isIdenticalTo(targetField.getReference());
     }
 
     private void fixAccessFlags(DexEncodedField newField, Collection<DexEncodedField> oldFields) {
