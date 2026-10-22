@@ -60,7 +60,7 @@ public class PcBasedDebugInfoConsolidator {
     if (groupsByParamCount.isEmpty()) {
       return;
     }
-    int threshold = options.testing.pcBasedDebugEncodingOverheadThreshold;
+    int threshold = options.testing.getPcBasedDebugEncodingOverheadThreshold(options);
     for (PcBasedDebugInfoGroup group : groupsByParamCount.values()) {
       group.computeSharedDebugInfo(threshold);
     }

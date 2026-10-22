@@ -122,54 +122,62 @@ public class ConsolidatePcBasedDebugInfoD8MergeTest extends TestBase {
     assertTrue(maxPcA < maxPcB);
     assertTrue(maxPcB < maxPcC);
 
-    testForD8(parameters.getBackend())
-        .addProgramFiles(
-            compileResultA.writeToZip(), compileResultB.writeToZip(), compileResultC.writeToZip())
-        .addOptionsModification(
-            options -> {
-              // Choose a threshold that allows consolidating ClassA and ClassB into a single
-              // bucket, but flushes before ClassC.
-              int overheadAB = maxPcB - maxPcA;
-              int overheadABC = (maxPcC - maxPcA) + (maxPcC - maxPcB);
-              assertTrue(overheadAB < overheadABC);
-              options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
-                  enableShareDebugInfoForDifferentParameterSizes;
-              options.getTestingOptions().pcBasedDebugEncodingOverheadThreshold = overheadAB;
-            })
-        .release()
-        .setMinApi(AndroidApiLevel.S)
-        .compile()
-        .inspect(
-            inspector -> {
-              DexDebugInfo debugInfoA =
-                  inspector
-                      .clazz(ClassA.class)
-                      .uniqueMethodWithOriginalName("work")
-                      .getMethod()
-                      .getDexCode()
-                      .getDebugInfo();
-              DexDebugInfo debugInfoB =
-                  inspector
-                      .clazz(ClassB.class)
-                      .uniqueMethodWithOriginalName("work")
-                      .getMethod()
-                      .getDexCode()
-                      .getDebugInfo();
-              DexDebugInfo debugInfoC =
-                  inspector
-                      .clazz(ClassC.class)
-                      .uniqueMethodWithOriginalName("work")
-                      .getMethod()
-                      .getDexCode()
-                      .getDebugInfo();
-              assertTrue(debugInfoA.isPcBasedInfo());
-              assertTrue(debugInfoB.isPcBasedInfo());
-              assertTrue(debugInfoC.isPcBasedInfo());
-              assertSame(debugInfoA, debugInfoB);
-              assertEquals(maxPcB, debugInfoA.asPcBasedInfo().getMaxPc());
-              assertNotSame(debugInfoB, debugInfoC);
-              assertEquals(maxPcC, debugInfoC.asPcBasedInfo().getMaxPc());
-            });
+    for (AndroidApiLevel apiLevel : new AndroidApiLevel[] {AndroidApiLevel.N, AndroidApiLevel.S}) {
+      testForD8(parameters.getBackend())
+          .addProgramFiles(
+              compileResultA.writeToZip(), compileResultB.writeToZip(), compileResultC.writeToZip())
+          .addOptionsModification(
+              options -> {
+                // Choose a threshold that allows consolidating ClassA and ClassB into a single
+                // bucket,
+                // but flushes before ClassC.
+                int overheadAB = maxPcB - maxPcA;
+                int overheadABC = (maxPcC - maxPcA) + (maxPcC - maxPcB);
+                assertTrue(overheadAB < overheadABC);
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes;
+                options.getTestingOptions().pcBasedDebugEncodingOverheadThreshold = overheadAB;
+              })
+          .release()
+          .setMinApi(apiLevel)
+          .compile()
+          .inspect(
+              inspector -> {
+                DexDebugInfo debugInfoA =
+                    inspector
+                        .clazz(ClassA.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                DexDebugInfo debugInfoB =
+                    inspector
+                        .clazz(ClassB.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                DexDebugInfo debugInfoC =
+                    inspector
+                        .clazz(ClassC.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                assertTrue(debugInfoA.isPcBasedInfo());
+                assertTrue(debugInfoB.isPcBasedInfo());
+                assertTrue(debugInfoC.isPcBasedInfo());
+                assertSame(debugInfoA, debugInfoB);
+                if (apiLevel.isLessThan(AndroidApiLevel.P)) {
+                  assertEquals(maxPcB, debugInfoA.asPcBasedInfo().getMaxPc());
+                  assertNotSame(debugInfoB, debugInfoC);
+                  assertEquals(maxPcC, debugInfoC.asPcBasedInfo().getMaxPc());
+                } else {
+                  assertSame(debugInfoB, debugInfoC);
+                  assertEquals(maxPcC, debugInfoA.asPcBasedInfo().getMaxPc());
+                }
+              });
+    }
   }
 
   @Test

@@ -364,7 +364,8 @@ public class DebugRepresentation {
     }
 
     private ConversionInfo computeConversionCosts(AppView<?> appView) {
-      int threshold = appView.options().testing.pcBasedDebugEncodingOverheadThreshold;
+      int threshold =
+          appView.options().testing.getPcBasedDebugEncodingOverheadThreshold(appView.options());
       boolean forcePcBasedEncoding = appView.options().testing.forcePcBasedEncoding;
       assert !pcToCost.isEmpty();
       // Iterate in ascending order as the point conversion cost is the sum of the preceding costs.

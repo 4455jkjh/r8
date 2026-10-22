@@ -2637,6 +2637,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.pc2pcOverheadThreshold") != null
             ? Integer.parseInt(System.getProperty("com.android.tools.r8.pc2pcOverheadThreshold"))
             : 200000;
+
+    public int getPcBasedDebugEncodingOverheadThreshold(InternalOptions options) {
+      return options.canHaveSharedDebugInfoExplosion() ? pcBasedDebugEncodingOverheadThreshold : -1;
+    }
+
     public Set<Inliner.Reason> validInliningReasons = null;
     public boolean noLocalsTableOnInput = false;
     public boolean forceNameReflectionOptimization = false;
@@ -3620,5 +3625,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // without checking the method prototype.
   public boolean canHaveDebugInfoParameterIteratorBug() {
     return canHaveBugPresentUntilExclusive(AndroidApiLevel.N);
+  }
+
+  // Prior to Android 9 (API 28), the dexlayout process in dex2oat expanded debug info tables
+  // without consideration for sharing. When many methods share a single large PC-based debug info
+  // item, this causes an explosion in memory usage and compilation time during dex2oat
+  // speed-profile compilation.
+  //
+  // See b/231903117.
+  public boolean canHaveSharedDebugInfoExplosion() {
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.P);
   }
 }
