@@ -13,13 +13,13 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeUtils;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMergerGraphLens.Builder;
 import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
-import com.android.tools.r8.utils.internal.IterableUtils;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,28 +55,23 @@ public interface ClassInstanceFieldsMerger {
   }
 
   /**
-   * Adds all fields from {@param clazz} to the class merger. For each field, we must choose which
-   * field on the target class to merge into.
-   *
-   * <p>A field that stores a reference type can be merged into a field that stores a different
-   * reference type. To avoid that we change fields that store a reference type to have type
-   * java.lang.Object when it is not needed (e.g., class Foo has fields 'A a' and 'B b' and class
-   * Bar has fields 'A b' and 'B a'), we make a prepass that matches fields with the same reference
-   * type.
+   * Maps each field of {@param source} to a field in {@param mergedFields}, the fields of the
+   * merged class. Fields of {@param source} that have no matching field are added to {@param
+   * mergedFields} and mapped to themselves.
    */
   static void mapFields(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       DexProgramClass source,
-      DexProgramClass target,
+      List<DexEncodedField> mergedFields,
       BiConsumer<DexEncodedField, DexEncodedField> consumer) {
-    Map<InstanceFieldInfo, LinkedList<DexEncodedField>> availableFieldsByExactInfo =
-        getAvailableFieldsByExactInfo(target);
+    Map<InstanceFieldInfo, Deque<DexEncodedField>> availableFieldsByExactInfo =
+        getAvailableFieldsByExactInfo(mergedFields);
     List<DexEncodedField> needsMerge = new ArrayList<>();
 
     // Pass 1: Match fields that have the exact same type.
     for (DexEncodedField oldField : source.instanceFields()) {
       InstanceFieldInfo info = InstanceFieldInfo.createExact(oldField);
-      LinkedList<DexEncodedField> availableFieldsWithExactSameInfo =
+      Deque<DexEncodedField> availableFieldsWithExactSameInfo =
           availableFieldsByExactInfo.get(info);
       if (availableFieldsWithExactSameInfo == null || availableFieldsWithExactSameInfo.isEmpty()) {
         needsMerge.add(oldField);
@@ -89,46 +84,44 @@ public interface ClassInstanceFieldsMerger {
       }
     }
 
-    // Pass 2: Match fields that do not have the same reference type.
-    Map<InstanceFieldInfo, LinkedList<DexEncodedField>> availableFieldsByRelaxedInfo =
+    // Pass 2: Match fields that do not have the same reference type, or add unmatched fields.
+    Map<InstanceFieldInfo, Deque<DexEncodedField>> availableFieldsByRelaxedInfo =
         getAvailableFieldsByRelaxedInfo(appView, availableFieldsByExactInfo);
     for (DexEncodedField oldField : needsMerge) {
-      assert oldField.getType().isReferenceType();
-      DexEncodedField newField =
-          availableFieldsByRelaxedInfo
-              .get(InstanceFieldInfo.createRelaxed(appView, oldField))
-              .removeFirst();
-      assert newField != null;
-      assert newField.getType().isReferenceType();
-      consumer.accept(oldField, newField);
+      Deque<DexEncodedField> availableFieldsWithRelaxedInfo =
+          availableFieldsByRelaxedInfo.get(InstanceFieldInfo.createRelaxed(appView, oldField));
+      if (availableFieldsWithRelaxedInfo != null && !availableFieldsWithRelaxedInfo.isEmpty()) {
+        assert oldField.getType().isReferenceType();
+        DexEncodedField newField = availableFieldsWithRelaxedInfo.removeFirst();
+        assert newField.getType().isReferenceType();
+        consumer.accept(oldField, newField);
+      } else {
+        mergedFields.add(oldField);
+        consumer.accept(oldField, oldField);
+      }
     }
   }
 
-  // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings({"JdkObsolete", "NonApiType"})
-  static Map<InstanceFieldInfo, LinkedList<DexEncodedField>> getAvailableFieldsByExactInfo(
-      DexProgramClass target) {
-    Map<InstanceFieldInfo, LinkedList<DexEncodedField>> availableFieldsByInfo =
-        new LinkedHashMap<>();
-    for (DexEncodedField field : target.instanceFields()) {
+  static Map<InstanceFieldInfo, Deque<DexEncodedField>> getAvailableFieldsByExactInfo(
+      Iterable<DexEncodedField> fields) {
+    Map<InstanceFieldInfo, Deque<DexEncodedField>> availableFieldsByInfo = new LinkedHashMap<>();
+    for (DexEncodedField field : fields) {
       availableFieldsByInfo
-          .computeIfAbsent(InstanceFieldInfo.createExact(field), ignore -> new LinkedList<>())
+          .computeIfAbsent(InstanceFieldInfo.createExact(field), ignore -> new ArrayDeque<>())
           .add(field);
     }
     return availableFieldsByInfo;
   }
 
-  // TODO(b/270398965): Replace LinkedList.
-  @SuppressWarnings({"JdkObsolete", "NonApiType"})
-  static Map<InstanceFieldInfo, LinkedList<DexEncodedField>> getAvailableFieldsByRelaxedInfo(
+  static Map<InstanceFieldInfo, Deque<DexEncodedField>> getAvailableFieldsByRelaxedInfo(
       AppView<? extends AppInfoWithClassHierarchy> appView,
-      Map<InstanceFieldInfo, LinkedList<DexEncodedField>> availableFieldsByExactInfo) {
-    Map<InstanceFieldInfo, LinkedList<DexEncodedField>> availableFieldsByRelaxedInfo =
+      Map<InstanceFieldInfo, Deque<DexEncodedField>> availableFieldsByExactInfo) {
+    Map<InstanceFieldInfo, Deque<DexEncodedField>> availableFieldsByRelaxedInfo =
         new LinkedHashMap<>();
     availableFieldsByExactInfo.forEach(
         (info, fields) ->
             availableFieldsByRelaxedInfo
-                .computeIfAbsent(info.toInfoWithRelaxedType(appView), ignore -> new LinkedList<>())
+                .computeIfAbsent(info.toInfoWithRelaxedType(appView), ignore -> new ArrayDeque<>())
                 .addAll(fields));
     return availableFieldsByRelaxedInfo;
   }
@@ -170,58 +163,48 @@ public interface ClassInstanceFieldsMerger {
       group
           .getInstanceFieldMap()
           .forEachManyToOneMapping(
-              (sourceFields, targetField) -> {
-                DexEncodedField newField =
-                    mergeSourceFieldsToTargetField(targetField, sourceFields);
+              (fieldsToMerge, targetField) -> {
+                DexEncodedField newField = mergeFields(targetField, fieldsToMerge);
                 newFields.add(newField);
                 committedFields.add(newField.getReference());
               });
       return newFields.toArray(DexEncodedField.EMPTY_ARRAY);
     }
 
-    private DexEncodedField mergeSourceFieldsToTargetField(
-        DexEncodedField targetField, Set<DexEncodedField> sourceFields) {
-      fixAccessFlags(targetField, sourceFields);
+    /**
+     * Merges {@param fieldsToMerge}, which contains at most one field from each class in the group,
+     * including {@param targetField}, into a single field on the target class.
+     */
+    private DexEncodedField mergeFields(
+        DexEncodedField targetField, Set<DexEncodedField> fieldsToMerge) {
+      fixAccessFlags(targetField, fieldsToMerge);
 
-      DexEncodedField newField;
-      if (needsRelaxedType(targetField, sourceFields)) {
-        DexType newFieldType =
-            DexTypeUtils.computeApiSafeLeastUpperBound(
-                appView,
-                Iterables.transform(
-                    Iterables.concat(IterableUtils.singleton(targetField), sourceFields),
-                    DexEncodedField::getType));
-        newField =
-            targetField.toTypeSubstitutedField(
-                appView,
-                targetField.getReference().withType(newFieldType, appView.dexItemFactory()));
-      } else {
-        newField = targetField;
+      DexType newFieldType =
+          needsRelaxedType(targetField, fieldsToMerge)
+              ? DexTypeUtils.computeApiSafeLeastUpperBound(
+                  appView, Iterables.transform(fieldsToMerge, DexEncodedField::getType))
+              : targetField.getType();
+      DexField newFieldReference =
+          appView
+              .dexItemFactory()
+              .createFreshFieldNameWithoutHolder(
+                  group.getTarget().getType(),
+                  newFieldType,
+                  targetField.getName().toString(),
+                  fieldReference -> isFresh(fieldReference, targetField));
+
+      if (fieldsToMerge.size() > 1
+          || targetField.getReference().isNotIdenticalTo(newFieldReference)) {
+        lensBuilder.recordNewFieldSignature(
+            Iterables.transform(fieldsToMerge, DexEncodedField::getReference),
+            newFieldReference,
+            targetField.getReference());
       }
-
-      if (!isFresh(newField.getReference(), targetField)) {
-        newField =
-            targetField.toTypeSubstitutedField(
-                appView,
-                appView
-                    .dexItemFactory()
-                    .createFreshFieldNameWithoutHolder(
-                        newField.getHolderType(),
-                        newField.getType(),
-                        newField.getName().toString(),
-                        fieldReference -> isFresh(fieldReference, targetField)));
-      }
-
-      lensBuilder.recordNewFieldSignature(
-          Iterables.transform(
-              IterableUtils.append(sourceFields, targetField), DexEncodedField::getReference),
-          newField.getReference(),
-          targetField.getReference());
-
-      return newField;
+      return targetField.toTypeSubstitutedField(appView, newFieldReference);
     }
 
-    // A relaxed field type could make the merged field collide with another field of the target.
+    // A relaxed field type, or a field moved from a source class, could make the merged field
+    // collide with another field of the target.
     private boolean isFresh(DexField fieldReference, DexEncodedField targetField) {
       if (committedFields.contains(fieldReference)) {
         return false;

@@ -328,7 +328,12 @@ public class ClassMerger {
     group.forEachSource(
         clazz -> {
           clazz.forEachInstanceField(
-              field -> prunedItemsBuilder.addRemovedField(field.getReference()));
+              field -> {
+                // Source fields that are moved to the target class are not removed.
+                if (!group.getInstanceFieldMap().containsValue(field)) {
+                  prunedItemsBuilder.addRemovedField(field.getReference());
+                }
+              });
           clazz.clearInstanceFields();
         });
     group.getTarget().setInstanceFields(classInstanceFieldsMerger.merge());

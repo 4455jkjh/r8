@@ -17,6 +17,7 @@ import static com.android.tools.r8.ir.code.Opcodes.RETURN;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ProgramField;
@@ -124,10 +125,11 @@ public class InstanceInitializerAnalysis {
                 return invalid();
               }
 
-              ProgramField targetField = group.getTargetInstanceField(sourceField);
-              assert targetField != null;
+              DexEncodedField mergedField =
+                  group.getInstanceFieldMap().get(sourceField.getDefinition());
+              assert mergedField != null;
 
-              builder.addInstancePut(targetField.getReference(), initializationInfo);
+              builder.addInstancePut(mergedField.getReference(), initializationInfo);
               break;
             }
 
