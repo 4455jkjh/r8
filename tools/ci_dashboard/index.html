@@ -1,0 +1,115 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+  for details. All rights reserved. Use of this source code is governed by a
+  BSD-style license that can be found in the LICENSE file.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Live LUCI and Kokoro CI build status radiator for the R8 compiler team."
+    />
+    <title>R8 CI Radiator</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <div class="radiator-shell">
+      <header class="top-bar">
+        <div class="brand-cluster">
+          <h1 class="brand-title">
+            <span class="brand-mark">R8</span>
+            <span>CI</span>
+          </h1>
+          <span id="overall-status-pill" class="overall-pill status-green"
+            >Loading…</span
+          >
+          <span
+            id="top-running-pill"
+            class="building-pill"
+            style="display: none"
+          ></span>
+          <a
+            id="tip-commit-chip"
+            class="tip-commit-chip"
+            href="https://r8.googlesource.com/r8/+/refs/heads/main"
+            target="_blank"
+            rel="noopener"
+          >
+            <span id="console-hover-readout" class="console-hover-text"
+              >Loading commits…</span
+            >
+          </a>
+        </div>
+
+        <div class="controls-cluster">
+          <div class="console-legend" aria-label="Build status legend">
+            <span class="legend-item"
+              ><i class="legend-swatch sw-green"></i>Passed</span
+            >
+            <span class="legend-item"
+              ><i class="legend-swatch sw-red"></i>Failed</span
+            >
+            <span class="legend-item"
+              ><i class="legend-swatch sw-running"></i>Running</span
+            >
+            <span class="legend-item"
+              ><i class="legend-swatch sw-infra"></i>Exception</span
+            >
+          </div>
+          <button type="button" id="btn-toggle-failing" class="action-btn">
+            Hide passing
+          </button>
+          <button type="button" id="btn-refresh-now" class="action-btn">
+            ↻
+          </button>
+          <a
+            id="link-milo-console"
+            class="action-btn"
+            href="https://ci.chromium.org/p/r8/g/main/console"
+            target="_blank"
+            rel="noopener"
+            >Milo ↗</a
+          >
+          <div class="freshness-chip">
+            <span id="poll-pulse-dot" class="pulse-dot fetching"></span>
+            <span id="poll-status-text">Connecting…</span>
+          </div>
+        </div>
+      </header>
+
+      <div id="alert-banner" class="alert-banner" role="alert">
+        <span id="alert-banner-text"></span>
+      </div>
+
+      <main
+        id="radiator-grid"
+        class="radiator-layout"
+        aria-live="polite"
+      ></main>
+    </div>
+
+    <div
+      id="detail-modal-backdrop"
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detail-modal-title"
+    >
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h3 id="detail-modal-title" class="modal-title">Details</h3>
+          <button type="button" id="detail-modal-close" class="modal-close">
+            Esc / Close
+          </button>
+        </div>
+        <div id="detail-modal-body" class="modal-body"></div>
+      </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+  </body>
+</html>

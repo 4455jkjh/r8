@@ -180,6 +180,12 @@ def main():
         print('Found %d cherry-picks (out of %d commits).' %
               (cherry_picks_count, len(changes)))
 
+    try:
+        from ci_dashboard import deploy
+        deploy.deploy_dashboard()
+    except Exception as e:
+        print('Warning: CI dashboard deploy failed: %s' % e, file=sys.stderr)
+
     if found_errors:
         return 1
     return 0
