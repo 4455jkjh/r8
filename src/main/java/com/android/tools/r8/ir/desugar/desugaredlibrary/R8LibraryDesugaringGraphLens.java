@@ -20,12 +20,12 @@ import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ArrayGet;
 import com.android.tools.r8.ir.code.BasicBlock;
-import com.android.tools.r8.ir.code.BasicBlockInstructionListIterator;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.CheckCast;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
@@ -222,7 +222,7 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
       GraphLens codeLens = context.getDefinition().getCode().getCodeLens(appView);
       while (blocks.hasNext()) {
         BasicBlock block = blocks.next();
-        BasicBlockInstructionListIterator instructions = block.listIterator();
+        InstructionListIterator instructions = block.listIterator();
         while (instructions.hasNext()) {
           Instruction instruction = instructions.next();
           DexMethod apiOutline = null;
@@ -267,7 +267,7 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
                         codeLens,
                         invoke.getInterfaceBit());
                 if (lookupResult.isNeedsDesugaredLibraryApiConversionSet()) {
-                  rewriteInvoke(code, blocks, instructions, invoke);
+                  instructions = rewriteInvoke(code, blocks, instructions, invoke, affectedValues);
                   changed = true;
                 }
                 break;
@@ -286,14 +286,22 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
               break;
           }
           if (apiOutline != null) {
+            DexType apiOutlineReturnType = apiOutline.getReturnType();
             instructions.replaceCurrentInstruction(
                 InvokeStatic.builder()
                     .setArguments(instruction.inValues())
                     .setMethod(apiOutline)
-                    .setOutValue(instruction.outValue())
+                    .applyIf(
+                        instruction.hasOutValue(),
+                        b ->
+                            b.setFreshOutValue(
+                                code,
+                                apiOutlineReturnType.toTypeElement(appView),
+                                instruction.getLocalInfo()))
                     .setIsInterface(false)
                     .setPosition(instruction)
-                    .build());
+                    .build(),
+                affectedValues);
             changed = true;
           }
         }
@@ -302,11 +310,12 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
       return Collections.emptySet();
     }
 
-    private void rewriteInvoke(
+    private InstructionListIterator rewriteInvoke(
         IRCode code,
         BasicBlockIterator blocks,
-        BasicBlockInstructionListIterator instructions,
-        InvokeMethod invoke) {
+        InstructionListIterator instructions,
+        InvokeMethod invoke,
+        AffectedValues affectedValues) {
       DexMethod invokedMethod = invoke.getInvokedMethod();
       DesugaredLibraryConversionCfProvider conversionCfProvider =
           desugaredLibraryApiConverter.getConversionCfProvider();
@@ -360,11 +369,12 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
                     .build();
             replacementInstructions.add(arrayGet);
             if (parameterType.isPrimitiveType()) {
+              DexType boxedParameterType = dexItemFactory().getBoxedForPrimitiveType(parameterType);
               CheckCast checkCast =
                   CheckCast.builder()
-                      .setCastType(dexItemFactory().getBoxedForPrimitiveType(parameterType))
+                      .setCastType(boxedParameterType)
                       .setObject(arrayGet.outValue())
-                      .setFreshOutValue(code, parameterType.toTypeElement(appView))
+                      .setFreshOutValue(code, boxedParameterType.toTypeElement(appView))
                       .setPosition(invoke)
                       .build();
               replacementInstructions.add(checkCast);
@@ -464,10 +474,10 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
       }
 
       if (invoke.hasOutValue()) {
-        invoke.outValue().replaceUsers(replacementValue);
+        invoke.outValue().replaceUsers(replacementValue, affectedValues);
       }
       instructions.removeOrReplaceByDebugLocalRead();
-      instructions.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+      return instructions.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
           code, blocks, replacementInstructions, appView.options());
     }
   }
