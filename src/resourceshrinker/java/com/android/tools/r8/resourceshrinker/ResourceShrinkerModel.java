@@ -40,116 +40,112 @@ import java.util.stream.Collectors;
  */
 public class ResourceShrinkerModel {
 
-    private final ShrinkerDebugReporter debugReporter;
+  private final ShrinkerDebugReporter debugReporter;
 
-    private final ResourceStore resourceStore;
-    private ObfuscatedClasses obfuscatedClasses = ObfuscatedClasses.NO_OBFUSCATION;
+  private final ResourceStore resourceStore;
+  private ObfuscatedClasses obfuscatedClasses = ObfuscatedClasses.NO_OBFUSCATION;
 
-    private final Set<String> strings = Sets.newHashSetWithExpectedSize(300);
+  private final Set<String> strings = Sets.newHashSetWithExpectedSize(300);
 
-    private final Map<String, ResourceTable> resourceTableCache = Maps.newHashMap();
+  private final Map<String, ResourceTable> resourceTableCache = Maps.newHashMap();
 
-    private boolean foundGetIdentifier = false;
-    private boolean foundWebContent = false;
+  private boolean foundGetIdentifier = false;
+  private boolean foundWebContent = false;
 
-    public ResourceShrinkerModel(
-            ShrinkerDebugReporter debugReporter, boolean supportMultipackages) {
-        this.debugReporter = debugReporter;
-        resourceStore = new ResourceStore(supportMultipackages);
-    }
+  public ResourceShrinkerModel(ShrinkerDebugReporter debugReporter, boolean supportMultipackages) {
+    this.debugReporter = debugReporter;
+    resourceStore = new ResourceStore(supportMultipackages);
+  }
 
-    @NonNull
-    public ShrinkerDebugReporter getDebugReporter() {
-        return debugReporter;
-    }
+  @NonNull
+  public ShrinkerDebugReporter getDebugReporter() {
+    return debugReporter;
+  }
 
-    @NonNull
-    public ResourceStore getResourceStore() {
-        return resourceStore;
-    }
+  @NonNull
+  public ResourceStore getResourceStore() {
+    return resourceStore;
+  }
 
-    @NonNull
-    public ObfuscatedClasses getObfuscatedClasses() {
-        return obfuscatedClasses;
-    }
+  @NonNull
+  public ObfuscatedClasses getObfuscatedClasses() {
+    return obfuscatedClasses;
+  }
 
-    /** Reports recorded mappings from obfuscated classes to original classes */
-    public void setObfuscatedClasses(@NonNull ObfuscatedClasses obfuscatedClasses) {
-        this.obfuscatedClasses = obfuscatedClasses;
-    }
+  /** Reports recorded mappings from obfuscated classes to original classes */
+  public void setObfuscatedClasses(@NonNull ObfuscatedClasses obfuscatedClasses) {
+    this.obfuscatedClasses = obfuscatedClasses;
+  }
 
   public boolean hasResourceId(int resourceId) {
     return resourceStore.getResource(resourceId) != null;
   }
 
-    /** Adds a new gathered resource to model. */
-    @NonNull
-    public Resource addResource(
-            @NonNull ResourceType type,
-            @Nullable String packageName,
-            @NonNull String name,
-            @Nullable String value) {
-        int intValue = -1;
-        try {
-            intValue = value != null ? Integer.decode(value) : -1;
-        } catch (NumberFormatException e) {
-            // ignore
-        }
-        return addResource(type, packageName, name, intValue);
+  /** Adds a new gathered resource to model. */
+  @NonNull
+  public Resource addResource(
+      @NonNull ResourceType type,
+      @Nullable String packageName,
+      @NonNull String name,
+      @Nullable String value) {
+    int intValue = -1;
+    try {
+      intValue = value != null ? Integer.decode(value) : -1;
+    } catch (NumberFormatException e) {
+      // ignore
     }
+    return addResource(type, packageName, name, intValue);
+  }
 
-    /** Adds a new gathered resource to model. */
-    @NonNull
-    public Resource addResource(
-            @NonNull ResourceType type,
-            @Nullable String packageName,
-            @NonNull String name,
-            int value) {
-        return resourceStore.addResource(new Resource(packageName, type, name, value));
+  /** Adds a new gathered resource to model. */
+  @NonNull
+  public Resource addResource(
+      @NonNull ResourceType type, @Nullable String packageName, @NonNull String name, int value) {
+    return resourceStore.addResource(new Resource(packageName, type, name, value));
+  }
+
+  /** Adds string constant found in code to strings pool. */
+  public void addStringConstant(@NonNull String string) {
+    strings.add(string);
+  }
+
+  /** Returns is reference to {@code Resources#getIdentifier} is found in code. */
+  public boolean isFoundGetIdentifier() {
+    return foundGetIdentifier;
+  }
+
+  /** Reports that reference to {@code Resources#getIdentifier} is found in code. */
+  public void setFoundGetIdentifier(boolean foundGetIdentifier) {
+    this.foundGetIdentifier = foundGetIdentifier;
+  }
+
+  /** Returns is web content is found in code. */
+  public boolean isFoundWebContent() {
+    return foundWebContent;
+  }
+
+  /** Reports that reference to web content is found in code. */
+  public void setFoundWebContent(boolean foundWebContent) {
+    this.foundWebContent = foundWebContent;
+  }
+
+  /** Returns all string constants gathered from compiled classes. */
+  public Set<String> getStrings() {
+    return strings;
+  }
+
+  /**
+   * Mark resources that match string constants as reachable in case invocation of {@code
+   * Resources#getIdentifier} or web content is found in code and safe mode in enabled.
+   */
+  public void keepPossiblyReferencedResources() {
+    if (strings.isEmpty()
+        || !resourceStore.getSafeMode()
+        || (!foundGetIdentifier && !foundWebContent)) {
+      // No calls to android.content.res.Resources#getIdentifier; or user specifically asked
+      // for us not to guess resources to keep
+      return;
     }
-
-    /** Adds string constant found in code to strings pool. */
-    public void addStringConstant(@NonNull String string) {
-        strings.add(string);
-    }
-
-    /** Returns is reference to {@code Resources#getIdentifier} is found in code. */
-    public boolean isFoundGetIdentifier() {
-        return foundGetIdentifier;
-    }
-
-    /** Reports that reference to {@code Resources#getIdentifier} is found in code. */
-    public void setFoundGetIdentifier(boolean foundGetIdentifier) {
-        this.foundGetIdentifier = foundGetIdentifier;
-    }
-
-    /** Returns is web content is found in code. */
-    public boolean isFoundWebContent() {
-        return foundWebContent;
-    }
-
-    /** Reports that reference to web content is found in code. */
-    public void setFoundWebContent(boolean foundWebContent) {
-        this.foundWebContent = foundWebContent;
-    }
-
-    /** Returns all string constants gathered from compiled classes. */
-    public Set<String> getStrings() {
-        return strings;
-    }
-
-    /**
-     * Mark resources that match string constants as reachable in case invocation of
-     * {@code Resources#getIdentifier} or web content is found in code and safe mode in enabled.
-     */
-    public void keepPossiblyReferencedResources() {
-        if (strings.isEmpty()
-                || !resourceStore.getSafeMode()
-                || (!foundGetIdentifier && !foundWebContent)) {
-            // No calls to android.content.res.Resources#getIdentifier; or user specifically asked
-            // for us not to guess resources to keep
-            return;
-        }
 
     debugReporter.debug(
         () ->
@@ -167,23 +163,25 @@ public class ResourceShrinkerModel {
                     .map(s -> s.length() > 40 ? s.substring(0, 37) + "..." : s)
                     .collect(Collectors.joining("\n")));
 
-        new PossibleResourcesMarker(debugReporter, resourceStore, strings, foundWebContent)
-                .markPossibleResourcesReachable();
-    }
+    new PossibleResourcesMarker(debugReporter, resourceStore, strings, foundWebContent)
+        .markPossibleResourcesReachable();
+  }
 
-    /**
-     * Reads resource table from specified path and stores it in cache to be able to reuse it if
-     * the same resource table is requested by another unit.
-     */
-    public ResourceTable readResourceTable(Path resourceTablePath) {
-        return resourceTableCache.computeIfAbsent(resourceTablePath.toString(), (path) -> {
-            try {
-                return ResourceTable.parseFrom(Files.readAllBytes(resourceTablePath));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+  /**
+   * Reads resource table from specified path and stores it in cache to be able to reuse it if the
+   * same resource table is requested by another unit.
+   */
+  public ResourceTable readResourceTable(Path resourceTablePath) {
+    return resourceTableCache.computeIfAbsent(
+        resourceTablePath.toString(),
+        (path) -> {
+          try {
+            return ResourceTable.parseFrom(Files.readAllBytes(resourceTablePath));
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
         });
-    }
+  }
 
   public boolean isSafeMode() {
     return getResourceStore().getSafeMode();
