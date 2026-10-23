@@ -29,9 +29,7 @@ public class ClinitDeadlockThroughInterfaceTest extends TestBase {
     testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepClassAndMembersRules(Main.class)
-        // TODO(b/557268346): Should not merge B and C.
-        .addHorizontallyMergedClassesInspector(
-            inspector -> inspector.assertIsCompleteMergeGroup(B.class, C.class))
+        .addHorizontallyMergedClassesInspector(inspector -> inspector.assertNoClassesMerged())
         .compile();
   }
 
