@@ -144,6 +144,21 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     sunkInstruction.setPosition(position);
   }
 
+  // Hoisting inserts the field get before the exit of `block`. If that exit has the bare synthetic
+  // preamble position of the method (e.g., when there is no line number before the branch), using
+  // the position of the field get would emit a source position before the preamble, which then
+  // could no longer be stripped. This is not needed when sinking, since the sunk field get is
+  // inserted at the start of a block with two predecessors, which is never the entry block.
+  private static void updateHoistedPosition(
+      Instruction hoistedInstruction, BasicBlock block, FieldGet firstFieldGet) {
+    Position blockExitPosition = block.getLastInstruction().getPosition();
+    if (blockExitPosition.isSyntheticPosition() && !blockExitPosition.hasCallerPosition()) {
+      hoistedInstruction.setPosition(blockExitPosition);
+    } else {
+      updatePosition(hoistedInstruction, firstFieldGet);
+    }
+  }
+
   @SuppressWarnings("ReferenceEquality")
   private boolean hoistFieldGet(IRCode code, BasicBlock block, List<BasicBlock> successors) {
     BasicBlock firstSuccessor = successors.get(0);
@@ -178,7 +193,7 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
               : firstReceiver;
       hoistedInstruction = new InstanceGet(outValue, newReceiver, field);
     }
-    updatePosition(hoistedInstruction, firstFieldGet);
+    updateHoistedPosition(hoistedInstruction, block, firstFieldGet);
     insertHoistedInstruction(code, block, firstSuccessor, hoistedInstruction);
     removeOldInstructions(outValue, firstFieldGet, secondFieldGet);
     return true;
