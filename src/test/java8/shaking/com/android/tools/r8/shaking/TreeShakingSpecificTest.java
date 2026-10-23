@@ -119,18 +119,13 @@ public class TreeShakingSpecificTest extends TestBase {
     return StringUtils.lines(
         "shaking1.Shaking -> shaking1.Shaking:",
         "# {'id':'sourceFile','fileName':'Shaking.java'}",
-        enableShareDebugInfoForDifferentParameterSizes
-            ? StringUtils.joinLines(
-                "    1:7:void main(java.lang.String[]):8:8 -> main",
-                "    8:22:void main(java.lang.String[]):9:9 -> main")
-            : "    1:2:void main(java.lang.String[]):8:9 -> main",
+        "    1:2:void main(java.lang.String[]):8:9 -> main",
         "shaking1.Used -> a:",
         "# {'id':'sourceFile','fileName':'Used.java'}",
         "    java.lang.String name -> a",
         "    1:3:void <init>(java.lang.String):12:12 -> <init>",
         "    4:6:void <init>(java.lang.String):13:13 -> <init>",
-        (enableShareDebugInfoForDifferentParameterSizes ? "    1:17" : "    1:1")
-            + ":java.lang.String method():17:17 -> a",
+        "    1:1:java.lang.String method():17:17 -> a",
         "    1:3:java.lang.String aMethodThatIsNotUsedButKept():21:21 "
             + "-> aMethodThatIsNotUsedButKept");
   }
