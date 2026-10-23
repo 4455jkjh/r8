@@ -224,7 +224,7 @@ public class StringConcatRemover extends CodeRewriterPass {
             dexItemFactory.stringType, dynamicTypes.toArray(DexType.EMPTY_ARRAY));
     DexCallSite callSite =
         dexItemFactory.createCallSite(
-            dexItemFactory.concatMethodName, proto, bootstrapMethodHandle, bootstrapArgs);
+            bootstrapMethod.getName(), proto, bootstrapMethodHandle, bootstrapArgs);
 
     InvokeCustom invoke = new InvokeCustom(callSite, null, dynamicValues);
     replaceWithInvoke(code, iterator, stringConcat, invoke, affectedValues);
