@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.bootstrap;
 
-import static com.android.tools.r8.ToolHelper.DexVm.Version.V16_0_0;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V5_1_1;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
@@ -59,8 +58,7 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters()
-            // TODO(b/507731439): Test on ART 17.
-            .withDexRuntimesRangeIncluding(V5_1_1, V16_0_0)
+            .withDexRuntimesStartingFromIncluding(V5_1_1)
             .withApiLevelsStartingAtIncluding(AndroidApiLevel.L)
             .withoutCollapsedDexRuntimes()
             .build(),

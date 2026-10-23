@@ -161,6 +161,13 @@ if [ -e $ANDROID_HOST_BUILD/apex ]; then
   if [ -e $ANDROID_HOST_BUILD/com.android.tzdata ]; then
     mkdir -p $DEST/com.android.tzdata
     cp -r $ANDROID_HOST_BUILD/com.android.tzdata/* $DEST/com.android.tzdata
+    # Newer ART versions look for tzdata and tz_version inside etc/tz/versioned/<version>/, which the host build does not populate directly.
+    for VERSIONED_DIR in $DEST/com.android.tzdata/etc/tz/versioned/*/; do
+      if [ -d "$VERSIONED_DIR" ]; then
+        cp -n $DEST/com.android.tzdata/etc/tz/tzdata "$VERSIONED_DIR"
+        cp -n $DEST/com.android.tzdata/etc/tz/tz_version "$VERSIONED_DIR"
+      fi
+    done
   fi
   if [ -e $ANDROID_HOST_BUILD/usr ]; then
     mkdir -p $DEST/usr

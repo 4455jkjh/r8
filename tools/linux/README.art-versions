@@ -76,12 +76,13 @@ export BRANCH=26Q4-release
 mkdir ${BRANCH}
 cd ${BRANCH}
 export ANDROID_CHECKOUT=$(pwd)
-repo init -u https://android.googlesource.com/platform/manifest -b ${BRANCH}
+repo init -u sso://googleplex-android/platform/manifest -b ${BRANCH}
 repo sync -cq -j48
 source build/envsetup.sh
 lunch aosp_akita-trunk_staging-userdebug
+m clean
 m systemimage
-SISO_EXPERIMENTS=ignore-missing-targets art/tools/buildbot-build.sh --host
+SISO_EXPERIMENTS=ignore-missing-targets art/tools/art_build.py --build-art-host-gtests --build-art-host-run-tests tzdata_icu_res_files_host_prebuilts tzdata_host tzdata_host_tzdata_apex tzlookup.xml_host_tzdata_apex tz_version_host tz_version_host_tzdata_apex libjavacrypto-host libjdwp-host
 repo manifest -r -o build_spec.xml
 
 Collected into tools/linux/host/art-17.2.0. The "host" path element is checked
@@ -104,12 +105,13 @@ export BRANCH=26Q3-release
 mkdir ${BRANCH}
 cd ${BRANCH}
 export ANDROID_CHECKOUT=$(pwd)
-repo init -u https://android.googlesource.com/platform/manifest -b ${BRANCH}
+repo init -u sso://googleplex-android/platform/manifest -b ${BRANCH}
 repo sync -cq -j48
 source build/envsetup.sh
 lunch aosp_akita-trunk_staging-userdebug
+m clean
 m systemimage
-SISO_EXPERIMENTS=ignore-missing-targets art/tools/buildbot-build.sh --host
+SISO_EXPERIMENTS=ignore-missing-targets art/tools/art_build.py --build-art-host-gtests --build-art-host-run-tests tzdata_icu_res_files_host_prebuilts tzdata_host tzdata_host_tzdata_apex tzlookup.xml_host_tzdata_apex tz_version_host tz_version_host_tzdata_apex libjavacrypto-host libjdwp-host
 repo manifest -r -o build_spec.xml
 
 Collected into tools/linux/host/art-17.1.0. The "host" path element is checked
@@ -128,16 +130,17 @@ art-17 beta 4 (Android Cinnamon Bun)
 -----------------------------
 Build branch 26Q2-beta-release. Art at 63a204192f29f530a58335de1db86d373f398260
 
-export BRANCH=26Q2-release
+export BRANCH=26Q2-beta-release
 mkdir ${BRANCH}
 cd ${BRANCH}
 export ANDROID_CHECKOUT=$(pwd)
-repo init -u https://android.googlesource.com/platform/manifest -b ${BRANCH}
+repo init -u sso://googleplex-android/platform/manifest -b ${BRANCH}
 repo sync -cq -j48
 source build/envsetup.sh
 lunch aosp_akita-trunk_staging-userdebug
-m -j
-art/tools/buildbot-build.sh --host
+m clean
+m systemimage
+SISO_EXPERIMENTS=ignore-missing-targets art/tools/art_build.py --build-art-host-gtests --build-art-host-run-tests tzdata_icu_res_files_host_prebuilts tzdata_host tzdata_host_tzdata_apex tzlookup.xml_host_tzdata_apex tz_version_host tz_version_host_tzdata_apex libjavacrypto-host libjdwp-host
 repo manifest -r -o build_spec.xml
 
 Collected into tools/linux/host/art-17.0.0-beta4. The "host" path element is checked
@@ -160,7 +163,7 @@ export BRANCH=25Q4-release
 mkdir ${BRANCH}
 cd ${BRANCH}
 export ANDROID_CHECKOUT=$(pwd)
-repo init -u https://android.googlesource.com/platform/manifest -b ${BRANCH}
+repo init -u sso://googleplex-android/platform/manifest -b ${BRANCH}
 repo sync -cq -j48
 source build/envsetup.sh
 lunch aosp_akita-trunk_staging-userdebug

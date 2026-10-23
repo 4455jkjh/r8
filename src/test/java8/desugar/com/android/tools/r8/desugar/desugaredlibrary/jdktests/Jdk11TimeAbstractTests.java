@@ -86,8 +86,7 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         // TODO(134732760): Support Dalvik VMs, currently fails because libjavacrypto is required
         // and present only in ART runtimes.
         getTestParameters()
-            // TODO(b/507731439): Test on ART 17.
-            .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
+            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
             .withAllApiLevels()
             .withApiLevel(AndroidApiLevel.O)
             .withoutCollapsedDexRuntimes()
@@ -121,6 +120,7 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
     Collections.addAll(classNames, RAW_TEMPORAL_SUCCESSES);
     Collections.addAll(classNames, RAW_TEMPORAL_SUCCESSES_IF_BRIDGE);
     Collections.addAll(classNames, RAW_TEMPORAL_SUCCESSES_UP_TO_14);
+    Collections.addAll(classNames, RAW_TEMPORAL_SUCCESSES_UP_TO_17_1);
     Collections.addAll(classNames, RAW_TEMPORAL_ISO_TESTS);
     Collections.addAll(classNames, FORMAT_CHRONO_ISO_TESTS);
     Collections.addAll(classNames, FORMAT_CHRONO_SUCCESSES);
@@ -274,7 +274,6 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         "test.java.time.TestOffsetDateTime",
         "test.java.time.TestInstant",
         "test.java.time.TestDuration",
-        "test.java.time.TestZoneOffset",
         "test.java.time.TestLocalDateTime",
         "test.java.time.TestClock_Fixed",
         "test.java.time.TestYear",
@@ -297,6 +296,12 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         // Reflective lookup Class.forName("java.time.Clock$SystemClock").getDeclaredField("offset")
         // fails.
         "test.java.time.TestClock_System"
+      };
+
+  static final String[] RAW_TEMPORAL_SUCCESSES_UP_TO_17_1 =
+      new String[] {
+        // Reflective immutability check on java.time.ZoneOffset fails due to non-final rules field.
+        "test.java.time.TestZoneOffset"
       };
 
   static final String[] RAW_TEMPORAL_ISO_TESTS =
@@ -371,7 +376,10 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
   }
 
   private static String[] getRawTemporalSuccesses(
-      boolean includeIsoTests, boolean isOlderThanV14, boolean includeBridgeTests) {
+      boolean includeIsoTests,
+      boolean isOlderThanV14,
+      boolean isOlderThanV17_2,
+      boolean includeBridgeTests) {
     List<String> allTests = new ArrayList<>();
     if (includeIsoTests) {
       Collections.addAll(allTests, RAW_TEMPORAL_ISO_TESTS);
@@ -380,6 +388,9 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
     if (isOlderThanV14) {
       // In 14 some reflection used in test fails.
       Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES_UP_TO_14);
+    }
+    if (isOlderThanV17_2) {
+      Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES_UP_TO_17_1);
     }
     if (includeBridgeTests) {
       Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES_IF_BRIDGE);
@@ -398,8 +409,11 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
                 .isBetweenBothIncluded(AndroidApiLevel.O, AndroidApiLevel.Sv2);
     return getRawTemporalSuccesses(
         !libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)
-            && parameters.getDexRuntimeVersion().isNewerThan(Version.V12_0_0),
+            && parameters
+                .getDexRuntimeVersion()
+                .isInRangeInclusive(Version.V13_0_0, Version.V17_1_0),
         parameters.getDexRuntimeVersion().isOlderThan(Version.V14_0_0),
+        parameters.getDexRuntimeVersion().isOlderThan(Version.V17_2_0),
         includeBridgeTests);
   }
 
@@ -440,13 +454,16 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
     } else {
       for (boolean includeIsoTests : new boolean[] {false, true}) {
         for (boolean isOlderThanV14 : new boolean[] {false, true}) {
-          for (boolean includeBridgeTests : new boolean[] {false, true}) {
-            Collections.addAll(
-                classNames,
-                Jdk11TestInputSplitter.split(
-                    getRawTemporalSuccesses(includeIsoTests, isOlderThanV14, includeBridgeTests),
-                    splitIndex,
-                    SPLIT));
+          for (boolean isOlderThanV17_2 : new boolean[] {false, true}) {
+            for (boolean includeBridgeTests : new boolean[] {false, true}) {
+              Collections.addAll(
+                  classNames,
+                  Jdk11TestInputSplitter.split(
+                      getRawTemporalSuccesses(
+                          includeIsoTests, isOlderThanV14, isOlderThanV17_2, includeBridgeTests),
+                      splitIndex,
+                      SPLIT));
+            }
           }
         }
       }

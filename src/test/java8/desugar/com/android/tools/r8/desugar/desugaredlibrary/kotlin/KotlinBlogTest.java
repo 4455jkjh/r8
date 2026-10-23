@@ -49,8 +49,7 @@ public class KotlinBlogTest extends DesugaredLibraryTestBase {
     return buildParameters(
         getTestParameters()
             .withDexRuntime(Version.V4_0_4)
-            // TODO(b/507731439): Test on ART 17.
-            .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
+            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
             .withAllApiLevels()
             .build(),
         getKotlinTestParameters().withAllCompilers().build(),
