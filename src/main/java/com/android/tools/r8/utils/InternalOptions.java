@@ -2441,6 +2441,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean usePcEncodingInCfForTesting = false;
     public boolean dexVersion40FromApiLevel30 =
         System.getProperty("com.android.tools.r8.dexVersion40ForApiLevel30") != null;
+    public boolean enableDexVersion35UpToApi30 =
+        System.getProperty("com.android.tools.r8.enableDexVersion35UpToApi30") != null;
     public boolean forceDexContainerFormat =
         System.getProperty("com.android.tools.r8.dexContainerExperiment") != null;
     public boolean enableDexConstString20 =
@@ -2940,6 +2942,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public boolean canUsePrivateInterfaceMethods() {
     return hasFeaturePresentFrom(privateInterfaceMethodsApiLevel());
+  }
+
+  // TODO(b/538384517): Remove the testing option and always emit DEX version 035 up to API 30.
+  public boolean isDexVersion35UpToApi30Enabled() {
+    return testing.enableDexVersion35UpToApi30
+        && isGeneratingDex()
+        && canUseDefaultAndStaticInterfaceMethods()
+        && !canUseNestBasedAccess()
+        && getMinApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R);
   }
 
   public static AndroidApiLevel varHandleApiLevel() {
