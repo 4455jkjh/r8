@@ -391,9 +391,9 @@ def run_once(archive, try_run):
 
 # Runs the same commands as run_once with the default number of test forks, and
 # leaves logs and status to Kokoro.
-def run_kokoro(perf_outdir):
+def run_kokoro(perf_outdir, try_run):
     failed = False
-    for cmd in get_default_test_commands(perf_outdir):
+    for cmd in get_default_test_commands(perf_outdir, try_run):
         cmd = [sys.executable] + cmd
         utils.PrintCmd(cmd)
         if subprocess.call(cmd) != 0:
@@ -406,14 +406,14 @@ def get_bot_timeout():
     return RUN_TIMEOUT * len(get_default_test_commands())
 
 
-def get_default_test_commands(perf_outdir=None):
+def get_default_test_commands(perf_outdir=None, try_run=False):
     # Run test.py internal testing.
     cmds = [[
         'tools/test.py', '--only_internal', '--slow_tests',
         '--java_max_memory_size=8G'
     ]]
     # Run internal benchmarks.
-    cmds.extend(get_perf_test_commands(False, perf_outdir))
+    cmds.extend(get_perf_test_commands(try_run, perf_outdir))
     # Ensure that all internal apps compile.
     cmds.append(
         ['tools/run_on_app.py', '--run-all', '--out=out', '--workers', '3'])
@@ -464,7 +464,7 @@ def Main():
     elif options.print_logs:
         return fetch_and_print_logs(options.print_logs)
     elif options.kokoro:
-        return run_kokoro(options.perf_outdir)
+        return run_kokoro(options.perf_outdir, options.try_run)
     else:
         return run_once(options.archive, options.try_run)
 
