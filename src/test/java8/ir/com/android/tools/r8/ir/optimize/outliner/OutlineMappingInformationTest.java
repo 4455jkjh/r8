@@ -13,6 +13,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
+import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
@@ -57,6 +58,19 @@ public class OutlineMappingInformationTest extends TestBase {
                 throwInFirstOutline ? "0" : "1",
                 throwOnFirstCall ? "0" : "1")
             .assertFailureWithErrorThatThrows(ArrayStoreException.class)
+            .inspectFailure(
+                inspector ->
+                    assertEquals(
+                        1,
+                        inspector
+                            .clazz(TestClass2.class)
+                            .uniqueMethodWithOriginalName("greet")
+                            .streamInstructions()
+                            .filter(InstructionSubject::isInvoke)
+                            .mapToInt(InstructionSubject::getLineNumber)
+                            .distinct()
+                            .count()))
+            .asSingleRuntimeResult()
             .getStackTrace();
   }
 

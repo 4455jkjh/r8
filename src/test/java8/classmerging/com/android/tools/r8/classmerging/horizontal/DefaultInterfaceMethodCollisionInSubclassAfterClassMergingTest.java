@@ -50,12 +50,10 @@ public class DefaultInterfaceMethodCollisionInSubclassAfterClassMergingTest exte
         .applyIf(
             parameters.canUseDefaultAndStaticInterfaceMethods(),
             runResult ->
-                runResult.assertFailureWithErrorThatThrows(
-                    parameters.isCfRuntime()
-                            && parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11)
-                            && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK25)
-                        ? AbstractMethodError.class
-                        : IncompatibleClassChangeError.class),
+                runResult.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK11) && vm.isOlderThan(CfVm.JDK25),
+                    r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class),
+                    r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class)),
             runResult -> runResult.assertSuccessWithOutputLines("A", "I", "J"));
   }
 

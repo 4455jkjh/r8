@@ -25,7 +25,7 @@ public class JdkClassFileProviderTest extends TestBase implements Opcodes {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withCfRuntimes().build();
+    return getTestParameters().withCfRuntimes().withoutCollapsedCfRuntimes().build();
   }
 
   final TestParameters parameters;

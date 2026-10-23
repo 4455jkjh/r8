@@ -109,7 +109,7 @@ public class CompileWithJdkClassFileProviderTest extends TestBase implements Opc
                         diagnosticMessage(containsString("java.util.concurrent.Flow$Subscriber"))));
                 diagnostics.assertOnlyWarnings();
               });
-        return;
+      return;
     } else {
       if (parameters.getRuntime().isDex()) {
         // java.util.concurrent.Flow$Subscriber is not present on Android.
@@ -138,19 +138,16 @@ public class CompileWithJdkClassFileProviderTest extends TestBase implements Opc
                                     + "java.util.concurrent.SubmissionPublisher"))),
                 b -> b.assertSuccessWithOutputLines("Got : 1", "Got : 2", "Got : 3", "Done"));
       } else {
-        if (parameters.getRuntime().asCf().getVm() == CfVm.JDK8) {
-          // java.util.concurrent.Flow$Subscriber not present in JDK8.
-          testBuilder
-              .run(parameters.getRuntime(), "MySubscriber")
-              .assertFailureWithErrorThatMatches(
-                  containsString("Could not find or load main class MySubscriber"));
-
-        } else {
-          // java.util.concurrent.Flow$Subscriber present in JDK9+.
-          testBuilder
-              .run(parameters.getRuntime(), "MySubscriber")
-              .assertSuccessWithOutputLines("Got : 1", "Got : 2", "Got : 3", "Done");
-        }
+        testBuilder
+            .run(parameters.getRuntime(), "MySubscriber")
+            .applyIfCfRuntime(
+                vm -> vm == CfVm.JDK8,
+                // java.util.concurrent.Flow$Subscriber not present in JDK8.
+                r ->
+                    r.assertFailureWithErrorThatMatches(
+                        containsString("Could not find or load main class MySubscriber")),
+                // java.util.concurrent.Flow$Subscriber present in JDK9+.
+                r -> r.assertSuccessWithOutputLines("Got : 1", "Got : 2", "Got : 3", "Done"));
       }
     }
 

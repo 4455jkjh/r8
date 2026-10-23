@@ -6,7 +6,6 @@ package com.android.tools.r8.desugar.constantdynamic;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.DesugarTestConfiguration;
@@ -41,11 +40,13 @@ public class BootstrapMethodNotFoundConstantDynamicTest extends TestBase {
   @Test
   public void testReference() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11));
     testForJvm(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertFailureWithErrorThatThrows(NoSuchMethodError.class);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+            r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -56,14 +57,11 @@ public class BootstrapMethodNotFoundConstantDynamicTest extends TestBase {
         .applyIf(
             // When not desugaring the CF code requires JDK 11.
             DesugarTestConfiguration::isNotDesugared,
-            r -> {
-              if (parameters.isCfRuntime()
-                  && parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11)) {
-                r.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
-              } else {
-                r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class);
-              }
-            })
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+                    rr -> rr.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)))
         .applyIf(
             DesugarTestConfiguration::isDesugared,
             r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class));

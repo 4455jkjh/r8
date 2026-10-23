@@ -8,9 +8,9 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.D8TestMultiRunResult;
+import com.android.tools.r8.JvmTestMultiRunResult;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.R8TestMultiRunResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
@@ -214,7 +214,7 @@ public class InnerClassNameTestRunner extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    SingleTestRunResult runResult = null;
+    JvmTestMultiRunResult runResult = null;
     if (parameters.isCfRuntime()) {
       runResult =
           testForJvm(parameters)
@@ -251,36 +251,34 @@ public class InnerClassNameTestRunner extends TestBase {
         r8RunResult.assertSuccessWithOutput(getExpectedMinified(inspector));
         break;
       case DOLLAR2_SEPARATOR:
-        if (parameters.isCfRuntime()
-            && parameters.getRuntime().asCf().getVm().lessThanOrEqual(CfVm.JDK8)) {
-          // $$ as separator and InnerClass as name, results in $InnerClass from getSimpleName...
-          String expectedWithDollarOnInnerName =
-              getExpectedNonMinified("$" + config.getInnerClassName());
-          runResult.assertSuccessWithOutput(expectedWithDollarOnInnerName);
-          // R8 map the inner name to 'a' while keeping $$ as a separator, whose inner name will be
-          // "$a" in JDK under 8.
-          r8RunResult.assertSuccessWithOutput(
-              minify ? getExpectedMinified(inspector, true) : expectedWithDollarOnInnerName);
-        } else {
-          // $$ in DEX or JDK 9+ will not change the InnerName/getSimpleName.
-          r8RunResult.assertSuccessWithOutput(getExpectedMinified(inspector));
+        // $$ as separator and InnerClass as name, results in $InnerClass from getSimpleName...
+        String expectedWithDollarOnInnerName =
+            getExpectedNonMinified("$" + config.getInnerClassName());
+        if (parameters.isCfRuntime()) {
+          runResult.applyIfCfRuntime(
+              vm -> vm.lessThanOrEqual(CfVm.JDK8),
+              r -> r.assertSuccessWithOutput(expectedWithDollarOnInnerName));
         }
+        r8RunResult.applyIfCfRuntime(
+            vm -> vm.lessThanOrEqual(CfVm.JDK8),
+            // R8 map the inner name to 'a' while keeping $$ as a separator, whose inner name will
+            // be
+            // "$a" in JDK under 8.
+            r ->
+                r.assertSuccessWithOutput(
+                    minify ? getExpectedMinified(inspector, true) : expectedWithDollarOnInnerName),
+            // $$ in DEX or JDK 9+ will not change the InnerName/getSimpleName.
+            r -> r.assertSuccessWithOutput(getExpectedMinified(inspector)));
         break;
       case EMTPY_SEPARATOR:
       case UNDERBAR_SEPARATOR:
       case NON_NESTED_INNER:
       case WRONG_REPACKAGE:
-        if (!minify
-            && parameters.isCfRuntime()
-            && parameters.getRuntime().asCf().getVm().lessThanOrEqual(CfVm.JDK8)) {
-          // Any non-$ separator results in a runtime exception in getCanonicalName.
-          r8RunResult.assertFailureWithErrorThatMatches(containsString("Malformed class name"));
-        } else {
-          assert minify
-              || parameters.isDexRuntime()
-              || !parameters.getRuntime().asCf().getVm().lessThanOrEqual(CfVm.JDK8);
-          r8RunResult.assertSuccessWithOutput(getExpectedMinified(inspector));
-        }
+        r8RunResult.applyIfCfRuntime(
+            vm -> !minify && vm.lessThanOrEqual(CfVm.JDK8),
+            // Any non-$ separator results in a runtime exception in getCanonicalName.
+            r -> r.assertFailureWithErrorThatMatches(containsString("Malformed class name")),
+            r -> r.assertSuccessWithOutput(getExpectedMinified(inspector)));
         break;
       default:
         throw new Unreachable("Unexpected test configuration: " + config);

@@ -65,7 +65,7 @@ public class MetadataRewriteInFunctionWithVarargTest extends KotlinMetadataTestB
     Path libJar = varargLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/vararg_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -97,7 +97,7 @@ public class MetadataRewriteInFunctionWithVarargTest extends KotlinMetadataTestB
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/vararg_app", "main"))
             .setOutputPath(temp.newFolder().toPath())

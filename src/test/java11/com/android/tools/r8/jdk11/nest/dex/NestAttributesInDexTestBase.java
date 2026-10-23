@@ -62,7 +62,11 @@ public abstract class NestAttributesInDexTestBase extends TestBase {
   }
 
   protected boolean isRuntimeWithNestSupport(CfRuntime runtime) {
-    return runtime.isNewerThanOrEqual(CfVm.JDK11);
+    return isRuntimeWithNestSupport(runtime.getVm());
+  }
+
+  protected boolean isRuntimeWithNestSupport(CfVm vm) {
+    return vm.isNewerThanOrEqual(CfVm.JDK11);
   }
 
   protected boolean isRuntimeWithNestSupport(DexRuntime runtime) {

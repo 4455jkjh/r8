@@ -58,8 +58,8 @@ public class VerticalClassMergingInvokeSuperToNestMemberTest extends TestBase {
         .addProgramClasses(Main.class)
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.getCfRuntime().isOlderThan(CfVm.JDK11),
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThan(CfVm.JDK11),
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
             runResult -> runResult.assertSuccessWithOutputLines("Bar.bar()"));
@@ -93,14 +93,15 @@ public class VerticalClassMergingInvokeSuperToNestMemberTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.canUseNestBasedAccesses()
-                || (parameters.isDexRuntime() && !emitNestAnnotationsInDex),
-            runResult -> runResult.assertSuccessWithOutputLines("Bar.bar()"),
-            parameters.isCfRuntime(),
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThan(CfVm.JDK11),
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
-            runResult -> runResult.assertFailureWithErrorThatThrows(IllegalAccessError.class));
+            runResult ->
+                runResult.applyIf(
+                    parameters.isCfRuntime() || !emitNestAnnotationsInDex,
+                    rr -> rr.assertSuccessWithOutputLines("Bar.bar()"),
+                    rr -> rr.assertFailureWithErrorThatThrows(IllegalAccessError.class)));
   }
 
   private Collection<byte[]> getTransformedClasses() throws Exception {

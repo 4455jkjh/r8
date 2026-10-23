@@ -61,7 +61,7 @@ public class MetadataRewriteInlineSuspendFunctionTest extends KotlinMetadataTest
     Assume.assumeFalse(keepOnlyPublic);
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(kotlinc.getKotlinxCoroutinesCoreJar(), libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -93,7 +93,7 @@ public class MetadataRewriteInlineSuspendFunctionTest extends KotlinMetadataTest
             .compile()
             .writeToZip();
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

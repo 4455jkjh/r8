@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.jdk17.records;
 
-import static org.junit.Assume.assumeTrue;
-
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestBuilder;
@@ -14,7 +12,6 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,19 +37,16 @@ public class RecordHashCodeTest extends TestBase {
         .build();
   }
 
-  private boolean isCfRuntimeWithNativeRecordSupport() {
-    return parameters.isCfRuntime()
-        && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
-        && parameters.getApiLevel().equals(AndroidApiLevel.B);
-  }
-
   @Test
   public void testReference() throws Exception {
-    assumeTrue(isCfRuntimeWithNativeRecordSupport());
+    parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED_RESULT);
+        .applyIfCfRuntime(
+            CfVm::hasRecordsSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -60,19 +54,25 @@ public class RecordHashCodeTest extends TestBase {
     testForD8(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIfDexRuntime(
-            isRecordsFullyDesugaredForD8(parameters)
-                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+        .applyIf(
+            isRecordsFullyDesugaredForD8(parameters),
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
-            Version::hasRecordsSupport,
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+            parameters.isCfRuntime(),
+            r ->
+                r.applyIfCfRuntime(
+                    CfVm::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT),
+                    rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)),
+            r ->
+                r.applyIfDexRuntime(
+                    Version::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT),
+                    rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));
   }
 
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isCfRuntimeWithNativeRecordSupport());
     R8TestBuilder<?, ?, ?> builder =
         testForR8(parameters)
             .addInnerClassesAndStrippedOuter(getClass())
@@ -82,7 +82,10 @@ public class RecordHashCodeTest extends TestBase {
       builder
           .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
           .run(parameters.getRuntime(), TestClass.class)
-          .assertSuccessWithOutput(EXPECTED_RESULT);
+          .applyIfCfRuntime(
+              CfVm::hasRecordsSupport,
+              r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+              r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
       return;
     }
     builder.run(parameters.getRuntime(), TestClass.class).assertSuccessWithOutput(EXPECTED_RESULT);
@@ -91,7 +94,6 @@ public class RecordHashCodeTest extends TestBase {
   @Test
   public void testR8DontShrinkDontObfuscate() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isCfRuntimeWithNativeRecordSupport());
     R8TestBuilder<?, ?, ?> builder =
         testForR8(parameters)
             .addInnerClassesAndStrippedOuter(getClass())
@@ -103,7 +105,10 @@ public class RecordHashCodeTest extends TestBase {
       builder
           .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
           .run(parameters.getRuntime(), TestClass.class)
-          .assertSuccessWithOutput(EXPECTED_RESULT);
+          .applyIfCfRuntime(
+              CfVm::hasRecordsSupport,
+              r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+              r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
       return;
     }
     builder.run(parameters.getRuntime(), TestClass.class).assertSuccessWithOutput(EXPECTED_RESULT);

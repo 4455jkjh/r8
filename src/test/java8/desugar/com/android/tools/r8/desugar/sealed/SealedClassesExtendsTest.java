@@ -65,12 +65,14 @@ public class SealedClassesExtendsTest extends TestBase {
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
     assumeTrue(keepPermittedSubclassesAttribute);
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     assumeFalse(repackage);
     testForJvm(parameters)
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+            r -> r.assertSuccessWithOutput(EXPECTED),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -81,11 +83,13 @@ public class SealedClassesExtendsTest extends TestBase {
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
-            (DesugarTestConfiguration c) ->
-                DesugarTestConfiguration.isNotJavac(c)
-                    || parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
+            DesugarTestConfiguration::isNotJavac,
             r -> r.assertSuccessWithOutput(EXPECTED),
-            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)));
   }
 
   private void inspect(CodeInspector inspector) {
@@ -110,8 +114,6 @@ public class SealedClassesExtendsTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(
-        parameters.isDexRuntime() || parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForR8(parameters)
         .apply(this::addTestClasses)
         .applyIf(
@@ -124,7 +126,10 @@ public class SealedClassesExtendsTest extends TestBase {
         .compile()
         .inspectIf(!parameters.isRandomPartialCompilation(), this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED);
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThan(CfVm.JDK17),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   public byte[] getTransformedClasses() throws Exception {

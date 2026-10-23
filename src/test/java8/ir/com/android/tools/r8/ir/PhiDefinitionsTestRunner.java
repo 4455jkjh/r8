@@ -117,9 +117,11 @@ public class PhiDefinitionsTestRunner extends TestBase {
   }
 
   private void runCf(Path outCf, String className) throws Exception {
-    ProcessResult runCf =
-        ToolHelper.runJava(parameters.asCfRuntime(), ImmutableList.of(outCf), className);
-    assertEquals(runInput.toString(), runCf.toString());
+    for (com.android.tools.r8.TestRuntime.CfRuntime cfRuntime :
+        parameters.getRuntime().asCfRuntimes()) {
+      ProcessResult runCf = ToolHelper.runJava(cfRuntime, ImmutableList.of(outCf), className);
+      assertEquals(runInput.toString(), runCf.toString());
+    }
   }
 
   private void runDex(Path outDex, String className) throws Exception {

@@ -8,14 +8,13 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
-import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
 public class ProguardTestCompileResult
-    extends TestCompileResult<ProguardTestCompileResult, SingleTestRunResult> {
+    extends TestCompileResult<ProguardTestCompileResult, ProguardTestMultiRunResult> {
 
   private final ProcessResult result;
   private final Path outputJar;
@@ -76,12 +75,12 @@ public class ProguardTestCompileResult
   }
 
   @Override
-  protected SingleTestRunResult createRunResult(List<SingleTestRunResult> results) {
-    throw new Unreachable();
+  protected SingleTestRunResult createSingleRunResult(TestRuntime runtime, ProcessResult result) {
+    return new SingleTestRunResult(app, runtime, result, proguardMap, state);
   }
 
   @Override
-  public SingleTestRunResult createRunResult(TestRuntime runtime, ProcessResult result) {
-    return new SingleTestRunResult(app, runtime, result, proguardMap, state);
+  public ProguardTestMultiRunResult createRunResult(List<SingleTestRunResult> results) {
+    return new ProguardTestMultiRunResult(app, proguardMap, state, results);
   }
 }

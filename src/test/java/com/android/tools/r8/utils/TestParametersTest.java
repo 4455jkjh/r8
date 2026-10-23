@@ -77,8 +77,9 @@ public class TestParametersTest extends TestBase {
   @Test
   public void testDexDefaultPresence() {
     assumeTrue(ToolHelper.isLinux());
-    assumeTrue(!TestParametersBuilder.isRuntimesPropertySet()
-        || TestParametersBuilder.getRuntimesProperty().contains("dex-default"));
+    assumeTrue(
+        !TestParametersBuilder.isRuntimesPropertySet()
+            || TestParametersBuilder.getRuntimesProperty().contains("dex-default"));
     assertTrue(
         getTestParameters()
             .withAllRuntimesAndApiLevels()
@@ -91,8 +92,9 @@ public class TestParametersTest extends TestBase {
   @Test
   public void testDex444Presence() {
     assumeTrue(ToolHelper.isLinux());
-    assumeTrue(!TestParametersBuilder.isRuntimesPropertySet()
-        || TestParametersBuilder.getRuntimesProperty().contains("dex-4.4.4"));
+    assumeTrue(
+        !TestParametersBuilder.isRuntimesPropertySet()
+            || TestParametersBuilder.getRuntimesProperty().contains("dex-4.4.4"));
     assertTrue(
         getTestParameters()
             .withAllRuntimesAndApiLevels()
@@ -100,5 +102,20 @@ public class TestParametersTest extends TestBase {
             .build()
             .stream()
             .anyMatch(parameter -> parameter.getRuntime().name().equals("dex-4.4.4")));
+  }
+
+  @Test
+  public void testCfDefaultPresence() {
+    assumeTrue(ToolHelper.isLinux());
+    assumeTrue(
+        !TestParametersBuilder.isRuntimesPropertySet()
+            || TestParametersBuilder.getRuntimesProperty().contains("jdk11"));
+    assertTrue(
+        getTestParameters()
+            .withAllRuntimesAndApiLevels()
+            .withoutCollapsedCfRuntimes()
+            .build()
+            .stream()
+            .anyMatch(parameter -> parameter.getRuntime().name().equals("jdk11")));
   }
 }

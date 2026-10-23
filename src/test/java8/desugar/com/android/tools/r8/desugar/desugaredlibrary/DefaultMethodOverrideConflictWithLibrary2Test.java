@@ -98,14 +98,11 @@ public class DefaultMethodOverrideConflictWithLibrary2Test extends DesugaredLibr
   }
 
   private void checkResult(TestRunResult<?> result) {
-    if (parameters.isCfRuntime()
-        && parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11)
-        && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK25)) {
-      // For some reason [JDK11,JDK25[ throws AbstractMethodError (see b/145566657).
-      result.assertFailureWithErrorThatThrows(AbstractMethodError.class);
-    } else {
-      result.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
-    }
+    result.applyIfCfRuntime(
+        vm -> vm.isNewerThanOrEqual(CfVm.JDK11) && vm.isOlderThan(CfVm.JDK25),
+        // For some reason [JDK11,JDK25[ throws AbstractMethodError (see b/145566657).
+        r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class),
+        r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
 
   // Interface that will lead to a conflicting default method with Spliterator::hasCharacteristics.

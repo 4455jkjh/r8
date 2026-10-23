@@ -4,12 +4,11 @@
 
 package com.android.tools.r8.jdk17.records;
 
-import static org.junit.Assume.assumeTrue;
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,11 +33,13 @@ public class RecordEqualsTest extends TestBase {
   @Test
   public void testReference() throws Exception {
     parameters.assumeCfRuntime();
-    assumeTrue(runtimeWithRecordsSupport(parameters.getRuntime()));
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED_RESULT);
+        .applyIfCfRuntime(
+            CfVm::hasRecordsSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   private void alwaysUseArtRecordSupportWhenPresent(TestCompilerBuilder<?, ?, ?, ?, ?> builder) {

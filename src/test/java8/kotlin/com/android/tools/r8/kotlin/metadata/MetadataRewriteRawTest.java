@@ -71,7 +71,7 @@ public class MetadataRewriteRawTest extends KotlinMetadataTestBase {
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar, javaLibZip)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(getInternalNameFromJavaType(PKG_APP), "main"))
@@ -106,7 +106,7 @@ public class MetadataRewriteRawTest extends KotlinMetadataTestBase {
                         (addedStrings, addedNonInitStrings) -> {}))
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar, javaLibZip)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(getInternalNameFromJavaType(PKG_APP), "main"))

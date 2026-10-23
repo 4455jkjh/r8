@@ -72,7 +72,7 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
     // The tests for weakCompareAndSet might fail on the JVM, as the tests do not account for
     // possible spurious failures but expect it to behave like compareAndSet (which is what the
     // desugared implementation does.
-    assumeTrue(parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK9));
+    assumeTrue(parameters.isCfRuntime(runtime -> runtime.isNewerThanOrEqual(CfVm.JDK9)));
     testForJvm(parameters)
         .addProgramClassesAndInnerClasses(getProgramClasses())
         .run(parameters.getRuntime(), getMainClass())

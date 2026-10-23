@@ -49,13 +49,10 @@ public class SingleResolutionWithFailingDispatchTest extends TestBase {
   }
 
   private void inspectRunResult(TestRunResult<?> runResult) {
-    if (parameters.isCfRuntime()
-        && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK11)
-        && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)) {
-      runResult.assertFailureWithErrorThatThrows(AbstractMethodError.class);
-    } else {
-      runResult.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
-    }
+    runResult.applyIfCfRuntime(
+        vm -> vm.isNewerThanOrEqual(CfVm.JDK11) && vm.isOlderThan(CfVm.JDK25),
+        r -> r.assertFailureWithErrorThatThrows(AbstractMethodError.class),
+        r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
 
   private static byte[] getProgramClassFileData() throws IOException {

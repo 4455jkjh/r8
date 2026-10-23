@@ -13,10 +13,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.KeepUnusedReturnValue;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
+import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
@@ -65,12 +67,16 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class VerticalClassMergerTest extends TestBase {
 
-  private static final Path EXAMPLE_KEEP = Paths.get(ToolHelper.EXAMPLES_DIR)
-      .resolve("classmerging").resolve("keep-rules.txt");
-  private static final Path JAVA8_EXAMPLE_KEEP = Paths.get(ToolHelper.EXAMPLES_ANDROID_O_DIR)
-      .resolve("classmerging").resolve("keep-rules.txt");
-  private static final Path DONT_OPTIMIZE = Paths.get(ToolHelper.EXAMPLES_DIR)
-      .resolve("classmerging").resolve("keep-rules-dontoptimize.txt");
+  private static final Path EXAMPLE_KEEP =
+      Paths.get(ToolHelper.EXAMPLES_DIR).resolve("classmerging").resolve("keep-rules.txt");
+  private static final Path JAVA8_EXAMPLE_KEEP =
+      Paths.get(ToolHelper.EXAMPLES_ANDROID_O_DIR)
+          .resolve("classmerging")
+          .resolve("keep-rules.txt");
+  private static final Path DONT_OPTIMIZE =
+      Paths.get(ToolHelper.EXAMPLES_DIR)
+          .resolve("classmerging")
+          .resolve("keep-rules-dontoptimize.txt");
 
   private static Path getCfDir() {
     return TestDeps.getExamplesPath("classes", "classmerging");
@@ -112,12 +118,12 @@ public class VerticalClassMergerTest extends TestBase {
 
   private CodeInspector inspector;
 
-  private final List<String> CAN_BE_MERGED = ImmutableList.of(
-      "classmerging.GenericInterface",
-      "classmerging.GenericAbstractClass",
-      "classmerging.Outer$SuperClass",
-      "classmerging.SuperClass"
-  );
+  private final List<String> CAN_BE_MERGED =
+      ImmutableList.of(
+          "classmerging.GenericInterface",
+          "classmerging.GenericAbstractClass",
+          "classmerging.Outer$SuperClass",
+          "classmerging.SuperClass");
 
   private static void assertAbsentOrIdentity(ClassNameMapper mapper, String className) {
     // The mapping should be absent or identity.
@@ -146,8 +152,7 @@ public class VerticalClassMergerTest extends TestBase {
         };
     Set<String> preservedClassNames =
         ImmutableSet.of(
-            "classmerging.ArrayTypeCollisionTest",
-            "classmerging.ArrayTypeCollisionTest$B");
+            "classmerging.ArrayTypeCollisionTest", "classmerging.ArrayTypeCollisionTest$B");
     runTest(
         testForR8(parameters.getBackend())
             .addKeepRules(
@@ -195,13 +200,25 @@ public class VerticalClassMergerTest extends TestBase {
     // Add two methods with the same name that have return types A[] and B[], respectively.
     classBuilder.addRuntimeInvisibleAnnotation(KeepUnusedReturnValue.class.getTypeName());
     classBuilder.addStaticMethod(
-        "method", ImmutableList.of(), "[Lclassmerging/A;",
-        ".limit stack 1", ".limit locals 1", "iconst_0", "anewarray classmerging/A", "areturn");
+        "method",
+        ImmutableList.of(),
+        "[Lclassmerging/A;",
+        ".limit stack 1",
+        ".limit locals 1",
+        "iconst_0",
+        "anewarray classmerging/A",
+        "areturn");
 
     classBuilder.addRuntimeInvisibleAnnotation(KeepUnusedReturnValue.class.getTypeName());
     classBuilder.addStaticMethod(
-        "method", ImmutableList.of(), "[Lclassmerging/B;",
-        ".limit stack 1", ".limit locals 1", "iconst_0", "anewarray classmerging/B", "areturn");
+        "method",
+        ImmutableList.of(),
+        "[Lclassmerging/B;",
+        ".limit stack 1",
+        ".limit locals 1",
+        "iconst_0",
+        "anewarray classmerging/B",
+        "areturn");
 
     // Class A is empty so that it can easily be merged into B.
     classBuilder = jasminBuilder.addClass("classmerging.A");
@@ -1213,16 +1230,22 @@ public class VerticalClassMergerTest extends TestBase {
     }
 
     // Check that the R8-generated code produces the same result as D8-generated code.
-    String d8Result =
+    D8TestMultiRunResult d8Result =
         testForD8(parameters.getBackend())
             .applyIf(parameters.isDexRuntime(), b -> b.setMinApi(parameters))
             .addProgramResourceProviders(input.getProgramResourceProviders())
             .run(parameters.getRuntime(), main)
-            .assertSuccess()
-            .asSingleRuntimeResult()
-            .getStdOut();
+            .assertSuccess();
 
-    compileResult.run(parameters.getRuntime(), main).assertSuccessWithOutput(d8Result);
+    R8TestMultiRunResult r8Result =
+        compileResult.run(parameters.getRuntime(), main).assertSuccess();
+    assertEquals(d8Result.getSingleRunResults().size(), r8Result.getSingleRunResults().size());
+    for (int i = 0; i < d8Result.getSingleRunResults().size(); i++) {
+      r8Result
+          .getSingleRunResults()
+          .get(i)
+          .assertSuccessWithOutput(d8Result.getSingleRunResults().get(i).getStdOut());
+    }
     // Check that we never come across a method that has a name with "$classmerging$" in it during
     // debugging.
     if (debugTestRunner != null && parameters.isDexRuntime()) {
@@ -1243,5 +1266,4 @@ public class VerticalClassMergerTest extends TestBase {
     }
     return builder.toString();
   }
-
 }

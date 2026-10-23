@@ -58,16 +58,18 @@ public class MetadataRewriteInExtensionPropertyTest extends KotlinMetadataTestBa
   }
 
   private static final KotlinCompileMemoizer extLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_lib", "B"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_lib", "B"));
 
   @Test
   public void smokeTest() throws Exception {
     Path libJar = extLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -108,9 +110,10 @@ public class MetadataRewriteInExtensionPropertyTest extends KotlinMetadataTestBa
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(full || kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (full || kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
@@ -137,8 +140,9 @@ public class MetadataRewriteInExtensionPropertyTest extends KotlinMetadataTestBa
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Super")));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Super")));
     KmFunctionSubject kmFunction = kmClass.kmFunctionWithUniqueName("doStuff");
     assertThat(kmFunction, not(isPresent()));
     assertThat(kmFunction, not(isExtensionFunction()));
@@ -174,9 +178,10 @@ public class MetadataRewriteInExtensionPropertyTest extends KotlinMetadataTestBa
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_property_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
@@ -204,10 +209,13 @@ public class MetadataRewriteInExtensionPropertyTest extends KotlinMetadataTestBa
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Super")));
-    assertTrue(superTypes.stream().anyMatch(
-        supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Super")));
+    assertTrue(
+        superTypes.stream()
+            .anyMatch(
+                supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
 
     ClassSubject bKt = inspector.clazz(bKtClassName);
     assertThat(bKt, isPresentAndNotRenamed());

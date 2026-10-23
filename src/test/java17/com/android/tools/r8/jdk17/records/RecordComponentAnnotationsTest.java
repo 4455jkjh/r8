@@ -222,11 +222,11 @@ public class RecordComponentAnnotationsTest extends TestBase {
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), RecordWithAnnotations.class)
-        .assertSuccessWithOutput(
+        .applyIfCfRuntime(
             // Result changed from JDK-20 to JDK-21, but we only test LTS, so check for JDK-17 here.
-            parameters.getRuntime().asCf().getVm().isLessThanOrEqualTo(CfVm.JDK17)
-                ? JVM_UNTIL_20_EXPECTED_RESULT
-                : JVM_FROM_21_EXPECTED_RESULT);
+            vm -> vm.isLessThanOrEqualTo(CfVm.JDK17),
+            r -> r.assertSuccessWithOutput(JVM_UNTIL_20_EXPECTED_RESULT),
+            r -> r.assertSuccessWithOutput(JVM_FROM_21_EXPECTED_RESULT));
   }
 
   @Test

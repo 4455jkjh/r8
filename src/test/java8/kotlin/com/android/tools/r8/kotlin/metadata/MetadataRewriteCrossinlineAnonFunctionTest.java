@@ -52,7 +52,7 @@ public class MetadataRewriteCrossinlineAnonFunctionTest extends KotlinMetadataTe
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -77,7 +77,7 @@ public class MetadataRewriteCrossinlineAnonFunctionTest extends KotlinMetadataTe
             .compile()
             .writeToZip();
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

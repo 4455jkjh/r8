@@ -38,6 +38,7 @@ public class RetraceInlineeWithNullCheckSequenceTest extends TestBase {
             .addProgramClasses(Caller.class, Foo.class)
             .run(TestRuntime.getDefaultCfRuntime(), Caller.class)
             .assertFailureWithErrorThatThrows(NullPointerException.class)
+            .asSingleRuntimeResult()
             .getStackTrace();
   }
 

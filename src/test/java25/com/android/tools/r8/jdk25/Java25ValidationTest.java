@@ -87,8 +87,8 @@ public class Java25ValidationTest extends TestBase {
     testForJvm(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.getCfRuntime().isOlderThan(CfVm.JDK25),
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThan(CfVm.JDK25),
             r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
             r -> r.assertSuccessWithOutput(EXPECTED));
   }

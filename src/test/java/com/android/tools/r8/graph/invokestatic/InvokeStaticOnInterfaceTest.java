@@ -16,7 +16,6 @@ import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -42,21 +41,20 @@ public class InvokeStaticOnInterfaceTest extends TestBase {
   @Test
   public void testJvm() throws IOException, CompilationFailedException, ExecutionException {
     assertTrue(parameters.isCfRuntime());
-    TestRunResult<?> runResult =
-        testForRuntime(parameters)
-            .addProgramClasses(I.class)
-            .addProgramClassFileData(getClassWithTransformedInvoked())
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.getRuntime().asCf().isNewerThan(CfVm.JDK8)) {
-      runResult.assertFailureWithErrorThatMatches(
-          allOf(
-              containsString("java.lang.IncompatibleClassChangeError: Method"),
-              // JVM method formatting changed between jdk11 and jdk17
-              containsString(I.class.getTypeName() + ".foo()"),
-              containsString("must be InterfaceMethodref constant")));
-    } else {
-      runResult.assertSuccessWithOutputLines("Hello World!");
-    }
+    testForRuntime(parameters)
+        .addProgramClasses(I.class)
+        .addProgramClassFileData(getClassWithTransformedInvoked())
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThan(CfVm.JDK8),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    allOf(
+                        containsString("java.lang.IncompatibleClassChangeError: Method"),
+                        // JVM method formatting changed between jdk11 and jdk17
+                        containsString(I.class.getTypeName() + ".foo()"),
+                        containsString("must be InterfaceMethodref constant"))),
+            r -> r.assertSuccessWithOutputLines("Hello World!"));
   }
 
   @Test(expected = CompilationFailedException.class)
@@ -74,31 +72,30 @@ public class InvokeStaticOnInterfaceTest extends TestBase {
   @Test
   public void testCfInvokeOnStaticInterfaceMethod_errorAllowed()
       throws ExecutionException, CompilationFailedException, IOException {
-    TestRunResult<?> runResult =
-        testForR8(parameters.getBackend())
-            .addProgramClasses(I.class)
-            .addProgramClassFileData(getClassWithTransformedInvoked())
-            .enableInliningAnnotations()
-            .enableNoVerticalClassMergingAnnotations()
-            .addOptionsModification(o -> o.testing.allowInvokeErrors = true)
-            .addDontObfuscate()
-            .addKeepMainRule(Main.class)
-            // Without a keep rule, we conclude that I.m() is not called and remove it. That is not
-            // true, however, since there is an invalid invoke to I.m(). To preserve the error we
-            // could consider rewriting invoke to `throw new ICCE()`, as this would also ensure that
-            // the compiled program runs on all runtimes with the same behavior.
-            .addKeepClassAndMembersRules(I.class)
-            .run(parameters.getRuntime(), Main.class);
-    if (parameters.getRuntime().asCf().isNewerThan(CfVm.JDK8)) {
-      runResult.assertFailureWithErrorThatMatches(
-          allOf(
-              containsString("java.lang.IncompatibleClassChangeError: Method"),
-              containsString(
-                  "com.android.tools.r8.graph.invokestatic.InvokeStaticOnInterfaceTest$I.foo()"),
-              containsString("must be InterfaceMethodref constant")));
-    } else {
-      runResult.assertSuccessWithOutputLines("Hello World!");
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(I.class)
+        .addProgramClassFileData(getClassWithTransformedInvoked())
+        .enableInliningAnnotations()
+        .enableNoVerticalClassMergingAnnotations()
+        .addOptionsModification(o -> o.testing.allowInvokeErrors = true)
+        .addDontObfuscate()
+        .addKeepMainRule(Main.class)
+        // Without a keep rule, we conclude that I.m() is not called and remove it. That is not
+        // true, however, since there is an invalid invoke to I.m(). To preserve the error we
+        // could consider rewriting invoke to `throw new ICCE()`, as this would also ensure that
+        // the compiled program runs on all runtimes with the same behavior.
+        .addKeepClassAndMembersRules(I.class)
+        .run(parameters.getRuntime(), Main.class)
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThan(CfVm.JDK8),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    allOf(
+                        containsString("java.lang.IncompatibleClassChangeError: Method"),
+                        containsString(
+                            "com.android.tools.r8.graph.invokestatic.InvokeStaticOnInterfaceTest$I.foo()"),
+                        containsString("must be InterfaceMethodref constant"))),
+            r -> r.assertSuccessWithOutputLines("Hello World!"));
   }
 
   private byte[] getClassWithTransformedInvoked() throws IOException {

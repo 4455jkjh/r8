@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.TestBase.Backend;
+import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -688,10 +689,14 @@ public abstract class TestCompileResult<
     app.writeToZipForTesting(out, OutputMode.ClassFile);
     List<Path> classPath =
         ImmutableList.<Path>builder().addAll(additionalRunClassPath).add(out).build();
-    ProcessResult result =
-        ToolHelper.runJava(
-            runtime.asCf(), vmArguments, additionalBootClasspath, classPath, arguments);
-    return createRunResult(runtime, result);
+    List<CfRuntime> cfRuntimes = runtime.asCfRuntimes();
+    List<SingleTestRunResult> singleRunResults = new ArrayList<>(cfRuntimes.size());
+    for (CfRuntime cfRuntime : cfRuntimes) {
+      ProcessResult result =
+          ToolHelper.runJava(cfRuntime, vmArguments, additionalBootClasspath, classPath, arguments);
+      singleRunResults.add(createSingleRunResult(cfRuntime, result));
+    }
+    return createRunResult(singleRunResults);
   }
 
   RR runArt(TestRuntime runtime, String mainClass, String... arguments) throws IOException {

@@ -16,7 +16,10 @@ import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.TestRuntime.NoneRuntime;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Predicate;
 
 // Actual test parameters for a specific configuration. Currently just the runtime configuration.
 public class TestParameters {
@@ -85,14 +88,14 @@ public class TestParameters {
   }
 
   public boolean hasSealedClassesReflectionSupport() {
-    return (isCfRuntime() && getCfRuntime().hasSealedClassesSupport())
+    return isCfRuntime()
         || (isDexRuntime()
             && getApiLevel()
                 .isGreaterThanOrEqualTo(TestBase.apiLevelWithSealedClassesReflectionSupport()));
   }
 
   public boolean hasSealedClassesRuntimeCheck() {
-    return (isCfRuntime() && getCfRuntime().hasSealedClassesSupport())
+    return isCfRuntime(CfRuntime::hasSealedClassesSupport)
         || (isDexRuntime()
             && getApiLevel()
                 .isGreaterThanOrEqualTo(TestBase.apiLevelWithSealedClassesReflectionSupport())
@@ -136,7 +139,7 @@ public class TestParameters {
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
     assertFalse(getApiLevel() != null && getApiLevel().getMajor() > 37);
     assert isCfRuntime() || isDexRuntime();
-    return isCfRuntime() && getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11);
+    return isCfRuntime(cfRuntime -> cfRuntime.isNewerThanOrEqual(CfVm.JDK11));
   }
 
   public boolean canUseNestBasedAccessesWhenDesugaring() {
@@ -196,7 +199,24 @@ public class TestParameters {
   }
 
   public boolean isCfRuntime(CfVm vm) {
-    return runtime.isCf() && runtime.asCf().getVm() == vm;
+    return isCfRuntime(cfRuntime -> cfRuntime.getVm() == vm);
+  }
+
+  public boolean isCfRuntime(Predicate<CfRuntime> predicate) {
+    if (!isCfRuntime()) {
+      return false;
+    }
+    List<CfRuntime> cfRuntimes = runtime.asCfRuntimes();
+    boolean result = predicate.test(cfRuntimes.get(0));
+    for (int i = 1; i < cfRuntimes.size(); i++) {
+      if (predicate.test(cfRuntimes.get(i)) != result) {
+        throw new Unreachable(
+            "Ambiguous predicate on CollapsedCfRuntimes: "
+                + runtime
+                + "; use applyIfCfRuntime() or withoutCollapsedCfRuntimes()");
+      }
+    }
+    return result;
   }
 
   public CfRuntime asCfRuntime() {
@@ -276,7 +296,13 @@ public class TestParameters {
 
   public boolean isOrSimulateNoneRuntime() {
     return isNoneRuntime()
-        || (runtime != null && runtime.equals(TestRuntime.getDefaultCfRuntime()));
+        || (runtime != null
+            && runtime.isCf()
+            && runtime.asCfRuntimes().contains(TestRuntime.getDefaultCfRuntime()));
+  }
+
+  public boolean isRepresentativeApiLevelForRuntime() {
+    return representativeApiLevelForRuntime;
   }
 
   // Helper function to get the "backend" for a given runtime target.

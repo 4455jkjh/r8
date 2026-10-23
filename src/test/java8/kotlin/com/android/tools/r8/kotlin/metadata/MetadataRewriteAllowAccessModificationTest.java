@@ -84,7 +84,7 @@ public class MetadataRewriteAllowAccessModificationTest extends KotlinMetadataTe
   public void smokeTest() throws Exception {
     Path libJar = libReferenceJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -127,7 +127,7 @@ public class MetadataRewriteAllowAccessModificationTest extends KotlinMetadataTe
             .inspect(this::inspect)
             .writeToZip();
     ProcessResult mainResult =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

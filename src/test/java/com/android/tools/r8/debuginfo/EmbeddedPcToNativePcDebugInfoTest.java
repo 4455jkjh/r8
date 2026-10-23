@@ -53,6 +53,7 @@ public class EmbeddedPcToNativePcDebugInfoTest extends TestBase {
             .addProgramClasses(Main.class)
             .run(TestRuntime.getDefaultCfRuntime(), Main.class, "")
             .assertFailure()
+            .asSingleRuntimeResult()
             .getStackTrace();
   }
 

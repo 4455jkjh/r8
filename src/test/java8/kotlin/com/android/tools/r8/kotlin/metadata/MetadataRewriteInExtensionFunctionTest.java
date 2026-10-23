@@ -69,16 +69,18 @@ public class MetadataRewriteInExtensionFunctionTest extends KotlinMetadataTestBa
   }
 
   private static final KotlinCompileMemoizer extLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_lib", "B"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_lib", "B"));
 
   @Test
   public void smokeTest() throws Exception {
     Path libJar = extLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -122,9 +124,10 @@ public class MetadataRewriteInExtensionFunctionTest extends KotlinMetadataTestBa
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(full || kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (full || kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
@@ -150,8 +153,9 @@ public class MetadataRewriteInExtensionFunctionTest extends KotlinMetadataTestBa
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Super")));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Super")));
 
     inspectExtensions(inspector);
   }
@@ -179,9 +183,10 @@ public class MetadataRewriteInExtensionFunctionTest extends KotlinMetadataTestBa
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
@@ -215,7 +220,8 @@ public class MetadataRewriteInExtensionFunctionTest extends KotlinMetadataTestBa
             .addKeepAttributes(ProguardKeepAttributes.INNER_CLASSES)
             .addKeepAttributes(ProguardKeepAttributes.ENCLOSING_METHOD)
             .compile();
-    Path kotlinSourcePath = getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main");
+    Path kotlinSourcePath =
+        getKotlinSourceFileFromResources(PKG_PREFIX + "/extension_function_app", "main");
 
     String kotlinSource = FileUtils.readTextFile(kotlinSourcePath, StandardCharsets.UTF_8);
 
@@ -258,7 +264,7 @@ public class MetadataRewriteInExtensionFunctionTest extends KotlinMetadataTestBa
         });
     assertEquals(Collections.singletonList("META-INF/main.kotlin_module"), kotlinModuleFiles);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(newSource)
             .setOutputPath(temp.newFolder().toPath())
@@ -288,10 +294,13 @@ public class MetadataRewriteInExtensionFunctionTest extends KotlinMetadataTestBa
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Super")));
-    assertTrue(superTypes.stream().anyMatch(
-        supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Super")));
+    assertTrue(
+        superTypes.stream()
+            .anyMatch(
+                supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
 
     inspectExtensions(inspector);
   }

@@ -33,6 +33,7 @@ public class MethodParametersTest extends TestBase {
         .withDexRuntimesStartingFromExcluding(Version.V7_0_0)
         .withCfRuntimes()
         .withAllApiLevelsAlsoForCf()
+        .withoutCollapsedCfRuntimes()
         .build();
   }
 

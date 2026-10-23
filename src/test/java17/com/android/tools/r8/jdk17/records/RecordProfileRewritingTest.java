@@ -13,7 +13,6 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentIf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.JdkClassFileProvider;
@@ -21,6 +20,7 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
@@ -66,11 +66,13 @@ public class RecordProfileRewritingTest extends TestBase {
   @Test
   public void testReference() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(runtimeWithRecordsSupport(parameters.getRuntime()));
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), MAIN_REFERENCE.getTypeName())
-        .assertSuccessWithOutput(EXPECTED_RESULT);
+        .applyIfCfRuntime(
+            CfVm::hasRecordsSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -90,19 +92,25 @@ public class RecordProfileRewritingTest extends TestBase {
                         inspectD8(profileInspector, inspector, compileResult.getSyntheticItems()),
                     options -> options.testing.disableRecordApplicationReaderMap = true))
         .run(parameters.getRuntime(), MAIN_REFERENCE.getTypeName())
-        .applyIfDexRuntime(
-            isRecordsFullyDesugaredForD8(parameters)
-                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+        .applyIf(
+            isRecordsFullyDesugaredForD8(parameters),
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
-            Version::hasRecordsSupport,
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
-            r -> r.assertFailureWithErrorThatThrows(ClassNotFoundException.class));
+            parameters.isCfRuntime(),
+            r ->
+                r.applyIfCfRuntime(
+                    CfVm::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT),
+                    rr -> rr.assertFailureWithErrorThatThrows(ClassNotFoundException.class)),
+            r ->
+                r.applyIfDexRuntime(
+                    Version::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT),
+                    rr -> rr.assertFailureWithErrorThatThrows(ClassNotFoundException.class)));
   }
 
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || runtimeWithRecordsSupport(parameters.getRuntime()));
     R8TestCompileResult compileResult =
         testForR8(parameters.getBackend())
             .addInnerClassesAndStrippedOuter(getClass())
@@ -127,7 +135,10 @@ public class RecordProfileRewritingTest extends TestBase {
                         inspectR8(profileInspector, inspector, compileResult.getSyntheticItems()),
                     options -> options.testing.disableRecordApplicationReaderMap = true))
         .run(parameters.getRuntime(), MAIN_REFERENCE.getTypeName())
-        .assertSuccessWithOutput(EXPECTED_RESULT);
+        .applyIfCfRuntime(
+            vm -> !vm.hasRecordsSupport(),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT));
   }
 
   private ExternalArtProfile getArtProfile() {

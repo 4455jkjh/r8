@@ -55,7 +55,12 @@ public class KeepDeserializeLambdaMethodTestRunner extends TestBase {
   @Parameterized.Parameters(name = "{0}, javac = {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().withNoneRuntime().build(), cfVmsToTest);
+        getTestParameters()
+            .withAllRuntimesAndApiLevels()
+            .withNoneRuntime()
+            .withoutCollapsedCfRuntimes()
+            .build(),
+        cfVmsToTest);
   }
 
   private static final List<CfVm> cfVmsToTest = new ArrayList<>();

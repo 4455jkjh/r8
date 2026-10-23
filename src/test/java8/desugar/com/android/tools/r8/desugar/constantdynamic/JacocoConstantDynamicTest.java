@@ -45,6 +45,7 @@ public class JacocoConstantDynamicTest extends TestBase {
         getTestParameters()
             .withAllRuntimes()
             .withAllApiLevelsAlsoForCf()
+            .withoutCollapsedCfRuntimes()
             .withoutCollapsedDexRuntimes()
             .build(),
         BooleanUtils.values());

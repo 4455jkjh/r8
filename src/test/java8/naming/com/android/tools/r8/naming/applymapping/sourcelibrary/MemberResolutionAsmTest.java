@@ -164,9 +164,13 @@ public class MemberResolutionAsmTest extends TestBase {
     return ImmutableList.of(ADump.dump(), BDump.dump(), MainDump.dump());
   }
 
-  private String getMethodSignature(String type, String method, boolean isOlderThanOrEqualKitKat) {
+  private String getMethodSignature(
+      String type,
+      String method,
+      boolean isNewerThanOrEqualJdk17,
+      boolean isOlderThanOrEqualKitKat) {
     if (parameters.isCfRuntime()) {
-      return parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
+      return isNewerThanOrEqualJdk17
           ? ("void " + type + "." + method + "()")
           : (type + "." + method + "()V");
     }
@@ -182,16 +186,30 @@ public class MemberResolutionAsmTest extends TestBase {
     testForRuntime(parameters)
         .addProgramClassFileData(swappingInputs())
         .run(parameters.getRuntime(), swappingMain)
-        .applyIfDexRuntime(
-            version -> version.isOlderThanOrEqual(Version.V4_4_4),
+        .applyIf(
+            parameters.isCfRuntime(),
             r ->
-                r.assertFailureWithErrorThatThrows(IllegalAccessError.class)
-                    .assertFailureWithErrorThatMatches(
-                        containsString(getMethodSignature("A", "x", true))),
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr ->
+                        rr.assertFailureWithErrorThatThrows(IllegalAccessError.class)
+                            .assertFailureWithErrorThatMatches(
+                                containsString(getMethodSignature("A", "x", true, false))),
+                    rr ->
+                        rr.assertFailureWithErrorThatThrows(IllegalAccessError.class)
+                            .assertFailureWithErrorThatMatches(
+                                containsString(getMethodSignature("A", "x", false, false)))),
             r ->
-                r.assertFailureWithErrorThatThrows(IllegalAccessError.class)
-                    .assertFailureWithErrorThatMatches(
-                        containsString(getMethodSignature("A", "x", false))));
+                r.applyIfDexRuntime(
+                    version -> version.isOlderThanOrEqual(Version.V4_4_4),
+                    rr ->
+                        rr.assertFailureWithErrorThatThrows(IllegalAccessError.class)
+                            .assertFailureWithErrorThatMatches(
+                                containsString(getMethodSignature("A", "x", false, true))),
+                    rr ->
+                        rr.assertFailureWithErrorThatThrows(IllegalAccessError.class)
+                            .assertFailureWithErrorThatMatches(
+                                containsString(getMethodSignature("A", "x", false, false)))));
   }
 
   @Test

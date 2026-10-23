@@ -110,14 +110,17 @@ public class ScriptEngineTest extends ScriptEngineTestBase {
             //  the rhino-android library on Android will add the Rhino script engine, and the JVM
             //  comes with "Oracle Nashorn" included.
             r ->
-                r.assertSuccessWithOutput(
-                    parameters.isCfRuntime()
-                        // No default JS engine starting from JDK-14 where Nashorn was removed,
-                        // see b/227162584.
-                        ? (parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
-                            ? StringUtils.lines("MyEngine1", "MyEngine2")
-                            : StringUtils.lines("MyEngine1", "MyEngine2", "Oracle Nashorn"))
-                        : StringUtils.lines("Mozilla Rhino", "MyEngine1", "MyEngine2")));
+                r.applyIfCfRuntime(
+                    // No default JS engine starting from JDK-14 where Nashorn was removed,
+                    // see b/227162584.
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr -> rr.assertSuccessWithOutputLines("MyEngine1", "MyEngine2"),
+                    vm -> true,
+                    rr ->
+                        rr.assertSuccessWithOutputLines("MyEngine1", "MyEngine2", "Oracle Nashorn"),
+                    rr ->
+                        rr.assertSuccessWithOutputLines(
+                            "Mozilla Rhino", "MyEngine1", "MyEngine2")));
 
     // TODO(b/136633154): On the JVM this should always be there as the service loading is in
     //  the library. On Android we should be able to rewrite the code and not have it.

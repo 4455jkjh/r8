@@ -45,6 +45,7 @@ public class JacocoConstantDynamicGetDeclaredMethods extends TestBase {
     return getTestParameters()
         .withAllRuntimes()
         .withAllApiLevels()
+        .withoutCollapsedCfRuntimes()
         .withoutCollapsedDexRuntimes()
         .build();
   }

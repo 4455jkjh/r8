@@ -22,6 +22,7 @@ import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRunResult;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.errors.DuplicateTypesDiagnostic;
 import com.android.tools.r8.errors.MissingGlobalSyntheticsConsumerDiagnostic;
@@ -232,13 +233,20 @@ public class RecordMergeTest extends TestBase {
   }
 
   private void checkRunResult(TestRunResult<?> result, String expectedResult) {
-    result.applyIfDexRuntime(
-        isRecordsFullyDesugaredForD8(parameters)
-            || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+    result.applyIf(
+        isRecordsFullyDesugaredForD8(parameters),
         r -> r.assertSuccessWithOutput(expectedResult),
-        Version::hasRecordsSupport,
-        r -> r.assertSuccessWithOutput(expectedResult),
-        r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+        parameters.isCfRuntime(),
+        r ->
+            r.applyIfCfRuntime(
+                CfVm::hasRecordsSupport,
+                rr -> rr.assertSuccessWithOutput(expectedResult),
+                rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)),
+        r ->
+            r.applyIfDexRuntime(
+                Version::hasRecordsSupport,
+                rr -> rr.assertSuccessWithOutput(expectedResult),
+                rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));
   }
 
   private void assertHasRecordTag(CodeInspector inspector) {

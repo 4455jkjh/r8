@@ -8,7 +8,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -48,12 +47,14 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(isRuntimeWithNestSupport(parameters.asCfRuntime()));
     testForJvm(parameters)
         .addProgramClassFileData(
             dumpHost(ACC_PRIVATE), dumpMember1(ACC_PRIVATE), dumpMember2(ACC_PRIVATE))
         .run(parameters.getRuntime(), "Host")
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            this::isRuntimeWithNestSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -105,7 +106,6 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
     assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.getRuntime()));
     testForR8(parameters)
@@ -130,13 +130,18 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
                             ignore -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
                             ignore ->
                                 r.assertFailureWithErrorThatThrows(IllegalAccessError.class))),
+            parameters.isCfRuntime(),
+            rr ->
+                rr.applyIfCfRuntime(
+                    this::isRuntimeWithNestSupport,
+                    r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+                    r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)),
             rr -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 
   @Test
   public void testR8KeepHostWithPrivateMembers() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
     assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.getRuntime()));
     testForR8(parameters)
@@ -150,14 +155,17 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
         .run(parameters.getRuntime(), "Host")
         .applyIf(
             parameters.isCfRuntime(),
-            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            rr ->
+                rr.applyIfCfRuntime(
+                    this::isRuntimeWithNestSupport,
+                    r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+                    r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)),
             r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class));
   }
 
   @Test
   public void testR8KeepHostWithPublicMembers() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
     assertFalse(parameters.isDexRuntime() && isRuntimeWithNestSupport(parameters.getRuntime()));
     testForR8(parameters)
@@ -169,7 +177,10 @@ public class NestAttributesInDexShrinkingMethodsTest extends NestAttributesInDex
         .compile()
         .inspect(this::expectNoNestAttributes)
         .run(parameters.getRuntime(), "Host")
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            cfVm -> !isRuntimeWithNestSupport(cfVm),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 
   /*

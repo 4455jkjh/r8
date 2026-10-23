@@ -53,9 +53,11 @@ public class MetadataRewriteInClasspathTypeTest extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer baseLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/classpath_lib_base", "itf"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/classpath_lib_base", "itf"));
   private static final KotlinCompileMemoizer extLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/classpath_lib_ext", "impl"))
+      getCompileMemoizer(
+              getKotlinSourceFileFromResources(PKG_PREFIX + "/classpath_lib_ext", "impl"))
           .configure(
               kotlinCompilerTool -> {
                 kotlinCompilerTool.addClasspathFiles(
@@ -71,7 +73,7 @@ public class MetadataRewriteInClasspathTypeTest extends KotlinMetadataTestBase {
     Path extLibJar = extLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(baseLibJar, extLibJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/classpath_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -105,7 +107,7 @@ public class MetadataRewriteInClasspathTypeTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(baseLibJar, libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/classpath_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -144,9 +146,12 @@ public class MetadataRewriteInClasspathTypeTest extends KotlinMetadataTestBase {
     KmClassSubject kmClass = extra.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Impl")));
-    assertTrue(superTypes.stream().anyMatch(
-        supertype -> supertype.getFinalDescriptor().equals(impl.getFinalDescriptor())));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Impl")));
+    assertTrue(
+        superTypes.stream()
+            .anyMatch(
+                supertype -> supertype.getFinalDescriptor().equals(impl.getFinalDescriptor())));
   }
 }

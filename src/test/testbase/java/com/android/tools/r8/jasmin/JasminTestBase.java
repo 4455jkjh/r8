@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 public class JasminTestBase extends TestBase {
 
   public static TestParametersBuilder getTestParameters() {
-    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+    return TestBase.getTestParameters().withoutCollapsedCfRuntimes().withoutCollapsedDexRuntimes();
   }
 
   // Subclasses running code on ART must provide the VM from their test parameters.
@@ -54,9 +54,8 @@ public class JasminTestBase extends TestBase {
     return ToolHelper.runJavaNoVerify(out, main);
   }
 
-  protected ProcessResult runOnJavaNoVerifyRaw(JasminBuilder program, JasminBuilder library,
-      String main)
-      throws Exception {
+  protected ProcessResult runOnJavaNoVerifyRaw(
+      JasminBuilder program, JasminBuilder library, String main) throws Exception {
     Path out = temp.newFolder().toPath();
     program.writeClassFiles(out);
     Path libraryOut = temp.newFolder().toPath();
@@ -111,9 +110,8 @@ public class JasminTestBase extends TestBase {
     return compileWithR8(builder, null);
   }
 
-  protected AndroidApp compileWithR8(JasminBuilder builder,
-      Consumer<InternalOptions> optionsConsumer)
-      throws Exception {
+  protected AndroidApp compileWithR8(
+      JasminBuilder builder, Consumer<InternalOptions> optionsConsumer) throws Exception {
     return ToolHelper.runR8(builder.build(), optionsConsumer);
   }
 
@@ -131,8 +129,8 @@ public class JasminTestBase extends TestBase {
     return ToolHelper.runR8(command, optionsConsumer);
   }
 
-  protected AndroidApp compileWithR8(JasminBuilder builder, String proguardConfig,
-      Consumer<InternalOptions> optionsConsumer)
+  protected AndroidApp compileWithR8(
+      JasminBuilder builder, String proguardConfig, Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     R8Command command =
         ToolHelper.prepareR8CommandBuilder(builder.build())
@@ -142,8 +140,8 @@ public class JasminTestBase extends TestBase {
     return ToolHelper.runR8(command, optionsConsumer);
   }
 
-  protected AndroidApp compileWithR8(JasminBuilder program, Path library,
-      Consumer<InternalOptions> optionsConsumer)
+  protected AndroidApp compileWithR8(
+      JasminBuilder program, Path library, Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     R8Command command =
         ToolHelper.prepareR8CommandBuilder(program.build())
@@ -153,8 +151,11 @@ public class JasminTestBase extends TestBase {
     return ToolHelper.runR8(command, optionsConsumer);
   }
 
-  protected AndroidApp compileWithR8(JasminBuilder program, Path library,
-      String proguardConfig, Consumer<InternalOptions> optionsConsumer)
+  protected AndroidApp compileWithR8(
+      JasminBuilder program,
+      Path library,
+      String proguardConfig,
+      Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     R8Command command =
         ToolHelper.prepareR8CommandBuilder(program.build())
@@ -169,42 +170,53 @@ public class JasminTestBase extends TestBase {
     return runOnArtR8(builder, main, null);
   }
 
-  protected String runOnArtR8(JasminBuilder builder, String main,
-      Consumer<InternalOptions> optionsConsumer)
+  protected String runOnArtR8(
+      JasminBuilder builder, String main, Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     AndroidApp result = compileWithR8(builder, optionsConsumer);
     return runOnArt(result, main);
   }
 
-  protected String runOnArtR8(JasminBuilder builder, String main, String proguardConfig,
+  protected String runOnArtR8(
+      JasminBuilder builder,
+      String main,
+      String proguardConfig,
       Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     AndroidApp result = compileWithR8(builder, proguardConfig, optionsConsumer);
     return runOnArt(result, main);
   }
 
-  protected ProcessResult runOnArtR8Raw(JasminBuilder builder, String main,
-      Consumer<InternalOptions> optionsConsumer)
+  protected ProcessResult runOnArtR8Raw(
+      JasminBuilder builder, String main, Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     AndroidApp result = compileWithR8(builder, optionsConsumer);
     return runOnArtRaw(result, main);
   }
 
-  protected ProcessResult runOnArtR8Raw(JasminBuilder builder, String main,
-      String proguardConfig, Consumer<InternalOptions> optionsConsumer)
+  protected ProcessResult runOnArtR8Raw(
+      JasminBuilder builder,
+      String main,
+      String proguardConfig,
+      Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     AndroidApp result = compileWithR8(builder, proguardConfig, optionsConsumer);
     return runOnArtRaw(result, main);
   }
 
-  protected ProcessResult runOnArtR8Raw(JasminBuilder program, JasminBuilder library, String main,
-      String proguardConfig, Consumer<InternalOptions> optionsConsumer)
+  protected ProcessResult runOnArtR8Raw(
+      JasminBuilder program,
+      JasminBuilder library,
+      String main,
+      String proguardConfig,
+      Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     Path libraryClasses = temp.newFolder().toPath();
     library.writeClassFiles(libraryClasses);
-    AndroidApp result = proguardConfig == null
-        ? compileWithR8(program, libraryClasses, optionsConsumer)
-        : compileWithR8(program, libraryClasses, proguardConfig, optionsConsumer);
+    AndroidApp result =
+        proguardConfig == null
+            ? compileWithR8(program, libraryClasses, optionsConsumer)
+            : compileWithR8(program, libraryClasses, proguardConfig, optionsConsumer);
     AndroidApp libraryApp = compileWithR8(library);
     return runOnArtRaw(result, libraryApp, main);
   }

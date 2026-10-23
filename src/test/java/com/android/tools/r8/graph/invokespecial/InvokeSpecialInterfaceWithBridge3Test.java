@@ -51,14 +51,13 @@ public class InvokeSpecialInterfaceWithBridge3Test extends TestBase {
       // TODO(b/166210854): Runs really should fail, but since DEX does not have interface
       //  method references the VM will just dispatch.
       runResult.assertSuccessWithOutput(EXPECTED);
+    } else if (parameters.isCfRuntime()) {
+      runResult.applyIfCfRuntime(
+          vm -> vm.isGreaterThanOrEqualTo(CfVm.JDK25),
+          rr -> rr.assertFailureWithErrorThatThrows(VerifyError.class),
+          rr -> rr.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
     } else {
       runResult.applyIfDexRuntime(
-          parameters.isCfRuntime(),
-          rr ->
-              rr.assertFailureWithErrorThatThrows(
-                  parameters.getRuntime().asCf().getVm().isGreaterThanOrEqualTo(CfVm.JDK25)
-                      ? VerifyError.class
-                      : IncompatibleClassChangeError.class),
           version -> version.isOlderThanOrEqual(Version.V4_4_4),
           rr -> rr.assertFailureWithErrorThatThrows(VerifyError.class),
           version -> version.isNewerThanOrEqual(Version.V7_0_0),

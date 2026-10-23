@@ -218,9 +218,7 @@ public class BackportDuplicationTest extends TestBase {
 
   @Test
   public void testPerFileIntermediate() throws Exception {
-    ProcessResult result = runDoublePerFileCompilation(Backend.CF, true);
-    assertEquals(result.toString(), 0, result.exitCode);
-    assertEquals(EXPECTED, result.stdout);
+    runDoublePerFileCompilation(Backend.CF, true);
   }
 
   @Test
@@ -248,7 +246,7 @@ public class BackportDuplicationTest extends TestBase {
     }
   }
 
-  public ProcessResult runDoublePerFileCompilation(Backend firstRoundOutput, boolean intermediate)
+  public void runDoublePerFileCompilation(Backend firstRoundOutput, boolean intermediate)
       throws Exception {
     List<byte[]> outputsRoundOne = Collections.synchronizedList(new ArrayList<>());
     testForD8(firstRoundOutput)
@@ -301,13 +299,20 @@ public class BackportDuplicationTest extends TestBase {
     }
 
     if (parameters.isCfRuntime()) {
-      return ToolHelper.runJava(
-          parameters.getRuntime().asCf(), outputsRoundTwo, TestClass.class.getTypeName());
+      for (com.android.tools.r8.TestRuntime.CfRuntime cfRuntime :
+          parameters.getRuntime().asCfRuntimes()) {
+        ProcessResult result =
+            ToolHelper.runJava(cfRuntime, outputsRoundTwo, TestClass.class.getTypeName());
+        assertEquals(result.toString(), 0, result.exitCode);
+        assertEquals(EXPECTED, result.stdout);
+      }
     } else {
       ArtCommandBuilder builder = new ArtCommandBuilder(parameters.getDexVm());
       builder.setMainClass(TestClass.class.getTypeName());
       outputsRoundTwo.forEach(p -> builder.appendClasspath(p.toAbsolutePath().toString()));
-      return ToolHelper.runArtRaw(builder);
+      ProcessResult result = ToolHelper.runArtRaw(builder);
+      assertEquals(result.toString(), 0, result.exitCode);
+      assertEquals(EXPECTED, result.stdout);
     }
   }
 

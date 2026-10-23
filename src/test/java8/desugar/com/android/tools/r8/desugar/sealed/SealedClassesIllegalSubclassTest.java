@@ -68,14 +68,15 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
     assumeTrue(keepPermittedSubclassesAttribute);
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForJvm(parameters)
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertFailureWithErrorThatMatches(
-            parameters.isCfRuntime() && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)
-                ? EXPECTED_BEFORE_JDK25
-                : EXPECTED_FROM_JDK25);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK25),
+            r -> r.assertFailureWithErrorThatMatches(EXPECTED_FROM_JDK25),
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+            r -> r.assertFailureWithErrorThatMatches(EXPECTED_BEFORE_JDK25),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -101,11 +102,13 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
                 r.assertSuccessWithOutput(EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE);
               }
             },
-            c -> parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK25),
-            r -> r.assertFailureWithErrorThatMatches(EXPECTED_FROM_JDK25),
-            c -> parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
-            r -> r.assertFailureWithErrorThatMatches(EXPECTED_BEFORE_JDK25),
-            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK25),
+                    rr -> rr.assertFailureWithErrorThatMatches(EXPECTED_FROM_JDK25),
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr -> rr.assertFailureWithErrorThatMatches(EXPECTED_BEFORE_JDK25),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)));
   }
 
   private void inspect(CodeInspector inspector) {
@@ -127,8 +130,6 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(
-        parameters.isDexRuntime() || parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     assumeFalse(parameters.isDexRuntime() && keepPermittedSubclassesAttribute);
     testForR8(parameters)
         .apply(this::addTestClasses)
@@ -148,19 +149,18 @@ public class SealedClassesIllegalSubclassTest extends TestBase {
               // the class with the attribute might end up in the D8 split keeping the attribute
               // anyway. Runtime result depends on that.
             },
-            parameters.isDexRuntime()
-                || (!keepPermittedSubclassesAttribute
-                    && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)),
+            parameters.isDexRuntime(),
             r -> r.assertSuccessWithOutput(EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE),
-            parameters.isCfRuntime()
-                && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK25)
-                && keepPermittedSubclassesAttribute,
-            r -> r.assertFailureWithErrorThatMatches(EXPECTED_FROM_JDK25),
-            parameters.isCfRuntime()
-                && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
-                && keepPermittedSubclassesAttribute,
-            r -> r.assertFailureWithErrorThatMatches(EXPECTED_BEFORE_JDK25),
-            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> !keepPermittedSubclassesAttribute && vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr ->
+                        rr.assertSuccessWithOutput(EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE),
+                    vm -> keepPermittedSubclassesAttribute && vm.isNewerThanOrEqual(CfVm.JDK25),
+                    rr -> rr.assertFailureWithErrorThatMatches(EXPECTED_FROM_JDK25),
+                    vm -> keepPermittedSubclassesAttribute && vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr -> rr.assertFailureWithErrorThatMatches(EXPECTED_BEFORE_JDK25),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)));
   }
 
   public byte[] getTransformedClasses() throws Exception {

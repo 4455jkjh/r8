@@ -57,7 +57,7 @@ public class MetadataRewriteInSealedClassNestedTest extends KotlinMetadataTestBa
   public void smokeTest() throws Exception {
     Path libJar = sealedLibJarMap.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -84,7 +84,7 @@ public class MetadataRewriteInSealedClassNestedTest extends KotlinMetadataTestBa
             .compile()
             .writeToZip();
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

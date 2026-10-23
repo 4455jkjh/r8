@@ -88,7 +88,7 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
         "Context receiver only supported until Kotlin 2.3",
         kotlinParameters.getCompiler().getCompilerVersion().isLessThanOrEqualTo(KOTLINC_2_3_10));
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJars.getForConfiguration(kotlinParameters))
             .addSourceFilesWithNonKtExtension(temp, MAIN_FILE)
             .setOutputPath(temp.newFolder().toPath())
@@ -132,7 +132,7 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
                         new CodeInspector(libJars.getForConfiguration(kotlinParameters))))
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFilesWithNonKtExtension(temp, MAIN_FILE)
             .setOutputPath(temp.newFolder().toPath())
@@ -194,7 +194,7 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
 
     Path libJar = r8LibraryResult.writeToZip();
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(newSource)
             .setOutputPath(temp.newFolder().toPath())

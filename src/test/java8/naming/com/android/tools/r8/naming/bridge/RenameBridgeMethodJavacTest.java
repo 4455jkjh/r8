@@ -32,23 +32,26 @@ public class RenameBridgeMethodJavacTest extends TestBase {
 
   @Test
   public void testJavac() throws Exception {
-    Path library =
-        javac(parameters.asCfRuntime())
-            .addSourceFiles(
-                ToolHelper.getSourceFileForTestClassFromResources(Creator.class),
-                ToolHelper.getSourceFileForTestClassFromResources(Result.class),
-                ToolHelper.getSourceFileForTestClassFromResources(ResultImpl.class),
-                ToolHelper.getSourceFileForTestClassFromResources(Tester.class),
-                ToolHelper.getSourceFileForTestClassFromResources(TesterImpl.class))
-            .compile();
-    Path output = temp.newFolder().toPath();
-    ProcessResult processResult = compileAgainstLibrary(library, output);
-    assertEquals(0, processResult.exitCode);
-    testForJvm(parameters)
-        .addRunClasspathFiles(library)
-        .addRunClasspathFiles(output)
-        .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("Hello World!");
+    for (com.android.tools.r8.TestRuntime.CfRuntime cfRuntime :
+        parameters.getRuntime().asCfRuntimes()) {
+      Path library =
+          javac(cfRuntime)
+              .addSourceFiles(
+                  ToolHelper.getSourceFileForTestClassFromResources(Creator.class),
+                  ToolHelper.getSourceFileForTestClassFromResources(Result.class),
+                  ToolHelper.getSourceFileForTestClassFromResources(ResultImpl.class),
+                  ToolHelper.getSourceFileForTestClassFromResources(Tester.class),
+                  ToolHelper.getSourceFileForTestClassFromResources(TesterImpl.class))
+              .compile();
+      Path output = temp.newFolder().toPath();
+      ProcessResult processResult = compileAgainstLibrary(cfRuntime, library, output);
+      assertEquals(0, processResult.exitCode);
+      testForJvm(parameters)
+          .addRunClasspathFiles(library)
+          .addRunClasspathFiles(output)
+          .run(cfRuntime, Main.class)
+          .assertSuccessWithOutputLines("Hello World!");
+    }
   }
 
   @Test
@@ -63,18 +66,23 @@ public class RenameBridgeMethodJavacTest extends TestBase {
             .addKeepClassAndMembersRulesWithAllowObfuscation(TesterImpl.class)
             .compile();
     Path library = libraryCompileResult.writeToZip();
-    Path output = temp.newFolder().toPath();
-    ProcessResult processResult = compileAgainstLibrary(library, output);
-    assertEquals(0, processResult.exitCode);
-    testForJvm(parameters)
-        .addProgramClasses(Main.class)
-        .addRunClasspathFiles(library)
-        .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("Hello World!");
+    for (com.android.tools.r8.TestRuntime.CfRuntime cfRuntime :
+        parameters.getRuntime().asCfRuntimes()) {
+      Path output = temp.newFolder().toPath();
+      ProcessResult processResult = compileAgainstLibrary(cfRuntime, library, output);
+      assertEquals(0, processResult.exitCode);
+      testForJvm(parameters)
+          .addProgramClasses(Main.class)
+          .addRunClasspathFiles(library)
+          .run(cfRuntime, Main.class)
+          .assertSuccessWithOutputLines("Hello World!");
+    }
   }
 
-  private ProcessResult compileAgainstLibrary(Path classPath, Path outputPath) throws Exception {
-    return javac(parameters.asCfRuntime())
+  private ProcessResult compileAgainstLibrary(
+      com.android.tools.r8.TestRuntime.CfRuntime cfRuntime, Path classPath, Path outputPath)
+      throws Exception {
+    return javac(cfRuntime)
         .addSourceFiles(ToolHelper.getSourceFileForTestClassFromResources(Main.class))
         .addClasspathFiles(classPath)
         .setOutputPath(outputPath)

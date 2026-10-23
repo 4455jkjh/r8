@@ -79,10 +79,10 @@ public class ObjectCloneInStaticInterfaceMethodTest extends TestBase {
         .addKeepClassAndMembersRules(I.class)
         .apply(this::addProgramInputs)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isDexRuntime() || parameters.isCfRuntime(CfVm.JDK8),
-            this::checkOutput,
-            r -> r.assertFailureWithErrorThatThrows(VerifyError.class));
+        .applyIfCfRuntime(
+            vm -> vm != CfVm.JDK8,
+            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
+            this::checkOutput);
   }
 
   private void checkOutput(TestRunResult<?> r) {

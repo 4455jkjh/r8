@@ -77,16 +77,13 @@ public class CollisionWithDefaultMethodOutsideMergeGroupLambdaTest extends TestB
             })
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/173990042): Should succeed with "K", "J".
-        .applyIf(
-            parameters.isCfRuntime(),
+        .applyIfCfRuntime(
+            parameters.isDexRuntime(),
+            builder -> builder.assertSuccessWithOutputLines("K", "J"),
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK11) && vm.isOlderThan(CfVm.JDK25),
+            builder -> builder.assertFailureWithErrorThatThrows(AbstractMethodError.class),
             builder ->
-                builder.assertFailureWithErrorThatThrows(
-                    parameters.isCfRuntime()
-                            && parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11)
-                            && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK25)
-                        ? AbstractMethodError.class
-                        : IncompatibleClassChangeError.class),
-            builder -> builder.assertSuccessWithOutputLines("K", "J"));
+                builder.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
 
   static class Main {

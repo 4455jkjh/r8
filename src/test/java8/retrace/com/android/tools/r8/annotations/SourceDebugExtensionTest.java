@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.annotations;
 
-import static com.android.tools.r8.ToolHelper.getFilesInTestFolderRelativeToClass;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -52,7 +51,7 @@ public class SourceDebugExtensionTest extends TestBase {
     KotlinCompiler kotlinc = kotlinTestParameters.getCompiler();
     Path kotlinSources =
         kotlinc(
-                KotlinTestBase.getKotlincHostRuntime(parameters.getRuntime()),
+                KotlinTestBase.getKotlincHostRuntime(),
                 getStaticTemp(),
                 kotlinc,
                 kotlinTestParameters.getTargetVersion(),

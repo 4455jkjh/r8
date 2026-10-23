@@ -49,12 +49,13 @@ public class Regress163264839Test extends TestBase {
             .addProgramClasses(TestClass.class)
             .run(parameters.getRuntime(), TestClass.class);
 
-    if (isInterface || parameters.isCfRuntime(CfVm.JDK8)) {
-      // JDK 8 allows mismatched method references in this case.
-      result.assertSuccessWithOutput(EXPECTED);
-    } else {
-      result.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
-    }
+    result.applyIfCfRuntime(
+        isInterface,
+        r -> r.assertSuccessWithOutput(EXPECTED),
+        vm -> vm == CfVm.JDK8,
+        // JDK 8 allows mismatched method references in this case.
+        r -> r.assertSuccessWithOutput(EXPECTED),
+        r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
 
   private byte[] getFunctionClass() throws Exception {

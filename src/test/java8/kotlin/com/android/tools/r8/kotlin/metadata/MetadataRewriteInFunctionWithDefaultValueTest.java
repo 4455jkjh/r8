@@ -60,7 +60,7 @@ public class MetadataRewriteInFunctionWithDefaultValueTest extends KotlinMetadat
     Path libJar = defaultValueLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_app", "main"))
@@ -94,7 +94,7 @@ public class MetadataRewriteInFunctionWithDefaultValueTest extends KotlinMetadat
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(PKG_PREFIX + "/default_value_app", "main"))

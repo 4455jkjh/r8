@@ -45,8 +45,9 @@ public class PartialCompilationSyntheticMethodKeepTest extends TestBase {
                     diagnosticType(UnusedProguardKeepRuleDiagnostic.class)))
         .inspect(inspector -> assertEquals(1, inspector.allClasses().size()))
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntime() || parameters.getCfRuntime().isNewerThan(CfVm.JDK9),
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThanOrEqual(CfVm.JDK9),
+            rr -> {},
             rr -> rr.assertSuccessWithOutputLines("Hello, world!"));
   }
 

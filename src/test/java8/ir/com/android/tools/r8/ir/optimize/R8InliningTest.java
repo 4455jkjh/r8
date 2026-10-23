@@ -160,29 +160,31 @@ public class R8InliningTest extends TestBase {
     outputDir = temp.newFolder().toPath();
     Path mapFile = outputDir.resolve(DEFAULT_MAP_FILENAME);
     generateR8Version(outputDir, mapFile, true);
-    String output;
+    // Compare result with Java to make sure we have the same behavior.
+    ProcessResult javaResult = ToolHelper.runJava(getInputFile(), "inlining.Inlining");
+    assertEquals(0, javaResult.exitCode);
     if (parameters.isDexRuntime()) {
-      output =
+      String output =
           ToolHelper.runArtNoVerificationErrors(
               Collections.singletonList(outputDir.resolve(DEFAULT_DEX_FILENAME).toString()),
               "inlining.Inlining",
               builder -> {},
               parameters.getRuntime().asDex().getVm());
+      assertEquals(javaResult.stdout, output);
     } else {
       assert parameters.isCfRuntime();
-      output =
-          ToolHelper.runJava(
-                  parameters.getRuntime().asCf(),
-                  Collections.singletonList("-noverify"),
-                  Collections.singletonList(outputDir.resolve(DEFAULT_JAR_FILENAME)),
-                  "inlining.Inlining")
-              .stdout;
+      for (com.android.tools.r8.TestRuntime.CfRuntime cfRuntime :
+          parameters.getRuntime().asCfRuntimes()) {
+        String output =
+            ToolHelper.runJava(
+                    cfRuntime,
+                    Collections.singletonList("-noverify"),
+                    Collections.singletonList(outputDir.resolve(DEFAULT_JAR_FILENAME)),
+                    "inlining.Inlining")
+                .stdout;
+        assertEquals(javaResult.stdout, output);
+      }
     }
-
-    // Compare result with Java to make sure we have the same behavior.
-    ProcessResult javaResult = ToolHelper.runJava(getInputFile(), "inlining.Inlining");
-    assertEquals(0, javaResult.exitCode);
-    assertEquals(javaResult.stdout, output);
   }
 
   private void checkAbsentBooleanMethod(ClassSubject clazz, String name) {

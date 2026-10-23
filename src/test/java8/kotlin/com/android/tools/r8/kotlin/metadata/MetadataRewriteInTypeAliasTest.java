@@ -89,7 +89,7 @@ public class MetadataRewriteInTypeAliasTest extends KotlinMetadataTestBase {
     Path libJar = typeAliasLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/typealias_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -136,7 +136,7 @@ public class MetadataRewriteInTypeAliasTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path appJar =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/typealias_app", "main"))
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));

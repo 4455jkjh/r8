@@ -77,7 +77,7 @@ public abstract class KotlinInlineTestBase extends KotlinTestBase {
   public void smokeTest() throws Exception {
     Path libJar = jarMap.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(getAppSourceFile())
             .compile();
@@ -110,12 +110,12 @@ public abstract class KotlinInlineTestBase extends KotlinTestBase {
     KotlinCompilerTool kotlinc =
         kotlinParameters.is(KOTLINC_1_3_72)
             ? kotlinc(
-                parameters.getRuntime().asCf(),
+                parameters.getRuntime(),
                 temp,
                 KOTLINC_1_4_20.getCompiler(),
                 kotlinParameters.getTargetVersion(),
                 kotlinParameters.getLambdaGeneration())
-            : kotlinc(parameters.getRuntime().asCf(), kotlinParameters);
+            : kotlinc(parameters.getRuntime(), kotlinParameters);
     Path output =
         kotlinc
             .addClasspathFiles(r8LibJar)

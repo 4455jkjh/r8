@@ -69,7 +69,7 @@ public class MetadataRewriteInCompanionTest extends KotlinMetadataTestBase {
     Path libJar = companionLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -101,7 +101,7 @@ public class MetadataRewriteInCompanionTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -146,7 +146,7 @@ public class MetadataRewriteInCompanionTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -181,10 +181,13 @@ public class MetadataRewriteInCompanionTest extends KotlinMetadataTestBase {
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
     if (!keptAll) {
-      assertTrue(superTypes.stream().noneMatch(
-          supertype -> supertype.getFinalDescriptor().contains("Super")));
-      assertTrue(superTypes.stream().anyMatch(
-          supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
+      assertTrue(
+          superTypes.stream()
+              .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Super")));
+      assertTrue(
+          superTypes.stream()
+              .anyMatch(
+                  supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
     }
 
     // The backing field for the property in the companion, with @JvmField

@@ -63,7 +63,7 @@ public class MetadataRewriteJvmStaticTest extends KotlinMetadataTestBase {
   @Test
   public void smokeTest() throws Exception {
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(kotlincLibJar.getForConfiguration(kotlinParameters))
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -108,7 +108,7 @@ public class MetadataRewriteJvmStaticTest extends KotlinMetadataTestBase {
 
   private void testKotlin(Path libJar) throws Exception {
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

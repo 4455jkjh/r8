@@ -33,6 +33,7 @@ public class B405152615 extends TestBase {
         testForJvm(getStaticTemp())
             .addTestClasspath()
             .run(TestRuntime.getDefaultCfRuntime(), Main.class)
+            .asSingleRuntimeResult()
             .getStdOut();
   }
 

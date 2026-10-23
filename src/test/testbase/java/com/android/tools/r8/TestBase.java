@@ -483,7 +483,9 @@ public class TestBase {
     return DesugarTestBuilder.create(null, builders.build());
   }
 
-  /** @deprecated use {@link #testForProguard(ProguardVersion)} instead. */
+  /**
+   * @deprecated use {@link #testForProguard(ProguardVersion)} instead.
+   */
   @Deprecated
   public ProguardTestBuilder testForProguard() {
     return testForProguard(ProguardVersion.V7_0_0);
@@ -528,6 +530,20 @@ public class TestBase {
   }
 
   public static KotlinCompilerTool kotlinc(
+      TestRuntime jdk,
+      TemporaryFolder temp,
+      KotlinCompiler kotlinCompiler,
+      KotlinTargetVersion kotlinTargetVersion,
+      KotlinLambdaGeneration lambdaGeneration) {
+    return kotlinc(
+        KotlinTestBase.getKotlincHostRuntime(),
+        temp,
+        kotlinCompiler,
+        kotlinTargetVersion,
+        lambdaGeneration);
+  }
+
+  public static KotlinCompilerTool kotlinc(
       CfRuntime jdk,
       TemporaryFolder temp,
       KotlinCompiler kotlinCompiler,
@@ -536,6 +552,19 @@ public class TestBase {
     return KotlinCompilerTool.create(
         getJdkForKotlinc(jdk, kotlinCompiler),
         temp,
+        kotlinCompiler,
+        kotlinTargetVersion,
+        lambdaGeneration);
+  }
+
+  public static KotlinCompilerTool kotlinc(
+      TestRuntime jdk,
+      KotlinCompiler kotlinCompiler,
+      KotlinTargetVersion kotlinTargetVersion,
+      KotlinLambdaGeneration lambdaGeneration) {
+    return kotlinc(
+        KotlinTestBase.getKotlincHostRuntime(),
+        staticTemp,
         kotlinCompiler,
         kotlinTargetVersion,
         lambdaGeneration);
@@ -559,6 +588,10 @@ public class TestBase {
         kotlinCompiler,
         kotlinTargetVersion,
         kotlinLambdaGeneration);
+  }
+
+  public KotlinCompilerTool kotlinc(TestRuntime jdk, KotlinTestParameters testParameters) {
+    return kotlinc(KotlinTestBase.getKotlincHostRuntime(), testParameters);
   }
 
   public KotlinCompilerTool kotlinc(CfRuntime jdk, KotlinTestParameters testParameters) {
@@ -588,8 +621,7 @@ public class TestBase {
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
-  @Rule
-  public TemporaryFolder temp = ToolHelper.getTemporaryFolderForTest();
+  @Rule public TemporaryFolder temp = ToolHelper.getTemporaryFolderForTest();
 
   @TempDir public Path tempDirJUnit5;
 
@@ -694,9 +726,7 @@ public class TestBase {
     return (a, b) -> memoizedFn.apply(new Pair(a, b));
   }
 
-  /**
-   * Check if tests should also run Proguard when applicable.
-   */
+  /** Check if tests should also run Proguard when applicable. */
   protected boolean isRunProguard() {
     return RUN_PROGUARD;
   }
@@ -704,7 +734,7 @@ public class TestBase {
   /**
    * Write lines of text to a temporary file.
    *
-   * The file will include a line separator after the last line.
+   * <p>The file will include a line separator after the last line.
    */
   protected Path writeTextToTempFile(String... lines) throws IOException {
     return writeTextToTempFile(System.lineSeparator(), Arrays.asList(lines));
@@ -713,18 +743,17 @@ public class TestBase {
   /**
    * Write lines of text to a temporary file, along with the specified line separator.
    *
-   * The file will include a line separator after the last line.
+   * <p>The file will include a line separator after the last line.
    */
-  protected Path writeTextToTempFile(String lineSeparator, List<String> lines)
-      throws IOException {
+  protected Path writeTextToTempFile(String lineSeparator, List<String> lines) throws IOException {
     return writeTextToTempFile(lineSeparator, lines, true);
   }
 
   /**
    * Write lines of text to a temporary file, along with the specified line separator.
    *
-   * The argument <code>includeTerminatingLineSeparator</code> control if the file will include
-   * a line separator after the last line.
+   * <p>The argument <code>includeTerminatingLineSeparator</code> control if the file will include a
+   * line separator after the last line.
    */
   protected Path writeTextToTempFile(
       String lineSeparator, List<String> lines, boolean includeTerminatingLineSeparator)
@@ -735,10 +764,7 @@ public class TestBase {
   }
 
   protected void writeTextToTempFile(
-      Path file,
-      String lineSeparator,
-      List<String> lines,
-      boolean includeTerminatingLineSeparator)
+      Path file, String lineSeparator, List<String> lines, boolean includeTerminatingLineSeparator)
       throws IOException {
     String contents = String.join(lineSeparator, lines);
     if (includeTerminatingLineSeparator) {
@@ -764,9 +790,7 @@ public class TestBase {
     return builder.build();
   }
 
-  /**
-   * Build an AndroidApp with the specified jar.
-   */
+  /** Build an AndroidApp with the specified jar. */
   protected AndroidApp readJar(Path jar) {
     return AndroidApp.builder()
         .addProgramResourceProvider(ArchiveProgramResourceProvider.fromArchive(jar))
@@ -895,9 +919,7 @@ public class TestBase {
     return AndroidApp.builder().addProgramFiles(programFiles).build();
   }
 
-  /**
-   * Copy test classes to the specified directory.
-   */
+  /** Copy test classes to the specified directory. */
   protected void copyTestClasses(Path dest, Class... classes) throws IOException {
     for (Class<?> clazz : classes) {
       Path path = dest.resolve(clazz.getCanonicalName().replace('.', '/') + ".class");
@@ -1191,7 +1213,7 @@ public class TestBase {
 
   /** Create a temporary JAR file containing the specified test classes. */
   protected Path jarTestClasses(List<Class<?>> classes) throws IOException {
-    return jarTestClasses(classes.toArray(new Class<?>[]{}));
+    return jarTestClasses(classes.toArray(new Class<?>[] {}));
   }
 
   protected static List<Object[]> buildParameters(Object... arraysOrIterables) {
@@ -1263,11 +1285,12 @@ public class TestBase {
   @Deprecated
   protected AndroidApp compileWithR8(AndroidApp app, Consumer<InternalOptions> optionsConsumer)
       throws CompilationFailedException {
-    R8Command command = ToolHelper.prepareR8CommandBuilder(app)
-        .setDisableTreeShaking(true)
-        .setDisableMinification(true)
-        .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown())
-        .build();
+    R8Command command =
+        ToolHelper.prepareR8CommandBuilder(app)
+            .setDisableTreeShaking(true)
+            .setDisableMinification(true)
+            .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown())
+            .build();
 
     return ToolHelper.runR8(command, optionsConsumer);
   }
@@ -1461,7 +1484,8 @@ public class TestBase {
     Path out = getNewTempFile("junit", ".zip").toPath();
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
     return ToolHelper.runArtNoVerificationErrors(
-        ImmutableList.of(out.toString()), mainClass,
+        ImmutableList.of(out.toString()),
+        mainClass,
         builder -> {
           builder.appendArtOption("-ea");
           for (String arg : args) {
@@ -1585,7 +1609,6 @@ public class TestBase {
     consumer.finished(null);
   }
 
-
   protected static Path writeClassesToJar(Class<?>... classes) throws IOException {
     List<Class<?>> classesCollection = Arrays.asList(classes);
     return writeClassesToJar(classesCollection);
@@ -1683,8 +1706,10 @@ public class TestBase {
       DexCode code, List<Class<? extends DexInstruction>> instructions) {
     assertEquals(instructions.size(), code.instructions.length);
     for (int i = 0; i < instructions.size(); ++i) {
-      assertEquals("Unexpected instruction at index " + i,
-          instructions.get(i), code.instructions[i].getClass());
+      assertEquals(
+          "Unexpected instruction at index " + i,
+          instructions.get(i),
+          code.instructions[i].getClass());
     }
   }
 
@@ -1712,13 +1737,17 @@ public class TestBase {
   }
 
   protected long countCall(MethodSubject method, String methodName) {
-    return method.streamInstructions().filter(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        DexMethod invokedMethod = instructionSubject.getMethod();
-        return invokedMethod.name.toString().contains(methodName);
-      }
-      return false;
-    }).count();
+    return method
+        .streamInstructions()
+        .filter(
+            instructionSubject -> {
+              if (instructionSubject.isInvoke()) {
+                DexMethod invokedMethod = instructionSubject.getMethod();
+                return invokedMethod.name.toString().contains(methodName);
+              }
+              return false;
+            })
+        .count();
   }
 
   public enum MinifyMode {
@@ -1883,8 +1912,20 @@ public class TestBase {
   }
 
   public static boolean runtimeWithRecordsSupport(TestRuntime runtime) {
-    return (runtime.isCf() && runtime.asCf().hasRecordsSupport())
-        || (runtime.isDex() && runtime.asDex().hasRecordsSupport());
+    if (runtime.isCf()) {
+      List<CfRuntime> cfRuntimes = runtime.asCfRuntimes();
+      boolean result = cfRuntimes.get(0).hasRecordsSupport();
+      for (int i = 1; i < cfRuntimes.size(); i++) {
+        if (cfRuntimes.get(i).hasRecordsSupport() != result) {
+          throw new Unreachable(
+              "Ambiguous runtimeWithRecordsSupport on CollapsedCfRuntimes: "
+                  + runtime
+                  + "; use applyIfCfRuntime() or withoutCollapsedCfRuntimes()");
+        }
+      }
+      return result;
+    }
+    return runtime.isDex() && runtime.asDex().hasRecordsSupport();
   }
 
   public static AndroidApiLevel apiLevelWithStaticInterfaceMethodsSupport() {

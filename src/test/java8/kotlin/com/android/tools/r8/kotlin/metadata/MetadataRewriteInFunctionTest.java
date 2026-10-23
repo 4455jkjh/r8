@@ -64,7 +64,7 @@ public class MetadataRewriteInFunctionTest extends KotlinMetadataTestBase {
     Path libJar = funLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/function_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -106,7 +106,7 @@ public class MetadataRewriteInFunctionTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/function_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -136,8 +136,9 @@ public class MetadataRewriteInFunctionTest extends KotlinMetadataTestBase {
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Super")));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Super")));
 
     ClassSubject bKt = inspector.clazz(bKtClassName);
     assertThat(bKt, isPresentAndNotRenamed());
@@ -170,7 +171,7 @@ public class MetadataRewriteInFunctionTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/function_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -213,10 +214,13 @@ public class MetadataRewriteInFunctionTest extends KotlinMetadataTestBase {
     kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Super")));
-    assertTrue(superTypes.stream().anyMatch(
-        supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("Super")));
+    assertTrue(
+        superTypes.stream()
+            .anyMatch(
+                supertype -> supertype.getFinalDescriptor().equals(sup.getFinalDescriptor())));
 
     ClassSubject bKt = inspector.clazz(bKtClassName);
     assertThat(bKt, isPresentAndNotRenamed());

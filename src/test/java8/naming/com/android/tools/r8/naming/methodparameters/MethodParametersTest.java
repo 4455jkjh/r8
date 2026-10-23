@@ -71,9 +71,9 @@ public class MethodParametersTest extends TestBase {
             .compile()
             .run(parameters.getRuntime(), TestClass.class);
     if (keepMethodParameters) {
-      checkOutputContainsAll(runResult.asSingleRuntimeResult().getStdOut());
+      runResult.inspectStdOut(this::checkOutputContainsAll);
     } else {
-      checkOutputNotContainsAll(runResult.asSingleRuntimeResult().getStdOut());
+      runResult.inspectStdOut(this::checkOutputNotContainsAll);
     }
   }
 
@@ -87,7 +87,7 @@ public class MethodParametersTest extends TestBase {
             .addProgramClassFileData(getTransformedTestClass())
             .setMinApi(keepMethodParameters ? AndroidApiLevel.O : AndroidApiLevel.L)
             .run(parameters.getRuntime(), TestClass.class);
-    checkOutputContainsAll(runResult.asSingleRuntimeResult().getStdOut());
+    runResult.inspectStdOut(this::checkOutputContainsAll);
   }
 
   private void checkOutputContainsAll(String stdOut) {

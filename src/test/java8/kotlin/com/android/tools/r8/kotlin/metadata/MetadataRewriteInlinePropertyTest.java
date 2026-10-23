@@ -35,16 +35,18 @@ public class MetadataRewriteInlinePropertyTest extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer libJars =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_property_lib", "lib"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_property_lib", "lib"));
   private final TestParameters parameters;
 
   @Test
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(getKotlincHostRuntime(parameters.getRuntime()), kotlinParameters)
+        kotlinc(getKotlincHostRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_property_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_property_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -75,9 +77,10 @@ public class MetadataRewriteInlinePropertyTest extends KotlinMetadataTestBase {
                         new CodeInspector(libJars.getForConfiguration(kotlinParameters))))
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_property_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_property_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

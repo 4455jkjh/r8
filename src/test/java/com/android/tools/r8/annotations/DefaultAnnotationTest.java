@@ -62,14 +62,10 @@ public class DefaultAnnotationTest extends TestBase {
         .addKeepRules("-keep class * { *; }")
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(getExpected());
-  }
-
-  private String getExpected() {
-    if (parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK9)) {
-      return EXPECTED_QUOTES;
-    }
-    return EXPECTED;
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK9),
+            r -> r.assertSuccessWithOutput(EXPECTED_QUOTES),
+            r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   private static byte[] getDalvikAnnotationDefault() throws Exception {

@@ -42,10 +42,10 @@ public class NormalAndExceptionFlowTest extends TestBase {
         .addProgramClassFileData(getTransformedTestClass())
         .run(parameters.getRuntime(), TestClass.class, "foo")
         .assertFailureWithErrorThatThrows(ArrayIndexOutOfBoundsException.class)
-        .apply(
-            r ->
+        .inspectStdOut(
+            stdout ->
                 assertThat(
-                    r.getStdOut(),
+                    stdout,
                     containsString(
                         "compilation bailout: "
                             + "Exception handler can be reached by both "

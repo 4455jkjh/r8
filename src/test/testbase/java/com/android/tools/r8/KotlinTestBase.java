@@ -53,8 +53,8 @@ public abstract class KotlinTestBase extends TestBase {
     this.kotlinParameters = kotlinParameters;
   }
 
-  public static CfRuntime getKotlincHostRuntime(TestRuntime runtime) {
-    return runtime.isCf() ? runtime.asCf() : TestRuntime.getCheckedInJdk17();
+  public static CfRuntime getKotlincHostRuntime() {
+    return TestRuntime.getCheckedInJdk17();
   }
 
   @Deprecated
@@ -165,5 +165,4 @@ public abstract class KotlinTestBase extends TestBase {
         builder.applyIf(
             Version.isMainVersion(), b -> b.setFakeCompilerVersion(SemanticVersion.max()));
   }
-
 }

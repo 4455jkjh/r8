@@ -59,7 +59,7 @@ public class KotlinCompilerTreeShakingTest extends CompilationTestBase {
     // Compile Hello.kt and make sure it works as expected.
     Path classPathBefore =
         kotlinc(
-                KotlinTestBase.getKotlincHostRuntime(parameters.getRuntime()),
+                KotlinTestBase.getKotlincHostRuntime(),
                 kotlinTestParameters.getCompiler(),
                 kotlinTestParameters.getTargetVersion(),
                 kotlinTestParameters.getLambdaGeneration())
@@ -76,9 +76,7 @@ public class KotlinCompilerTreeShakingTest extends CompilationTestBase {
   @Ignore(
       "b/136457753: assertion error in static class merger; "
           + "b/144877828: assertion error in method naming state during interface method renaming; "
-          + "b/144859533: umbrella"
-  )
-
+          + "b/144859533: umbrella")
   @Test
   public void test() throws Exception {
     KotlinCompiler kotlinc = kotlinTestParameters.getCompiler();
@@ -127,7 +125,7 @@ public class KotlinCompilerTreeShakingTest extends CompilationTestBase {
     // Compile Hello.kt again with r8-processed kotlin-compiler.jar
     Path classPathAfter =
         kotlinc(
-                parameters.getRuntime().asCf(),
+                parameters.getRuntime(),
                 new KotlinCompiler(
                     "r8ProcessedKotlinc", r8ProcessedKotlinc, kotlinc.getCompilerVersion()),
                 kotlinTestParameters.getTargetVersion(),

@@ -50,7 +50,8 @@ public class MetadataRewriteInlineClassIncludeDescriptorClassesTest extends Kotl
 
   private static final KotlinCompileMemoizer libJars =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_class_fun_descriptor_classes_lib", "lib"),
+          getKotlinSourceFileFromResources(
+              PKG_PREFIX + "/inline_class_fun_descriptor_classes_lib", "lib"),
           getKotlinSourceFileFromResources(
               PKG_PREFIX + "/inline_class_fun_descriptor_classes_lib", "keepForApi"));
   private final TestParameters parameters;
@@ -59,7 +60,7 @@ public class MetadataRewriteInlineClassIncludeDescriptorClassesTest extends Kotl
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -101,7 +102,7 @@ public class MetadataRewriteInlineClassIncludeDescriptorClassesTest extends Kotl
                 })
             .writeToZip();
     ProcessResult kotlinCompileAppResult =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

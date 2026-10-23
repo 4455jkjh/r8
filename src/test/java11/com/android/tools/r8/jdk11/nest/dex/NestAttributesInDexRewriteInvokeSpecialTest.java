@@ -41,11 +41,14 @@ public class NestAttributesInDexRewriteInvokeSpecialTest extends NestAttributesI
 
   @Test
   public void testRuntime() throws Exception {
-    assumeTrue(parameters.isCfRuntime() && isRuntimeWithNestSupport(parameters.asCfRuntime()));
+    parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addProgramClassesAndInnerClasses(NestHierachy.class)
         .run(parameters.getRuntime(), NestHierachy.class)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            this::isRuntimeWithNestSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test

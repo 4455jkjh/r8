@@ -38,6 +38,7 @@ public class IntLongArithmeticRegressionTest extends TestBase {
             .addTestClasspath()
             .run(TestRuntime.getCheckedInJdk11(), PairsAndSuccessiveMain.class)
             .assertSuccess()
+            .asSingleRuntimeResult()
             .getStdOut();
 
     expectedUnusedThrowingStaticOutput =
@@ -45,6 +46,7 @@ public class IntLongArithmeticRegressionTest extends TestBase {
             .addTestClasspath()
             .run(TestRuntime.getCheckedInJdk11(), UnusedThrowingStaticMain.class)
             .assertSuccess()
+            .asSingleRuntimeResult()
             .getStdOut();
 
     expectedMinMaxPhiOutput =
@@ -52,6 +54,7 @@ public class IntLongArithmeticRegressionTest extends TestBase {
             .addTestClasspath()
             .run(TestRuntime.getCheckedInJdk11(), MinMaxPhiMain.class)
             .assertSuccess()
+            .asSingleRuntimeResult()
             .getStdOut();
   }
 

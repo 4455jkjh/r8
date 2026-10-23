@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -69,6 +68,22 @@ public abstract class TestRuntime {
 
     public boolean lessThanOrEqual(CfVm other) {
       return isLessThanOrEqualTo(other);
+    }
+
+    public boolean isOlderThan(CfVm other) {
+      return isLessThan(other);
+    }
+
+    public boolean isOlderThanOrEqual(CfVm other) {
+      return isLessThanOrEqualTo(other);
+    }
+
+    public boolean isNewerThan(CfVm other) {
+      return isGreaterThan(other);
+    }
+
+    public boolean isNewerThanOrEqual(CfVm other) {
+      return isGreaterThanOrEqualTo(other);
     }
 
     @Override
@@ -425,6 +440,11 @@ public abstract class TestRuntime {
       return this;
     }
 
+    @Override
+    public List<CfRuntime> asCfRuntimes() {
+      return ImmutableList.of(this);
+    }
+
     public CfVm getVm() {
       return vm;
     }
@@ -458,6 +478,10 @@ public abstract class TestRuntime {
       return vm.lessThan(version);
     }
 
+    public boolean isOlderThanOrEqual(CfVm version) {
+      return vm.lessThanOrEqual(version);
+    }
+
     public boolean isNewerThan(CfVm version) {
       return !vm.lessThanOrEqual(version);
     }
@@ -472,6 +496,68 @@ public abstract class TestRuntime {
 
     public boolean hasSealedClassesSupport() {
       return getVm().hasSealedClassesSupport();
+    }
+  }
+
+  // Wrapper for multiple CF runtimes sharing the same compilation parameters.
+  public static class CollapsedCfRuntimes extends TestRuntime {
+
+    private final List<CfRuntime> runtimes;
+
+    public CollapsedCfRuntimes(List<CfRuntime> runtimes) {
+      assert runtimes.size() > 1;
+      this.runtimes = ImmutableList.copyOf(runtimes);
+    }
+
+    @Override
+    public String name() {
+      return "cf-[" + StringUtils.join(",", runtimes, CfRuntime::name) + "]";
+    }
+
+    @Override
+    public boolean isCf() {
+      return true;
+    }
+
+    @Override
+    public CfRuntime asCf() {
+      throw new Unreachable("Cannot get single CfRuntime from CollapsedCfRuntimes: " + this);
+    }
+
+    @Override
+    public List<CfRuntime> asCfRuntimes() {
+      return runtimes;
+    }
+
+    @Override
+    public AndroidApiLevel maxSupportedApiLevel() {
+      AndroidApiLevel max = AndroidApiLevel.LATEST;
+      for (CfRuntime runtime : runtimes) {
+        AndroidApiLevel level = runtime.maxSupportedApiLevel();
+        if (level.isLessThan(max)) {
+          max = level;
+        }
+      }
+      return max;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (!(other instanceof CollapsedCfRuntimes)) {
+        return false;
+      }
+      CollapsedCfRuntimes collapsedCfRuntimes = (CollapsedCfRuntimes) other;
+      return runtimes.equals(collapsedCfRuntimes.runtimes);
+    }
+
+    @Override
+    public int hashCode() {
+      return runtimes.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return name();
     }
   }
 
@@ -517,6 +603,10 @@ public abstract class TestRuntime {
 
   public CfRuntime asCf() {
     return null;
+  }
+
+  public List<CfRuntime> asCfRuntimes() {
+    throw new Unreachable();
   }
 
   public Backend getBackend() {

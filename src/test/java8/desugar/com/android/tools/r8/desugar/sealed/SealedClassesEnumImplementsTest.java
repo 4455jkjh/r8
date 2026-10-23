@@ -60,11 +60,13 @@ public class SealedClassesEnumImplementsTest extends TestBase {
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
     assumeTrue(keepPermittedSubclassesAttribute);
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForJvm(parameters)
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+            r -> r.assertSuccessWithOutput(EXPECTED),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -74,11 +76,13 @@ public class SealedClassesEnumImplementsTest extends TestBase {
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
-            (DesugarTestConfiguration c) ->
-                DesugarTestConfiguration.isNotJavac(c)
-                    || parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
+            DesugarTestConfiguration::isNotJavac,
             r -> r.assertSuccessWithOutput(EXPECTED),
-            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)));
   }
 
   private void inspect(CodeInspector inspector) {

@@ -78,10 +78,18 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
   }
 
   private void checkResult(TestRunResult<?> result, boolean isR8) {
-    result.applyIfDexRuntime(
-        Version::isDalvik,
-        r -> r.assertSuccessWithOutput(getExpectedStdout(isR8, true)),
-        r -> r.assertSuccessWithOutput(getExpectedStdout(isR8, false)));
+    result.applyIf(
+        parameters.isCfRuntime(),
+        r ->
+            r.applyIfCfRuntime(
+                vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                rr -> rr.assertSuccessWithOutput(getExpectedStdout(isR8, true, false)),
+                rr -> rr.assertSuccessWithOutput(getExpectedStdout(isR8, false, false))),
+        r ->
+            r.applyIfDexRuntime(
+                Version::isDalvik,
+                rr -> rr.assertSuccessWithOutput(getExpectedStdout(isR8, false, true)),
+                rr -> rr.assertSuccessWithOutput(getExpectedStdout(isR8, false, false))));
   }
 
   private void inspect(CodeInspector inspector) {
@@ -125,8 +133,8 @@ public class IfThrowNullPointerExceptionTest extends TestBase {
     }
   }
 
-  private String getExpectedStdout(boolean isR8, boolean isDalvik) {
-    if (parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)) {
+  private String getExpectedStdout(boolean isR8, boolean isJdk17OrNewer, boolean isDalvik) {
+    if (isJdk17OrNewer) {
       // Newer JVMs have added support for printing the expression and local causing the NPE.
       if (isR8) {
         return StringUtils.lines(

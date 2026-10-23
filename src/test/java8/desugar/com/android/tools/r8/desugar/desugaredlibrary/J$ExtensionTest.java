@@ -6,7 +6,7 @@ package com.android.tools.r8.desugar.desugaredlibrary;
 
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
-import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
@@ -102,18 +102,20 @@ public class J$ExtensionTest extends DesugaredLibraryTestBase {
   @Test
   public void testJ$ExtensionNoDesugaring() throws Exception {
     if (parameters.isCfRuntime()) {
-      String stderr =
-          testForJvm(parameters)
-              .addProgramFiles(compiledClasses)
-              .run(parameters.getRuntime(), MAIN_CLASS_NAME)
-              .assertFailure()
-              .getStdErr();
-      if (parameters.getRuntime().asCf().getVm() == CfVm.JDK8) {
-        assertTrue(
-            stderr.contains("java.lang.SecurityException: Prohibited package name: java.time"));
-      } else {
-        assertTrue(stderr.contains("java.lang.ClassNotFoundException: java.time.LocalTimeAccess"));
-      }
+      testForJvm(parameters)
+          .addProgramFiles(compiledClasses)
+          .run(parameters.getRuntime(), MAIN_CLASS_NAME)
+          .assertFailure()
+          .applyIfCfRuntime(
+              vm -> vm == CfVm.JDK8,
+              r ->
+                  r.assertFailureWithErrorThatMatches(
+                      containsString(
+                          "java.lang.SecurityException: Prohibited package name: java.time")),
+              r ->
+                  r.assertFailureWithErrorThatMatches(
+                      containsString(
+                          "java.lang.ClassNotFoundException: java.time.LocalTimeAccess")));
     } else {
       testForD8()
           .addProgramFiles(compiledClasses)

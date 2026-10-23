@@ -37,9 +37,9 @@ import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Base class of individual tree shaking tests in com.android.tools.r8.shaking.examples.
- * <p>
- * To add a new test, add Java files and keep rules to a new subdirectory of src/test/examples and
- * add a new subclass of TreeShakingTest. To run with multiple minification modes and
+ *
+ * <p>To add a new test, add Java files and keep rules to a new subdirectory of src/test/examples
+ * and add a new subclass of TreeShakingTest. To run with multiple minification modes and
  * frontend/backend combinations, copy the Parameterized setup from one of the existing subclasses,
  * e.g. {@link com.android.tools.r8.shaking.examples.TreeShaking1Test}. Then create a test method
  * that calls {@link TreeShakingTest::runTest}, passing in the path to your keep rule file and
@@ -109,8 +109,12 @@ public abstract class TreeShakingTest extends TestBase {
   private static void checkSameStructure(FoundFieldSubject refField, ClassSubject clazz) {
     FieldSignature signature = refField.getOriginalSignature();
     Assert.assertTrue(
-        "Missing field: " + signature.type + " " + clazz.getOriginalDescriptor()
-            + "." + signature.name,
+        "Missing field: "
+            + signature.type
+            + " "
+            + clazz.getOriginalDescriptor()
+            + "."
+            + signature.name,
         clazz.field(signature.type, signature.name).isPresent());
   }
 
@@ -194,16 +198,17 @@ public abstract class TreeShakingTest extends TestBase {
     Path outJar = compileResult.writeToZip();
     if (parameters.isCfRuntime()) {
       Path shakinglib = TestDeps.getExamplesPath("shakinglib.jar");
-      CfRuntime cfRuntime = parameters.getRuntime().asCf();
-      ProcessResult resultInput =
-          ToolHelper.runJava(cfRuntime, Arrays.asList(programFile, shakinglib), getMainClass());
-      Assert.assertEquals(0, resultInput.exitCode);
-      ProcessResult resultOutput =
-          ToolHelper.runJava(cfRuntime, Arrays.asList(outJar, shakinglib), getMainClass());
-      if (outputComparator != null) {
-        outputComparator.accept(resultInput.stdout, resultOutput.stdout);
-      } else {
-        Assert.assertEquals(resultInput.toString(), resultOutput.toString());
+      for (CfRuntime cfRuntime : parameters.getRuntime().asCfRuntimes()) {
+        ProcessResult resultInput =
+            ToolHelper.runJava(cfRuntime, Arrays.asList(programFile, shakinglib), getMainClass());
+        Assert.assertEquals(0, resultInput.exitCode);
+        ProcessResult resultOutput =
+            ToolHelper.runJava(cfRuntime, Arrays.asList(outJar, shakinglib), getMainClass());
+        if (outputComparator != null) {
+          outputComparator.accept(resultInput.stdout, resultOutput.stdout);
+        } else {
+          Assert.assertEquals(resultInput.toString(), resultOutput.toString());
+        }
       }
       if (inspection != null) {
         compileResult.inspect(inspection);
