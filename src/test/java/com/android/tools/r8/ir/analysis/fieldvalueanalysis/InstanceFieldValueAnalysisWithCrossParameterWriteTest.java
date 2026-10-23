@@ -50,8 +50,7 @@ public class InstanceFieldValueAnalysisWithCrossParameterWriteTest extends TestB
         .enableNeverClassInliningAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557274403): R8 unsoundly propagates granted = true across super.<init>() call.
-        .assertSuccessWithOutputLines("GRANT", "DENY");
+        .assertSuccessWithOutputLines("DENY", "DENY");
   }
 
   private static byte[] getPreSuperFieldPutClassData() throws IOException {

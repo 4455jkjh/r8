@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IRCodeUtils;
 import com.android.tools.r8.ir.code.InstancePut;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.Instruction.SideEffectAssumption;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.Value;
@@ -288,6 +289,15 @@ public class InstanceFieldValueAnalysis extends FieldValueAnalysis {
         Instruction instruction = instructionIterator.next();
         if (instruction.readSet(appView, context).contains(field)) {
           return false;
+        }
+        if (instruction.isInvokeDirect()) {
+          SideEffectAssumption assumption =
+              instruction == parentConstructorCall
+                  ? SideEffectAssumption.NONE
+                  : SideEffectAssumption.IGNORE_RECEIVER_FIELD_ASSIGNMENTS;
+          if (instruction.instructionMayHaveSideEffects(appView, context, assumption)) {
+            return false;
+          }
         }
       }
       return true;
