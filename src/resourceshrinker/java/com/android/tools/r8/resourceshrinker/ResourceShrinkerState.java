@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.resourceshrinker;
 
+import static com.android.SdkConstants.ANDROID_PKG;
+import static com.android.SdkConstants.PREFIX_RESOURCE_REF;
 import static com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker.getUtfReader;
 
 import com.android.aapt.Resources;
@@ -27,6 +29,8 @@ import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRec
 import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorderKt;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
+import com.google.common.primitives.Ints;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
@@ -91,6 +95,8 @@ public class ResourceShrinkerState<T> {
 
   private Map<Integer, Set<String>> resourceIdToXmlFiles;
   private final IntSet seenAndroidIds = new IntOpenHashSet();
+  // Separate from rootSet().resourceIds so @id/* entries also populate seenAndroidIds.
+  private final IntSet pinnedGetIdentifierIds = new IntOpenHashSet();
   private Set<String> packageNames;
   private final Set<String> seenNoneClassValues = new HashSet<>();
   private final Set<Integer> seenResourceIds = new HashSet<>();
@@ -161,6 +167,117 @@ public class ResourceShrinkerState<T> {
 
   public boolean hasResourceId(int resourceId) {
     return r8ResourceShrinkerModel.hasResourceId(resourceId);
+  }
+
+  /**
+   * Traces the resources that {@code Resources.getIdentifier(name, defType, defPackage)} can
+   * resolve to when {@code name} is a constant. A null {@code defType} or {@code defPackage} means
+   * the argument is not a compile-time constant, whereas an empty string means a literal null or
+   * empty string.
+   *
+   * <p>Mirrors {@code ResourcesImpl.getIdentifier}, {@code AssetManager2::GetResourceId}, and
+   * {@code ExtractResourceName}: decimal integer strings resolve by numeric ID, otherwise {@code
+   * name} is parsed into optional {@code package:} and {@code type/} prefixes (in either order
+   * after an optional leading {@code @}) followed by {@code entry}, overriding the corresponding
+   * default when present. Lookups with an empty effective package or type, or targeting the {@code
+   * "android"} framework package, are ignored; when the type is non-constant, the entry is matched
+   * across all types.
+   */
+  public void traceGetIdentifier(
+      String name,
+      String defType,
+      String defPackage,
+      String reachableFrom,
+      ResourceShrinkerCallback callback) {
+    forEachGetIdentifierResource(
+        name, defType, defPackage, resource -> traceResource(resource, reachableFrom, callback));
+  }
+
+  public void pinGetIdentifier(String name, String defType, String defPackage) {
+    forEachGetIdentifierResource(
+        name, defType, defPackage, resource -> pinnedGetIdentifierIds.add(resource.value));
+  }
+
+  public void tracePinnedResources(ResourceShrinkerCallback callback) {
+    ResourceStore resourceStore = r8ResourceShrinkerModel.getResourceStore();
+    for (int id : pinnedGetIdentifierIds) {
+      traceResource(resourceStore.getResource(id), "Non shrunken dex code", callback);
+    }
+  }
+
+  private void forEachGetIdentifierResource(
+      String name, String defType, String defPackage, Consumer<Resource> consumer) {
+    ResourceStore resourceStore = r8ResourceShrinkerModel.getResourceStore();
+    Integer id = Ints.tryParse(name);
+    if (id != null) {
+      Resource resource = resourceStore.getResource(id);
+      if (resource != null) {
+        consumer.accept(resource);
+      }
+      return;
+    }
+    // Parse [@][package:][type/]entry or [@][type/][package:]entry, mirroring ExtractResourceName
+    // in androidfw.
+    String extractedPackage = "";
+    String extractedType = "";
+    boolean hasPackageSeparator = false;
+    boolean hasTypeSeparator = false;
+    int start = name.startsWith(PREFIX_RESOURCE_REF) ? PREFIX_RESOURCE_REF.length() : 0;
+    int end = name.length();
+    for (int current = start; current < end; current++) {
+      char c = name.charAt(current);
+      if (extractedType.isEmpty() && c == '/') {
+        hasTypeSeparator = true;
+        extractedType = name.substring(start, current);
+        start = current + 1;
+      } else if (extractedPackage.isEmpty() && c == ':') {
+        hasPackageSeparator = true;
+        extractedPackage = name.substring(start, current);
+        start = current + 1;
+      }
+    }
+    if ((hasPackageSeparator && extractedPackage.isEmpty())
+        || (hasTypeSeparator && extractedType.isEmpty())) {
+      return;
+    }
+    String entry = name.substring(start, end);
+    String packageName = extractedPackage.isEmpty() ? defPackage : extractedPackage;
+    String typeName = extractedType.isEmpty() ? defType : extractedType;
+    // Accept any non-"android" package so merged libraries, splits, or renamed/repackaged callers
+    // whose package differs from the final APK manifest or resource table still resolve in
+    // ResourceStore.
+    if (entry.isEmpty()
+        || (typeName != null && typeName.isEmpty())
+        || (packageName != null && (packageName.isEmpty() || ANDROID_PKG.equals(packageName)))) {
+      return;
+    }
+    String fieldName = ResourcesUtil.resourceNameToFieldName(entry);
+    if (typeName != null) {
+      ResourceType type = ResourceType.fromClassName(typeName);
+      if (type != null) {
+        for (Resource resource : resourceStore.getResources(type, fieldName)) {
+          consumer.accept(resource);
+        }
+      }
+      return;
+    }
+    for (ListMultimap<String, Resource> map : resourceStore.getResourceMaps()) {
+      for (Resource resource : map.get(fieldName)) {
+        consumer.accept(resource);
+      }
+    }
+  }
+
+  private void traceResource(
+      Resource resource, String reachableFrom, ResourceShrinkerCallback callback) {
+    if (resource == null) {
+      return;
+    }
+    if (resource.type == ResourceType.ID) {
+      // IDs are otherwise only kept when declared in live XML, see enableResourceIdPruning.
+      seenAndroidIds.add(resource.value);
+    }
+    trace(resource.value, reachableFrom, callback);
   }
 
   public void traceKeepXmlAndManifest(ResourceShrinkerCallback callback) {
@@ -694,8 +811,9 @@ public class ResourceShrinkerState<T> {
   public void enqueuerDone(boolean isFinalTreeshaking) {
     seenResourceIds.clear();
     if (!isFinalTreeshaking) {
-      // After final tree shaking we will need the reachability bits to decide what to write out
-      // from the model.
+      // After final tree shaking shrinkModel() still needs seenAndroidIds and the reachability bits
+      // to decide what to write out from the model.
+      seenAndroidIds.clear();
       clearReachableBits();
     }
   }

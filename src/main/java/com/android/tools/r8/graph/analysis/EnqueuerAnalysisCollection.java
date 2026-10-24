@@ -370,9 +370,10 @@ public final class EnqueuerAnalysisCollection {
     }
   }
 
-  public void onStarted(Enqueuer enqueuer) {
+  public void onStarted(Enqueuer enqueuer, ExecutorService executorService)
+      throws ExecutionException {
     for (StartEnqueuerAnalysis analysis : startAnalyses) {
-      analysis.onStarted(enqueuer);
+      analysis.onStarted(enqueuer, executorService);
     }
   }
 

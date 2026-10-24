@@ -4,9 +4,11 @@
 package com.android.tools.r8.graph.analysis;
 
 import com.android.tools.r8.shaking.Enqueuer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 public interface StartEnqueuerAnalysis {
 
   /** Called when the Enqueuer starts tracing. */
-  void onStarted(Enqueuer enqueuer);
+  void onStarted(Enqueuer enqueuer, ExecutorService executorService) throws ExecutionException;
 }

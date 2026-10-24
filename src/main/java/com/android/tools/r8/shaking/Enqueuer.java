@@ -3890,7 +3890,7 @@ public class Enqueuer {
     assert analyses.isEmpty();
     assert mode.isMainDexTracing();
     this.rootSet = appView.getMainDexRootSet();
-    analyses.onStarted(this);
+    analyses.onStarted(this, executorService);
     // Translate the result of root-set computation into enqueuer actions.
     includeMinimumKeepInfo(rootSet);
     trace(executorService, timing);
@@ -3913,7 +3913,7 @@ public class Enqueuer {
   public EnqueuerResult traceApplication(
       RootSet rootSet, ExecutorService executorService, Timing timing) throws ExecutionException {
     this.rootSet = rootSet;
-    analyses.onStarted(this);
+    analyses.onStarted(this, executorService);
     rootSet.pendingMethodMoveInverse.forEach(pendingMethodMoveInverse::put);
 
     // Transfer the minimum keep info from the root set into the Enqueuer state.

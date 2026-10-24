@@ -889,6 +889,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.enableResourceIdPruning", false);
 
+  // Under optimized resource shrinking, keep resources looked up with constant names through
+  // live calls to Resources.getIdentifier(String, String, String).
+  public boolean enableResourceGetIdentifierTracing =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enableResourceGetIdentifierTracing", true);
+
   // Flag to turn on/offLoad/store optimization in the Cf back-end.
   public boolean enableLoadStoreOptimization = true;
   // Flag to turn on/off desugaring in D8/R8.

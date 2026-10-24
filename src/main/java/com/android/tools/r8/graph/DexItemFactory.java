@@ -762,6 +762,11 @@ public class DexItemFactory {
   public final DexProto androidGetStringProto = createProto(stringType, intType);
   public final DexMethod androidResourcesGetStringMethod =
       createMethod(androidResourcesType, androidGetStringProto, getStringName);
+  public final DexMethod androidResourcesGetIdentifierMethod =
+      createMethod(
+          androidResourcesType,
+          createProto(intType, stringType, stringType, stringType),
+          "getIdentifier");
 
   public final StringBuildingMethods stringBuilderMethods =
       new StringBuildingMethods(stringBuilderType);

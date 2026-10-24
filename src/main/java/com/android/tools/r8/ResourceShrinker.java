@@ -45,6 +45,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexValue;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.SingleConstant;
 import com.android.tools.r8.ir.code.WideConstant;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
@@ -66,6 +67,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
@@ -508,20 +510,23 @@ public final class ResourceShrinker {
         Collection<DexProgramClass> programClasses,
         InternalOptions options,
         IntConsumer resourceValueCallback,
-        Consumer<DexField> fieldAccessCallback) {
+        Consumer<DexField> fieldAccessCallback,
+        BiConsumer<ProgramMethod, LirCode<?>> methodCallback) {
       for (DexProgramClass programClass : programClasses) {
         if (options.removeUnreadKeptRClassResources
             && DescriptorUtils.isRClassDescriptor(programClass.getType().toDescriptorString())) {
           continue;
         }
-        for (DexEncodedMethod method : programClass.methods()) {
-          if (method.hasCode()) {
-            Code code = method.getCode();
+        for (ProgramMethod method : programClass.programMethods()) {
+          if (method.getDefinition().hasCode()) {
+            Code code = method.getDefinition().getCode();
             assert code.isLirCode();
+            LirCode<?> lirCode = code.asLirCode();
             LirResourceShrinkerCallbacks lirResourceShrinkerCallbacks =
                 new LirResourceShrinkerCallbacks(
-                    code.asLirCode(), resourceValueCallback, fieldAccessCallback);
-            code.asLirCode().forEach(lirResourceShrinkerCallbacks::onInstructionView);
+                    lirCode, resourceValueCallback, fieldAccessCallback);
+            lirCode.forEach(lirResourceShrinkerCallbacks::onInstructionView);
+            methodCallback.accept(method, lirCode);
           }
         }
         for (DexEncodedField field : programClass.staticFields()) {

@@ -21,9 +21,8 @@ public class EnqueuerReflectiveIdentification extends ReflectiveIdentification {
 
   @Override
   protected boolean processInvoke(ProgramMethod method, InvokeMethod invoke) {
-    if (super.processInvoke(method, invoke)) {
-      return true;
-    }
-    return enqueuer.getAnalyses().handleReflectiveInvoke(method, invoke);
+    boolean handled = super.processInvoke(method, invoke);
+    // IrBasedEnqueuerAnalysis may also trace invokes handled above (e.g., -identifiernamestring).
+    return enqueuer.getAnalyses().handleReflectiveInvoke(method, invoke) || handled;
   }
 }

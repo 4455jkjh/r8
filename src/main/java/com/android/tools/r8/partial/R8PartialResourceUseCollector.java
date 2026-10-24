@@ -9,6 +9,8 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.FieldResolutionResult;
+import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
 import com.android.tools.r8.utils.DescriptorUtils;
 
@@ -33,8 +35,11 @@ public abstract class R8PartialResourceUseCollector implements ReferenceChecker 
           if (resolutionResult.isSingleFieldResolutionResult()) {
             keepField(resolutionResult.getResolutionPair());
           }
-        });
+        },
+        this::analyzeMethod);
   }
+
+  protected void analyzeMethod(ProgramMethod method, LirCode<?> code) {}
 
   protected abstract void keep(int resourceId);
 
