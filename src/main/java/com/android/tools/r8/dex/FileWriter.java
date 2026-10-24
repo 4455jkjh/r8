@@ -397,6 +397,24 @@ public class FileWriter {
             new UnsupportedDefaultInterfaceMethodDiagnostic(
                 holder.getOrigin(), MethodPosition.create(method)));
       }
+      if (options.isDexVersion35UpToApi30Enabled()) {
+        if (method.accessFlags.isPrivate()) {
+          throw new CompilationError(
+              "Cannot encode private instance interface method '"
+                  + method.getReference().toSourceString()
+                  + "' in DEX version 035, as private instance interface methods are not supported"
+                  + " by this DEX version.",
+              holder.getOrigin());
+        }
+        if (method.accessFlags.isNative()) {
+          throw new CompilationError(
+              "Cannot encode non-static native interface method '"
+                  + method.getReference().toSourceString()
+                  + "' in DEX version 035, as non-static native interface methods are not"
+                  + " supported by this DEX version.",
+              holder.getOrigin());
+        }
+      }
     }
 
     if (method.accessFlags.isPrivate()) {
