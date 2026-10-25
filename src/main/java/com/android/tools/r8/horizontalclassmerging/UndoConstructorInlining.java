@@ -44,6 +44,7 @@ import com.android.tools.r8.lightir.LirWriter;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
@@ -469,6 +470,8 @@ public class UndoConstructorInlining {
 
     private final Map<DexProgramClass, Map<DexMethod, ProgramMethod>> constructorCache =
         new IdentityHashMap<>();
+    private final Map<DexProgramClass, ProgramMethodSet> pendingConstructors =
+        new IdentityHashMap<>();
 
     // Get or create a constructor on the given class that calls target, which is a constructor on
     // a parent class. Note that the returned constructor may not actually call the given target
@@ -529,13 +532,17 @@ public class UndoConstructorInlining {
       }
 
       // Create a constructor that calls target.
+      ProgramMethodSet pendingConstructorsForClass =
+          pendingConstructors.computeIfAbsent(clazz, ignoreKey(ProgramMethodSet::create));
       DexItemFactory dexItemFactory = appView.dexItemFactory();
       DexMethod candidateMethodReference = target.withHolder(clazz, dexItemFactory);
       DexMethod methodReference =
           dexItemFactory.createInstanceInitializerWithFreshProto(
               candidateMethodReference,
               classMergerSharedData.getExtraUnusedArgumentTypes(),
-              test -> clazz.lookupDirectMethod(test) == null);
+              test ->
+                  clazz.lookupDirectMethod(test) == null
+                      && !pendingConstructorsForClass.contains(test));
       DexEncodedMethod method =
           DexEncodedMethod.syntheticBuilder()
               .setMethod(methodReference)
@@ -549,7 +556,9 @@ public class UndoConstructorInlining {
               .setApiLevelForDefinition(
                   appView.apiLevelCompute().computeInitialMinApiLevel(appView.options()))
               .build();
-      return method.asProgramMethod(clazz);
+      ProgramMethod programMethod = method.asProgramMethod(clazz);
+      pendingConstructorsForClass.add(programMethod);
+      return programMethod;
     }
 
     private LirCode<Integer> createConstructorCode(DexMethod methodReference, DexMethod target) {
@@ -602,11 +611,11 @@ public class UndoConstructorInlining {
     }
 
     void commitPendingConstructors() {
-      constructorCache.forEach(
+      pendingConstructors.forEach(
           (clazz, constructors) -> {
             List<DexEncodedMethod> methods =
                 ListUtils.sort(
-                    ListUtils.map(constructors.values(), DexClassAndMember::getDefinition),
+                    ListUtils.map(constructors, DexClassAndMember::getDefinition),
                     Comparator.comparing(DexEncodedMember::getReference));
             clazz.addDirectMethods(methods);
           });
