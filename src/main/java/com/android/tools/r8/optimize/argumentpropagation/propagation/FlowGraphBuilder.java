@@ -235,7 +235,8 @@ public class FlowGraphBuilder {
     if (enclosingMethodState.isUnknown()) {
       boolean hasNarrowing =
           inFlow.getType().isNotIdenticalTo(node.getStaticType())
-              || (inFlow.isThis() && transferFunction.isIdentity());
+              || (inFlow.isThis() && transferFunction.isIdentity())
+              || transferFunction.isCastAbstractFunction();
       if (!hasNarrowing) {
         // The current node depends on a parameter for which we don't know anything.
         node.clearPredecessors();
