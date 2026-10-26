@@ -156,9 +156,20 @@ class PythonRuntime:
 
 
 def get_java_format_base_command():
-    java_bin = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
-    return google_java_format_diff.get_base_command(java_bin,
-                                                    GOOGLE_JAVA_FORMAT_JAR)
+    java_exec = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
+    return [
+        java_exec,
+        # Disable hsperfdata to prevent lock contention on /tmp/hsperfdata_<user> during parallel execution.
+        '-XX:+PerfDisableSharedMem',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED',
+        '-jar',
+        GOOGLE_JAVA_FORMAT_JAR,
+    ]
 
 
 def get_kotlin_format_base_command():
@@ -179,6 +190,44 @@ def get_prettier_base_command():
 
 def get_git_upstream():
     return check_output(['git', 'cl', 'upstream']).decode('utf-8').strip()
+
+
+def run_command(command):
+    p = Popen(command, stdout=PIPE, stderr=PIPE, stdin=DEVNULL)
+    stdout, stderr = p.communicate()
+    return p.returncode, stdout.decode('utf-8'), stderr.decode('utf-8')
+
+
+def format_java_file(filename, base_command, lines=None, fix_formatting=False):
+    if not os.path.exists(filename):
+        return []
+    command = base_command[:]
+    if fix_formatting:
+        command.append('-i')
+    if lines:
+        command.extend(lines)
+    command.append(filename)
+    returncode, stdout, stderr = run_command(command)
+    if returncode != 0:
+        err_msg = stderr if stderr else "Unknown error"
+        return [f"Java formatting error on {filename}:\n{err_msg}"]
+
+    if not fix_formatting:
+        diff_string = google_java_format_diff.create_diff(filename, stdout)
+        if diff_string:
+            return [diff_string]
+    return []
+
+
+def format_java_files(lines_by_file, base_command, fix_formatting=False):
+    errors = []
+    for filename, lines in lines_by_file.items():
+        errors.extend(
+            format_java_file(filename,
+                             base_command,
+                             lines=lines,
+                             fix_formatting=fix_formatting))
+    return errors
 
 
 def prepare_check_java_files():
@@ -207,12 +256,15 @@ def check_java_files_precise_diff(files, upstream, fix_formatting=False):
     if not diff_text.strip():
         return []
 
-    java_bin = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
-    return google_java_format_diff.format_diff(diff_text,
-                                               GOOGLE_JAVA_FORMAT_JAR,
-                                               java_bin,
-                                               fix_formatting=fix_formatting,
-                                               prefix_strip=1)
+    lines_by_file = google_java_format_diff.parse_diff(diff_text.splitlines(),
+                                                       p=1)
+    if not lines_by_file:
+        return []
+
+    base_command = get_java_format_base_command()
+    return format_java_files(lines_by_file,
+                             base_command,
+                             fix_formatting=fix_formatting)
 
 
 # This function must be threadsafe.
@@ -220,30 +272,26 @@ def check_java_files_precise_diff(files, upstream, fix_formatting=False):
 def check_java_files_full(files, fix_formatting=False):
     if not files:
         return []
-    cmd = get_java_format_base_command()
+    base_command = get_java_format_base_command()
     if fix_formatting:
-        cmd.extend(['-i'] + files)
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, stdin=DEVNULL)
-        _, stderr = proc.communicate()
-        if proc.returncode != 0:
-            err_msg = stderr.decode('utf-8') if stderr else "Unknown error"
+        returncode, _, stderr = run_command(base_command + ['-i'] + files)
+        if returncode != 0:
+            err_msg = stderr if stderr else "Unknown error"
             return [f"Java formatting error:\n{err_msg}"]
         return []
     else:
-        cmd.extend(['--dry-run', '--set-exit-if-changed'] + files)
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, stdin=DEVNULL)
-        stdout, stderr = proc.communicate()
+        returncode, stdout, stderr = run_command(
+            base_command + ['--dry-run', '--set-exit-if-changed'] + files)
         errors = []
-        if proc.returncode != 0:
+        if returncode != 0:
             if stdout:
-                base_command = get_java_format_base_command()
-                for file_path in stdout.decode('utf-8').splitlines():
+                for file_path in stdout.splitlines():
                     errors.extend(
-                        google_java_format_diff.format_file(
-                            file_path, base_command, fix_formatting=False))
+                        format_java_file(file_path,
+                                         base_command,
+                                         fix_formatting=False))
             if stderr:
-                errors.append(
-                    f"Java formatting error:\n{stderr.decode('utf-8')}")
+                errors.append(f"Java formatting error:\n{stderr}")
             elif not errors and not stdout:
                 errors.append("Java formatting error:\nUnknown error")
         return errors
