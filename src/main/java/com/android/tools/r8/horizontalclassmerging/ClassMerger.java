@@ -455,7 +455,11 @@ public class ClassMerger {
 
     private boolean requiresClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
       if (runtimeTypeCheckInfo != null
-          && Iterables.any(group, runtimeTypeCheckInfo::isCheckCastType)) {
+          && Iterables.any(
+              group,
+              clazz ->
+                  runtimeTypeCheckInfo.isCheckCastType(clazz)
+                      || runtimeTypeCheckInfo.isInstanceOfType(clazz))) {
         return true;
       }
       if (virtualMethodMergers.stream()

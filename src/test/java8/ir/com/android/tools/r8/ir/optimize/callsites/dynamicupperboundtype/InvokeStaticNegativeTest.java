@@ -8,6 +8,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -41,6 +42,7 @@ public class InvokeStaticNegativeTest extends TestBase {
         .addInnerClasses(InvokeStaticNegativeTest.class)
         .addKeepMainRule(MAIN)
         .enableInliningAnnotations()
+        .enableNoHorizontalClassMergingAnnotations()
         .addOptionsModification(
             o ->
                 o.testing.callSiteOptimizationInfoInspector = this::callSiteOptimizationInfoInspect)
@@ -80,8 +82,10 @@ public class InvokeStaticNegativeTest extends TestBase {
 
   static class Base {}
 
+  @NoHorizontalClassMerging
   static class Sub1 extends Base {}
 
+  @NoHorizontalClassMerging
   static class Sub2 extends Base {}
 
   static class Main {

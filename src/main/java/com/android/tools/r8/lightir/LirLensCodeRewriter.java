@@ -302,7 +302,11 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
 
   @Override
   public void onInstanceOf(DexType type, EV value) {
-    if (graphLens.isLirToLirDesugaringLens()
+    if (graphLens.isHorizontalClassMergerGraphLens()) {
+      if (appView.horizontallyMergedClasses().hasClassId(type)) {
+        addTypeInstructionToRewrite(type);
+      }
+    } else if (graphLens.isLirToLirDesugaringLens()
         && graphLens
             .asLirToLirDesugaringLens()
             .needsApiOutlining(InstructionKind.INSTANCEOF, type, context)) {

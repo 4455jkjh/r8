@@ -4,9 +4,6 @@
 
 package com.android.tools.r8.classmerging.horizontal;
 
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
@@ -22,17 +19,14 @@ public class ClassesDistinguishedByDirectInstanceOfTest extends HorizontalClassM
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
+        .addHorizontallyMergedClassesInspector(
+            inspector ->
+                inspector.assertIsCompleteMergeGroup(A.class, B.class).assertNoOtherClassesMerged())
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("foo", "bar", "false", "true")
-        .inspect(
-            codeInspector -> {
-              // The two classes should not be merged.
-              assertThat(codeInspector.clazz(A.class), isPresent());
-              assertThat(codeInspector.clazz(B.class), isPresent());
-            });
+        .assertSuccessWithOutputLines("foo", "bar", "false", "true");
   }
 
   @NeverClassInline

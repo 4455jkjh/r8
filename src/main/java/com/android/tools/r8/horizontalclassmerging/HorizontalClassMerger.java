@@ -18,6 +18,7 @@ import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
+import com.android.tools.r8.horizontalclassmerging.HorizontalClassMergerGraphLens.SyntheticHelperMethod;
 import com.android.tools.r8.horizontalclassmerging.code.SyntheticInitializerConverter;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.LirConverter;
@@ -36,7 +37,6 @@ import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
@@ -294,7 +294,8 @@ public class HorizontalClassMerger {
   }
 
   /**
-   * The horizontal class merger may synthesize a single helper method for rewriting check-casts.
+   * The horizontal class merger may synthesize a helper method for rewriting check-casts and a
+   * helper method for rewriting instance-ofs.
    */
   private void finalizeSynthetics(
       HorizontalClassMergerGraphLens horizontalClassMergerGraphLens,
@@ -308,15 +309,15 @@ public class HorizontalClassMerger {
     // Prune merged classes and commit pending synthetics.
     appView.rebuildAppInfo(timing, getNewApplication(mergedClasses, timing));
 
-    ProgramMethod throwClassCastExceptionIfNotEqualsMethod =
-        horizontalClassMergerGraphLens.unsetThrowClassCastExceptionIfNotEqualsMethod();
-    if (throwClassCastExceptionIfNotEqualsMethod == null) {
+    List<SyntheticHelperMethod> synthesizedHelperMethods =
+        horizontalClassMergerGraphLens.unsetSynthesizedHelperMethods();
+    if (synthesizedHelperMethods.isEmpty()) {
       // Nothing to finalize.
       return;
     }
 
     try (Timing t0 = timing.begin("Finalize synthetics")) {
-      List<ProgramMethod> synthesizedMethods = new ArrayList<>(1);
+      List<ProgramMethod> synthesizedMethods = new ArrayList<>(synthesizedHelperMethods.size());
       appView
           .getSyntheticItems()
           .getCommitted()
@@ -324,16 +325,17 @@ public class HorizontalClassMerger {
               (type, method) ->
                   synthesizedMethods.add(
                       method.lookupDefinition(appView::definitionFor).getMethod()));
-      assert synthesizedMethods.size() == 1;
+      assert synthesizedMethods.size() == synthesizedHelperMethods.size();
 
-      // Convert synthetic method to output format.
-      ProgramMethod synthesizedMethod = ListUtils.first(synthesizedMethods);
-      IRCode code =
-          synthesizedMethod.buildIR(appView, MethodConversionOptions.forLirPhase(appView));
-      synthesizedMethod.setCode(
-          new IRToLirFinalizer(appView)
-              .finalizeCode(code, BytecodeMetadataProvider.empty(), timing),
-          appView);
+      // Convert synthetic methods to output format.
+      for (ProgramMethod synthesizedMethod : synthesizedMethods) {
+        IRCode code =
+            synthesizedMethod.buildIR(appView, MethodConversionOptions.forLirPhase(appView));
+        synthesizedMethod.setCode(
+            new IRToLirFinalizer(appView)
+                .finalizeCode(code, BytecodeMetadataProvider.empty(), timing),
+            appView);
+      }
 
       // Finalize synthetics and bring the profile collection additions up-to-date.
       SyntheticFinalization.finalizeWithLiveness(appView.withLiveness(), executorService, timing);
@@ -341,26 +343,32 @@ public class HorizontalClassMerger {
           .setArtProfileCollection(appView.getArtProfileCollection())
           .setStartupProfile(appView.getStartupProfile());
 
-      // Rewrite LIR that references the internal synthetic method.
-      ProgramMethodSet synthesizedMethodCallers =
-          horizontalClassMergerGraphLens.unsetThrowClassCastExceptionIfNotEqualsMethodCallers();
-      assert !synthesizedMethodCallers.isEmpty();
+      // Rewrite LIR that references the internal synthetic methods.
+      ProgramMethodSet synthesizedMethodCallers = ProgramMethodSet.create();
+      for (SyntheticHelperMethod synthesizedHelperMethod : synthesizedHelperMethods) {
+        assert !synthesizedHelperMethod.getCallers().isEmpty();
+        synthesizedMethodCallers.addAll(synthesizedHelperMethod.getCallers());
+      }
       LirConverter.rewriteLirWithUnappliedLens(
           appView.withClassHierarchy(), synthesizedMethodCallers::contains, executorService);
       appView.clearCodeRewritings(executorService, timing);
 
-      // Add synthesized method to profile(s).
-      DexMethod externalSynthesizedMethodReference =
-          appView
-              .graphLens()
-              .getRenamedMethodSignature(
-                  synthesizedMethod.getReference(), horizontalClassMergerGraphLens);
-      assert externalSynthesizedMethodReference.isNotIdenticalTo(synthesizedMethod.getReference());
-      ProgramMethod externalSynthesizedMethod =
-          appView.definitionFor(externalSynthesizedMethodReference).asProgramMethod();
-      for (ProgramMethod synthesizedMethodCaller : synthesizedMethodCallers) {
-        profileCollectionAdditions.addMethodAndHolderIfContextIsInProfile(
-            externalSynthesizedMethod, synthesizedMethodCaller);
+      // Add synthesized methods to profile(s).
+      for (SyntheticHelperMethod synthesizedHelperMethod : synthesizedHelperMethods) {
+        ProgramMethod synthesizedMethod = synthesizedHelperMethod.getMethod();
+        DexMethod externalSynthesizedMethodReference =
+            appView
+                .graphLens()
+                .getRenamedMethodSignature(
+                    synthesizedMethod.getReference(), horizontalClassMergerGraphLens);
+        assert externalSynthesizedMethodReference.isNotIdenticalTo(
+            synthesizedMethod.getReference());
+        ProgramMethod externalSynthesizedMethod =
+            appView.definitionFor(externalSynthesizedMethodReference).asProgramMethod();
+        for (ProgramMethod synthesizedMethodCaller : synthesizedHelperMethod.getCallers()) {
+          profileCollectionAdditions.addMethodAndHolderIfContextIsInProfile(
+              externalSynthesizedMethod, synthesizedMethodCaller);
+        }
       }
     }
   }

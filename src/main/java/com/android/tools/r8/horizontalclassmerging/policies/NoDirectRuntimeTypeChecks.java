@@ -36,12 +36,13 @@ public class NoDirectRuntimeTypeChecks extends SingleClassPolicy {
       // fields to interfaces.
       return !runtimeTypeCheckInfo.isRuntimeCheckType(clazz);
     } else {
-      // Allow check-casts to the base type, since we can use the classId field for correct
-      // rewriting.
+      // Allow check-casts and instance-of checks on the base type, since we can use the classId
+      // field for correct rewriting.
       return runtimeTypeCheckInfo.getNumberOfCheckCasts(clazz) <= 3
           && !runtimeTypeCheckInfo.isCheckCastArrayType(clazz)
           && !runtimeTypeCheckInfo.isExceptionGuardType(clazz)
-          && !runtimeTypeCheckInfo.isInstanceOfType(clazz);
+          && runtimeTypeCheckInfo.getNumberOfInstanceOfs(clazz) <= 3
+          && !runtimeTypeCheckInfo.isInstanceOfArrayType(clazz);
     }
   }
 

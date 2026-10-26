@@ -77,6 +77,8 @@ public class FieldRenamingTest extends TestBase {
     testForR8(parameters.getBackend())
         .addProgramFiles(CLASSES)
         .addKeepMainRule(MAIN)
+        .addNoHorizontalClassMergingRule(
+            Concrete1.class.getTypeName(), Concrete2.class.getTypeName())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), MAIN)
         .assertSuccessWithOutput(EXPECTED_OUTPUT)

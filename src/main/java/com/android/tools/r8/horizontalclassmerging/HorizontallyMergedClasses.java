@@ -57,8 +57,12 @@ public class HorizontallyMergedClasses implements MergedClasses {
   }
 
   public int getClassId(DexType type) {
-    assert classIds.containsKey(type);
+    assert hasClassId(type);
     return classIds.getInt(type);
+  }
+
+  public boolean hasClassId(DexType type) {
+    return classIds.containsKey(type);
   }
 
   public boolean hasClassIdField(DexType type) {

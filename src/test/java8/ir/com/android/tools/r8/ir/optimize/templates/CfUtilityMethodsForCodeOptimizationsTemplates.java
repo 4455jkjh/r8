@@ -6,6 +6,10 @@ package com.android.tools.r8.ir.optimize.templates;
 
 public class CfUtilityMethodsForCodeOptimizationsTemplates {
 
+  public static boolean isEqual(int expected, int actual) {
+    return actual == expected;
+  }
+
   public static boolean isNonNull(Object o) {
     return o != null;
   }
