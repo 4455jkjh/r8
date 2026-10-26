@@ -6,6 +6,9 @@ package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
+import com.android.tools.r8.utils.internal.SemiInfiniteRangeSet;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -59,34 +62,35 @@ public class ParsedApiClassMapping {
     return mappedClass;
   }
 
-  public static class GreatestEndingRangeMapper
-      implements Mapper<ApiVersionSet, ApiRange, RuntimeException> {
+  public static class GreatestEndingRangeMapper<T extends Ordered<T>>
+      implements Mapper<SemiInfiniteRangeSet<T>, SemiInfiniteRange<T>, RuntimeException> {
 
     @Override
-    public ApiRange mapClass(ClassReference clazz, ApiVersionSet range) {
+    public SemiInfiniteRange<T> mapClass(ClassReference clazz, SemiInfiniteRangeSet<T> range) {
       return range.getLargestEndRange();
     }
 
     @Override
-    public ApiRange mapExtends(
-        ClassReference clazz, ClassReference supertype, ApiVersionSet range) {
+    public SemiInfiniteRange<T> mapExtends(
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRangeSet<T> range) {
       return range.getLargestEndRange();
     }
 
     @Override
-    public ApiRange mapImplements(
-        ClassReference clazz, ClassReference supertype, ApiVersionSet range) {
+    public SemiInfiniteRange<T> mapImplements(
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRangeSet<T> range) {
       return range.getLargestEndRange();
     }
 
     @Override
-    public ApiRange mapMethod(ClassReference clazz, MethodReference method, ApiVersionSet range) {
+    public SemiInfiniteRange<T> mapMethod(
+        ClassReference clazz, MethodReference method, SemiInfiniteRangeSet<T> range) {
       return range.getLargestEndRange();
     }
 
     @Override
-    public ApiRange mapField(
-        ClassReference clazz, FieldTypelessReference field, ApiVersionSet range) {
+    public SemiInfiniteRange<T> mapField(
+        ClassReference clazz, FieldTypelessReference field, SemiInfiniteRangeSet<T> range) {
       return range.getLargestEndRange();
     }
 

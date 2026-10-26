@@ -10,6 +10,8 @@ import com.android.tools.r8.apimodel.ApiAmendments.FieldAmendment;
 import com.android.tools.r8.apimodel.ApiAmendments.MethodAmendment;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,12 +19,13 @@ import java.util.Map;
 public class ParsedApiClassAmending {
 
   public static void amendApi(
-      Collection<ParsedApiClass<ApiRange>> apiClasses,
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses,
       ApiAmendments amendments,
       AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
-    Map<ClassReference, ParsedApiClass<ApiRange>> classMap = new HashMap<>();
-    for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
+    Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap =
+        new HashMap<>();
+    for (ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass : apiClasses) {
       classMap.put(apiClass.getClassReference(), apiClass);
     }
 
@@ -39,11 +42,12 @@ public class ParsedApiClassAmending {
 
   private static void amendApiField(
       FieldAmendment fieldAmendment,
-      Map<ClassReference, ParsedApiClass<ApiRange>> classMap,
+      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap,
       AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
     FieldTypelessReference fieldRef = fieldAmendment.getFieldReference();
-    ParsedApiClass<ApiRange> holder = classMap.get(fieldRef.getHolderClass());
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> holder =
+        classMap.get(fieldRef.getHolderClass());
     if (holder == null) {
       throw new ApiDatabaseGeneratorException(
           "Holder class "
@@ -55,18 +59,19 @@ public class ParsedApiClassAmending {
     if (holder.hasField(fieldRef)) {
       listener.onAlreadyPresentApiField(fieldAmendment);
     } else {
-      holder.registerField(fieldRef, new ApiRange(fieldAmendment.getApiLevel()));
+      holder.registerField(fieldRef, SemiInfiniteRange.startingAt(fieldAmendment.getApiLevel()));
       listener.onAmendApiField(fieldAmendment);
     }
   }
 
   private static void amendApiMethod(
       MethodAmendment methodAmendment,
-      Map<ClassReference, ParsedApiClass<ApiRange>> classMap,
+      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap,
       AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
     MethodReference methodRef = methodAmendment.getMethodReference();
-    ParsedApiClass<ApiRange> holder = classMap.get(methodRef.getHolderClass());
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> holder =
+        classMap.get(methodRef.getHolderClass());
     if (holder == null) {
       throw new ApiDatabaseGeneratorException(
           "Holder class "
@@ -78,22 +83,23 @@ public class ParsedApiClassAmending {
     if (holder.hasMethod(methodRef)) {
       listener.onAlreadyPresentApiMethod(methodAmendment);
     } else {
-      holder.registerMethod(methodRef, new ApiRange(methodAmendment.getApiLevel()));
+      holder.registerMethod(methodRef, SemiInfiniteRange.startingAt(methodAmendment.getApiLevel()));
       listener.onAmendApiMethod(methodAmendment);
     }
   }
 
   private static void amendApiClass(
-      Collection<ParsedApiClass<ApiRange>> apiClasses,
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses,
       ClassAmendment classAmendment,
-      Map<ClassReference, ParsedApiClass<ApiRange>> classMap,
+      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap,
       AmendmentListener listener) {
     ClassReference classRef = classAmendment.getClassReference();
     if (classMap.containsKey(classRef)) {
       listener.onAlreadyPresentApiClass(classAmendment);
     } else {
-      ParsedApiClass<ApiRange> newClass =
-          new ParsedApiClass<>(classRef, new ApiRange(classAmendment.getApiLevel()));
+      ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> newClass =
+          new ParsedApiClass<>(
+              classRef, SemiInfiniteRange.startingAt(classAmendment.getApiLevel()));
       apiClasses.add(newClass);
       classMap.put(classRef, newClass);
       listener.onAmendApiClass(classAmendment);

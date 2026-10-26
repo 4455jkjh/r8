@@ -4,10 +4,11 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.apimodel.AmendmentListener;
-import com.android.tools.r8.apimodel.ApiRange;
 import com.android.tools.r8.apimodel.ParsedApiClass;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.JarTrimmer;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.Trimmer;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -15,16 +16,20 @@ public class ApiDatabaseGeneratorTestHelper {
   public static void run(
       ApiDatabaseGeneratorCommand command,
       AmendmentListener amendmentListener,
-      Function<JarTrimmer, Trimmer<ApiDatabaseGeneratorException>> jarTrimmerWrapper)
+      Function<
+              JarTrimmer,
+              Trimmer<SemiInfiniteRange<AndroidApiLevel>, ApiDatabaseGeneratorException>>
+          jarTrimmerWrapper)
       throws ApiDatabaseGeneratorException {
     ApiDatabaseGenerator.run(command, amendmentListener, jarTrimmerWrapper);
   }
 
-  public static <E extends Throwable> Collection<ParsedApiClass<ApiRange>> generateClasses(
-      ApiDatabaseGeneratorCommand command,
-      AmendmentListener amendmentListener,
-      Function<JarTrimmer, Trimmer<E>> jarTrimmerWrapper)
-      throws ApiDatabaseGeneratorException, E {
+  public static <E extends Throwable>
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> generateClasses(
+          ApiDatabaseGeneratorCommand command,
+          AmendmentListener amendmentListener,
+          Function<JarTrimmer, Trimmer<SemiInfiniteRange<AndroidApiLevel>, E>> jarTrimmerWrapper)
+          throws ApiDatabaseGeneratorException, E {
     return ApiDatabaseGenerator.generateClasses(command, amendmentListener, jarTrimmerWrapper);
   }
 }

@@ -20,6 +20,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,10 +85,11 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
     ClassReference classCRef = Reference.classFromClass(TestClassC.class);
     ClassReference interfaceIRef = Reference.classFromClass(TestInterfaceI.class);
 
-    ApiRange range = new ApiRange(AndroidApiLevel.B);
+    SemiInfiniteRange<AndroidApiLevel> range = SemiInfiniteRange.startingAt(AndroidApiLevel.B);
 
     // Setup API classes.
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, range);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, range);
     apiClassA.registerSupertype(Reference.classFromClass(Object.class), range);
     MethodReference methodA = Reference.methodFromMethod(TestClassA.class.getMethod("methodA"));
     MethodReference staticMethodA =
@@ -103,7 +105,8 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
     apiClassA.registerMethod(nonExistentMethod, range);
     apiClassA.registerField(nonExistentField, range);
 
-    ParsedApiClass<ApiRange> apiClassB = new ParsedApiClass<>(classBRef, range);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassB =
+        new ParsedApiClass<>(classBRef, range);
     apiClassB.registerSupertype(classARef, range);
     MethodReference methodB = Reference.methodFromMethod(TestClassB.class.getMethod("methodB"));
     MethodReference inheritedMethodA =
@@ -116,7 +119,8 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
     apiClassB.registerMethod(inheritedStaticMethodA, range);
     apiClassB.registerField(inheritedFieldA, range);
 
-    ParsedApiClass<ApiRange> apiInterfaceI = new ParsedApiClass<>(interfaceIRef, range);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiInterfaceI =
+        new ParsedApiClass<>(interfaceIRef, range);
     apiInterfaceI.registerSupertype(Reference.classFromClass(Object.class), range);
     MethodReference interfaceMethod =
         Reference.method(interfaceIRef, "interfaceMethod", Collections.emptyList(), null);
@@ -128,7 +132,8 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
     apiInterfaceI.registerMethod(defaultMethod, range);
     apiInterfaceI.registerMethod(staticInterfaceMethod, range);
 
-    ParsedApiClass<ApiRange> apiClassC = new ParsedApiClass<>(classCRef, range);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassC =
+        new ParsedApiClass<>(classCRef, range);
     apiClassC.registerSupertype(Reference.classFromClass(Object.class), range);
     apiClassC.registerInterface(interfaceIRef, range);
     MethodReference inheritedDefaultMethod =
@@ -141,20 +146,22 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
     // Class not in JAR,
     ClassReference classDRef =
         Reference.classFromBinaryName("com/android/tools/r8/apimodel/NonExistentClassD");
-    ParsedApiClass<ApiRange> apiClassD = new ParsedApiClass<>(classDRef, range);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassD =
+        new ParsedApiClass<>(classDRef, range);
 
-    Collection<ParsedApiClass<ApiRange>> apiClasses =
+    Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses =
         Arrays.asList(apiClassA, apiClassB, apiInterfaceI, apiClassC, apiClassD);
 
     // Run JAR trimmer.
     List<ApiJarInfo> readJars = ListUtils.mapThrowing(jars, ApiJarReader::read);
     ApiJarInfo jarInfo = ApiJarMerging.mergeJarInfos(readJars);
-    Collection<ParsedApiClass<ApiRange>> trimmed =
+    Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> trimmed =
         ParsedApiClassTrimming.trim(apiClasses, new JarTrimmer(jarInfo));
 
     // Verify results.
-    Map<ClassReference, ParsedApiClass<ApiRange>> trimmedMap = new HashMap<>();
-    for (ParsedApiClass<ApiRange> clazz : trimmed) {
+    Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> trimmedMap =
+        new HashMap<>();
+    for (ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> clazz : trimmed) {
       trimmedMap.put(clazz.getClassReference(), clazz);
     }
 
@@ -163,7 +170,7 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
 
     // Verify Class A.
     assertTrue(trimmedMap.containsKey(classARef));
-    ParsedApiClass<ApiRange> trimmedA = trimmedMap.get(classARef);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> trimmedA = trimmedMap.get(classARef);
     assertTrue(trimmedA.hasMethod(methodA));
     assertTrue(trimmedA.hasMethod(staticMethodA));
     assertTrue(trimmedA.hasField(fieldA));
@@ -172,7 +179,7 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
 
     // Verify Class B.
     assertTrue(trimmedMap.containsKey(classBRef));
-    ParsedApiClass<ApiRange> trimmedB = trimmedMap.get(classBRef);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> trimmedB = trimmedMap.get(classBRef);
     assertTrue(trimmedB.hasMethod(methodB));
     assertTrue(trimmedB.hasMethod(inheritedMethodA));
     assertTrue(trimmedB.hasMethod(inheritedStaticMethodA));
@@ -180,14 +187,14 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
 
     // Verify Interface I.
     assertTrue(trimmedMap.containsKey(interfaceIRef));
-    ParsedApiClass<ApiRange> trimmedI = trimmedMap.get(interfaceIRef);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> trimmedI = trimmedMap.get(interfaceIRef);
     assertTrue(trimmedI.hasMethod(interfaceMethod));
     assertTrue(trimmedI.hasMethod(defaultMethod));
     assertTrue(trimmedI.hasMethod(staticInterfaceMethod));
 
     // Verify Class C.
     assertTrue(trimmedMap.containsKey(classCRef));
-    ParsedApiClass<ApiRange> trimmedC = trimmedMap.get(classCRef);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> trimmedC = trimmedMap.get(classCRef);
     assertTrue(trimmedC.hasMethod(inheritedDefaultMethod));
     assertFalse(trimmedC.hasMethod(nonInheritedStaticInterfaceMethod));
   }

@@ -6,6 +6,8 @@ package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.apimodel.jar.ApiJarInfo;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import com.android.tools.r8.utils.internal.ThrowingFunction;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +16,9 @@ import java.util.Collection;
 public class AmendApiFromResources {
 
   public static void applyAmendments(
-      Collection<ParsedApiClass<ApiRange>> classes, ApiJarInfo jarInfo, AmendmentListener listener)
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classes,
+      ApiJarInfo jarInfo,
+      AmendmentListener listener)
       throws ApiDatabaseGeneratorException, IOException {
     ApiAmendments missingApi =
         readResource("/resources/missing.api.txt", ApiAmendmentsParser::parseApiAmendments);
