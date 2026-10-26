@@ -4,9 +4,6 @@
 
 package com.android.tools.r8.enumunboxing;
 
-import static org.junit.Assert.assertThrows;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -30,21 +27,18 @@ public class EnumUnboxingAnnotationClassValueTest extends TestBase {
   }
 
   @Test
-  public void testR8() {
-    assertThrows(
-        CompilationFailedException.class,
-        () ->
-            testForR8(parameters)
-                .addInnerClasses(getClass())
-                .addKeepMainRule(Main.class)
-                .addKeepClassAndMembersRules(Handles.class)
-                .addKeepAttributeAnnotationDefault()
-                .addKeepRuntimeVisibleAnnotations()
-                .addEnumUnboxingInspector(
-                    inspector ->
-                        inspector.assertUnboxed(
-                            Tag.class, TagDefault.class, TagArray.class, TagArrayDefault.class))
-                .compile());
+  public void testR8() throws Exception {
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(Handles.class)
+        .addKeepAttributeAnnotationDefault()
+        .addKeepRuntimeVisibleAnnotations()
+        .addEnumUnboxingInspector(
+            inspector ->
+                inspector.assertNotUnboxed(
+                    Tag.class, TagDefault.class, TagArray.class, TagArrayDefault.class))
+        .compile();
   }
 
   @Retention(RetentionPolicy.RUNTIME)

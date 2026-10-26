@@ -5,13 +5,16 @@
 package com.android.tools.r8.ir.optimize.enums;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexEncodedAnnotation;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.optimize.enums.eligibility.Reason;
@@ -127,6 +130,7 @@ class EnumUnboxingCandidateAnalysis {
         assert clazz.interfaces.contains(appView.dexItemFactory().annotationType);
         removeEnumsInAnnotation(clazz);
       }
+      clazz.forEachAnnotation(this::removeEnumsInAnnotation);
     }
   }
 
@@ -136,11 +140,36 @@ class EnumUnboxingCandidateAnalysis {
     for (DexEncodedMethod method : clazz.virtualMethods()) {
       assert method.getParameters().isEmpty()
           || appView.options().testing.allowInjectedAnnotationMethods;
-      DexType valueType = method.getReturnType().getBaseType();
-      if (enumToUnboxCandidates.isCandidate(valueType)) {
-        if (!enumUnboxer.reportFailure(valueType, Reason.ANNOTATION)) {
-          enumToUnboxCandidates.removeCandidate(valueType);
-        }
+      removeEnumInAnnotation(method.getReturnType().getBaseType());
+    }
+  }
+
+  private void removeEnumsInAnnotation(DexAnnotation annotation) {
+    removeEnumsInEncodedAnnotation(annotation.getAnnotation());
+  }
+
+  private void removeEnumsInEncodedAnnotation(DexEncodedAnnotation annotation) {
+    annotation.forEachElement(element -> removeEnumsInAnnotationValue(element.getValue()));
+  }
+
+  private void removeEnumsInAnnotationValue(DexValue value) {
+    if (value.isDexValueType()) {
+      removeEnumInAnnotation(value.asDexValueType().getValue().getBaseType());
+    } else if (value.isDexValueEnum()) {
+      removeEnumInAnnotation(value.asDexValueEnum().getValue().getHolderType());
+    } else if (value.isDexValueArray()) {
+      for (DexValue element : value.asDexValueArray().getValues()) {
+        removeEnumsInAnnotationValue(element);
+      }
+    } else if (value.isDexValueAnnotation()) {
+      removeEnumsInEncodedAnnotation(value.asDexValueAnnotation().getValue());
+    }
+  }
+
+  private void removeEnumInAnnotation(DexType valueType) {
+    if (enumToUnboxCandidates.isCandidate(valueType)) {
+      if (!enumUnboxer.reportFailure(valueType, Reason.ANNOTATION)) {
+        enumToUnboxCandidates.removeCandidate(valueType);
       }
     }
   }
