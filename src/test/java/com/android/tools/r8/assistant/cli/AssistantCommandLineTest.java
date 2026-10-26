@@ -122,11 +122,12 @@ public class AssistantCommandLineTest extends TestBase {
   public void testUnknownCommand() throws Exception {
     assertUsageError(
         run("foo"),
-        "Unknown command: foo. Available commands: instrument.",
+        "Unknown command: foo. Available commands: instrument, query.",
         INVOCATION + " --help");
     assertUsageError(
         run("app.apk", "--output", "out.apk"),
-        "Unknown command: app.apk. Available commands: instrument. To instrument an APK, run: "
+        "Unknown command: app.apk. Available commands: instrument, query. To instrument an APK,"
+            + " run: "
             + INVOCATION
             + " instrument --input <apk> --output <apk>",
         INVOCATION + " --help");
@@ -316,7 +317,7 @@ public class AssistantCommandLineTest extends TestBase {
       assertNull(AssistantCommandLine.parse(args));
     }
     assertEquals(
-        "Unknown command: foo. Available commands: instrument.",
+        "Unknown command: foo. Available commands: instrument, query.",
         assertThrows(
                 AssistantUsageException.class,
                 () -> AssistantCommandLine.parse(ImmutableList.of("foo")))
