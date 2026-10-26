@@ -218,6 +218,10 @@ INTERNAL_SLOW_BENCHMARKS = {
         'targets': ['r8-full'],
         'enable_perf_size': True
     },
+    'YouTubeApp': {
+        'targets': ['r8-full'],
+        'enable_perf_size': True
+    },
 }
 # A collection of benchmarks that should not be run on the bots, but can be used
 # for running locally.
@@ -227,10 +231,6 @@ LOCAL_BENCHMARKS = {
     },
     'SystemUIAppTreeShaking': {
         'targets': ['r8-full']
-    },
-    'YouTubeApp': {
-        'targets': ['r8-full'],
-        'enable_perf_size': True
     },
 }
 # A collection of build benchmarks that are tracked on CI.
