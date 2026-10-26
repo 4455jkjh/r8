@@ -61,9 +61,7 @@ public class StoreStoreFenceBeforeOtherwiseRedundantStoreTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557267669): StoreStoreFence should prevent store-after-store elimination.
-        .assertSuccessWithOutputLines(
-            parameters.canUseJavaLangInvokeVarHandleStoreStoreFence() ? "0" : "1");
+        .assertSuccessWithOutputLines("1");
   }
 
   private void inspect(CodeInspector inspector) {
@@ -95,8 +93,9 @@ public class StoreStoreFenceBeforeOtherwiseRedundantStoreTest extends TestBase {
                   "Ljava/lang/invoke/VarHandle;", "storeStoreFence", "()V")));
     }
 
-    // TODO(b/557267669): StoreStoreFence should prevent store-after-store elimination.
-    assertEquals(1, countInstancePutInstructions(publishMethodSubject, xFieldSubject));
+    assertEquals(
+        parameters.canUseJavaLangInvokeVarHandleStoreStoreFence() ? 2 : 1,
+        countInstancePutInstructions(publishMethodSubject, xFieldSubject));
   }
 
   private long countInstancePutInstructions(

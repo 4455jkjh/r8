@@ -573,6 +573,8 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
               killAllNonFinalActiveFields();
             } else if (instruction.isNewInstance()) {
               handleNewInstance(instruction.asNewInstance());
+            } else if (instruction.isStoreStoreFence()) {
+              activeState.clearMostRecentFieldWrites();
             } else {
               // If the current instruction could trigger a method invocation, it could also cause
               // field values to change. In that case, it must be handled above.
@@ -614,7 +616,6 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
                       || instruction.isThrow()
                       || instruction.isUnop()
                       || instruction.isRecordFieldValues()
-                      || instruction.isStoreStoreFence()
                   : "Unexpected instruction of type " + instruction.getClass().getTypeName();
             }
           }
