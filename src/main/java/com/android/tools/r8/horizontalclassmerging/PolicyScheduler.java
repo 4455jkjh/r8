@@ -261,7 +261,6 @@ public class PolicyScheduler {
     builder.add(
         new SameFilePolicy(appView),
         new CheckAbstractClasses(appView),
-        new NoClassAnnotationCollisions(),
         new SameFeatureSplit(appView),
         new SameStartupPartition(appView),
         new SameInstanceFields(appView),
@@ -272,6 +271,9 @@ public class PolicyScheduler {
         new SyntheticItemsPolicy(appView),
         new RespectPackageBoundaries(appView),
         new NoDifferentApiReferenceLevel(appView),
+        // Run after the policies that group classes by a merge key, since this policy distributes
+        // the non-annotated classes across the groups of the annotated classes.
+        new NoClassAnnotationCollisions(),
         new NoIndirectRuntimeTypeChecks(appView, runtimeTypeCheckInfo),
         new NoWeakerAccessPrivileges(appView, immediateSubtypingInfo),
         new PreventClassMethodAndDefaultMethodCollisions(appView, immediateSubtypingInfo),
