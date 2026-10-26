@@ -378,14 +378,23 @@ Test: n/a"""
         commit_and_upload_studio(prebuilts_tools, options,
                                  git_message_prebuilts, topic)
 
-        # 3. Update tools/buildSrc/base/dependencies.properties.
+        # 3. Update tools/buildSrc/base/libs.versions.toml.
         with utils.ChangedWorkingDirectory(tools_buildsrc):
             if not options.use_existing_work_branch:
                 subprocess.check_call(['repo', 'start', change_name])
-            dependencies_properties = os.path.join('base',
-                                                   'dependencies.properties')
-            sed(r'r8 = com\.android\.tools:r8:.*',
-                f'r8 = com.android.tools:r8:{version}', dependencies_properties)
+            libs_versions_toml = os.path.join('base', 'libs.versions.toml')
+            if os.path.exists(libs_versions_toml):
+                sed(r'r8 = "com\.android\.tools:r8:[^"]+"',
+                    f'r8 = "com.android.tools:r8:{version}"',
+                    libs_versions_toml)
+            else:
+                # Update dependencies.properties for compatibility with older
+                # studio branches.
+                dependencies_properties = os.path.join(
+                    'base', 'dependencies.properties')
+                sed(r'r8 = com\.android\.tools:r8:.*',
+                    f'r8 = com.android.tools:r8:{version}',
+                    dependencies_properties)
 
         commit_and_upload_studio(tools_buildsrc,
                                  options,
