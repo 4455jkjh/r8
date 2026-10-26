@@ -37,8 +37,8 @@ public class B369739225Test extends TestBase {
     testForJvm(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17),
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_JDK_FROM_17),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_DALVIK_ART_JDK_UNTIL_11));
   }
@@ -60,8 +60,8 @@ public class B369739225Test extends TestBase {
         .addKeepMainRule(TestClass.class)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17),
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_JDK_FROM_17),
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_DALVIK_ART_JDK_UNTIL_11));
   }

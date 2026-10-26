@@ -50,7 +50,6 @@ import com.android.tools.r8.utils.collections.ProgramFieldMap;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.BitUtils;
-import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -61,10 +60,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
-
-// TODO(b/112437944): Handle cycles in the graph + add a test that fails with the current
-//  implementation. The current caching mechanism is unsafe, because we may mark a message as not
-//  containing a map/required field in presence of cycles, although it does.
 
 // TODO(b/112437944): Handle incomplete information about extensions + add a test that fails with
 //  the current implementation. If there are some extensions that cannot be resolved, then we should
@@ -90,8 +85,10 @@ public class ProtoEnqueuerExtension
   private final Map<DexType, ProtoMessageInfo> seenButNotLiveProtos = new IdentityHashMap<>();
 
   // To cache whether a proto message contains a map/required field directly or indirectly.
-  private final Map<ProtoMessageInfo, OptionalBool> reachesMapOrRequiredFieldFromMessageCache =
-      new IdentityHashMap<>();
+  private final Set<ProtoMessageInfo> reachesMapOrRequiredFieldFromMessageCache =
+      Sets.newIdentityHashSet();
+  private final Set<ProtoMessageInfo> doesNotReachMapOrRequiredFieldFromMessageCache =
+      Sets.newIdentityHashSet();
 
   // Keeps track of the set of dynamicMethod() methods for which we have traced const-class and
   // static-get instructions.
@@ -411,10 +408,12 @@ public class ProtoEnqueuerExtension
         return;
       }
 
-      extensionGraph
+      if (extensionGraph
           .computeIfAbsent(
               containerType.asClassType().getClassType(), ignore -> Sets.newIdentityHashSet())
-          .add(extensionType.asClassType().getClassType());
+          .add(extensionType.asClassType().getClassType())) {
+        doesNotReachMapOrRequiredFieldFromMessageCache.clear();
+      }
     }
   }
 
@@ -663,6 +662,11 @@ public class ProtoEnqueuerExtension
    * @return true if this proto field contains a map/required field directly or indirectly.
    */
   private boolean reachesMapOrRequiredField(ProtoFieldInfo protoFieldInfo) {
+    return reachesMapOrRequiredField(protoFieldInfo, null);
+  }
+
+  private boolean reachesMapOrRequiredField(
+      ProtoFieldInfo protoFieldInfo, Set<ProtoMessageInfo> visited) {
     ProtoFieldType protoFieldType = protoFieldInfo.getType();
 
     // If it is a map/required field, return true.
@@ -681,7 +685,7 @@ public class ProtoEnqueuerExtension
     if (baseMessageType != null) {
       ProtoMessageInfo protoMessageInfo = getOrCreateProtoMessageInfo(baseMessageType);
       if (protoMessageInfo != null) {
-        return reachesMapOrRequiredField(protoMessageInfo);
+        return reachesMapOrRequiredField(protoMessageInfo, visited);
       }
       assert false : "Unable to find proto message info for `" + baseMessageType + "`";
     }
@@ -693,27 +697,32 @@ public class ProtoEnqueuerExtension
    *
    * @return true if this proto message contains a map/required field directly or indirectly.
    */
-  private boolean reachesMapOrRequiredField(ProtoMessageInfo protoMessageInfo) {
+  private boolean reachesMapOrRequiredField(
+      ProtoMessageInfo protoMessageInfo, Set<ProtoMessageInfo> visited) {
     if (!protoMessageInfo.hasFields() && !extensionGraph.containsKey(protoMessageInfo.getType())) {
       return false;
     }
 
-    OptionalBool cache =
-        reachesMapOrRequiredFieldFromMessageCache.getOrDefault(
-            protoMessageInfo, OptionalBool.unknown());
-    if (!cache.isUnknown()) {
-      return cache.isTrue();
+    if (reachesMapOrRequiredFieldFromMessageCache.contains(protoMessageInfo)) {
+      return true;
+    }
+    if (doesNotReachMapOrRequiredFieldFromMessageCache.contains(protoMessageInfo)) {
+      return false;
     }
 
-    // To guard against infinite recursion, we set the cache for this message to false, although
-    // we may later find out that this message actually contains a map/required field.
-    reachesMapOrRequiredFieldFromMessageCache.put(protoMessageInfo, OptionalBool.of(false));
+    boolean isRoot = visited == null;
+    if (isRoot) {
+      visited = Sets.newIdentityHashSet();
+    }
+    if (!visited.add(protoMessageInfo)) {
+      return false;
+    }
 
     // Check if any of the fields contains a map/required field.
     if (protoMessageInfo.hasFields()) {
       for (ProtoFieldInfo protoFieldInfo : protoMessageInfo.getFields()) {
-        if (reachesMapOrRequiredField(protoFieldInfo)) {
-          reachesMapOrRequiredFieldFromMessageCache.put(protoMessageInfo, OptionalBool.of(true));
+        if (reachesMapOrRequiredField(protoFieldInfo, visited)) {
+          reachesMapOrRequiredFieldFromMessageCache.add(protoMessageInfo);
           return true;
         }
       }
@@ -734,12 +743,15 @@ public class ProtoEnqueuerExtension
                           + extensionType.getTypeName()
                           + "`"));
         }
-      } else if (reachesMapOrRequiredField(protoExtensionMessageInfo)) {
-        reachesMapOrRequiredFieldFromMessageCache.put(protoMessageInfo, OptionalBool.of(true));
+      } else if (reachesMapOrRequiredField(protoExtensionMessageInfo, visited)) {
+        reachesMapOrRequiredFieldFromMessageCache.add(protoMessageInfo);
         return true;
       }
     }
 
+    if (isRoot) {
+      doesNotReachMapOrRequiredFieldFromMessageCache.addAll(visited);
+    }
     return false;
   }
 

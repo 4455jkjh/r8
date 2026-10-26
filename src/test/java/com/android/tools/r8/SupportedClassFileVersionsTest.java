@@ -41,10 +41,12 @@ public class SupportedClassFileVersionsTest extends TestBase implements Opcodes 
         .addProgramClassFileData(dump(version))
         .run(parameters.getRuntime(), "Test")
         .applyIf(
-            (DesugarTestConfiguration c) ->
-                DesugarTestConfiguration.isNotDesugared(c) // This implies CF runtime.
-                    && version.major() > parameters.asCfRuntime().getVm().getClassfileVersion(),
-            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+            DesugarTestConfiguration::isNotDesugared, // This implies CF runtime.
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> version.major() > vm.getClassfileVersion(),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+                    rr -> rr.assertSuccessWithOutputLines("Hello, world!")),
             r -> r.assertSuccessWithOutputLines("Hello, world!"));
   }
 
@@ -57,9 +59,8 @@ public class SupportedClassFileVersionsTest extends TestBase implements Opcodes 
         .addKeepMainRule("Test")
         .setMinApi(parameters)
         .run(parameters.getRuntime(), "Test")
-        .applyIf(
-            parameters.isCfRuntime()
-                && version.major() > parameters.asCfRuntime().getVm().getClassfileVersion(),
+        .applyIfCfRuntime(
+            vm -> version.major() > vm.getClassfileVersion(),
             r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
             r -> r.assertSuccessWithOutputLines("Hello, world!"));
   }

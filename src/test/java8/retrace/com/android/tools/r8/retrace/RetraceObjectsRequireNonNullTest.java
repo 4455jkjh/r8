@@ -48,10 +48,6 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  private boolean isCfVmWithModulePrefix() {
-    return parameters.isCfRuntime() && !parameters.isCfRuntime(CfVm.JDK8);
-  }
-
   private boolean isApiWithRequireNonNullSupport() {
     return parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
   }
@@ -60,30 +56,27 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
   public void testReference() throws Exception {
     parameters.assumeJvmTestParameters();
     boolean includeObjectsFrame = true;
-    boolean includeJvmModule = isCfVmWithModulePrefix();
     boolean doNotCheckLines = true;
     testForJvm(parameters)
         .addProgramClasses(getInputClasses())
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, true, doNotCheckLines));
   }
 
   @Test
   public void testD8() throws Exception {
     boolean includeObjectsFrame = isApiWithRequireNonNullSupport();
-    boolean includeJvmModule = includeObjectsFrame && isCfVmWithModulePrefix();
     boolean doNotCheckLines = includeObjectsFrame;
     testForD8(parameters.getBackend())
         .addProgramClasses(getInputClasses())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, includeObjectsFrame, doNotCheckLines));
   }
 
   @Test
   public void testD8DebugRetrace() throws Exception {
     boolean includeObjectsFrame = true;
-    boolean includeJvmModule = isApiWithRequireNonNullSupport() && isCfVmWithModulePrefix();
     boolean doNotCheckLines = isApiWithRequireNonNullSupport();
     testForD8(parameters.getBackend())
         .debug()
@@ -91,13 +84,15 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
         .addProgramClasses(getInputClasses())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(
+            r ->
+                checkRunResult(
+                    r, includeObjectsFrame, isApiWithRequireNonNullSupport(), doNotCheckLines));
   }
 
   @Test
   public void testD8ReleaseRetrace() throws Exception {
     boolean includeObjectsFrame = true;
-    boolean includeJvmModule = isApiWithRequireNonNullSupport() && isCfVmWithModulePrefix();
     boolean doNotCheckLines = isApiWithRequireNonNullSupport();
     testForD8(parameters.getBackend())
         .release()
@@ -105,14 +100,16 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
         .addProgramClasses(getInputClasses())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(
+            r ->
+                checkRunResult(
+                    r, includeObjectsFrame, isApiWithRequireNonNullSupport(), doNotCheckLines));
   }
 
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
     boolean includeObjectsFrame = true;
-    boolean includeJvmModule = isCfVmWithModulePrefix();
     boolean doNotCheckLines = parameters.isCfRuntime() || isApiWithRequireNonNullSupport();
     testForR8(parameters.getBackend())
         .addProgramClasses(getInputClasses())
@@ -121,37 +118,57 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
         .addKeepAttributeLineNumberTable()
         .setMinApi(parameters)
         .run(parameters.getRuntime(), CLASS_MAIN)
-        .apply(r -> checkRunResult(r, includeObjectsFrame, includeJvmModule, doNotCheckLines));
+        .apply(r -> checkRunResult(r, includeObjectsFrame, true, doNotCheckLines));
   }
 
   private void checkRunResult(
       TestRunResult<?> runResult,
       boolean includeObjectsFrame,
-      boolean includeJvmModule,
+      boolean includeJvmModuleIfSupported,
       boolean doNotCheckLines)
       throws Exception {
     runResult
         .assertFailureWithErrorThatThrows(NullPointerException.class)
-        .applyIfDexRuntime(
-            version -> version.isNewerThanOrEqual(V16_1_0),
+        .applyIf(
+            parameters.isCfRuntime(),
             r ->
-                r.inspectStackTrace(
-                    stackTrace ->
-                        checkExpectedStackTrace(
-                            stackTrace,
-                            includeObjectsFrame,
-                            includeJvmModule,
-                            doNotCheckLines,
-                            true)),
+                r.applyIfCfRuntime(
+                    vm -> vm != CfVm.JDK8,
+                    rr ->
+                        rr.inspectStackTrace(
+                            stackTrace ->
+                                checkExpectedStackTrace(
+                                    stackTrace,
+                                    includeObjectsFrame,
+                                    includeJvmModuleIfSupported,
+                                    doNotCheckLines,
+                                    false)),
+                    rr ->
+                        rr.inspectStackTrace(
+                            stackTrace ->
+                                checkExpectedStackTrace(
+                                    stackTrace,
+                                    includeObjectsFrame,
+                                    false,
+                                    doNotCheckLines,
+                                    false))),
             r ->
-                r.inspectStackTrace(
-                    stackTrace ->
-                        checkExpectedStackTrace(
-                            stackTrace,
-                            includeObjectsFrame,
-                            includeJvmModule,
-                            doNotCheckLines,
-                            false)));
+                r.applyIfDexRuntime(
+                    version -> version.isNewerThanOrEqual(V16_1_0),
+                    rr ->
+                        rr.inspectStackTrace(
+                            stackTrace ->
+                                checkExpectedStackTrace(
+                                    stackTrace, includeObjectsFrame, false, doNotCheckLines, true)),
+                    rr ->
+                        rr.inspectStackTrace(
+                            stackTrace ->
+                                checkExpectedStackTrace(
+                                    stackTrace,
+                                    includeObjectsFrame,
+                                    false,
+                                    doNotCheckLines,
+                                    false))));
   }
 
   private void checkExpectedStackTrace(

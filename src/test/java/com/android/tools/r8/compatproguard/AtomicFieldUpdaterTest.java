@@ -6,6 +6,8 @@ package com.android.tools.r8.compatproguard;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexConstClass;
 import com.android.tools.r8.dex.code.DexConstString;
 import com.android.tools.r8.dex.code.DexInvokeStatic;
@@ -18,8 +20,21 @@ import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class AtomicFieldUpdaterTest extends CompatProguardSmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public AtomicFieldUpdaterTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private final String CLASS_NAME = "Example";
   private final static String BOO = "Boo";

@@ -4,13 +4,29 @@
 
 package com.android.tools.r8.retrace;
 
+import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.retrace.mappings.FieldsWithSameMinifiedNameMapping;
 import com.android.tools.r8.retrace.mappings.MappingForTest;
 import java.util.function.Consumer;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class RetraceFieldTests {
+@RunWith(Parameterized.class)
+public class RetraceFieldTests extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public RetraceFieldTests(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void testFieldsWithSameMinifiedName() {

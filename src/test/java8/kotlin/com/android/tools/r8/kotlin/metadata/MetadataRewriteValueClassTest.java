@@ -62,7 +62,7 @@ public class MetadataRewriteValueClassTest extends KotlinMetadataTestBase {
   @Test
   public void smokeTest() throws Exception {
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(kotlincLibJar.getForConfiguration(kotlinParameters))
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -97,7 +97,7 @@ public class MetadataRewriteValueClassTest extends KotlinMetadataTestBase {
             .inspect(this::inspect)
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

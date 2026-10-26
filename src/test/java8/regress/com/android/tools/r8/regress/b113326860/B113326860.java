@@ -12,6 +12,9 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.dex.code.DexSput;
 import com.android.tools.r8.dex.code.DexSputBoolean;
@@ -28,6 +31,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 class TestClassDoOptimize {
   private static boolean b = false;
@@ -93,7 +99,17 @@ class TestDoWhileLoop {
   }
 }
 
-public class B113326860 {
+@RunWith(Parameterized.class)
+public class B113326860 extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public B113326860(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private CodeInspector compileTestClasses(List<Class> classes)
       throws IOException, CompilationFailedException {

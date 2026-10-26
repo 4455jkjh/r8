@@ -84,11 +84,9 @@ public class NestVirtualMethodAccessWithIntermediateClassTest extends TestBase {
         .addProgramClasses(getClasses())
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
+        .applyIfCfRuntime(
             // TODO(b/227160049): Incorrect nest-based access allowed on JDK17!?
-            inSameNest
-                && parameters.isCfRuntime()
-                && parameters.asCfRuntime().isNewerThanOrEqual(JDK17),
+            vm -> inSameNest && vm.isNewerThanOrEqual(JDK17),
             runResult -> runResult.assertSuccessWithOutputLines("A::bar"),
             runResult -> checkExpectedResult(runResult, false));
   }

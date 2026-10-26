@@ -7,7 +7,6 @@ package com.android.tools.r8.desugar.sealed;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -55,8 +54,6 @@ public class SealedClassesShrinkingTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    assumeTrue(
-        parameters.isDexRuntime() || parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForR8(parameters)
         .addProgramClasses(TestClass.class, UsedSub.class, UnusedSub.class)
         .addProgramClassFileData(getTransformedClasses())

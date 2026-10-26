@@ -28,15 +28,17 @@ public class CompileDumpR8Assistant extends CompileDumpBase {
   private static final List<String> VALID_OPTIONS = Arrays.asList("--reflective-usage-json-output");
 
   private static final List<String> VALID_OPTIONS_WITH_SINGLE_OPERAND =
-      Arrays.asList("--output", "--lib", "--classpath", "--min-api", "--threads");
+      Arrays.asList("--output", "--lib", "--classpath", "--min-api", "--threads", "--runtime");
 
   public static void main(String[] args) throws CompilationFailedException {
     Path outputPath = null;
+    Path runtimePath = null;
     CompilationMode compilationMode = CompilationMode.RELEASE;
     List<Path> program = new ArrayList<>();
     List<Path> library = new ArrayList<>();
     List<Path> classpath = new ArrayList<>();
-    int minApi = 1;
+    int minApiMajor = 1;
+    int minApiMinor = 0;
     int threads = -1;
     boolean reflectiveUsageAsJson = false;
 
@@ -70,12 +72,18 @@ public class CompileDumpR8Assistant extends CompileDumpBase {
             }
           case "--min-api":
             {
-              minApi = Integer.parseInt(operand);
+              minApiMajor = parseMinApiMajor(operand);
+              minApiMinor = parseMinApiMinor(operand);
               break;
             }
           case "--threads":
             {
               threads = Integer.parseInt(operand);
+              break;
+            }
+          case "--runtime":
+            {
+              runtimePath = Paths.get(operand);
               break;
             }
           default:
@@ -91,8 +99,11 @@ public class CompileDumpR8Assistant extends CompileDumpBase {
             .addLibraryFiles(library)
             .addClasspathFiles(classpath)
             .setOutput(outputPath, OutputMode.DexIndexed)
-            .setMode(compilationMode)
-            .setMinApiLevel(minApi);
+            .setMode(compilationMode);
+    setMinApiLevel(commandBuilder, minApiMajor, minApiMinor);
+    if (runtimePath != null) {
+      commandBuilder.setAssistantRuntime(runtimePath);
+    }
     if (reflectiveUsageAsJson) {
       commandBuilder.setReflectiveReceiverClass(ReflectiveOperationJsonLogger.class);
     }

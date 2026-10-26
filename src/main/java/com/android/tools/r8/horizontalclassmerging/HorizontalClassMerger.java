@@ -145,6 +145,7 @@ public class HorizontalClassMerger {
     HorizontallyMergedClasses mergedClasses =
         HorizontallyMergedClasses.builder().addMergeGroups(groups).build();
     appView.setHorizontallyMergedClasses(mergedClasses);
+    appView.getMergedClassesProvenance().recordHorizontalMerges(appView, groups);
 
     HorizontalClassMergerGraphLens horizontalClassMergerGraphLens =
         createLens(

@@ -59,6 +59,14 @@ public class ReservedVirtualMethodNamesFromUnresolvedReferencesTest extends Test
   // Superclass will be rewritten to RuntimeSuperClass during transformation.
   public static class RuntimeClass extends CompileTimeSuperClass {}
 
+  public interface LibraryInterface {}
+
+  public static class LibrarySuperClass {}
+
+  public interface ProgramInterface extends LibraryInterface {
+    void foo();
+  }
+
   public static class ClassWithUnresolvedReferenceToMethodNamedA {
     @NeverInline
     public int callA(RuntimeClass o) {
@@ -86,51 +94,47 @@ public class ReservedVirtualMethodNamesFromUnresolvedReferencesTest extends Test
     }
   }
 
-  @Test
-  public void test() throws Exception {
+  private byte[] getRuntimeClass() throws Exception {
+    String runtimeSuperClassDescriptor =
+        Reference.classFromClass(RuntimeSuperClass.class).getDescriptor();
+    return transformer(RuntimeClass.class)
+        // Rewrite RuntimeClass to extend RuntimeSuperClass instead of CompileTimeSuperClass
+        .setSuper(runtimeSuperClassDescriptor)
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(CompileTimeSuperClass.class), runtimeSuperClassDescriptor)
+        .transform();
+  }
+
+  private byte[] getClassWithUnresolvedReferenceToMethodNamedA() throws Exception {
     String runtimeSuperClassDescriptor =
         Reference.classFromClass(RuntimeSuperClass.class).getDescriptor();
     String runtimeClassDescriptor = Reference.classFromClass(RuntimeClass.class).getDescriptor();
-
-    byte[] runtimeClassBytes =
-        transformer(RuntimeClass.class)
-            // Rewrite RuntimeClass to extend RuntimeSuperClass instead of CompileTimeSuperClass
-            .setSuper(runtimeSuperClassDescriptor)
-            .replaceClassDescriptorInMethodInstructions(
-                descriptor(CompileTimeSuperClass.class), runtimeSuperClassDescriptor)
-            .transform();
-
     // Rewrite ClassWithUnresolvedReferenceToMethodNamedA to reference RuntimeSuperClass instead of
     // CompileTimeSuperClass, including unresolved reference RuntimeSuperClass.a()
-    byte[] classWithUnresolvedReferenceToMethodNamedABytes =
-        transformer(ClassWithUnresolvedReferenceToMethodNamedA.class)
-            .replaceClassDescriptorInMethodInstructions(
-                descriptor(CompileTimeSuperClass.class),
-                targetSuperClass ? runtimeSuperClassDescriptor : runtimeClassDescriptor)
-            .replaceClassDescriptorInMembers(
-                descriptor(CompileTimeSuperClass.class),
-                targetSuperClass ? runtimeSuperClassDescriptor : runtimeClassDescriptor)
-            .addMethodTransformer(
-                new MethodTransformer() {
-                  @Override
-                  public void visitMethodInsn(
-                      int opcode,
-                      String owner,
-                      String name,
-                      String descriptor,
-                      boolean isInterface) {
-                    if (name.equals("dummy")) {
-                      super.visitMethodInsn(opcode, owner, "a", descriptor, isInterface);
-                    } else {
-                      super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                    }
-                  }
-                })
-            .transform();
+    return transformer(ClassWithUnresolvedReferenceToMethodNamedA.class)
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(CompileTimeSuperClass.class),
+            targetSuperClass ? runtimeSuperClassDescriptor : runtimeClassDescriptor)
+        .replaceClassDescriptorInMembers(
+            descriptor(CompileTimeSuperClass.class),
+            targetSuperClass ? runtimeSuperClassDescriptor : runtimeClassDescriptor)
+        .addMethodTransformer(
+            new MethodTransformer() {
+              @Override
+              public void visitMethodInsn(
+                  int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                super.visitMethodInsn(
+                    opcode, owner, name.equals("dummy") ? "a" : name, descriptor, isInterface);
+              }
+            })
+        .transform();
+  }
 
+  @Test
+  public void test() throws Exception {
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class, RuntimeSuperClass.class)
-        .addProgramClassFileData(runtimeClassBytes, classWithUnresolvedReferenceToMethodNamedABytes)
+        .addProgramClassFileData(getRuntimeClass(), getClassWithUnresolvedReferenceToMethodNamedA())
         .addKeepMainRule(Main.class)
         .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToMethodNamedA.class)
         .addKeepRules(
@@ -145,11 +149,37 @@ public class ReservedVirtualMethodNamesFromUnresolvedReferencesTest extends Test
               ClassSubject runtimeSuperClass = inspector.clazz(RuntimeSuperClass.class);
               MethodSubject existingMethod =
                   runtimeSuperClass.uniqueMethodWithOriginalName("existingMethod");
-              // TODO(b/533167364): Renaming existingMethod to a makes the unresolved method a
-              //  in the input resolve.
-              assertEquals("a", existingMethod.getFinalName());
+              assertEquals("b", existingMethod.getFinalName());
             })
-        // Should be assertSuccessWithOutputLines("Could not call callA()", "2")
-        .assertSuccessWithOutputLines("2", "2");
+        .assertSuccessWithOutputLines("Could not call callA()", "2");
+  }
+
+  @Test
+  public void testLibrary() throws Exception {
+    byte[] runtimeSuperClassBytes =
+        transformer(RuntimeSuperClass.class)
+            .setSuper(descriptor(LibrarySuperClass.class))
+            .replaceClassDescriptorInMethodInstructions(
+                descriptor(Object.class), descriptor(LibrarySuperClass.class))
+            .setImplements(LibraryInterface.class)
+            .transform();
+    byte[] runtimeClassBytes = getRuntimeClass();
+
+    testForR8(parameters.getBackend())
+        .addProgramClasses(Main.class, ProgramInterface.class)
+        .addProgramClassFileData(getClassWithUnresolvedReferenceToMethodNamedA())
+        .addLibraryClasses(LibraryInterface.class, LibrarySuperClass.class)
+        .addLibraryClassFileData(runtimeSuperClassBytes, runtimeClassBytes)
+        .addDefaultRuntimeLibrary(parameters)
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToMethodNamedA.class)
+        .addKeepClassAndMembersRulesWithAllowObfuscation(ProgramInterface.class)
+        .enableInliningAnnotations()
+        .setMinApi(parameters)
+        .compile()
+        .addRunClasspathClasses(LibraryInterface.class, LibrarySuperClass.class)
+        .addRunClasspathClassFileData(runtimeSuperClassBytes, runtimeClassBytes)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Could not call callA()", "2");
   }
 }

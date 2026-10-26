@@ -7,7 +7,6 @@ package com.android.tools.r8.cf.stackmap;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
@@ -49,20 +48,18 @@ public class StackMapVerificationNoFrameForHandlerTest extends TestBase {
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
-    SingleTestRunResult mainResult =
-        testForJvm(parameters)
-            .addProgramClassFileData(
-                includeFrameInHandler
-                    ? MainDump.dump()
-                    : transformer(MainDump.dump(), Reference.classFromClass(Main.class))
-                        .stripFrames("main")
-                        .transform())
-            .run(parameters.getRuntime(), Main.class);
-    if (includeFrameInHandler) {
-      mainResult.assertSuccessWithOutputLines(EXPECTED_OUTPUT);
-    } else {
-      mainResult.assertFailureWithErrorThatMatches(containsString(EXPECTED_JVM_ERROR));
-    }
+    testForJvm(parameters)
+        .addProgramClassFileData(
+            includeFrameInHandler
+                ? MainDump.dump()
+                : transformer(MainDump.dump(), Reference.classFromClass(Main.class))
+                    .stripFrames("main")
+                    .transform())
+        .run(parameters.getRuntime(), Main.class)
+        .applyIf(
+            includeFrameInHandler,
+            r -> r.assertSuccessWithOutputLines(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatMatches(containsString(EXPECTED_JVM_ERROR)));
   }
 
   @Test

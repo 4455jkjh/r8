@@ -73,14 +73,13 @@ public class LambdaWithPrimitiveReferenceTypeConflictTest extends TestBase {
   }
 
   private boolean expectCompilationError() {
-    return variant == Variant.ARGUMENT || expectJvmRuntimeError();
+    return variant == Variant.ARGUMENT || variant == Variant.RETURN_BYTE;
   }
 
-  private boolean expectJvmRuntimeError() {
+  private boolean expectJvmRuntimeError(CfVm vm) {
     // This should be the same as what we allow compilation failure for, but JDK8 doesn't verify
     // the argument constraints so the program runs.
-    return variant == Variant.RETURN_BYTE
-        || (variant == Variant.ARGUMENT && !parameters.isCfRuntime(CfVm.JDK8));
+    return variant == Variant.RETURN_BYTE || (variant == Variant.ARGUMENT && vm != CfVm.JDK8);
   }
 
   @Test
@@ -90,8 +89,8 @@ public class LambdaWithPrimitiveReferenceTypeConflictTest extends TestBase {
         .addProgramClasses(getProgramClasses())
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            expectJvmRuntimeError(),
+        .applyIfCfRuntime(
+            this::expectJvmRuntimeError,
             r -> r.assertFailureWithErrorThatThrows(LambdaConversionException.class),
             r -> r.assertSuccessWithOutput(EXPECTED));
   }

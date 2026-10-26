@@ -20,6 +20,8 @@ import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_G
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_METHODS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_FIELD;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_FIELDS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_GENERIC_INTERFACES;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_GENERIC_SUPERCLASS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_METHOD;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_METHODS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_NAME;
@@ -27,8 +29,10 @@ import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_G
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_SUPERCLASS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_IS_ASSIGNABLE_FROM;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_IS_INSTANCE;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_LOADER_LOAD_CLASS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_NEW_INSTANCE;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.PROXY_NEW_PROXY_INSTANCE;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.RESOURCE_BUNDLE_GET_BUNDLE;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.SERVICE_LOADER_LOAD;
 
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
@@ -36,20 +40,34 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 // This logs the information in JSON-like format,
 // manually encoded to avoid loading gson on the mobile.
+// Each distinct event is logged once with an id before the reflective call. When the call returns
+// normally, {"returned": id, "result": summary} is logged once per distinct summary of the result,
+// so an event without a returned line never returned normally (it threw).
 @KeepForApi
 public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceiver {
 
   private final FileWriter output;
-  private final Set<Long> seenEvents = new HashSet<>();
+  private final Map<Long, Integer> eventIds = new HashMap<>();
+  private final Set<Long> seenResults = new HashSet<>();
+  // Set when writing the log fails. Logging then stops instead of throwing from the hooks, which
+  // would change the control flow of the app around the reflective call.
+  private boolean outputFailed = false;
 
   // TODO(b/486090382): Consider injecting the app id as part of instrumentation.
   public String getApplicationId() {
@@ -145,7 +163,7 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
       }
       this.output = new FileWriter(file);
     } catch (IOException e) {
-      throw new UncheckedIOException(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -153,7 +171,7 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
       Class<?> returnType, Class<?> holder, String method, Class<?>... parameters) {
     int parametersLength = parameters == null ? 0 : parameters.length;
     String[] methodStrings = new String[parametersLength + 3];
-    methodStrings[0] = printClass(returnType);
+    methodStrings[0] = printMemberType(returnType);
     methodStrings[1] = printClass(holder);
     methodStrings[2] = method;
     for (int i = 0; i < parametersLength; i++) {
@@ -167,41 +185,100 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
   }
 
   private String printClass(Class<?> clazz) {
-    return clazz == null ? "null" : clazz.getName();
+    return clazz == null ? "null" : printType(clazz);
+  }
+
+  // The member type is null if the member lookup fails, which is logged as JSON null.
+  private String printMemberType(Class<?> type) {
+    return type == null ? null : printClass(type);
   }
 
   private String printClassLoader(ClassLoader classLoader) {
     return classLoader == null ? "null" : printClass(classLoader.getClass());
   }
 
+  private boolean isIgnored(Stack stack, Class<?> clazz) {
+    return clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack, clazz);
+  }
+
+  private boolean isIgnored(Stack stack, String className) {
+    String target = unwrapArrayTypeName(className);
+    return target == null || isIgnoredTarget(target) || isIgnoredCaller(stack, target);
+  }
+
+  private String unwrapArrayTypeName(String name) {
+    if (name == null) {
+      return null;
+    }
+    int dimensions = 0;
+    while (dimensions < name.length() && name.charAt(dimensions) == '[') {
+      dimensions++;
+    }
+    if (dimensions == 0) {
+      return name;
+    }
+    String element = name.substring(dimensions);
+    if (element.startsWith("L") && element.endsWith(";")) {
+      return element.substring(1, element.length() - 1);
+    }
+    if (element.length() == 1 && "ZBCSIJFD".indexOf(element.charAt(0)) >= 0) {
+      return null;
+    }
+    return name;
+  }
+
   private boolean isIgnoredClass(Class<?> clazz) {
-    return clazz != null && isIgnoredTarget(clazz.getName());
+    if (clazz == null) {
+      return true;
+    }
+    Class<?> c = clazz;
+    while (c.isArray()) {
+      c = c.getComponentType();
+    }
+    if (c.isPrimitive()) {
+      return true;
+    }
+    return isIgnoredTarget(c.getName());
   }
 
   private boolean isIgnoredTarget(String name) {
-    return name != null
-        && (name.startsWith("java.") || name.startsWith("javax.") || name.startsWith("android."));
+    return name.startsWith("java.") || name.startsWith("javax.") || name.startsWith("android.");
   }
 
-  private boolean isIgnoredCaller(Stack stack) {
-    if (stack == null
+  private boolean isLibraryClass(String name) {
+    return name.startsWith("java.")
+        || name.startsWith("javax.")
+        || name.startsWith("android.")
+        || name.startsWith("androidx.")
+        || name.startsWith("kotlin.")
+        || name.startsWith("kotlinx.");
+  }
+
+  private boolean isIgnoredCaller(Stack stack, Class<?> target) {
+    Class<?> c = target;
+    while (c != null && c.isArray()) {
+      c = c.getComponentType();
+    }
+    return isIgnoredCaller(stack, c != null ? c.getName() : null);
+  }
+
+  // Reflection from library code, such as androidx or kotlinx code in the app, is only ignored if
+  // the target is a library class too. Library code that reflects on app classes, such as
+  // FragmentFactory or kotlinx.serialization on app classes, is logged.
+  private boolean isIgnoredCaller(Stack stack, String target) {
+    if ((target != null && !isLibraryClass(target))
+        || stack == null
         || stack.getStackTraceElements() == null
         || stack.getStackTraceElements().length == 0) {
       return false;
     }
     String name = stack.getStackTraceElements()[0].getClassName();
-    return name != null
-        && (name.startsWith("java.")
-            || name.startsWith("javax.")
-            || name.startsWith("android.")
-            || name.startsWith("androidx.")
-            || name.startsWith("kotlin.")
-            || name.startsWith("kotlinx."));
+    return name != null && isLibraryClass(name);
   }
 
-  private synchronized void output(ReflectiveEventType event, Stack stack, String... args) {
-    if (output == null) {
-      return;
+  private synchronized int output(ReflectiveEventType event, Stack stack, String... args) {
+    if (output == null || outputFailed) {
+      return NO_ID;
     }
     long hash = 0xcbf29ce484222325L;
     hash = updateHash(hash, event.name());
@@ -214,13 +291,18 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
     for (String arg : args) {
       hash = updateHash(hash, arg);
     }
-    if (!seenEvents.add(hash)) {
-      return;
+    Integer id = eventIds.get(hash);
+    if (id != null) {
+      return id;
     }
+    id = eventIds.size();
+    eventIds.put(hash, id);
     try {
       output.write("{\"event\": \"");
       output.write(event.name());
       output.write("\"");
+      output.write(", \"id\": ");
+      output.write(Integer.toString(id));
       if (stackStrings != null) {
         output.write(", \"stack\": ");
         printArray(stackStrings);
@@ -229,24 +311,27 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
       output.write(", \"args\": ");
       printArray(args);
       output.write("}");
-      output.write(System.lineSeparator());
+      output.write("\n");
       output.flush();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      outputFailed = true;
+      return NO_ID;
     }
+    return id;
   }
 
   // 64-bit FNV-1a hash algorithm to minimize collision risk when deduplicating
   // large volumes of reflection events across long application runs.
   private long updateHash(long hash, String s) {
     if (s == null) {
-      return hash;
+      // Mix in a value that no char can produce, so that a null argument still changes the hash.
+      return (hash ^ 0x10000) * 0x100000001b3L;
     }
     for (int i = 0; i < s.length(); i++) {
       hash ^= s.charAt(i);
       hash *= 0x100000001b3L;
     }
-    return hash;
+    return (hash ^ 0x10001) * 0x100000001b3L;
   }
 
   private void printArray(String... args) throws IOException {
@@ -261,201 +346,164 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
   }
 
   private void writeJsonString(String s) throws IOException {
+    StringBuilder builder = new StringBuilder();
+    appendJsonString(builder, s);
+    output.write(builder.toString());
+  }
+
+  private void appendJsonString(StringBuilder builder, String s) {
     if (s == null) {
-      output.write("null");
+      builder.append("null");
       return;
     }
-    output.write("\"");
+    builder.append("\"");
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
       if (c == '"') {
-        output.write("\\\"");
+        builder.append("\\\"");
       } else if (c == '\\') {
-        output.write("\\\\");
+        builder.append("\\\\");
       } else if (c == '\b') {
-        output.write("\\b");
+        builder.append("\\b");
       } else if (c == '\f') {
-        output.write("\\f");
+        builder.append("\\f");
       } else if (c == '\n') {
-        output.write("\\n");
+        builder.append("\\n");
       } else if (c == '\r') {
-        output.write("\\r");
+        builder.append("\\r");
       } else if (c == '\t') {
-        output.write("\\t");
+        builder.append("\\t");
       } else {
-        output.write(c);
+        builder.append(c);
       }
     }
-    output.write("\"");
+    builder.append("\"");
   }
 
   @Override
-  public void onClassNewInstance(Stack stack, Class<?> clazz) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassNewInstance(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
-      return;
-    }
-    // Class#newInstance() requires a public nullary constructor.
-    // Probe it to ensure one exists before recording the instantiation.
-    try {
-      clazz.getConstructor();
-    } catch (Throwable e) {
-      return;
-    }
-    output(CLASS_NEW_INSTANCE, stack, printClass(clazz));
+    return output(CLASS_NEW_INSTANCE, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetDeclaredMethod(
+  public int onClassGetDeclaredMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
-    if (clazz == null || returnType == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_DECLARED_METHOD, stack, methodToString(returnType, clazz, method, parameters));
+    return output(
+        CLASS_GET_DECLARED_METHOD, stack, methodToString(returnType, clazz, method, parameters));
   }
 
   @Override
-  public void onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_DECLARED_METHODS, stack, printClass(clazz));
+    return output(CLASS_GET_DECLARED_METHODS, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetDeclaredField(
+  public int onClassGetDeclaredField(
       Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
-    if (clazz == null || fieldType == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_DECLARED_FIELD, stack, printClass(fieldType), printClass(clazz), fieldName);
+    return output(
+        CLASS_GET_DECLARED_FIELD, stack, printMemberType(fieldType), printClass(clazz), fieldName);
   }
 
   @Override
-  public void onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_DECLARED_FIELDS, stack, printClass(clazz));
+    return output(CLASS_GET_DECLARED_FIELDS, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    // Probe the declared constructor to ensure it exists before logging.
-    try {
-      clazz.getDeclaredConstructor(parameters);
-    } catch (Throwable e) {
-      return;
-    }
-    output(CLASS_GET_DECLARED_CONSTRUCTOR, stack, constructorToString(clazz, parameters));
+    return output(CLASS_GET_DECLARED_CONSTRUCTOR, stack, constructorToString(clazz, parameters));
   }
 
   @Override
-  public void onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_DECLARED_CONSTRUCTORS, stack, printClass(clazz));
+    return output(CLASS_GET_DECLARED_CONSTRUCTORS, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetMethod(
+  public int onClassGetMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
-    if (clazz == null || returnType == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_METHOD, stack, methodToString(returnType, clazz, method, parameters));
+    return output(CLASS_GET_METHOD, stack, methodToString(returnType, clazz, method, parameters));
   }
 
   @Override
-  public void onClassGetMethods(Stack stack, Class<?> clazz) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetMethods(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_METHODS, stack, printClass(clazz));
+    return output(CLASS_GET_METHODS, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
-    if (clazz == null || fieldType == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_FIELD, stack, printClass(fieldType), printClass(clazz), fieldName);
+    return output(CLASS_GET_FIELD, stack, printMemberType(fieldType), printClass(clazz), fieldName);
   }
 
   @Override
-  public void onClassGetFields(Stack stack, Class<?> clazz) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetFields(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_FIELDS, stack, printClass(clazz));
+    return output(CLASS_GET_FIELDS, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    // Probe the public constructor to ensure it exists before logging.
-    try {
-      clazz.getConstructor(parameters);
-    } catch (Throwable e) {
-      return;
-    }
-    output(CLASS_GET_CONSTRUCTOR, stack, constructorToString(clazz, parameters));
+    return output(CLASS_GET_CONSTRUCTOR, stack, constructorToString(clazz, parameters));
   }
 
   @Override
-  public void onClassGetConstructors(Stack stack, Class<?> clazz) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetConstructors(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_CONSTRUCTORS, stack, printClass(clazz));
+    return output(CLASS_GET_CONSTRUCTORS, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
-    if (clazz == null || lookupType == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
+    if (lookupType == null || isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_NAME, stack, printClass(clazz), lookupType.name());
+    return output(CLASS_GET_NAME, stack, printClass(clazz), lookupType.name());
   }
 
   @Override
-  public void onClassForName(
+  public int onClassForName(
       Stack stack, String className, boolean initialize, ClassLoader classLoader) {
-    if (className == null || isIgnoredTarget(className) || isIgnoredCaller(stack)) {
-      return;
+    if (isIgnored(stack, className)) {
+      return NO_ID;
     }
-    try {
-      ClassLoader loader = classLoader;
-      if (loader == null
-          && stack != null
-          && stack.getStackTraceElements() != null
-          && stack.getStackTraceElements().length > 0) {
-        try {
-          // When classLoader is null, Class#forName defaults to the caller's class loader,
-          // which would be the assistant runtime library's loader rather than the application.
-          // Look up the actual caller's class loader from the stack to resolve in the app context.
-          String callerClassName = stack.getStackTraceElements()[0].getClassName();
-          loader = Class.forName(callerClassName).getClassLoader();
-        } catch (Throwable t) {
-        }
-      }
-      if (loader == null) {
-        Class.forName(className);
-      } else {
-        Class.forName(className, initialize, loader);
-      }
-    } catch (Throwable e) {
-      return;
-    }
-    output(
+    return output(
         CLASS_FOR_NAME,
         stack,
         className,
@@ -464,56 +512,51 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
   }
 
   @Override
-  public void onClassGetComponentType(Stack stack, Class<?> clazz) {
-    if (isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetComponentType(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_COMPONENT_TYPE, stack, printClass(clazz));
+    return output(CLASS_GET_COMPONENT_TYPE, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassGetPackage(Stack stack, Class<?> clazz) {
-    if (isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetPackage(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_PACKAGE, stack, printClass(clazz));
+    return output(CLASS_GET_PACKAGE, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
-    if (isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
+    if (sup == null || isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_IS_ASSIGNABLE_FROM, stack, printClass(clazz), printClass(sup));
+    return output(CLASS_IS_ASSIGNABLE_FROM, stack, printClass(clazz), printClass(sup));
   }
 
   @Override
-  public void onClassGetSuperclass(Stack stack, Class<?> clazz) {
-    if (isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassGetSuperclass(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_GET_SUPERCLASS, stack, printClass(clazz));
+    return output(CLASS_GET_SUPERCLASS, stack, printClass(clazz));
   }
 
   @Override
-  public void onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
-    if (holder == null || clazz == null || isIgnoredClass(holder) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
+    if (clazz == null || isIgnored(stack, holder)) {
+      return NO_ID;
     }
-    try {
-      holder.asSubclass(clazz);
-    } catch (Throwable e) {
-      return;
-    }
-    output(CLASS_AS_SUBCLASS, stack, printClass(holder), printClass(clazz));
+    return output(CLASS_AS_SUBCLASS, stack, printClass(holder), printClass(clazz));
   }
 
   @Override
-  public void onClassIsInstance(Stack stack, Class<?> holder, Object object) {
-    if (holder == null || isIgnoredClass(holder) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassIsInstance(Stack stack, Class<?> holder, Object object) {
+    if (isIgnored(stack, holder)) {
+      return NO_ID;
     }
-    output(
+    return output(
         CLASS_IS_INSTANCE,
         stack,
         printClass(holder),
@@ -521,16 +564,11 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
   }
 
   @Override
-  public void onClassCast(Stack stack, Class<?> holder, Object object) {
-    if (holder == null || isIgnoredClass(holder) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassCast(Stack stack, Class<?> holder, Object object) {
+    if (isIgnored(stack, holder)) {
+      return NO_ID;
     }
-    try {
-      holder.cast(object);
-    } catch (Throwable e) {
-      return;
-    }
-    output(
+    return output(
         CLASS_CAST,
         stack,
         printClass(holder),
@@ -538,60 +576,236 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
   }
 
   @Override
-  public void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {
-    if (clazz == null || classFlag == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {
+    if (classFlag == null || isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(CLASS_FLAG, stack, printClass(clazz), classFlag.name());
+    return output(CLASS_FLAG, stack, printClass(clazz), classFlag.name());
   }
 
   @Override
-  public void onAtomicFieldUpdaterNewUpdater(
+  public int onAtomicFieldUpdaterNewUpdater(
       Stack stack, Class<?> fieldClass, Class<?> clazz, String name) {
-    if (fieldClass == null || clazz == null || name == null) {
-      return;
+    if (fieldClass == null || name == null || isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    if (isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
-    }
-    output(
+    return output(
         ATOMIC_FIELD_UPDATER_NEW_UPDATER, stack, printClass(fieldClass), printClass(clazz), name);
   }
 
   @Override
-  public void onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
-    if (clazz == null || isIgnoredClass(clazz) || isIgnoredCaller(stack)) {
-      return;
+  public int onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
     }
-    output(SERVICE_LOADER_LOAD, stack, printClass(clazz), printClassLoader(classLoader));
+    return output(SERVICE_LOADER_LOAD, stack, printClass(clazz), printClassLoader(classLoader));
   }
 
   @Override
-  public void onProxyNewProxyInstance(
+  public int onProxyNewProxyInstance(
       Stack stack,
       ClassLoader classLoader,
       Class<?>[] interfaces,
       InvocationHandler invocationHandler) {
-    if (interfaces == null || invocationHandler == null || isIgnoredCaller(stack)) {
-      return;
+    if (interfaces == null || invocationHandler == null) {
+      return NO_ID;
     }
     boolean allIgnored = true;
     for (Class<?> itf : interfaces) {
-      if (itf != null && !isIgnoredClass(itf)) {
+      if (!isIgnored(stack, itf)) {
         allIgnored = false;
         break;
       }
     }
     if (allIgnored) {
-      return;
+      return NO_ID;
     }
     String[] methodStrings = new String[interfaces.length + 2];
     methodStrings[0] = printClassLoader(classLoader);
-    methodStrings[1] = invocationHandler.toString();
+    methodStrings[1] = printClass(invocationHandler.getClass());
     for (int i = 0; i < interfaces.length; i++) {
       methodStrings[i + 2] = printClass(interfaces[i]);
     }
-    output(PROXY_NEW_PROXY_INSTANCE, stack, methodStrings);
+    return output(PROXY_NEW_PROXY_INSTANCE, stack, methodStrings);
+  }
+
+  @Override
+  public int onClassGetGenericSuperclass(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_GENERIC_SUPERCLASS, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onClassGetGenericInterfaces(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_GENERIC_INTERFACES, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onClassLoaderLoadClass(Stack stack, ClassLoader classLoader, String className) {
+    if (isIgnored(stack, className)) {
+      return NO_ID;
+    }
+    return output(CLASS_LOADER_LOAD_CLASS, stack, className, printClassLoader(classLoader));
+  }
+
+  @Override
+  public int onResourceBundleGetBundle(
+      Stack stack, String baseName, Locale locale, ClassLoader classLoader) {
+    if (isIgnored(stack, baseName)) {
+      return NO_ID;
+    }
+    return output(
+        RESOURCE_BUNDLE_GET_BUNDLE,
+        stack,
+        baseName,
+        locale == null ? "null" : locale.toString(),
+        printClassLoader(classLoader));
+  }
+
+  @Override
+  public void onReflectiveOperationReturned(int id, Object result) {
+    if (id == NO_ID || output == null) {
+      return;
+    }
+    StringBuilder builder = new StringBuilder();
+    appendResult(builder, result);
+    outputReturned(id, builder.toString());
+  }
+
+  private synchronized void outputReturned(int id, String result) {
+    if (output == null || outputFailed) {
+      return;
+    }
+    String idString = Integer.toString(id);
+    long hash = 0xcbf29ce484222325L;
+    hash = updateHash(hash, idString);
+    hash = updateHash(hash, result);
+    if (!seenResults.add(hash)) {
+      return;
+    }
+    try {
+      output.write("{\"returned\": ");
+      output.write(idString);
+      output.write(", \"result\": ");
+      output.write(result);
+      output.write("}");
+      output.write("\n");
+      output.flush();
+    } catch (IOException e) {
+      outputFailed = true;
+    }
+  }
+
+  // Summarizes the result without calling into app code, such as toString() on a proxy. A
+  // ParameterizedType is summarized by its raw type, such as TypeToken<...>, and other Types that
+  // are not classes by their runtime class, as Type.toString() can throw TypeNotPresentException
+  // for types that are missing in a shrunk app.
+  private void appendResult(StringBuilder builder, Object result) {
+    if (result == null || result instanceof Boolean) {
+      builder.append(result);
+    } else if (result instanceof String) {
+      appendJsonString(builder, (String) result);
+    } else if (result instanceof Class) {
+      appendJsonString(builder, printType((Class<?>) result));
+    } else if (result instanceof Member) {
+      appendJsonString(builder, printMember((Member) result));
+    } else if (result instanceof Member[]) {
+      Member[] members = (Member[]) result;
+      String[] memberStrings = new String[members.length];
+      for (int i = 0; i < members.length; i++) {
+        memberStrings[i] = printMember(members[i]);
+      }
+      Arrays.sort(memberStrings);
+      builder.append("[");
+      for (int i = 0; i < memberStrings.length; i++) {
+        if (i > 0) {
+          builder.append(", ");
+        }
+        appendJsonString(builder, memberStrings[i]);
+      }
+      builder.append("]");
+    } else if (result instanceof Type[]) {
+      // Keep the declaration order, which is significant for generic interfaces.
+      Type[] types = (Type[]) result;
+      builder.append("[");
+      for (int i = 0; i < types.length; i++) {
+        if (i > 0) {
+          builder.append(", ");
+        }
+        appendResult(builder, types[i]);
+      }
+      builder.append("]");
+    } else if (result instanceof ParameterizedType) {
+      appendJsonString(builder, printParameterizedType((ParameterizedType) result));
+    } else {
+      appendJsonString(builder, printType(result.getClass()));
+    }
+  }
+
+  // Prints the raw type without the type arguments. libcore resolves the raw type lazily, which can
+  // throw TypeNotPresentException or MalformedParameterizedTypeException in a shrunk app, so that
+  // falls back to the runtime class.
+  private String printParameterizedType(ParameterizedType type) {
+    Type rawType;
+    try {
+      rawType = type.getRawType();
+    } catch (Throwable t) {
+      rawType = null;
+    }
+    return rawType instanceof Class
+        ? printType((Class<?>) rawType) + "<...>"
+        : printType(type.getClass());
+  }
+
+  private String printMember(Member member) {
+    try {
+      if (member instanceof Field) {
+        Field field = (Field) member;
+        return printType(field.getType()) + " " + field.getName();
+      }
+      if (member instanceof Method) {
+        Method method = (Method) member;
+        return printType(method.getReturnType())
+            + " "
+            + method.getName()
+            + printParameters(method.getParameterTypes());
+      }
+      Constructor<?> constructor = (Constructor<?>) member;
+      return "<init>" + printParameters(constructor.getParameterTypes());
+    } catch (LinkageError e) {
+      return member.getName();
+    }
+  }
+
+  private String printParameters(Class<?>[] parameters) {
+    StringBuilder builder = new StringBuilder("(");
+    for (int i = 0; i < parameters.length; i++) {
+      if (i > 0) {
+        builder.append(",");
+      }
+      builder.append(printType(parameters[i]));
+    }
+    return builder.append(")").toString();
+  }
+
+  // Same as Class.getTypeName(), which is only available from API level 26.
+  private String printType(Class<?> clazz) {
+    Class<?> type = clazz;
+    int dimensions = 0;
+    while (type.isArray()) {
+      type = type.getComponentType();
+      dimensions++;
+    }
+    StringBuilder builder = new StringBuilder(type.getName());
+    for (int i = 0; i < dimensions; i++) {
+      builder.append("[]");
+    }
+    return builder.toString();
   }
 
   public boolean requiresStackInformation() {

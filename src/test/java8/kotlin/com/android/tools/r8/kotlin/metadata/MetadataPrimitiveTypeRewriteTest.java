@@ -13,7 +13,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -59,7 +58,7 @@ public class MetadataPrimitiveTypeRewriteTest extends KotlinMetadataTestBase {
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -106,7 +105,7 @@ public class MetadataPrimitiveTypeRewriteTest extends KotlinMetadataTestBase {
             .writeToZip();
     boolean expectingCompilationError = kotlinParameters.isOlderThan(KOTLINC_1_4_20) && !keepUnit;
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -116,19 +115,18 @@ public class MetadataPrimitiveTypeRewriteTest extends KotlinMetadataTestBase {
     if (expectingCompilationError) {
       return;
     }
-    final SingleTestRunResult runResult =
-        testForJvm(parameters)
-            .addRunClasspathFiles(kotlinc.getKotlinStdlibJar(), libJar)
-            .addClasspath(output)
-            .run(parameters.getRuntime(), PKG_APP + ".MainKt");
-    if (keepUnit) {
-      runResult.assertSuccessWithOutputLines(EXPECTED);
-    } else {
-      runResult.assertFailureWithErrorThatMatches(
-          allOf(
-              containsString("java.lang.NoSuchMethodError:"),
-              containsString(
-                  "com.android.tools.r8.kotlin.metadata.primitive_type_rewrite_lib.LibKt.foo()")));
-    }
+    testForJvm(parameters)
+        .addRunClasspathFiles(kotlinc.getKotlinStdlibJar(), libJar)
+        .addClasspath(output)
+        .run(parameters.getRuntime(), PKG_APP + ".MainKt")
+        .applyIf(
+            keepUnit,
+            r -> r.assertSuccessWithOutputLines(EXPECTED),
+            r ->
+                r.assertFailureWithErrorThatMatches(
+                    allOf(
+                        containsString("java.lang.NoSuchMethodError:"),
+                        containsString(
+                            "com.android.tools.r8.kotlin.metadata.primitive_type_rewrite_lib.LibKt.foo()"))));
   }
 }

@@ -559,7 +559,19 @@ public object ThirdPartyDeps {
     )
   public val jdwpTests: ThirdPartyDependency =
     ThirdPartyDependency("jdwp-tests", Paths.get("third_party", "jdwp-tests").toFile())
-  public val kotlinCompilers: List<ThirdPartyDependency> = getThirdPartyKotlinCompilers()
+  public val kotlinCompiler1_3_72: ThirdPartyDependency = getThirdPartyKotlinCompiler("1.3.72")
+  public val kotlinCompiler1_4_20: ThirdPartyDependency = getThirdPartyKotlinCompiler("1.4.20")
+  public val kotlinCompiler1_5_0: ThirdPartyDependency = getThirdPartyKotlinCompiler("1.5.0")
+  public val kotlinCompiler1_6_0: ThirdPartyDependency = getThirdPartyKotlinCompiler("1.6.0")
+  public val kotlinCompiler1_7_0: ThirdPartyDependency = getThirdPartyKotlinCompiler("1.7.0")
+  public val kotlinCompiler1_8_0: ThirdPartyDependency = getThirdPartyKotlinCompiler("1.8.0")
+  public val kotlinCompiler1_9_21: ThirdPartyDependency = getThirdPartyKotlinCompiler("1.9.21")
+  public val kotlinCompiler2_0_20: ThirdPartyDependency = getThirdPartyKotlinCompiler("2.0.20")
+  public val kotlinCompiler2_1_10: ThirdPartyDependency = getThirdPartyKotlinCompiler("2.1.10")
+  public val kotlinCompiler2_2_0: ThirdPartyDependency = getThirdPartyKotlinCompiler("2.2.0")
+  public val kotlinCompiler2_3_10: ThirdPartyDependency = getThirdPartyKotlinCompiler("2.3.10")
+  public val kotlinCompiler2_4_20: ThirdPartyDependency = getThirdPartyKotlinCompiler("2.4.20")
+  public val kotlinCompilerDev: ThirdPartyDependency = getThirdPartyKotlinCompiler("dev")
   public val kotlinR8TestResources: ThirdPartyDependency =
     ThirdPartyDependency(
       "kotlinR8TestResources",
@@ -842,23 +854,11 @@ private fun getThirdPartyChromeHeadless(): ThirdPartyDependency {
   )
 }
 
-private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
-  return listOf(
-      "kotlin-compiler-1.3.72",
-      "kotlin-compiler-1.4.20",
-      "kotlin-compiler-1.5.0",
-      "kotlin-compiler-1.6.0",
-      "kotlin-compiler-1.7.0",
-      "kotlin-compiler-1.8.0",
-      "kotlin-compiler-1.9.21",
-      "kotlin-compiler-2.0.20",
-      "kotlin-compiler-2.1.10",
-      "kotlin-compiler-2.2.0",
-      "kotlin-compiler-2.3.10",
-      "kotlin-compiler-2.4.20",
-      "kotlin-compiler-dev",
-    )
-    .map { ThirdPartyDependency(it, Paths.get("third_party", "kotlin", it).toFile()) }
+private fun getThirdPartyKotlinCompiler(version: String): ThirdPartyDependency {
+  return ThirdPartyDependency(
+    "kotlin-compiler-$version",
+    Paths.get("third_party", "kotlin", "kotlin-compiler-$version").toFile(),
+  )
 }
 
 private fun getThirdPartyDesugarLibraryRelease(version: String): ThirdPartyDependency {

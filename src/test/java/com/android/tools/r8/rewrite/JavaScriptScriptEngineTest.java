@@ -83,9 +83,9 @@ public class JavaScriptScriptEngineTest extends ScriptEngineTestBase {
                             containsString("Unverifiable code in `"),
                             containsString("org.mozilla.javascript.tools.")))))
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
+        .applyIfCfRuntime(
             // No default JS engine starting from JDK-14 where Nashorn was removed, see b/227162584.
-            parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17),
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
             r -> r.assertFailureWithErrorThatThrows(NullPointerException.class),
             r ->
                 r.assertSuccessWithOutput(

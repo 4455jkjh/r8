@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.debug.DebugTestConfig;
@@ -145,6 +146,42 @@ public class SingleTestRunResult extends TestRunResult<SingleTestRunResult> {
     StringBuilder sb = new StringBuilder();
     appendProcessResult(sb);
     ps.println(sb.toString());
+    return self();
+  }
+
+  private boolean matchesCfVersion(Predicate<CfVm> predicate) {
+    return runtime.isCf() && predicate.test(runtime.asCf().getVm());
+  }
+
+  @Override
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      SingleTestRunResult applyIfCfRuntime(
+          Predicate<CfVm> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<CfVm> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<CfVm> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<CfVm> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    if (matchesCfVersion(condition1)) {
+      thenConsumer1.accept(this);
+    } else if (matchesCfVersion(condition2)) {
+      thenConsumer2.accept(this);
+    } else if (matchesCfVersion(condition3)) {
+      thenConsumer3.accept(this);
+    } else if (matchesCfVersion(condition4)) {
+      thenConsumer4.accept(this);
+    } else {
+      elseConsumer.accept(this);
+    }
     return self();
   }
 

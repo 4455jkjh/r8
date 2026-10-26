@@ -52,9 +52,10 @@ public class MetadataRewriteInlineClassTest extends KotlinMetadataTestBase {
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_class_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_class_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -84,9 +85,10 @@ public class MetadataRewriteInlineClassTest extends KotlinMetadataTestBase {
                         new CodeInspector(libJars.getForConfiguration(kotlinParameters))))
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_class_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/inline_class_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

@@ -5,7 +5,6 @@ package com.android.tools.r8.desugar.sealed;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -50,12 +49,14 @@ public class PermittedSubclassesAttributeInDexTest extends TestBase {
   @Test
   public void testRuntime() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForJvm(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .addProgramClasses(Sub1.class, Sub2.class)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   private void inspect(CodeInspector inspector) {

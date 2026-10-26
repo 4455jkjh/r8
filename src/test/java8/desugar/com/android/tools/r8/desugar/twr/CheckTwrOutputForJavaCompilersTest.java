@@ -33,7 +33,7 @@ public class CheckTwrOutputForJavaCompilersTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withCfRuntimes().build();
+    return getTestParameters().withCfRuntimes().withoutCollapsedCfRuntimes().build();
   }
 
   public CheckTwrOutputForJavaCompilersTest(TestParameters parameters) {

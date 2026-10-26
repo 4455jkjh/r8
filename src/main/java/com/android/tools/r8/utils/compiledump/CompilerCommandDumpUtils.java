@@ -4,12 +4,18 @@
 
 package com.android.tools.r8.utils.compiledump;
 
+import com.android.tools.r8.BaseCompilerCommand;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.R8Command;
 import java.nio.file.Path;
 
 // Simple boolean commands directly on compiler command builders
 public class CompilerCommandDumpUtils {
+  public static void setMinApiLevel(
+      BaseCompilerCommand.Builder<?, ?> builder, int major, int minor) {
+    builder.setMinApiLevel(major, minor);
+  }
+
   public static void setEnableExperimentalMissingLibraryApiModeling(
       R8Command.Builder builder, boolean enable) {
     builder.setEnableExperimentalMissingLibraryApiModeling(enable);
@@ -32,6 +38,10 @@ public class CompilerCommandDumpUtils {
 
   public static void setIsolatedSplits(R8Command.Builder builder, boolean isolatedSplits) {
     builder.setEnableIsolatedSplits(isolatedSplits);
+  }
+
+  public static void setProguardMapInputFile(D8Command.Builder builder, Path pgInputMap) {
+    builder.setProguardMapInputFile(pgInputMap);
   }
 
   public static void setProguardMapOutputPath(D8Command.Builder builder, Path pgOutputMap) {

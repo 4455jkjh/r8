@@ -14,7 +14,6 @@ import com.android.tools.r8.ProguardVersion;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -147,7 +146,7 @@ public class ClassValueTest extends TestBase {
 
   @Test
   public void testProguardKeepExtendsMissingTypeProguard() throws Exception {
-    assumeTrue(parameters.isCfRuntime() && parameters.asCfRuntime().getVm() == CfVm.JDK11);
+    assumeTrue(parameters.isCfRuntime());
     testForProguard(ProguardVersion.V7_0_0)
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.T))
         .addInnerClasses(getClass())
@@ -195,7 +194,7 @@ public class ClassValueTest extends TestBase {
 
   @Test
   public void testProguardKeepConcreteMethod() throws Exception {
-    assumeTrue(parameters.isCfRuntime() && parameters.asCfRuntime().getVm() == CfVm.JDK11);
+    assumeTrue(parameters.isCfRuntime());
     testForProguard(ProguardVersion.V7_0_0)
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)

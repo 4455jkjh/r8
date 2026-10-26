@@ -7,10 +7,26 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import java.util.regex.Pattern;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class PossibleResourcesMarkerTest {
+@RunWith(Parameterized.class)
+public class PossibleResourcesMarkerTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public PossibleResourcesMarkerTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void testSimpleConversion() {

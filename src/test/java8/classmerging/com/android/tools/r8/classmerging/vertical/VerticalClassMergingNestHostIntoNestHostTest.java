@@ -63,14 +63,27 @@ public class VerticalClassMergingNestHostIntoNestHostTest extends TestBase {
         .compile()
         .run(parameters.getRuntime(), Main.class)
         .applyIf(
-            parameters.isDexRuntime() && emitNestAnnotationsInDex,
-            runResult -> runResult.assertFailureWithErrorThatThrows(IllegalAccessError.class),
-            parameters.isCfRuntime() && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK11),
+            parameters.isCfRuntime(),
             runResult ->
-                runResult.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+                runResult.applyIfCfRuntime(
+                    vm -> vm.isOlderThan(CfVm.JDK11),
+                    r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+                    r ->
+                        r.assertSuccessWithOutputLines(
+                            "InnerFoo.innerFoo()",
+                            "Foo.foo()",
+                            "InnerBar.innerBar()",
+                            "Bar.bar()")),
             runResult ->
-                runResult.assertSuccessWithOutputLines(
-                    "InnerFoo.innerFoo()", "Foo.foo()", "InnerBar.innerBar()", "Bar.bar()"));
+                runResult.applyIf(
+                    emitNestAnnotationsInDex,
+                    r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class),
+                    r ->
+                        r.assertSuccessWithOutputLines(
+                            "InnerFoo.innerFoo()",
+                            "Foo.foo()",
+                            "InnerBar.innerBar()",
+                            "Bar.bar()")));
   }
 
   private Collection<byte[]> getTransformedClasses() throws Exception {

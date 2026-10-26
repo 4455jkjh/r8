@@ -58,17 +58,19 @@ public class MetadataRewriteInPropertyTest extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer propertyTypeLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/fragile_property_lib", "lib"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/fragile_property_lib", "lib"));
 
   @Test
   public void smokeTest_getterApp() throws Exception {
     Path libJar = propertyTypeLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(PKG_PREFIX + "/fragile_property_only_getter", "getter_user"))
+                getKotlinSourceFileFromResources(
+                    PKG_PREFIX + "/fragile_property_only_getter", "getter_user"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -94,10 +96,11 @@ public class MetadataRewriteInPropertyTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(PKG_PREFIX + "/fragile_property_only_getter", "getter_user"))
+                getKotlinSourceFileFromResources(
+                    PKG_PREFIX + "/fragile_property_only_getter", "getter_user"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
@@ -161,10 +164,11 @@ public class MetadataRewriteInPropertyTest extends KotlinMetadataTestBase {
     Path libJar = propertyTypeLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(PKG_PREFIX + "/fragile_property_only_setter", "setter_user"))
+                getKotlinSourceFileFromResources(
+                    PKG_PREFIX + "/fragile_property_only_setter", "setter_user"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -194,10 +198,11 @@ public class MetadataRewriteInPropertyTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(PKG_PREFIX + "/fragile_property_only_setter", "setter_user"))
+                getKotlinSourceFileFromResources(
+                    PKG_PREFIX + "/fragile_property_only_setter", "setter_user"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {

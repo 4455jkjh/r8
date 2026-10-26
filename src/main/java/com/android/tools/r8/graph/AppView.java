@@ -16,6 +16,7 @@ import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.graph.analysis.InitializedClassesInInstanceMethodsAnalysis.InitializedClassesInInstanceMethods;
 import com.android.tools.r8.graph.classmerging.MergedClassesCollection;
+import com.android.tools.r8.graph.classmerging.MergedClassesProvenance;
 import com.android.tools.r8.graph.lens.AppliedGraphLens;
 import com.android.tools.r8.graph.lens.ClearCodeRewritingGraphLens;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -152,6 +153,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private InitializedClassesInInstanceMethods initializedClassesInInstanceMethods;
   private HorizontallyMergedClasses horizontallyMergedClasses = HorizontallyMergedClasses.empty();
   private VerticallyMergedClasses verticallyMergedClasses;
+  private MergedClassesProvenance mergedClassesProvenance;
   private EnumDataMap unboxedEnums = null;
   private SmallMethodInlinerResult smallMethodInlinerResult = null;
   private OpenClosedInterfacesCollection openClosedInterfacesCollection =
@@ -230,6 +232,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     this.computedMinApiLevel =
         timing.time(
             "ApiLevel computed", () -> apiLevelCompute.computeInitialMinApiLevel(options()));
+    this.mergedClassesProvenance = MergedClassesProvenance.create(this);
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -946,6 +949,14 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     } else {
       assert this.verticallyMergedClasses != null;
     }
+  }
+
+  public MergedClassesProvenance getMergedClassesProvenance() {
+    return mergedClassesProvenance;
+  }
+
+  public void clearMergedClassesProvenance() {
+    mergedClassesProvenance = MergedClassesProvenance.throwing();
   }
 
   public OpenClosedInterfacesCollection getOpenClosedInterfacesCollection() {

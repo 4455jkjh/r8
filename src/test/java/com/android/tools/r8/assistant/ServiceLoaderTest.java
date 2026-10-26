@@ -44,8 +44,9 @@ public class ServiceLoaderTest extends TestBase {
   public static class Instrumentation extends EmptyReflectiveOperationReceiver {
 
     @Override
-    public void onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
+    public int onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
       System.out.println(clazz.getName());
+      return NO_ID;
     }
   }
 }

@@ -14,7 +14,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 
 import com.android.tools.r8.D8TestMultiRunResult;
 import com.android.tools.r8.R8TestMultiRunResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.jasmin.JasminBuilder;
@@ -126,7 +125,7 @@ public class InvalidTypesTest extends JasminTestBase {
 
       @Override
       public String instruction() {
-          return "invokestatic UnverifiableClass/unverifiableMethod()V";
+        return "invokestatic UnverifiableClass/unverifiableMethod()V";
       }
     },
     INVOKE_VERIFIABLE_METHOD_ON_UNVERIFIABLE_CLASS {
@@ -276,7 +275,7 @@ public class InvalidTypesTest extends JasminTestBase {
               .run(parameters.getRuntime(), mainClass.name);
       checkTestRunResult(jvmResult, Compiler.JAVAC);
 
-      SingleTestRunResult proguardResult =
+      TestRunResult<?> proguardResult =
           testForProguard()
               .addProgramFiles(inputJar)
               .addKeepMainRule(mainClass.name)

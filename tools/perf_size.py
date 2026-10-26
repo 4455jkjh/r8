@@ -18,6 +18,8 @@ import dex2oat
 import git_utils
 import gradle
 import jdk
+import perf
+import run_benchmark
 import thread_utils
 from thread_utils import print_thread
 import utils
@@ -57,6 +59,16 @@ SIZE_COMPILEDUMPS = {
     'Signal': 'signal-android',
     'NewPipe': 'newpipe',
 }
+
+# The internal benchmarks in perf.py with enable_perf_size are measured with
+# --internal instead of the above.
+INTERNAL_SIZE_BENCHMARKS = [
+    benchmark for benchmarks in (perf.INTERNAL_BENCHMARKS,
+                                 perf.INTERNAL_SLOW_BENCHMARKS,
+                                 perf.LOCAL_BENCHMARKS)
+    for benchmark, info in benchmarks.items()
+    if info.get('enable_perf_size', False)
+]
 
 COMPILEDUMP_COMPILERS = ('r8full', 'd8-debug', 'd8-release')
 
@@ -123,22 +135,31 @@ def parse_options(argv=None):
                         help='Enable verbose logging.',
                         action='store_true',
                         default=False)
+    parser.add_argument('--internal',
+                        help='Measure the internal app dumps instead.',
+                        action='store_true',
+                        default=False)
     options, args = parser.parse_known_args(argv)
+    if options.internal:
+        all_benchmarks = list(INTERNAL_SIZE_BENCHMARKS)
+        all_compiledumps = []
+    else:
+        all_benchmarks = list(SIZE_BENCHMARKS.keys())
+        all_compiledumps = list(SIZE_COMPILEDUMPS.keys())
     if options.benchmark is not None or options.compiledump is not None:
         options.benchmarks = list(dict.fromkeys(options.benchmark or []))
         options.compiledumps = list(dict.fromkeys(options.compiledump or []))
     else:
-        options.benchmarks = list(SIZE_BENCHMARKS.keys())
-        options.compiledumps = list(SIZE_COMPILEDUMPS.keys())
+        options.benchmarks = all_benchmarks
+        options.compiledumps = all_compiledumps
     for b in options.benchmarks:
-        if b not in SIZE_BENCHMARKS:
+        if b not in all_benchmarks:
             parser.error(f'Unknown benchmark: {b}')
     for c in options.compiledumps:
-        if c not in SIZE_COMPILEDUMPS:
+        if c not in all_compiledumps:
             parser.error(f'Unknown compiledump: {c}')
-    options.is_full_suite = (
-        set(options.benchmarks) == set(SIZE_BENCHMARKS.keys()) and
-        set(options.compiledumps) == set(SIZE_COMPILEDUMPS.keys()))
+    options.is_full_suite = (set(options.benchmarks) == set(all_benchmarks) and
+                             set(options.compiledumps) == set(all_compiledumps))
     options.no_build = options.no_build or options.use_prebuilt_lib
     return options, args
 
@@ -184,6 +205,7 @@ def ensure_dependencies(options):
     deps_to_download = {
         os.path.join(utils.OPENSOURCE_DUMPS_DIR, SIZE_BENCHMARKS[b])
         for b in options.benchmarks
+        if b in SIZE_BENCHMARKS
     } | {
         os.path.join(utils.OPENSOURCE_DUMPS_DIR, SIZE_COMPILEDUMPS[c])
         for c in options.compiledumps
@@ -199,6 +221,12 @@ def ensure_dependencies(options):
     for dep_path in sorted(deps_to_download):
         if os.path.exists(dep_path + '.tar.gz.sha1'):
             utils.ensure_google_download(dep_path, quiet=not options.verbose)
+    # Download the internal app dumps here, as the parallel benchmark runs
+    # would otherwise download the same dump concurrently.
+    for b in options.benchmarks:
+        if b in INTERNAL_SIZE_BENCHMARKS:
+            run_benchmark.ensure_internal_dependencies(
+                b, quiet=not options.verbose)
 
 
 def tag_local_r8_jar(src_jar, commit_sha, temp_dir, label='patch'):
@@ -414,12 +442,13 @@ def run_suite(r8_jar, version_label, temp_dir, options):
     return {k: results_dict[k] for k in get_expected_result_keys(options)}
 
 
-def get_baseline_gs_location(commit_hash):
-    return f'gs://{BUCKET}/{commit_hash}/baseline.json'
+def get_baseline_gs_location(commit_hash, options):
+    name = 'baseline_internal.json' if options.internal else 'baseline.json'
+    return f'gs://{BUCKET}/{commit_hash}/{name}'
 
 
-def try_load_baseline_from_gcs(commit_hash, required_keys, temp_dir):
-    gs_loc = get_baseline_gs_location(commit_hash)
+def try_load_baseline_from_gcs(commit_hash, required_keys, temp_dir, options):
+    gs_loc = get_baseline_gs_location(commit_hash, options)
     if not utils.cloud_storage_exists(gs_loc):
         return None
     local_path = os.path.join(temp_dir, f'baseline_{commit_hash}.json')
@@ -448,7 +477,7 @@ def try_upload_baseline_to_gcs(commit_hash, items, temp_dir, options):
     }
     with open(local_path, 'w') as f:
         json.dump(payload, f, indent=2)
-    gs_loc = get_baseline_gs_location(commit_hash)
+    gs_loc = get_baseline_gs_location(commit_hash, options)
     try:
         utils.upload_file_to_cloud_storage(local_path, gs_loc)
         print(f'Uploaded size baseline to {gs_loc}')
@@ -518,7 +547,7 @@ def resolve_baseline_results(options,
     # Check GCS cache for any candidate commit.
     for commit_hash in candidates:
         cached = try_load_baseline_from_gcs(commit_hash, required_keys,
-                                            temp_dir)
+                                            temp_dir, options)
         if cached is not None:
             return commit_hash, cached, False
 

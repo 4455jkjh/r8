@@ -833,7 +833,7 @@ public final class LambdaClass {
 
                     Code codeWithPatchedDebugInfo =
                         DexEncodedMethod.mutateOrCreateCodeWithFakeThisParameter(
-                            newMethod.getCode(), callTarget.getArity(), appView);
+                            newMethod.getCode(), callTarget, appView);
                     newMethod.setCode(codeWithPatchedDebugInfo, newMethod.getParameterInfo());
                     return newMethod;
                   });

@@ -11,15 +11,34 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class NestedExceptionTestRunner extends TestBase {
   static final Class CLASS = NestedExceptionTest.class;
+
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public NestedExceptionTestRunner(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   @Test
   public void testNestedException() throws Exception {
@@ -36,6 +55,10 @@ public class NestedExceptionTestRunner extends TestBase {
     Path out = temp.newFolder().toPath().resolve("test.jar");
     AndroidApp compiledResources = sink.build();
     compiledResources.writeForTesting(out, OutputMode.ClassFile);
-    assertEquals(0, ToolHelper.runJava(out, CLASS.getCanonicalName()).exitCode);
+    assertEquals(
+        0,
+        ToolHelper.runJava(
+                parameters.getRuntime().asCf(), ImmutableList.of(out), CLASS.getCanonicalName())
+            .exitCode);
   }
 }

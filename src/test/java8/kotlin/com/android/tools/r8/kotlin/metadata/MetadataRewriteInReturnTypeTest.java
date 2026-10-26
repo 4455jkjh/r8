@@ -57,9 +57,10 @@ public class MetadataRewriteInReturnTypeTest extends KotlinMetadataTestBase {
     Path libJar = returnTypeLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/returntype_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/returntype_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -86,9 +87,10 @@ public class MetadataRewriteInReturnTypeTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/returntype_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/returntype_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
@@ -115,13 +117,16 @@ public class MetadataRewriteInReturnTypeTest extends KotlinMetadataTestBase {
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Itf")));
-    assertTrue(superTypes.stream().anyMatch(
-        supertype -> supertype.getFinalDescriptor().equals(itf.getFinalDescriptor())));
+    assertTrue(
+        superTypes.stream().noneMatch(supertype -> supertype.getFinalDescriptor().contains("Itf")));
+    assertTrue(
+        superTypes.stream()
+            .anyMatch(
+                supertype -> supertype.getFinalDescriptor().equals(itf.getFinalDescriptor())));
     List<ClassSubject> functionReturnTypes = kmClass.getReturnTypesInFunctions();
-    assertTrue(functionReturnTypes.stream().anyMatch(
-        returnType -> returnType.getFinalDescriptor().equals(itf.getFinalDescriptor())));
+    assertTrue(
+        functionReturnTypes.stream()
+            .anyMatch(
+                returnType -> returnType.getFinalDescriptor().equals(itf.getFinalDescriptor())));
   }
 }
-

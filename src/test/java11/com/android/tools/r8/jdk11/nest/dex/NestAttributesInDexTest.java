@@ -6,7 +6,6 @@ package com.android.tools.r8.jdk11.nest.dex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -16,7 +15,6 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.jdk11.nest.dex.Host.Member1;
 import com.android.tools.r8.jdk11.nest.dex.Host.Member2;
 import com.android.tools.r8.transformers.ClassFileTransformer;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -78,7 +76,12 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
 
   private void checkResultR8(TestRunResult<?> result) {
     // TODO(b/247047415): Partial DEX support in Android U DP1 (reflective APIs).
-    if (isRuntimeWithNestSupport(parameters.getRuntime())) {
+    if (parameters.isCfRuntime()) {
+      result.applyIfCfRuntime(
+          this::isRuntimeWithNestSupport,
+          r -> r.assertSuccessWithOutput(R8_EXPECTED_OUTPUT),
+          r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
+    } else if (isRuntimeWithNestSupport(parameters.getRuntime())) {
       result.assertSuccessWithOutput(R8_EXPECTED_OUTPUT);
     } else {
       result.applyIfDexRuntime(
@@ -90,15 +93,15 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
 
   @Test
   public void testRuntime() throws Exception {
-    assumeTrue(
-        parameters.isCfRuntime()
-            && isRuntimeWithNestSupport(parameters.asCfRuntime())
-            && parameters.getApiLevel().isEqualTo(AndroidApiLevel.B));
+    parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .addProgramClasses(OtherHost.class)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            this::isRuntimeWithNestSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   private void inspect(CodeInspector inspector, boolean emitNestAnnotationsInDex) {
@@ -154,7 +157,6 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
   @Test
   public void testR8NoKeep() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     testForR8(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .addStrippedOuter(getClass())
@@ -174,7 +176,6 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
   @Test
   public void testR8KeepHost() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     testForR8(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .addStrippedOuter(getClass())
@@ -196,7 +197,6 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
   @Test
   public void testR8KeepMembers() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     testForR8(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .addStrippedOuter(getClass())
@@ -218,7 +218,6 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
   @Test
   public void testR8KeepBoth() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isRuntimeWithNestSupport(parameters.asCfRuntime()));
     testForR8(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .addStrippedOuter(getClass())

@@ -36,10 +36,10 @@ public class MemberRebindingProtectedInProgramHierachyInvalidInputTest extends T
         .addProgramClasses(SubClassOfClassWithProtectedField.class, TestClass.class)
         .addProgramClassFileData(getTransformedClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK21),
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK21),
             r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
-            parameters.getCfRuntime().getVm() == CfVm.JDK11,
+            vm -> vm == CfVm.JDK11,
             SingleTestRunResult::assertFailure, // JDK-11 either crash or report VerifyError.
             r -> r.assertFailureWithOutputThatMatches(containsString("SIGSEGV")));
   }

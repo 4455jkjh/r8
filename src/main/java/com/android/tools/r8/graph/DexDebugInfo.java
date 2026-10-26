@@ -404,7 +404,20 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
         new DexDebugEvent[] {factory.zeroChangeDefaultEvent});
   }
 
-  public static EventBasedDebugInfo convertToEventBased(DexCode code, DexItemFactory factory) {
+  public static EventBasedDebugInfo convertToEventBased(
+      DexCode code, DexItemFactory factory, DexMethod method) {
+    DexDebugInfo debugInfo = code.getDebugInfo();
+    if (debugInfo == null) {
+      return null;
+    }
+    if (debugInfo.isEventBasedInfo()) {
+      return debugInfo.asEventBasedInfo();
+    }
+    return convertToEventBased(code, factory, method.getParameters().size());
+  }
+
+  public static EventBasedDebugInfo convertToEventBased(
+      DexCode code, DexItemFactory factory, int parameterCount) {
     DexDebugInfo debugInfo = code.getDebugInfo();
     if (debugInfo == null) {
       return null;
@@ -418,7 +431,7 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
             code, debugInfo.asPcBasedInfo().getMaxPc());
     // Generate a line event at each throwing instruction.
     return forceConvertToEventBasedDebugInfo(
-        debugInfo.getStartLine(), debugInfo.getParameterCount(), code.getInstructions(), factory);
+        debugInfo.getStartLine(), parameterCount, code.getInstructions(), factory);
   }
 
   public static EventBasedDebugInfo createEventBasedDebugInfoForNativePc(

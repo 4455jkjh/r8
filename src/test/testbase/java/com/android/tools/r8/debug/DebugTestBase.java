@@ -87,7 +87,7 @@ import org.junit.rules.TestName;
 public abstract class DebugTestBase extends TestBase {
 
   public static TestParametersBuilder getTestParameters() {
-    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+    return TestBase.getTestParameters().withoutCollapsedCfRuntimes().withoutCollapsedDexRuntimes();
   }
 
   // Set to true to enable verbose logs
@@ -154,8 +154,7 @@ public abstract class DebugTestBase extends TestBase {
     return result;
   }
 
-  @Rule
-  public TestName testName = new TestName();
+  @Rule public TestName testName = new TestName();
 
   protected final void runDebugTest(
       DebugTestConfig config, Class<?> debuggeeClass, JUnit3Wrapper.Command... commands)
@@ -220,10 +219,7 @@ public abstract class DebugTestBase extends TestBase {
   public Stream<JUnit3Wrapper.DebuggeeState> streamDebugTest(
       DebugTestConfig config, String debuggeeClass, StepFilter filter) throws Exception {
     return streamDebugTest(
-        config,
-        debuggeeClass,
-        breakpoint(debuggeeClass, "main", "([Ljava/lang/String;)V"),
-        filter);
+        config, debuggeeClass, breakpoint(debuggeeClass, "main", "([Ljava/lang/String;)V"), filter);
   }
 
   /**
@@ -256,11 +252,7 @@ public abstract class DebugTestBase extends TestBase {
 
     // Initial setup of the debug tests. Assumes execution starts at the "main" method of the class.
     final JUnit3Wrapper wrapper =
-        new JUnit3Wrapper(
-            config,
-            debuggeeClass,
-            ImmutableList.of(breakpoint, run()),
-            null);
+        new JUnit3Wrapper(config, debuggeeClass, ImmutableList.of(breakpoint, run()), null);
 
     // Setup the initial state for the JDWP test base and run the program to the initial breakpoint.
     wrapper.prepareForStreaming();
@@ -354,18 +346,19 @@ public abstract class DebugTestBase extends TestBase {
     return breakpoint(className, methodName, null, line);
   }
 
-  protected final JUnit3Wrapper.Command breakpoint(String className, String methodName,
-      String methodSignature) {
+  protected final JUnit3Wrapper.Command breakpoint(
+      String className, String methodName, String methodSignature) {
     return breakpoint(className, methodName, methodSignature, FIRST_LINE);
   }
 
-  protected final JUnit3Wrapper.Command breakpoint(String className, String methodName,
-      String methodSignature, int line) {
-    return new JUnit3Wrapper.Command.BreakpointCommand(className, methodName, methodSignature, line);
+  protected final JUnit3Wrapper.Command breakpoint(
+      String className, String methodName, String methodSignature, int line) {
+    return new JUnit3Wrapper.Command.BreakpointCommand(
+        className, methodName, methodSignature, line);
   }
 
-  protected final JUnit3Wrapper.Command breakOnException(String className, String methodName,
-      boolean caught, boolean uncaught) {
+  protected final JUnit3Wrapper.Command breakOnException(
+      String className, String methodName, boolean caught, boolean uncaught) {
     return new JUnit3Wrapper.Command.BreakOnExceptionCommand(
         className, methodName, caught, uncaught);
   }
@@ -402,7 +395,8 @@ public abstract class DebugTestBase extends TestBase {
   protected static List<Variable> getVisibleKotlinInlineVariables(
       JUnit3Wrapper.DebuggeeState debuggeeState) {
     return debuggeeState.getVisibleVariables().stream()
-        .filter(v -> v.getName().matches("^\\$i\\$f\\$.*$")).collect(Collectors.toList());
+        .filter(v -> v.getName().matches("^\\$i\\$f\\$.*$"))
+        .collect(Collectors.toList());
   }
 
   public enum StepKind {
@@ -432,40 +426,48 @@ public abstract class DebugTestBase extends TestBase {
     return step(stepKind, StepLevel.LINE, stepFilter);
   }
 
-  private JUnit3Wrapper.Command step(StepKind stepKind, StepLevel stepLevel,
-      StepFilter stepFilter) {
+  private JUnit3Wrapper.Command step(
+      StepKind stepKind, StepLevel stepLevel, StepFilter stepFilter) {
     return new JUnit3Wrapper.Command.StepCommand(stepKind, stepLevel, stepFilter);
   }
 
-  protected JUnit3Wrapper.Command stepUntil(StepKind stepKind, StepLevel stepLevel,
+  protected JUnit3Wrapper.Command stepUntil(
+      StepKind stepKind,
+      StepLevel stepLevel,
       Function<JUnit3Wrapper.DebuggeeState, Boolean> stepUntil) {
     return stepUntil(stepKind, stepLevel, stepUntil, DEFAULT_FILTER);
   }
 
-  protected JUnit3Wrapper.Command stepUntil(StepKind stepKind, StepLevel stepLevel,
-      Function<JUnit3Wrapper.DebuggeeState, Boolean> stepUntil, StepFilter stepFilter) {
+  protected JUnit3Wrapper.Command stepUntil(
+      StepKind stepKind,
+      StepLevel stepLevel,
+      Function<JUnit3Wrapper.DebuggeeState, Boolean> stepUntil,
+      StepFilter stepFilter) {
     // We create an extension to the given step filter which will also check whether we need to
     // step again according to the given stepUntil function.
-    StepFilter stepUntilFilter = new StepFilter() {
-      @Override
-      public List<String> getExcludedClasses() {
-        return stepFilter.getExcludedClasses();
-      }
+    StepFilter stepUntilFilter =
+        new StepFilter() {
+          @Override
+          public List<String> getExcludedClasses() {
+            return stepFilter.getExcludedClasses();
+          }
 
-      @Override
-      public boolean skipLocation(JUnit3Wrapper.DebuggeeState debuggeeState, JUnit3Wrapper wrapper,
-          JUnit3Wrapper.Command.StepCommand stepCommand) {
-        if (stepFilter.skipLocation(debuggeeState, wrapper, stepCommand)) {
-          return true;
-        }
-        if (stepUntil.apply(debuggeeState) == Boolean.FALSE) {
-          // We did not reach the expected location so step again.
-          wrapper.enqueueCommandFirst(stepCommand);
-          return true;
-        }
-        return false;
-      }
-    };
+          @Override
+          public boolean skipLocation(
+              JUnit3Wrapper.DebuggeeState debuggeeState,
+              JUnit3Wrapper wrapper,
+              JUnit3Wrapper.Command.StepCommand stepCommand) {
+            if (stepFilter.skipLocation(debuggeeState, wrapper, stepCommand)) {
+              return true;
+            }
+            if (stepUntil.apply(debuggeeState) == Boolean.FALSE) {
+              // We did not reach the expected location so step again.
+              wrapper.enqueueCommandFirst(stepCommand);
+              return true;
+            }
+            return false;
+          }
+        };
     return new JUnit3Wrapper.Command.StepCommand(stepKind, stepLevel, stepUntilFilter);
   }
 
@@ -474,11 +476,12 @@ public abstract class DebugTestBase extends TestBase {
   }
 
   protected final JUnit3Wrapper.Command checkLocals(String... localNames) {
-    return inspect(t -> {
-      for (String str : localNames) {
-        t.checkLocal(str);
-      }
-    });
+    return inspect(
+        t -> {
+          for (String str : localNames) {
+            t.checkLocal(str);
+          }
+        });
   }
 
   protected final JUnit3Wrapper.Command checkLocal(String localName, Value expectedValue) {
@@ -490,18 +493,21 @@ public abstract class DebugTestBase extends TestBase {
   }
 
   protected final JUnit3Wrapper.Command checkNoLocals(String... localNames) {
-    return inspect(t -> {
-      for (String str : localNames) {
-        t.checkNoLocal(str);
-      }
-    });
+    return inspect(
+        t -> {
+          for (String str : localNames) {
+            t.checkNoLocal(str);
+          }
+        });
   }
 
   protected final JUnit3Wrapper.Command checkNoLocal() {
-    return inspect(t -> {
-      List<String> localNames = t.getLocalNames();
-      Assert.assertTrue("Local variables: " + String.join(",", localNames), localNames.isEmpty());
-    });
+    return inspect(
+        t -> {
+          List<String> localNames = t.getLocalNames();
+          Assert.assertTrue(
+              "Local variables: " + String.join(",", localNames), localNames.isEmpty());
+        });
   }
 
   protected final JUnit3Wrapper.Command checkLine(int line) {
@@ -530,16 +536,17 @@ public abstract class DebugTestBase extends TestBase {
     return checkMethod(className, methodName, null);
   }
 
-  protected final JUnit3Wrapper.Command checkMethod(String className, String methodName,
-      String methodSignature) {
-    return inspect(t -> {
-      Assert.assertEquals("Incorrect class name", className, t.getClassName());
-      Assert.assertEquals("Incorrect method name", methodName, t.getMethodName());
-      if (methodSignature != null) {
-        Assert.assertEquals("Incorrect method signature", methodSignature,
-            t.getMethodSignature());
-      }
-    });
+  protected final JUnit3Wrapper.Command checkMethod(
+      String className, String methodName, String methodSignature) {
+    return inspect(
+        t -> {
+          Assert.assertEquals("Incorrect class name", className, t.getClassName());
+          Assert.assertEquals("Incorrect method name", methodName, t.getMethodName());
+          if (methodSignature != null) {
+            Assert.assertEquals(
+                "Incorrect method signature", methodSignature, t.getMethodSignature());
+          }
+        });
   }
 
   protected final JUnit3Wrapper.Command checkStaticFieldClinitSafe(
@@ -549,11 +556,14 @@ public abstract class DebugTestBase extends TestBase {
 
   protected final JUnit3Wrapper.Command checkStaticField(
       String className, String fieldName, String fieldSignature, Value expectedValue) {
-    return inspect(t -> {
-      Value value = t.getStaticField(className, fieldName, fieldSignature);
-      Assert.assertEquals("Incorrect value for static '" + className + "." + fieldName + "'",
-          expectedValue, value);
-    });
+    return inspect(
+        t -> {
+          Value value = t.getStaticField(className, fieldName, fieldSignature);
+          Assert.assertEquals(
+              "Incorrect value for static '" + className + "." + fieldName + "'",
+              expectedValue,
+              value);
+        });
   }
 
   protected final JUnit3Wrapper.Command checkFieldOnThis(
@@ -928,15 +938,16 @@ public abstract class DebugTestBase extends TestBase {
         logWriter.println("Loop on state " + state.name());
       }
       switch (state) {
-        case ProcessCommand: {
-          Command command = commandsQueue.poll();
-          assert command != null;
-          if (DEBUG_TESTS) {
-            logWriter.println("Process command " + command.toString());
-          }
-          try {
-            command.perform(this);
-          } catch (TestErrorException e) {
+        case ProcessCommand:
+          {
+            Command command = commandsQueue.poll();
+            assert command != null;
+            if (DEBUG_TESTS) {
+              logWriter.println("Process command " + command.toString());
+            }
+            try {
+              command.perform(this);
+            } catch (TestErrorException e) {
               boolean ignoreException =
                   config
                       .getRuntime()
@@ -958,12 +969,12 @@ public abstract class DebugTestBase extends TestBase {
                             }
                             return false;
                           });
-            if (!ignoreException) {
-              throw e;
+              if (!ignoreException) {
+                throw e;
+              }
             }
+            break;
           }
-          break;
-        }
         case WaitForEvent:
           processEvents();
           break;
@@ -981,17 +992,11 @@ public abstract class DebugTestBase extends TestBase {
     }
 
     private enum State {
-      /**
-       * Process next command
-       */
+      /** Process next command */
       ProcessCommand,
-      /**
-       * Wait for the next event
-       */
+      /** Wait for the next event */
       WaitForEvent,
-      /**
-       * The debuggee has exited
-       */
+      /** The debuggee has exited */
       Exit
     }
 
@@ -1043,11 +1048,15 @@ public abstract class DebugTestBase extends TestBase {
         if (DEBUG_TESTS && debuggeeState.getLocation() != null) {
           // Dump location
           String classSig = getMirror().getClassSignature(debuggeeState.getLocation().classID);
-          String methodName = VmMirrorUtils
-              .getMethodName(getMirror(), debuggeeState.getLocation().classID,
+          String methodName =
+              VmMirrorUtils.getMethodName(
+                  getMirror(),
+                  debuggeeState.getLocation().classID,
                   debuggeeState.getLocation().methodID);
-          String methodSig = VmMirrorUtils
-              .getMethodSignature(getMirror(), debuggeeState.getLocation().classID,
+          String methodSig =
+              VmMirrorUtils.getMethodSignature(
+                  getMirror(),
+                  debuggeeState.getLocation().classID,
                   debuggeeState.getLocation().methodID);
           String msg =
               String.format(
@@ -1138,6 +1147,7 @@ public abstract class DebugTestBase extends TestBase {
 
     public interface FrameInspector {
       long getFrameId();
+
       Location getLocation();
 
       int getLineNumber();
@@ -1145,26 +1155,29 @@ public abstract class DebugTestBase extends TestBase {
       List<SignatureAndLine> getInlineFrames();
 
       String getSourceFile();
+
       String getClassName();
+
       String getClassSignature();
+
       String getMethodName();
+
       String getMethodSignature();
 
       // Locals
 
       List<Variable> getVisibleVariables();
 
-      /**
-       * Returns the names of all local variables visible at the current location
-       */
+      /** Returns the names of all local variables visible at the current location */
       List<String> getLocalNames();
 
-      /**
-       * Returns the values of all locals visible at the current location.
-       */
+      /** Returns the values of all locals visible at the current location. */
       Map<String, Value> getLocalValues();
+
       void checkNoLocal(String localName);
+
       void checkLocal(String localName);
+
       void checkLocal(String localName, Value expectedValue);
 
       void setLocal(String localName, Value newValue);
@@ -1244,9 +1257,10 @@ public abstract class DebugTestBase extends TestBase {
         public String getSourceFile() {
           // TODO(shertz) support JSR-45
           Location location = getLocation();
-          CommandPacket sourceFileCommand = new CommandPacket(
-              JDWPCommands.ReferenceTypeCommandSet.CommandSetID,
-              JDWPCommands.ReferenceTypeCommandSet.SourceFileCommand);
+          CommandPacket sourceFileCommand =
+              new CommandPacket(
+                  JDWPCommands.ReferenceTypeCommandSet.CommandSetID,
+                  JDWPCommands.ReferenceTypeCommandSet.SourceFileCommand);
           sourceFileCommand.setNextValueAsReferenceTypeID(location.classID);
           ReplyPacket replyPacket = getMirror().performCommand(sourceFileCommand);
           if (replyPacket.getErrorCode() != 0) {
@@ -1271,8 +1285,7 @@ public abstract class DebugTestBase extends TestBase {
 
         @Override
         public Map<String, Value> getLocalValues() {
-          return JUnit3Wrapper.getVariablesAt(mirror, location)
-              .stream()
+          return JUnit3Wrapper.getVariablesAt(mirror, location).stream()
               .collect(
                   Collectors.toMap(
                       Variable::getName,
@@ -1295,8 +1308,12 @@ public abstract class DebugTestBase extends TestBase {
         }
 
         private String convertCurrentLocationToString() {
-          return getSourceFile() + ":" + getLineNumber()
-              + " (pc 0x" + Long.toHexString(location.index) + ")";
+          return getSourceFile()
+              + ":"
+              + getLineNumber()
+              + " (pc 0x"
+              + Long.toHexString(location.index)
+              + ")";
         }
 
         private void failNoLocal(String localName) {
@@ -1343,9 +1360,10 @@ public abstract class DebugTestBase extends TestBase {
           }
 
           // Get value
-          CommandPacket commandPacket = new CommandPacket(
-              JDWPCommands.StackFrameCommandSet.CommandSetID,
-              JDWPCommands.StackFrameCommandSet.GetValuesCommand);
+          CommandPacket commandPacket =
+              new CommandPacket(
+                  JDWPCommands.StackFrameCommandSet.CommandSetID,
+                  JDWPCommands.StackFrameCommandSet.GetValuesCommand);
           commandPacket.setNextValueAsThreadID(getThreadId());
           commandPacket.setNextValueAsFrameID(getFrameId());
           commandPacket.setNextValueAsInt(1);
@@ -1422,8 +1440,10 @@ public abstract class DebugTestBase extends TestBase {
 
         public String getMethodSignature() {
           Location location = getLocation();
-          CommandPacket command = new CommandPacket(ReferenceTypeCommandSet.CommandSetID,
-              ReferenceTypeCommandSet.MethodsWithGenericCommand);
+          CommandPacket command =
+              new CommandPacket(
+                  ReferenceTypeCommandSet.CommandSetID,
+                  ReferenceTypeCommandSet.MethodsWithGenericCommand);
           command.setNextValueAsReferenceTypeID(location.classID);
 
           ReplyPacket reply = getMirror().performCommand(command);
@@ -1435,7 +1455,7 @@ public abstract class DebugTestBase extends TestBase {
             reply.getNextValueAsString(); // skip name
             String methodSignature = reply.getNextValueAsString();
             reply.getNextValueAsString(); // skip generic signature
-            reply.getNextValueAsInt();  // skip modifiers
+            reply.getNextValueAsInt(); // skip modifiers
             if (methodId == location.methodID) {
               return methodSignature;
             }
@@ -1605,12 +1625,14 @@ public abstract class DebugTestBase extends TestBase {
         internalSetInstanceField(getMirror(), thisObjectId, fieldId, value);
       }
 
-      private long findField(VmMirror mirror, long classId, String fieldName,
-          String fieldSignature) {
+      private long findField(
+          VmMirror mirror, long classId, String fieldName, String fieldSignature) {
 
         boolean withGenericSignature = true;
-        CommandPacket commandPacket = new CommandPacket(ReferenceTypeCommandSet.CommandSetID,
-            ReferenceTypeCommandSet.FieldsWithGenericCommand);
+        CommandPacket commandPacket =
+            new CommandPacket(
+                ReferenceTypeCommandSet.CommandSetID,
+                ReferenceTypeCommandSet.FieldsWithGenericCommand);
         commandPacket.setNextValueAsReferenceTypeID(classId);
         ReplyPacket replyPacket = mirror.performCommand(commandPacket);
         if (replyPacket.getErrorCode() != Error.NONE) {
@@ -1643,8 +1665,8 @@ public abstract class DebugTestBase extends TestBase {
 
         Assert.assertFalse("No field named " + fieldName + " found", matchingFieldIds.isEmpty());
         // There must be only one matching field.
-        Assert.assertEquals("More than 1 field found: please specify a signature", 1,
-            matchingFieldIds.size());
+        Assert.assertEquals(
+            "More than 1 field found: please specify a signature", 1, matchingFieldIds.size());
         return matchingFieldIds.getLong(0);
       }
 
@@ -1696,8 +1718,8 @@ public abstract class DebugTestBase extends TestBase {
       return result;
     }
 
-    public static Optional<Variable> getVariableAt(VmMirror mirror, Location location,
-        String localName) {
+    public static Optional<Variable> getVariableAt(
+        VmMirror mirror, Location location, String localName) {
       return getVariablesAt(mirror, location).stream()
           .filter(v -> localName.equals(v.getName()))
           .findFirst();
@@ -1844,8 +1866,7 @@ public abstract class DebugTestBase extends TestBase {
           assert replyPacket.getErrorCode() == Error.NONE;
           int breakpointId = replyPacket.getNextValueAsInt();
           testBase.events.put(
-              Integer.valueOf(breakpointId),
-              new BreakOnExceptionHandler(className, methodName));
+              Integer.valueOf(breakpointId), new BreakOnExceptionHandler(className, methodName));
         }
 
         @Override
@@ -1862,8 +1883,8 @@ public abstract class DebugTestBase extends TestBase {
         private boolean requestedClassPrepare = false;
         private int line;
 
-        public BreakpointCommand(String className, String methodName,
-            String methodSignature, int line) {
+        public BreakpointCommand(
+            String className, String methodName, String methodSignature, int line) {
           assert className != null;
           assert methodName != null;
           this.className = className;
@@ -1917,8 +1938,12 @@ public abstract class DebugTestBase extends TestBase {
             LongList pcs = testBase.getMethodCodeIndex(classId, breakpointMethodId, line);
             for (long pc : pcs) {
               Assert.assertTrue("No code in method", pc >= 0);
-              ReplyPacket replyPacket = testBase.getMirror().setBreakpoint(
-                  new Location(typeTag, classId, breakpointMethodId, pc), SuspendPolicy.ALL);
+              ReplyPacket replyPacket =
+                  testBase
+                      .getMirror()
+                      .setBreakpoint(
+                          new Location(typeTag, classId, breakpointMethodId, pc),
+                          SuspendPolicy.ALL);
               assert replyPacket.getErrorCode() == Error.NONE;
               int breakpointId = replyPacket.getNextValueAsInt();
               testBase.events.put(Integer.valueOf(breakpointId), new DefaultEventHandler());
@@ -1926,12 +1951,14 @@ public abstract class DebugTestBase extends TestBase {
           }
         }
 
-        private static long findMethod(VmMirror mirror, long classId, String methodName,
-            String methodSignature) {
+        private static long findMethod(
+            VmMirror mirror, long classId, String methodName, String methodSignature) {
 
           boolean withGenericSignature = true;
-          CommandPacket commandPacket = new CommandPacket(ReferenceTypeCommandSet.CommandSetID,
-              ReferenceTypeCommandSet.MethodsWithGenericCommand);
+          CommandPacket commandPacket =
+              new CommandPacket(
+                  ReferenceTypeCommandSet.CommandSetID,
+                  ReferenceTypeCommandSet.MethodsWithGenericCommand);
           commandPacket.setNextValueAsReferenceTypeID(classId);
           ReplyPacket replyPacket = mirror.performCommand(commandPacket);
           if (replyPacket.getErrorCode() != Error.NONE) {
@@ -1962,11 +1989,11 @@ public abstract class DebugTestBase extends TestBase {
           }
           Assert.assertTrue(replyPacket.isAllDataRead());
 
-          Assert
-              .assertFalse("No method named " + methodName + " found", matchingMethodIds.isEmpty());
+          Assert.assertFalse(
+              "No method named " + methodName + " found", matchingMethodIds.isEmpty());
           // There must be only one matching method
-          Assert.assertEquals("More than 1 method found: please specify a signature", 1,
-              matchingMethodIds.size());
+          Assert.assertEquals(
+              "More than 1 method found: please specify a signature", 1, matchingMethodIds.size());
           return matchingMethodIds.iterator().nextLong();
         }
 
@@ -2010,7 +2037,9 @@ public abstract class DebugTestBase extends TestBase {
 
         @Override
         public String toString() {
-          return String.format("step %s/%s", JDWPConstants.StepDepth.getName(stepDepth.jdwpValue),
+          return String.format(
+              "step %s/%s",
+              JDWPConstants.StepDepth.getName(stepDepth.jdwpValue),
               JDWPConstants.StepSize.getName(stepSize.jdwpValue));
         }
       }
@@ -2031,8 +2060,9 @@ public abstract class DebugTestBase extends TestBase {
               getVariableAt(testBase.getMirror(), testBase.debuggeeState.getLocation(), localName);
           Assert.assertTrue("No local '" + localName + "'", localVar.isPresent());
 
-          CommandPacket setValues = new CommandPacket(StackFrameCommandSet.CommandSetID,
-              StackFrameCommandSet.SetValuesCommand);
+          CommandPacket setValues =
+              new CommandPacket(
+                  StackFrameCommandSet.CommandSetID, StackFrameCommandSet.SetValuesCommand);
           setValues.setNextValueAsThreadID(testBase.getDebuggeeState().getThreadId());
           setValues.setNextValueAsFrameID(testBase.getDebuggeeState().getFrameId());
           setValues.setNextValueAsInt(1);
@@ -2090,9 +2120,7 @@ public abstract class DebugTestBase extends TestBase {
       private final StepFilter stepFilter;
 
       private StepEventHandler(
-          JUnit3Wrapper.Command.StepCommand stepCommand,
-          int stepRequestID,
-          StepFilter stepFilter) {
+          JUnit3Wrapper.Command.StepCommand stepCommand, int stepRequestID, StepFilter stepFilter) {
         this.stepCommand = stepCommand;
         this.stepRequestID = stepRequestID;
         this.stepFilter = stepFilter;
@@ -2112,7 +2140,6 @@ public abstract class DebugTestBase extends TestBase {
         super.handle(testBase);
       }
     }
-
   }
 
   //
@@ -2127,15 +2154,13 @@ public abstract class DebugTestBase extends TestBase {
      */
     List<String> getExcludedClasses();
 
-    /**
-     * Indicates whether the given location must be skipped.
-     */
-    boolean skipLocation(JUnit3Wrapper.DebuggeeState debuggeeState, JUnit3Wrapper wrapper,
+    /** Indicates whether the given location must be skipped. */
+    boolean skipLocation(
+        JUnit3Wrapper.DebuggeeState debuggeeState,
+        JUnit3Wrapper wrapper,
         JUnit3Wrapper.Command.StepCommand stepCommand);
 
-    /**
-     * A {@link StepFilter} that does not filter anything.
-     */
+    /** A {@link StepFilter} that does not filter anything. */
     class NoStepFilter implements StepFilter {
 
       @Override
@@ -2144,15 +2169,16 @@ public abstract class DebugTestBase extends TestBase {
       }
 
       @Override
-      public boolean skipLocation(JUnit3Wrapper.DebuggeeState debuggeeState, JUnit3Wrapper wrapper,
+      public boolean skipLocation(
+          JUnit3Wrapper.DebuggeeState debuggeeState,
+          JUnit3Wrapper wrapper,
           JUnit3Wrapper.Command.StepCommand stepCommand) {
         return false;
       }
     }
 
     /**
-     * A {@link StepFilter} that matches the default behavior of IntelliJ regarding single
-     * stepping.
+     * A {@link StepFilter} that matches the default behavior of IntelliJ regarding single stepping.
      */
     class IntelliJStepFilter implements StepFilter {
       // This is the value specified by JDWP in documentation of ReferenceType.Methods command.
@@ -2179,7 +2205,9 @@ public abstract class DebugTestBase extends TestBase {
       }
 
       @Override
-      public boolean skipLocation(JUnit3Wrapper.DebuggeeState debuggeeState, JUnit3Wrapper wrapper,
+      public boolean skipLocation(
+          JUnit3Wrapper.DebuggeeState debuggeeState,
+          JUnit3Wrapper wrapper,
           JUnit3Wrapper.Command.StepCommand stepCommand) {
         VmMirror mirror = debuggeeState.getMirror();
         Location location = debuggeeState.getLocation();
@@ -2235,8 +2263,8 @@ public abstract class DebugTestBase extends TestBase {
         // ReferenceType.Methods command which gather information about all methods in a class.
         Method[] methods = mirror.getMethods(location.classID);
         for (Method method : methods) {
-          if (method.getMethodID() == location.methodID &&
-              ((method.getModBits() & SYNTHETIC_FLAG) != 0)) {
+          if (method.getMethodID() == location.methodID
+              && ((method.getModBits() & SYNTHETIC_FLAG) != 0)) {
             return true;
           }
         }
@@ -2274,9 +2302,7 @@ public abstract class DebugTestBase extends TestBase {
       }
     }
 
-    /**
-     * IntelliJ derived step filter that also skips all android runtime specific libraries.
-     */
+    /** IntelliJ derived step filter that also skips all android runtime specific libraries. */
     class AndroidRuntimeStepFilter extends IntelliJStepFilter {
 
       @Override

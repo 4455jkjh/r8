@@ -4,6 +4,7 @@
 package com.android.tools.r8.androidresources;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.DiagnosticsHandler;
@@ -16,12 +17,17 @@ public class DebugConsumerUtils {
 
   private static void ensureReachableOptimized(
       List<String> logStrings, String type, String name, boolean reachable) {
+    String prefix = type + ":" + name + ":";
     assertTrue(
         logStrings.stream()
             .anyMatch(
                 s ->
-                    s.contains(type + ":" + name + ":")
+                    s.contains(prefix)
                         && s.contains(reachable ? "reachable from" : "is not reachable.")));
+    if (reachable) {
+      assertFalse(
+          logStrings.stream().anyMatch(s -> s.contains(prefix) && s.contains("is not reachable.")));
+    }
   }
 
   private static void ensureDexReachableResourcesState(

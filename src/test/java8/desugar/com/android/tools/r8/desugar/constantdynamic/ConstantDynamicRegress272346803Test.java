@@ -6,7 +6,6 @@ package com.android.tools.r8.desugar.constantdynamic;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.DesugarTestConfiguration;
@@ -47,12 +46,14 @@ public class ConstantDynamicRegress272346803Test extends TestBase {
   @Test
   public void testReference() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11));
     testForJvm(parameters)
         .addProgramClasses(Main.class)
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -64,14 +65,11 @@ public class ConstantDynamicRegress272346803Test extends TestBase {
         .applyIf(
             // When not desugaring the CF code requires JDK 11.
             DesugarTestConfiguration::isNotDesugared,
-            r -> {
-              if (parameters.isCfRuntime()
-                  && parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11)) {
-                r.assertSuccessWithOutput(EXPECTED_OUTPUT);
-              } else {
-                r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class);
-              }
-            })
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)))
         .applyIf(
             DesugarTestConfiguration::isDesugared, r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }

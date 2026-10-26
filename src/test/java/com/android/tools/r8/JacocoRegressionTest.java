@@ -7,10 +7,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
@@ -19,7 +24,19 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /** Jacoco does invalid instrumentation when R8 clobber locals of arguments: TODO(b/117589870) */
+@RunWith(Parameterized.class)
 public class JacocoRegressionTest extends TestBase implements Opcodes {
+
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public JacocoRegressionTest(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   @Test
   public void test() throws Exception {
@@ -33,13 +50,15 @@ public class JacocoRegressionTest extends TestBase implements Opcodes {
     archiveConsumer.finished(null);
 
     String expected = "15" + System.lineSeparator();
-    ProcessResult result = ToolHelper.runJava(path, name);
+    ProcessResult result =
+        ToolHelper.runJava(parameters.getRuntime().asCf(), ImmutableList.of(path), name);
     assertEquals(expected, result.stdout);
 
     Path agentOutput = output.resolve("agent.out");
     ProcessResult result1 =
         ToolHelper.runJava(
-            path,
+            parameters.getRuntime().asCf(),
+            ImmutableList.of(path),
             String.format(
                 "-javaagent:%s=destfile=%s,dumponexit=true,output=file",
                 TestDeps.getJacocoAgentJar(), agentOutput),

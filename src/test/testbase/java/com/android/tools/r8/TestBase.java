@@ -17,6 +17,7 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.DataResourceProvider.Visitor;
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompiler;
+import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinCompilerTool.KotlinLambdaGeneration;
 import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.TestRuntime.CfRuntime;
@@ -153,6 +154,10 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
 public class TestBase {
+
+  static {
+    InternalOptions.allowMinApiMinorLevels = true;
+  }
 
   public static Iterable<?> allRuntimesAndApiLevelsSource() {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
@@ -311,6 +316,12 @@ public class TestBase {
   public R8PartialTestBuilder testForR8Partial(Backend backend) {
     assert backend.isDex();
     return testForR8Partial(temp);
+  }
+
+  public R8CompatTestBuilder testForR8Compat(TestParameters parameters) {
+    assert parameters.getPartialCompilationTestParameters().isNone();
+    return testForR8Compat(parameters.getBackend())
+        .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
   }
 
   public R8CompatTestBuilder testForR8Compat(Backend backend) {
@@ -472,7 +483,9 @@ public class TestBase {
     return DesugarTestBuilder.create(null, builders.build());
   }
 
-  /** @deprecated use {@link #testForProguard(ProguardVersion)} instead. */
+  /**
+   * @deprecated use {@link #testForProguard(ProguardVersion)} instead.
+   */
   @Deprecated
   public ProguardTestBuilder testForProguard() {
     return testForProguard(ProguardVersion.V7_0_0);
@@ -502,18 +515,59 @@ public class TestBase {
     return JavaCompilerTool.create(jdk, temp);
   }
 
+  private static CfRuntime getJdkForKotlinc(CfRuntime jdk, KotlinCompiler kotlinCompiler) {
+    boolean isOldKotlinCompiler =
+        kotlinCompiler.getCompilerVersion().isLessThan(KotlinCompilerVersion.MIN_SUPPORTED_VERSION);
+    // TODO(b/227161720): Old Kotlinc versions fail to run on JDK17.
+    if (isOldKotlinCompiler && jdk.isNewerThanOrEqual(CfVm.JDK17)) {
+      return TestRuntime.getCheckedInJdk9();
+    }
+    // Newer Kotlinc versions (2.5+) require at least JDK17 to run.
+    if (!isOldKotlinCompiler && jdk.isOlderThan(CfVm.JDK17)) {
+      return TestRuntime.getCheckedInJdk17();
+    }
+    return jdk;
+  }
+
+  public static KotlinCompilerTool kotlinc(
+      TestRuntime jdk,
+      TemporaryFolder temp,
+      KotlinCompiler kotlinCompiler,
+      KotlinTargetVersion kotlinTargetVersion,
+      KotlinLambdaGeneration lambdaGeneration) {
+    return kotlinc(
+        KotlinTestBase.getKotlincHostRuntime(),
+        temp,
+        kotlinCompiler,
+        kotlinTargetVersion,
+        lambdaGeneration);
+  }
+
   public static KotlinCompilerTool kotlinc(
       CfRuntime jdk,
       TemporaryFolder temp,
       KotlinCompiler kotlinCompiler,
       KotlinTargetVersion kotlinTargetVersion,
       KotlinLambdaGeneration lambdaGeneration) {
-    // TODO(b/227161720): Kotlinc fails to run on JDK17.
-    if (jdk.isNewerThanOrEqual(CfVm.JDK17)) {
-      jdk = TestRuntime.getCheckedInJdk9();
-    }
     return KotlinCompilerTool.create(
-        jdk, temp, kotlinCompiler, kotlinTargetVersion, lambdaGeneration);
+        getJdkForKotlinc(jdk, kotlinCompiler),
+        temp,
+        kotlinCompiler,
+        kotlinTargetVersion,
+        lambdaGeneration);
+  }
+
+  public static KotlinCompilerTool kotlinc(
+      TestRuntime jdk,
+      KotlinCompiler kotlinCompiler,
+      KotlinTargetVersion kotlinTargetVersion,
+      KotlinLambdaGeneration lambdaGeneration) {
+    return kotlinc(
+        KotlinTestBase.getKotlincHostRuntime(),
+        staticTemp,
+        kotlinCompiler,
+        kotlinTargetVersion,
+        lambdaGeneration);
   }
 
   public static KotlinCompilerTool kotlinc(
@@ -521,12 +575,7 @@ public class TestBase {
       KotlinCompiler kotlinCompiler,
       KotlinTargetVersion kotlinTargetVersion,
       KotlinLambdaGeneration lambdaGeneration) {
-    // TODO(b/227161720): Kotlinc fails to run on JDK17.
-    if (jdk.isNewerThanOrEqual(CfVm.JDK17)) {
-      jdk = TestRuntime.getCheckedInJdk9();
-    }
-    return KotlinCompilerTool.create(
-        jdk, staticTemp, kotlinCompiler, kotlinTargetVersion, lambdaGeneration);
+    return kotlinc(jdk, staticTemp, kotlinCompiler, kotlinTargetVersion, lambdaGeneration);
   }
 
   public static KotlinCompilerTool kotlinc(
@@ -534,18 +583,18 @@ public class TestBase {
       KotlinTargetVersion kotlinTargetVersion,
       KotlinLambdaGeneration kotlinLambdaGeneration) {
     return kotlinc(
-        TestRuntime.getCheckedInJdk9(),
+        TestRuntime.getCheckedInJdk17(),
         staticTemp,
         kotlinCompiler,
         kotlinTargetVersion,
         kotlinLambdaGeneration);
   }
 
+  public KotlinCompilerTool kotlinc(TestRuntime jdk, KotlinTestParameters testParameters) {
+    return kotlinc(KotlinTestBase.getKotlincHostRuntime(), testParameters);
+  }
+
   public KotlinCompilerTool kotlinc(CfRuntime jdk, KotlinTestParameters testParameters) {
-    // TODO(b/227161720): Kotlinc fails to run on JDK17.
-    if (jdk.isNewerThanOrEqual(CfVm.JDK17)) {
-      jdk = TestRuntime.getCheckedInJdk9();
-    }
     return kotlinc(
         jdk,
         temp,
@@ -572,8 +621,7 @@ public class TestBase {
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
-  @Rule
-  public TemporaryFolder temp = ToolHelper.getTemporaryFolderForTest();
+  @Rule public TemporaryFolder temp = ToolHelper.getTemporaryFolderForTest();
 
   @TempDir public Path tempDirJUnit5;
 
@@ -678,9 +726,7 @@ public class TestBase {
     return (a, b) -> memoizedFn.apply(new Pair(a, b));
   }
 
-  /**
-   * Check if tests should also run Proguard when applicable.
-   */
+  /** Check if tests should also run Proguard when applicable. */
   protected boolean isRunProguard() {
     return RUN_PROGUARD;
   }
@@ -688,7 +734,7 @@ public class TestBase {
   /**
    * Write lines of text to a temporary file.
    *
-   * The file will include a line separator after the last line.
+   * <p>The file will include a line separator after the last line.
    */
   protected Path writeTextToTempFile(String... lines) throws IOException {
     return writeTextToTempFile(System.lineSeparator(), Arrays.asList(lines));
@@ -697,18 +743,17 @@ public class TestBase {
   /**
    * Write lines of text to a temporary file, along with the specified line separator.
    *
-   * The file will include a line separator after the last line.
+   * <p>The file will include a line separator after the last line.
    */
-  protected Path writeTextToTempFile(String lineSeparator, List<String> lines)
-      throws IOException {
+  protected Path writeTextToTempFile(String lineSeparator, List<String> lines) throws IOException {
     return writeTextToTempFile(lineSeparator, lines, true);
   }
 
   /**
    * Write lines of text to a temporary file, along with the specified line separator.
    *
-   * The argument <code>includeTerminatingLineSeparator</code> control if the file will include
-   * a line separator after the last line.
+   * <p>The argument <code>includeTerminatingLineSeparator</code> control if the file will include a
+   * line separator after the last line.
    */
   protected Path writeTextToTempFile(
       String lineSeparator, List<String> lines, boolean includeTerminatingLineSeparator)
@@ -719,10 +764,7 @@ public class TestBase {
   }
 
   protected void writeTextToTempFile(
-      Path file,
-      String lineSeparator,
-      List<String> lines,
-      boolean includeTerminatingLineSeparator)
+      Path file, String lineSeparator, List<String> lines, boolean includeTerminatingLineSeparator)
       throws IOException {
     String contents = String.join(lineSeparator, lines);
     if (includeTerminatingLineSeparator) {
@@ -748,9 +790,7 @@ public class TestBase {
     return builder.build();
   }
 
-  /**
-   * Build an AndroidApp with the specified jar.
-   */
+  /** Build an AndroidApp with the specified jar. */
   protected AndroidApp readJar(Path jar) {
     return AndroidApp.builder()
         .addProgramResourceProvider(ArchiveProgramResourceProvider.fromArchive(jar))
@@ -879,9 +919,7 @@ public class TestBase {
     return AndroidApp.builder().addProgramFiles(programFiles).build();
   }
 
-  /**
-   * Copy test classes to the specified directory.
-   */
+  /** Copy test classes to the specified directory. */
   protected void copyTestClasses(Path dest, Class... classes) throws IOException {
     for (Class<?> clazz : classes) {
       Path path = dest.resolve(clazz.getCanonicalName().replace('.', '/') + ".class");
@@ -1175,7 +1213,7 @@ public class TestBase {
 
   /** Create a temporary JAR file containing the specified test classes. */
   protected Path jarTestClasses(List<Class<?>> classes) throws IOException {
-    return jarTestClasses(classes.toArray(new Class<?>[]{}));
+    return jarTestClasses(classes.toArray(new Class<?>[] {}));
   }
 
   protected static List<Object[]> buildParameters(Object... arraysOrIterables) {
@@ -1247,11 +1285,12 @@ public class TestBase {
   @Deprecated
   protected AndroidApp compileWithR8(AndroidApp app, Consumer<InternalOptions> optionsConsumer)
       throws CompilationFailedException {
-    R8Command command = ToolHelper.prepareR8CommandBuilder(app)
-        .setDisableTreeShaking(true)
-        .setDisableMinification(true)
-        .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown())
-        .build();
+    R8Command command =
+        ToolHelper.prepareR8CommandBuilder(app)
+            .setDisableTreeShaking(true)
+            .setDisableMinification(true)
+            .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown())
+            .build();
 
     return ToolHelper.runR8(command, optionsConsumer);
   }
@@ -1445,7 +1484,8 @@ public class TestBase {
     Path out = getNewTempFile("junit", ".zip").toPath();
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
     return ToolHelper.runArtNoVerificationErrors(
-        ImmutableList.of(out.toString()), mainClass,
+        ImmutableList.of(out.toString()),
+        mainClass,
         builder -> {
           builder.appendArtOption("-ea");
           for (String arg : args) {
@@ -1569,7 +1609,6 @@ public class TestBase {
     consumer.finished(null);
   }
 
-
   protected static Path writeClassesToJar(Class<?>... classes) throws IOException {
     List<Class<?>> classesCollection = Arrays.asList(classes);
     return writeClassesToJar(classesCollection);
@@ -1667,8 +1706,10 @@ public class TestBase {
       DexCode code, List<Class<? extends DexInstruction>> instructions) {
     assertEquals(instructions.size(), code.instructions.length);
     for (int i = 0; i < instructions.size(); ++i) {
-      assertEquals("Unexpected instruction at index " + i,
-          instructions.get(i), code.instructions[i].getClass());
+      assertEquals(
+          "Unexpected instruction at index " + i,
+          instructions.get(i),
+          code.instructions[i].getClass());
     }
   }
 
@@ -1696,13 +1737,17 @@ public class TestBase {
   }
 
   protected long countCall(MethodSubject method, String methodName) {
-    return method.streamInstructions().filter(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        DexMethod invokedMethod = instructionSubject.getMethod();
-        return invokedMethod.name.toString().contains(methodName);
-      }
-      return false;
-    }).count();
+    return method
+        .streamInstructions()
+        .filter(
+            instructionSubject -> {
+              if (instructionSubject.isInvoke()) {
+                DexMethod invokedMethod = instructionSubject.getMethod();
+                return invokedMethod.name.toString().contains(methodName);
+              }
+              return false;
+            })
+        .count();
   }
 
   public enum MinifyMode {
@@ -1867,8 +1912,20 @@ public class TestBase {
   }
 
   public static boolean runtimeWithRecordsSupport(TestRuntime runtime) {
-    return (runtime.isCf() && runtime.asCf().hasRecordsSupport())
-        || (runtime.isDex() && runtime.asDex().hasRecordsSupport());
+    if (runtime.isCf()) {
+      List<CfRuntime> cfRuntimes = runtime.asCfRuntimes();
+      boolean result = cfRuntimes.get(0).hasRecordsSupport();
+      for (int i = 1; i < cfRuntimes.size(); i++) {
+        if (cfRuntimes.get(i).hasRecordsSupport() != result) {
+          throw new Unreachable(
+              "Ambiguous runtimeWithRecordsSupport on CollapsedCfRuntimes: "
+                  + runtime
+                  + "; use applyIfCfRuntime() or withoutCollapsedCfRuntimes()");
+        }
+      }
+      return result;
+    }
+    return runtime.isDex() && runtime.asDex().hasRecordsSupport();
   }
 
   public static AndroidApiLevel apiLevelWithStaticInterfaceMethodsSupport() {

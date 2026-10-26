@@ -1,0 +1,140 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+package com.android.tools.r8.ir.optimize.redundantfieldloadelimination;
+
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import java.util.HashSet;
+import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
+/**
+ * Reading many final static fields twice in a method should not keep all the values of the first
+ * reads alive until the second reads, since that requires one register per field.
+ */
+@RunWith(Parameterized.class)
+public class RedundantFinalStaticFieldLoadRegisterPressureTest extends TestBase {
+
+  private static final int NUMBER_OF_FIELDS = 200;
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withDexRuntimesAndAllApiLevels().build();
+  }
+
+  @Test
+  public void test() throws Exception {
+    testForR8(parameters)
+        .addProgramClasses(Main.class)
+        .addProgramClassFileData(dumpConstants())
+        .addKeepMainRule(Main.class)
+        .addKeepMethodRules(Constants.class, "public static void readAllTwice()")
+        .enableInliningAnnotations()
+        .compile()
+        .inspect(this::inspect)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines(Integer.toString(NUMBER_OF_FIELDS));
+  }
+
+  private void inspect(CodeInspector inspector) {
+    MethodSubject method =
+        inspector.clazz(Constants.class).uniqueMethodWithOriginalName("readAllTwice");
+    assertThat(method, isPresent());
+    int registers = method.getMethod().getCode().asDexCode().registerSize;
+    // Without bounding the number of cached final static field values, the values of all the first
+    // reads are live until the second reads, which requires NUMBER_OF_FIELDS registers. Some reads
+    // are still canonicalized by ConstantCanonicalizer, so the register count is not minimal.
+    assertTrue("Expected < 100 registers, got " + registers, registers < 100);
+  }
+
+  // Generates the class Constants with NUMBER_OF_FIELDS final static fields F<i> and the method
+  // readAllTwice(), which passes the value of each field to Main.consume() and then does it again.
+  private static byte[] dumpConstants() {
+    String binaryName = binaryName(Constants.class);
+    String mainBinaryName = binaryName(Main.class);
+    ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+    cw.visit(
+        Opcodes.V1_8,
+        Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
+        binaryName,
+        null,
+        "java/lang/Object",
+        null);
+    for (int i = 0; i < NUMBER_OF_FIELDS; i++) {
+      cw.visitField(
+              Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
+              "F" + i,
+              "Ljava/lang/Object;",
+              null,
+              null)
+          .visitEnd();
+    }
+    MethodVisitor clinit = cw.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
+    clinit.visitCode();
+    for (int i = 0; i < NUMBER_OF_FIELDS; i++) {
+      clinit.visitTypeInsn(Opcodes.NEW, "java/lang/Object");
+      clinit.visitInsn(Opcodes.DUP);
+      clinit.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+      clinit.visitFieldInsn(Opcodes.PUTSTATIC, binaryName, "F" + i, "Ljava/lang/Object;");
+    }
+    clinit.visitInsn(Opcodes.RETURN);
+    clinit.visitMaxs(0, 0);
+    clinit.visitEnd();
+    MethodVisitor readAllTwice =
+        cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "readAllTwice", "()V", null, null);
+    readAllTwice.visitCode();
+    for (int round = 0; round < 2; round++) {
+      for (int i = 0; i < NUMBER_OF_FIELDS; i++) {
+        readAllTwice.visitFieldInsn(Opcodes.GETSTATIC, binaryName, "F" + i, "Ljava/lang/Object;");
+        readAllTwice.visitMethodInsn(
+            Opcodes.INVOKESTATIC, mainBinaryName, "consume", "(Ljava/lang/Object;)V", false);
+      }
+    }
+    readAllTwice.visitInsn(Opcodes.RETURN);
+    readAllTwice.visitMaxs(0, 0);
+    readAllTwice.visitEnd();
+    cw.visitEnd();
+    return cw.toByteArray();
+  }
+
+  // Replaced by the class generated by dumpConstants().
+  static class Constants {
+
+    public static void readAllTwice() {}
+  }
+
+  static class Main {
+
+    static final Set<Object> seen = new HashSet<>();
+
+    public static void main(String[] args) {
+      Constants.readAllTwice();
+      System.out.println(seen.size());
+    }
+
+    @NeverInline
+    static void consume(Object o) {
+      seen.add(o);
+    }
+  }
+}

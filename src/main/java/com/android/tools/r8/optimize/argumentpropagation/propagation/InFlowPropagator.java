@@ -253,7 +253,8 @@ public class InFlowPropagator {
         node.isReceiverNode() && Iterables.all(transferFunctions, AbstractFunction::isIdentity);
     boolean narrowType =
         node.getStaticType().isReferenceType()
-            && node.getStaticType().isNotIdenticalTo(successorNode.getStaticType());
+            && (node.getStaticType().isNotIdenticalTo(successorNode.getStaticType())
+                || Iterables.any(transferFunctions, AbstractFunction::isCastAbstractFunction));
     if (!narrowNullability && !narrowType) {
       return ValueState.unknown();
     }

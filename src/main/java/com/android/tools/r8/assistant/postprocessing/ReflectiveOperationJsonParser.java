@@ -11,10 +11,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ReflectiveOperationJsonParser {
@@ -27,6 +31,7 @@ public class ReflectiveOperationJsonParser {
 
   public List<ReflectiveEvent> parse(Path file) throws IOException {
     List<ReflectiveEvent> result = new ArrayList<>();
+    Int2ReferenceMap<ReflectiveEvent> eventsById = new Int2ReferenceOpenHashMap<>();
     List<String> lines = Files.readAllLines(file);
     for (String line : lines) {
       if (line.trim().isEmpty()) {
@@ -36,21 +41,48 @@ public class ReflectiveOperationJsonParser {
       if (event.isEmpty()) {
         continue;
       }
+      JsonElement returnedElement = event.get("returned");
+      if (returnedElement != null) {
+        ReflectiveEvent returnedEvent = eventsById.get(returnedElement.getAsInt());
+        if (returnedEvent != null) {
+          returnedEvent.addResult(toResult(event.get("result")));
+        }
+        continue;
+      }
       ReflectiveEventType eventType = ReflectiveEventType.valueOf(event.get("event").getAsString());
       JsonElement stackElement = event.get("stack");
       String[] stack = stackElement != null ? toStringArray(stackElement) : null;
       JsonElement argsElement = event.get("args");
       String[] args = argsElement != null ? toStringArray(argsElement) : null;
-      result.add(ReflectiveEvent.instantiate(eventType, stack, args, factory));
+      ReflectiveEvent reflectiveEvent =
+          ReflectiveEvent.instantiate(eventType, stack, args, factory);
+      JsonElement idElement = event.get("id");
+      if (idElement != null) {
+        reflectiveEvent.setId(idElement.getAsInt());
+        eventsById.put(reflectiveEvent.getId(), reflectiveEvent);
+      }
+      result.add(reflectiveEvent);
     }
     return result;
+  }
+
+  private Object toResult(JsonElement resultElement) {
+    if (resultElement == null || resultElement.isJsonNull()) {
+      return null;
+    }
+    if (resultElement.isJsonArray()) {
+      return Arrays.asList(toStringArray(resultElement));
+    }
+    JsonPrimitive primitive = resultElement.getAsJsonPrimitive();
+    return primitive.isBoolean() ? primitive.getAsBoolean() : primitive.getAsString();
   }
 
   private String[] toStringArray(JsonElement argsElement) {
     JsonArray jsonArray = argsElement.getAsJsonArray();
     String[] strings = new String[jsonArray.size()];
     for (int i = 0; i < strings.length; i++) {
-      strings[i] = jsonArray.get(i).getAsString();
+      JsonElement element = jsonArray.get(i);
+      strings[i] = element.isJsonNull() ? null : element.getAsString();
     }
     return strings;
   }

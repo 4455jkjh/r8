@@ -52,11 +52,13 @@ public class SealedClassesJdk17CompiledTest extends TestBase {
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
     assumeTrue(keepPermittedSubclassesAttribute);
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForJvm(parameters)
         .addProgramClassesAndInnerClasses(Helper.getSealedClasses())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(EXPECTED);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+            r -> r.assertSuccessWithOutput(EXPECTED),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -66,11 +68,13 @@ public class SealedClassesJdk17CompiledTest extends TestBase {
         .addProgramClassesAndInnerClasses(Helper.getSealedClasses())
         .run(parameters.getRuntime(), Main.class)
         .applyIf(
-            (DesugarTestConfiguration c) ->
-                DesugarTestConfiguration.isNotJavac(c)
-                    || parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17),
+            DesugarTestConfiguration::isNotJavac,
             r -> r.assertSuccessWithOutput(EXPECTED),
-            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)));
   }
 
   private void inspect(CodeInspector inspector) {
@@ -90,8 +94,6 @@ public class SealedClassesJdk17CompiledTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(
-        parameters.isDexRuntime() || parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     parameters.assumeNoPartialCompilation("TODO");
     testForR8(parameters.getBackend())
         .addProgramClassesAndInnerClasses(Helper.getSealedClasses())
@@ -105,9 +107,9 @@ public class SealedClassesJdk17CompiledTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isDexRuntime() || parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17),
-            r -> r.assertSuccessWithOutput(EXPECTED),
-            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThan(CfVm.JDK17),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED));
   }
 }

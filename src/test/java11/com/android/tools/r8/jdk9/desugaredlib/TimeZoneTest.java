@@ -42,7 +42,8 @@ public class TimeZoneTest extends DesugaredLibraryTestBase {
   private final CompilationSpecification compilationSpecification;
 
   private static final String EXPECTED_OUTPUT = StringUtils.lines("9223372036854775807");
-  private static final String EXPECTED_OUTPUT_NO_TZ_DATA = StringUtils.lines("1771120800000");
+  private static final String EXPECTED_OUTPUT_TZ_DATA = StringUtils.lines("1771120800000");
+  private static final String EXPECTED_OUTPUT_DESUGARED_17_2 = StringUtils.lines("1789866000000");
   private static final String EXPECTED_OUTPUT_NO_TZ_DATA_4_4_4 = StringUtils.lines("1774749600000");
 
   private static final Class<?> MAIN_CLASS = TimeZoneMain.class;
@@ -76,19 +77,27 @@ public class TimeZoneTest extends DesugaredLibraryTestBase {
   }
 
   private void checkExpectedOutput(TestRunResult<?> result, boolean desugaring) {
-    result
-        // On 4.4.4 the tzdata is missing and the behavior is different than art VMs.
-        .applyIfDexRuntime(
+    result.applyIfDexRuntime(
+        // On 4.4.4, the older tzdata uses Morocco's pre-2018 summer DST transition (2026-03-29).
         version -> version == Version.V4_4_4,
         r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_NO_TZ_DATA_4_4_4),
-        // VMs from 12.0.0 to 16.0.0, the tz data is missing. The desugared library behavior uses
-        // emulated tz data and is as if the tz data was present. The non desugared behavior is
-        // different since the tz data is missing.
+        // On 12.0.0+, tzdata is present; when java.time is not desugared, platform ZoneId reads
+        // tzdata directly and finds the 2026-02-15 Ramadan transition. When java.time is desugared
+        // on 12.0.0-17.1.0, j$.time.zone.ZoneRules probes java.util.TimeZone in 90-day steps,
+        // skipping the 35-day Ramadan window and returning Long.MAX_VALUE.
         version ->
-            version.isInRangeInclusive(Version.V12_0_0, Version.V16_0_0)
+            version.isNewerThanOrEqual(Version.V12_0_0)
                 && (!desugaring
                     || !libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)),
-        r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_NO_TZ_DATA),
+        r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_TZ_DATA),
+        // On 17.2.0 with desugared java.time, java.util.TimeZone reports an offset change at
+        // 2026-09-20 that is caught by the 90-day probe in j$.time.zone.ZoneRules.
+        version ->
+            version == Version.V17_2_0
+                && desugaring
+                && libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters),
+        r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_DESUGARED_17_2),
+        // On VMs 5.1.1-10.0.0, tzdata is missing (falling back to GMT with no transitions).
         r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 

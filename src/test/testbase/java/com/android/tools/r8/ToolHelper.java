@@ -2158,6 +2158,7 @@ public class ToolHelper {
   public static ProcessResult runR8Assistant(
       Path inputApk, Path outputApk, String... additionalArgs) throws IOException {
     List<String> args = new ArrayList<>();
+    args.add("instrument");
     args.add(inputApk.toString());
     args.add("--output");
     args.add(outputApk.toString());

@@ -74,14 +74,20 @@ public class MethodParametersNullValueTest extends TestBase {
   }
 
   private void checkExpected(TestRunResult<?> result) {
-    result.applyIfDexRuntime(
-        parameters.isCfRuntime(CfVm.JDK8),
-        // JDK8 will throw when accessing a null valued method parameter name.
-        r -> r.assertFailureWithErrorThatThrows(MalformedParametersException.class),
-        version -> version.isOlderThanOrEqual(Version.V7_0_0),
-        // API 26 introduced the java.lang.reflect.Parameter and methods.
-        r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
-        r -> r.assertSuccessWithOutput(EXPECTED));
+    result.applyIf(
+        parameters.isCfRuntime(),
+        r ->
+            r.applyIfCfRuntime(
+                vm -> vm == CfVm.JDK8,
+                // JDK8 will throw when accessing a null valued method parameter name.
+                rr -> rr.assertFailureWithErrorThatThrows(MalformedParametersException.class),
+                rr -> rr.assertSuccessWithOutput(EXPECTED)),
+        r ->
+            r.applyIfDexRuntime(
+                version -> version.isOlderThanOrEqual(Version.V7_0_0),
+                // API 26 introduced the java.lang.reflect.Parameter and methods.
+                rr -> rr.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+                rr -> rr.assertSuccessWithOutput(EXPECTED)));
   }
 
   private byte[] getTransformedTestClass() throws Exception {

@@ -8,6 +8,7 @@ import com.android.tools.r8.ArchiveProtoAndroidResourceConsumer;
 import com.android.tools.r8.ArchiveProtoAndroidResourceProvider;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.StringConsumer;
 import java.nio.file.Path;
 
 public class ResourceShrinkerDumpUtils {
@@ -25,5 +26,11 @@ public class ResourceShrinkerDumpUtils {
 
   public static void setOptimziedResourceShrinking(boolean value, R8Command.Builder builder) {
     builder.setResourceShrinkerConfiguration(b -> b.enableOptimizedShrinkingWithR8().build());
+  }
+
+  public static void enableOptimizedResourceShrinkingAndSetDebugConsumer(
+      StringConsumer consumer, R8Command.Builder builder) {
+    builder.setResourceShrinkerConfiguration(
+        b -> b.enableOptimizedShrinkingWithR8().setDebugConsumer(consumer).build());
   }
 }

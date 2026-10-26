@@ -60,7 +60,7 @@ public class PcBasedDebugInfoConsolidator {
     if (groupsByParamCount.isEmpty()) {
       return;
     }
-    int threshold = options.testing.pcBasedDebugEncodingOverheadThreshold;
+    int threshold = options.testing.getPcBasedDebugEncodingOverheadThreshold(options);
     for (PcBasedDebugInfoGroup group : groupsByParamCount.values()) {
       group.computeSharedDebugInfo(threshold);
     }
@@ -111,6 +111,7 @@ public class PcBasedDebugInfoConsolidator {
     }
 
     void record(PcBasedDebugInfo debugInfo, int methodMaxPc) {
+      assert debugInfo.getParameterCount() == paramCount;
       countByMaxPc.addTo(methodMaxPc, 1);
       if (existingMaxPcInfo == null || debugInfo.getMaxPc() > existingMaxPcInfo.getMaxPc()) {
         existingMaxPcInfo = debugInfo;

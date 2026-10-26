@@ -43,9 +43,8 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
 
   private static final String EXPECTED_OUTPUT = StringUtils.unixLines("Hello, world!", "21", "6");
 
-  private boolean isInputCfVersionSupported() {
-    return inputCfVersion.isLessThanOrEqualTo(
-        CfVersion.fromRaw(parameters.getRuntime().asCf().getVm().getClassfileVersion()));
+  private boolean isInputCfVersionSupported(CfVm vm) {
+    return inputCfVersion.isLessThanOrEqualTo(CfVersion.fromRaw(vm.getClassfileVersion()));
   }
 
   @Test
@@ -55,16 +54,16 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
         .addProgramClassFileData(transformIToPrivate(inputCfVersion))
         .addProgramClasses(TestRunner.class)
         .run(parameters.getRuntime(), TestRunner.class)
-        .applyIf(
+        .applyIfCfRuntime(
             // Fails if input CF version is not supported.
-            !isInputCfVersionSupported(),
+            vm -> !isInputCfVersionSupported(vm),
             r ->
                 r.assertFailureWithErrorThatMatches(
                     containsString(
                         "more recent version of the Java Runtime (class file version "
                             + inputCfVersion.toString())),
             // Fails with ICCE on VMs prior to JDK 11.
-            parameters.getRuntime().asCf().isOlderThan(CfVm.JDK11),
+            vm -> vm.isOlderThan(CfVm.JDK11),
             r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
             // Succeeds on VMs from JDK 11 regardless of the CF version of the input.
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
@@ -77,26 +76,30 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
         .addProgramClasses(TestRunner.class)
         .run(parameters.getRuntime(), TestRunner.class)
         .applyIf(
-            // Running un-desugared on a JVM with too high a CF version fails.
-            (DesugarTestConfiguration c) ->
-                parameters.getRuntime().isCf()
-                    && !isInputCfVersionSupported()
-                    && DesugarTestConfiguration.isNotDesugared(c),
+            DesugarTestConfiguration::isNotDesugared,
             r ->
-                r.assertFailureWithErrorThatMatches(
-                    containsString(
-                        "more recent version of the Java Runtime (class file version "
-                            + inputCfVersion.toString())),
-            // Running without interface method desugaring on a JVM with a supported CF version
-            // fails on pre JVM 11. On JVM 11 and above this succeeds even of the input CF version
-            // is below 55.
-            (DesugarTestConfiguration c) ->
-                parameters.getRuntime().isCf()
-                    && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK11)
-                    && (DesugarTestConfiguration.isNotDesugared(c)
-                        || (parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
-                            && c == DesugarTestConfiguration.D8_DEX)),
-            r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
+                r.applyIfCfRuntime(
+                    // Running un-desugared on a JVM with too high a CF version fails.
+                    vm -> !isInputCfVersionSupported(vm),
+                    rr ->
+                        rr.assertFailureWithErrorThatMatches(
+                            containsString(
+                                "more recent version of the Java Runtime (class file version "
+                                    + inputCfVersion.toString())),
+                    // Running without interface method desugaring on a JVM with a supported CF
+                    // version fails on pre JVM 11. On JVM 11 and above this succeeds even of the
+                    // input CF version is below 55.
+                    vm -> vm.isOlderThan(CfVm.JDK11),
+                    rr -> rr.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT)),
+            c ->
+                parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
+                    && c == DesugarTestConfiguration.D8_DEX,
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isOlderThan(CfVm.JDK11),
+                    rr -> rr.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT)),
             // All other conditions succeed.
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
@@ -114,9 +117,9 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), TestRunner.class)
-        .applyIf(
+        .applyIfCfRuntime(
             // Running un-desugared on a JVM with too high a CF version fails.
-            parameters.getRuntime().isCf() && !isInputCfVersionSupported(),
+            vm -> !isInputCfVersionSupported(vm),
             r ->
                 r.assertFailureWithErrorThatMatches(
                     containsString(
@@ -124,8 +127,7 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
                             + inputCfVersion.toString())),
             // Running on a JVM with a supported CF version fails on pre JVM 11. On
             // JVM 11 and above this succeeds even of the input CF version is below 55.
-            parameters.getRuntime().isCf()
-                && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK11),
+            vm -> vm.isOlderThan(CfVm.JDK11),
             r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
             // All other conditions succeed.
             r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
@@ -152,9 +154,11 @@ public class InterfaceInvokePrivateTest extends TestBase implements Opcodes {
     /* private */ default String privateHello() {
       return "Hello, world!";
     }
+
     /* private */ default String privateHello(int i1, int i2, int i3, int i4, int i5, int i6) {
       return "" + (i1 + i2 + i3 + i4 + i5 + i6);
     }
+
     /* private */ default String privateHello(long l1, long l2, long l3) {
       return "" + (l1 + l2 + l3);
     }

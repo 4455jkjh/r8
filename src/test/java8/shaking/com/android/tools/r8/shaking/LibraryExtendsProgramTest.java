@@ -5,6 +5,8 @@ package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.shaking.libraryextendsprogram.Interface;
 import com.android.tools.r8.shaking.libraryextendsprogram.Main;
 import com.android.tools.r8.shaking.libraryextendsprogram.SubClass;
@@ -12,8 +14,21 @@ import com.android.tools.r8.shaking.libraryextendsprogram.SuperClass;
 import com.android.tools.r8.utils.AndroidApp;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class LibraryExtendsProgramTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public LibraryExtendsProgramTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test(expected = CompilationFailedException.class)
   public void libraryClassExtendsProgramClass() throws Exception {

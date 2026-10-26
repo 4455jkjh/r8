@@ -7,6 +7,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexConstString;
 import com.android.tools.r8.dex.code.DexInvokeStatic;
 import com.android.tools.r8.dex.code.DexReturnVoid;
@@ -17,8 +19,21 @@ import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class ForNameTest extends CompatProguardSmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public ForNameTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private final String CLASS_NAME = "Example";
   private final static String BOO = "Boo";

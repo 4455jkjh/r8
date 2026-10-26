@@ -41,15 +41,20 @@ import org.junit.runners.Parameterized.Parameters;
 public class DexToDexSdkIntOptimizationTest extends TestBase {
 
   @Parameter(0)
-  public TestParameters parameters;
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
 
   @Parameter(1)
   public boolean enableMappingOutput;
 
-  @Parameters(name = "{0}, map output: {1}")
+  @Parameter(2)
+  public TestParameters parameters;
+
+  @Parameters(name = "{2}, map output: {1}, share: {0}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDefaultDexRuntime().build(), BooleanUtils.values());
+        BooleanUtils.values(),
+        BooleanUtils.values(),
+        getTestParameters().withDefaultDexRuntime().build());
   }
 
   @Test
@@ -58,7 +63,11 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
         testForD8()
             .addProgramClassFileData(getMainClassFileData())
             .addOptionsModification(
-                options -> options.getTestingOptions().forcePcBasedEncoding = true)
+                options -> {
+                  options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                      enableShareDebugInfoForDifferentParameterSizes;
+                  options.getTestingOptions().forcePcBasedEncoding = true;
+                })
             .internalEnableMappingOutput()
             .release()
             .setMinApi(AndroidApiLevel.B)
@@ -78,6 +87,10 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
     // Compiling with D8 should normally not perform dex-to-dex optimizations.
     testForD8()
         .addProgramFiles(originalCompileResult)
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .applyIf(enableMappingOutput, D8TestBuilder::internalEnableMappingOutput)
         .release()
         .setMinApi(AndroidApiLevel.N)
@@ -91,6 +104,8 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
             options -> {
               assertFalse(options.enableDexToDexCodeOptimizations);
               options.enableDexToDexCodeOptimizations = true;
+              options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                  enableShareDebugInfoForDifferentParameterSizes;
             })
         .applyIf(enableMappingOutput, D8TestBuilder::internalEnableMappingOutput)
         .release()
@@ -106,6 +121,8 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
                 options -> {
                   assertFalse(options.enableDexToDexCodeOptimizations);
                   options.enableDexToDexCodeOptimizations = true;
+                  options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                      enableShareDebugInfoForDifferentParameterSizes;
                 })
             .applyIf(enableMappingOutput, D8TestBuilder::internalEnableMappingOutput)
             .release()

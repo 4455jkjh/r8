@@ -70,7 +70,7 @@ public class MetadataRewriteInMultifileClassTest extends KotlinMetadataTestBase 
     Path libJar = multifileLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
@@ -99,7 +99,7 @@ public class MetadataRewriteInMultifileClassTest extends KotlinMetadataTestBase 
             .writeToZip();
 
     ProcessResult kotlinTestCompileResult =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
@@ -144,7 +144,7 @@ public class MetadataRewriteInMultifileClassTest extends KotlinMetadataTestBase 
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))

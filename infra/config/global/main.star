@@ -261,10 +261,8 @@ common_test_options = [
 
 default_timeout = time.hour * 12
 
-def get_dimensions(windows = False, internal = False, archive = False, tester = False, jammy = True, coordinator = False, perf = False):
+def get_dimensions(archive = False, tester = False, jammy = True, coordinator = False, perf = False):
     # We use the following setup:
-    #   windows -> always windows machine
-    #   internal -> always internal, single small, machine
     #   archive -> archive or normal machines (normal machines set archive)
     #   tester -> tester or normal machines
     #   coordinator -> coordinator machines
@@ -274,16 +272,12 @@ def get_dimensions(windows = False, internal = False, archive = False, tester = 
         "cpu": "x86-64",
         "pool": "luci.r8.ci",
     }
-    if windows:
-        dimensions["os"] = "Windows-11"
-    elif jammy:
+    if jammy:
         dimensions["os"] = "Ubuntu-22.04"
     else:
         dimensions["os"] = "Ubuntu-20.04"
     if coordinator:
         dimensions["coordinator"] = "true"
-    elif internal:
-        dimensions["internal"] = "true"
     elif archive:
         dimensions["archive"] = "true"
     elif tester:
@@ -430,8 +424,6 @@ def archivers():
         "archive",
         "archive_release",
         "lib_desugar-archive-jdk11",
-        "lib_desugar-archive-jdk11-legacy",
-        "lib_desugar-archive-jdk8",
     ]:
         desugar = "desugar" in name
         properties = {
@@ -439,12 +431,7 @@ def archivers():
             "builder_group": "internal.client.r8",
         }
         if desugar:
-            if name.endswith("jdk11"):
-                properties["test_options"] = ["--variant=jdk11_minimal", "--variant=jdk11", "--variant=jdk11_nio"]
-            elif name.endswith("jdk11-legacy"):
-                properties["test_options"] = ["--variant=jdk11_legacy"]
-            else:
-                properties["test_options"] = ["--variant=jdk8"]
+            properties["test_options"] = ["--variant=jdk11_minimal", "--variant=jdk11", "--variant=jdk11_nio"]
         else:
             properties["env"] = {
                 "R8_BOT_ARCHIVE": "1",
@@ -452,7 +439,7 @@ def archivers():
 
         r8_builder(
             name,
-            category = "library_desugar" if desugar else "archive",
+            category = "aux" if desugar else "archive",
             dimensions = get_dimensions(archive = True),
             triggering_policy = scheduler.policy(
                 kind = scheduler.GREEDY_BATCHING_KIND,
@@ -477,7 +464,7 @@ r8_builder(
         max_batch_size = 1,
         max_concurrent_invocations = 1,
     ),
-    priority = 25,
+    priority = 20,
     properties = {
         "test_wrapper": "tools/check-cherry-picks.py",
         "builder_group": "internal.client.r8",
@@ -793,37 +780,6 @@ r8_tester_with_default(
     dimensions = get_dimensions(tester = True),
     release_trigger = ["branch-gitiles-9.6-forward"],
 )
-
-r8_tester_with_default(
-    "win",
-    ["--all_tests"],
-    dimensions = get_dimensions(windows = True),
-    execution_timeout = time.hour * 16,
-    trigger = True,
-    max_concurrent_invocations = 2,
-)
-
-def internal():
-    for name in ["linux-internal", "linux-internal_release"]:
-        r8_builder(
-            name,
-            dimensions = get_dimensions(internal = True),
-            triggering_policy = scheduler.policy(
-                kind = scheduler.GREEDY_BATCHING_KIND,
-                max_concurrent_invocations = 1,
-                max_batch_size = 1 if "release" in name else 20,
-            ),
-            priority = 25,
-            properties = {
-                "test_options": ["--bot"],
-                "test_wrapper": "tools/internal_test.py",
-                "builder_group": "internal.client.r8",
-            },
-            execution_timeout = time.hour * 24,
-            expiration_timeout = time.hour * 70,
-        )
-
-internal()
 
 def app_dump():
     for release in ["", "_release"]:

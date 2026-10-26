@@ -96,6 +96,7 @@ public class BootstrapCurrentEqualityTest extends TestBase {
   public static TestParametersCollection data() {
     return getTestParameters()
         .withCfRuntimesStartingFromIncluding(CfVm.getMinimumSystemVersion())
+        .withoutCollapsedCfRuntimes()
         .build();
   }
 
@@ -262,10 +263,7 @@ public class BootstrapCurrentEqualityTest extends TestBase {
   }
 
   private void RunR8AndCheck(
-      Pair<Path, Path> r8,
-      Path program,
-      ExternalR8TestCompileResult result,
-      CompilationMode mode)
+      Pair<Path, Path> r8, Path program, ExternalR8TestCompileResult result, CompilationMode mode)
       throws Exception {
     ExternalR8TestCompileResult runR8R8 =
         testForExternalR8(newTempFolder(), parameters.getBackend(), parameters.getRuntime())

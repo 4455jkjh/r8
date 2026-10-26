@@ -52,7 +52,7 @@ public class MetadataRewriteCrossinlineConcreteFunctionTest extends KotlinMetada
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -77,7 +77,7 @@ public class MetadataRewriteCrossinlineConcreteFunctionTest extends KotlinMetada
             .compile()
             .writeToZip();
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

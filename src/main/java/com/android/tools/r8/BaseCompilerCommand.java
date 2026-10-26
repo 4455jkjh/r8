@@ -596,7 +596,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       if (major <= 0 || minor < 0) {
         getReporter().error("Invalid minApiLevel: " + major + "." + minor);
       } else {
-        this.minApiLevel = new UncheckedApiLevel(major, minor);
+        setMinApiLevel(new UncheckedApiLevel(major, minor));
       }
       return self();
     }
@@ -607,7 +607,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
      * <p>See {@link BaseCompilerCommandUtils#setMinApiLevel} for a public bridge.
      */
     B setMinApiLevel(UncheckedApiLevel minApiLevel) {
-      this.minApiLevel = minApiLevel;
+      validateMinApiLevel(minApiLevel, level -> this.minApiLevel = level);
       return self();
     }
 

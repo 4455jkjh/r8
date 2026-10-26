@@ -5,13 +5,14 @@ package com.android.tools.r8.cf.frames;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.AssertUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,12 +45,11 @@ public class DoubleAndLongIncompatibleTypesOnStackTest extends TestBase implemen
         .applyIf(
             insertFrame,
             runResult ->
-                runResult.applyIf(
-                    parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9),
-                    ignore -> runResult.assertSuccessWithEmptyOutput(),
-                    ignore ->
-                        runResult
-                            .assertFailureWithErrorThatThrows(VerifyError.class)
+                runResult.applyIfCfRuntime(
+                    vm -> vm.isOlderThan(CfVm.JDK9),
+                    SingleTestRunResult::assertSuccessWithEmptyOutput,
+                    rr ->
+                        rr.assertFailureWithErrorThatThrows(VerifyError.class)
                             .assertFailureWithErrorThatMatches(
                                 containsString(
                                     "Type top (current frame, stack[1]) is not assignable to"

@@ -12,9 +12,10 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -25,17 +26,31 @@ import org.junit.runners.Parameterized.Parameters;
 public class ConsolidatePcBasedDebugInfoD8MergeTest extends TestBase {
 
   @Parameter(0)
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
+
+  @Parameter(1)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withDefaultDexRuntime().build();
+  @Parameters(name = "{1}, share={0}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        BooleanUtils.values(), getTestParameters().withDefaultDexRuntime().build());
   }
 
   private D8TestCompileResult compileWithPcBasedDebugInfo(Class<?> clazz) throws Exception {
+    return compileWithPcBasedDebugInfo(clazz, enableShareDebugInfoForDifferentParameterSizes);
+  }
+
+  private D8TestCompileResult compileWithPcBasedDebugInfo(
+      Class<?> clazz, boolean enableShareDebugInfoForDifferentParameterSizes) throws Exception {
     return testForD8(parameters.getBackend())
         .addProgramClasses(clazz)
-        .addOptionsModification(options -> options.getTestingOptions().forcePcBasedEncoding = true)
+        .addOptionsModification(
+            options -> {
+              options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                  enableShareDebugInfoForDifferentParameterSizes;
+              options.getTestingOptions().forcePcBasedEncoding = true;
+            })
         .internalEnableMappingOutput()
         .release()
         .setMinApi(AndroidApiLevel.N)
@@ -65,6 +80,10 @@ public class ConsolidatePcBasedDebugInfoD8MergeTest extends TestBase {
 
     testForD8(parameters.getBackend())
         .addProgramFiles(compileResultA.writeToZip(), compileResultB.writeToZip())
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .release()
         .setMinApi(AndroidApiLevel.S)
         .compile()
@@ -103,21 +122,132 @@ public class ConsolidatePcBasedDebugInfoD8MergeTest extends TestBase {
     assertTrue(maxPcA < maxPcB);
     assertTrue(maxPcB < maxPcC);
 
+    for (AndroidApiLevel apiLevel : new AndroidApiLevel[] {AndroidApiLevel.N, AndroidApiLevel.S}) {
+      testForD8(parameters.getBackend())
+          .addProgramFiles(
+              compileResultA.writeToZip(), compileResultB.writeToZip(), compileResultC.writeToZip())
+          .addOptionsModification(
+              options -> {
+                // Choose a threshold that allows consolidating ClassA and ClassB into a single
+                // bucket,
+                // but flushes before ClassC.
+                int overheadAB = maxPcB - maxPcA;
+                int overheadABC = (maxPcC - maxPcA) + (maxPcC - maxPcB);
+                assertTrue(overheadAB < overheadABC);
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes;
+                options.getTestingOptions().pcBasedDebugEncodingOverheadThreshold = overheadAB;
+              })
+          .release()
+          .setMinApi(apiLevel)
+          .compile()
+          .inspect(
+              inspector -> {
+                DexDebugInfo debugInfoA =
+                    inspector
+                        .clazz(ClassA.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                DexDebugInfo debugInfoB =
+                    inspector
+                        .clazz(ClassB.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                DexDebugInfo debugInfoC =
+                    inspector
+                        .clazz(ClassC.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                assertTrue(debugInfoA.isPcBasedInfo());
+                assertTrue(debugInfoB.isPcBasedInfo());
+                assertTrue(debugInfoC.isPcBasedInfo());
+                assertSame(debugInfoA, debugInfoB);
+                if (apiLevel.isLessThan(AndroidApiLevel.P)) {
+                  assertEquals(maxPcB, debugInfoA.asPcBasedInfo().getMaxPc());
+                  assertNotSame(debugInfoB, debugInfoC);
+                  assertEquals(maxPcC, debugInfoC.asPcBasedInfo().getMaxPc());
+                } else {
+                  assertSame(debugInfoB, debugInfoC);
+                  assertEquals(maxPcC, debugInfoA.asPcBasedInfo().getMaxPc());
+                }
+              });
+    }
+  }
+
+  @Test
+  public void testConsolidatesAcrossDifferentParameterSizesWhenEnabled() throws Exception {
+    int maxPcA = -1;
+    int maxPcD = -1;
+    for (boolean enableSharingInInput :
+        enableShareDebugInfoForDifferentParameterSizes
+            ? BooleanUtils.values()
+            : new Boolean[] {false}) {
+      D8TestCompileResult compileResultA =
+          compileWithPcBasedDebugInfo(ClassA.class, enableSharingInInput);
+      D8TestCompileResult compileResultD =
+          compileWithPcBasedDebugInfo(ClassD.class, enableSharingInInput);
+
+      maxPcA = getMaxPc(compileResultA, ClassA.class);
+      maxPcD = getMaxPc(compileResultD, ClassD.class);
+      int expectedMaxPc = Math.max(maxPcA, maxPcD);
+
+      testForD8(parameters.getBackend())
+          .addProgramFiles(compileResultA.writeToZip(), compileResultD.writeToZip())
+          .addOptionsModification(
+              options ->
+                  options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                      enableShareDebugInfoForDifferentParameterSizes)
+          .release()
+          .setMinApi(AndroidApiLevel.S)
+          .compile()
+          .inspect(
+              inspector -> {
+                DexDebugInfo debugInfoA =
+                    inspector
+                        .clazz(ClassA.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                DexDebugInfo debugInfoD =
+                    inspector
+                        .clazz(ClassD.class)
+                        .uniqueMethodWithOriginalName("work")
+                        .getMethod()
+                        .getDexCode()
+                        .getDebugInfo();
+                assertTrue(debugInfoA.isPcBasedInfo());
+                assertTrue(debugInfoD.isPcBasedInfo());
+                if (enableShareDebugInfoForDifferentParameterSizes) {
+                  assertSame(debugInfoA, debugInfoD);
+                  assertEquals(0, debugInfoA.getParameterCount());
+                  assertEquals(expectedMaxPc, debugInfoA.asPcBasedInfo().getMaxPc());
+                } else {
+                  assertNotSame(debugInfoA, debugInfoD);
+                  assertEquals(1, debugInfoA.getParameterCount());
+                  assertEquals(2, debugInfoD.getParameterCount());
+                }
+              });
+    }
+
+    int expectedMaxPc = Math.max(maxPcA, maxPcD);
     testForD8(parameters.getBackend())
-        .addProgramFiles(
-            compileResultA.writeToZip(), compileResultB.writeToZip(), compileResultC.writeToZip())
+        .addProgramClasses(ClassA.class, ClassD.class)
         .addOptionsModification(
             options -> {
-              // Choose a threshold that allows consolidating ClassA and ClassB into a single
-              // bucket,
-              // but flushes before ClassC.
-              int overheadAB = maxPcB - maxPcA;
-              int overheadABC = (maxPcC - maxPcA) + (maxPcC - maxPcB);
-              assertTrue(overheadAB < overheadABC);
-              options.getTestingOptions().pcBasedDebugEncodingOverheadThreshold = overheadAB;
+              options.getTestingOptions().forcePcBasedEncoding = true;
+              options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                  enableShareDebugInfoForDifferentParameterSizes;
             })
+        .internalEnableMappingOutput()
         .release()
-        .setMinApi(AndroidApiLevel.S)
+        .setMinApi(AndroidApiLevel.N)
         .compile()
         .inspect(
             inspector -> {
@@ -128,27 +258,24 @@ public class ConsolidatePcBasedDebugInfoD8MergeTest extends TestBase {
                       .getMethod()
                       .getDexCode()
                       .getDebugInfo();
-              DexDebugInfo debugInfoB =
+              DexDebugInfo debugInfoD =
                   inspector
-                      .clazz(ClassB.class)
-                      .uniqueMethodWithOriginalName("work")
-                      .getMethod()
-                      .getDexCode()
-                      .getDebugInfo();
-              DexDebugInfo debugInfoC =
-                  inspector
-                      .clazz(ClassC.class)
+                      .clazz(ClassD.class)
                       .uniqueMethodWithOriginalName("work")
                       .getMethod()
                       .getDexCode()
                       .getDebugInfo();
               assertTrue(debugInfoA.isPcBasedInfo());
-              assertTrue(debugInfoB.isPcBasedInfo());
-              assertTrue(debugInfoC.isPcBasedInfo());
-              assertSame(debugInfoA, debugInfoB);
-              assertEquals(maxPcB, debugInfoA.asPcBasedInfo().getMaxPc());
-              assertNotSame(debugInfoB, debugInfoC);
-              assertEquals(maxPcC, debugInfoC.asPcBasedInfo().getMaxPc());
+              assertTrue(debugInfoD.isPcBasedInfo());
+              if (enableShareDebugInfoForDifferentParameterSizes) {
+                assertSame(debugInfoA, debugInfoD);
+                assertEquals(0, debugInfoA.getParameterCount());
+                assertEquals(expectedMaxPc, debugInfoA.asPcBasedInfo().getMaxPc());
+              } else {
+                assertNotSame(debugInfoA, debugInfoD);
+                assertEquals(1, debugInfoA.getParameterCount());
+                assertEquals(2, debugInfoD.getParameterCount());
+              }
             });
   }
 
@@ -199,6 +326,15 @@ public class ConsolidatePcBasedDebugInfoD8MergeTest extends TestBase {
         throw new IllegalStateException();
       }
       return sum;
+    }
+  }
+
+  public static class ClassD {
+    public static int work(int x, int y) {
+      if (x < y) {
+        throw new IllegalArgumentException();
+      }
+      return x + y;
     }
   }
 }

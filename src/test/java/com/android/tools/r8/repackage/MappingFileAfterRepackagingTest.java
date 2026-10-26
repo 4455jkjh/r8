@@ -9,6 +9,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
@@ -23,15 +24,20 @@ import org.junit.runners.Parameterized.Parameters;
 public class MappingFileAfterRepackagingTest extends TestBase {
 
   @Parameter(0)
-  public TestParameters parameters;
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
 
   @Parameter(1)
+  public TestParameters parameters;
+
+  @Parameter(2)
   public boolean repackage;
 
-  @Parameters(name = "{0}, repackage: {1}")
+  @Parameters(name = "{1}, repackage: {2}, share: {0}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        BooleanUtils.values(),
+        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        BooleanUtils.values());
   }
 
   @Test
@@ -41,6 +47,10 @@ public class MappingFileAfterRepackagingTest extends TestBase {
         .addKeepMainRule(Main.class)
         .addKeepAttributeLineNumberTable()
         .addKeepAttributeSourceFile()
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .addHorizontallyMergedClassesInspector(
             inspector ->
                 inspector.assertIsCompleteMergeGroup(A.class, B.class).assertNoOtherClassesMerged())
@@ -69,7 +79,13 @@ public class MappingFileAfterRepackagingTest extends TestBase {
                       .count();
               assertEquals(
                   (repackage ? 1 : 2 + BooleanUtils.intValue(parameters.isDexRuntime()))
-                      + BooleanUtils.intValue(canDiscardResidualDebugInfo(parameters)),
+                      + BooleanUtils.intValue(
+                          canDiscardResidualDebugInfo(parameters)
+                              || (parameters.isDexRuntime()
+                                  && enableShareDebugInfoForDifferentParameterSizes
+                                  && parameters
+                                      .getApiLevel()
+                                      .isGreaterThanOrEqualTo(AndroidApiLevel.N))),
                   unqualifiedMatches);
             });
   }

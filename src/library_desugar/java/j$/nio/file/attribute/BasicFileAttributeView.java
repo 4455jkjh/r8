@@ -4,5 +4,4 @@
 
 package j$.nio.file.attribute;
 
-public class BasicFileAttributeView extends FileAttributeView {
-}
+public class BasicFileAttributeView extends FileAttributeView {}

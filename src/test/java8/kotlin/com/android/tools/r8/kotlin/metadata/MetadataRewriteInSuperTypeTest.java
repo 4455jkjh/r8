@@ -60,7 +60,7 @@ public class MetadataRewriteInSuperTypeTest extends KotlinMetadataTestBase {
     Path libJar = superTypeLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/supertype_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -87,7 +87,7 @@ public class MetadataRewriteInSuperTypeTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/supertype_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -115,10 +115,11 @@ public class MetadataRewriteInSuperTypeTest extends KotlinMetadataTestBase {
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("internal")));
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Itf")));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("internal")));
+    assertTrue(
+        superTypes.stream().noneMatch(supertype -> supertype.getFinalDescriptor().contains("Itf")));
   }
 
   @Test
@@ -137,7 +138,7 @@ public class MetadataRewriteInSuperTypeTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/supertype_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -167,11 +168,14 @@ public class MetadataRewriteInSuperTypeTest extends KotlinMetadataTestBase {
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("internal")));
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Itf")));
-    assertTrue(superTypes.stream().anyMatch(
-        supertype -> supertype.getFinalDescriptor().equals(itf.getFinalDescriptor())));
+    assertTrue(
+        superTypes.stream()
+            .noneMatch(supertype -> supertype.getFinalDescriptor().contains("internal")));
+    assertTrue(
+        superTypes.stream().noneMatch(supertype -> supertype.getFinalDescriptor().contains("Itf")));
+    assertTrue(
+        superTypes.stream()
+            .anyMatch(
+                supertype -> supertype.getFinalDescriptor().equals(itf.getFinalDescriptor())));
   }
 }

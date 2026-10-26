@@ -8,13 +8,28 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class D8FrameworkDeterministicTest extends CompilationTestBase {
   private static final int MIN_SDK = 24;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public D8FrameworkDeterministicTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static Path getJar() {
     return TestDeps.getFrameworkPath("framework_160115954.jar");

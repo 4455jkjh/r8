@@ -10,6 +10,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -23,8 +25,21 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class CovariantReturnTypeTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public CovariantReturnTypeTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void test() throws Exception {

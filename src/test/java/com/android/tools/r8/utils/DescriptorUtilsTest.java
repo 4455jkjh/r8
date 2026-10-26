@@ -6,11 +6,27 @@ package com.android.tools.r8.utils;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import java.io.File;
 import java.nio.file.Paths;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class DescriptorUtilsTest {
+@RunWith(Parameterized.class)
+public class DescriptorUtilsTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public DescriptorUtilsTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void toShorty() {

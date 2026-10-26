@@ -56,21 +56,23 @@ public class UnboundedFormalTypeGenericSignatureTest extends TestBase {
                 transformer(Super.class).removeInnerClasses().transform())
             .run(parameters.getRuntime(), Main.class);
     if (parameters.isCfRuntime()) {
-      if (parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK25)) {
-        runResult.assertSuccessWithOutputLines(
-            "class java.lang.TypeNotPresentException::Type R not present",
-            "R",
-            "class java.lang.TypeNotPresentException::Type T not present");
-      } else if (parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK17)) {
-        runResult.assertSuccessWithOutputLines(
-            "class java.lang.NullPointerException::Cannot invoke"
-                + " \"java.lang.reflect.Type.getTypeName()\" because \"t\" is null",
-            "R",
-            "null");
-      } else {
-        runResult.assertSuccessWithOutputLines(
-            "class java.lang.NullPointerException::null", "R", "null");
-      }
+      runResult.applyIfCfRuntime(
+          vm -> vm.isNewerThanOrEqual(CfVm.JDK25),
+          r ->
+              r.assertSuccessWithOutputLines(
+                  "class java.lang.TypeNotPresentException::Type R not present",
+                  "R",
+                  "class java.lang.TypeNotPresentException::Type T not present"),
+          vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+          r ->
+              r.assertSuccessWithOutputLines(
+                  "class java.lang.NullPointerException::Cannot invoke"
+                      + " \"java.lang.reflect.Type.getTypeName()\" because \"t\" is null",
+                  "R",
+                  "null"),
+          r ->
+              r.assertSuccessWithOutputLines(
+                  "class java.lang.NullPointerException::null", "R", "null"));
     } else {
       runResult.assertSuccessWithOutputLines(Super.class.getTypeName() + "<R>", "R", "T");
     }
@@ -91,14 +93,14 @@ public class UnboundedFormalTypeGenericSignatureTest extends TestBase {
                 transformer(Super.class).removeInnerClasses().transform())
             .run(parameters.getRuntime(), Main.class);
     if (parameters.isCfRuntime()) {
-      if (parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK25)) {
-        runResult.assertSuccessWithOutputLines(
-            Super.class.getTypeName() + "<T>",
-            "class java.lang.TypeNotPresentException::Type S not present",
-            "class java.lang.TypeNotPresentException::Type Q not present");
-      } else {
-        runResult.assertSuccessWithOutputLines(Super.class.getTypeName() + "<T>", "null", "null");
-      }
+      runResult.applyIfCfRuntime(
+          vm -> vm.isNewerThanOrEqual(CfVm.JDK25),
+          r ->
+              r.assertSuccessWithOutputLines(
+                  Super.class.getTypeName() + "<T>",
+                  "class java.lang.TypeNotPresentException::Type S not present",
+                  "class java.lang.TypeNotPresentException::Type Q not present"),
+          r -> r.assertSuccessWithOutputLines(Super.class.getTypeName() + "<T>", "null", "null"));
     } else {
       runResult.assertSuccessWithOutputLines(Super.class.getTypeName() + "<T>", "S", "Q");
     }

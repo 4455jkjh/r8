@@ -55,16 +55,18 @@ public class MetadataRewriteFlexibleUpperBoundTest extends KotlinMetadataTestBas
   }
 
   private static final KotlinCompileMemoizer libJars =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/flexible_upper_bound_lib", "lib"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/flexible_upper_bound_lib", "lib"));
   private final TestParameters parameters;
 
   @Test
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/flexible_upper_bound_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/flexible_upper_bound_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -93,9 +95,10 @@ public class MetadataRewriteFlexibleUpperBoundTest extends KotlinMetadataTestBas
             .inspect(this::inspect)
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/flexible_upper_bound_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/flexible_upper_bound_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {

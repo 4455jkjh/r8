@@ -42,7 +42,7 @@ public class DexPositionToPcMappedRangeMapper {
     timing.begin("Pc mapper");
     List<MappedPosition> mappedPositions = new ArrayList<>();
     // Do the actual processing for each method.
-    DexCode code = method.getDefinition().getCode().asDexCode();
+    DexCode code = method.getDefinition().getDexCode();
     timing.begin("Convert to event based debug info");
     EventBasedDebugInfo debugInfo = getEventBasedDebugInfo(method.getDefinition(), code, appView);
     timing.end();
@@ -139,9 +139,11 @@ public class DexPositionToPcMappedRangeMapper {
       return DexDebugInfo.createEventBasedInfoForMethodWithoutDebugInfo(
           method, appView.dexItemFactory());
     }
-    assert method.getParameters().size() == dexCode.getDebugInfo().getParameterCount();
+    assert method.getParameters().size() == dexCode.getDebugInfo().getParameterCount()
+        || (dexCode.getDebugInfo().isPcBasedInfo()
+            && dexCode.getDebugInfo().getParameterCount() == 0);
     EventBasedDebugInfo debugInfo =
-        DexDebugInfo.convertToEventBased(dexCode, appView.dexItemFactory());
+        DexDebugInfo.convertToEventBased(dexCode, appView.dexItemFactory(), method.getReference());
     assert debugInfo != null;
     return debugInfo;
   }

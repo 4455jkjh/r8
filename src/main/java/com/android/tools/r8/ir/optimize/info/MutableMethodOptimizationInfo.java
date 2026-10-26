@@ -596,6 +596,10 @@ public class MutableMethodOptimizationInfo extends MethodOptimizationInfo
     this.isReturnValueUsed = isReturnValueUsed;
   }
 
+  void unsetIsReturnValueUsed() {
+    isReturnValueUsed = OptionalBool.unknown();
+  }
+
   @Override
   public boolean forceInline() {
     return inlining == InlinePreference.ForceInline;

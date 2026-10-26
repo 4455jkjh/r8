@@ -6,6 +6,8 @@ package com.android.tools.r8.smali;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.SmaliWriter;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
@@ -17,8 +19,21 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import org.antlr.runtime.RecognitionException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class SmaliDisassembleTest extends SmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public SmaliDisassembleTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   // Run the provided smali through R8 smali disassembler and expect the exact same output.
   void roundTripRawSmali(String smali) {

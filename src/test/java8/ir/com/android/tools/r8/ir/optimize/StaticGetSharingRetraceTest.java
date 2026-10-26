@@ -35,6 +35,7 @@ public class StaticGetSharingRetraceTest extends TestBase {
         testForJvm(temp)
             .addInnerClasses(getClass())
             .run(TestRuntime.getDefaultCfRuntime(), MainHoist.class)
+            .asSingleRuntimeResult()
             .getStackTrace();
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
@@ -53,6 +54,7 @@ public class StaticGetSharingRetraceTest extends TestBase {
         testForJvm(temp)
             .addInnerClasses(getClass())
             .run(TestRuntime.getDefaultCfRuntime(), MainSink.class)
+            .asSingleRuntimeResult()
             .getStackTrace();
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())

@@ -6,6 +6,9 @@ package com.android.tools.r8.graph;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexDebugEvent.AdvancePC;
 import com.android.tools.r8.graph.DexDebugEvent.Default;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
@@ -13,8 +16,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class DexDebugEventsTest {
+@RunWith(Parameterized.class)
+public class DexDebugEventsTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public DexDebugEventsTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   static final DexItemFactory factory = new DexItemFactory();
   static final DexMethod method = factory.createMethod(

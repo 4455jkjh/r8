@@ -15,10 +15,12 @@ import com.android.tools.r8.shaking.KeepMethodInfo;
 public class ClassGetMember extends ReflectiveEvent {
 
   private final DexMember<?, ?> member;
+  private final boolean hasMemberType;
 
   protected ClassGetMember(
       ReflectiveEventType eventType, String[] stack, String[] args, DexItemFactory factory) {
     super(eventType, stack);
+    hasMemberType = args[0] != null;
     DexType type = toTypeOrTripleStar(args[0], factory);
     DexType holder = toType(args[1], factory);
     String name = args[2];
@@ -42,6 +44,13 @@ public class ClassGetMember extends ReflectiveEvent {
     return member;
   }
 
+  // False if the field type or return type was not logged, which is the case for field and method
+  // lookups that failed. The member then has the type ***. Failed constructor lookups have the
+  // type void, so use ReflectiveEvent.hasReturned() to check whether a lookup succeeded.
+  public boolean hasMemberType() {
+    return hasMemberType;
+  }
+
   @Override
   public boolean isClassGetMember() {
     return true;
@@ -54,11 +63,22 @@ public class ClassGetMember extends ReflectiveEvent {
 
   @Override
   public String getContentsString() {
-    return member.toSourceString();
+    if (hasMemberType) {
+      return member.toSourceString();
+    }
+    // The type *** has no source form, so print the member without it.
+    if (member.isDexMethod()) {
+      return member.asDexMethod().toSourceStringWithoutReturnType();
+    }
+    return member.getHolderType().toSourceString() + "." + member.getName();
   }
 
   @Override
   public boolean isKeptBy(KeepInfoCollectionExported keepInfoCollectionExported) {
+    if (!hasMemberType) {
+      // The lookup failed, so there is no member to keep.
+      return false;
+    }
     if (member.isDexField()) {
       KeepFieldInfo keepFieldInfo =
           keepInfoCollectionExported.getKeepFieldInfo(member.asDexField().asFieldReference());

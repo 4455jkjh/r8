@@ -9,26 +9,29 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.SourceFileProvider;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexDebugEntry;
 import com.android.tools.r8.graph.DexDebugEntryBuilder;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
@@ -37,15 +40,16 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
   private static final String FILENAME_MAIN = "EnsureNoDebugInfoEmittedForPcOnlyTest.java";
   private static final Class<?> MAIN = EnsureNoDebugInfoEmittedForPcOnlyTest.class;
 
-  private final TestParameters parameters;
+  @Parameter(0)
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
-  }
+  @Parameter(1)
+  public TestParameters parameters;
 
-  public EnsureNoDebugInfoEmittedForPcOnlyTestRunner(TestParameters parameters) {
-    this.parameters = parameters;
+  @Parameters(name = "{1}, share={0}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        BooleanUtils.values(), getTestParameters().withDexRuntimes().withAllApiLevels().build());
   }
 
   @Test
@@ -53,6 +57,10 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
     testForD8(parameters.getBackend())
         .debug()
         .addProgramClasses(MAIN)
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .setMinApi(parameters)
         .internalEnableMappingOutput()
         .run(parameters.getRuntime(), MAIN)
@@ -66,6 +74,10 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
     testForD8(parameters.getBackend())
         .release()
         .addProgramClasses(MAIN)
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .setMinApi(parameters)
         .internalEnableMappingOutput()
         .applyIf(
@@ -91,6 +103,9 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
             inspector -> {
               if (canDiscardResidualDebugInfo(parameters)) {
                 checkNoDebugInfo(inspector, 5);
+              } else if (enableShareDebugInfoForDifferentParameterSizes
+                  && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)) {
+                checkPcBasedDebugInfo(inspector);
               } else {
                 checkHasLineNumberInfo(inspector);
               }
@@ -103,6 +118,10 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
     testForD8(parameters.getBackend())
         .release()
         .addProgramClasses(MAIN)
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), MAIN)
         // If compiling without a map output actual debug info should also be retained. Otherwise
@@ -118,6 +137,10 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
         .addProgramClasses(MAIN)
         .addKeepMainRule(MAIN)
         .addKeepAttributeLineNumberTable()
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), MAIN)
         .inspectOriginalStackTrace(
@@ -134,6 +157,12 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
     assertEquals(expectedMethodsInMain, clazz.allMethods().size());
     MethodSubject main = clazz.uniqueMethodWithOriginalName("main");
     assertNull(main.getMethod().getCode().asDexCode().getDebugInfo());
+  }
+
+  private void checkPcBasedDebugInfo(CodeInspector inspector) {
+    ClassSubject clazz = inspector.clazz(MAIN);
+    MethodSubject main = clazz.uniqueMethodWithOriginalName("main");
+    assertTrue(main.getMethod().getCode().asDexCode().getDebugInfo().isPcBasedInfo());
   }
 
   private void checkHasLineNumberInfo(CodeInspector inspector) {

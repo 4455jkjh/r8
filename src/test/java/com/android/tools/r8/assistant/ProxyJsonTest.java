@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.assistant;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -62,6 +64,10 @@ public class ProxyJsonTest extends TestBase {
     assertEquals(ReflectiveEventType.PROXY_NEW_PROXY_INSTANCE, updater0.getEventType());
     assertEquals(ProxyTestClass.F.class.getName(), updater0.getInterfaces()[0].toSourceString());
     assertEquals(1, updater0.getInterfaces().length);
+    assertEquals(0, updater0.getId());
+    assertEquals(1, updater0.getResults().size());
+    // The proxy is summarized by its class name, which is runtime specific.
+    assertThat((String) updater0.getResults().get(0), containsString("$Proxy"));
 
     Box<KeepInfoCollectionExported> keepInfoBox = new Box<>();
     testForR8(parameters)

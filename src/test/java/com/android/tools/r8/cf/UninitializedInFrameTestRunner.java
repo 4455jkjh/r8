@@ -11,17 +11,36 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class UninitializedInFrameTestRunner extends TestBase {
   static final Class CLASS = UninitializedInFrameTest.class;
+
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public UninitializedInFrameTestRunner(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   @Test
   public void test() throws Exception {
@@ -41,7 +60,9 @@ public class UninitializedInFrameTestRunner extends TestBase {
     inputConsumer.accept(
         ByteDataView.of(clazz), DescriptorUtils.javaTypeToDescriptor(CLASS.getName()), null);
     inputConsumer.finished(null);
-    ProcessResult runInput = ToolHelper.runJava(input, CLASS.getCanonicalName());
+    ProcessResult runInput =
+        ToolHelper.runJava(
+            parameters.getRuntime().asCf(), ImmutableList.of(input), CLASS.getCanonicalName());
     if (runInput.exitCode != 0) {
       System.out.println(runInput);
     }
@@ -56,7 +77,9 @@ public class UninitializedInFrameTestRunner extends TestBase {
             .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(new ArchiveConsumer(output))
             .build());
-    ProcessResult runOutput = ToolHelper.runJava(output, CLASS.getCanonicalName());
+    ProcessResult runOutput =
+        ToolHelper.runJava(
+            parameters.getRuntime().asCf(), ImmutableList.of(output), CLASS.getCanonicalName());
     if (runOutput.exitCode != 0) {
       System.out.println(runOutput);
     }

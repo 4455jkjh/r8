@@ -47,6 +47,7 @@ public class YouTubeBenchmarks extends BenchmarkBase {
 
   private static void configure(R8FullTestBuilder testBuilder) {
     testBuilder
+        .addKeepAttributeInnerClassesAndEnclosingMethod()
         .addOptionsModification(
             options -> {
               options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces();

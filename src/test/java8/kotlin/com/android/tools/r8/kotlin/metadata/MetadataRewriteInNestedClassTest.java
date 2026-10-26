@@ -59,7 +59,7 @@ public class MetadataRewriteInNestedClassTest extends KotlinMetadataTestBase {
     Path libJar = nestedLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/nested_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -92,7 +92,7 @@ public class MetadataRewriteInNestedClassTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/nested_app", "main"))
             .setOutputPath(temp.newFolder().toPath())

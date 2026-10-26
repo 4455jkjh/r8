@@ -16,6 +16,7 @@ import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IRCodeInstructionListIterator;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
@@ -24,6 +25,7 @@ import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.PrimaryD8L8IRConverter;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Map;
@@ -125,6 +127,7 @@ public class ReflectiveInstrumentation {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void insertCallToMethod(
       DexMethod method,
       IRCode code,
@@ -134,15 +137,37 @@ public class ReflectiveInstrumentation {
     InvokeStatic invokeStatic =
         InvokeStatic.builder()
             .setMethod(method)
+            .setFreshOutValue(appView, code)
             .setArguments(invoke.inValues())
             // Same position so that the stack trace has the correct line number.
             .setPosition(invoke.getPosition())
             .build();
     instructionIterator.previous();
-    instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-        code, blockIterator, ImmutableList.of(invokeStatic), appView.options());
-    if (instructionIterator.hasNext()) {
-      instructionIterator.next();
+    InstructionListIterator iterator =
+        instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+            code, blockIterator, ImmutableList.of(invokeStatic), appView.options());
+    Instruction next = iterator.next();
+    assert next == invoke;
+    // Pass the id from the pre-call hook and the result to the after-call hook. If the reflective
+    // call throws, the after-call hook is not reached and the log has no returned line for it.
+    DexType returnType = invoke.getInvokedMethod().getReturnType();
+    if (returnType.isReferenceType() || returnType.isBooleanType()) {
+      if (!invoke.hasOutValue()) {
+        invoke.setOutValue(code.createValue(returnType.toTypeElement(appView)));
+      }
+      InvokeStatic onReturn =
+          InvokeStatic.builder()
+              .setMethod(
+                  returnType.isBooleanType()
+                      ? reflectiveReferences.onReturnBooleanMethod
+                      : reflectiveReferences.onReturnObjectMethod)
+              .setArguments(invokeStatic.outValue(), invoke.outValue())
+              .setPosition(invoke.getPosition())
+              .build();
+      iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+          code, blockIterator, ImmutableList.of(onReturn), appView.options());
+    } else {
+      throw new Unreachable("Unexpected return type: " + returnType);
     }
   }
 }

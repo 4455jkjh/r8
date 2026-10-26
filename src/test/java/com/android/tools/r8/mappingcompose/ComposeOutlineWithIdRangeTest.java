@@ -14,16 +14,20 @@ import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.MappingComposer;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class ComposeOutlineWithIdRangeTest extends TestBase {
-
-  @Parameter() public TestParameters parameters;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters().withNoneRuntime().build();
+  }
+
+  public ComposeOutlineWithIdRangeTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
   }
 
   private static final String mappingFoo =

@@ -11,4 +11,5 @@ dependencies {
   runtimeOnlyData(project(":third_party", "examplesAndroidN"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))
   runtimeOnlyData(project(":third_party", "jdk9"))
+  runtimeOnlyData(project(":third_party", "kotlinCompiler2_4_20"))
 }

@@ -127,12 +127,10 @@ public class MultipleMaximallySpecificTest extends TestBase {
         .addProgramClasses(getInputClasses())
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(
-            parameters.isCfRuntime()
-                    && parameters.asCfRuntime().isNewerThan(CfVm.JDK9)
-                    && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)
-                ? EXPECTED_AFTER_JDK9_AND_BEFORE_25_AND_ART
-                : EXPECTED_UPTO_JDK9_AND_AFTER_25);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThan(CfVm.JDK9) && vm.isOlderThan(CfVm.JDK25),
+            r -> r.assertSuccessWithOutput(EXPECTED_AFTER_JDK9_AND_BEFORE_25_AND_ART),
+            r -> r.assertSuccessWithOutput(EXPECTED_UPTO_JDK9_AND_AFTER_25));
   }
 
   @Test

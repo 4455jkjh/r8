@@ -8,13 +8,28 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.internal.HeapUtils;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class HeapDumpTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public HeapDumpTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void testHeapDump() throws Exception {

@@ -9,6 +9,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.naming.signature.GenericSignatureAction;
 import com.android.tools.r8.naming.signature.GenericSignatureParser;
 import com.google.common.collect.ImmutableList;
@@ -20,8 +22,21 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class GenericSignatureParserTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public GenericSignatureParserTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static class ReGenerateGenericSignatureRewriter
       implements GenericSignatureAction<String> {

@@ -7,6 +7,9 @@ import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowingBiFunction;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
@@ -28,10 +31,20 @@ import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(JUnit4.class)
-public class FilteredClassPathTest {
+@RunWith(Parameterized.class)
+public class FilteredClassPathTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public FilteredClassPathTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private void testPath(List<String> filters, List<String> positives, List<String> negatives) {
     FilteredClassPath path = makeFilteredClassPath(filters);

@@ -47,10 +47,6 @@ public class RetraceBackportMethodTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  private boolean isCfVmWithModulePrefix() {
-    return parameters.isCfRuntime() && !parameters.isCfRuntime(CfVm.JDK8);
-  }
-
   private boolean isApiWithFloorDivIntSupport() {
     return parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
   }
@@ -60,19 +56,18 @@ public class RetraceBackportMethodTest extends TestBase {
     parameters.assumeJvmTestParameters();
     boolean includeMathFrame = true;
     boolean includeExternalSyntheticFrame = false;
-    boolean includeJvmModule = isCfVmWithModulePrefix();
     boolean doNotCheckLines = true;
     testForJvm(parameters)
         .addProgramClasses(getInputClasses())
         .run(parameters.getRuntime(), CLASS_MAIN)
         .apply(this::checkRunResult)
-        .inspectStackTrace(
-            stackTrace ->
-                checkExpectedStackTrace(
-                    stackTrace,
+        .apply(
+            rr ->
+                inspectExpectedStackTrace(
+                    rr,
                     includeMathFrame,
                     includeExternalSyntheticFrame,
-                    includeJvmModule,
+                    true,
                     doNotCheckLines,
                     null));
   }
@@ -81,7 +76,6 @@ public class RetraceBackportMethodTest extends TestBase {
   public void testD8() throws Exception {
     boolean includeMathFrame = isApiWithFloorDivIntSupport();
     boolean includeExternalSyntheticFrame = !includeMathFrame;
-    boolean includeJvmModule = includeMathFrame && isCfVmWithModulePrefix();
     boolean doNotCheckLines = includeMathFrame;
     testForD8(parameters.getBackend())
         .addProgramClasses(getInputClasses())
@@ -91,22 +85,19 @@ public class RetraceBackportMethodTest extends TestBase {
         .apply(this::checkRunResult)
         .apply(
             rr ->
-                rr.inspectStackTrace(
-                    stackTrace ->
-                        checkExpectedStackTrace(
-                            stackTrace,
-                            includeMathFrame,
-                            includeExternalSyntheticFrame,
-                            includeJvmModule,
-                            doNotCheckLines,
-                            rr.getSyntheticItems())));
+                inspectExpectedStackTrace(
+                    rr,
+                    includeMathFrame,
+                    includeExternalSyntheticFrame,
+                    includeMathFrame,
+                    doNotCheckLines,
+                    rr.getSyntheticItems()));
   }
 
   @Test
   public void testD8DebugRetrace() throws Exception {
     boolean includeMathFrame = true;
     boolean includeExternalSyntheticFrame = false;
-    boolean includeJvmModule = isApiWithFloorDivIntSupport() && isCfVmWithModulePrefix();
     boolean doNotCheckLines = isApiWithFloorDivIntSupport();
     testForD8(parameters.getBackend())
         .debug()
@@ -118,22 +109,19 @@ public class RetraceBackportMethodTest extends TestBase {
         .apply(this::checkRunResult)
         .apply(
             rr ->
-                rr.inspectStackTrace(
-                    stackTrace ->
-                        checkExpectedStackTrace(
-                            stackTrace,
-                            includeMathFrame,
-                            includeExternalSyntheticFrame,
-                            includeJvmModule,
-                            doNotCheckLines,
-                            rr.getSyntheticItems())));
+                inspectExpectedStackTrace(
+                    rr,
+                    includeMathFrame,
+                    includeExternalSyntheticFrame,
+                    isApiWithFloorDivIntSupport(),
+                    doNotCheckLines,
+                    rr.getSyntheticItems()));
   }
 
   @Test
   public void testD8ReleaseRetrace() throws Exception {
     boolean includeMathFrame = true;
     boolean includeExternalSyntheticFrame = false;
-    boolean includeJvmModule = isApiWithFloorDivIntSupport() && isCfVmWithModulePrefix();
     boolean doNotCheckLines = isApiWithFloorDivIntSupport();
     testForD8(parameters.getBackend())
         .release()
@@ -145,15 +133,13 @@ public class RetraceBackportMethodTest extends TestBase {
         .apply(this::checkRunResult)
         .apply(
             rr ->
-                rr.inspectStackTrace(
-                    stackTrace ->
-                        checkExpectedStackTrace(
-                            stackTrace,
-                            includeMathFrame,
-                            includeExternalSyntheticFrame,
-                            includeJvmModule,
-                            doNotCheckLines,
-                            rr.getSyntheticItems())));
+                inspectExpectedStackTrace(
+                    rr,
+                    includeMathFrame,
+                    includeExternalSyntheticFrame,
+                    isApiWithFloorDivIntSupport(),
+                    doNotCheckLines,
+                    rr.getSyntheticItems()));
   }
 
   @Test
@@ -161,7 +147,6 @@ public class RetraceBackportMethodTest extends TestBase {
     parameters.assumeR8TestParameters();
     boolean includeMathFrame = true;
     boolean includeExternalSyntheticFrame = false;
-    boolean includeJvmModule = isCfVmWithModulePrefix();
     boolean doNotCheckLines = parameters.isCfRuntime() || isApiWithFloorDivIntSupport();
     testForR8(parameters.getBackend())
         .addProgramClasses(getInputClasses())
@@ -174,19 +159,49 @@ public class RetraceBackportMethodTest extends TestBase {
         .apply(this::checkRunResult)
         .apply(
             rr ->
-                rr.inspectStackTrace(
-                    stackTrace ->
-                        checkExpectedStackTrace(
-                            stackTrace,
-                            includeMathFrame,
-                            includeExternalSyntheticFrame,
-                            includeJvmModule,
-                            doNotCheckLines,
-                            rr.getSyntheticItems())));
+                inspectExpectedStackTrace(
+                    rr,
+                    includeMathFrame,
+                    includeExternalSyntheticFrame,
+                    true,
+                    doNotCheckLines,
+                    rr.getSyntheticItems()));
   }
 
   private void checkRunResult(TestRunResult<?> runResult) {
     runResult.assertFailureWithErrorThatThrows(ArithmeticException.class);
+  }
+
+  private void inspectExpectedStackTrace(
+      TestRunResult<?> runResult,
+      boolean includeMathFrame,
+      boolean includeExternalSyntheticFrame,
+      boolean includeJvmModuleIfSupported,
+      boolean doNotCheckLines,
+      SyntheticItemsTestUtils syntheticItems)
+      throws Exception {
+    runResult.applyIfCfRuntime(
+        vm -> vm != CfVm.JDK8,
+        r ->
+            r.inspectStackTrace(
+                stackTrace ->
+                    checkExpectedStackTrace(
+                        stackTrace,
+                        includeMathFrame,
+                        includeExternalSyntheticFrame,
+                        includeJvmModuleIfSupported,
+                        doNotCheckLines,
+                        syntheticItems)),
+        r ->
+            r.inspectStackTrace(
+                stackTrace ->
+                    checkExpectedStackTrace(
+                        stackTrace,
+                        includeMathFrame,
+                        includeExternalSyntheticFrame,
+                        false,
+                        doNotCheckLines,
+                        syntheticItems)));
   }
 
   private void checkExpectedStackTrace(

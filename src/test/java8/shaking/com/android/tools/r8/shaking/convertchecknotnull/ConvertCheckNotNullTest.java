@@ -82,20 +82,28 @@ public class ConvertCheckNotNullTest extends TestBase {
                   isAbsent());
             })
         .run(parameters.getRuntime(), Main.class)
-        .applyIfDexRuntime(
-            version -> version.isEqualToOneOf(Version.V8_1_0, Version.DEFAULT),
-            r -> r.assertSuccessWithOutput(getExpectedOutput(Version.V8_1_0)),
-            version -> version.isNewerThanOrEqual(Version.V5_1_1),
-            r -> r.assertSuccessWithOutput(getExpectedOutput(Version.V5_1_1)),
-            r -> r.assertSuccessWithOutput(getExpectedOutput(Version.V4_0_4)));
+        .applyIf(
+            parameters.isCfRuntime(),
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK17),
+                    rr -> rr.assertSuccessWithOutput(getExpectedOutput(CfVm.JDK17, null)),
+                    rr -> rr.assertSuccessWithOutput(getExpectedOutput(CfVm.JDK8, null))),
+            r ->
+                r.applyIfDexRuntime(
+                    version -> version.isEqualToOneOf(Version.V8_1_0, Version.DEFAULT),
+                    rr -> rr.assertSuccessWithOutput(getExpectedOutput(null, Version.V8_1_0)),
+                    version -> version.isNewerThanOrEqual(Version.V5_1_1),
+                    rr -> rr.assertSuccessWithOutput(getExpectedOutput(null, Version.V5_1_1)),
+                    rr -> rr.assertSuccessWithOutput(getExpectedOutput(null, Version.V4_0_4))));
   }
 
-  private String getExpectedOutput(Version dexRuntimeVersion) {
+  private String getExpectedOutput(CfVm cfVm, Version dexRuntimeVersion) {
     String message4 = "null";
     String message5 = "null";
     String message6 = "null";
     if (parameters.isCfRuntime()) {
-      if (parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK17)) {
+      if (cfVm.isNewerThanOrEqual(CfVm.JDK17)) {
         message4 = "Cannot invoke \"Object.getClass()\" because \"<local3>\" is null";
         message5 = "Cannot invoke \"Object.getClass()\" because \"<local4>\" is null";
         message6 = "Cannot invoke \"Object.getClass()\" because \"<local5>\" is null";

@@ -4,9 +4,7 @@
 
 package com.android.tools.r8.utils.internal;
 
-/**
- * Closed interval of two longs.
- */
+/** Closed interval of two longs. */
 public class LongInterval {
 
   private final long min;

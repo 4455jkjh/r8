@@ -15,6 +15,8 @@ import com.android.tools.r8.GenerateMainDexListCommand;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.origin.Origin;
@@ -31,8 +33,21 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class GenerateMainDexListCommandTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public GenerateMainDexListCommandTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();

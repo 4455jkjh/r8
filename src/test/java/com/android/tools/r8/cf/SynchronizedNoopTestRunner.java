@@ -10,7 +10,10 @@ import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfMonitor;
@@ -22,10 +25,23 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class SynchronizedNoopTestRunner {
+@RunWith(Parameterized.class)
+public class SynchronizedNoopTestRunner extends TestBase {
   private byte[] data;
   static final Class CLASS = SynchronizedNoopTest.class;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public SynchronizedNoopTestRunner(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void testSynchronizedNoop() throws Exception {

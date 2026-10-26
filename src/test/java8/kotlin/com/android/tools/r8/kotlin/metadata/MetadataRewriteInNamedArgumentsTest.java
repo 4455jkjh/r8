@@ -52,7 +52,7 @@ public class MetadataRewriteInNamedArgumentsTest extends KotlinMetadataTestBase 
     Path libJar = libJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(APP_LOCATION, "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -87,7 +87,7 @@ public class MetadataRewriteInNamedArgumentsTest extends KotlinMetadataTestBase 
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(APP_LOCATION, "main"))
             .setOutputPath(temp.newFolder().toPath())

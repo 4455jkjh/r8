@@ -15,7 +15,6 @@ import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
@@ -53,10 +52,10 @@ public class LambdaSplitByCodeCorrectnessTest extends KotlinTestBase {
   public void testSplitLambdaGroups() throws Exception {
     String PKG_NAME = LambdaSplitByCodeCorrectnessTest.class.getPackage().getName();
     String folder = DescriptorUtils.getInternalNameFromJavaType(PKG_NAME);
-    CfRuntime cfRuntime =
-        parameters.isCfRuntime() ? parameters.getRuntime().asCf() : TestRuntime.getCheckedInJdk9();
     Path ktClasses =
-        kotlinc(cfRuntime, kotlinParameters)
+        kotlinc(
+                parameters.isCfRuntime() ? parameters.getRuntime() : TestRuntime.getCheckedInJdk9(),
+                kotlinParameters)
             .addSourceFiles(getKotlinSourceFileFromResources(folder, "Simple"))
             .compile();
     testForR8(parameters.getBackend())

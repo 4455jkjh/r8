@@ -5,10 +5,25 @@
 package com.android.tools.r8.cf;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import java.util.Arrays;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class BasicBlockMuncherQuadraticTest extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public BasicBlockMuncherQuadraticTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   @Test
   public void testQuadratic() throws Exception {

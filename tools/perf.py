@@ -192,7 +192,8 @@ EXTERNAL_BENCHMARKS = {
 # A collection of internal benchmarks that should be run on the internal bot.
 INTERNAL_BENCHMARKS = {
     'SystemUIApp': {
-        'targets': ['r8-full']
+        'targets': ['r8-full'],
+        'enable_perf_size': True
     },
     'SystemUIAppGc': {
         'targets': ['r8-full']
@@ -203,16 +204,23 @@ INTERNAL_BENCHMARKS = {
         'variant': 'nolib'
     },
     'SystemUIAppPartial': {
-        'targets': ['r8-full']
+        'targets': ['r8-full'],
+        'enable_perf_size': True
     },
     'SystemUIAppContainerDex': {
-        'targets': ['r8-full']
+        'targets': ['r8-full'],
+        'enable_perf_size': True
     },
 }
 # A collection of internal benchmarks that should be run on the internal bot.
 INTERNAL_SLOW_BENCHMARKS = {
     'AGSA': {
-        'targets': ['r8-full']
+        'targets': ['r8-full'],
+        'enable_perf_size': True
+    },
+    'YouTubeApp': {
+        'targets': ['r8-full'],
+        'enable_perf_size': True
     },
 }
 # A collection of benchmarks that should not be run on the bots, but can be used
@@ -222,9 +230,6 @@ LOCAL_BENCHMARKS = {
         'targets': ['r8-full']
     },
     'SystemUIAppTreeShaking': {
-        'targets': ['r8-full']
-    },
-    'YouTubeApp': {
         'targets': ['r8-full']
     },
 }

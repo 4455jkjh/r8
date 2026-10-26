@@ -52,19 +52,20 @@ public class SharedBootstrapMethodConstantDynamicTest extends TestBase {
   @Test
   public void testReference() throws Exception {
     assumeTrue(parameters.isCfRuntime());
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK11));
     assumeTrue(parameters.getApiLevel().isEqualTo(AndroidApiLevel.B));
 
     testForJvm(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
   public void testD8CfNoDesugar() throws Exception {
     assumeTrue(parameters.isCfRuntime());
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK11));
     assumeTrue(parameters.getApiLevel().isEqualTo(AndroidApiLevel.B));
 
     testForD8(parameters.getBackend())
@@ -74,7 +75,10 @@ public class SharedBootstrapMethodConstantDynamicTest extends TestBase {
         .compile()
         .assertNoMessages()
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test

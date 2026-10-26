@@ -81,7 +81,7 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
   @Test
   public void smokeTest() throws Exception {
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJars.getForConfiguration(kotlinParameters))
             .addSourceFilesWithNonKtExtension(temp, MAIN_FILE)
             .setOutputPath(temp.newFolder().toPath())
@@ -122,7 +122,7 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
                         new CodeInspector(libJars.getForConfiguration(kotlinParameters))))
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFilesWithNonKtExtension(temp, MAIN_FILE)
             .setOutputPath(temp.newFolder().toPath())
@@ -181,7 +181,7 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
 
     Path libJar = r8LibraryResult.writeToZip();
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(newSource)
             .setOutputPath(temp.newFolder().toPath())

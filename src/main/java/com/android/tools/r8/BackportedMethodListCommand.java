@@ -241,7 +241,7 @@ public class BackportedMethodListCommand {
     }
 
     Builder setMinApiLevel(UncheckedApiLevel minApiLevel) {
-      this.minApiLevel = minApiLevel;
+      BaseCommand.validateMinApiLevel(minApiLevel, reporter, level -> this.minApiLevel = level);
       return this;
     }
 

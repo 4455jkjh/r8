@@ -139,9 +139,11 @@ public class KotlinxCoroutinesTestRunner extends KotlinMetadataTestBase {
     if (notWorkingTests.contains(testName)) {
       return;
     }
-    ProcessResult processResult =
-        ToolHelper.runJava(
-            parameters.getRuntime().asCf(), dependencies, "org.junit.runner.JUnitCore", testName);
-    assertEquals(0, processResult.exitCode);
+    for (com.android.tools.r8.TestRuntime.CfRuntime cfRuntime :
+        parameters.getRuntime().asCfRuntimes()) {
+      ProcessResult processResult =
+          ToolHelper.runJava(cfRuntime, dependencies, "org.junit.runner.JUnitCore", testName);
+      assertEquals(0, processResult.exitCode);
+    }
   }
 }

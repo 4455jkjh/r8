@@ -78,6 +78,10 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
   private static final int MAX_CAPACITY = 10000;
   private static final int MIN_CAPACITY_PER_BLOCK = 50;
+  // Each final static field value cached from a static-get extends the live range of its value.
+  // Bound the number of such values to avoid excessive register pressure in methods that read many
+  // final static fields.
+  private static final int MAX_FINAL_STATIC_FIELD_VALUES_FROM_STATIC_GET = 100;
 
   public RedundantLoadAndStoreElimination(AppView<?> appView) {
     super(appView);
@@ -970,7 +974,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
       ExistingOrMaterializableValue value = new ExistingValue(staticGet.value());
       if (field.isFinalOrEffectivelyFinal(appView)) {
-        activeState.putFinalStaticField(field.getReference(), value);
+        activeState.putFinalStaticFieldFromStaticGet(field.getReference(), value);
       } else {
         activeState.putNonFinalStaticField(field.getReference(), value);
       }
@@ -1679,6 +1683,16 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         finalStaticFieldValues = new LinkedHashMap<>();
       }
       finalStaticFieldValues.put(field, value);
+    }
+
+    public void putFinalStaticFieldFromStaticGet(
+        DexField field, ExistingOrMaterializableValue value) {
+      assert finalStaticFieldValues == null || !finalStaticFieldValues.containsKey(field);
+      if (finalStaticFieldValues != null
+          && finalStaticFieldValues.size() >= MAX_FINAL_STATIC_FIELD_VALUES_FROM_STATIC_GET) {
+        reduceSize(1, finalStaticFieldValues);
+      }
+      putFinalStaticField(field, value);
     }
 
     public InstancePut putMostRecentInstanceFieldWrite(

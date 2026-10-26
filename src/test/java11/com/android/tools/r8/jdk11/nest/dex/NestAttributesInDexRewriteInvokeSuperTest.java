@@ -8,13 +8,10 @@ import static com.android.tools.r8.utils.codeinspector.AssertUtils.assertFailsCo
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.PartialCompilationTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
@@ -50,14 +47,14 @@ public class NestAttributesInDexRewriteInvokeSuperTest extends NestAttributesInD
 
   @Test
   public void testRuntime() throws Exception {
-    assumeTrue(
-        parameters.isCfRuntime()
-            && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK11)
-            && parameters.getApiLevel().isEqualTo(AndroidApiLevel.B));
+    parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addProgramClassFileData(dumpHost(), dumpMember(), dumpSubMember())
         .run(parameters.getRuntime(), "Host")
-        .assertSuccessWithOutputLines(EXPECTED_OUTPUT_LINES);
+        .applyIfCfRuntime(
+            this::isRuntimeWithNestSupport,
+            r -> r.assertSuccessWithOutputLines(EXPECTED_OUTPUT_LINES),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   private int nonConstructorInvokeDirectCount(MethodSubject method) {

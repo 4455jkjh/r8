@@ -621,7 +621,8 @@ public class JumboStringCodeRewriter {
 
   private void recordDebugEventTargets(
       Int2ReferenceMap<DexInstruction> offsetToInstruction, DexInstruction lastInstruction) {
-    EventBasedDebugInfo eventBasedInfo = DexDebugInfo.convertToEventBased(getCode(), factory);
+    EventBasedDebugInfo eventBasedInfo =
+        DexDebugInfo.convertToEventBased(getCode(), factory, method.getReference());
     if (eventBasedInfo == null) {
       if (materializeInfoForNativePc.getAsBoolean()) {
         eventBasedInfo =

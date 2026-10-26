@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.debug.CfDebugTestConfig;
 import com.android.tools.r8.testing.AndroidBuildVersion;
@@ -21,7 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-public class JvmTestBuilder extends TestBuilder<SingleTestRunResult, JvmTestBuilder> {
+public class JvmTestBuilder extends TestBuilder<JvmTestMultiRunResult, JvmTestBuilder> {
 
   // Ordered list of classpath entries.
   private List<Path> classpath = new ArrayList<>();
@@ -58,13 +59,18 @@ public class JvmTestBuilder extends TestBuilder<SingleTestRunResult, JvmTestBuil
   }
 
   @Override
-  public SingleTestRunResult run(TestRuntime runtime, String mainClass, String... args)
+  public JvmTestMultiRunResult run(TestRuntime runtime, String mainClass, String... args)
       throws IOException {
     assert runtime.isCf();
-    ProcessResult result =
-        ToolHelper.runJava(
-            runtime.asCf(), vmArguments, classpath, ObjectArrays.concat(mainClass, args));
-    return new SingleTestRunResult(builder.build(), runtime, result, getState());
+    AndroidApp app = builder.build();
+    List<CfRuntime> cfRuntimes = runtime.asCfRuntimes();
+    List<SingleTestRunResult> singleRunResults = new ArrayList<>(cfRuntimes.size());
+    String[] arguments = ObjectArrays.concat(mainClass, args);
+    for (CfRuntime cfRuntime : cfRuntimes) {
+      ProcessResult result = ToolHelper.runJava(cfRuntime, vmArguments, classpath, arguments);
+      singleRunResults.add(new SingleTestRunResult(app, cfRuntime, result, getState()));
+    }
+    return new JvmTestMultiRunResult(app, getState(), singleRunResults);
   }
 
   @Override

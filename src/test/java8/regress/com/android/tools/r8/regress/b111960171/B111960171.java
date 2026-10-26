@@ -10,6 +10,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -22,6 +25,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 class TestClass {
   public void f(int x, double y, double u, double v, List<Object> w) {
@@ -42,7 +48,17 @@ class TestClass {
   }
 }
 
-public class B111960171 {
+@RunWith(Parameterized.class)
+public class B111960171 extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public B111960171(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private MethodSubject compileTestClassAndGetMethod(int apiLevel)
       throws IOException, CompilationFailedException {

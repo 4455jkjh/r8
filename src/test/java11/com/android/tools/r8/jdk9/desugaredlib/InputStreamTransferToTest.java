@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,16 +55,18 @@ public class InputStreamTransferToTest extends DesugaredLibraryTestBase {
 
   @Test
   public void test() throws Exception {
-    // The method is not present on JDK8 so if we don't desugar that won't work.
-    Assume.assumeFalse(
-        parameters.isCfRuntime(CfVm.JDK8)
-            && !libraryDesugaringSpecification.hasNioFileDesugaring(parameters)
-            && compilationSpecification.isCfToCf());
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(MAIN_CLASS)
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            // The method is not present on JDK8 so if we don't desugar that won't work.
+            vm ->
+                vm == CfVm.JDK8
+                    && !libraryDesugaringSpecification.hasNioFileDesugaring(parameters)
+                    && compilationSpecification.isCfToCf(),
+            r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 
   public static class MyInputStream extends ByteArrayInputStream {

@@ -5,6 +5,7 @@ package com.android.tools.r8;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
@@ -31,6 +32,9 @@ public class PlaywrightTestBase extends TestBase {
   private final List<Request> failedRequests = new ArrayList<>();
 
   public Page getPage(boolean headful) {
+    // chrome-headless-shell does not start in the Windows Server containers of the Kokoro Windows
+    // bots.
+    assumeFalse(ToolHelper.isWindows());
     if (page == null) {
       initPage(headful);
     }

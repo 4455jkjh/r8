@@ -3,10 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.kotlin.metadata;
 
-import static org.junit.Assert.assertEquals;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndNotRenamed;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
@@ -54,7 +54,7 @@ public class MetadataRewriteEnumTest extends KotlinMetadataTestBase {
   public void smokeTest() throws Exception {
     Path libJar = jarMap.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/enum_app", "main"))
             .compile();
@@ -84,7 +84,7 @@ public class MetadataRewriteEnumTest extends KotlinMetadataTestBase {
                   direction.allFields().forEach(field -> assertTrue(field.isRenamed()));
                 });
     ProcessResult kotlinCompileResult =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(r8libResult.writeToZip())
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/enum_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -116,7 +116,7 @@ public class MetadataRewriteEnumTest extends KotlinMetadataTestBase {
                   Assert.assertEquals(expectedEnumNames, kmClass.getEnumEntries());
                 });
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(jarMap.getForConfiguration(kotlinParameters))
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/enum_app", "main"))
             .compile();

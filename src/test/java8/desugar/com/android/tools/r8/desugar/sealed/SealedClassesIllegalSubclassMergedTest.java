@@ -8,12 +8,12 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRena
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -65,22 +65,24 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
         .addProgramClassFileData(getTransformedAnotherSuper());
   }
 
-  private Matcher<String> illegalPermittedSubclassesMatcher() {
-    return parameters.isDexRuntime()
-        ? EXPECTED_ART
-        : (parameters.isCfRuntime() && parameters.asCfRuntime().isOlderThan(CfVm.JDK25)
-            ? EXPECTED_BEFORE_JDK25
-            : EXPECTED_FROM_JDK25);
+  private void checkIllegalPermittedSubclassesError(TestRunResult<?> runResult) {
+    if (parameters.isDexRuntime()) {
+      runResult.assertFailureWithErrorThatMatches(EXPECTED_ART);
+    } else {
+      runResult.applyIfCfRuntime(
+          vm -> vm.isOlderThan(CfVm.JDK25),
+          r -> r.assertFailureWithErrorThatMatches(EXPECTED_BEFORE_JDK25),
+          r -> r.assertFailureWithErrorThatMatches(EXPECTED_FROM_JDK25));
+    }
   }
 
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForJvm(parameters)
         .apply(this::addTestClasses)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertFailureWithErrorThatMatches(illegalPermittedSubclassesMatcher());
+        .apply(this::checkIllegalPermittedSubclassesError);
   }
 
   private void inspect(CodeInspector inspector) {
@@ -104,7 +106,7 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
             parameters.hasSealedClassesRuntimeCheck(),
-            r -> r.assertFailureWithErrorThatMatches(illegalPermittedSubclassesMatcher()),
+            this::checkIllegalPermittedSubclassesError,
             r ->
                 r.assertSuccessWithOutput(
                     EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE_OR_FIXED_ATTRIBUTE));
@@ -130,7 +132,7 @@ public class SealedClassesIllegalSubclassMergedTest extends TestBase {
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
             parameters.hasSealedClassesRuntimeCheck(),
-            r -> r.assertFailureWithErrorThatMatches(illegalPermittedSubclassesMatcher()),
+            this::checkIllegalPermittedSubclassesError,
             r ->
                 r.assertSuccessWithOutput(
                     EXPECTED_WITHOUT_PERMITTED_SUBCLASSES_ATTRIBUTE_OR_FIXED_ATTRIBUTE));

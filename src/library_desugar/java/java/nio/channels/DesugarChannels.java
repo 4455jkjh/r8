@@ -46,5 +46,4 @@ public class DesugarChannels {
     }
     return DesugarFileChannel.openEmulatedFileChannel(path, openOptions, attrs);
   }
-
 }

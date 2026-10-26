@@ -107,9 +107,10 @@ public class MetadataRewriteInTypeArgumentsTest extends KotlinMetadataTestBase {
     Path libJar = jarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/typeargument_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/typeargument_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -145,9 +146,10 @@ public class MetadataRewriteInTypeArgumentsTest extends KotlinMetadataTestBase {
             .inspect(this::inspect)
             .writeToZip();
     Path mainJar =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/typeargument_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/typeargument_app", "main"))
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
       return;

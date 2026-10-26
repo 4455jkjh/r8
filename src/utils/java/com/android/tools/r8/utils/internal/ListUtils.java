@@ -355,6 +355,17 @@ public class ListUtils {
     void accept(T item, int index);
   }
 
+  public static <T> List<T> sort(Iterable<T> items, Comparator<T> comparator) {
+    if (items instanceof Collection<?>) {
+      return sort((Collection<T>) items, comparator);
+    }
+    ArrayList<T> sorted = new ArrayList<>();
+    Iterables.addAll(sorted, items);
+    sorted.trimToSize();
+    sorted.sort(comparator);
+    return sorted;
+  }
+
   public static <T> List<T> sort(Iterable<T> items, Comparator<T> comparator, int numberOfItems) {
     List<T> sorted = new ArrayList<>(numberOfItems);
     Iterables.addAll(sorted, items);

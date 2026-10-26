@@ -6,6 +6,7 @@ package com.android.tools.r8.assistant.runtime;
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.lang.reflect.InvocationHandler;
+import java.util.Locale;
 
 @KeepForApi
 public class EmptyReflectiveOperationReceiver implements ReflectiveOperationReceiver {
@@ -16,89 +17,165 @@ public class EmptyReflectiveOperationReceiver implements ReflectiveOperationRece
   }
 
   @Override
-  public void onClassForName(
-      Stack stack, String className, boolean initialize, ClassLoader classLoader) {}
+  public int onClassForName(
+      Stack stack, String className, boolean initialize, ClassLoader classLoader) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetComponentType(Stack stack, Class<?> clazz) {}
+  public int onClassGetComponentType(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetPackage(Stack stack, Class<?> clazz) {}
+  public int onClassGetPackage(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {}
+  public int onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassNewInstance(Stack stack, Class<?> clazz) {}
+  public int onClassNewInstance(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetDeclaredMethod(
-      Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {}
+  public int onClassGetDeclaredMethod(
+      Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {}
+  public int onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetDeclaredField(
-      Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {}
+  public int onClassGetDeclaredField(
+      Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetDeclaredFields(Stack stack, Class<?> clazz) {}
+  public int onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {}
+  public int onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {}
+  public int onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetMethod(
-      Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {}
+  public int onClassGetMethod(
+      Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetMethods(Stack stack, Class<?> clazz) {}
+  public int onClassGetMethods(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {}
+  public int onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetFields(Stack stack, Class<?> clazz) {}
+  public int onClassGetFields(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {}
+  public int onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetConstructors(Stack stack, Class<?> clazz) {}
+  public int onClassGetConstructors(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {}
+  public int onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassGetSuperclass(Stack stack, Class<?> clazz) {}
+  public int onClassGetSuperclass(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {}
+  public int onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassIsInstance(Stack stack, Class<?> holder, Object object) {}
+  public int onClassIsInstance(Stack stack, Class<?> holder, Object object) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassCast(Stack stack, Class<?> holder, Object object) {}
+  public int onClassCast(Stack stack, Class<?> holder, Object object) {
+    return NO_ID;
+  }
 
   @Override
-  public void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {}
+  public int onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {
+    return NO_ID;
+  }
 
   @Override
-  public void onAtomicFieldUpdaterNewUpdater(
-      Stack stack, Class<?> fieldClass, Class<?> clazz, String name) {}
+  public int onAtomicFieldUpdaterNewUpdater(
+      Stack stack, Class<?> fieldClass, Class<?> clazz, String name) {
+    return NO_ID;
+  }
 
   @Override
-  public void onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {}
+  public int onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
+    return NO_ID;
+  }
 
   @Override
-  public void onProxyNewProxyInstance(
+  public int onProxyNewProxyInstance(
       Stack stack,
       ClassLoader classLoader,
       Class<?>[] interfaces,
-      InvocationHandler invocationHandler) {}
+      InvocationHandler invocationHandler) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetGenericSuperclass(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetGenericInterfaces(Stack stack, Class<?> clazz) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassLoaderLoadClass(Stack stack, ClassLoader classLoader, String className) {
+    return NO_ID;
+  }
+
+  @Override
+  public int onResourceBundleGetBundle(
+      Stack stack, String baseName, Locale locale, ClassLoader classLoader) {
+    return NO_ID;
+  }
+
+  @Override
+  public void onReflectiveOperationReturned(int id, Object result) {}
 }

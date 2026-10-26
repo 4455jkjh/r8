@@ -375,7 +375,8 @@ public class ResourceShrinkerEnqueuerExtension
 
   @Override
   public void done(Enqueuer enqueuer, ExecutorService executorService) {
-    resourceShrinkerState.enqueuerDone(enqueuer.getMode().isFinalTreeShaking());
+    resourceShrinkerState.enqueuerDone(
+        enqueuer.getMode().isFinalTreeShaking() || !appView.options().shouldRerunEnqueuer());
   }
 
   private void populateRClassValues(DexProgramClass programClass) {

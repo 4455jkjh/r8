@@ -5,7 +5,6 @@
 package com.android.tools.r8.jdk17.records;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.R8TestBuilder;
@@ -13,9 +12,9 @@ import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
@@ -61,12 +60,6 @@ public class RecordBlogTest extends TestBase {
         .build();
   }
 
-  private boolean isCfRuntimeWithNativeRecordSupport() {
-    return parameters.isCfRuntime()
-        && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
-        && parameters.getApiLevel().equals(AndroidApiLevel.B);
-  }
-
   private String getExpectedOutputFromKeepRule(String keepRule) {
     String template = null;
     if (parameters.getPartialCompilationTestParameters().isIncludeAll()) {
@@ -105,11 +98,15 @@ public class RecordBlogTest extends TestBase {
 
   @Test
   public void testReference() throws Exception {
-    assumeTrue(isCfRuntimeWithNativeRecordSupport());
+    parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addProgramClassesAndInnerClasses(RecordBlog.class)
         .run(parameters.getRuntime(), RecordBlog.class)
-        .assertSuccessWithOutput(getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE));
+        .applyIfCfRuntime(
+            CfVm::hasRecordsSupport,
+            r ->
+                r.assertSuccessWithOutput(getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE)),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -117,21 +114,30 @@ public class RecordBlogTest extends TestBase {
     testForD8(parameters)
         .addProgramClassesAndInnerClasses(RecordBlog.class)
         .run(parameters.getRuntime(), RecordBlog.class)
-        .applyIfDexRuntime(
-            isRecordsFullyDesugaredForD8(parameters)
-                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+        .applyIf(
+            isRecordsFullyDesugaredForD8(parameters),
             r ->
                 r.assertSuccessWithOutput(getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE)),
-            Version::hasRecordsSupport,
+            parameters.isCfRuntime(),
             r ->
-                r.assertSuccessWithOutput(getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE)),
-            r -> r.assertFailureWithErrorThatThrows(ClassNotFoundException.class));
+                r.applyIfCfRuntime(
+                    CfVm::hasRecordsSupport,
+                    rr ->
+                        rr.assertSuccessWithOutput(
+                            getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE)),
+                    rr -> rr.assertFailureWithErrorThatThrows(ClassNotFoundException.class)),
+            r ->
+                r.applyIfDexRuntime(
+                    Version::hasRecordsSupport,
+                    rr ->
+                        rr.assertSuccessWithOutput(
+                            getExpectedOutputFromTemplate(REFERENCE_OUTPUT_TEMPLATE)),
+                    rr -> rr.assertFailureWithErrorThatThrows(ClassNotFoundException.class)));
   }
 
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isCfRuntimeWithNativeRecordSupport());
     Map<String, String> results = new HashMap<>();
     KEEP_RULE_TO_OUTPUT_FORMAT.forEach(
         (kr, outputFormat) -> {
@@ -145,8 +151,16 @@ public class RecordBlogTest extends TestBase {
               builder
                   .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
                   .run(parameters.getRuntime(), RecordBlog.class)
-                  .assertSuccess()
-                  .inspectStdOut(res -> results.put(kr, res));
+                  .applyIfCfRuntime(
+                      CfVm::hasRecordsSupport,
+                      r ->
+                          r.assertSuccess()
+                              .inspectStdOut(
+                                  res -> {
+                                    String previous = results.put(kr, res);
+                                    assertTrue(previous == null || previous.equals(res));
+                                  }),
+                      r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
             } else {
               builder
                   .run(parameters.getRuntime(), RecordBlog.class)
@@ -165,6 +179,12 @@ public class RecordBlogTest extends TestBase {
             }
           }
         });
+    if (parameters.isCfRuntime()
+        && parameters.getRuntime().asCfRuntimes().stream()
+            .noneMatch(CfRuntime::hasRecordsSupport)) {
+      assertTrue(results.isEmpty());
+      return;
+    }
     boolean success = true;
     for (String kr : KEEP_RULE_TO_OUTPUT_FORMAT.keySet()) {
       if (!isExpectedOutput(kr, results)) {

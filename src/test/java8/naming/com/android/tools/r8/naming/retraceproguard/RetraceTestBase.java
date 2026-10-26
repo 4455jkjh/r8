@@ -22,7 +22,7 @@ import org.junit.Before;
 public abstract class RetraceTestBase extends TestBase {
 
   public static TestParametersBuilder getTestParameters() {
-    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+    return TestBase.getTestParameters().withoutCollapsedCfRuntimes().withoutCollapsedDexRuntimes();
   }
 
   protected TestParameters parameters;

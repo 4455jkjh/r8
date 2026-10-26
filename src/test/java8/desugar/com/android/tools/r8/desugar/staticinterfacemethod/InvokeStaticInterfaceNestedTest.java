@@ -49,15 +49,18 @@ public class InvokeStaticInterfaceNestedTest extends TestBase {
     boolean didDesugarInterfaceMethods =
         isDesugared && !parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring();
     if (parameters.isCfRuntime()) {
-      if (parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK9)) {
-        // The correct expected behavior is ICCE.
-        runResult.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
-      } else if (didDesugarInterfaceMethods) {
-        runResult.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
-      } else {
-        // Dex VMs and JDK 8 will just dispatch (this is not the intended behavior).
-        runResult.assertSuccessWithOutputLines(UNEXPECTED_SUCCESS);
-      }
+      runResult.applyIfCfRuntime(
+          vm -> vm.isNewerThanOrEqual(CfVm.JDK9),
+          // The correct expected behavior is ICCE.
+          r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
+          r -> {
+            if (didDesugarInterfaceMethods) {
+              r.assertFailureWithErrorThatThrows(NoSuchMethodError.class);
+            } else {
+              // Dex VMs and JDK 8 will just dispatch (this is not the intended behavior).
+              r.assertSuccessWithOutputLines(UNEXPECTED_SUCCESS);
+            }
+          });
       return;
     }
     if (parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring()) {

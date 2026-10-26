@@ -50,16 +50,18 @@ public class MetadataRewriteInParameterTypeTest extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer parameterTypeLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/parametertype_lib", "lib"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/parametertype_lib", "lib"));
 
   @Test
   public void smokeTest() throws Exception {
     Path libJar = parameterTypeLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/parametertype_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/parametertype_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -86,9 +88,10 @@ public class MetadataRewriteInParameterTypeTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/parametertype_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/parametertype_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
@@ -115,12 +118,17 @@ public class MetadataRewriteInParameterTypeTest extends KotlinMetadataTestBase {
     KmClassSubject kmClass = impl.getKmClass();
     assertThat(kmClass, isPresent());
     List<ClassSubject> superTypes = kmClass.getSuperTypes();
-    assertTrue(superTypes.stream().noneMatch(
-        supertype -> supertype.getFinalDescriptor().contains("Itf")));
-    assertTrue(superTypes.stream().anyMatch(
-        supertype -> supertype.getFinalDescriptor().equals(itf.getFinalDescriptor())));
+    assertTrue(
+        superTypes.stream().noneMatch(supertype -> supertype.getFinalDescriptor().contains("Itf")));
+    assertTrue(
+        superTypes.stream()
+            .anyMatch(
+                supertype -> supertype.getFinalDescriptor().equals(itf.getFinalDescriptor())));
     List<ClassSubject> parameterTypes = kmClass.getParameterTypesInFunctions();
-    assertTrue(parameterTypes.stream().anyMatch(
-        parameterType -> parameterType.getFinalDescriptor().equals(itf.getFinalDescriptor())));
+    assertTrue(
+        parameterTypes.stream()
+            .anyMatch(
+                parameterType ->
+                    parameterType.getFinalDescriptor().equals(itf.getFinalDescriptor())));
   }
 }

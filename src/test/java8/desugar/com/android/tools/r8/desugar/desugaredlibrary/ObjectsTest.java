@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.hamcrest.Matcher;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -297,10 +296,6 @@ public class ObjectsTest extends DesugaredLibraryTestBase implements Opcodes {
 
   @Test
   public void testObjects() throws Throwable {
-    Assume.assumeFalse(
-        "Method is absent on JDK8",
-        parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.R)
-            && parameters.isCfRuntime(CfVm.JDK8));
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClasses(getClass())
         .addProgramClassFileData(ImmutableList.of(dumpAndroidRUtilsObjectsMethods()))
@@ -313,7 +308,12 @@ public class ObjectsTest extends DesugaredLibraryTestBase implements Opcodes {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        .applyIfCfRuntime(
+            vm ->
+                parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.R)
+                    && vm == CfVm.JDK8,
+            r -> r.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
   }
 
   static class TestClass {

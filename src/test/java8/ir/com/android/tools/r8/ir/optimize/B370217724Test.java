@@ -40,8 +40,8 @@ public class B370217724Test extends TestBase {
     testForJvm(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK9),
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK9),
             r -> r.assertSuccessWithOutput(OUTPUT_FROM_JVM9),
             r -> r.assertSuccessWithOutput(OUTPUT_JVM8));
   }
@@ -63,14 +63,12 @@ public class B370217724Test extends TestBase {
         .addKeepMainRule(TestClass.class)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isCfRuntime(),
-            r ->
-                r.assertSuccessWithOutput(
-                    parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK9)
-                        ? OUTPUT_FROM_JVM9
-                        : OUTPUT_JVM8),
-            r -> r.assertSuccessWithOutputThatMatches(anyOf(is(OUTPUT_ART_1), is(OUTPUT_ART_2))));
+        .applyIfCfRuntime(
+            parameters.isDexRuntime(),
+            r -> r.assertSuccessWithOutputThatMatches(anyOf(is(OUTPUT_ART_1), is(OUTPUT_ART_2))),
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK9),
+            r -> r.assertSuccessWithOutput(OUTPUT_FROM_JVM9),
+            r -> r.assertSuccessWithOutput(OUTPUT_JVM8));
   }
 
   static class TestClass {

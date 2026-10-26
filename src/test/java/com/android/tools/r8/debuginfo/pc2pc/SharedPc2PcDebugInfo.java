@@ -3,15 +3,16 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debuginfo.pc2pc;
 
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -19,6 +20,8 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class SharedPc2PcDebugInfo extends TestBase {
@@ -26,15 +29,21 @@ public class SharedPc2PcDebugInfo extends TestBase {
   static final List<String> METHODS = Arrays.asList("m1", "m2", "m3", "m4");
   static final String EXPECTED = StringUtils.lines(METHODS);
 
-  private final TestParameters parameters;
+  @Parameter(0)
+  public boolean enableShareDebugInfoForDifferentParameterSizes;
 
-  @Parameterized.Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withDefaultDexRuntime().withApiLevel(AndroidApiLevel.B).build();
-  }
+  @Parameter(1)
+  public TestParameters parameters;
 
-  public SharedPc2PcDebugInfo(TestParameters parameters) {
-    this.parameters = parameters;
+  @Parameters(name = "{1}, enableShareDebugInfoForDifferentParameterSizes: {0}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        BooleanUtils.values(),
+        getTestParameters()
+            .withDefaultDexRuntime()
+            .withApiLevel(AndroidApiLevel.B)
+            .withApiLevel(AndroidApiLevel.N)
+            .build());
   }
 
   @Test
@@ -43,6 +52,10 @@ public class SharedPc2PcDebugInfo extends TestBase {
         .addProgramClasses(TestClass.class)
         .addKeepClassAndMembersRules(TestClass.class)
         .addKeepAttributeLineNumberTable()
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes =
+                    enableShareDebugInfoForDifferentParameterSizes)
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), TestClass.class)
@@ -50,9 +63,6 @@ public class SharedPc2PcDebugInfo extends TestBase {
         .inspect(
             inspector -> {
               ClassSubject clazz = inspector.clazz(TestClass.class);
-              DexEncodedMethod mainMethod = clazz.mainMethod().getMethod();
-              // The main method debug info is smallest using normal line increments.
-              assertTrue(mainMethod.getCode().asDexCode().getDebugInfo().isEventBasedInfo());
               // The mX methods can share the pc encoding which is smaller than the sum of the
               // normal encodings.
               DexDebugInfo shared = null;
@@ -63,6 +73,15 @@ public class SharedPc2PcDebugInfo extends TestBase {
                 // The DEX parser should allocate the same shared instance to each method.
                 assertTrue(shared == null || debugInfo == shared);
                 shared = debugInfo;
+              }
+              DexEncodedMethod mainMethod = clazz.mainMethod().getMethod();
+              DexDebugInfo mainDebugInfo = mainMethod.getCode().asDexCode().getDebugInfo();
+              if (enableShareDebugInfoForDifferentParameterSizes
+                  && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)) {
+                assertSame(shared, mainDebugInfo);
+              } else {
+                // The main method debug info is smallest using normal line increments.
+                assertTrue(mainDebugInfo.isEventBasedInfo());
               }
             });
   }

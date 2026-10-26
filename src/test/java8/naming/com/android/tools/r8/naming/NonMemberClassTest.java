@@ -33,15 +33,16 @@ public class NonMemberClassTest extends TestBase {
       }
       new Local();
 
-      Runnable r = new Runnable() {
-        @NeverInline
-        @Override
-        public void run() {
-          if (this.getClass().isAnonymousClass()) {
-            System.out.println("I'm anonymous.");
-          }
-        }
-      };
+      Runnable r =
+          new Runnable() {
+            @NeverInline
+            @Override
+            public void run() {
+              if (this.getClass().isAnonymousClass()) {
+                System.out.println("I'm anonymous.");
+              }
+            }
+          };
       r.run();
     }
   }
@@ -73,7 +74,7 @@ public class NonMemberClassTest extends TestBase {
       }
     }
 
-    public String getExpectedOutput(TestParameters parameters, boolean isFullMode) {
+    public String getExpectedOutput(TestParameters parameters, boolean isFullMode, boolean isJdk8) {
       // In full mode, we remove all attributes since nothing pinned, i.e., no reflection uses.
       if (isFullMode) {
         return "";
@@ -84,8 +85,7 @@ public class NonMemberClassTest extends TestBase {
           return JVM_OUTPUT;
         case KEEP_ALLOW_MINIFICATION:
         case NO_KEEP_MINIFICATION:
-          if (parameters.isCfRuntime()
-              && parameters.getRuntime().asCf().getVm().lessThanOrEqual(CfVm.JDK8)) {
+          if (parameters.isCfRuntime() && isJdk8) {
             return MINIFIED_OUTPUT_JDK8;
           }
           return JVM_OUTPUT;
@@ -116,13 +116,8 @@ public class NonMemberClassTest extends TestBase {
   // e.g., 1 or more digits (followed by the simple name if it's local).
   // Since JDK9, the simple name is computed by stripping off the package name.
   // See b/132808897 for more details.
-  private static final String MINIFIED_OUTPUT_JDK8 = StringUtils.lines(
-      "I'm local."
-  );
-  private static final String JVM_OUTPUT = StringUtils.lines(
-      "I'm local.",
-      "I'm anonymous."
-  );
+  private static final String MINIFIED_OUTPUT_JDK8 = StringUtils.lines("I'm local.");
+  private static final String JVM_OUTPUT = StringUtils.lines("I'm local.", "I'm anonymous.");
 
   private final TestParameters parameters;
   private final TestConfig config;
@@ -162,7 +157,10 @@ public class NonMemberClassTest extends TestBase {
         .compile()
         .inspect(inspector -> config.inspect(false, inspector))
         .run(parameters.getRuntime(), MAIN)
-        .assertSuccessWithOutput(config.getExpectedOutput(parameters, false));
+        .applyIfCfRuntime(
+            vm -> vm.lessThanOrEqual(CfVm.JDK8),
+            r -> r.assertSuccessWithOutput(config.getExpectedOutput(parameters, false, true)),
+            r -> r.assertSuccessWithOutput(config.getExpectedOutput(parameters, false, false)));
   }
 
   @Test
@@ -179,6 +177,9 @@ public class NonMemberClassTest extends TestBase {
         .compile()
         .inspect(inspector -> config.inspect(true, inspector))
         .run(parameters.getRuntime(), MAIN)
-        .assertSuccessWithOutput(config.getExpectedOutput(parameters, true));
+        .applyIfCfRuntime(
+            vm -> vm.lessThanOrEqual(CfVm.JDK8),
+            r -> r.assertSuccessWithOutput(config.getExpectedOutput(parameters, true, true)),
+            r -> r.assertSuccessWithOutput(config.getExpectedOutput(parameters, true, false)));
   }
 }

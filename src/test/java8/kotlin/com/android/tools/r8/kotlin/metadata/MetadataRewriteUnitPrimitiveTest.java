@@ -66,7 +66,7 @@ public class MetadataRewriteUnitPrimitiveTest extends KotlinMetadataTestBase {
   @Test
   public void smokeTest() throws Exception {
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(kotlincLibJar.getForConfiguration(kotlinParameters))
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -104,7 +104,7 @@ public class MetadataRewriteUnitPrimitiveTest extends KotlinMetadataTestBase {
                         new CodeInspector(kotlincLibJar.getForConfiguration(kotlinParameters))))
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

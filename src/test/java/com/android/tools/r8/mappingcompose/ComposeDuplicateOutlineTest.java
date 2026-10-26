@@ -14,17 +14,21 @@ import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.MappingComposer;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /* This is a regression test for b/289788048 */
+@RunWith(Parameterized.class)
 public class ComposeDuplicateOutlineTest extends TestBase {
-
-  @Parameter() public TestParameters parameters;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters().withNoneRuntime().build();
+  }
+
+  public ComposeDuplicateOutlineTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
   }
 
   private static final String mappingFoo =

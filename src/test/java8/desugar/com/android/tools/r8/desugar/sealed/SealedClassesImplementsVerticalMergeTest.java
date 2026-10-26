@@ -7,7 +7,6 @@ package com.android.tools.r8.desugar.sealed;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.NoUnusedInterfaceRemoval;
 import com.android.tools.r8.TestBase;
@@ -67,8 +66,6 @@ public class SealedClassesImplementsVerticalMergeTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    assumeTrue(
-        parameters.isDexRuntime() || parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17));
     testForR8(parameters)
         .addProgramClasses(TestClass.class, Super.class, Sub1.class, Sub2.class, SubSub.class)
         .addProgramClassFileData(getTransformedClasses())

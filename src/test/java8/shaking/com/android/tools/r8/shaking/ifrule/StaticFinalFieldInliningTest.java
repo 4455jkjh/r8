@@ -45,26 +45,29 @@ public class StaticFinalFieldInliningTest extends TestBase {
 
   @Test
   public void testJavaCompilers() throws Exception {
-    Path output =
-        JavaCompilerTool.create(parameters.getRuntime().asCf(), temp)
-            .addSourceFiles(
-                ToolHelper.getSourceFileForTestClassFromResources(
-                    StaticFinalFieldInliningSource.class))
-            .compile();
+    for (com.android.tools.r8.TestRuntime.CfRuntime cfRuntime :
+        parameters.getRuntime().asCfRuntimes()) {
+      Path output =
+          JavaCompilerTool.create(cfRuntime, temp)
+              .addSourceFiles(
+                  ToolHelper.getSourceFileForTestClassFromResources(
+                      StaticFinalFieldInliningSource.class))
+              .compile();
 
-    testForJvm(parameters)
-        .addProgramFiles(output)
-        .run(parameters.getRuntime(), StaticFinalFieldInliningSource.class)
-        .assertSuccessWithOutput(EXPECTED);
+      testForJvm(parameters)
+          .addProgramFiles(output)
+          .run(cfRuntime, StaticFinalFieldInliningSource.class)
+          .assertSuccessWithOutput(EXPECTED);
 
-    CodeInspector inspector = new CodeInspector(output);
-    assertHasStaticGet(true, "getNullObject", inspector);
-    assertHasStaticGet(true, "getConstObject", inspector);
-    assertHasStaticGet(true, "getNullString", inspector);
-    assertHasStaticGet(false, "getConstString", inspector);
-    assertHasStaticGet(true, "getNonConstInt", inspector);
-    assertHasStaticGet(false, "getConstInt", inspector);
-    assertHasStaticGet(false, "getConstDouble", inspector);
+      CodeInspector inspector = new CodeInspector(output);
+      assertHasStaticGet(true, "getNullObject", inspector);
+      assertHasStaticGet(true, "getConstObject", inspector);
+      assertHasStaticGet(true, "getNullString", inspector);
+      assertHasStaticGet(false, "getConstString", inspector);
+      assertHasStaticGet(true, "getNonConstInt", inspector);
+      assertHasStaticGet(false, "getConstInt", inspector);
+      assertHasStaticGet(false, "getConstDouble", inspector);
+    }
   }
 
   private static void assertHasStaticGet(

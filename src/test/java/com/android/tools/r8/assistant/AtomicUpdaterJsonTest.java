@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.assistant;
 
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -23,6 +25,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -73,6 +78,19 @@ public class AtomicUpdaterJsonTest extends TestBase {
     AtomicFieldUpdaterNewUpdater updater2 =
         reflectiveEvents.get(2).asAtomicFieldUpdaterNewUpdater();
     assertEquals("java.lang.Object " + name + ".o", updater2.getField().toSourceString());
+
+    // The updaters are runtime specific subclasses nested in the updater classes.
+    Class<?>[] updaterClasses = {
+      AtomicIntegerFieldUpdater.class,
+      AtomicLongFieldUpdater.class,
+      AtomicReferenceFieldUpdater.class
+    };
+    for (int i = 0; i < reflectiveEvents.size(); i++) {
+      ReflectiveEvent event = reflectiveEvents.get(i);
+      assertEquals(i, event.getId());
+      assertEquals(1, event.getResults().size());
+      assertThat((String) event.getResults().get(0), startsWith(updaterClasses[i].getName() + "$"));
+    }
 
     Box<KeepInfoCollectionExported> keepInfoBox = new Box<>();
     testForR8(parameters)

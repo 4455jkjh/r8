@@ -18,11 +18,11 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions.InlinerOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -70,9 +70,7 @@ public class NonVirtualOverrideTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}, vertical class merging: {1}")
   public static Collection<Object[]> data() {
-    return buildParameters(
-        getTestParameters().withAllRuntimes().build(),
-        BooleanUtils.values());
+    return buildParameters(getTestParameters().withAllRuntimes().build(), BooleanUtils.values());
   }
 
   public NonVirtualOverrideTest(TestParameters parameters, boolean enableVerticalClassMerging) {
@@ -111,6 +109,7 @@ public class NonVirtualOverrideTest extends TestBase {
         .addProgramFiles(referenceJar)
         .run(CfRuntime.getDefaultCfRuntime(), NonVirtualOverrideTestClass.class)
         .assertSuccess()
+        .asSingleRuntimeResult()
         .getStdOut();
   }
 

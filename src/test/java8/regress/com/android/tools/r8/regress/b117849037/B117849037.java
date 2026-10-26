@@ -8,11 +8,16 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 interface MyConsumer<T> {
   void accept(T element);
@@ -83,7 +88,17 @@ class TestClass {
   }
 }
 
+@RunWith(Parameterized.class)
 public class B117849037 extends TestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public B117849037(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   public void compile(Path output) throws CompilationFailedException, IOException {
     testForD8()

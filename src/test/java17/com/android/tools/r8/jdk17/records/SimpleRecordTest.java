@@ -15,7 +15,6 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -51,20 +50,17 @@ public class SimpleRecordTest extends TestBase {
         BooleanUtils.values());
   }
 
-  private boolean isCfRuntimeWithNativeRecordSupport() {
-    return parameters.isCfRuntime()
-        && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK17)
-        && parameters.getApiLevel().equals(AndroidApiLevel.B);
-  }
-
   @Test
   public void testReference() throws Exception {
-    assumeTrue(isCfRuntimeWithNativeRecordSupport());
+    parameters.assumeJvmTestParameters();
     assumeFalse(forceInvokeRangeForInvokeCustom);
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), SimpleRecord.class)
-        .assertSuccessWithOutput(EXPECTED_RESULT);
+        .applyIfCfRuntime(
+            CfVm::hasRecordsSupport,
+            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -77,13 +73,20 @@ public class SimpleRecordTest extends TestBase {
             i -> RecordTestUtils.assertNoJavaLangRecord(i, parameters),
             options -> options.testing.disableRecordApplicationReaderMap = true)
         .run(parameters.getRuntime(), SimpleRecord.class)
-        .applyIfDexRuntime(
-            isRecordsFullyDesugaredForD8(parameters)
-                || (parameters.isCfRuntime() && runtimeWithRecordsSupport(parameters.getRuntime())),
+        .applyIf(
+            isRecordsFullyDesugaredForD8(parameters),
             r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
-            Version::hasRecordsSupport,
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
-            r -> r.assertFailureWithErrorThatThrows(NoClassDefFoundError.class));
+            parameters.isCfRuntime(),
+            r ->
+                r.applyIfCfRuntime(
+                    CfVm::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT),
+                    rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)),
+            r ->
+                r.applyIfDexRuntime(
+                    Version::hasRecordsSupport,
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_RESULT),
+                    rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));
   }
 
   @Test
@@ -141,7 +144,6 @@ public class SimpleRecordTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isCfRuntimeWithNativeRecordSupport());
     assumeTrue(forceInvokeRangeForInvokeCustom || parameters.isCfRuntime());
     R8TestBuilder<?, ?, ?> builder =
         testForR8(parameters)
@@ -163,7 +165,10 @@ public class SimpleRecordTest extends TestBase {
           .inspect(RecordTestUtils::assertRecordsAreRecords)
           .inspect(inspector -> inspector.clazz(Person.class).isRenamed())
           .run(parameters.getRuntime(), SimpleRecord.class)
-          .assertSuccessWithOutput(EXPECTED_RESULT);
+          .applyIfCfRuntime(
+              CfVm::hasRecordsSupport,
+              r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+              r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
       return;
     }
     builder
@@ -182,7 +187,6 @@ public class SimpleRecordTest extends TestBase {
   @Test
   public void testR8NoMinification() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeTrue(parameters.isDexRuntime() || isCfRuntimeWithNativeRecordSupport());
     assumeTrue(forceInvokeRangeForInvokeCustom || !parameters.isDexRuntime());
     R8TestBuilder<?, ?, ?> builder =
         testForR8(parameters)
@@ -195,7 +199,10 @@ public class SimpleRecordTest extends TestBase {
           .compile()
           .inspect(RecordTestUtils::assertRecordsAreRecords)
           .run(parameters.getRuntime(), SimpleRecord.class)
-          .assertSuccessWithOutput(EXPECTED_RESULT);
+          .applyIfCfRuntime(
+              CfVm::hasRecordsSupport,
+              r -> r.assertSuccessWithOutput(EXPECTED_RESULT),
+              r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
       return;
     }
     builder

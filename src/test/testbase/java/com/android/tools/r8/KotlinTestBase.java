@@ -53,8 +53,8 @@ public abstract class KotlinTestBase extends TestBase {
     this.kotlinParameters = kotlinParameters;
   }
 
-  public static CfRuntime getKotlincHostRuntime(TestRuntime runtime) {
-    return runtime.isCf() ? runtime.asCf() : TestRuntime.getCheckedInJdk9();
+  public static CfRuntime getKotlincHostRuntime() {
+    return TestRuntime.getCheckedInJdk17();
   }
 
   @Deprecated
@@ -113,8 +113,7 @@ public abstract class KotlinTestBase extends TestBase {
   }
 
   protected KotlinCompilerTool kotlinCompilerTool() {
-    return KotlinCompilerTool.create(
-        CfRuntime.getCheckedInJdk9(), temp, kotlinc, targetVersion, lambdaGeneration);
+    return kotlinc(CfRuntime.getCheckedInJdk17(), temp, kotlinc, targetVersion, lambdaGeneration);
   }
 
   public static KotlinCompileMemoizer getCompileMemoizer(Path... source) {
@@ -166,5 +165,4 @@ public abstract class KotlinTestBase extends TestBase {
         builder.applyIf(
             Version.isMainVersion(), b -> b.setFakeCompilerVersion(SemanticVersion.max()));
   }
-
 }

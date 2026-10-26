@@ -12,6 +12,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.ir.conversion.callgraph.CycleEliminator;
 import com.android.tools.r8.ir.conversion.callgraph.Node;
@@ -23,8 +25,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class CycleEliminationTest extends CallGraphTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public CycleEliminationTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private static class Configuration {
 

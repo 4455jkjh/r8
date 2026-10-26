@@ -11,7 +11,6 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.R8TestMultiRunResult;
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -100,7 +99,7 @@ public class SerializedNameAlternateTest extends TestBase {
   public void testKeepSerializedNameProguard()
       throws IOException, CompilationFailedException, ExecutionException {
     assumeTrue(parameters.isCfRuntime());
-    SingleTestRunResult result =
+    TestRunResult<?> result =
         testForProguard()
             .addInnerClasses(SerializedNameAlternateTest.class)
             .addKeepAttributes("*Annotation*")

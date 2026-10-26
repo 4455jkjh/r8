@@ -4,6 +4,7 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.errors.UnsupportedMinApiMinorLevelDiagnostic;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
@@ -14,6 +15,7 @@ import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.Box;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Base class for commands and command builders for applications/tools which take an Android
@@ -94,6 +97,17 @@ public abstract class BaseCommand {
 
     public LibraryInputOrigin(Path file) {
       super("library input", file);
+    }
+  }
+
+  static void validateMinApiLevel(
+      UncheckedApiLevel minApiLevel, Reporter reporter, Consumer<UncheckedApiLevel> setter) {
+    if (minApiLevel.getMinor() > 0 && !InternalOptions.allowMinApiMinorLevels) {
+      reporter.error(
+          new UnsupportedMinApiMinorLevelDiagnostic(
+              minApiLevel.getMajor(), minApiLevel.getMinor()));
+    } else {
+      setter.accept(minApiLevel);
     }
   }
 
@@ -172,6 +186,10 @@ public abstract class BaseCommand {
 
     Reporter getReporter() {
       return reporter;
+    }
+
+    void validateMinApiLevel(UncheckedApiLevel minApiLevel, Consumer<UncheckedApiLevel> setter) {
+      BaseCommand.validateMinApiLevel(minApiLevel, reporter, setter);
     }
 
     /** Add program file resources. */

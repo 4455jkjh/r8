@@ -76,10 +76,11 @@ public class InvokeVirtualPrivateBaseWithDefaultDirectInvokeTest extends TestBas
         (nonDesugaredCf && parameters.isCfRuntime())
             || parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring();
     // JDK 11 allows this incorrect dispatch for some reason.
-    if (parameters.isCfRuntime()
-        && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK11)
-        && isNotDesugared) {
-      result.assertSuccessWithOutputLines("I::foo");
+    if (parameters.isCfRuntime() && isNotDesugared) {
+      result.applyIfCfRuntime(
+          vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+          r -> r.assertSuccessWithOutputLines("I::foo"),
+          r -> r.assertFailureWithErrorThatThrows(IllegalAccessError.class));
       return;
     }
     // TODO(b/152199517): Should become an illegal access on future DEX VM.

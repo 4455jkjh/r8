@@ -4,5 +4,4 @@
 
 package j$.nio.file.attribute;
 
-public class PosixFileAttributes extends BasicFileAttributes {
-}
+public class PosixFileAttributes extends BasicFileAttributes {}

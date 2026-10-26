@@ -12,16 +12,35 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+@RunWith(Parameterized.class)
 public class UnneededLoadStoreDebugInfoTest extends TestBase {
+
+  private final TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withCfRuntime(CfVm.JDK21).build();
+  }
+
+  public UnneededLoadStoreDebugInfoTest(TestParameters parameters) {
+    this.parameters = parameters;
+  }
 
   private static final String CLASS_NAME = "UnneededLoadStoreDebugInfoTest";
   private static final String DESCRIPTOR = "L" + CLASS_NAME + ";";
@@ -61,7 +80,8 @@ public class UnneededLoadStoreDebugInfoTest extends TestBase {
     ArchiveConsumer consumer = new ArchiveConsumer(inputJar);
     consumer.accept(ByteDataView.of(Dump.dump()), DESCRIPTOR, null);
     consumer.finished(null);
-    ProcessResult runInput = ToolHelper.runJava(inputJar, CLASS_NAME);
+    ProcessResult runInput =
+        ToolHelper.runJava(parameters.getRuntime().asCf(), ImmutableList.of(inputJar), CLASS_NAME);
     assertEquals(0, runInput.exitCode);
     Path outputJar = temp.getRoot().toPath().resolve("output.jar");
     R8.run(
@@ -73,7 +93,8 @@ public class UnneededLoadStoreDebugInfoTest extends TestBase {
             .addLibraryFiles(TestDeps.getJava8RuntimeJar())
             .setProgramConsumer(new ArchiveConsumer(outputJar))
             .build());
-    ProcessResult runOutput = ToolHelper.runJava(outputJar, CLASS_NAME);
+    ProcessResult runOutput =
+        ToolHelper.runJava(parameters.getRuntime().asCf(), ImmutableList.of(outputJar), CLASS_NAME);
     assertEquals(runInput.toString(), runOutput.toString());
   }
 }

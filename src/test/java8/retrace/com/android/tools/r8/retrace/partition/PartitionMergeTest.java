@@ -55,12 +55,14 @@ public class PartitionMergeTest extends TestBase {
             .addProgramClasses(A.class)
             .run(getDefaultCfRuntime(), A.class)
             .assertFailureWithErrorThatThrows(RuntimeException.class)
+            .asSingleRuntimeResult()
             .getStackTrace();
     expectedStackTrace2 =
         testForJvm(getStaticTemp())
             .addProgramClasses(B.class)
             .run(getDefaultCfRuntime(), B.class)
             .assertFailureWithErrorThatThrows(RuntimeException.class)
+            .asSingleRuntimeResult()
             .getStackTrace();
   }
 

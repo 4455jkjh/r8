@@ -99,9 +99,11 @@ import com.android.tools.r8.ir.optimize.enums.classification.EnumUnboxerMethodCl
 import com.android.tools.r8.ir.optimize.enums.classification.EnumUnboxerMethodClassificationAnalysis;
 import com.android.tools.r8.ir.optimize.info.bridge.BridgeAnalyzer;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoCollection;
+import com.android.tools.r8.ir.optimize.info.initializer.AlwaysTrueInstanceInitializerInfoContext;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfoCollection;
 import com.android.tools.r8.ir.optimize.info.initializer.NonTrivialInstanceInitializerInfo;
+import com.android.tools.r8.ir.optimize.info.initializer.SimpleInliningConstraintInstanceInitializerInfoContext;
 import com.android.tools.r8.ir.optimize.info.initializer.readbeforewrite.ReadBeforeWriteAnalysis;
 import com.android.tools.r8.ir.optimize.info.initializer.readbeforewrite.ReadBeforeWriteAnalysisState;
 import com.android.tools.r8.ir.optimize.typechecks.CheckCastAndInstanceOfMethodSpecialization;
@@ -271,9 +273,8 @@ public class MethodOptimizationInfoCollector {
 
     NonTrivialInstanceInitializerInfo.Builder builder =
         NonTrivialInstanceInitializerInfo.builder(instanceFieldInitializationInfos);
-    InstanceInitializerInfo instanceInitializerInfo = analyzeInstanceInitializer(code, builder);
     feedback.setInstanceInitializerInfoCollection(
-        method, InstanceInitializerInfoCollection.of(instanceInitializerInfo));
+        method, analyzeInstanceInitializer(code, builder));
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -292,12 +293,12 @@ public class MethodOptimizationInfoCollector {
   // ** Assigns arguments or non-throwing constants to fields of this class.
   //
   // (Note that this initializer does not have to have zero arguments.)
-  private InstanceInitializerInfo analyzeInstanceInitializer(
+  private InstanceInitializerInfoCollection analyzeInstanceInitializer(
       IRCode code, NonTrivialInstanceInitializerInfo.Builder builder) {
     ProgramMethod context = code.context();
     if (context.getHolder().definesFinalizer(options.itemFactory)) {
       // Defining a finalize method can observe the side-effect of Object.<init> GC registration.
-      return null;
+      return InstanceInitializerInfoCollection.empty();
     }
 
     AliasedValueConfiguration aliasesThroughAssumeAndCheckCasts =
@@ -305,6 +306,8 @@ public class MethodOptimizationInfoCollector {
     Value receiver = code.getThis();
     boolean receiverHasPhiUsers = hasAliasedPhiUsers(receiver, aliasesThroughAssumeAndCheckCasts);
     boolean hasCatchHandler = false;
+    // Constraint on the arguments under which the invokes in this initializer have no side effects.
+    SimpleInliningConstraint sideEffectConstraint = AlwaysSimpleInliningConstraint.getInstance();
     for (BasicBlock block : code.blocks) {
       if (block.hasCatchHandlers()) {
         hasCatchHandler = true;
@@ -362,7 +365,7 @@ public class MethodOptimizationInfoCollector {
               DexClassAndField field =
                   appView.appInfo().resolveField(fieldGet.getField()).getResolutionPair();
               if (field == null) {
-                return null;
+                return InstanceInitializerInfoCollection.empty();
               }
               builder.markFieldAsRead(field);
               if (fieldGet.instructionMayHaveSideEffects(appView, context)) {
@@ -381,7 +384,7 @@ public class MethodOptimizationInfoCollector {
               DexEncodedField field =
                   appView.appInfo().resolveField(instancePut.getField()).getResolvedField();
               if (field == null) {
-                return null;
+                return InstanceInitializerInfoCollection.empty();
               }
               Value object =
                   instancePut.object().getAliasedValue(aliasesThroughAssumeAndCheckCasts);
@@ -409,12 +412,12 @@ public class MethodOptimizationInfoCollector {
               DexClass holder = appView.definitionForHolder(invokedMethod);
               DexEncodedMethod singleTarget = invokedMethod.lookupOnClass(holder);
               if (singleTarget == null) {
-                return null;
+                return InstanceInitializerInfoCollection.empty();
               }
               if (singleTarget.isInstanceInitializer()
                   && invoke.getReceiver().getAliasedValue() == receiver) {
                 if (builder.hasParent() && builder.getParent() != singleTarget.getReference()) {
-                  return null;
+                  return InstanceInitializerInfoCollection.empty();
                 }
                 // java.lang.Enum.<init>(), java.lang.Object.<init>(), and java.lang.Record.<init>()
                 // are considered trivial.
@@ -479,9 +482,18 @@ public class MethodOptimizationInfoCollector {
           case INVOKE_VIRTUAL:
             {
               InvokeMethod invoke = instruction.asInvokeMethod();
-              builder
-                  .markAllFieldsAsRead()
-                  .setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
+              // Only mark the fields read by the invoke as read, instead of all fields.
+              builder.markFieldsAsRead(invoke.readSet(appView, context));
+              if (!builder.mayHaveOtherSideEffectsThanInstanceFieldAssignments()) {
+                SimpleInliningConstraint invokeConstraint =
+                    computeConstraintForInstructionNotToHaveSideEffects(invoke, context);
+                // Note that the meet may be never even if the invoke constraint is not, e.g., when
+                // the resulting conjunction exceeds the maximum size.
+                sideEffectConstraint = sideEffectConstraint.meet(invokeConstraint);
+                if (sideEffectConstraint.isNever()) {
+                  builder.setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
+                }
+              }
               for (Value argument : invoke.arguments()) {
                 if (couldBeReceiverValue(
                     argument, receiver, receiverHasPhiUsers, aliasesThroughAssumeAndCheckCasts)) {
@@ -532,11 +544,29 @@ public class MethodOptimizationInfoCollector {
     //       this.f = 42;
     //     }
     //   }
-    if (hasCatchHandler && builder.mayHaveOtherSideEffectsThanInstanceFieldAssignments()) {
+    if (hasCatchHandler
+        && (builder.mayHaveOtherSideEffectsThanInstanceFieldAssignments()
+            || !sideEffectConstraint.isAlways())) {
       builder.setInstanceFieldInitializationMayDependOnEnvironment();
     }
     computeInstanceFieldsMaybeReadBeforeWrite(code, builder, hasCatchHandler);
-    return builder.build();
+    if (sideEffectConstraint.isAlways()
+        || builder.mayHaveOtherSideEffectsThanInstanceFieldAssignments()) {
+      return InstanceInitializerInfoCollection.of(builder.build());
+    }
+    // The initializer only has side effects if the invocation does not satisfy the constraint,
+    // e.g., EnumEntriesList.<init>(entries) only has side effects if entries is null due to its
+    // null check. Record precise info for invocations that satisfy the constraint, so that an
+    // unused `new EnumEntriesList(entries)` can be removed, and conservative info otherwise.
+    InstanceInitializerInfo infoIfConstraintIsSatisfied = builder.build();
+    InstanceInitializerInfo infoOtherwise =
+        builder.setMayHaveOtherSideEffectsThanInstanceFieldAssignments().build();
+    return InstanceInitializerInfoCollection.builder()
+        .put(
+            new SimpleInliningConstraintInstanceInitializerInfoContext(sideEffectConstraint),
+            infoIfConstraintIsSatisfied)
+        .put(AlwaysTrueInstanceInitializerInfoContext.getInstance(), infoOtherwise)
+        .build();
   }
 
   private void computeInstanceFieldsMaybeReadBeforeWrite(
@@ -1031,6 +1061,16 @@ public class MethodOptimizationInfoCollector {
                 .isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
           if (instruction.instructionMayHaveSideEffects(
               appView, context, SideEffectAssumption.IGNORE_RECEIVER_FIELD_ASSIGNMENTS)) {
+            noSideEffectsConstraint = NeverSimpleInliningConstraint.getInstance();
+            break;
+          }
+        } else if (instruction.isInstancePut()
+            && instruction
+                .asInstancePut()
+                .object()
+                .getAliasedValue()
+                .isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
+          if (instruction.instructionInstanceCanThrow(appView, context)) {
             noSideEffectsConstraint = NeverSimpleInliningConstraint.getInstance();
             break;
           }

@@ -36,7 +36,7 @@ import org.junit.rules.TemporaryFolder;
 public class SplitterTestBase extends TestBase {
 
   public static TestParametersBuilder getTestParameters() {
-    return TestBase.getTestParameters().withoutCollapsedDexRuntimes();
+    return TestBase.getTestParameters().withoutCollapsedCfRuntimes().withoutCollapsedDexRuntimes();
   }
 
   public static FeatureSplit simpleSplitProvider(

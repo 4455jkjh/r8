@@ -7,6 +7,8 @@ package com.android.tools.r8.smali;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.EmbeddedOrigin;
 import com.android.tools.r8.utils.AndroidApp;
@@ -14,8 +16,21 @@ import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.io.IOException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class SmaliBuildTest extends SmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public SmaliBuildTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private void checkJavaLangString(AndroidApp application, boolean present) {
     try {

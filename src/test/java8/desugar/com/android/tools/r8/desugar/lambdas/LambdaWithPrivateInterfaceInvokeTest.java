@@ -42,10 +42,8 @@ public class LambdaWithPrivateInterfaceInvokeTest extends TestBase {
         .addProgramClassFileData(getTransformForI())
         .run(parameters.getRuntime(), TestClass.class)
         // On JDK 8 and 9 the VM will fail if not targeting with invoke special.
-        .applyIf(
-            !useInvokeSpecial
-                && parameters.isCfRuntime()
-                && parameters.asCfRuntime().isOlderThan(CfVm.JDK11),
+        .applyIfCfRuntime(
+            vm -> !useInvokeSpecial && vm.isOlderThan(CfVm.JDK11),
             r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
             r -> r.assertSuccessWithOutput(EXPECTED));
   }

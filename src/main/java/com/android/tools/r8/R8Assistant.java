@@ -6,6 +6,7 @@ package com.android.tools.r8;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import com.android.tools.r8.assistant.ReflectiveInstrumentation;
+import com.android.tools.r8.assistant.cli.AssistantCommandLine;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.graph.AppInfo;
@@ -26,9 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -179,62 +177,17 @@ public class R8Assistant {
     }
   }
 
-  public static void main(String[] args) throws Exception {
-    if (args.length == 0) {
-      printUsage();
-      return;
+  /**
+   * Runs the R8 Assistant command line, {@code java -jar r8-assistant.jar <command> [options]}.
+   * Exits with status 1 if the command fails and 2 if the command line is invalid.
+   */
+  public static void main(String[] args) {
+    int exitCode = AssistantCommandLine.run(args, System.out, System.err);
+    if (exitCode != AssistantCommandLine.EXIT_SUCCESS) {
+      System.out.flush();
+      System.err.flush();
+      System.exit(exitCode);
     }
-    Options options = parseArgs(args);
-    if (options == null) {
-      return;
-    }
-    runOnApk(options);
-  }
-
-  private static Options parseArgs(String[] args) {
-    Options options = new Options();
-    List<String> positional = new ArrayList<>();
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i];
-      if (arg.equals("-h") || arg.equals("--help")) {
-        printUsage();
-        return null;
-      } else if (arg.equals("--output") || arg.equals("-o")) {
-        options.setOutputApk(nextPathArg(args, ++i, arg));
-      } else if (arg.equals("--input") || arg.equals("-i")) {
-        options.setInputApk(nextPathArg(args, ++i, arg));
-      } else if (arg.equals("--runtime") || arg.equals("-r")) {
-        options.setRuntimeDex(nextPathArg(args, ++i, arg));
-      } else if (arg.equals("--temp-dir")) {
-        options.setTempDir(nextPathArg(args, ++i, arg));
-      } else if (arg.startsWith("-")) {
-        throw new IllegalArgumentException("Unknown option: " + arg);
-      } else {
-        positional.add(arg);
-      }
-    }
-    applyPositionalArgs(options, positional);
-    return options;
-  }
-
-  /** Positional arguments are {@code [<input.apk> [<output.apk>]]} unless given as options. */
-  private static void applyPositionalArgs(Options options, List<String> positional) {
-    if (options.getInputApk() == null && !positional.isEmpty()) {
-      options.setInputApk(Paths.get(positional.remove(0)));
-    }
-    if (options.getOutputApk() == null && !positional.isEmpty()) {
-      options.setOutputApk(Paths.get(positional.remove(0)));
-    }
-    if (!positional.isEmpty()) {
-      throw new IllegalArgumentException("Unexpected arguments: " + positional);
-    }
-  }
-
-  private static Path nextPathArg(String[] args, int index, String flag) {
-    if (index >= args.length) {
-      throw new IllegalArgumentException("Missing value for " + flag);
-    }
-    return Paths.get(args[index]);
   }
 
   public static void runOnApk(Options options) throws Exception {
@@ -336,15 +289,5 @@ public class R8Assistant {
       }
     }
     return newEntry;
-  }
-
-  private static void printUsage() {
-    System.out.println("Usage: r8-assistant <input.apk> --output <output.apk> [options]");
-    System.out.println("Options:");
-    System.out.println("  --output, -o <file>   Output path for instrumented APK");
-    System.out.println("  --input, -i <file>    Input APK file");
-    System.out.println("  --runtime, -r <path>  Path to assistant runtime DEX (optional)");
-    System.out.println("  --temp-dir <dir>      Temporary directory for extraction");
-    System.out.println("  --help, -h            Show this help message");
   }
 }

@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.code.DexConst;
 import com.android.tools.r8.dex.code.DexConst4;
 import com.android.tools.r8.dex.code.DexConstHigh16;
@@ -25,8 +27,21 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class SwitchRewritingTest extends SmaliTestBase {
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
+
+  public SwitchRewritingTest(TestParameters parameters) {
+    parameters.assertNoneRuntime();
+  }
 
   private boolean some16BitConst(DexInstruction instruction) {
     return instruction instanceof DexConst4

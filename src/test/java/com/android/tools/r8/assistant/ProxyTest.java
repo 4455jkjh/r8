@@ -44,12 +44,13 @@ public class ProxyTest extends TestBase {
   public static class Instrumentation extends EmptyReflectiveOperationReceiver {
 
     @Override
-    public void onProxyNewProxyInstance(
+    public int onProxyNewProxyInstance(
         Stack stack,
         ClassLoader classLoader,
         Class<?>[] interfaces,
         InvocationHandler invocationHandler) {
       System.out.println(Arrays.toString(interfaces));
+      return NO_ID;
     }
   }
 }

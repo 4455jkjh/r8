@@ -127,6 +127,9 @@ public class VerticalClassMerger {
     if (verticalClassMergerResult.isEmpty()) {
       return;
     }
+    appView
+        .getMergedClassesProvenance()
+        .recordVerticalMerges(appView, verticalClassMergerResult.getVerticallyMergedClasses());
     VerticalClassMergerGraphLens lens =
         runFixup(
             classMergerSharedData,

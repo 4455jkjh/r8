@@ -83,6 +83,7 @@ import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.InternalMapConsumer;
 import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.naming.mappinginformation.MergedClassesInformation;
 import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
@@ -162,6 +163,12 @@ import java.util.stream.Collectors;
 import org.objectweb.asm.Opcodes;
 
 public class InternalOptions implements GlobalKeepInfoConfiguration {
+
+  public static final String ALLOW_MIN_API_MINOR_LEVELS_PROPERTY_KEY =
+      "com.android.tools.r8.allowMinApiMinorLevels";
+
+  public static boolean allowMinApiMinorLevels =
+      parseSystemPropertyOrDefault(ALLOW_MIN_API_MINOR_LEVELS_PROPERTY_KEY, false);
 
   // Set to true to run compilation in a single thread and without randomly shuffling the input.
   // This makes life easier when running R8 in a debugger.
@@ -2333,7 +2340,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
             "com.android.tools.r8.dex.refinementInDebug", false);
     public boolean enableCodeItemSizePerReferenceLayout =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
-            "com.android.tools.r8.enableCodeItemSizePerReferenceLayout", true);
+            "com.android.tools.r8.enableCodeItemSizePerReferenceLayout", false);
 
     // TODO(b/569861570): Remove this flag when optimization has been enabled in Android Platform.
     public boolean enableAndWithDefiniteBitsOptimization =
@@ -2615,12 +2622,26 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean invertConditionals = false;
     public boolean placeExceptionalBlocksLast = false;
     public boolean forceJumboStringProcessing = false;
+    public boolean enableShareDebugInfoForDifferentParameterSizes =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableShareDebugInfoForDifferentParameterSizes", false);
+
+    public boolean enableShareDebugInfoForDifferentParameterSizes(InternalOptions options) {
+      return enableShareDebugInfoForDifferentParameterSizes
+          && !options.canHaveDebugInfoParameterIteratorBug();
+    }
+
     public boolean forcePcBasedEncoding = false;
     public boolean forcePruneMetaInfManifestMf = false;
     public int pcBasedDebugEncodingOverheadThreshold =
         System.getProperty("com.android.tools.r8.pc2pcOverheadThreshold") != null
             ? Integer.parseInt(System.getProperty("com.android.tools.r8.pc2pcOverheadThreshold"))
             : 200000;
+
+    public int getPcBasedDebugEncodingOverheadThreshold(InternalOptions options) {
+      return options.canHaveSharedDebugInfoExplosion() ? pcBasedDebugEncodingOverheadThreshold : -1;
+    }
+
     public Set<Inliner.Reason> validInliningReasons = null;
     public boolean noLocalsTableOnInput = false;
     public boolean forceNameReflectionOptimization = false;
@@ -2735,6 +2756,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return testing.enableExperimentalMapFileVersion
         ? MapVersion.MAP_VERSION_EXPERIMENTAL
         : MapVersion.STABLE;
+  }
+
+  public boolean isMergedClassInformationSupported() {
+    return MergedClassesInformation.isSupported(getMapFileVersion());
   }
 
   @VisibleForTesting
@@ -3587,5 +3612,28 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // it is unclear whether it is strictly related to Unsafe or if it is a coincidence.
   public boolean canHaveBugWithInlinedMethodsContainingUnsafe() {
     return isGeneratingDex() && minApiLevel.isLessThanOrEqualTo(AndroidApiLevel.L_MR1);
+  }
+
+  // Prior to Android 7.0 (API 24), ART's DexFile::DecodeDebugInfo0 used a single pass to decode
+  // both local variable and position information. It iterated over `parameters_size` entries in
+  // the debug_info_item alongside a DexFileParameterIterator for the method prototype, and aborted
+  // before decoding line numbers if the parameter iterator still had remaining parameters
+  // (`if (it.HasNext()) return;`). Therefore, emitting `parameters_size = 0` in shared PC-based
+  // debug info items causes methods with one or more parameters to lose line number information in
+  // stack traces on Android 5 and 6 (API 21-23). In Android 7.0 (API 24), position decoding was
+  // split into DexFile::DecodeDebugPositionInfo, which skips `parameters_size` ULEB128 values
+  // without checking the method prototype.
+  public boolean canHaveDebugInfoParameterIteratorBug() {
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.N);
+  }
+
+  // Prior to Android 9 (API 28), the dexlayout process in dex2oat expanded debug info tables
+  // without consideration for sharing. When many methods share a single large PC-based debug info
+  // item, this causes an explosion in memory usage and compilation time during dex2oat
+  // speed-profile compilation.
+  //
+  // See b/231903117.
+  public boolean canHaveSharedDebugInfoExplosion() {
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.P);
   }
 }

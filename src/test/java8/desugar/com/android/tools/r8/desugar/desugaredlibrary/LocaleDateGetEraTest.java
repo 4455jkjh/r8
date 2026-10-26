@@ -80,15 +80,18 @@ public class LocaleDateGetEraTest extends DesugaredLibraryTestBase {
 
   private void checkResult(TestRunResult<?> run, Class<?> eraClass) {
     if (parameters.getRuntime().isCf()
-        && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)
         && eraClass == IsoEra.class
         // We desugar up to 30 at this point...
         && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.S)) {
       // The method with the covariant return type is present only from JDK9.
-      run.assertFailureWithErrorThatMatches(
-          containsString(
-              "java.lang.NoSuchMethodError:"
-                  + " java.time.LocalDate.getEra()Ljava/time/chrono/IsoEra;"));
+      run.applyIfCfRuntime(
+          vm -> vm.isOlderThan(CfVm.JDK9),
+          r ->
+              r.assertFailureWithErrorThatMatches(
+                  containsString(
+                      "java.lang.NoSuchMethodError:"
+                          + " java.time.LocalDate.getEra()Ljava/time/chrono/IsoEra;")),
+          r -> r.assertSuccessWithOutput(EXPECTED_RESULT));
     } else if (parameters.getRuntime().isDex()
         && eraClass == IsoEra.class
         && parameters.getApiLevel().isBetweenBothIncluded(AndroidApiLevel.O, AndroidApiLevel.S)

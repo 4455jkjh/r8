@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.desugar.constantdynamic;
 
-import static org.junit.Assume.assumeTrue;
-
 import com.android.tools.r8.DesugarTestConfiguration;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -61,11 +59,13 @@ public class ConstantDynamicGetDeclaredMethodsTest extends TestBase {
   @Test
   public void testReference() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11));
     testForJvm(parameters)
         .addProgramClassFileData(getTransformedClasses())
         .run(parameters.getRuntime(), MAIN_CLASS)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT_WITH_METHOD_HANDLES);
+        .applyIfCfRuntime(
+            vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT_WITH_METHOD_HANDLES),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
   @Test
@@ -76,14 +76,11 @@ public class ConstantDynamicGetDeclaredMethodsTest extends TestBase {
         .applyIf(
             // When not desugaring the CF code requires JDK 11.
             DesugarTestConfiguration::isNotDesugared,
-            r -> {
-              if (parameters.isCfRuntime()
-                  && parameters.getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11)) {
-                r.assertSuccessWithOutput(EXPECTED_OUTPUT_WITH_METHOD_HANDLES);
-              } else {
-                r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class);
-              }
-            },
+            r ->
+                r.applyIfCfRuntime(
+                    vm -> vm.isNewerThanOrEqual(CfVm.JDK11),
+                    rr -> rr.assertSuccessWithOutput(EXPECTED_OUTPUT_WITH_METHOD_HANDLES),
+                    rr -> rr.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class)),
             c ->
                 DesugarTestConfiguration.isDesugared(c)
                     && parameters.getApiLevel().isLessThan(AndroidApiLevel.O),

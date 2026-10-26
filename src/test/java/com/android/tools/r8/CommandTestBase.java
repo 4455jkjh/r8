@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
+import com.android.tools.r8.errors.UnsupportedMinApiMinorLevelDiagnostic;
 import com.android.tools.r8.profile.art.ArtProfile;
 import com.android.tools.r8.profile.art.ArtProfileConsumer;
 import com.android.tools.r8.profile.art.ArtProfileForRewriting;
@@ -472,6 +473,31 @@ public abstract class CommandTestBase<C extends BaseCompilerCommand> extends Tes
       fail("Expected failure");
     } catch (CompilationFailedException e) {
       // Expected.
+    }
+  }
+
+  @Test
+  public void minApiMinorLevelTest() throws Exception {
+    C command = parseWithRequiredArgs("--min-api", "36.1");
+    assertEquals(36, command.getUncheckedMinApiLevel().getMajor());
+    assertEquals(1, command.getUncheckedMinApiLevel().getMinor());
+
+    try {
+      InternalOptions.allowMinApiMinorLevels = false;
+      parseWithRequiredArgs("--min-api", "36.0");
+      DiagnosticsChecker handler = new DiagnosticsChecker();
+      try {
+        parseWithRequiredArgs(handler, "--min-api", "36.1");
+        fail("Expected failure");
+      } catch (CompilationFailedException e) {
+        assertEquals(1, handler.errors.size());
+        assertTrue(handler.errors.get(0) instanceof UnsupportedMinApiMinorLevelDiagnostic);
+        handler.checkErrorsContains(
+            "An API level of 36.1 is not supported by this compiler because minor API levels are"
+                + " not allowed.");
+      }
+    } finally {
+      InternalOptions.allowMinApiMinorLevels = true;
     }
   }
 

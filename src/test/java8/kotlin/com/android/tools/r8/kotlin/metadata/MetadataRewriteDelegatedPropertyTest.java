@@ -76,7 +76,7 @@ public class MetadataRewriteDelegatedPropertyTest extends KotlinMetadataTestBase
   public void smokeTest() throws Exception {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -105,7 +105,7 @@ public class MetadataRewriteDelegatedPropertyTest extends KotlinMetadataTestBase
             .inspect(this::inspectMetadata)
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(outputJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(
@@ -133,7 +133,7 @@ public class MetadataRewriteDelegatedPropertyTest extends KotlinMetadataTestBase
             .compile()
             .writeToZip();
     ProcessResult compileResult =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
+        kotlinc(parameters.getRuntime(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(outputJar)
             .addSourceFiles(
                 getKotlinSourceFileFromResources(

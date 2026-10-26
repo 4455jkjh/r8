@@ -12,6 +12,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import urllib.request
 import xml.etree.ElementTree
 import zipfile
@@ -249,8 +250,10 @@ def bug_fmt(bug):
 
 def prepare_studio(args):
     assert len(args.version) == 1
-    assert os.path.exists(args.studio), ("Could not find STUDIO path %s" %
-                                         args.studio)
+    assert args.studio or args.studio_branch
+    if args.studio:
+        assert os.path.exists(args.studio), ("Could not find STUDIO path %s" %
+                                             args.studio)
 
     def commit_and_upload_studio(path,
                                  options,
@@ -275,29 +278,25 @@ def prepare_studio(args):
                     cmd.append('--label=Presubmit-Ready+1')
                 subprocess.run(cmd, input=b'y\n', check=True)
 
-    def release_studio(options):
-        assert len(options.version) == 1
+    def release_studio_in_checkout(studio, options):
         version = options.version[0]
-        print("Releasing for STUDIO")
-        if options.dry_run:
-            return 'DryRun: omitting studio release for %s' % version
-
         change_name = 'update-r8'
         topic = options.topic if options.topic else f'r8-{version}'
-        tools_base = os.path.join(args.studio, 'tools', 'base')
-        prebuilts_tools = os.path.join(args.studio, 'prebuilts', 'tools')
-        tools_buildsrc = os.path.join(args.studio, 'tools', 'buildSrc')
+        tools_base = os.path.join(studio, 'tools', 'base')
+        prebuilts_tools = os.path.join(studio, 'prebuilts', 'tools')
+        tools_buildsrc = os.path.join(studio, 'tools', 'buildSrc')
 
-        with utils.ChangedWorkingDirectory(args.studio):
-            if not options.use_existing_work_branch:
-                if not options.yes:
-                    answer = input(f'Abandon branch {change_name} [Y/n]:')
-                    if answer and answer.lower() != 'y':
-                        print(f'Aborting release for {version}')
-                        sys.exit(1)
-                subprocess.call(['repo', 'abandon', change_name])
-            if not options.no_sync:
-                subprocess.check_call(['repo', 'sync', '-cq', '-j', '16'])
+        if options.studio:
+            with utils.ChangedWorkingDirectory(studio):
+                if not options.use_existing_work_branch:
+                    if not options.yes:
+                        answer = input(f'Abandon branch {change_name} [Y/n]:')
+                        if answer and answer.lower() != 'y':
+                            print(f'Aborting release for {version}')
+                            sys.exit(1)
+                    subprocess.call(['repo', 'abandon', change_name])
+                if not options.no_sync:
+                    subprocess.check_call(['repo', 'sync', '-cq', '-j', '16'])
 
         # 1. Update tools/base and run maven_fetch.sh (which updates
         # tools/base/bazel/maven/BUILD.maven and fetches prebuilts into
@@ -323,7 +322,7 @@ def prepare_studio(args):
             utils.PrintCmd([maven_fetch])
             subprocess.check_call([maven_fetch])
 
-        with utils.ChangedWorkingDirectory(args.studio):
+        with utils.ChangedWorkingDirectory(studio):
             cmd = ['tools/base/bazel/bazel', 'shutdown']
             utils.PrintCmd(cmd)
             subprocess.check_call(cmd)
@@ -375,6 +374,42 @@ Test: n/a"""
                                  git_message_update,
                                  topic,
                                  presubmit=not options.no_presubmit)
+
+    def release_studio(options):
+        assert len(options.version) == 1
+        version = options.version[0]
+        print("Releasing for STUDIO")
+        if options.dry_run:
+            return 'DryRun: omitting studio release for %s' % version
+
+        if options.studio:
+            release_studio_in_checkout(options.studio, options)
+        else:
+            assert options.studio_branch
+            with tempfile.TemporaryDirectory(
+                    # Checkout in current working directory, as the Studio project
+                    # is too large to safely go into /tmp.
+                    dir=os.getcwd(),
+                    prefix='studio-release-tmp-') as temp:
+                with utils.ChangedWorkingDirectory(temp):
+                    cmd = ('REPO_ALLOW_SHALLOW=0 repo init -c -u '
+                           'sso://googleplex-android/platform/manifest -b '
+                           f'{options.studio_branch} --use-superproject '
+                           '--partial-clone --clone-filter=blob:limit=10k && '
+                           'repo sync -c -j16')
+                    utils.PrintCmd(cmd)
+                    subprocess.check_call(cmd, shell=True)
+                release_studio_in_checkout(temp, options)
+                if not options.yes:
+                    while True:
+                        try:
+                            answer = input(
+                                "Type 'delete' to finish and delete checkout in %s: "
+                                % temp)
+                            if answer == 'delete':
+                                break
+                        except KeyboardInterrupt:
+                            pass
 
     return release_studio
 
@@ -1164,11 +1199,17 @@ def parse_options():
                         default=[],
                         action='append',
                         help='List of bugs for release version')
-    result.add_argument(
+    studio_group = result.add_mutually_exclusive_group()
+    studio_group.add_argument(
         '--studio',
         metavar=('<path>'),
         help='Release for studio by setting the path to a studio '
         'checkout')
+    studio_group.add_argument(
+        '--studio-branch',
+        '--studio_branch',
+        metavar=('<branch name>'),
+        help='Release for studio by setting the branch name to release to')
     result.add_argument('--topic',
                         default=None,
                         metavar=('<topic>'),
@@ -1222,7 +1263,8 @@ def parse_options():
                         help='Location for dry run output.')
     args = result.parse_args()
 
-    if args.studio and not args.update_desugar_library_in_studio:
+    if (args.studio or
+            args.studio_branch) and not args.update_desugar_library_in_studio:
         if len(args.version) != 1:
             print("ERROR: only one version supported for studio")
             sys.exit(1)
@@ -1249,13 +1291,13 @@ def main():
     targets_to_run = []
 
     if args.new_dev_branch:
-        if args.google3 or args.studio or args.maven:
+        if args.google3 or args.studio or args.studio_branch or args.maven:
             print('Cannot create a branch and roll at the same time.')
             sys.exit(1)
         targets_to_run.append(prepare_branch(args))
 
     if args.dev_release:
-        if args.google3 or args.studio or args.maven:
+        if args.google3 or args.studio or args.studio_branch or args.maven:
             print('Cannot create a dev release and roll at the same time.')
             sys.exit(1)
         targets_to_run.append(prepare_release(args))
@@ -1264,7 +1306,8 @@ def main():
 
     if args.google3:
         targets_to_run.append(prepare_google3(args))
-    if args.studio and not args.update_desugar_library_in_studio:
+    if (args.studio or
+            args.studio_branch) and not args.update_desugar_library_in_studio:
         targets_to_run.append(prepare_studio(args))
     if args.maven:
         targets_to_run.append(prepare_maven(args))

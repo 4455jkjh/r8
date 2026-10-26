@@ -8,6 +8,7 @@ import static com.android.tools.r8.KotlinTestBase.getCompileMemoizer;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
+import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -15,6 +16,7 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -108,7 +110,13 @@ public class KotlinInlineFunctionInlineDebugTest extends KotlinDebugTestBase {
                       .sorted(Comparator.comparingLong(Variable::getCodeIndex))
                       .map(Variable::getName)
                       .collect(Collectors.toList());
-              assertEquals(ImmutableList.of("a$iv", "b$iv", "c$iv"), inlinedParametersByCodeIndex);
+              assertEquals(
+                  kotlinParameters
+                          .getCompilerVersion()
+                          .isGreaterThanOrEqualTo(KotlinCompilerVersion.KOTLINC_2_2_0)
+                      ? ImmutableList.of("a$iv", "b$iv", "c$iv")
+                      : Collections.emptyList(),
+                  inlinedParametersByCodeIndex);
             }),
         run());
   }

@@ -53,7 +53,7 @@ public class MetadataRewriteAnonymousTest extends KotlinMetadataTestBase {
     Path libJar = libJars.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/anonymous_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -83,7 +83,7 @@ public class MetadataRewriteAnonymousTest extends KotlinMetadataTestBase {
             .inspect(this::inspect)
             .writeToZip();
     Path main =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/anonymous_app", "main"))
             .setOutputPath(temp.newFolder().toPath())

@@ -41,16 +41,18 @@ public class MetadataRewriteRemovedCompanionTest extends KotlinMetadataTestBase 
   }
 
   private static final KotlinCompileMemoizer companionRemoveJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_lib", "lib"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_lib", "lib"));
 
   @Test
   public void smokeTest() throws Exception {
     Path libJar = companionRemoveJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -76,9 +78,10 @@ public class MetadataRewriteRemovedCompanionTest extends KotlinMetadataTestBase 
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -103,9 +106,10 @@ public class MetadataRewriteRemovedCompanionTest extends KotlinMetadataTestBase 
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
+        kotlinc(parameters.getRuntime(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/companion_remove_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 

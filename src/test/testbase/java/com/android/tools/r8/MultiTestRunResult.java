@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.naming.retrace.StackTrace;
@@ -38,8 +39,8 @@ public abstract class MultiTestRunResult<RR extends MultiTestRunResult<RR>>
   public SingleTestRunResult asSingleRuntimeResult() {
     if (singleRunResults.size() != 1) {
       throw new Unreachable(
-          "Cannot access single-VM result on CollapsedDexRuntimes; use"
-              + " withoutCollapsedDexRuntimes()");
+          "Cannot access single-VM result on collapsed runtimes; use"
+              + " withoutCollapsedCfRuntimes() or withoutCollapsedDexRuntimes()");
     }
     return singleRunResults.get(0);
   }
@@ -121,6 +122,39 @@ public abstract class MultiTestRunResult<RR extends MultiTestRunResult<RR>>
   public RR writeProcessResult(PrintStream ps) {
     for (SingleTestRunResult singleResult : singleRunResults) {
       singleResult.writeProcessResult(ps);
+    }
+    return self();
+  }
+
+  @Override
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      RR applyIfCfRuntime(
+          Predicate<CfVm> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<CfVm> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<CfVm> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<CfVm> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    for (SingleTestRunResult singleResult : singleRunResults) {
+      singleResult.applyIfCfRuntime(
+          condition1,
+          thenConsumer1,
+          condition2,
+          thenConsumer2,
+          condition3,
+          thenConsumer3,
+          condition4,
+          thenConsumer4,
+          elseConsumer);
     }
     return self();
   }

@@ -60,8 +60,8 @@ public class DayTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private String getUKStandaloneExpectedResult() {
-    if (parameters.isCfRuntime() && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
+  private String getUKStandaloneExpectedResult(CfVm cfVm) {
+    if (parameters.isCfRuntime() && cfVm.isOlderThan(CfVm.JDK9)) {
       return UK_EXPECTED_RESULT_JDK8;
     }
     if (parameters.isDexRuntime()
@@ -72,8 +72,8 @@ public class DayTest extends DesugaredLibraryTestBase {
     return UK_EXPECTED_RESULT;
   }
 
-  private String getSimplifiedChineseStandaloneExpectedResult() {
-    if (parameters.isCfRuntime() && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
+  private String getSimplifiedChineseStandaloneExpectedResult(CfVm cfVm) {
+    if (parameters.isCfRuntime() && cfVm.isOlderThan(CfVm.JDK9)) {
       return SIMPLIFIED_CHINESE_EXPECTED_RESULT_JDK8;
     }
     if (parameters.isDexRuntime()
@@ -84,8 +84,8 @@ public class DayTest extends DesugaredLibraryTestBase {
     return SIMPLIFIED_CHINESE_EXPECTED_RESULT;
   }
 
-  private String getSimplifiedChineseExpectedResult() {
-    if (parameters.isCfRuntime() && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
+  private String getSimplifiedChineseExpectedResult(CfVm cfVm) {
+    if (parameters.isCfRuntime() && cfVm.isOlderThan(CfVm.JDK9)) {
       return SIMPLIFIED_CHINESE_EXPECTED_RESULT_JDK8;
     }
     if (parameters.isDexRuntime()
@@ -96,11 +96,11 @@ public class DayTest extends DesugaredLibraryTestBase {
     return SIMPLIFIED_CHINESE_EXPECTED_RESULT;
   }
 
-  private String getExpectedResult() {
-    return getUKStandaloneExpectedResult()
+  private String getExpectedResult(CfVm cfVm) {
+    return getUKStandaloneExpectedResult(cfVm)
         + UK_EXPECTED_RESULT
-        + getSimplifiedChineseStandaloneExpectedResult()
-        + getSimplifiedChineseExpectedResult();
+        + getSimplifiedChineseStandaloneExpectedResult(cfVm)
+        + getSimplifiedChineseExpectedResult(cfVm);
   }
 
   @Test
@@ -111,14 +111,17 @@ public class DayTest extends DesugaredLibraryTestBase {
       testForJvm(parameters)
           .addInnerClasses(DayTest.class)
           .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutput(getExpectedResult());
+          .applyIfCfRuntime(
+              vm -> vm.isOlderThan(CfVm.JDK9),
+              r -> r.assertSuccessWithOutput(getExpectedResult(CfVm.JDK8)),
+              r -> r.assertSuccessWithOutput(getExpectedResult(CfVm.JDK9)));
       return;
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(getExpectedResult());
+        .assertSuccessWithOutput(getExpectedResult(null));
   }
 
   static class Main {

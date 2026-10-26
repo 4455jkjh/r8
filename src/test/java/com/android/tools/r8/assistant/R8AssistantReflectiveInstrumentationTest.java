@@ -23,6 +23,7 @@ import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,7 +72,7 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
-        .inspect(inspector -> inspectStaticCallsInReflectOn(5, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(9, inspector))
         .addVmArguments("-Dcom.android.tools.r8.reflectiveJsonLogger=" + jsonLog.toString())
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccess();
@@ -92,7 +93,7 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
-        .inspect(inspector -> inspectStaticCallsInReflectOn(5, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(9, inspector))
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines(
             "Custom receiver " + Bar.class.getName(),
@@ -110,19 +111,34 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
-        .inspect(inspector -> inspectStaticCallsInReflectOn(5, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(9, inspector))
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines("correct", "correct", "correct");
   }
 
   // Injected into the app by the R8Assistant.
+  @Test
+  public void testInstrumentationWithCustomOracleTrackingResults() throws Exception {
+    testForAssistant()
+        .addProgramClasses(TestClass.class, Foo.class, Bar.class)
+        .addInstrumentationClasses(ResultTrackingInstrumentationClass.class)
+        .setCustomReflectiveOperationReceiver(ResultTrackingInstrumentationClass.class)
+        .setMinApi(parameters)
+        .compile()
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutputLines(
+            "Returned 0: " + Bar.class.getName(),
+            "Returned 1: callMe",
+            "Returned 2: " + Bar.class.getName());
+  }
+
   public static class TestReflectiveOperationReceiverStackHandler
       extends EmptyReflectiveOperationReceiver {
 
     int lineNumberOfNewInstance = -1;
 
     @Override
-    public void onClassForName(
+    public int onClassForName(
         Stack stack, String className, boolean initialize, ClassLoader loader) {
       if (!className.equals(Bar.class.getName())) {
         throw new RuntimeException("Wrong class name passed");
@@ -132,6 +148,7 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
         throw new RuntimeException("Wrong line number on top of stack " + lineNumberOfTopOfStack);
       }
       ensureCorrectStack(stack);
+      return NO_ID;
     }
 
     private void ensureCorrectStack(Stack stack) {
@@ -157,16 +174,17 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
     }
 
     @Override
-    public void onClassNewInstance(Stack stack, Class<?> clazz) {
+    public int onClassNewInstance(Stack stack, Class<?> clazz) {
       if (!clazz.equals(Bar.class)) {
         throw new RuntimeException("Wrong class passed");
       }
       ensureCorrectStack(stack);
       lineNumberOfNewInstance = getLineNumberOfTopOfStack(stack);
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredMethod(
+    public int onClassGetDeclaredMethod(
         Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
       if (!clazz.equals(Bar.class) || !method.equals("callMe")) {
         throw new RuntimeException("Wrong method passed");
@@ -176,6 +194,7 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
         throw new RuntimeException("Wrong line number on top of stack " + lineNumberOfTopOfStack);
       }
       ensureCorrectStack(stack);
+      return NO_ID;
     }
 
     @Override
@@ -194,22 +213,57 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
     assertEquals(count, codeCount);
   }
 
+  public static class ResultTrackingInstrumentationClass extends EmptyReflectiveOperationReceiver {
+    @Override
+    public int onClassNewInstance(Stack stack, Class<?> clazz) {
+      return 0;
+    }
+
+    @Override
+    public int onClassGetDeclaredMethod(
+        Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
+      return 1;
+    }
+
+    @Override
+    public int onClassForName(
+        Stack stack, String className, boolean initialize, ClassLoader classLoader) {
+      return 2;
+    }
+
+    @Override
+    public void onReflectiveOperationReturned(int id, Object result) {
+      String summary;
+      if (result instanceof Class) {
+        summary = ((Class<?>) result).getName();
+      } else if (result instanceof Method) {
+        summary = ((Method) result).getName();
+      } else {
+        summary = result.getClass().getName();
+      }
+      System.out.println("Returned " + id + ": " + summary);
+    }
+  }
+
   public static class InstrumentationClass extends EmptyReflectiveOperationReceiver {
     @Override
-    public void onClassForName(
+    public int onClassForName(
         Stack stack, String className, boolean initialize, ClassLoader classLoader) {
       System.out.println("Custom receiver classForName " + className);
+      return NO_ID;
     }
 
     @Override
-    public void onClassNewInstance(Stack stack, Class<?> clazz) {
+    public int onClassNewInstance(Stack stack, Class<?> clazz) {
       System.out.println("Custom receiver " + clazz.getName());
+      return NO_ID;
     }
 
     @Override
-    public void onClassGetDeclaredMethod(
+    public int onClassGetDeclaredMethod(
         Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
       System.out.println("Custom receiver method " + method);
+      return NO_ID;
     }
   }
 

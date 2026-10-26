@@ -7,8 +7,6 @@ package com.android.tools.r8.profile.art.completeness;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -47,11 +45,13 @@ public class NestBasedAccessBridgesProfileRewritingTest extends TestBase {
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
-    assumeTrue(parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK11));
     testForJvm(parameters)
         .addProgramClassFileData(getProgramClassFileData())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("1", "2", "3", "4");
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThan(CfVm.JDK11),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+            r -> r.assertSuccessWithOutputLines("1", "2", "3", "4"));
   }
 
   @Test
@@ -69,7 +69,6 @@ public class NestBasedAccessBridgesProfileRewritingTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
-    assumeFalse(parameters.isCfRuntime() && parameters.asCfRuntime().isOlderThan(CfVm.JDK11));
     testForR8(parameters.getBackend())
         .addProgramClassFileData(getProgramClassFileData())
         .addKeepMainRule(Main.class)
@@ -80,7 +79,10 @@ public class NestBasedAccessBridgesProfileRewritingTest extends TestBase {
         .compile()
         .inspectResidualArtProfile(this::inspectR8)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("1", "2", "3", "4");
+        .applyIfCfRuntime(
+            vm -> vm.isOlderThan(CfVm.JDK11),
+            r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class),
+            r -> r.assertSuccessWithOutputLines("1", "2", "3", "4"));
   }
 
   private List<byte[]> getProgramClassFileData() throws Exception {
@@ -104,11 +106,7 @@ public class NestBasedAccessBridgesProfileRewritingTest extends TestBase {
 
   private void inspectD8(ArtProfileInspector profileInspector, CodeInspector inspector)
       throws Exception {
-    inspect(
-        profileInspector,
-        inspector,
-        parameters.canUseNestBasedAccessesWhenDesugaring(),
-        false);
+    inspect(profileInspector, inspector, parameters.canUseNestBasedAccessesWhenDesugaring(), false);
   }
 
   private void inspectR8(ArtProfileInspector profileInspector, CodeInspector inspector)
@@ -116,7 +114,7 @@ public class NestBasedAccessBridgesProfileRewritingTest extends TestBase {
     inspect(
         profileInspector,
         inspector,
-        parameters.canUseNestBasedAccesses(),
+        parameters.isCfRuntime() || parameters.canUseNestBasedAccesses(),
         true);
   }
 

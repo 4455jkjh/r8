@@ -8,6 +8,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
 
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.naming.retrace.StackTrace;
@@ -270,6 +271,164 @@ public abstract class TestRunResult<RR extends TestRunResult<RR>> {
       elseConsumer.accept(self());
     }
     return self();
+  }
+
+  public <T extends Throwable> RR applyIfCfRuntime(
+      Predicate<CfVm> condition, ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer)
+      throws T {
+    return applyIfCfRuntime(condition, thenConsumer, emptyThrowingConsumer());
+  }
+
+  public <S extends Throwable, T extends Throwable> RR applyIfCfRuntime(
+      Predicate<CfVm> condition1,
+      ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+      ThrowingConsumer<? super SingleTestRunResult, T> elseConsumer)
+      throws S, T {
+    Predicate<CfVm> condition2 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer2 =
+        ThrowingConsumer.unreachable();
+    return applyIfCfRuntime(condition1, thenConsumer1, condition2, thenConsumer2, elseConsumer);
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable> RR applyIfCfRuntime(
+      Predicate<CfVm> condition1,
+      ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+      Predicate<CfVm> condition2,
+      ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+      ThrowingConsumer<? super SingleTestRunResult, U> elseConsumer)
+      throws S, T, U {
+    Predicate<CfVm> condition3 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer3 =
+        ThrowingConsumer.unreachable();
+    return applyIfCfRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        elseConsumer);
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable, V extends Throwable>
+      RR applyIfCfRuntime(
+          Predicate<CfVm> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<CfVm> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<CfVm> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V {
+    Predicate<CfVm> condition4 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer4 =
+        ThrowingConsumer.unreachable();
+    return applyIfCfRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        condition4,
+        thenConsumer4,
+        elseConsumer);
+  }
+
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      RR applyIfCfRuntime(
+          Predicate<CfVm> condition1,
+          ThrowingConsumer<? super SingleTestRunResult, S> thenConsumer1,
+          Predicate<CfVm> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<CfVm> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<CfVm> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    throw new Unreachable();
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable> RR applyIfCfRuntime(
+      boolean condition1,
+      ThrowingConsumer<RR, S> thenConsumer1,
+      Predicate<CfVm> condition2,
+      ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+      ThrowingConsumer<? super SingleTestRunResult, U> elseConsumer)
+      throws S, T, U {
+    Predicate<CfVm> condition3 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer3 =
+        ThrowingConsumer.unreachable();
+    return applyIfCfRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        elseConsumer);
+  }
+
+  public <S extends Throwable, T extends Throwable, U extends Throwable, V extends Throwable>
+      RR applyIfCfRuntime(
+          boolean condition1,
+          ThrowingConsumer<RR, S> thenConsumer1,
+          Predicate<CfVm> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<CfVm> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V {
+    Predicate<CfVm> condition4 = Predicates.alwaysFalse();
+    ThrowingConsumer<SingleTestRunResult, RuntimeException> thenConsumer4 =
+        ThrowingConsumer.unreachable();
+    return applyIfCfRuntime(
+        condition1,
+        thenConsumer1,
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        condition4,
+        thenConsumer4,
+        elseConsumer);
+  }
+
+  public <
+          S extends Throwable,
+          T extends Throwable,
+          U extends Throwable,
+          V extends Throwable,
+          W extends Throwable>
+      RR applyIfCfRuntime(
+          boolean condition1,
+          ThrowingConsumer<RR, S> thenConsumer1,
+          Predicate<CfVm> condition2,
+          ThrowingConsumer<? super SingleTestRunResult, T> thenConsumer2,
+          Predicate<CfVm> condition3,
+          ThrowingConsumer<? super SingleTestRunResult, U> thenConsumer3,
+          Predicate<CfVm> condition4,
+          ThrowingConsumer<? super SingleTestRunResult, W> thenConsumer4,
+          ThrowingConsumer<? super SingleTestRunResult, V> elseConsumer)
+          throws S, T, U, V, W {
+    if (condition1) {
+      thenConsumer1.accept(self());
+      return self();
+    }
+    return applyIfCfRuntime(
+        condition2,
+        thenConsumer2,
+        condition3,
+        thenConsumer3,
+        condition4,
+        thenConsumer4,
+        elseConsumer);
   }
 
   public <T extends Throwable> RR applyIfDexRuntime(

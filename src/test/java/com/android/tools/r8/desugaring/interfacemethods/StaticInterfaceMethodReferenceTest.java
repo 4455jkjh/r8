@@ -78,8 +78,7 @@ public class StaticInterfaceMethodReferenceTest extends TestBase {
   private void checkResult(TestRunResult<?> result) {
     // If the reference is of correct type, or running on JDK8 which allows mismatch the
     // output is the expected print.
-    if (isInterface
-        || (parameters.isCfRuntime() && parameters.getRuntime().asCf().getVm() == CfVm.JDK8)) {
+    if (isInterface) {
       result.assertSuccessWithOutputLines("Target::foo");
       return;
     }
@@ -92,8 +91,11 @@ public class StaticInterfaceMethodReferenceTest extends TestBase {
       return;
     }
 
-    // Otherwise the run should result in an ICCE.
-    result.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
+    // Otherwise the run should result in an ICCE on JDK9+.
+    result.applyIfCfRuntime(
+        vm -> vm == CfVm.JDK8,
+        r -> r.assertSuccessWithOutputLines("Target::foo"),
+        r -> r.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class));
   }
 
   private static byte[] getTarget(boolean isInterface) throws Exception {

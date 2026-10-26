@@ -68,8 +68,8 @@ public class MonthTest extends DesugaredLibraryTestBase {
     this.compilationSpecification = compilationSpecification;
   }
 
-  private String getUKStandaloneExpectedResult() {
-    if (parameters.isCfRuntime() && parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
+  private String getUKStandaloneExpectedResult(CfVm cfVm) {
+    if (parameters.isCfRuntime() && cfVm.isOlderThan(CfVm.JDK9)) {
       return MISSING_STANDALONE;
     }
     if (parameters.isDexRuntime()
@@ -80,9 +80,9 @@ public class MonthTest extends DesugaredLibraryTestBase {
     return UK_EXPECTED_RESULT;
   }
 
-  private String getRUExpectedResult(Version version) {
+  private String getRUExpectedResult(CfVm cfVm, Version version) {
     if (parameters.isCfRuntime()) {
-      if (parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
+      if (cfVm.isOlderThan(CfVm.JDK9)) {
         return RU_EXPECTED_RESULT;
       }
       return RU_EXPECTED_RESULT_DOT;
@@ -102,9 +102,9 @@ public class MonthTest extends DesugaredLibraryTestBase {
     return RU_EXPECTED_RESULT_DOT;
   }
 
-  private String getRUStandaloneExpectedResult(Version version) {
+  private String getRUStandaloneExpectedResult(CfVm cfVm, Version version) {
     if (parameters.isCfRuntime()) {
-      if (parameters.getRuntime().asCf().isOlderThan(CfVm.JDK9)) {
+      if (cfVm.isOlderThan(CfVm.JDK9)) {
         return RU_STANDALONE_EXPECTED_RESULT_ALL_UPPERCASE;
       }
       return RU_STANDALONE_EXPECTED_RESULT_NARROW_UPPERCASE;
@@ -124,11 +124,11 @@ public class MonthTest extends DesugaredLibraryTestBase {
     return RU_STANDALONE_EXPECTED_RESULT_NARROW_UPPERCASE;
   }
 
-  private String getExpectedResult(Version version) {
-    return getUKStandaloneExpectedResult()
+  private String getExpectedResult(CfVm cfVm, Version version) {
+    return getUKStandaloneExpectedResult(cfVm)
         + UK_EXPECTED_RESULT
-        + getRUStandaloneExpectedResult(version)
-        + getRUExpectedResult(version);
+        + getRUStandaloneExpectedResult(cfVm, version)
+        + getRUExpectedResult(cfVm, version);
   }
 
   @Test
@@ -138,7 +138,10 @@ public class MonthTest extends DesugaredLibraryTestBase {
       testForJvm(parameters)
           .addInnerClasses(MonthTest.class)
           .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutput(getExpectedResult(null));
+          .applyIfCfRuntime(
+              vm -> vm.isOlderThan(CfVm.JDK9),
+              r -> r.assertSuccessWithOutput(getExpectedResult(CfVm.JDK8, null)),
+              r -> r.assertSuccessWithOutput(getExpectedResult(CfVm.JDK9, null)));
       return;
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
@@ -147,10 +150,10 @@ public class MonthTest extends DesugaredLibraryTestBase {
         .run(parameters.getRuntime(), Main.class)
         .applyIfDexRuntime(
             version -> version.isOlderThan(Version.V4_4_4),
-            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V4_0_4)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(null, Version.V4_0_4)),
             version -> version.isInRangeInclusive(Version.V4_4_4, Version.V5_1_1),
-            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V4_4_4)),
-            r -> r.assertSuccessWithOutput(getExpectedResult(Version.V6_0_1)));
+            r -> r.assertSuccessWithOutput(getExpectedResult(null, Version.V4_4_4)),
+            r -> r.assertSuccessWithOutput(getExpectedResult(null, Version.V6_0_1)));
   }
 
   static class Main {

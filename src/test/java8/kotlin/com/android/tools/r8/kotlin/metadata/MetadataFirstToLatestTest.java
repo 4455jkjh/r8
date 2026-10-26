@@ -140,7 +140,7 @@ public class MetadataFirstToLatestTest extends KotlinMetadataTestBase {
       throws Exception {
     Path output =
         kotlinc(
-                parameters.getRuntime().asCf(),
+                parameters.getRuntime(),
                 new KotlinCompiler(kotlinCompilerVersion),
                 targetVersion,
                 lambdaGeneration)
