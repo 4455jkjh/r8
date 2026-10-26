@@ -1010,8 +1010,6 @@
         );
       }
 
-      const brKind = worstKind(brColumns.map((i) => i.kind));
-
       // The card strip shows each builder's status on one commit: the newest
       // branch commit that has any build (release builders only trigger on
       // Version.java changes, so the branch tip may have none).
@@ -1040,6 +1038,13 @@
           ? b.buildUrl || `${MILO_BUILD_BASE}${encodeURIComponent(b.id)}`
           : col.builderUrl;
       }
+      // A branch whose newest built commit still has builds pending is
+      // RUNNING, rather than showing the previous commit's results.
+      const brPending = brColumns.filter((c) => c.stripKind === "running");
+      const brKind =
+        brPending.length > 0
+          ? "running"
+          : worstKind(brColumns.map((i) => i.kind));
       const brFailing = brColumns.filter(
         (i) => i.kind === "red" || i.kind === "infra",
       );
@@ -1075,6 +1080,7 @@
         redCount: brRed.length,
         infraCount: brInfra.length,
         buildingCount: brBuilding.length,
+        pendingCount: brPending.length,
         failingItems: brFailing,
         columns: brColumns,
         commits: visBrCommits,
@@ -1503,16 +1509,20 @@
     const rowsHtml = rel.branchSummaries
       .map((br) => {
         const tagText =
-          br.kind === "red"
-            ? br.infraCount > 0
-              ? `${br.redCount}F · ${br.infraCount}I`
-              : `${br.redCount} FAIL`
-            : br.kind === "infra"
-              ? `${br.infraCount} INFRA`
-              : "ALL OK";
+          br.kind === "running"
+            ? "RUNNING"
+            : br.kind === "red"
+              ? br.infraCount > 0
+                ? `${br.redCount}F · ${br.infraCount}I`
+                : `${br.redCount} FAIL`
+              : br.kind === "infra"
+                ? `${br.infraCount} INFRA`
+                : "ALL OK";
 
         let failSummaryHtml = "";
-        if (br.failingItems.length > 0) {
+        if (br.kind === "running") {
+          failSummaryHtml = `<div class="branch-fail-names is-running">⟳ ${br.pendingCount} of ${br.totalCount} running on ${escapeHtml((br.stripSha || "").slice(0, 8))}</div>`;
+        } else if (br.failingItems.length > 0) {
           const shown = br.failingItems.slice(0, 2).map((i) => i.label);
           const extra = br.failingItems.length - shown.length;
           failSummaryHtml = `<div class="branch-fail-names is-failing" title="${escapeHtml(br.failingItems.map((i) => i.label).join(", "))}">${escapeHtml(shown.join(", "))}${extra > 0 ? ` <span class="branch-fail-more">+${extra}</span>` : ""}</div>`;
