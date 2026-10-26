@@ -305,19 +305,37 @@ def prepare_studio(args):
         with utils.ChangedWorkingDirectory(tools_base):
             if not options.use_existing_work_branch:
                 subprocess.check_call(['repo', 'start', change_name])
-            artifacts_bzl = os.path.join('bazel', 'maven', 'artifacts.bzl')
-            for line in open(artifacts_bzl, 'r'):
-                result = re.search(r'"com\.android\.tools:r8:([^"]+)"', line)
-                if result:
-                    previous_version = result.group(1)
-                    break
-            if not previous_version:
-                print(
-                    f'ERROR: Could not find previous R8 version in {artifacts_bzl}'
-                )
-                sys.exit(1)
-            sed(r'"com\.android\.tools:r8:[^"]+"',
-                f'"com.android.tools:r8:{version}"', artifacts_bzl)
+            r8_version_bzl = os.path.join('bazel', 'maven', 'r8-version.bzl')
+            if os.path.exists(r8_version_bzl):
+                for line in open(r8_version_bzl, 'r'):
+                    result = re.search(r'R8_VERSION = "([^"]+)"', line)
+                    if result:
+                        previous_version = result.group(1)
+                        break
+                if not previous_version:
+                    print(
+                        f'ERROR: Could not find previous R8 version in {r8_version_bzl}'
+                    )
+                    sys.exit(1)
+                sed(r'R8_VERSION = "[^"]+"', f'R8_VERSION = "{version}"',
+                    r8_version_bzl)
+            else:
+                # Look for the version in artifacts.bzl as well for
+                # compatibility with older studio branches.
+                artifacts_bzl = os.path.join('bazel', 'maven', 'artifacts.bzl')
+                for line in open(artifacts_bzl, 'r'):
+                    result = re.search(r'"com\.android\.tools:r8:([^"]+)"',
+                                       line)
+                    if result:
+                        previous_version = result.group(1)
+                        break
+                if not previous_version:
+                    print(
+                        f'ERROR: Could not find previous R8 version in {artifacts_bzl}'
+                    )
+                    sys.exit(1)
+                sed(r'"com\.android\.tools:r8:[^"]+"',
+                    f'"com.android.tools:r8:{version}"', artifacts_bzl)
             maven_fetch = os.path.join('bazel', 'maven', 'maven_fetch.sh')
             utils.PrintCmd([maven_fetch])
             subprocess.check_call([maven_fetch])
