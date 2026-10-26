@@ -91,6 +91,10 @@ public class TestDeps {
     dependencies.put("DESUGAR_LIBRARY_RELEASE_1_1_1", null);
     dependencies.put("DESUGAR_LIBRARY_RELEASE_1_1_5", null);
     dependencies.put("DESUGAR_LIBRARY_RELEASE_2_0_3", null);
+    dependencies.put("DEX2OAT_33_10", null);
+    dependencies.put("DEX2OAT_35_14", null);
+    dependencies.put("DEX2OAT_36_0", null);
+    dependencies.put("DEX2OAT_HEAD", null);
     dependencies.put("EXAMPLES", null);
     dependencies.put("EXAMPLES_ANDROID_N", null);
     dependencies.put("EXAMPLES_ANDROID_O", null);
@@ -313,6 +317,22 @@ public class TestDeps {
 
   public static Path getDesugarLibraryRelease2_0_3Dir() {
     return getDependency("DESUGAR_LIBRARY_RELEASE_2_0_3");
+  }
+
+  public static Path getDex2Oat33_10Dir() {
+    return getDependency("DEX2OAT_33_10");
+  }
+
+  public static Path getDex2Oat35_14Dir() {
+    return getDependency("DEX2OAT_35_14");
+  }
+
+  public static Path getDex2Oat36_0Dir() {
+    return getDependency("DEX2OAT_36_0");
+  }
+
+  public static Path getDex2OatHeadDir() {
+    return getDependency("DEX2OAT_HEAD");
   }
 
   public static Path getExamplesDir() {

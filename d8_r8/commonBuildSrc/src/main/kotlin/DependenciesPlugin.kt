@@ -337,7 +337,6 @@ public object ThirdPartyDeps {
     )
   public val androidJars: List<ThirdPartyDependency> = getThirdPartyAndroidJars()
   public val androidVMs: List<ThirdPartyDependency> = getThirdPartyAndroidVms()
-  public val dex2Oats: List<ThirdPartyDependency> = getThirdPartyDex2Oats()
   public val apiDatabase: ThirdPartyDependency =
     ThirdPartyDependency(
       "apiDatabase",
@@ -476,6 +475,10 @@ public object ThirdPartyDeps {
     getThirdPartyDesugarLibraryRelease("1.1.5")
   public val desugarLibraryRelease2_0_3: ThirdPartyDependency =
     getThirdPartyDesugarLibraryRelease("2.0.3")
+  public val dex2Oat33_10: ThirdPartyDependency = getThirdPartyDex2Oat("33.10")
+  public val dex2Oat35_14: ThirdPartyDependency = getThirdPartyDex2Oat("35.14")
+  public val dex2Oat36_0: ThirdPartyDependency = getThirdPartyDex2Oat("36.0")
+  public val dex2OatHead: ThirdPartyDependency = getThirdPartyDex2Oat("head")
   // TODO(b/289363570): This could probably be removed.
   public val framework: ThirdPartyDependency =
     ThirdPartyDependency(
@@ -795,12 +798,11 @@ private fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
   return ThirdPartyDependency(version, Paths.get("third_party", "android_jar", version).toFile())
 }
 
-private fun getThirdPartyDex2Oats(): List<ThirdPartyDependency> {
-  return listOf("head", "36.0", "35.14", "33.10").map(::getThirdPartyDex2Oat)
-}
-
 private fun getThirdPartyDex2Oat(version: String): ThirdPartyDependency {
-  return ThirdPartyDependency(version, Paths.get("third_party", "dex2oat", version).toFile())
+  return ThirdPartyDependency(
+    "dex2oat-$version",
+    Paths.get("third_party", "dex2oat", version).toFile(),
+  )
 }
 
 private fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {

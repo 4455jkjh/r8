@@ -196,6 +196,14 @@ registerTestDep(
   "DESUGAR_LIBRARY_RELEASE_2_0_3",
 )
 
+registerTestDep("dex2Oat33_10", ThirdPartyDeps.dex2Oat33_10, "DEX2OAT_33_10")
+
+registerTestDep("dex2Oat35_14", ThirdPartyDeps.dex2Oat35_14, "DEX2OAT_35_14")
+
+registerTestDep("dex2Oat36_0", ThirdPartyDeps.dex2Oat36_0, "DEX2OAT_36_0")
+
+registerTestDep("dex2OatHead", ThirdPartyDeps.dex2OatHead, "DEX2OAT_HEAD")
+
 registerTestDep("examples", ThirdPartyDeps.examples, "EXAMPLES")
 
 registerTestDep("examplesAndroidN", ThirdPartyDeps.examplesAndroidN, "EXAMPLES_ANDROID_N")

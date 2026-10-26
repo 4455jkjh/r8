@@ -2470,22 +2470,21 @@ public class ToolHelper {
 
   private static ProcessResult runDex2OatV13AndNewer(
       Path dexFile, Path oatFile, Path temp, DexVm vm) throws IOException {
-    String versionString;
+    Path dex2oatDir;
     if (vm.version == DexVm.Version.V13_0_0) {
-      versionString = "33.10";
+      dex2oatDir = TestDeps.getDex2Oat33_10Dir();
     } else if (vm.version == DexVm.Version.V15_0_0) {
-      versionString = "35.14";
+      dex2oatDir = TestDeps.getDex2Oat35_14Dir();
     } else if (vm.version == DexVm.Version.V16_0_0 || vm.version == DexVm.Version.V16_1_0) {
-      versionString = "36.0";
+      dex2oatDir = TestDeps.getDex2Oat36_0Dir();
     } else if (vm.version == DexVm.Version.V17_0_0
         || vm.version == DexVm.Version.V17_1_0
         || vm.version == DexVm.Version.V17_2_0) {
-      versionString = "head";
+      dex2oatDir = TestDeps.getDex2OatHeadDir();
     } else {
       throw new Unreachable();
     }
 
-    Path dex2oatDir = Paths.get(THIRD_PARTY_DIR, "dex2oat", versionString);
     List<String> command = new ArrayList<>();
     command.add(
         dex2oatDir
@@ -2500,7 +2499,7 @@ public class ToolHelper {
     command.add("--dex-file=" + dexFile.toAbsolutePath());
     command.add("--copy-dex-files=always");
 
-    if (!versionString.equals("33.10")) {
+    if (vm.version != DexVm.Version.V13_0_0) {
       command.add("--runtime-arg");
       command.add("-Xgc:CMC");
     }
@@ -2536,7 +2535,7 @@ public class ToolHelper {
                 .toAbsolutePath());
     command.add("--oat-file=" + oatFile.toAbsolutePath());
     command.add("--app-image-file=" + temp.resolve("classes.art").toAbsolutePath());
-    if (!versionString.equals("33.10")) {
+    if (vm.version != DexVm.Version.V13_0_0) {
       command.add("--force-allow-oj-inlines");
     }
     command.add("--instruction-set=" + getArchString(vm));
