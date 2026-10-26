@@ -13,11 +13,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.R8AssistantVersion;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.Version;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;
@@ -95,7 +95,8 @@ public class AssistantCommandLineTest extends TestBase {
   public void testVersion() throws Exception {
     ProcessResult result = run("--version");
     assertEquals(result.toString(), AssistantCommandLine.EXIT_SUCCESS, result.exitCode);
-    assertEquals(StringUtils.lines("R8 Assistant " + Version.getVersionString()), result.stdout);
+    assertEquals(
+        StringUtils.lines("R8 Assistant " + R8AssistantVersion.getVersionString()), result.stdout);
     assertEquals("", result.stderr);
   }
 
