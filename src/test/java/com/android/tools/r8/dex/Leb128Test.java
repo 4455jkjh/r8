@@ -5,6 +5,8 @@ package com.android.tools.r8.dex;
 
 import static com.android.tools.r8.dex.Constants.DEX_MAGIC_SIZE;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.LebUtils;
@@ -16,33 +18,33 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-/**
- * Test for encoding and decoding Leb128
- */
+/** Test for encoding and decoding Leb128 */
 @RunWith(Parameterized.class)
-public class Leb128Test {
+public class Leb128Test extends TestBase {
   private final int value;
 
-  public Leb128Test(int value) {
+  public Leb128Test(TestParameters parameters, int value) {
+    parameters.assertNoneRuntime();
     this.value = value;
   }
 
-  @Parameters(name = "{0}")
-  public static Collection<Integer> data() {
-    return Arrays.asList(
-      0,
-      0x3f, // Uses 6 bits
-      0x7f, // Uses 7 bits
-      0xff, // Uses 8 bits
-      0x3ff, // Uses 14 bits
-      0x407f, // Uses 15 bits with 7 consecutive 0s.
-      Integer.MIN_VALUE, // 10...0 pattern
-      0xffffffc0, // 1..1000000
-      0xffffff80, // 1..10000000
-      0xffffff00, // 1..100000000
-      0xffffc07f, // Uses 15 bits with 7 consecutive 0s.
-      Integer.MIN_VALUE + 1
-    );
+  @Parameters(name = "{0}, {1}")
+  public static Collection<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        Arrays.asList(
+            0,
+            0x3f, // Uses 6 bits
+            0x7f, // Uses 7 bits
+            0xff, // Uses 8 bits
+            0x3ff, // Uses 14 bits
+            0x407f, // Uses 15 bits with 7 consecutive 0s.
+            Integer.MIN_VALUE, // 10...0 pattern
+            0xffffffc0, // 1..1000000
+            0xffffff80, // 1..10000000
+            0xffffff00, // 1..100000000
+            0xffffc07f, // Uses 15 bits with 7 consecutive 0s.
+            Integer.MIN_VALUE + 1));
   }
 
   // Create a DexReader with correct file magic followed by the argument bytes. Positions the

@@ -3,7 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.dex;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ObjectArrays;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Assert;
@@ -15,27 +19,34 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class FileNamePrefixTest {
+public class FileNamePrefixTest extends TestBase {
 
   private final List<String> files;
   private final String expectedPrefix;
 
-  public FileNamePrefixTest(String[] files, String expectedPrefix) {
+  public FileNamePrefixTest(TestParameters parameters, String[] files, String expectedPrefix) {
+    parameters.assertNoneRuntime();
     this.files = ImmutableList.copyOf(files);
     this.expectedPrefix = expectedPrefix;
   }
 
-  @Parameters(name = "{index}: {1}")
+  @Parameters(name = "{index}: {2}")
   public static Collection<Object[]> data() {
-    return ImmutableList.of(
-        new Object[]{new String[]{"classes.dex", "classes2.dex"}, "classes"},
-        new Object[]{new String[]{"Classes.dex", "Classes2.dex"}, "Classes"},
-        new Object[]{new String[]{"classes.dex", "classes2.dix"}, null},
-        new Object[]{new String[]{"classes.dex", "classes2.xdex"}, null},
-        new Object[]{new String[]{"classes.dex", "classes1.dex"}, null},
-        new Object[]{new String[]{"classes.dex", "fields2.dex"}, null},
-        new Object[]{new String[]{"classes.dex", "classes2.dex", "classes4.dex"}, null}
-    );
+    return ListUtils.flatMap(
+        getTestParameters().withNoneRuntime().build(),
+        parameters ->
+            ListUtils.map(
+                ImmutableList.of(
+                    new Object[] {new String[] {"classes.dex", "classes2.dex"}, "classes"},
+                    new Object[] {new String[] {"Classes.dex", "Classes2.dex"}, "Classes"},
+                    new Object[] {new String[] {"classes.dex", "classes2.dix"}, null},
+                    new Object[] {new String[] {"classes.dex", "classes2.xdex"}, null},
+                    new Object[] {new String[] {"classes.dex", "classes1.dex"}, null},
+                    new Object[] {new String[] {"classes.dex", "fields2.dex"}, null},
+                    new Object[] {
+                      new String[] {"classes.dex", "classes2.dex", "classes4.dex"}, null
+                    }),
+                row -> ObjectArrays.concat(parameters, row)));
   }
 
   @Rule

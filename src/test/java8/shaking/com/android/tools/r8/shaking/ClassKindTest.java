@@ -4,13 +4,16 @@
 package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.classkinds.Annotation;
 import com.android.tools.r8.shaking.classkinds.Class;
 import com.android.tools.r8.shaking.classkinds.Enum;
 import com.android.tools.r8.shaking.classkinds.Interface;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,24 +30,35 @@ public class ClassKindTest extends TestBase {
   private static List<java.lang.Class<?>> CLASSES_TO_INCLUDE =
       ImmutableList.of(Annotation.class, Class.class, Enum.class, Interface.class);
 
-  public ClassKindTest(String config, List<java.lang.Class<?>> classes) {
+  public ClassKindTest(TestParameters parameters, String config, List<java.lang.Class<?>> classes) {
+    parameters.assertNoneRuntime();
     this.config = config;
     this.classes = classes;
   }
 
-  @Parameters(name = "{0}")
+  @Parameters(name = "{0}, {1}")
   public static Collection<Object[]> parameters() {
-    return ImmutableList.copyOf(
-        new Object[][] {
-          {"-keep interface *", ImmutableList.of(Interface.class, Annotation.class)},
-          {"-keep class *", CLASSES_TO_INCLUDE},
-          {"-keep enum *", ImmutableList.of(Enum.class)},
-          {"-keep @interface *", ImmutableList.of(Annotation.class)},
-          {"-keep !interface *", ImmutableList.of(Enum.class, Class.class)},
-          {"-keep !enum *", ImmutableList.of(Interface.class, Annotation.class, Class.class)},
-          {"-keep !@interface *", ImmutableList.of(Interface.class, Enum.class, Class.class)},
-          {"-keep !class *", ImmutableList.of()}
-        });
+    return ListUtils.flatMap(
+        getTestParameters().withNoneRuntime().build(),
+        parameters ->
+            ListUtils.map(
+                new Object[][] {
+                  {"-keep interface *", ImmutableList.of(Interface.class, Annotation.class)},
+                  {"-keep class *", CLASSES_TO_INCLUDE},
+                  {"-keep enum *", ImmutableList.of(Enum.class)},
+                  {"-keep @interface *", ImmutableList.of(Annotation.class)},
+                  {"-keep !interface *", ImmutableList.of(Enum.class, Class.class)},
+                  {
+                    "-keep !enum *",
+                    ImmutableList.of(Interface.class, Annotation.class, Class.class)
+                  },
+                  {
+                    "-keep !@interface *",
+                    ImmutableList.of(Interface.class, Enum.class, Class.class)
+                  },
+                  {"-keep !class *", ImmutableList.of()}
+                },
+                row -> ObjectArrays.concat(parameters, row)));
   }
 
   public final String config;

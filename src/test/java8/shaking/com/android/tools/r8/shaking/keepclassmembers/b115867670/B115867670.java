@@ -12,6 +12,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.forceproguardcompatibility.ProguardCompatibilityTestBase;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -69,12 +70,15 @@ public class B115867670 extends ProguardCompatibilityTestBase {
       ImmutableList.of(
           JsonClass.class, Foo.class, Foo.Interaction.class, Foo.Request.class, Main.class);
 
-  @Parameters(name = "shrinker: {0}")
-  public static Collection<Object> data() {
-    return ImmutableList.of(Shrinker.R8_COMPAT, Shrinker.R8_COMPAT_CF, Shrinker.R8, Shrinker.R8_CF);
+  @Parameters(name = "{0}, shrinker: {1}")
+  public static Collection<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        ImmutableList.of(Shrinker.R8_COMPAT, Shrinker.R8_COMPAT_CF, Shrinker.R8, Shrinker.R8_CF));
   }
 
-  public B115867670(Shrinker shrinker) {
+  public B115867670(TestParameters parameters, Shrinker shrinker) {
+    parameters.assertNoneRuntime();
     this.shrinker = shrinker;
   }
 

@@ -6,11 +6,13 @@ package com.android.tools.r8.naming;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.google.common.collect.ObjectArrays;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,10 +29,12 @@ import org.junit.runners.Parameterized.Parameters;
 public class MinifierTest extends NamingTestBase {
 
   public MinifierTest(
+      TestParameters parameters,
       String test,
       List<String> keepRulesFiles,
       BiConsumer<DexItemFactory, NamingLens> inspection) {
     super(test, keepRulesFiles, inspection);
+    parameters.assertNoneRuntime();
   }
 
   @Test
@@ -39,7 +43,7 @@ public class MinifierTest extends NamingTestBase {
     inspection.accept(naming);
   }
 
-  @Parameters(name = "test: {0} keep: {1}")
+  @Parameters(name = "{0} test: {1} keep: {2}")
   public static Collection<Object[]> data() {
     List<String> tests = Arrays.asList("naming001");
 
@@ -52,7 +56,11 @@ public class MinifierTest extends NamingTestBase {
     inspections.put("naming001:keep-rules-014.txt", MinifierTest::test001_rule014);
     inspections.put("naming001:keep-rules-017.txt", MinifierTest::test001_rule017);
 
-    return createTests(tests, inspections);
+    Collection<Object[]> testsWithInspections = createTests(tests, inspections);
+    return ListUtils.flatMap(
+        getTestParameters().withNoneRuntime().build(),
+        parameters ->
+            ListUtils.map(testsWithInspections, test -> ObjectArrays.concat(parameters, test)));
   }
 
   private static void test001_rule001(DexItemFactory dexItemFactory, NamingLens naming) {

@@ -10,6 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
@@ -57,13 +58,16 @@ public class AsterisksTest extends ProguardCompatibilityTestBase {
   private static final List<Class<?>> CLASSES = ImmutableList.of(B111974287.class);
   private final Shrinker shrinker;
 
-  public AsterisksTest(Shrinker shrinker) {
+  public AsterisksTest(TestParameters parameters, Shrinker shrinker) {
+    parameters.assertNoneRuntime();
     this.shrinker = shrinker;
   }
 
-  @Parameters(name = "shrinker: {0}")
-  public static Collection<Object> data() {
-    return ImmutableList.of(Shrinker.R8, Shrinker.R8_CF);
+  @Parameters(name = "{0}, shrinker: {1}")
+  public static Collection<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        ImmutableList.of(Shrinker.R8, Shrinker.R8_CF));
   }
 
   @Test

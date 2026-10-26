@@ -11,15 +11,17 @@ import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.cf.LambdaTest;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
@@ -30,6 +32,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class R8CFExamplesTests extends TestBase {
 
+  private final TestParameters parameters;
   private final TestMode testMode;
   private final CompilationMode compilationMode;
 
@@ -38,18 +41,15 @@ public class R8CFExamplesTests extends TestBase {
     CF_TO_IR,
   }
 
-  @Parameters(name = "{0}:{1}")
+  @Parameters(name = "{0}, {1}:{2}")
   public static List<Object[]> data() {
-    List<Object[]> data = new ArrayList<>();
-    for (TestMode testMode : TestMode.values()) {
-      for (CompilationMode compilationMode : CompilationMode.values()) {
-        data.add(new Object[] {testMode, compilationMode});
-      }
-    }
-    return data;
+    return buildParameters(
+        getTestParameters().withCfRuntimes().build(), TestMode.values(), CompilationMode.values());
   }
 
-  public R8CFExamplesTests(TestMode testMode, CompilationMode compilationMode) {
+  public R8CFExamplesTests(
+      TestParameters parameters, TestMode testMode, CompilationMode compilationMode) {
+    this.parameters = parameters;
     this.testMode = testMode;
     this.compilationMode = compilationMode;
   }
@@ -97,11 +97,14 @@ public class R8CFExamplesTests extends TestBase {
   }
 
   private void runTest(Path inputJar, String mainClass) throws Exception {
-    ProcessResult runInput = ToolHelper.runJava(inputJar, mainClass);
-    Assert.assertEquals(0, runInput.exitCode);
     Path outputJar = runR8(inputJar, compilationMode, "output.jar");
-    ProcessResult runOutput = ToolHelper.runJava(outputJar, mainClass);
-    Assert.assertEquals(runInput.toString(), runOutput.toString());
+    for (CfRuntime cfRuntime : parameters.getRuntime().asCfRuntimes()) {
+      ProcessResult runInput = ToolHelper.runJava(cfRuntime, ImmutableList.of(inputJar), mainClass);
+      Assert.assertEquals(0, runInput.exitCode);
+      ProcessResult runOutput =
+          ToolHelper.runJava(cfRuntime, ImmutableList.of(outputJar), mainClass);
+      Assert.assertEquals(runInput.toString(), runOutput.toString());
+    }
   }
 
   private Path runR8(Path inputJar, CompilationMode mode, String outputName) throws Exception {

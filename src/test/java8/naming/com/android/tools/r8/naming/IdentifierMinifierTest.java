@@ -23,9 +23,9 @@ import com.android.tools.r8.utils.codeinspector.InstructionSubject.JumboStringMo
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -99,19 +99,11 @@ public class IdentifierMinifierTest extends TestBase {
     inspections.put("identifiernamestring:keep-rules-1.txt", IdentifierMinifierTest::test2_rule1);
     inspections.put("identifiernamestring:keep-rules-2.txt", IdentifierMinifierTest::test2_rule2);
     inspections.put("identifiernamestring:keep-rules-3.txt", IdentifierMinifierTest::test2_rule3);
-    Collection<Object[]> parameters = NamingTestBase.createTests(tests, inspections);
-
-    List<Object[]> parametersWithBackend = new ArrayList<>();
-    for (TestParameters testParameter : getTestParameters().withAllRuntimesAndApiLevels().build()) {
-      for (Object[] row : parameters) {
-        Object[] newRow = new Object[row.length + 1];
-        newRow[0] = testParameter;
-        System.arraycopy(row, 0, newRow, 1, row.length);
-        parametersWithBackend.add(newRow);
-      }
-    }
-
-    return parametersWithBackend;
+    Collection<Object[]> testsWithInspections = NamingTestBase.createTests(tests, inspections);
+    return ListUtils.flatMap(
+        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        parameters ->
+            ListUtils.map(testsWithInspections, test -> ObjectArrays.concat(parameters, test)));
   }
 
   // Without -adaptclassstrings

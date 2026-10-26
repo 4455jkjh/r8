@@ -54,7 +54,7 @@ public class ListUtils {
     return result != null ? result : defaultValue;
   }
 
-  public static <S, T> List<T> flatMap(List<S> list, Function<S, Collection<T>> fn) {
+  public static <S, T> List<T> flatMap(Iterable<S> list, Function<S, ? extends Collection<T>> fn) {
     List<T> result = new ArrayList<>();
     list.forEach(element -> result.addAll(fn.apply(element)));
     return result;

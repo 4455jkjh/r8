@@ -7,6 +7,8 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.BaseCompilerCommandUtils;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.Marker;
@@ -20,9 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -33,24 +33,23 @@ import org.junit.runners.Parameterized.Parameters;
  * classes.dex.
  */
 @RunWith(Parameterized.class)
-public class D8FrameworkDexPassthroughMarkerTest {
+public class D8FrameworkDexPassthroughMarkerTest extends TestBase {
 
   private static final Path FRAMEWORK_JAR =
       Paths.get(
           ToolHelper.TOOLS_DIR + "linux/art-5.1.1/product/mako/system/framework/framework.jar");
 
-  @Rule
-  public TemporaryFolder output = ToolHelper.getTemporaryFolderForTest();
-
-  @Parameters(name = "Min api = {0}")
+  @Parameters(name = "{0}, Min api = {1}")
   public static Collection<Object[]> data() {
-    return Arrays.asList(
-        new Object[][] {{AndroidApiLevel.N}, {AndroidApiLevel.O}, {AndroidApiLevel.O_MR1}});
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        Arrays.asList(AndroidApiLevel.N, AndroidApiLevel.O, AndroidApiLevel.O_MR1));
   }
 
   private final AndroidApiLevel minApi;
 
-  public D8FrameworkDexPassthroughMarkerTest(AndroidApiLevel minApi) {
+  public D8FrameworkDexPassthroughMarkerTest(TestParameters parameters, AndroidApiLevel minApi) {
+    parameters.assertNoneRuntime();
     this.minApi = minApi;
   }
 

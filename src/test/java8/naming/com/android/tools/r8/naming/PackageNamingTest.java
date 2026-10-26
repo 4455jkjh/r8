@@ -13,15 +13,18 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import java.io.File;
 import java.nio.file.Path;
@@ -46,7 +49,7 @@ public class PackageNamingTest extends TestBase {
   private final Path keepRulesFile;
   private final ThrowingConsumer<CodeInspector, RuntimeException> inspection;
 
-  @Parameters(name = "test: {0} keep: {1}")
+  @Parameters(name = "{0} test: {1} keep: {2}")
   public static Collection<Object[]> data() {
     List<String> tests = Arrays.asList("naming044", "naming101");
     Map<String, ThrowingConsumer<CodeInspector, RuntimeException>> inspections = new HashMap<>();
@@ -63,13 +66,19 @@ public class PackageNamingTest extends TestBase {
     inspections.put("naming101:keep-rules-102.txt", PackageNamingTest::test101_rule102);
     inspections.put("naming101:keep-rules-104.txt", PackageNamingTest::test101_rule104);
     inspections.put("naming101:keep-rules-106.txt", PackageNamingTest::test101_rule106);
-    return createTests(tests, inspections);
+    Collection<Object[]> testsWithInspections = createTests(tests, inspections);
+    return ListUtils.flatMap(
+        getTestParameters().withNoneRuntime().build(),
+        parameters ->
+            ListUtils.map(testsWithInspections, test -> ObjectArrays.concat(parameters, test)));
   }
 
   public PackageNamingTest(
+      TestParameters parameters,
       String test,
       Path keepRulesFile,
       ThrowingConsumer<CodeInspector, RuntimeException> inspection) {
+    parameters.assertNoneRuntime();
     this.test = test;
     this.keepRulesFile = keepRulesFile;
     this.inspection = inspection;

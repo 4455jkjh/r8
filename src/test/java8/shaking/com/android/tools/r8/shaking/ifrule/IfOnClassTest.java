@@ -11,12 +11,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NoAccessModification;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.forceproguardcompatibility.ProguardCompatibilityTestBase;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,18 +42,18 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
   private final Shrinker shrinker;
   private final boolean keepPrecondition;
 
-  public IfOnClassTest(Shrinker shrinker, boolean keepPrecondition) {
+  public IfOnClassTest(TestParameters parameters, Shrinker shrinker, boolean keepPrecondition) {
+    parameters.assertNoneRuntime();
     this.shrinker = shrinker;
     this.keepPrecondition = keepPrecondition;
   }
 
-  @Parameters(name = "shrinker: {0} precondition: {1}")
+  @Parameters(name = "{0}, shrinker: {1} precondition: {2}")
   public static Collection<Object[]> data() {
-    return ImmutableList.of(
-        new Object[] {Shrinker.R8, true},
-        new Object[] {Shrinker.R8, false},
-        new Object[] {Shrinker.R8_CF, true},
-        new Object[] {Shrinker.R8_CF, false});
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        ImmutableList.of(Shrinker.R8, Shrinker.R8_CF),
+        BooleanUtils.values());
   }
 
   private String adaptConfiguration(String proguardConfig) {

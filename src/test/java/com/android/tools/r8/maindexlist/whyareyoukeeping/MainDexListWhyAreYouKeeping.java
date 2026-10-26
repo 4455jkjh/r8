@@ -10,6 +10,7 @@ import com.android.tools.r8.GenerateMainDexList;
 import com.android.tools.r8.GenerateMainDexListCommand;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.origin.Origin;
@@ -54,15 +55,17 @@ public class MainDexListWhyAreYouKeeping extends TestBase {
     KeptGraphConsumer
   }
 
-  @Parameters(name = "{0} {1}")
+  @Parameters(name = "{0}, {1} {2}")
   public static List<Object[]> parameters() {
-    return buildParameters(Command.values(), ApiUse.values());
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(), Command.values(), ApiUse.values());
   }
 
   private final Command command;
   private final ApiUse apiUse;
 
-  public MainDexListWhyAreYouKeeping(Command command, ApiUse apiUse) {
+  public MainDexListWhyAreYouKeeping(TestParameters parameters, Command command, ApiUse apiUse) {
+    parameters.assertNoneRuntime();
     this.command = command;
     this.apiUse = apiUse;
   }

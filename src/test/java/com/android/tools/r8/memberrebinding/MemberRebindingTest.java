@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -41,7 +42,8 @@ public class MemberRebindingTest extends TestBase {
   private final ThrowingConsumer<CodeInspector, Exception> inspection;
   private final AndroidApiLevel minApiLevel;
 
-  public MemberRebindingTest(TestConfiguration configuration) {
+  public MemberRebindingTest(TestParameters parameters, TestConfiguration configuration) {
+    parameters.assertNoneRuntime();
     this.name = configuration.name;
     this.backend = configuration.backend;
     this.keepRuleFile = configuration.keepRuleFile;
@@ -199,8 +201,8 @@ public class MemberRebindingTest extends TestBase {
     }
   }
 
-  @Parameters(name = "{0}")
-  public static Collection<TestConfiguration> data() {
+  @Parameters(name = "{0}, {1}")
+  public static Collection<Object[]> data() {
     ImmutableList.Builder<TestConfiguration> builder = ImmutableList.builder();
     for (Backend backend : Backend.values()) {
       TestConfiguration.add(
@@ -232,7 +234,7 @@ public class MemberRebindingTest extends TestBase {
           TestConfiguration.AndroidVersion.N,
           MemberRebindingTest::inspect4);
     }
-    return builder.build();
+    return buildParameters(getTestParameters().withNoneRuntime().build(), builder.build());
   }
 
   @Test

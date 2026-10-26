@@ -11,12 +11,14 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -58,14 +60,15 @@ public class WhyAreYouKeepingTest extends TestBase {
           "|- is referenced in keep rule:",
           "|  -keep class com.android.tools.r8.shaking.whyareyoukeeping.A { void foo(); }");
 
-  @Parameters(name = "{0}")
-  public static Backend[] parameters() {
-    return Backend.values();
+  @Parameters(name = "{0}, {1}")
+  public static List<Object[]> parameters() {
+    return buildParameters(getTestParameters().withNoneRuntime().build(), Backend.values());
   }
 
   public final Backend backend;
 
-  public WhyAreYouKeepingTest(Backend backend) {
+  public WhyAreYouKeepingTest(TestParameters parameters, Backend backend) {
+    parameters.assertNoneRuntime();
     this.backend = backend;
   }
 
