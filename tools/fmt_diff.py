@@ -194,6 +194,18 @@ def get_git_upstream():
 
 
 FORMATTER_TAG_RE = re.compile(r'(?://|/\*)\s*@formatter:(off|on)\b')
+KTFMT_DISABLE_TAG_RE = re.compile(r'(?://|/\*)\s*ktfmt:disable-file\b')
+
+
+def is_kotlin_file_disabled(file_path):
+    if not os.path.exists(file_path):
+        return False
+    with open(file_path, 'rb') as f:
+        content = f.read()
+    if b'ktfmt:disable-file' not in content:
+        return False
+    return bool(
+        KTFMT_DISABLE_TAG_RE.search(content.decode('utf-8', errors='ignore')))
 
 
 # Scans `filename` for `@formatter:off` and `@formatter:on` comments.
@@ -442,6 +454,9 @@ def prepare_check_kotlin_files():
 # This function must be threadsafe.
 # prepare_check_kotlin_files() must be called first.
 def check_kotlin_files(files, format_style, fix_formatting=False):
+    files = [f for f in files if not is_kotlin_file_disabled(f)]
+    if not files:
+        return []
     cmd = get_kotlin_format_base_command() + [format_style]
     if not fix_formatting:
         cmd.append('-n')
@@ -524,7 +539,8 @@ def check(files,
         if file_path in FMT_IGNORE or not os.path.exists(file_path):
             pass
         elif is_kotlin_file(file_path):
-            kotlin_files.append(file_path)
+            if not is_kotlin_file_disabled(file_path):
+                kotlin_files.append(file_path)
         elif is_java_file(file_path):
             java_files.append(file_path)
         elif is_python_file(file_path):
