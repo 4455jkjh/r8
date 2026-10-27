@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.horizontalclassmerging.InstanceInitializerAnalysis.InstanceInitializerAnalysisResult;
 import com.android.tools.r8.horizontalclassmerging.InstanceInitializerMerger.Builder;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.IterableUtils;
@@ -59,18 +60,19 @@ public class InstanceInitializerMergerCollection {
             clazz.forEachProgramDirectMethodMatching(
                 DexEncodedMethod::isInstanceInitializer,
                 instanceInitializer -> {
-                  InstanceInitializerDescription description =
+                  InstanceInitializerAnalysisResult analysisResult =
                       InstanceInitializerAnalysis.analyze(
                           appViewWithClassHierarchy, group, instanceInitializer);
-                  if (description != null) {
+                  if (analysisResult != null) {
                     buildersByDescription
                         .computeIfAbsent(
-                            description,
+                            analysisResult.getDescription(),
                             ignoreKey(
                                 () ->
                                     new InstanceInitializerMerger.Builder(
                                         appViewWithClassHierarchy, classIdentifiers, lensBuilder)))
-                        .addEquivalent(instanceInitializer);
+                        .addEquivalent(
+                            instanceInitializer, analysisResult.getArgumentPermutation());
                   } else {
                     buildersWithoutDescription.add(instanceInitializer);
                   }

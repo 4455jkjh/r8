@@ -17,6 +17,8 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.FieldLookupResult;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.MethodLookupResult;
+import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
+import com.android.tools.r8.graph.proto.ArgumentPermutation;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.conversion.ExtraConstantParameter;
@@ -31,6 +33,8 @@ import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyT
 import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyToOneRepresentativeMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,12 +43,16 @@ import java.util.Set;
 public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
 
   private final Map<DexMethod, ExtraConstantParameter> methodExtraParameters;
+  // Maps original instance initializers to the argument permutations applied when canonicalizing
+  // and merging equivalent constructors.
+  private final Map<DexMethod, ArgumentPermutation> methodArgumentPermutations;
   private final HorizontallyMergedClasses mergedClasses;
 
   private HorizontalClassMergerGraphLens(
       AppView<?> appView,
       HorizontallyMergedClasses mergedClasses,
       Map<DexMethod, ExtraConstantParameter> methodExtraParameters,
+      Map<DexMethod, ArgumentPermutation> methodArgumentPermutations,
       BidirectionalManyToOneRepresentativeMap<DexField, DexField> fieldMap,
       BidirectionalManyToOneMap<DexMethod, DexMethod> methodMap,
       BidirectionalManyToOneRepresentativeMap<DexMethod, DexMethod> newMethodSignatures) {
@@ -55,6 +63,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
         mergedClasses.getBidirectionalMap(),
         newMethodSignatures);
     this.methodExtraParameters = methodExtraParameters;
+    this.methodArgumentPermutations = methodArgumentPermutations;
     this.mergedClasses = mergedClasses;
   }
 
@@ -148,21 +157,32 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
       RewrittenPrototypeDescription prototypeChanges,
       DexMethod previousMethod,
       DexMethod newMethod) {
+    if (!previousMethod.isInstanceInitializer(dexItemFactory())) {
+      assert !methodArgumentPermutations.containsKey(previousMethod);
+      assert previousMethod.getArity() == newMethod.getArity();
+      return prototypeChanges;
+    }
+    List<ExtraParameter> extraParameters = Collections.emptyList();
     if (newMethod.getArity() > previousMethod.getArity()) {
-      assert dexItemFactory().isConstructor(previousMethod);
-      RewrittenPrototypeDescription collisionResolution =
-          RewrittenPrototypeDescription.createForExtraParameters(
-              computeExtraUnusedParameters(previousMethod, newMethod));
+      extraParameters = new ArrayList<>(computeExtraUnusedParameters(previousMethod, newMethod));
       ExtraConstantParameter extraParameter = methodExtraParameters.get(previousMethod);
       if (extraParameter != null) {
-        List<ExtraParameter> extraParameters =
-            (List<ExtraParameter>) collisionResolution.getExtraParameters();
         extraParameters.set(0, extraParameter);
       }
-      return prototypeChanges.combine(collisionResolution);
     }
-    assert newMethod.getArity() == previousMethod.getArity();
-    return prototypeChanges;
+    // Account for any parameters permuted during instance initializer canonicalization before
+    // computing extra parameters (such as the synthetic class ID parameter or extra unused
+    // parameters added for signature collision resolution).
+    ArgumentInfoCollection argumentInfoCollection = ArgumentInfoCollection.empty();
+    if (methodArgumentPermutations.containsKey(previousMethod)) {
+      argumentInfoCollection =
+          ArgumentInfoCollection.builder()
+              .setArgumentInfosSize(previousMethod.getNumberOfArguments(false))
+              .setArgumentPermutation(methodArgumentPermutations.get(previousMethod))
+              .build();
+    }
+    return prototypeChanges.combine(
+        RewrittenPrototypeDescription.create(extraParameters, null, argumentInfoCollection));
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -196,6 +216,8 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
         newMethodSignatures = BidirectionalManyToOneRepresentativeHashMap.newIdentityHashMap();
     private final Map<DexMethod, ExtraConstantParameter> methodExtraParameters =
         new IdentityHashMap<>();
+    private final Map<DexMethod, ArgumentPermutation> methodArgumentPermutations =
+        new IdentityHashMap<>();
 
     private final MutableBidirectionalManyToOneMap<DexMethod, DexMethod> pendingMethodMapUpdates =
         BidirectionalManyToOneHashMap.newIdentityHashMap();
@@ -225,6 +247,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
           appView,
           mergedClasses,
           methodExtraParameters,
+          methodArgumentPermutations,
           newFieldSignatures,
           methodMap,
           newMethodSignatures);
@@ -367,10 +390,17 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
      * where many constructors are merged into a single constructor. The synthesized constructor
      * therefore does not have a unique reverse constructor.
      */
-    void mapMergedConstructor(DexMethod from, DexMethod to, ExtraConstantParameter extraParameter) {
+    void mapMergedConstructor(
+        DexMethod from,
+        DexMethod to,
+        ExtraConstantParameter extraParameter,
+        ArgumentPermutation argumentPermutation) {
       mapMethod(from, to);
       if (extraParameter != null) {
         methodExtraParameters.put(from, extraParameter);
+      }
+      if (!argumentPermutation.isDefault()) {
+        methodArgumentPermutations.put(from, argumentPermutation);
       }
     }
   }

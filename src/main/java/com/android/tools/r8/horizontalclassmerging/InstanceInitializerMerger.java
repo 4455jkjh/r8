@@ -19,16 +19,19 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeUtils;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.proto.ArgumentPermutation;
 import com.android.tools.r8.horizontalclassmerging.code.ConstructorEntryPointSynthesizedCode;
 import com.android.tools.r8.ir.conversion.ExtraConstantByteParameter;
 import com.android.tools.r8.ir.conversion.ExtraConstantIntParameter;
 import com.android.tools.r8.ir.conversion.ExtraConstantParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedParameter;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
+import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.internal.structural.Ordered;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;
@@ -45,6 +48,7 @@ public class InstanceInitializerMerger {
   private final HorizontalMergeGroup group;
   private final List<ProgramMethod> instanceInitializers;
   private final InstanceInitializerDescription instanceInitializerDescription;
+  private final ProgramMethodMap<ArgumentPermutation> argumentPermutations;
   private final HorizontalClassMergerGraphLens.Builder lensBuilder;
 
   InstanceInitializerMerger(
@@ -53,7 +57,14 @@ public class InstanceInitializerMerger {
       HorizontalMergeGroup group,
       List<ProgramMethod> instanceInitializers,
       HorizontalClassMergerGraphLens.Builder lensBuilder) {
-    this(appView, classIdentifiers, group, instanceInitializers, lensBuilder, null);
+    this(
+        appView,
+        classIdentifiers,
+        group,
+        instanceInitializers,
+        lensBuilder,
+        null,
+        ProgramMethodMap.empty());
   }
 
   InstanceInitializerMerger(
@@ -62,13 +73,15 @@ public class InstanceInitializerMerger {
       HorizontalMergeGroup group,
       List<ProgramMethod> instanceInitializers,
       HorizontalClassMergerGraphLens.Builder lensBuilder,
-      InstanceInitializerDescription instanceInitializerDescription) {
+      InstanceInitializerDescription instanceInitializerDescription,
+      ProgramMethodMap<ArgumentPermutation> argumentPermutations) {
     this.appView = appView;
     this.classIdentifiers = classIdentifiers;
     this.dexItemFactory = appView.dexItemFactory();
     this.group = group;
     this.instanceInitializers = instanceInitializers;
     this.instanceInitializerDescription = instanceInitializerDescription;
+    this.argumentPermutations = argumentPermutations;
     this.lensBuilder = lensBuilder;
 
     // Constructors should not be empty and all constructors should have the same prototype unless
@@ -98,17 +111,18 @@ public class InstanceInitializerMerger {
     return classFileVersion;
   }
 
-  private DexMethod getNewMethodReference(ProgramMethod representative, boolean needsClassId) {
-    DexType[] oldParameters = representative.getParameters().values;
-    DexType[] newParameters =
-        new DexType[representative.getParameters().size() + BooleanUtils.intValue(needsClassId)];
-    System.arraycopy(oldParameters, 0, newParameters, 0, oldParameters.length);
-    for (int parameterIndex = 0; parameterIndex < oldParameters.length; parameterIndex++) {
-      Set<DexType> parameterTypes = getParameterTypes(instanceInitializers, parameterIndex);
+  private DexMethod getNewMethodReference(boolean needsClassId) {
+    int arity = getArity();
+    DexType[] newParameters = new DexType[arity + BooleanUtils.intValue(needsClassId)];
+    for (int parameterIndex = 0; parameterIndex < arity; parameterIndex++) {
+      Set<DexType> parameterTypes =
+          getParameterTypes(instanceInitializers, parameterIndex, argumentPermutations);
       if (parameterTypes.size() > 1) {
         DexType leastUpperBound = DexTypeUtils.computeLeastUpperBound(appView, parameterTypes);
         assert DexTypeUtils.isApiSafe(appView, leastUpperBound);
         newParameters[parameterIndex] = leastUpperBound;
+      } else {
+        newParameters[parameterIndex] = parameterTypes.iterator().next();
       }
     }
     if (needsClassId) {
@@ -119,13 +133,43 @@ public class InstanceInitializerMerger {
     return dexItemFactory.createInstanceInitializer(group.getTarget().getType(), newParameters);
   }
 
+  /**
+   * Returns the original parameter type of {@code instanceInitializer} that maps to {@code
+   * newParameterIndex} (0-based) after applying any argument permutation in {@code
+   * argumentPermutations}.
+   */
+  private static DexType getParameterType(
+      ProgramMethod instanceInitializer,
+      int newParameterIndex,
+      ProgramMethodMap<ArgumentPermutation> argumentPermutations) {
+    ArgumentPermutation argumentPermutation =
+        argumentPermutations.getOrDefault(instanceInitializer, ArgumentPermutation.getDefault());
+    if (argumentPermutation.isDefault()) {
+      return instanceInitializer.getParameter(newParameterIndex);
+    }
+    int targetNewArgumentIndex = newParameterIndex + 1;
+    for (int oldParameterIndex = 0;
+        oldParameterIndex < instanceInitializer.getParameters().size();
+        oldParameterIndex++) {
+      int oldArgumentIndex = oldParameterIndex + 1;
+      if (argumentPermutation.getNewArgumentIndex(oldArgumentIndex) == targetNewArgumentIndex) {
+        return instanceInitializer.getParameter(oldParameterIndex);
+      }
+    }
+    throw new Unreachable();
+  }
+
   private static Set<DexType> getParameterTypes(
-      List<ProgramMethod> instanceInitializers, int parameterIndex) {
+      List<ProgramMethod> instanceInitializers,
+      int parameterIndex,
+      ProgramMethodMap<ArgumentPermutation> argumentPermutations) {
     return SetUtils.newIdentityHashSet(
         builder ->
             instanceInitializers.forEach(
                 instanceInitializer ->
-                    builder.accept(instanceInitializer.getParameter(parameterIndex))));
+                    builder.accept(
+                        getParameterType(
+                            instanceInitializer, parameterIndex, argumentPermutations))));
   }
 
   /**
@@ -165,6 +209,8 @@ public class InstanceInitializerMerger {
     private final Reference2IntMap<DexType> classIdentifiers;
     private int estimatedDexCodeSize;
     private final List<List<ProgramMethod>> instanceInitializerGroups = new ArrayList<>();
+    private final ProgramMethodMap<ArgumentPermutation> argumentPermutations =
+        ProgramMethodMap.create();
     private final HorizontalClassMergerGraphLens.Builder lensBuilder;
 
     public Builder(
@@ -199,7 +245,11 @@ public class InstanceInitializerMerger {
       return this;
     }
 
-    public Builder addEquivalent(ProgramMethod instanceInitializer) {
+    public Builder addEquivalent(
+        ProgramMethod instanceInitializer, ArgumentPermutation argumentPermutation) {
+      if (!argumentPermutation.isDefault()) {
+        argumentPermutations.put(instanceInitializer, argumentPermutation);
+      }
       // If adding the given constructor to the current merge group leads to any API unsafe
       // parameter types, then the constructor should be merged into a new group.
       List<ProgramMethod> eligibleGroup = null;
@@ -223,10 +273,12 @@ public class InstanceInitializerMerger {
       for (int parameterIndex = 0;
           parameterIndex < instanceInitializer.getParameters().size();
           parameterIndex++) {
-        Set<DexType> parameterTypes = getParameterTypes(group, parameterIndex);
+        Set<DexType> parameterTypes =
+            getParameterTypes(group, parameterIndex, argumentPermutations);
         // Adding the given instance initializer to the group can only lead to an API unsafe
         // parameter type if the instance initializer contributes a new parameter type to the group.
-        if (parameterTypes.add(instanceInitializer.getParameter(parameterIndex))
+        if (parameterTypes.add(
+                getParameterType(instanceInitializer, parameterIndex, argumentPermutations))
             && !DexTypeUtils.isLeastUpperBoundApiSafe(appView, parameterTypes)) {
           return false;
         }
@@ -255,7 +307,8 @@ public class InstanceInitializerMerger {
                   group,
                   instanceInitializers,
                   lensBuilder,
-                  instanceInitializerDescription));
+                  instanceInitializerDescription,
+                  argumentPermutations));
     }
   }
 
@@ -321,7 +374,7 @@ public class InstanceInitializerMerger {
         instanceInitializers.size() > 1
             && (!hasInstanceInitializerDescription() || group.hasClassIdField());
 
-    DexMethod newMethodReferenceTemplate = getNewMethodReference(representative, needsClassId);
+    DexMethod newMethodReferenceTemplate = getNewMethodReference(needsClassId);
 
     DexMethod newMethodReference =
         dexItemFactory.createInstanceInitializerWithFreshProto(
@@ -376,8 +429,13 @@ public class InstanceInitializerMerger {
                 : new ExtraConstantByteParameter(
                     classIdentifiers.getInt(instanceInitializer.getHolderType()));
       }
+      ArgumentPermutation argumentPermutation =
+          argumentPermutations.getOrDefault(instanceInitializer, ArgumentPermutation.getDefault());
       lensBuilder.mapMergedConstructor(
-          instanceInitializer.getReference(), newMethodReference, extraParameter);
+          instanceInitializer.getReference(),
+          newMethodReference,
+          extraParameter,
+          argumentPermutation);
     }
 
     DexEncodedMethod representativeMethod = representative.getDefinition();

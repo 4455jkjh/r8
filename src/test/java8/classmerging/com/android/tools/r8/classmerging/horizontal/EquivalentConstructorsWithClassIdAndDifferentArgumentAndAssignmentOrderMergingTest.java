@@ -54,10 +54,8 @@ public class EquivalentConstructorsWithClassIdAndDifferentArgumentAndAssignmentO
             inspector -> {
               ClassSubject aClassSubject = inspector.clazz(A.class);
               assertThat(aClassSubject, isPresent());
-              // TODO(b/189296638): Enable constructor merging by changing the constructor
               assertEquals(
-                  parameters.canUseJavaLangInvokeVarHandleStoreStoreFence() ? 1 : 2,
-                  aClassSubject.allMethods(FoundMethodSubject::isInstanceInitializer).size());
+                  1, aClassSubject.allMethods(FoundMethodSubject::isInstanceInitializer).size());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("CD", "CD");
