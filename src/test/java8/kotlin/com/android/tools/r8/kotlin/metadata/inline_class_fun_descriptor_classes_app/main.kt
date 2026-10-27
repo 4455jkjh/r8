@@ -6,6 +6,7 @@ package com.android.tools.r8.kotlin.metadata.inline_class_fun_descriptor_classes
 
 import com.android.tools.r8.kotlin.metadata.inline_class_fun_descriptor_classes_lib.create
 // This unused import should not be removed - expected by test.
+// ktfmt:disable-file
 import com.android.tools.r8.kotlin.metadata.inline_class_fun_descriptor_classes_lib.Password
 import com.android.tools.r8.kotlin.metadata.inline_class_fun_descriptor_classes_lib.login
 

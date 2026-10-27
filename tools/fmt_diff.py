@@ -30,10 +30,6 @@ GOOGLE_KOTLIN_FORMAT_DIR = os.path.join(defines.THIRD_PARTY, 'google',
 GOOGLE_KOTLIN_FORMAT_JAR = os.path.join(GOOGLE_KOTLIN_FORMAT_DIR,
                                         'ktfmt-0.54-jar-with-dependencies.jar')
 
-FMT_IGNORE = {
-    'src/test/java/com/android/tools/r8/kotlin/metadata/inline_class_fun_descriptor_classes_app/main.kt'
-}
-
 GOOGLE_YAPF_DIR = os.path.join(defines.THIRD_PARTY, 'google', 'yapf',
                                '20231013')
 GOOGLE_YAPF = os.path.join(GOOGLE_YAPF_DIR, 'yapf')
@@ -82,8 +78,8 @@ def get_changed_files(upstream, file_predicate=None):
     changed_files = check_output(['git', 'diff', '--name-only',
                                   upstream]).decode('utf-8').splitlines()
     return [
-        f for f in changed_files if f not in FMT_IGNORE and
-        (file_predicate is None or file_predicate(f)) and os.path.exists(f)
+        f for f in changed_files
+        if (file_predicate is None or file_predicate(f)) and os.path.exists(f)
     ]
 
 
@@ -94,14 +90,14 @@ def get_dir_files(directory, file_predicate=None):
               file=sys.stderr)
         return []
     if os.path.isfile(directory):
-        if directory not in FMT_IGNORE and predicate(directory):
+        if predicate(directory):
             return [directory]
         return []
     files = []
     for root, _, filenames in os.walk(directory):
         for filename in filenames:
             file_path = os.path.join(root, filename)
-            if file_path not in FMT_IGNORE and predicate(file_path):
+            if predicate(file_path):
                 files.append(file_path)
     return files
 
@@ -536,7 +532,7 @@ def check(files,
     web_files = []
 
     for file_path in files:
-        if file_path in FMT_IGNORE or not os.path.exists(file_path):
+        if not os.path.exists(file_path):
             pass
         elif is_kotlin_file(file_path):
             if not is_kotlin_file_disabled(file_path):
