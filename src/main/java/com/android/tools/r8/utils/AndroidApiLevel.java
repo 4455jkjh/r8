@@ -4,6 +4,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableList;
@@ -224,6 +225,11 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     return getAndroidApiLevel(apiLevel.getMajor(), apiLevel.getMinor());
   }
 
+  public static <E extends Throwable> AndroidApiLevel getAndroidApiLevel(
+      UncheckedApiLevel apiLevel, ThrowingConsumer<String, E> onError) throws E {
+    return getAndroidApiLevel(apiLevel.getMajor(), apiLevel.getMinor(), onError);
+  }
+
   public UncheckedApiLevel asUnchecked() {
     return new UncheckedApiLevel(major, minor);
   }
@@ -231,9 +237,19 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   /**
    * @throws IllegalArgumentException if the parsed API version is invalid (e.g. 99.99).
    */
-  @SuppressWarnings("ReferenceEquality")
   public static AndroidApiLevel getAndroidApiLevel(int major, int minor) {
-    assert CINNAMON_BUN_2 == LATEST; // This has to be updated when new API levels are added.
+    return getAndroidApiLevel(
+        major,
+        minor,
+        message -> {
+          throw new IllegalArgumentException(message);
+        });
+  }
+
+  public static <E extends Throwable> AndroidApiLevel getAndroidApiLevel(
+      int major, int minor, ThrowingConsumer<String, E> onError) throws E {
+    assert CINNAMON_BUN_2.isEqualTo(
+        LATEST); // This has to be updated when new API levels are added.
     switch (major) {
       case 1:
         if (minor == 0) {
@@ -441,18 +457,31 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
         }
         break;
     }
-    throw new IllegalArgumentException(
-        "Unsupported or invalid Android API level: " + getNumericString(major, minor));
+    onError.accept("Unsupported or invalid Android API level: " + getNumericString(major, minor));
+    return null;
   }
 
   /**
    * Parses strings like {@code <int>} or {@code <int>.<int>}.
    *
-   * @throws NumberFormatException if the number parts are malformatted
-   * @throws IllegalArgumentException if the parsed API version is invalid (e.g. 99.99).
+   * @throws IllegalArgumentException if the parsed API version is malformatted or invalid (e.g.
+   *     99.99).
    */
   public static AndroidApiLevel parseAndroidApiLevel(String apiLevel) {
-    return getAndroidApiLevel(UncheckedApiLevel.parse(apiLevel));
+    return parseAndroidApiLevel(
+        apiLevel,
+        message -> {
+          throw new IllegalArgumentException(message);
+        });
+  }
+
+  public static <E extends Throwable> AndroidApiLevel parseAndroidApiLevel(
+      String apiLevel, ThrowingConsumer<String, E> onError) throws E {
+    UncheckedApiLevel unchecked = UncheckedApiLevel.parse(apiLevel, onError);
+    if (unchecked == null) {
+      return null;
+    }
+    return getAndroidApiLevel(unchecked, onError);
   }
 
   @Override

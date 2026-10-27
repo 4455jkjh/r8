@@ -5,8 +5,10 @@
 package com.android.tools.r8.apimodel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
+import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -177,5 +179,26 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
           }
         });
     assertEquals(1, apiClass.fieldCount() + apiClass.methodCount());
+  }
+
+  @Test
+  public void testApiLevelParser() throws Exception {
+    assertEquals(AndroidApiLevel.B, ApiLevelParser.parse("1"));
+    assertEquals(AndroidApiLevel.BAKLAVA, ApiLevelParser.parse("36.0"));
+    assertEquals(AndroidApiLevel.BAKLAVA_1, ApiLevelParser.parse("36.1"));
+    assertEquals(AndroidApiLevel.CINNAMON_BUN_2, ApiLevelParser.parse("37.2"));
+
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("0"));
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("-1"));
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("36.-1"));
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("abc"));
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("36.abc"));
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("35.1"));
+    assertThrows(
+        ApiDatabaseGeneratorException.class,
+        () -> ApiLevelParser.parse(AndroidApiLevel.MAIN.getNumericString()));
+    assertThrows(
+        ApiDatabaseGeneratorException.class,
+        () -> ApiLevelParser.parse(AndroidApiLevel.EXTENSION.getNumericString()));
   }
 }

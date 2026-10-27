@@ -320,10 +320,6 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
       }
       temp.write(intToShortEncodedByteArray(uniqueDescriptorForReference.length));
       temp.write(uniqueDescriptorForReference);
-      if (pair.getSecond() == AndroidApiLevel.MAIN
-          || pair.getSecond() == AndroidApiLevel.EXTENSION) {
-        throw new GenerationException("Invalid API level for database entry: " + pair.getSecond());
-      }
       temp.write(AndroidApiDataAccess.serializeApiLevel(pair.getSecond()));
     }
     byte[] tempArray = temp.toByteArray();

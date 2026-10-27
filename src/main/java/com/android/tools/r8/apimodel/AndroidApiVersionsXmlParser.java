@@ -274,12 +274,16 @@ public class AndroidApiVersionsXmlParser {
 
   private static AndroidApiLevel parseAndroidApiLevel(int versionsVersion, String versionString)
       throws ParsingException {
-    assert versionsVersion == 4 || (versionsVersion == 3 && !versionString.contains("."));
-    try {
-      return AndroidApiLevel.parseAndroidApiLevel(versionString);
-    } catch (NumberFormatException e) {
-      throw new ParsingException("Version cannot be parsed: " + versionString, e);
+    assert versionsVersion == 3 || versionsVersion == 4;
+    if (versionsVersion == 3 && versionString.contains(".")) {
+      throw new ParsingException(
+          "Version '" + versionString + "' is not supported for api version " + versionsVersion);
     }
+    return ApiLevelParser.parse(
+        versionString,
+        message -> {
+          throw new ParsingException(message);
+        });
   }
 
   private SemiInfiniteRange<AndroidApiLevel> parseApiRange(
