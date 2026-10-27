@@ -548,9 +548,7 @@ public class ToolHelper {
       List<String> result = new ArrayList<>();
       // The art script _must_ be run with bash, bots default to /bin/dash for /bin/sh, so
       // explicitly set it;
-      if (shouldUseDocker()) {
-        result.add("tools/docker/run.sh");
-      } else if (isLinux()) {
+      if (isLinux()) {
         result.add("/bin/bash");
       }
       result.add(getExecutable());
@@ -593,8 +591,6 @@ public class ToolHelper {
       return String.join(" ", command());
     }
 
-    protected abstract boolean shouldUseDocker();
-
     protected abstract String getExecutable();
   }
 
@@ -610,11 +606,6 @@ public class ToolHelper {
         assert ART_BINARY_VERSIONS.containsKey(version);
       }
       this.version = version;
-    }
-
-    @Override
-    protected boolean shouldUseDocker() {
-      return isMac();
     }
 
     public void setNoCaching(boolean noCaching) {
@@ -1221,11 +1212,10 @@ public class ToolHelper {
     if (dir == null) {
       throw new IllegalStateException("Does not support dex vm: " + version);
     }
-    if (isLinux() || isMac()) {
-      // The Linux version is used on Mac, where it is run in a Docker container.
+    if (isLinux()) {
       return TOOLS_DIR + "linux/" + dir;
     }
-    fail("Unsupported platform, we currently only support mac and linux: " + getPlatform());
+    fail("Unsupported platform, we currently only support linux: " + getPlatform());
     return ""; //never here
   }
 
@@ -1369,8 +1359,6 @@ public class ToolHelper {
     return Paths.get(System.getProperty("java.io.tmpdir"), "r8-temp");
   }
 
-  // For non-Linux platforms create the temporary directory in the repository root to simplify
-  // running Art in a docker container
   public static TemporaryFolder getTemporaryFolderForTest() {
     String tmpDir = System.getProperty("test_dir");
     if (tmpDir == null) {
@@ -1549,8 +1537,8 @@ public class ToolHelper {
           "Art does not work on on your platform.");
       return false;
     }
-    if (isWindows() && getDexVmFromProperty().getKind() == Kind.HOST) {
-      System.err.println("Testing on host is not supported on Windows.");
+    if (!isLinux() && getDexVmFromProperty().getKind() == Kind.HOST) {
+      System.err.println("Testing on host is not supported on " + getPlatform() + ".");
       return false;
     }
     return true;
