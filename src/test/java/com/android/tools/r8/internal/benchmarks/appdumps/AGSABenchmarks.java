@@ -78,8 +78,7 @@ public abstract class AGSABenchmarks extends BenchmarkBase {
   protected static AppDumpBenchmarkBuilder builder(String name) {
     return AppDumpBenchmarkBuilder.builder()
         .setName(name)
-        .setDumpDependencyPath(TestDeps::getAgsaDir)
-        .setWarmupIterations(0);
+        .setDumpDependencyPath(TestDeps::getAgsaDir);
   }
 
   public static class AGSA extends AGSABenchmarks {

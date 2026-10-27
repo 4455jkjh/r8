@@ -41,7 +41,6 @@ public class YouTubeBenchmarks extends BenchmarkBase {
     return AppDumpBenchmarkBuilder.builder()
         .setName("YouTubeApp")
         .setDumpDependencyPath(TestDeps::getYouTube2140Dir)
-        .setWarmupIterations(0)
         .buildR8(YouTubeBenchmarks::configure);
   }
 
