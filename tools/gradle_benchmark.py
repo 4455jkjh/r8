@@ -101,9 +101,23 @@ def parse_options():
 # Upload to google storage unless a outdir is specified.
 def upload_benchmark(csv_path, outdir=None):
     benchmark_data = read_benchmark_csv(csv_path)
+    build_results = {}
     for runs in benchmark_data:
-        upload_run(runs['benchmark'], runs['warmups'], runs['iterations'],
-                   outdir)
+        build_results[runs['benchmark']] = upload_run(runs['benchmark'],
+                                                      runs['warmups'],
+                                                      runs['iterations'],
+                                                      outdir)
+    if build_results:
+        try:
+            with utils.TempDir() as temp:
+                perf.ArchiveWeeklyBundle({'build': build_results},
+                                         list(build_results.keys()),
+                                         temp,
+                                         target='build',
+                                         outdir=outdir)
+        except Exception as e:
+            print(f'Warning: failed to write weekly bundle: {e}',
+                  file=sys.stderr)
 
 
 # Upload to google storage unless a outdir is specified.
@@ -112,8 +126,9 @@ def upload_run(benchmark_name, warmups, iterations, outdir):
         output_file = os.path.join(temp, 'result.json')
         target_name = "build"
         # Write benchmark results.
-        write_benchmark_output_to_file(output_file, benchmark_name, warmups,
-                                       iterations)
+        result_json = write_benchmark_output_to_file(output_file,
+                                                     benchmark_name, warmups,
+                                                     iterations)
         benchmark_dest = perf.GetArtifactLocation(benchmark=benchmark_name,
                                                   target=target_name,
                                                   version=None,
@@ -131,6 +146,7 @@ def upload_run(benchmark_name, warmups, iterations, outdir):
                                                  version=None,
                                                  filename='meta')
             perf.ArchiveOutputFile(meta_file, meta_dest, outdir=outdir)
+        return result_json
 
 
 # The csv file looks something like this
@@ -172,18 +188,18 @@ def read_benchmark_csv(csv_path):
 
 
 def write_benchmark_output_to_file(path, benchmark_name, warmups, iterations):
+    result_json = {
+        'benchmark_name': benchmark_name,
+        'results': [{
+            'runtime': convert_ms_to_ns(time)
+        } for time in iterations],
+        'warmup': [{
+            'runtime': convert_ms_to_ns(time)
+        } for time in warmups]
+    }
     with open(path, 'w') as f:
-        json.dump(
-            {
-                'benchmark_name':
-                    benchmark_name,
-                'results': [{
-                    'runtime': convert_ms_to_ns(time)
-                } for time in iterations],
-                'warmup': [{
-                    'runtime': convert_ms_to_ns(time)
-                } for time in warmups]
-            }, f)
+        json.dump(result_json, f)
+    return result_json
 
 
 def convert_ms_to_ns(time):

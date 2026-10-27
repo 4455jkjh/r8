@@ -5,11 +5,15 @@
 
 import argparse
 import compiledump
+import datetime
+import hashlib
+import historic_run
 import json
 import os
 import shutil
 import subprocess
 import sys
+import time
 
 import utils
 if utils.is_bot():
@@ -279,6 +283,9 @@ ALL_BENCHMARKS.update(INTERNAL_SLOW_BENCHMARKS)
 ALL_BENCHMARKS.update(LOCAL_BENCHMARKS)
 ALL_BENCHMARKS.update(BUILD_BENCHMARKS)
 BUCKET = "r8-perf-results"
+# Prefix of the weekly bundles that the perf page loads directly from the
+# bucket, see GetWeeklyBundleLocation().
+WEEKLY_PREFIX = 'weekly'
 SAMPLE_BENCHMARK_RESULT_JSON = {
     'benchmark_name': '<benchmark_name>',
     'results': [{
@@ -453,8 +460,10 @@ def GetGSLocation(filename, bucket=BUCKET):
 def ArchiveBenchmarkResult(benchmark, target, benchmark_result_json_files,
                            options, temp):
     result_file = os.path.join(temp, 'result_file')
+    merged_result_json = MergeBenchmarkResultJsonFiles(
+        benchmark_result_json_files)
     with open(result_file, 'w') as f:
-        json.dump(MergeBenchmarkResultJsonFiles(benchmark_result_json_files), f)
+        json.dump(merged_result_json, f)
     ArchiveOutputFile(result_file,
                       GetArtifactLocation(benchmark,
                                           target,
@@ -462,6 +471,89 @@ def ArchiveBenchmarkResult(benchmark, target, benchmark_result_json_files,
                                           'result.json',
                                           is_try=options.is_try),
                       outdir=options.outdir)
+    return merged_result_json
+
+
+# Returns the ISO week of the given timestamp as WwwYyy, e.g. W43Y26.
+def GetIsoWeekFolder(timestamp):
+    year, week, _ = datetime.datetime.fromtimestamp(
+        timestamp, tz=datetime.timezone.utc).isocalendar()
+    return f'W{week:02d}Y{year % 100:02d}'
+
+
+# Returns a name for this perf.py run that is unique per build, target, and set
+# of benchmarks, since a build can run perf.py more than once.
+def GetWeeklyBundleRunName(benchmarks, target=None):
+    run_id = (os.environ.get('SWARMING_TASK_ID') or
+              os.environ.get('KOKORO_BUILD_ID') or f'local-{int(time.time())}')
+    key = f"{target or ''}:{','.join(sorted(set(benchmarks)))}"
+    benchmarks_hash = hashlib.sha1(key.encode('utf-8')).hexdigest()[:8]
+    return f'{run_id}-{benchmarks_hash}'
+
+
+# Weekly bundles hold all results of one perf.py run on one commit:
+#   weekly/WwwYyy/HASH/RUN.json for main commits, in the ISO week of the commit,
+#   weekly/WwwYyy/try/HASH/RUN.json for try commits, in the ISO week of their
+#       merge base with main,
+#   weekly/releases/BRANCH/HASH/RUN.json for release branch commits.
+def GetWeeklyBundleLocation(commit, run_name, is_try):
+    if is_try:
+        merge_base = subprocess.check_output(
+            ['git', 'merge-base',
+             commit.parent_hash(), 'origin/main']).decode('utf-8').strip()
+        parent = historic_run.git_commit_from_hash(merge_base)
+        week = GetIsoWeekFolder(parent.committer_timestamp())
+        return (f'{WEEKLY_PREFIX}/{week}/try/{commit.hash()}/{run_name}.json',
+                merge_base)
+    branch = commit.branch()
+    if branch and branch != 'main':
+        return (f'{WEEKLY_PREFIX}/releases/{branch}/{commit.hash()}/'
+                f'{run_name}.json', None)
+    week = GetIsoWeekFolder(commit.committer_timestamp())
+    return f'{WEEKLY_PREFIX}/{week}/{commit.hash()}/{run_name}.json', None
+
+
+def ArchiveWeeklyBundle(benchmark_results,
+                        benchmarks,
+                        temp,
+                        target=None,
+                        version=None,
+                        is_try=False,
+                        outdir=None):
+    if version:
+        if not compiledump.is_hash(version):
+            return
+        commit = historic_run.git_commit_from_hash(version)
+        if commit is None:
+            return
+    else:
+        commit = utils.get_HEAD_commit()
+    run_name = GetWeeklyBundleRunName(benchmarks, target=target)
+    location, parent_hash = GetWeeklyBundleLocation(commit, run_name, is_try)
+    commit_info = {
+        'author': commit.author_name(),
+        'hash': commit.hash(),
+        'submitted': commit.committer_timestamp(),
+        'title': commit.title(),
+    }
+    commit_version = commit.version()
+    if commit_version:
+        commit_info['version'] = commit_version
+    if parent_hash:
+        commit_info['parent_hash'] = parent_hash
+    bundle = {
+        'commit': commit_info,
+        'run': {
+            'name': run_name,
+            'time': int(time.time()),
+        },
+        # Results by target and benchmark, in the format of result.json.
+        'benchmarks': benchmark_results,
+    }
+    bundle_file = os.path.join(temp, 'weekly_bundle.json')
+    with open(bundle_file, 'w') as f:
+        json.dump(bundle, f)
+    ArchiveOutputFile(bundle_file, location, outdir=outdir)
 
 
 def ArchiveOutputFile(file, dest, bucket=BUCKET, header=None, outdir=None):
@@ -485,6 +577,8 @@ def main():
     options, args = ParseOptions()
     Build(options)
     any_failed = False
+    # Results of this run by target and benchmark, for the weekly bundle.
+    weekly_bundle_results = {}
     with utils.TempDir() as temp:
         if options.version:
             # Download r8.jar once instead of once per run_benchmark.py invocation.
@@ -569,16 +663,18 @@ def main():
                     continue
 
                 # Merge results and write output.
+                target_results = weekly_bundle_results.setdefault(target, {})
                 if sub_benchmarks_for_target:
                     for sub_benchmark in sub_benchmarks_for_target:
-                        ArchiveBenchmarkResult(
-                            benchmark + sub_benchmark, target,
-                            benchmark_result_json_files[sub_benchmark], options,
-                            temp)
+                        target_results[
+                            benchmark + sub_benchmark] = ArchiveBenchmarkResult(
+                                benchmark + sub_benchmark, target,
+                                benchmark_result_json_files[sub_benchmark],
+                                options, temp)
                 else:
-                    ArchiveBenchmarkResult(benchmark, target,
-                                           benchmark_result_json_files, options,
-                                           temp)
+                    target_results[benchmark] = ArchiveBenchmarkResult(
+                        benchmark, target, benchmark_result_json_files, options,
+                        temp)
 
                 # Write metadata.
                 if utils.is_bot():
@@ -595,6 +691,21 @@ def main():
                                           'meta',
                                           is_try=options.is_try),
                                       outdir=options.outdir)
+
+        # The weekly bundles are a new pipeline that runs next to the existing
+        # one, so failing to write them must not fail the run.
+        if weekly_bundle_results:
+            try:
+                ArchiveWeeklyBundle(weekly_bundle_results,
+                                    options.benchmarks,
+                                    temp,
+                                    target=options.target,
+                                    version=options.version,
+                                    is_try=options.is_try,
+                                    outdir=options.outdir)
+            except Exception as e:
+                print(f'Warning: failed to write weekly bundle: {e}',
+                      file=sys.stderr)
 
     # Only upload benchmark data when running on the perf bot.
     if utils.is_bot(
