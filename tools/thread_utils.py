@@ -116,7 +116,10 @@ def run_in_sequence(jobs, stop_on_first_failure):
 
 def print_thread(msg, worker_id):
     if worker_id is None:
-        print(msg)
+        print(msg, flush=True)
     else:
-        for line in msg.splitlines():
-            print('WORKER %s: %s' % (worker_id, line))
+        lines = [
+            'WORKER %s: %s' % (worker_id, line) for line in msg.splitlines()
+        ]
+        if lines:
+            print('\n'.join(lines), flush=True)

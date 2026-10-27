@@ -736,6 +736,8 @@ def upload_file_to_cloud_storage(source, destination, header=None):
         if header:
             if header.lower().startswith('cache-control:'):
                 cmd.append('--cache-control=' + header.split(':', 1)[1].strip())
+            elif header.lower().startswith('content-type:'):
+                cmd.append('--content-type=' + header.split(':', 1)[1].strip())
             else:
                 cmd.extend(['--custom-metadata=' + header.replace(':', '=')])
         cmd.extend([source, destination])
