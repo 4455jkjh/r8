@@ -4,17 +4,22 @@
 
 package com.android.tools.r8.optimize.argumentpropagation.unusedarguments;
 
+import static com.android.tools.r8.optimize.argumentpropagation.unusedarguments.UnusedArgumentsAnalysis.computeUnusedArguments;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
+import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.path.PathConstraintSupplier;
 import com.android.tools.r8.ir.analysis.path.state.ConcretePathConstraintAnalysisState;
 import com.android.tools.r8.ir.analysis.path.state.PathConstraintKind;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.Argument;
+import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -23,22 +28,36 @@ import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.LazyDominatorTree;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.LirConverter;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
+import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorApplicationFixer;
+import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorGraphLens;
+import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorProgramOptimizer;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeUnopCompareNode;
+import com.android.tools.r8.optimize.argumentpropagation.propagation.InterfaceMethodArgumentPropagator;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ParameterRemovalUtils;
+import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.optimize.compose.ComposeReferences;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.collections.WorkList;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -92,6 +111,9 @@ public class EffectivelyUnusedArgumentsAnalysis {
   // for the method parameter p to be effectively unused.
   private final Map<MethodParameter, Set<MethodParameter>> constraints = new ConcurrentHashMap<>();
 
+  // Set of method parameters in `constraints` whose used value in IR is known to be non-null.
+  private final Set<MethodParameter> nonNullParameters = ConcurrentHashMap.newKeySet();
+
   // Maps Composable parameters to a condition. If the condition evaluates to true for a given
   // invoke, then the argument to this method parameter can be ignored. Note that this does not
   // imply that the method parameter is unused and can be removed.
@@ -107,6 +129,91 @@ public class EffectivelyUnusedArgumentsAnalysis {
 
   public EffectivelyUnusedArgumentsAnalysis(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
+  }
+
+  public static void runIfNecessary(
+      AppView<AppInfoWithLiveness> appView, ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    if (!appView.options().isOptimizing()
+        || !appView.options().isShrinking()
+        || !appView.options().callSiteOptimizationOptions().isEnabled()
+        || appView.hasCfByteCodePassThroughMethods()) {
+      return;
+    }
+    timing.begin("EffectivelyUnusedArgumentsAnalysis");
+    new EffectivelyUnusedArgumentsAnalysis(appView).run(executorService, timing);
+    timing.end();
+  }
+
+  private void run(ExecutorService executorService, Timing timing) throws ExecutionException {
+    // Initialize.
+    ImmediateProgramSubtypingInfo immediateSubtypingInfo =
+        ImmediateProgramSubtypingInfo.create(appView);
+    List<Set<DexProgramClass>> stronglyConnectedProgramComponents =
+        new ProgramClassesBidirectedGraph(appView, immediateSubtypingInfo)
+            .computeStronglyConnectedComponents();
+    Map<Set<DexProgramClass>, DexMethodSignatureSet> interfaceDispatchOutsideProgram =
+        new ConcurrentHashMap<>();
+    ThreadUtils.processItemsThatMatches(
+        stronglyConnectedProgramComponents,
+        alwaysTrue(),
+        (stronglyConnectedComponent, threadTiming) -> {
+          initializeOptimizableVirtualMethods(stronglyConnectedComponent);
+          new InterfaceMethodArgumentPropagator(
+                  appView,
+                  immediateSubtypingInfo,
+                  signature ->
+                      interfaceDispatchOutsideProgram
+                          .computeIfAbsent(
+                              stronglyConnectedComponent, ignoreKey(DexMethodSignatureSet::create))
+                          .add(signature))
+              .run(stronglyConnectedComponent);
+        },
+        appView.options(),
+        executorService,
+        timing,
+        timing.beginMerger("Initialize", executorService),
+        (i, stronglyConnectedComponent) ->
+            stronglyConnectedComponent.iterator().next().getTypeName());
+
+    // Run IR analysis.
+    ThreadUtils.processItemsThatMatches(
+        appView.appInfo().classes(),
+        alwaysTrue(),
+        (clazz, threadTiming) ->
+            clazz.forEachProgramMethodMatching(
+                DexEncodedMethod::hasCode,
+                method -> {
+                  IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
+                  computeUnusedArguments(method, code);
+                  scan(method, code);
+                }),
+        appView.options(),
+        executorService,
+        timing,
+        timing.beginMerger("IR analysis", executorService),
+        (i, clazz) -> clazz.getTypeName());
+
+    // Compute unused arguments.
+    try (Timing t0 = timing.begin("Compute unused arguments")) {
+      ProgramMethodSet prunedMethods = ProgramMethodSet.empty();
+      computeEffectivelyUnusedArguments(prunedMethods);
+    }
+
+    // Rewrite application.
+    try (Timing t0 = timing.begin("Rewrite application")) {
+      Set<DexProgramClass> affectedClasses = ConcurrentHashMap.newKeySet();
+      ArgumentPropagatorGraphLens graphLens =
+          new ArgumentPropagatorProgramOptimizer(
+                  appView, immediateSubtypingInfo, interfaceDispatchOutsideProgram)
+              .run(stronglyConnectedProgramComponents, affectedClasses, executorService, timing);
+      new ArgumentPropagatorApplicationFixer(appView, graphLens)
+          .fixupApplication(affectedClasses, executorService, timing);
+    }
+
+    // Rewrite code.
+    LirConverter.rewriteLirWithLens(appView, timing, executorService);
+    appView.getTypeElementFactory().clearTypeElementsCache();
   }
 
   public ComputationTreeNode getEffectivelyUnusedCondition(MethodParameter methodParameter) {
@@ -141,6 +248,10 @@ public class EffectivelyUnusedArgumentsAnalysis {
         });
   }
 
+  public void scan(ProgramMethod method, IRCode code) {
+    scan(method, code, null);
+  }
+
   public void scan(
       ProgramMethod method, IRCode code, PathConstraintSupplier pathConstraintSupplier) {
     new Analyzer(method, code, pathConstraintSupplier).analyze();
@@ -150,7 +261,8 @@ public class EffectivelyUnusedArgumentsAnalysis {
     // Build a graph where nodes are method parameters and there is an edge from method parameter p0
     // to method parameter p1 if the removal of p0 depends on the removal of p1.
     EffectivelyUnusedArgumentsGraph dependenceGraph =
-        EffectivelyUnusedArgumentsGraph.create(appView, conditions, constraints, prunedMethods);
+        EffectivelyUnusedArgumentsGraph.create(
+            appView, conditions, constraints, nonNullParameters, prunedMethods);
 
     // Remove all unoptimizable method parameters from the graph, as well as all nodes that depend
     // on a node that is unoptimable.
@@ -191,6 +303,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
       MethodParameter methodParameter = new MethodParameter(method, argumentIndex);
       conditions.remove(methodParameter);
       constraints.remove(methodParameter);
+      nonNullParameters.remove(methodParameter);
     }
   }
 
@@ -227,10 +340,13 @@ public class EffectivelyUnusedArgumentsAnalysis {
               assert !conditions.containsKey(methodParameter);
               conditions.put(methodParameter, effectivelyUnusedCondition);
             },
-            effectivelyUnusedConstraints -> {
+            (usedValue, effectivelyUnusedConstraints) -> {
               MethodParameter methodParameter = new MethodParameter(method, argument.getIndex());
               assert !constraints.containsKey(methodParameter);
               constraints.put(methodParameter, effectivelyUnusedConstraints);
+              if (usedValue.getType().isDefinitelyNotNull()) {
+                nonNullParameters.add(methodParameter);
+              }
             });
       }
     }
@@ -240,7 +356,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
         Argument argument,
         Value argumentValue,
         Consumer<ComputationTreeNode> effectivelyUnusedConditionsConsumer,
-        Consumer<Set<MethodParameter>> effectivelyUnusedConstraintsConsumer) {
+        BiConsumer<Value, Set<MethodParameter>> effectivelyUnusedConstraintsConsumer) {
       if (!ParameterRemovalUtils.canRemoveUnusedParameter(appView, method, argument.getIndex())) {
         return;
       }
@@ -264,6 +380,13 @@ public class EffectivelyUnusedArgumentsAnalysis {
       } else if (argumentValue.hasPhiUsers()) {
         computeIgnoreComposableArgumentCondition(argument, argumentValue);
         return;
+      } else if (argumentValue.hasSingleUniqueUser()
+          && argumentValue.singleUniqueUser().isAssume()) {
+        Assume assume = argumentValue.singleUniqueUser().asAssume();
+        if (assume.outValue().hasDebugUsers() || assume.outValue().hasPhiUsers()) {
+          return;
+        }
+        usedValue = assume.outValue();
       } else {
         usedValue = argumentValue;
       }
@@ -280,7 +403,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
             return;
           }
           int dependentArgumentIndex =
-              ListUtils.uniqueIndexMatching(invoke.arguments(), value -> value == argumentValue);
+              ListUtils.uniqueIndexMatching(invoke.arguments(), value -> value == usedValue);
           if (dependentArgumentIndex < 0
               || !ParameterRemovalUtils.canRemoveUnusedParameter(
                   appView, resolvedMethod, dependentArgumentIndex)) {
@@ -293,7 +416,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
         }
       }
       if (!effectivelyUnusedConstraints.isEmpty()) {
-        effectivelyUnusedConstraintsConsumer.accept(effectivelyUnusedConstraints);
+        effectivelyUnusedConstraintsConsumer.accept(usedValue, effectivelyUnusedConstraints);
       }
     }
 
@@ -314,7 +437,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
 
     @SuppressWarnings("ReferenceEquality")
     private ComputationTreeUnopCompareNode getUnusedCondition(Value argumentValue, Phi phi) {
-      if (phi.getOperands().size() != 2) {
+      if (pathConstraintSupplier == null || phi.getOperands().size() != 2) {
         return null;
       }
       BasicBlock block = phi.getBlock();
@@ -343,7 +466,8 @@ public class EffectivelyUnusedArgumentsAnalysis {
     }
 
     private void computeIgnoreComposableArgumentCondition(Argument argument, Value argumentValue) {
-      if (!appView.options().callSiteOptimizationOptions().isComposableArgumentRemovalEnabled()
+      if (pathConstraintSupplier == null
+          || !appView.options().callSiteOptimizationOptions().isComposableArgumentRemovalEnabled()
           || !appView.getComposeReferences().isComposable(method)) {
         return;
       }

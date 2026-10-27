@@ -54,21 +54,19 @@ public class ParameterTypeStrengtheningTest extends TestBase {
               ClassSubject bClassSubject = inspector.clazz(B.class);
               assertThat(bClassSubject, isPresent());
 
-              // Method testA(I) should be rewritten to testA(A).
+              // Method testA(I) should be rewritten to testA(A), which allows inlining A.m(), after
+              // which the unused parameter is removed.
               MethodSubject testAMethodSubject =
                   mainClassSubject.uniqueMethodWithOriginalName("testA");
               assertThat(testAMethodSubject, isPresent());
-              assertEquals(
-                  aClassSubject.getFinalName(),
-                  testAMethodSubject.getProgramMethod().getParameter(0).getTypeName());
+              assertEquals(0, testAMethodSubject.getParameters().size());
 
-              // Method testB(I) should be rewritten to testB(B).
+              // Method testB(I) should be rewritten to testB(B), which allows inlining B.m(), after
+              // which the unused parameter is removed.
               MethodSubject testBMethodSubject =
                   mainClassSubject.uniqueMethodWithOriginalName("testB");
               assertThat(testBMethodSubject, isPresent());
-              assertEquals(
-                  bClassSubject.getFinalName(),
-                  testBMethodSubject.getProgramMethod().getParameter(0).getTypeName());
+              assertEquals(0, testBMethodSubject.getParameters().size());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("A", "B");

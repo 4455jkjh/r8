@@ -3,8 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debuginfo;
 
+import static com.android.tools.r8.TestBase.testForR8;
 
 import com.android.tools.r8.AssumeMayHaveSideEffects;
+import com.android.tools.r8.KeepUnusedReturnValue;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -57,6 +59,7 @@ public class CanonicalizeWithInline extends TestBase {
                 "-keepattributes SourceFile,LineNumberTable",
                 "-keep class ** { public void call(int); }")
             .enableInliningAnnotations()
+            .enableKeepUnusedReturnValueAnnotations()
             .enableSideEffectAnnotations()
             .compile()
             .writeToDirectory();
@@ -80,6 +83,7 @@ public class CanonicalizeWithInline extends TestBase {
     }
 
     @AssumeMayHaveSideEffects
+    @KeepUnusedReturnValue
     @NeverInline
     private String doSomething(int a) {
       String s = "bFoobar" + a;
@@ -98,6 +102,7 @@ public class CanonicalizeWithInline extends TestBase {
     }
 
     @AssumeMayHaveSideEffects
+    @KeepUnusedReturnValue
     @NeverInline
     private String doSomething(int a) {
       String s = "bFoobar" + a;

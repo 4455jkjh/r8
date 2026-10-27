@@ -325,7 +325,6 @@ public class R8InliningTest extends TestBase {
     // These constants describe the expected number of invoke instructions calling a possibly
     // inlined method.
     int ALWAYS_INLINABLE = 0;
-    int INLINABLE_WHEN_DISABLED = allowAccessModification && parameters.isDexRuntime() ? 1 : 0;
     int NEVER_INLINABLE = 1;
 
     ClassSubject clazz = inspector.clazz(nullabilityClass);
@@ -339,7 +338,7 @@ public class R8InliningTest extends TestBase {
             allowAccessModification ? "void" : "int",
             "notInlinable",
             ImmutableList.of("inlining." + (allowAccessModification ? "B" : "A")));
-    assertCounters(ALWAYS_INLINABLE, INLINABLE_WHEN_DISABLED, countInvokes(inspector, m));
+    assertCounters(ALWAYS_INLINABLE, ALWAYS_INLINABLE, countInvokes(inspector, m));
 
     m = clazz.method("int", "notInlinableDueToMissingNpe", ImmutableList.of("inlining.A"));
     assertCounters(ALWAYS_INLINABLE, ALWAYS_INLINABLE, countInvokes(inspector, m));

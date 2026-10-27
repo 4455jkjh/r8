@@ -148,7 +148,9 @@ public class UnusedArgumentsObjectTest extends UnusedArgumentsTestBase {
             Assert.assertTrue(
                 method.getFinalName().equals("main")
                     || method.getFinalName().equals("<init>")
-                    || (method.getFinalSignature().parameters.length == 1
-                        && method.getFinalSignature().parameters[0].equals("java.lang.Object"))));
+                    || (parameters.isCfRuntime()
+                        ? (method.getFinalSignature().parameters.length == 1
+                            && method.getFinalSignature().parameters[0].equals("java.lang.Object"))
+                        : method.getFinalSignature().parameters.length == 0)));
   }
 }

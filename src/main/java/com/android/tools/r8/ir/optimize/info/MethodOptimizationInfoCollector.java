@@ -44,6 +44,7 @@ import static com.android.tools.r8.ir.code.Opcodes.SUB;
 import static com.android.tools.r8.ir.code.Opcodes.THROW;
 import static com.android.tools.r8.ir.code.Opcodes.USHR;
 import static com.android.tools.r8.ir.code.Opcodes.XOR;
+import static com.android.tools.r8.optimize.argumentpropagation.unusedarguments.UnusedArgumentsAnalysis.computeUnusedArguments;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -1350,28 +1351,5 @@ public class MethodOptimizationInfoCollector {
   private boolean hasBitwiseOperation(Argument argument) {
     return argument.getOutType().isInt()
         && argument.outValue().hasUserThatMatches(Instruction::isAnd);
-  }
-
-  private void computeUnusedArguments(
-      ProgramMethod method, IRCode code, OptimizationFeedback feedback, Timing timing) {
-    timing.begin("Compute unused arguments");
-    computeUnusedArguments(method, code, feedback);
-    timing.end();
-  }
-
-  private void computeUnusedArguments(
-      ProgramMethod method, IRCode code, OptimizationFeedback feedback) {
-    BitSet unusedArguments = new BitSet(method.getDefinition().getNumberOfArguments());
-    InstructionIterator instructionIterator = code.entryBlock().iterator();
-    Argument argument = instructionIterator.next().asArgument();
-    while (argument != null) {
-      if (!argument.outValue().hasAnyUsers()) {
-        unusedArguments.set(argument.getIndex());
-      }
-      argument = instructionIterator.next().asArgument();
-    }
-    if (!unusedArguments.isEmpty()) {
-      feedback.setUnusedArguments(method, unusedArguments);
-    }
   }
 }

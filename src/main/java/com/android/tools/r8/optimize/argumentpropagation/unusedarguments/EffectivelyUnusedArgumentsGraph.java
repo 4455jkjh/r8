@@ -43,6 +43,7 @@ class EffectivelyUnusedArgumentsGraph {
       AppView<AppInfoWithLiveness> appView,
       Map<MethodParameter, ComputationTreeNode> conditions,
       Map<MethodParameter, Set<MethodParameter>> constraints,
+      Set<MethodParameter> nonNullParameters,
       ProgramMethodSet prunedMethods) {
     EffectivelyUnusedArgumentsGraph graph = new EffectivelyUnusedArgumentsGraph(appView);
     conditions.forEach(
@@ -78,6 +79,9 @@ class EffectivelyUnusedArgumentsGraph {
             return;
           }
           EffectivelyUnusedArgumentsGraphNode node = graph.getOrCreateNode(methodParameter);
+          if (nonNullParameters.contains(methodParameter)) {
+            node.setNotNull();
+          }
           for (MethodParameter constraint : constraintsForMethodParameter) {
             graph.addConstraintEdge(node, constraint, constraints, prunedMethods);
           }

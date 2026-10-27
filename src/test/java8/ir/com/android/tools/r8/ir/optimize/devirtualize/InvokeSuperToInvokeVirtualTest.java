@@ -99,6 +99,7 @@ public class InvokeSuperToInvokeVirtualTest extends TestBase {
   static class A {
 
     @NeverInline
+    @NoMethodStaticizing
     void hello() {
       System.out.print("Hello");
     }

@@ -168,7 +168,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
 
   private boolean hasPotentialNonTrivialInvokeRewriting(
       DexMethod method, InvokeType type, MethodLookupResult result) {
-    if (graphLens.isHorizontalClassMergerGraphLens()) {
+    if (graphLens.isArgumentPropagatorGraphLens() || graphLens.isHorizontalClassMergerGraphLens()) {
       return !result.getPrototypeChanges().isEmpty();
     }
     if (graphLens.isProtoNormalizerLens()) {
@@ -492,6 +492,11 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   private boolean hasNonTrivialMethodChanges() {
+    if (graphLens.isArgumentPropagatorGraphLens()) {
+      RewrittenPrototypeDescription prototypeChanges =
+          graphLens.lookupPrototypeChangesForMethodDefinition(context.getReference(), codeLens);
+      return !prototypeChanges.isEmpty();
+    }
     if (graphLens.isClassMergerLens()) {
       RewrittenPrototypeDescription prototypeChanges =
           graphLens.lookupPrototypeChangesForMethodDefinition(context.getReference(), codeLens);
@@ -572,6 +577,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     MethodProcessor methodProcessor = null;
     new LensCodeRewriter(appViewWithClassHierarchy)
         .rewrite(code, context, methodProcessor, graphLens, codeLens, timing);
+    new DeadCodeRemover(appView).run(code, timing);
     IRToLirFinalizer finalizer = new IRToLirFinalizer(appView);
     LirCode<?> rewritten = finalizer.finalizeCode(code, BytecodeMetadataProvider.empty(), timing);
     timing.end();
