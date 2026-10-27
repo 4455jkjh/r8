@@ -4,7 +4,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import argparse
-import json
 import os
 try:
     import resource
@@ -29,26 +28,22 @@ def parse_options():
         '--version',
         metavar='<version>',
         help='Expected R8 Assistant version in R8AssistantVersion.java')
+    parser.add_argument('--archive-dir',
+                        '--archive_dir',
+                        metavar='<output directory>',
+                        default=None,
+                        help='Directory to write archived files into.')
     parser.add_argument('--dry-run',
                         '--dry_run',
                         default=False,
                         action='store_true',
                         help='Build only, no upload to Cloud Storage.')
-    parser.add_argument('--dry-run-output',
-                        '--dry_run_output',
-                        metavar='<output directory>',
-                        default=None,
-                        help='Output directory for dry run.')
     parser.add_argument(
         '--skip-gradle-build',
         '--skip_gradle_build',
         default=False,
         action='store_true',
         help='Skip Gradle build (only supported with --dry-run).')
-    parser.add_argument('--archive-details',
-                        metavar='<file>',
-                        default=utils.ARCHIVE_DETAILS,
-                        help='Path to write archive_details.json.')
     return parser.parse_args()
 
 
@@ -80,21 +75,18 @@ def get_url(version, file_name):
     return f'{get_version_destination(utils.CLOUD_STORAGE_URL + "/", version)}/{file_name}'
 
 
-def upload_file(src_file, version, dst_file, options):
+def archive_file(src_file, version, dst_file, options):
+    if options.archive_dir:
+        local_dst = os.path.join(options.archive_dir, get_storage_path(version),
+                                 dst_file)
+        os.makedirs(os.path.dirname(local_dst), exist_ok=True)
+        shutil.copyfile(src_file, local_dst)
+        print(f'Archived {src_file} to {local_dst}')
     destination = get_upload_destination(version, dst_file)
-    print(f'Uploading {src_file} to {destination}')
     if options.dry_run:
-        if options.dry_run_output:
-            dry_run_destination = os.path.join(options.dry_run_output, version,
-                                               dst_file)
-            print(
-                f'Dry run, not actually uploading. Copying to {dry_run_destination}'
-            )
-            os.makedirs(os.path.dirname(dry_run_destination), exist_ok=True)
-            shutil.copyfile(src_file, dry_run_destination)
-        else:
-            print('Dry run, not actually uploading')
+        print(f'Dry run, not uploading {src_file} to {destination}')
     else:
+        print(f'Uploading {src_file} to {destination}')
         utils.upload_file_to_cloud_storage(src_file, destination)
         print(f'File available at: {get_url(version, dst_file)}')
 
@@ -117,11 +109,6 @@ def run(options):
     if not utils.is_bot() and not options.dry_run:
         raise Exception("You are not a bot, don't archive builds. "
                         "Use --dry-run to test locally")
-    if (options.dry_run_output and
-        (not os.path.exists(options.dry_run_output) or
-         not os.path.isdir(options.dry_run_output))):
-        raise Exception(
-            f'{options.dry_run_output} does not exist or is not a directory')
     if options.skip_gradle_build and not options.dry_run:
         raise Exception(
             'Using --skip-gradle-build only supported with --dry-run')
@@ -131,6 +118,10 @@ def run(options):
         raise Exception(
             f'R8AssistantVersion.LABEL is {version}, expected {options.version}'
         )
+    destination = get_version_destination('gs://', version)
+    if not options.dry_run and utils.cloud_storage_exists(destination):
+        raise Exception(
+            f'Target archive directory {destination} already exists')
 
     timing = Timing()
     set_r_limit_to_max()
@@ -160,12 +151,7 @@ def run(options):
             skip_gradle_build=True)
         timing.end()
 
-        destination = get_version_destination('gs://', version)
-        if not options.dry_run and utils.cloud_storage_exists(destination):
-            raise Exception(
-                f'Target archive directory {destination} already exists')
-
-        timing.begin('Upload files')
+        timing.begin('Archive files')
         for_archiving = [
             utils.R8_ASSISTANT_LIB_JAR,
             utils.R8_ASSISTANT_LIB_JAR + '.map',
@@ -179,17 +165,7 @@ def run(options):
             if file_name.endswith('.jar'):
                 with zipfile.ZipFile(tagged_file, 'a') as f:
                     f.write(version_file, os.path.basename(version_file))
-            upload_file(tagged_file, version, file_name, options)
-
-        os.makedirs(os.path.dirname(os.path.abspath(options.archive_details)),
-                    exist_ok=True)
-        archive_details = {
-            'version': version,
-            'bucket': ARCHIVE_BUCKET,
-            'bucket_path': get_storage_path(version),
-        }
-        with open(options.archive_details, 'w') as f:
-            json.dump(archive_details, f, indent=4)
+            archive_file(tagged_file, version, file_name, options)
         timing.end()
         timing.report()
 
