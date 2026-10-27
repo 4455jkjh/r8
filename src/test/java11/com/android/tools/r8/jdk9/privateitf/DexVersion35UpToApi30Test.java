@@ -60,7 +60,6 @@ public class DexVersion35UpToApi30Test extends TestBase {
 
   @Test
   public void testPrivateInstanceInterfaceMethodInDexInput() throws Exception {
-    // DEX input is not desugared, so the private instance interface method remains.
     Path dexInput =
         testForD8(parameters)
             .addProgramClassFileData(
@@ -68,26 +67,20 @@ public class DexVersion35UpToApi30Test extends TestBase {
                     TestClassWithPrivate.class, IWithPrivate.class, AWithPrivate.class))
             .compile()
             .writeToZip();
-    TestCompilerBuilder<?, ?, ?, ?, ?> builder =
+    // The private instance interface method in the DEX input is staticized.
+    TestCompileResult<?, ?> compileResult =
         testForD8(parameters)
             .addProgramFiles(dexInput)
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true);
-    if (parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R)) {
-      assertThrows(
-          CompilationFailedException.class,
-          () ->
-              builder.compileWithExpectedDiagnostics(
-                  diagnostics ->
-                      diagnostics.assertErrorsMatch(
-                          diagnosticMessage(
-                              containsString("Cannot encode private instance interface method")))));
-    } else {
-      TestCompileResult<?, ?> compileResult = builder.compile();
-      assertDexVersion(getDefaultDexVersion(parameters), compileResult);
-      compileResult
-          .run(parameters.getRuntime(), TestClassWithPrivate.class)
-          .assertSuccessWithOutputLines("42");
-    }
+            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .compile();
+    assertDexVersion(
+        parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R)
+            ? DexVersion.V35
+            : getDefaultDexVersion(parameters),
+        compileResult);
+    compileResult
+        .run(parameters.getRuntime(), TestClassWithPrivate.class)
+        .assertSuccessWithOutputLines("42");
   }
 
   @Test

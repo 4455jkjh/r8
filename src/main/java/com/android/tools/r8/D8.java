@@ -32,6 +32,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.conversion.PrimaryD8L8IRConverter;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryAmender;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.PrefixRewritingNamingLens;
+import com.android.tools.r8.ir.desugar.itf.PrivateInterfaceMethodStaticizer;
 import com.android.tools.r8.ir.optimize.AssertionsRewriter;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.jar.CfApplicationWriter;
@@ -456,6 +457,8 @@ public final class D8 {
   private static void finalizeApplication(
       AppView<AppInfo> appView, ExecutorService executorService, Timing timing)
       throws ExecutionException {
+    PrivateInterfaceMethodStaticizer.run(appView, executorService, timing);
+
     timing.time(
         "Finalize synthetics",
         () -> SyntheticFinalization.finalize(appView, timing, executorService));

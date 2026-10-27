@@ -454,17 +454,20 @@ public abstract class KeepInfoCollection {
             DexMethod newMethod = lens.getRenamedMethodSignature(method);
             assert !info.isPinned(options)
                 || info.isMinificationAllowed(options)
-                || newMethod.name.isIdenticalTo(method.name);
+                || newMethod.name.isIdenticalTo(method.name)
+                || lens.isPrivateInterfaceMethodLens();
             assert !info.isPinned(options)
                 || newMethod.getArity() == method.getArity()
-                || (info.isShrinkingAllowed(options) && lens.isNonStartupInStartupOutlinerLens());
+                || (info.isShrinkingAllowed(options) && lens.isNonStartupInStartupOutlinerLens())
+                || lens.isPrivateInterfaceMethodLens();
             assert !info.isPinned(options)
                 || Streams.zip(
                         newMethod.getParameters().stream(),
                         method.getParameters().stream().map(lens::lookupType),
                         Object::equals)
                     .allMatch(x -> x)
-                || (info.isShrinkingAllowed(options) && lens.isNonStartupInStartupOutlinerLens());
+                || (info.isShrinkingAllowed(options) && lens.isNonStartupInStartupOutlinerLens())
+                || lens.isPrivateInterfaceMethodLens();
             assert !info.isPinned(options)
                 || newMethod.getReturnType().isIdenticalTo(lens.lookupType(method.getReturnType()));
             KeepMethodInfo previous = newMethodInfo.put(newMethod, info);

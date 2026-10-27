@@ -1044,12 +1044,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
       cfCode.addFakeThisParameter(appView.dexItemFactory());
       return cfCode;
     } else if (code.isLirCode()) {
-      // TODO(b/443663978): Add support for patching up LIR debug info.
-      assert appView.options().isRelease()
-          || appView.options().getBottomUpOutlinerOptions().forceDebug;
-      assert code.asLirCode().getDebugLocalInfoTable() == null
-          || appView.options().getBottomUpOutlinerOptions().forceDebug;
-      return code.asLirCode().newCodeWithoutDebugLocalInfoTable();
+      return code.asLirCode().newCodeWithFakeThisParameter(appView.dexItemFactory());
     }
     assert false;
     return code;

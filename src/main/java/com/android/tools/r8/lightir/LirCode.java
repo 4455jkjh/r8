@@ -9,9 +9,11 @@ import com.android.tools.r8.graph.ArgumentUse;
 import com.android.tools.r8.graph.ClasspathMethod;
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DebugLocalInfo;
+import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
@@ -37,6 +39,7 @@ import com.android.tools.r8.utils.internal.ComparatorUtils;
 import com.android.tools.r8.utils.internal.FastMapUtils;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.IntObjPredicate;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
@@ -270,7 +273,7 @@ public class LirCode<EV> extends Code
       // Copy the maps to ensure they have not over-allocated the backing store.
       this.valueToLocalMap = ImmutableMap.copyOf(valueToLocalMap);
       this.instructionToEndUseMap =
-          instructionToEndUseMap.isEmpty()
+          instructionToEndUseMap == null || instructionToEndUseMap.isEmpty()
               ? null
               : new Int2ReferenceOpenHashMap<>(instructionToEndUseMap);
     }
@@ -284,6 +287,33 @@ public class LirCode<EV> extends Code
 
     public void forEachLocalDefinition(BiConsumer<EV, DebugLocalInfo> fn) {
       valueToLocalMap.forEach(fn);
+    }
+
+    /** Renames the local 'this' to a fresh name (e.g., '_this') when the receiver is staticized. */
+    DebugLocalInfoTable<EV> withFakeThisLocal(DexItemFactory factory) {
+      int largestPrefix = 0;
+      boolean hasThis = false;
+      for (DebugLocalInfo local : valueToLocalMap.values()) {
+        largestPrefix = Math.max(largestPrefix, DexCode.getLargestPrefix(factory, local.name));
+        hasThis |= factory.thisName.isIdenticalTo(local.name);
+      }
+      if (!hasThis) {
+        return this;
+      }
+      DexString fakeThisName =
+          factory.createString(
+              StringUtils.times(DexCode.FAKE_THIS_PREFIX, largestPrefix + 1)
+                  + DexCode.FAKE_THIS_SUFFIX);
+      ImmutableMap.Builder<EV, DebugLocalInfo> newValueToLocalMap =
+          ImmutableMap.builderWithExpectedSize(valueToLocalMap.size());
+      valueToLocalMap.forEach(
+          (value, local) ->
+              newValueToLocalMap.put(
+                  value,
+                  factory.thisName.isIdenticalTo(local.name)
+                      ? new DebugLocalInfo(fakeThisName, local.type, local.signature)
+                      : local));
+      return new DebugLocalInfoTable<>(newValueToLocalMap.build(), instructionToEndUseMap);
     }
 
     @Override
@@ -818,8 +848,13 @@ public class LirCode<EV> extends Code
     }
   }
 
-  public LirCode<EV> newCodeWithoutDebugLocalInfoTable() {
+  @SuppressWarnings("ReferenceEquality")
+  public LirCode<EV> newCodeWithFakeThisParameter(DexItemFactory factory) {
     if (debugLocalInfoTable == null) {
+      return this;
+    }
+    DebugLocalInfoTable<EV> newDebugLocalInfoTable = debugLocalInfoTable.withFakeThisLocal(factory);
+    if (newDebugLocalInfoTable == debugLocalInfoTable) {
       return this;
     }
     return new LirCode<>(
@@ -829,7 +864,7 @@ public class LirCode<EV> extends Code
         instructions,
         instructionCount,
         tryCatchTable,
-        null,
+        newDebugLocalInfoTable,
         strategyInfo,
         useDexEstimationStrategy,
         metadataMap);

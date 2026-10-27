@@ -223,8 +223,12 @@ public class ParameterAnnotationsList extends DexItem
     if (isEmpty()) {
       return this;
     }
-    DexAnnotationSet[] newValues = new DexAnnotationSet[size() + 1];
-    System.arraycopy(values, 0, newValues, 1, size());
+    // The this parameter is prepended, so it is missing if there are missing parameters.
+    if (missingParameterAnnotations > 0) {
+      return new ParameterAnnotationsList(values, missingParameterAnnotations + 1);
+    }
+    DexAnnotationSet[] newValues = new DexAnnotationSet[values.length + 1];
+    System.arraycopy(values, 0, newValues, 1, values.length);
     newValues[0] = DexAnnotationSet.empty();
     return new ParameterAnnotationsList(newValues, 0);
   }

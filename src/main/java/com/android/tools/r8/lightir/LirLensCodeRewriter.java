@@ -67,6 +67,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
   private final LensCodeRewriterUtils helper;
 
   private final boolean isNonStartupInStartupOutlinerLens;
+  private final boolean hasPrivateInterfaceMethodLens;
 
   private int numberOfInvokeOpcodeChanges = 0;
   private Set<DexMethod> invokeInstructionsToRewrite = NO_INVOKE_INSTRUCTIONS_TO_REWRITE;
@@ -100,6 +101,15 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     this.isNonStartupInStartupOutlinerLens =
         nonStartupInStartupOutlinerLens != null
             && nonStartupInStartupOutlinerLens.isNonStartupInStartupOutlinerLens();
+    NonIdentityGraphLens privateInterfaceMethodLens =
+        graphLens.isNonIdentityLens()
+            ? graphLens
+                .asNonIdentityLens()
+                .find(l -> l.isPrivateInterfaceMethodLens() || l == codeLens)
+            : null;
+    this.hasPrivateInterfaceMethodLens =
+        privateInterfaceMethodLens != null
+            && privateInterfaceMethodLens.isPrivateInterfaceMethodLens();
   }
 
   @Override
@@ -446,6 +456,9 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
       return true;
     }
     if (opcode == LirOpcodes.INVOKEINTERFACE) {
+      return true;
+    }
+    if (hasPrivateInterfaceMethodLens && LirOpcodeUtils.isInvokeDirect(opcode)) {
       return true;
     }
     if (isNonStartupInStartupOutlinerLens) {

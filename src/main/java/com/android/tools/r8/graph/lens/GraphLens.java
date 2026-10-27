@@ -497,6 +497,10 @@ public abstract class GraphLens {
     return false;
   }
 
+  public boolean isPrivateInterfaceMethodLens() {
+    return false;
+  }
+
   public boolean isProtoNormalizerLens() {
     return false;
   }

@@ -47,6 +47,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryAmender;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.PrefixRewritingNamingLens;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.R8LibraryDesugaring;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter;
+import com.android.tools.r8.ir.desugar.itf.PrivateInterfaceMethodStaticizer;
 import com.android.tools.r8.ir.desugar.records.RecordFieldValuesRewriter;
 import com.android.tools.r8.ir.desugar.records.RecordInstructionDesugaring;
 import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaring;
@@ -824,6 +825,9 @@ public class R8 {
             .asR8()
             .commitDexingOutputClasses(appView);
       }
+
+      // Run when the D8 part of R8 partial is included, since it also needs to be staticized.
+      PrivateInterfaceMethodStaticizer.run(appView, executorService, timing);
 
       // Rewrite LIR with lens to allow building IR from LIR in class mergers.
       LirConverter.rewriteLirWithLens(appView, timing, executorService);
