@@ -13,6 +13,8 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
@@ -54,7 +56,7 @@ public class InlineProtectedSuperMethodInDifferentPackageTest extends TestBase {
         .addProgramClasses(Other.class, Leaf.class, Main.class)
         .addProgramClassFileData(getProgramClassFileData())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("false");
+        .assertSuccessWithOutputLines("false", "false", "false", "false");
   }
 
   @Test
@@ -63,33 +65,61 @@ public class InlineProtectedSuperMethodInDifferentPackageTest extends TestBase {
         .addProgramClasses(Other.class, Leaf.class, Main.class)
         .addProgramClassFileData(getProgramClassFileData())
         .addKeepMainRule(Main.class)
-        .addKeepRules("-keep class " + Leaf.class.getTypeName() + " { public boolean sameSize(); }")
+        .addKeepRules("-keep class " + Leaf.class.getTypeName() + " { public boolean same*(); }")
         .addDontObfuscate()
         .allowAccessModification(allowAccessModification)
         .setMode(mode)
         .compile()
         .inspect(
             inspector -> {
+              ClassSubject baseClass =
+                  inspector.clazz(Reference.classFromDescriptor(NEW_BASE_DESCRIPTOR));
               MethodSubject getMeasuredSize =
-                  inspector
-                      .clazz(Reference.classFromDescriptor(NEW_BASE_DESCRIPTOR))
-                      .uniqueMethodWithOriginalName("getMeasuredSize");
+                  baseClass.uniqueMethodWithOriginalName("getMeasuredSize");
+              ClassSubject midClass = inspector.clazz(Mid.class);
+              FieldSubject fieldSize =
+                  (mode.isRelease() && (parameters.isDexRuntime() || allowAccessModification)
+                          ? midClass
+                          : baseClass)
+                      .uniqueFieldWithOriginalName("fieldSize");
+              assertThat(fieldSize, isPresent());
+              assertTrue(
+                  (mode.isRelease() && parameters.isDexRuntime()) || allowAccessModification
+                      ? fieldSize.isPublic()
+                      : fieldSize.isProtected());
+              MethodSubject getSize =
+                  (mode.isRelease() ? baseClass : midClass).uniqueMethodWithOriginalName("getSize");
+              MethodSubject getOtherSize = midClass.uniqueMethodWithOriginalName("getOtherSize");
+              MethodSubject getFieldSize = midClass.uniqueMethodWithOriginalName("getFieldSize");
+              MethodSubject getOtherFieldSize =
+                  midClass.uniqueMethodWithOriginalName("getOtherFieldSize");
+              MethodSubject setFieldSize = midClass.uniqueMethodWithOriginalName("setFieldSize");
+              MethodSubject setOtherFieldSize =
+                  midClass.uniqueMethodWithOriginalName("setOtherFieldSize");
               if (mode.isRelease() && (parameters.isDexRuntime() || allowAccessModification)) {
                 assertThat(getMeasuredSize, isAbsent());
+                assertThat(getSize, isAbsent());
+                assertThat(getOtherSize, isAbsent());
+                assertThat(getFieldSize, isAbsent());
+                assertThat(getOtherFieldSize, isAbsent());
+                assertThat(setFieldSize, isAbsent());
+                assertThat(setOtherFieldSize, isAbsent());
               } else {
                 assertThat(getMeasuredSize, isPresent());
                 assertTrue(
                     allowAccessModification
                         ? getMeasuredSize.isPublic()
                         : getMeasuredSize.isProtected());
+                assertThat(getSize, isPresent());
+                assertThat(getOtherSize, isPresent());
+                assertThat(getFieldSize, isPresent());
+                assertThat(getOtherFieldSize, isPresent());
+                assertThat(setFieldSize, isPresent());
+                assertThat(setOtherFieldSize, isPresent());
               }
             })
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/577393730): Should succeed on CF in release mode without allowAccessModification.
-        .applyIf(
-            parameters.isCfRuntime() && !allowAccessModification && mode.isRelease(),
-            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
-            r -> r.assertSuccessWithOutputLines("false"));
+        .assertSuccessWithOutputLines("false", "false", "false", "false");
   }
 
   @Test
@@ -99,25 +129,48 @@ public class InlineProtectedSuperMethodInDifferentPackageTest extends TestBase {
         .addProgramClasses(Other.class, Leaf.class, Main.class)
         .addProgramClassFileData(getProgramClassFileData())
         .addKeepMainRule(Main.class)
-        .addKeepRules("-keep class " + Leaf.class.getTypeName() + " { public boolean sameSize(); }")
+        .addKeepRules("-keep class " + Leaf.class.getTypeName() + " { public boolean same*(); }")
         .addDontObfuscate()
         .apply(b -> b.getBuilder().setProtectApiSurface(true))
         .compile()
         .inspect(
             inspector -> {
+              ClassSubject baseClass =
+                  inspector.clazz(Reference.classFromDescriptor(NEW_BASE_DESCRIPTOR));
               MethodSubject getMeasuredSize =
-                  inspector
-                      .clazz(Reference.classFromDescriptor(NEW_BASE_DESCRIPTOR))
-                      .uniqueMethodWithOriginalName("getMeasuredSize");
+                  baseClass.uniqueMethodWithOriginalName("getMeasuredSize");
               assertThat(getMeasuredSize, isPresent());
               assertTrue(getMeasuredSize.isProtected());
+              FieldSubject fieldSize = baseClass.uniqueFieldWithOriginalName("fieldSize");
+              assertThat(fieldSize, isPresent());
+              assertTrue(fieldSize.isProtected());
+              ClassSubject midClass = inspector.clazz(Mid.class);
+              MethodSubject getSize = baseClass.uniqueMethodWithOriginalName("getSize");
+              MethodSubject getOtherSize = midClass.uniqueMethodWithOriginalName("getOtherSize");
+              MethodSubject getFieldSize = midClass.uniqueMethodWithOriginalName("getFieldSize");
+              MethodSubject getOtherFieldSize =
+                  midClass.uniqueMethodWithOriginalName("getOtherFieldSize");
+              MethodSubject setFieldSize = midClass.uniqueMethodWithOriginalName("setFieldSize");
+              MethodSubject setOtherFieldSize =
+                  midClass.uniqueMethodWithOriginalName("setOtherFieldSize");
+              if (parameters.isDexRuntime()) {
+                assertThat(getSize, isAbsent());
+                assertThat(getOtherSize, isAbsent());
+                assertThat(getFieldSize, isAbsent());
+                assertThat(getOtherFieldSize, isAbsent());
+                assertThat(setFieldSize, isAbsent());
+                assertThat(setOtherFieldSize, isAbsent());
+              } else {
+                assertThat(getSize, isPresent());
+                assertThat(getOtherSize, isPresent());
+                assertThat(getFieldSize, isPresent());
+                assertThat(getOtherFieldSize, isPresent());
+                assertThat(setFieldSize, isPresent());
+                assertThat(setOtherFieldSize, isPresent());
+              }
             })
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/577393730): Should succeed on CF.
-        .applyIf(
-            parameters.isCfRuntime(),
-            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
-            r -> r.assertSuccessWithOutputLines("false"));
+        .assertSuccessWithOutputLines("false", "false", "false", "false");
   }
 
   private static List<byte[]> getProgramClassFileData() {
@@ -131,9 +184,11 @@ public class InlineProtectedSuperMethodInDifferentPackageTest extends TestBase {
 
   public abstract static class /*p1.*/ Base {
     private long size;
+    protected long fieldSize;
 
     protected Base(long size) {
       this.size = size;
+      this.fieldSize = size;
     }
 
     protected final long getMeasuredSize() {
@@ -148,6 +203,26 @@ public class InlineProtectedSuperMethodInDifferentPackageTest extends TestBase {
 
     public final long getSize() {
       return getMeasuredSize();
+    }
+
+    public final long getOtherSize(Mid other) {
+      return other.getMeasuredSize();
+    }
+
+    public final long getFieldSize() {
+      return fieldSize;
+    }
+
+    public final long getOtherFieldSize(Mid other) {
+      return other.fieldSize;
+    }
+
+    public final void setFieldSize(long fieldSize) {
+      this.fieldSize = fieldSize;
+    }
+
+    public final void setOtherFieldSize(Mid other, long fieldSize) {
+      other.fieldSize = fieldSize;
     }
   }
 
@@ -168,12 +243,31 @@ public class InlineProtectedSuperMethodInDifferentPackageTest extends TestBase {
     public boolean sameSize() {
       return getSize() == wrapped.getSize();
     }
+
+    public boolean sameSizeIndirect() {
+      return getSize() == getOtherSize(wrapped);
+    }
+
+    public boolean sameFieldSize() {
+      setFieldSize(getFieldSize() + 1);
+      wrapped.setFieldSize(wrapped.getFieldSize() + 1);
+      return getFieldSize() == wrapped.getFieldSize();
+    }
+
+    public boolean sameFieldSizeIndirect() {
+      setFieldSize(getFieldSize() + 1);
+      setOtherFieldSize(wrapped, getOtherFieldSize(wrapped) + 1);
+      return getFieldSize() == getOtherFieldSize(wrapped);
+    }
   }
 
   public static class Main {
     public static void main(String[] args) {
       Leaf leaf = new Leaf(args.length, new Other(args.length + 1));
       System.out.println(leaf.sameSize());
+      System.out.println(leaf.sameSizeIndirect());
+      System.out.println(leaf.sameFieldSize());
+      System.out.println(leaf.sameFieldSizeIndirect());
     }
   }
 }

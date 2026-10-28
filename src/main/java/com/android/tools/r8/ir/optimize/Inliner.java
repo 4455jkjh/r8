@@ -358,9 +358,18 @@ public class Inliner {
           && this.targetHolder == o.targetHolder;
     }
 
-    @SuppressWarnings("ReferenceEquality")
     public static ConstraintWithTarget deriveConstraint(
         ProgramMethod context, DexType targetHolder, AccessFlags<?> flags, AppView<?> appView) {
+      return deriveConstraint(context, targetHolder, flags, appView, null);
+    }
+
+    @SuppressWarnings("ReferenceEquality")
+    public static ConstraintWithTarget deriveConstraint(
+        ProgramMethod context,
+        DexType targetHolder,
+        AccessFlags<?> flags,
+        AppView<?> appView,
+        Value receiver) {
       if (flags.isPublic()) {
         return ALWAYS;
       } else if (flags.isPrivate()) {
@@ -377,6 +386,11 @@ public class Inliner {
           // Even though protected, this is visible via the same package from the context.
           return new ConstraintWithTarget(Constraint.PACKAGE, targetHolder);
         } else if (appView.isSubtype(context.getHolderType(), targetHolder).isTrue()) {
+          if (appView.options().isGeneratingClassFiles()
+              && receiver != null
+              && !receiver.getAliasedValue().isThis()) {
+            return new ConstraintWithTarget(Constraint.SAMECLASS, context.getHolderType());
+          }
           return new ConstraintWithTarget(Constraint.SUBCLASS, targetHolder);
         }
         return NEVER;
@@ -465,9 +479,13 @@ public class Inliner {
           return NEVER;
         }
         assert other.constraint == Constraint.SUBCLASS;
-        if (allNestMembersSubtypeOf(one.targetHolder, other.targetHolder, appView)) {
+        if (!appView.options().isGeneratingClassFiles()
+            && allNestMembersSubtypeOf(one.targetHolder, other.targetHolder, appView)) {
           // Then, SAMENEST is a more restrictive constraint.
           return one;
+        }
+        if (appView.isSubtype(one.targetHolder, other.targetHolder).isTrue()) {
+          return new ConstraintWithTarget(Constraint.SAMECLASS, one.targetHolder);
         }
         return NEVER;
       }

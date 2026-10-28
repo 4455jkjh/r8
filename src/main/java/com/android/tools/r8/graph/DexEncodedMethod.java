@@ -27,6 +27,8 @@ import com.android.tools.r8.graph.DexAnnotation.AnnotatedKind;
 import com.android.tools.r8.graph.GenericSignature.MethodTypeSignature;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
+import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
+import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.ValueType;
@@ -617,6 +619,14 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
       AppView<? extends AppInfoWithClassHierarchy> appView,
       ProgramMethod context,
       WhyAreYouNotInliningReporter whyAreYouNotInliningReporter) {
+    return isInliningCandidate(appView, context, whyAreYouNotInliningReporter, null);
+  }
+
+  public boolean isInliningCandidate(
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      ProgramMethod context,
+      WhyAreYouNotInliningReporter whyAreYouNotInliningReporter,
+      InvokeMethod invoke) {
     checkIfObsolete();
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
     switch (compilationState) {
@@ -625,6 +635,28 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
 
       case PROCESSED_INLINING_CANDIDATE_SUBCLASS:
         if (appInfo.isSubtype(context.getHolderType(), getHolderType())) {
+          if (appView.options().isGeneratingClassFiles()) {
+            // This state (PROCESSED_INLINING_CANDIDATE_SUBCLASS: "code also contains instructions
+            // that access protected entities that reside in a different package and hence require
+            // subclass relationship to be visible") requires additional checks when generating
+            // class files.
+            if (invoke == null) {
+              // Without an invoke restrict to same type.
+              if (context.getHolderType().isNotIdenticalTo(getHolderType())) {
+                whyAreYouNotInliningReporter.reportCallerNotSubtype();
+                return false;
+              }
+            } else if (invoke.isInvokeMethodWithReceiver()) {
+              // With an invoke receiver has to be assignable to the caller class.
+              ClassTypeElement receiverType =
+                  invoke.asInvokeMethodWithReceiver().getReceiver().getType().asClassType();
+              if (receiverType == null
+                  || !appInfo.isSubtype(receiverType.getClassType(), context.getHolderType())) {
+                whyAreYouNotInliningReporter.reportCallerNotSubtype();
+                return false;
+              }
+            }
+          }
           return true;
         }
         whyAreYouNotInliningReporter.reportCallerNotSubtype();

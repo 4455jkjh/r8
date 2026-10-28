@@ -17,6 +17,7 @@ import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionRes
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.Inliner.Constraint;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -98,16 +99,18 @@ public class InliningConstraints {
     return ConstraintWithTarget.classIsVisible(context, clazz, appView);
   }
 
-  public ConstraintWithTarget forInstanceGet(DexField field, ProgramMethod context) {
-    return forFieldInstruction(field, context);
+  public ConstraintWithTarget forInstanceGet(
+      DexField field, Value receiver, ProgramMethod context) {
+    return forFieldInstruction(field, receiver, context);
   }
 
   public ConstraintWithTarget forInstanceOf(DexType type, ProgramMethod context) {
     return ConstraintWithTarget.classIsVisible(context, type, appView);
   }
 
-  public ConstraintWithTarget forInstancePut(DexField field, ProgramMethod context) {
-    return forFieldInstruction(field, context);
+  public ConstraintWithTarget forInstancePut(
+      DexField field, Value receiver, ProgramMethod context) {
+    return forFieldInstruction(field, receiver, context);
   }
 
   public ConstraintWithTarget forInvokeCustom() {
@@ -115,7 +118,8 @@ public class InliningConstraints {
     return ConstraintWithTarget.NEVER;
   }
 
-  public ConstraintWithTarget forInvokeDirect(DexMethod method, ProgramMethod context) {
+  public ConstraintWithTarget forInvokeDirect(
+      DexMethod method, Value receiver, ProgramMethod context) {
     if (method.holder.isArrayType()) {
       return ConstraintWithTarget.ALWAYS;
     }
@@ -129,11 +133,13 @@ public class InliningConstraints {
     if (target == null) {
       return ConstraintWithTarget.NEVER;
     }
-    return forResolvedMember(resolutionResult.getInitialResolutionHolder(), context, target);
+    return forResolvedMember(
+        resolutionResult.getInitialResolutionHolder(), context, target, receiver);
   }
 
-  public ConstraintWithTarget forInvokeInterface(DexMethod method, ProgramMethod context) {
-    return forVirtualInvoke(method, context, true);
+  public ConstraintWithTarget forInvokeInterface(
+      DexMethod method, Value receiver, ProgramMethod context) {
+    return forVirtualInvoke(method, receiver, context, true);
   }
 
   public ConstraintWithTarget forInvokeMultiNewArray(DexType type, ProgramMethod context) {
@@ -162,7 +168,7 @@ public class InliningConstraints {
     if (target == null) {
       return ConstraintWithTarget.NEVER;
     }
-    return forResolvedMember(resolutionResult.getInitialResolutionHolder(), context, target);
+    return forResolvedMember(resolutionResult.getInitialResolutionHolder(), context, target, null);
   }
 
   public ConstraintWithTarget forInvokeSuper(DexMethod method, ProgramMethod context) {
@@ -170,8 +176,9 @@ public class InliningConstraints {
     return new ConstraintWithTarget(Constraint.SAMECLASS, context.getHolderType());
   }
 
-  public ConstraintWithTarget forInvokeVirtual(DexMethod method, ProgramMethod context) {
-    return forVirtualInvoke(method, context, false);
+  public ConstraintWithTarget forInvokeVirtual(
+      DexMethod method, Value receiver, ProgramMethod context) {
+    return forVirtualInvoke(method, receiver, context, false);
   }
 
   public ConstraintWithTarget forJumpInstruction() {
@@ -239,11 +246,11 @@ public class InliningConstraints {
   }
 
   public ConstraintWithTarget forStaticGet(DexField field, ProgramMethod context) {
-    return forFieldInstruction(field, context);
+    return forFieldInstruction(field, null, context);
   }
 
   public ConstraintWithTarget forStaticPut(DexField field, ProgramMethod context) {
-    return forFieldInstruction(field, context);
+    return forFieldInstruction(field, null, context);
   }
 
   public ConstraintWithTarget forStore() {
@@ -274,7 +281,8 @@ public class InliningConstraints {
     return ConstraintWithTarget.NEVER;
   }
 
-  private ConstraintWithTarget forFieldInstruction(DexField field, ProgramMethod context) {
+  private ConstraintWithTarget forFieldInstruction(
+      DexField field, Value receiver, ProgramMethod context) {
     SingleFieldResolutionResult<?> fieldResolutionResult =
         appView.appInfo().resolveField(field).asSingleFieldResolutionResult();
     if (fieldResolutionResult == null) {
@@ -283,11 +291,12 @@ public class InliningConstraints {
     return forResolvedMember(
         fieldResolutionResult.getInitialResolutionHolder(),
         context,
-        fieldResolutionResult.getResolutionPair());
+        fieldResolutionResult.getResolutionPair(),
+        receiver);
   }
 
   private ConstraintWithTarget forVirtualInvoke(
-      DexMethod method, ProgramMethod context, boolean isInterface) {
+      DexMethod method, Value receiver, ProgramMethod context, boolean isInterface) {
     if (method.holder.isArrayType()) {
       return ConstraintWithTarget.ALWAYS;
     }
@@ -308,14 +317,16 @@ public class InliningConstraints {
     return forResolvedMember(
         resolutionResult.getInitialResolutionHolder(),
         context,
-        resolutionResult.getResolutionPair());
+        resolutionResult.getResolutionPair(),
+        receiver);
   }
 
   @SuppressWarnings("ReferenceEquality")
   private ConstraintWithTarget forResolvedMember(
       DexClass initialResolutionHolder,
       ProgramMethod context,
-      DexClassAndMember<?, ?> resolvedMember) {
+      DexClassAndMember<?, ?> resolvedMember,
+      Value receiver) {
     if (!FeatureSplitBoundaryOptimizationUtils.isSafeForAccess(
             initialResolutionHolder, context, appView)
         || !FeatureSplitBoundaryOptimizationUtils.isSafeForAccess(
@@ -326,7 +337,7 @@ public class InliningConstraints {
     assert initialResolutionHolder != null;
     ConstraintWithTarget memberConstraintWithTarget =
         ConstraintWithTarget.deriveConstraint(
-            context, resolvedHolder, resolvedMember.getAccessFlags(), appView);
+            context, resolvedHolder, resolvedMember.getAccessFlags(), appView, receiver);
     // We also have to take the constraint of the initial resolution holder into account.
     ConstraintWithTarget classConstraintWithTarget =
         ConstraintWithTarget.deriveConstraint(
