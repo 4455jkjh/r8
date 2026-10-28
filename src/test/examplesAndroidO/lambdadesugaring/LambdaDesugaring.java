@@ -25,18 +25,15 @@ public class LambdaDesugaring {
     X foo(int i);
   }
 
-  interface I2 extends I {
-  }
+  interface I2 extends I {}
 
   interface I3 {
     String foo();
   }
 
-  interface M1 {
-  }
+  interface M1 {}
 
-  interface M2 {
-  }
+  interface M2 {}
 
   interface J {
     String foo(String a, int b, boolean c);
@@ -97,7 +94,7 @@ public class LambdaDesugaring {
   }
 
   static void atA(ArrayTransformerA<Integer> f) {
-    print(f.transform(new Integer[] { 1, 2, 3 }));
+    print(f.transform(new Integer[] {1, 2, 3}));
   }
 
   static void atB(ArrayTransformerB<String> f) {
@@ -291,8 +288,7 @@ public class LambdaDesugaring {
     }
 
     public static class ProtectedInit extends OtherRefs.PublicInit {
-      protected ProtectedInit() {
-      }
+      protected ProtectedInit() {}
 
       static String testProtected() {
         return g(ProtectedInit::new);
@@ -305,8 +301,7 @@ public class LambdaDesugaring {
     }
 
     static class InternalInit extends ProtectedInit {
-      InternalInit() {
-      }
+      InternalInit() {}
 
       @Override
       public String toString() {
@@ -315,8 +310,7 @@ public class LambdaDesugaring {
     }
 
     static class PrivateInit extends InternalInit {
-      private PrivateInit() {
-      }
+      private PrivateInit() {}
 
       static String testPrivate() {
         return g(PrivateInit::new);
@@ -332,8 +326,7 @@ public class LambdaDesugaring {
   public void testLambdasSimple() {
     System.out.println(f(() -> "testLambdasSimple#1"));
     System.out.println(
-        g((a, b, c) -> "{" + a + ":" + b + ":" + c + "}",
-            "testLambdasSimple#2", 123, true));
+        g((a, b, c) -> "{" + a + ":" + b + ":" + c + "}", "testLambdasSimple#2", 123, true));
   }
 
   public void testLambdasSimpleWithCaptures() {
@@ -342,8 +335,11 @@ public class LambdaDesugaring {
     char c = '#';
 
     System.out.println(
-        g((x, y, z) -> "{" + s + ":" + l + ":" + c + ":" + x + ":" + y + ":" + z + "}",
-            "param1", 2, false));
+        g(
+            (x, y, z) -> "{" + s + ":" + l + ":" + c + ":" + x + ":" + y + ":" + z + "}",
+            "param1",
+            2,
+            false));
 
     I i1 = () -> "i1";
     I i2 = () -> i1.foo() + ":i2";
@@ -472,12 +468,9 @@ public class LambdaDesugaring {
 
     static void test() {
       assertDifferentInstance(
-          INSTANCE::instanceProvider,
-          INSTANCE::instanceProvider,
-          "Instances must be different");
+          INSTANCE::instanceProvider, INSTANCE::instanceProvider, "Instances must be different");
       assertDifferentInstance(
-          INSTANCE::instanceProvider,
-          statefulLambda(), "Instances must be different");
+          INSTANCE::instanceProvider, statefulLambda(), "Instances must be different");
     }
 
     public static String staticProvider() {

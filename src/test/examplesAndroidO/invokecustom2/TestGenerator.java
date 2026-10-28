@@ -63,7 +63,8 @@ public class TestGenerator {
               generateMethodMain(cw);
               super.visitEnd();
             }
-          }, 0);
+          },
+          0);
       try (OutputStream output =
           Files.newOutputStream(outputClassNamePath, StandardOpenOption.CREATE)) {
         output.write(cw.toByteArray());
@@ -73,8 +74,9 @@ public class TestGenerator {
 
   /* generate main method that only call all test methods. */
   private void generateMethodMain(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC,
-        "main", "([Ljava/lang/String;)V", null, null);
+    MethodVisitor mv =
+        cv.visitMethod(
+            Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
     String internalName = Type.getInternalName(InvokeCustom.class);
     mv.visitMethodInsn(Opcodes.INVOKESTATIC, internalName, "test1", "()V", false);
     mv.visitMethodInsn(Opcodes.INVOKESTATIC, internalName, "test2", "()V", false);
@@ -90,32 +92,44 @@ public class TestGenerator {
   }
 
   /**
-   *  Generate test with an invokedynamic, a static bootstrap method without extra args and no arg
-   *  to the target method.
+   * Generate test with an invokedynamic, a static bootstrap method without extra args and no arg to
+   * the target method.
    */
   private void generateMethodTest1(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test1", "()V",
-        null, null);
-    MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
-        MethodType.class);
-    Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStatic", mt.toMethodDescriptorString(), false);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test1", "()V", null, null);
+    MethodType mt =
+        MethodType.methodType(
+            CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStatic",
+            mt.toMethodDescriptorString(),
+            false);
     mv.visitInvokeDynamicInsn("targetMethodTest1", "()V", bootstrap);
     mv.visitInsn(Opcodes.RETURN);
     mv.visitMaxs(-1, -1);
   }
 
   /**
-   *  Generate test with an invokedynamic, a static bootstrap method without extra args and
-   *  args to the target method.
+   * Generate test with an invokedynamic, a static bootstrap method without extra args and args to
+   * the target method.
    */
   private void generateMethodTest2(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test2", "()V",
-        null, null);
-    MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
-        MethodType.class);
-    Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStatic", mt.toMethodDescriptorString(), false);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test2", "()V", null, null);
+    MethodType mt =
+        MethodType.methodType(
+            CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStatic",
+            mt.toMethodDescriptorString(),
+            false);
     mv.visitLdcInsn(new Boolean(true));
     mv.visitLdcInsn(new Byte((byte) 127));
     mv.visitLdcInsn(new Character('c'));
@@ -131,30 +145,48 @@ public class TestGenerator {
   }
 
   /**
-   *  Generate test with an invokedynamic, a static bootstrap method with extra args and no arg
-   *  to the target method.
+   * Generate test with an invokedynamic, a static bootstrap method with extra args and no arg to
+   * the target method.
    */
   private void generateMethodTest3(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test3", "()V",
-        null, null);
-    MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
-        MethodType.class, int.class,
-        long.class, float.class, double.class);
-    Handle bootstrap = new Handle( Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStaticWithExtraArgs", mt.toMethodDescriptorString(), false);
-    mv.visitInvokeDynamicInsn("targetMethodTest3", "()V", bootstrap, new Integer(1),
-        new Long(123456789), new Float(123.456), new Double(123456.789123));
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test3", "()V", null, null);
+    MethodType mt =
+        MethodType.methodType(
+            CallSite.class,
+            MethodHandles.Lookup.class,
+            String.class,
+            MethodType.class,
+            int.class,
+            long.class,
+            float.class,
+            double.class);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStaticWithExtraArgs",
+            mt.toMethodDescriptorString(),
+            false);
+    mv.visitInvokeDynamicInsn(
+        "targetMethodTest3",
+        "()V",
+        bootstrap,
+        new Integer(1),
+        new Long(123456789),
+        new Float(123.456),
+        new Double(123456.789123));
     mv.visitInsn(Opcodes.RETURN);
     mv.visitMaxs(-1, -1);
   }
 
   /**
-   *  Generate test with an invokedynamic, a static bootstrap method with an extra arg that is a
-   *  MethodHandle of kind invokespecial.
+   * Generate test with an invokedynamic, a static bootstrap method with an extra arg that is a
+   * MethodHandle of kind invokespecial.
    */
   private void generateMethodTest4(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test4", "()V",
-        null, null);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test4", "()V", null, null);
     MethodType mt =
         MethodType.methodType(
             CallSite.class,
@@ -162,30 +194,48 @@ public class TestGenerator {
             String.class,
             MethodType.class,
             MethodHandle.class);
-    Handle bootstrap = new Handle( Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmCreateCallSite", mt.toMethodDescriptorString(), false);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmCreateCallSite",
+            mt.toMethodDescriptorString(),
+            false);
     mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(InvokeCustom.class));
     mv.visitInsn(Opcodes.DUP);
-    mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(InvokeCustom.class),
-        "<init>", "()V", false);
-    mv.visitInvokeDynamicInsn("targetMethodTest4", "(Linvokecustom2/InvokeCustom;)V", bootstrap,
-        new Handle(Opcodes.H_INVOKESPECIAL, Type.getInternalName(Super.class),
-            "targetMethodTest4", "()V", false));
+    mv.visitMethodInsn(
+        Opcodes.INVOKESPECIAL, Type.getInternalName(InvokeCustom.class), "<init>", "()V", false);
+    mv.visitInvokeDynamicInsn(
+        "targetMethodTest4",
+        "(Linvokecustom2/InvokeCustom;)V",
+        bootstrap,
+        new Handle(
+            Opcodes.H_INVOKESPECIAL,
+            Type.getInternalName(Super.class),
+            "targetMethodTest4",
+            "()V",
+            false));
     mv.visitInsn(Opcodes.RETURN);
     mv.visitMaxs(-1, -1);
   }
 
   /**
-   * Generate a test with an invokedynamic where the target generates
-   * a result that the call site prints out.
+   * Generate a test with an invokedynamic where the target generates a result that the call site
+   * prints out.
    */
   private void generateMethodTest5(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test5", "()V",
-        null, null);
-    MethodType mt = MethodType.methodType(
-        CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-    Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStatic", mt.toMethodDescriptorString(), false);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test5", "()V", null, null);
+    MethodType mt =
+        MethodType.methodType(
+            CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStatic",
+            mt.toMethodDescriptorString(),
+            false);
     mv.visitIntInsn(Opcodes.SIPUSH, 1000);
     mv.visitIntInsn(Opcodes.SIPUSH, -923);
     mv.visitIntInsn(Opcodes.SIPUSH, 77);
@@ -196,30 +246,48 @@ public class TestGenerator {
     mv.visitInsn(Opcodes.DUP);
     mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
     mv.visitLdcInsn("targetMethodTest5 returned: ");
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append",
-        "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "append",
+        "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        false);
     mv.visitVarInsn(Opcodes.ILOAD, 0);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append",
-        "(I)Ljava/lang/StringBuilder;", false);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString",
-        "()Ljava/lang/String;", false);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println",
-        "(Ljava/lang/String;)V", false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "append",
+        "(I)Ljava/lang/StringBuilder;",
+        false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "toString",
+        "()Ljava/lang/String;",
+        false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
     mv.visitInsn(Opcodes.RETURN);
     mv.visitMaxs(-1, -1);
   }
 
   /**
-   * Generate a test with an invokedynamic where the call site invocation tests the summation of
-   * two long values and returns a long.
+   * Generate a test with an invokedynamic where the call site invocation tests the summation of two
+   * long values and returns a long.
    */
   private void generateMethodTest6(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test6", "()V",
-        null, null);
-    MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
-        MethodType.class);
-    Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStatic", mt.toMethodDescriptorString(), false);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test6", "()V", null, null);
+    MethodType mt =
+        MethodType.methodType(
+            CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStatic",
+            mt.toMethodDescriptorString(),
+            false);
     mv.visitLdcInsn(0x77777777777l);
     mv.visitLdcInsn(-0x11111111111l);
     mv.visitLdcInsn(0x66666666666l);
@@ -230,30 +298,48 @@ public class TestGenerator {
     mv.visitInsn(Opcodes.DUP);
     mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
     mv.visitLdcInsn("targetMethodTest6 returned: ");
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append",
-        "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "append",
+        "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        false);
     mv.visitVarInsn(Opcodes.LLOAD, 0);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append",
-        "(J)Ljava/lang/StringBuilder;", false);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString",
-        "()Ljava/lang/String;", false);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println",
-        "(Ljava/lang/String;)V", false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "append",
+        "(J)Ljava/lang/StringBuilder;",
+        false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "toString",
+        "()Ljava/lang/String;",
+        false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
     mv.visitInsn(Opcodes.RETURN);
     mv.visitMaxs(-1, -1);
   }
 
   /**
-   * Generate a test with an invokedynamic where the call site invocation tests the product of
-   * two float values and returns a double.
+   * Generate a test with an invokedynamic where the call site invocation tests the product of two
+   * float values and returns a double.
    */
   private void generateMethodTest7(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test7", "()V",
-        null, null);
-    MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
-        MethodType.class);
-    Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStatic", mt.toMethodDescriptorString(), false);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test7", "()V", null, null);
+    MethodType mt =
+        MethodType.methodType(
+            CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStatic",
+            mt.toMethodDescriptorString(),
+            false);
     double x = 0.5009765625;
     double y = -x;
     mv.visitLdcInsn((float) x);
@@ -266,38 +352,61 @@ public class TestGenerator {
     mv.visitInsn(Opcodes.DUP);
     mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
     mv.visitLdcInsn("targetMethodTest6 returned: ");
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append",
-        "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "append",
+        "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        false);
     mv.visitVarInsn(Opcodes.DLOAD, 0);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append",
-        "(D)Ljava/lang/StringBuilder;", false);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString",
-        "()Ljava/lang/String;", false);
-    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println",
-        "(Ljava/lang/String;)V", false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "append",
+        "(D)Ljava/lang/StringBuilder;",
+        false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL,
+        "java/lang/StringBuilder",
+        "toString",
+        "()Ljava/lang/String;",
+        false);
+    mv.visitMethodInsn(
+        Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
     mv.visitInsn(Opcodes.RETURN);
     mv.visitMaxs(-1, -1);
   }
 
   /**
-   * Generate a test with multiple invokedynamic bytecodes operating on the same parameters.
-   * These invocations should each produce invoke-custom bytecodes with unique call site ids.
+   * Generate a test with multiple invokedynamic bytecodes operating on the same parameters. These
+   * invocations should each produce invoke-custom bytecodes with unique call site ids.
    */
   private void generateMethodTest8(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test8", "()V",
-        null, null);
-    MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
-        MethodType.class);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test8", "()V", null, null);
+    MethodType mt =
+        MethodType.methodType(
+            CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
     // These should be two distinct call sites and both invoke the
     // bootstrap method. An erroneous implementation might treat them
     // as the same call site because the handle arguments are the same.
-    Handle bootstrap1 = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStatic", mt.toMethodDescriptorString(), false);
+    Handle bootstrap1 =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStatic",
+            mt.toMethodDescriptorString(),
+            false);
     mv.visitLdcInsn("First invokedynamic invocation");
     mv.visitInvokeDynamicInsn("targetMethodTest8", "(Ljava/lang/String;)V", bootstrap1);
 
-    Handle bootstrap2 = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(InvokeCustom.class),
-        "bsmLookupStatic", mt.toMethodDescriptorString(), false);
+    Handle bootstrap2 =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            Type.getInternalName(InvokeCustom.class),
+            "bsmLookupStatic",
+            mt.toMethodDescriptorString(),
+            false);
     mv.visitLdcInsn("Second invokedynamic invocation");
     mv.visitInvokeDynamicInsn("targetMethodTest8", "(Ljava/lang/String;)V", bootstrap2);
 
@@ -308,47 +417,61 @@ public class TestGenerator {
     mv.visitMaxs(-1, -1);
   }
 
-  /**
-   * Generate a test with different kinds of constant method handles.
-   */
+  /** Generate a test with different kinds of constant method handles. */
   private void generateMethodTest9(ClassVisitor cv) {
-    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test9", "()V",
-        null, null);
+    MethodVisitor mv =
+        cv.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "test9", "()V", null, null);
     MethodType mt =
-        MethodType.methodType(CallSite.class,
-            MethodHandles.Lookup.class, String.class, MethodType.class,
-            MethodHandle.class, MethodHandle.class,
-            MethodHandle.class, MethodHandle.class,
-            MethodHandle.class, MethodHandle.class,
-            MethodHandle.class, MethodHandle.class);
+        MethodType.methodType(
+            CallSite.class,
+            MethodHandles.Lookup.class,
+            String.class,
+            MethodType.class,
+            MethodHandle.class,
+            MethodHandle.class,
+            MethodHandle.class,
+            MethodHandle.class,
+            MethodHandle.class,
+            MethodHandle.class,
+            MethodHandle.class,
+            MethodHandle.class);
     String internalName = Type.getInternalName(InvokeCustom.class);
-    Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, internalName, "bsmLookupTest9",
-        mt.toMethodDescriptorString(), false);
+    Handle bootstrap =
+        new Handle(
+            Opcodes.H_INVOKESTATIC,
+            internalName,
+            "bsmLookupTest9",
+            mt.toMethodDescriptorString(),
+            false);
     Handle staticSetter =
         new Handle(Opcodes.H_GETSTATIC, internalName, "staticFieldTest9", "I", false);
     Handle staticGetter =
         new Handle(Opcodes.H_PUTSTATIC, internalName, "staticFieldTest9", "I", false);
-    Handle setter =
-        new Handle(Opcodes.H_GETFIELD, internalName, "fieldTest9", "F", false);
-    Handle getter =
-        new Handle(Opcodes.H_PUTFIELD, internalName, "fieldTest9", "F", false);
+    Handle setter = new Handle(Opcodes.H_GETFIELD, internalName, "fieldTest9", "F", false);
+    Handle getter = new Handle(Opcodes.H_PUTFIELD, internalName, "fieldTest9", "F", false);
     Handle instanceInvoke =
         new Handle(Opcodes.H_INVOKEVIRTUAL, internalName, "helperMethodTest9", "()V", false);
     Handle constructor =
         new Handle(Opcodes.H_NEWINVOKESPECIAL, internalName, "<init>", "(I)V", false);
     Handle interfaceInvoke =
-        new Handle(Opcodes.H_INVOKEINTERFACE,
-            Type.getInternalName(Runnable.class),
-            "run", "()V", true);
+        new Handle(
+            Opcodes.H_INVOKEINTERFACE, Type.getInternalName(Runnable.class), "run", "()V", true);
     // test4 covers invokespecial for a super method. This covers invokespecial of a private method.
     Handle privateInvoke =
         new Handle(Opcodes.H_INVOKESPECIAL, internalName, "privateMethodTest9", "()V", false);
 
-    mv.visitInvokeDynamicInsn("targetMethodTest9", "()V", bootstrap,
-        staticSetter, staticGetter,
-        setter, getter,
-        instanceInvoke, constructor,
-        interfaceInvoke, privateInvoke);
+    mv.visitInvokeDynamicInsn(
+        "targetMethodTest9",
+        "()V",
+        bootstrap,
+        staticSetter,
+        staticGetter,
+        setter,
+        getter,
+        instanceInvoke,
+        constructor,
+        interfaceInvoke,
+        privateInvoke);
     mv.visitInsn(Opcodes.RETURN);
     mv.visitMaxs(-1, -1);
   }

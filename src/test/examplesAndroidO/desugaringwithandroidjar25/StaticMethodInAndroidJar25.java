@@ -8,8 +8,7 @@ import java.util.Comparator;
 
 public class StaticMethodInAndroidJar25 {
   public static void main(String[] args) throws Exception {
-    Comparator<String> comparing =
-        Comparator.comparing(x -> x, String::compareTo);
+    Comparator<String> comparing = Comparator.comparing(x -> x, String::compareTo);
     System.out.println("'a' <> 'b' = " + comparing.compare("a", "b"));
     System.out.println("'b' <> 'b' = " + comparing.compare("b", "b"));
     System.out.println("'c' <> 'b' = " + comparing.compare("c", "b"));

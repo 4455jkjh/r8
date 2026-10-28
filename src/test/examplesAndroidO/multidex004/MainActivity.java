@@ -8,15 +8,13 @@ import multidex004.fakeframeworks.Activity;
 
 public class MainActivity extends Activity {
 
-    protected void onCreate() {
-    }
+  protected void onCreate() {}
 
-    public int getVersion(VersionInterface version) {
-        return version.getVersion();
-    }
+  public int getVersion(VersionInterface version) {
+    return version.getVersion();
+  }
 
-    public int getVersion() {
-      return getVersion(() -> VersionStatic.getVersion());
-    }
-
+  public int getVersion() {
+    return getVersion(() -> VersionStatic.getVersion());
+  }
 }

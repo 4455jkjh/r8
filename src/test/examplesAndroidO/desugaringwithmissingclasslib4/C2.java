@@ -10,4 +10,3 @@ public class C2 extends C {
     return "C2";
   }
 }
-

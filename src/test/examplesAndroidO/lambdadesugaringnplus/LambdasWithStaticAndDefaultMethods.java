@@ -51,16 +51,25 @@ public class LambdasWithStaticAndDefaultMethods {
   interface II extends I {
     static String iStatic() {
       II ii = I::iStatic;
-      return "II::iStatic(" + ((I) I::iStatic).iRegular() +
-          "|" + ((II) ii::iDefaultOverridden).iRegular() +
-          "|" + ((II) String::new).iRegular() +
-          "|" + ((II) ii::iRegular).iRegular() + ")";
+      return "II::iStatic("
+          + ((I) I::iStatic).iRegular()
+          + "|"
+          + ((II) ii::iDefaultOverridden).iRegular()
+          + "|"
+          + ((II) String::new).iRegular()
+          + "|"
+          + ((II) ii::iRegular).iRegular()
+          + ")";
     }
 
     default String iDefaultOverridden() {
-      return "II::iDefault(" + ((I) this::iDefault).iRegular() +
-          "|" + ((II) "One-Two-Three"::intern).iRegular() +
-          "|" + ((II) this::iDefault).iRegular() + ")";
+      return "II::iDefault("
+          + ((I) this::iDefault).iRegular()
+          + "|"
+          + ((II) "One-Two-Three"::intern).iRegular()
+          + "|"
+          + ((II) this::iDefault).iRegular()
+          + ")";
     }
   }
 
@@ -101,8 +110,7 @@ public class LambdasWithStaticAndDefaultMethods {
     }
   }
 
-  static class B38257361_C implements B38257361_I2 {
-  }
+  static class B38257361_C implements B38257361_I2 {}
 
   static class B38257361 {
     private B38257361_C c = new B38257361_C();
@@ -176,19 +184,19 @@ public class LambdasWithStaticAndDefaultMethods {
     }
 
     public static A[] fooAA(A[] p) {
-      return new A[]{new A("fooAA")};
+      return new A[] {new A("fooAA")};
     }
 
     public static A[] fooBA(B[] p) {
-      return new A[]{new A("fooBA")};
+      return new A[] {new A("fooBA")};
     }
 
     public static B[] fooAB(A[] p) {
-      return new B[]{new B("fooAB")};
+      return new B[] {new B("fooAB")};
     }
 
     public static B[] fooBB(B[] p) {
-      return new B[]{new B("fooBB")};
+      return new B[] {new B("fooBB")};
     }
 
     public static void testAA(IAA i) {
@@ -243,12 +251,9 @@ public class LambdasWithStaticAndDefaultMethods {
     }
   }
 
-  static class B38257037_C implements B38257037_I2 {
-  }
+  static class B38257037_C implements B38257037_I2 {}
 
-  /**
-   * Check that bridges are generated.
-   */
+  /** Check that bridges are generated. */
   static class B38257037 {
     private B38257037_C c = new B38257037_C();
 
@@ -276,7 +281,7 @@ public class LambdasWithStaticAndDefaultMethods {
   }
 
   interface B38306708_I {
-    class $CC{
+    class $CC {
       static void print() {
         System.out.println("$CC");
       }
@@ -303,8 +308,7 @@ public class LambdasWithStaticAndDefaultMethods {
     }
   }
 
-  static class B38308515_C implements B38308515_I {
-  }
+  static class B38308515_C implements B38308515_I {}
 
   static class B38308515 {
     static void test() {
@@ -323,8 +327,7 @@ public class LambdasWithStaticAndDefaultMethods {
       void annotatedAbstractMethod();
 
       @SomeAnnotation(3)
-      default void annotatedDefaultMethod() {
-      }
+      default void annotatedDefaultMethod() {}
 
       @SomeAnnotation(4)
       static void annotatedStaticMethod() {
@@ -390,8 +393,9 @@ public class LambdasWithStaticAndDefaultMethods {
 
     private static Class getCompanionClassOrInterface() {
       try {
-        return Class.forName("lambdadesugaringnplus."
-            + "LambdasWithStaticAndDefaultMethods$B38302860$AnnotatedInterface$-CC");
+        return Class.forName(
+            "lambdadesugaringnplus."
+                + "LambdasWithStaticAndDefaultMethods$B38302860$AnnotatedInterface$-CC");
       } catch (Exception e) {
         return AnnotatedInterface.class;
       }
@@ -422,7 +426,7 @@ public class LambdasWithStaticAndDefaultMethods {
   static void g(G<String[]> g) {
     StringBuilder builder = new StringBuilder("{");
     String sep = "";
-    for (String s : g.foo(new String[] { "Arg0", "Arg1", "Arg2" })) {
+    for (String s : g.foo(new String[] {"Arg0", "Arg1", "Arg2"})) {
       builder.append(sep).append(s);
       sep = ", ";
     }
@@ -454,8 +458,11 @@ public class LambdasWithStaticAndDefaultMethods {
     }
 
     public String iMainImpl() {
-      return "ClassWithSuperChain::iMain(" + SuperChainDerived.super.iMain() +
-          " + " + OtherSuperChain.super.iMain() + ")";
+      return "ClassWithSuperChain::iMain("
+          + SuperChainDerived.super.iMain()
+          + " + "
+          + OtherSuperChain.super.iMain()
+          + ")";
     }
   }
 
@@ -475,15 +482,16 @@ public class LambdasWithStaticAndDefaultMethods {
     p(i.stateful()::iRegular);
 
     g(a -> a);
-    g(a -> {
-      int size = a.length;
-      for (int x = 0; x < size / 2; x++) {
-        String t = a[x];
-        a[x] = a[size - 1 - x];
-        a[size - 1 - x] = t;
-      }
-      return a;
-    });
+    g(
+        a -> {
+          int size = a.length;
+          for (int x = 0; x < size / 2; x++) {
+            String t = a[x];
+            a[x] = a[size - 1 - x];
+            a[size - 1 - x] = t;
+          }
+          return a;
+        });
 
     p(c::iRegular);
     p(c::iDefault);

@@ -6,16 +6,11 @@ package multidex004.fakelibrary;
 
 import java.io.File;
 
-/**
- * Stub.
- */
+/** Stub. */
 final class ZipUtil {
-    static class EmptyInner {
-    }
+  static class EmptyInner {}
 
-    static long getZipCrc(File apk) {
-      return 1;
-    }
-
-
+  static long getZipCrc(File apk) {
+    return 1;
+  }
 }

@@ -62,8 +62,8 @@ public class StringConcat {
     throw new AssertionError("unreachable");
   }
 
-  private static String makeConcat(Object o, String st, boolean z,
-      char c, byte b, short s, int i, long l, float f, double d) {
+  private static String makeConcat(
+      Object o, String st, boolean z, char c, byte b, short s, int i, long l, float f, double d) {
     throw new AssertionError("unreachable");
   }
 
@@ -117,8 +117,18 @@ public class StringConcat {
     throw new AssertionError("unreachable");
   }
 
-  private static String makeConcatWithConstants(Object o, String st, boolean z,
-      char c, byte b, short s, int i, long l, float f, double d, String recipe) {
+  private static String makeConcatWithConstants(
+      Object o,
+      String st,
+      boolean z,
+      char c,
+      byte b,
+      short s,
+      int i,
+      long l,
+      float f,
+      double d,
+      String recipe) {
     throw new AssertionError("unreachable");
   }
 
@@ -154,8 +164,8 @@ public class StringConcat {
 
   private static void testSingleValueArray() {
     // Unchecked since Array.toString() is non-deterministic.
-    makeConcat(new char[] { 'a', 'b' });
-    makeConcatWithConstants(new char[] { 'a', 'b' }, "RECIPE:prefix\u0001suffix");
+    makeConcat(new char[] {'a', 'b'});
+    makeConcatWithConstants(new char[] {'a', 'b'}, "RECIPE:prefix\u0001suffix");
   }
 
   private static void testSingleValueObject() {
@@ -167,11 +177,8 @@ public class StringConcat {
         makeConcatWithConstants((Object) "object", "RECIPE:prefix\u0001suffix"),
         "prefixobjectsuffix");
     check(
-        makeConcatWithConstants((Object) 1.234, "RECIPE:prefix\u0001suffix"),
-        "prefix1.234suffix");
-    check(
-        makeConcatWithConstants((Object) null, "RECIPE:prefix\u0001suffix"),
-        "prefixnullsuffix");
+        makeConcatWithConstants((Object) 1.234, "RECIPE:prefix\u0001suffix"), "prefix1.234suffix");
+    check(makeConcatWithConstants((Object) null, "RECIPE:prefix\u0001suffix"), "prefixnullsuffix");
   }
 
   private static void testSingleValuePrimitive() {
@@ -194,21 +201,43 @@ public class StringConcat {
     check(makeConcatWithConstants((double) 6, "RECIPE:prefix\u0001suffix"), "prefix6.0suffix");
   }
 
-  private static void testAllTypes(Object o, String st, boolean z,
-      char c, byte b, short s, int i, long l, float f, double d) {
+  private static void testAllTypes(
+      Object o, String st, boolean z, char c, byte b, short s, int i, long l, float f, double d) {
     check(makeConcat(o, st, z, c, b, s, i, l, f, d), "nullstrtrueA12345.06.0");
-    check(makeConcatWithConstants(o, st, z, c, b, s, i, l, f, d,
-        "RECIPE:[\u0001-\u0001>\u0001===\u0001\u0001\u0001alpha\u0001beta\u0001\u0001]\u0001"),
+    check(
+        makeConcatWithConstants(
+            o,
+            st,
+            z,
+            c,
+            b,
+            s,
+            i,
+            l,
+            f,
+            d,
+            "RECIPE:[\u0001-\u0001>\u0001===\u0001\u0001\u0001alpha\u0001beta\u0001\u0001]\u0001"),
         "[null-str>true===A12alpha3beta45.0]6.0");
   }
 
-  private static void testInExceptionContext(Object o, String st, boolean z,
-      char c, byte b, short s, int i, long l, float f, double d) {
+  private static void testInExceptionContext(
+      Object o, String st, boolean z, char c, byte b, short s, int i, long l, float f, double d) {
     check(makeConcat((long) 4), "4");
     try {
       check(makeConcat(o, st, z, c, b, s, i, l, f, d), "nullstrtrueA12345.06.0");
-      check(makeConcatWithConstants(o, st, z, c, b, s, i, l, f, d,
-          "RECIPE:\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"),
+      check(
+          makeConcatWithConstants(
+              o,
+              st,
+              z,
+              c,
+              b,
+              s,
+              i,
+              l,
+              f,
+              d,
+              "RECIPE:\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"),
           "nullstrtrueA12345.06.0");
       try {
         check(makeConcat("try-try"), "try-try");
@@ -216,9 +245,20 @@ public class StringConcat {
       } catch (NullPointerException re) {
         throw new AssertionError("UNREACHABLE");
       } catch (Exception re) {
-        check(makeConcatWithConstants(o, st, z, c, b, s, i, l, f, d,
-            "RECIPE:(\u0001, \u0001, \u0001, \u0001, \u0001, "
-                + "\u0001, \u0001, \u0001, \u0001, \u0001)"),
+        check(
+            makeConcatWithConstants(
+                o,
+                st,
+                z,
+                c,
+                b,
+                s,
+                i,
+                l,
+                f,
+                d,
+                "RECIPE:(\u0001, \u0001, \u0001, \u0001, \u0001, "
+                    + "\u0001, \u0001, \u0001, \u0001, \u0001)"),
             "(null, str, true, A, 1, 2, 3, 4, 5.0, 6.0)");
         throw new IndexOutOfBoundsException();
       }
@@ -240,15 +280,16 @@ public class StringConcat {
 
   private static void testConcatWitConstants() {
     check(
-        makeConcatWithConstants(
-            123, "abc", "RECIPE:arg=\u0001; const=\u0002; arg=\u0001", "str"
-        ),
+        makeConcatWithConstants(123, "abc", "RECIPE:arg=\u0001; const=\u0002; arg=\u0001", "str"),
         "arg=123; const=str; arg=abc");
     check(
         makeConcatWithConstants(
-            123, "abc", "RECIPE:\u0002arg=\u0001\u0002arg=\u0001\u0002",
-            "prefix-", "-infix-", "-suffix"
-        ),
+            123,
+            "abc",
+            "RECIPE:\u0002arg=\u0001\u0002arg=\u0001\u0002",
+            "prefix-",
+            "-infix-",
+            "-suffix"),
         "prefix-arg=123-infix-arg=abc-suffix");
   }
 
@@ -260,10 +301,10 @@ public class StringConcat {
     testSingleValueArray();
     testSingleValueObject();
     testSingleValuePrimitive();
-    testAllTypes(null, "str", true, (char) 65,
-        (byte) 1, (short) 2, 3, (long) 4, (float) 5, (double) 6);
-    testInExceptionContext(null, "str", true, (char) 65,
-        (byte) 1, (short) 2, 3, (long) 4, (float) 5, (double) 6);
+    testAllTypes(
+        null, "str", true, (char) 65, (byte) 1, (short) 2, 3, (long) 4, (float) 5, (double) 6);
+    testInExceptionContext(
+        null, "str", true, (char) 65, (byte) 1, (short) 2, 3, (long) 4, (float) 5, (double) 6);
     testConcatWitConstants();
   }
 }

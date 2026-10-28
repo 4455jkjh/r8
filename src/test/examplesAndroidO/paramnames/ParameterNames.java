@@ -12,8 +12,7 @@ public class ParameterNames {
   private static final int MODIFIER_NONE = 0;
   private static final int MODIFIER_FINAL = 0X10;
 
-  public ParameterNames(int a, final int b) {
-  }
+  public ParameterNames(int a, final int b) {}
 
   public static void check(String expected, String checked) {
     if (!expected.equals(checked)) {

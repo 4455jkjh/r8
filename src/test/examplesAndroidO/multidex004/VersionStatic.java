@@ -6,7 +6,7 @@ package multidex004;
 
 public class VersionStatic {
 
-    public static int getVersion() {
-        return 1;
-    }
+  public static int getVersion() {
+    return 1;
+  }
 }
