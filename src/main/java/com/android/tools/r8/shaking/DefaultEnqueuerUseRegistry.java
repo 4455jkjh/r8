@@ -331,15 +331,19 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
 
   private void registerTypeSwitchCallSiteBootstrapArgs(DexCallSite callSite) {
     for (DexValue bootstrapArg : callSite.bootstrapArgs) {
-      registerBoostrapArg(bootstrapArg, NOT_ARGUMENT_TO_LAMBDA_METAFACTORY);
-      if (bootstrapArg.isDexValueConstDynamic()
-          && isEnumDescConstantDynamic(
-              bootstrapArg.asDexValueConstDynamic().getValue(), dexItemFactory())) {
-        dispatchEnumDescConstantDynamic(
-            bootstrapArg.asDexValueConstDynamic().getValue(),
-            dexItemFactory(),
-            getContext(),
-            (type, name) -> registerEnumReferencedInTypeSwitchBootstrapArguments(type));
+      if (bootstrapArg.isDexValueType()) {
+        registerInstanceOf(bootstrapArg.asDexValueType().getValue());
+      } else {
+        registerBoostrapArg(bootstrapArg, NOT_ARGUMENT_TO_LAMBDA_METAFACTORY);
+        if (bootstrapArg.isDexValueConstDynamic()
+            && isEnumDescConstantDynamic(
+                bootstrapArg.asDexValueConstDynamic().getValue(), dexItemFactory())) {
+          dispatchEnumDescConstantDynamic(
+              bootstrapArg.asDexValueConstDynamic().getValue(),
+              dexItemFactory(),
+              getContext(),
+              (type, name) -> registerEnumReferencedInTypeSwitchBootstrapArguments(type));
+        }
       }
     }
   }
@@ -347,9 +351,13 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
   private void registerEnumSwitchCallSiteBootstrapArgs(DexCallSite callSite) {
     DexType enumType = callSite.getMethodProto().getParameter(0);
     for (DexValue bootstrapArg : callSite.bootstrapArgs) {
-      registerBoostrapArg(bootstrapArg, NOT_ARGUMENT_TO_LAMBDA_METAFACTORY);
-      if (bootstrapArg.isDexValueString()) {
-        registerEnumReferencedInTypeSwitchBootstrapArguments(enumType);
+      if (bootstrapArg.isDexValueType()) {
+        registerInstanceOf(bootstrapArg.asDexValueType().getValue());
+      } else {
+        registerBoostrapArg(bootstrapArg, NOT_ARGUMENT_TO_LAMBDA_METAFACTORY);
+        if (bootstrapArg.isDexValueString()) {
+          registerEnumReferencedInTypeSwitchBootstrapArguments(enumType);
+        }
       }
     }
   }
