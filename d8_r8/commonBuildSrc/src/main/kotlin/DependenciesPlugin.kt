@@ -357,7 +357,7 @@ public object ThirdPartyDeps {
   public val art17_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-17.0.0-beta4")
   public val art17_1_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-17.1.0")
   public val art17_2_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-17.2.0")
-  public val artMaster: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-master")
+  public val artMain: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-main")
   public val artTests: ThirdPartyDependency =
     ThirdPartyDependency("art-tests", Paths.get("tests", "2017-10-04", "art").toFile())
   public val artTestsLegacy: ThirdPartyDependency =

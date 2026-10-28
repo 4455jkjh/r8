@@ -57,7 +57,7 @@ dependencies {
   runtimeOnlyData(project(":third_party", "art17_0_0"))
   runtimeOnlyData(project(":third_party", "art17_1_0"))
   runtimeOnlyData(project(":third_party", "art17_2_0"))
-  runtimeOnlyData(project(":third_party", "artMaster"))
+  runtimeOnlyData(project(":third_party", "artMain"))
   runtimeOnlyData(project(":third_party", "artTests"))
   runtimeOnlyData(project(":third_party", "artTestsLegacy"))
   runtimeOnlyData(project(":third_party", "chromeHeadless"))

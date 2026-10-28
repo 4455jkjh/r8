@@ -324,8 +324,8 @@ public class ToolHelper {
     ART_17_1_0_HOST(Version.V17_1_0, Kind.HOST),
     ART_17_2_0_TARGET(Version.V17_2_0, Kind.TARGET),
     ART_17_2_0_HOST(Version.V17_2_0, Kind.HOST),
-    ART_MASTER_TARGET(Version.MASTER, Kind.TARGET),
-    ART_MASTER_HOST(Version.MASTER, Kind.HOST);
+    ART_MAIN_TARGET(Version.MAIN, Kind.TARGET),
+    ART_MAIN_HOST(Version.MAIN, Kind.HOST);
 
     private static final ImmutableMap<String, DexVm> SHORT_NAME_MAP =
         Arrays.stream(DexVm.values()).collect(ImmutableMap.toImmutableMap(
@@ -351,7 +351,7 @@ public class ToolHelper {
       V17_0_0("17.0.0"),
       V17_1_0("17.1.0"),
       V17_2_0("17.2.0"),
-      MASTER("master");
+      MAIN("main");
 
       /** This should generally be the latest DEX VM fully supported. */
       // TODO(b/204855476): Rename to DEFAULT alias once the checked in VM is removed.
@@ -428,15 +428,15 @@ public class ToolHelper {
         return V17_2_0;
       }
 
-      public static Version master() {
-        return MASTER;
+      public static Version main() {
+        return MAIN;
       }
 
       static {
-        // Ensure first is always first and last is always last except for master.
+        // Ensure first is always first and last is always last except for main.
         assert Arrays.stream(values()).allMatch(v -> v == first() || v.compareTo(first()) > 0);
         assert Arrays.stream(values())
-            .allMatch(v -> v == last() || v == master() || v.compareTo(last()) < 0);
+            .allMatch(v -> v == last() || v == main() || v.compareTo(last()) < 0);
       }
     }
 
@@ -983,7 +983,7 @@ public class ToolHelper {
   private static final Map<DexVm, Supplier<Path>> ART_DIRS =
       ImmutableMap.<DexVm, Supplier<Path>>builder()
           .put(DexVm.ART_DEFAULT, TestDeps::getArtDefaultDir)
-          .put(DexVm.ART_MASTER_HOST, TestDeps::getArtMasterDir)
+          .put(DexVm.ART_MAIN_HOST, TestDeps::getArtMainDir)
           .put(DexVm.ART_17_2_0_HOST, TestDeps::getArt17_2_0Dir)
           .put(DexVm.ART_17_1_0_HOST, TestDeps::getArt17_1_0Dir)
           .put(DexVm.ART_17_0_0_HOST, TestDeps::getArt17_0_0Dir)
@@ -1005,7 +1005,7 @@ public class ToolHelper {
   private static final Map<DexVm, String> ART_BINARY_VERSIONS =
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "bin/art")
-          .put(DexVm.ART_MASTER_HOST, "bin/art")
+          .put(DexVm.ART_MAIN_HOST, "bin/art")
           .put(DexVm.ART_17_2_0_HOST, "bin/art")
           .put(DexVm.ART_17_1_0_HOST, "bin/art")
           .put(DexVm.ART_17_0_0_HOST, "bin/art")
@@ -1155,7 +1155,7 @@ public class ToolHelper {
       case V17_0_0:
       case V17_1_0:
       case V17_2_0:
-      case MASTER:
+      case MAIN:
         return "arm64";
       case V12_0_0:
         return "x86_64";
@@ -1393,7 +1393,7 @@ public class ToolHelper {
 
   public static AndroidApiLevel getMinApiLevelForDexVm(DexVm dexVm) {
     switch (dexVm.version) {
-      case MASTER:
+      case MAIN:
         return AndroidApiLevel.MAIN;
       case V17_2_0:
         return AndroidApiLevel.CINNAMON_BUN_2;
@@ -1438,7 +1438,7 @@ public class ToolHelper {
 
   static final Map<AndroidApiLevel, DexVm.Version> apiLevelToDexVmVersion =
       ImmutableMap.<AndroidApiLevel, DexVm.Version>builder()
-          .put(AndroidApiLevel.MAIN, DexVm.Version.MASTER)
+          .put(AndroidApiLevel.MAIN, DexVm.Version.MAIN)
           .put(AndroidApiLevel.CINNAMON_BUN_2, DexVm.Version.V17_2_0)
           .put(AndroidApiLevel.CINNAMON_BUN_1, DexVm.Version.V17_1_0)
           .put(AndroidApiLevel.CINNAMON_BUN, DexVm.Version.V17_0_0)

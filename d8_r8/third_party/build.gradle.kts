@@ -118,7 +118,7 @@ registerTestDep("art17_1_0", ThirdPartyDeps.art17_1_0, "ART_17_1_0")
 
 registerTestDep("art17_2_0", ThirdPartyDeps.art17_2_0, "ART_17_2_0")
 
-registerTestDep("artMaster", ThirdPartyDeps.artMaster, "ART_MASTER")
+registerTestDep("artMain", ThirdPartyDeps.artMain, "ART_MAIN")
 
 registerTestDep("artTests", ThirdPartyDeps.artTests, "ART_TESTS")
 

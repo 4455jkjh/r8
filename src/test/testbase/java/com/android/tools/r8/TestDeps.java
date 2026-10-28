@@ -77,7 +77,7 @@ public class TestDeps {
     dependencies.put("ART_17_0_0", null);
     dependencies.put("ART_17_1_0", null);
     dependencies.put("ART_17_2_0", null);
-    dependencies.put("ART_MASTER", null);
+    dependencies.put("ART_MAIN", null);
     dependencies.put("ART_TESTS", null);
     dependencies.put("ART_TESTS_LEGACY", null);
     dependencies.put("BOOKSTORY", null);
@@ -274,8 +274,8 @@ public class TestDeps {
     return getDependency("ART_17_2_0");
   }
 
-  public static Path getArtMasterDir() {
-    return getDependency("ART_MASTER");
+  public static Path getArtMainDir() {
+    return getDependency("ART_MAIN");
   }
 
   public static Path getArtTestsDir() {

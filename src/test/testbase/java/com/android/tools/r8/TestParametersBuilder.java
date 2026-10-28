@@ -54,7 +54,7 @@ public class TestParametersBuilder {
     return withFilter(
         p ->
             p.isDexRuntime()
-                && p.getDexRuntimeVersion().isOlderThan(DexVm.Version.MASTER)
+                && p.getDexRuntimeVersion().isOlderThan(DexVm.Version.MAIN)
                 && predicate.test(p.getDexRuntimeVersion()));
   }
 
