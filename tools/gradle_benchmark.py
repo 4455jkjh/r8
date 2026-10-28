@@ -111,9 +111,7 @@ def upload_benchmark(csv_path, outdir=None):
         try:
             with utils.TempDir() as temp:
                 perf.ArchiveWeeklyBundle({'build': build_results},
-                                         list(build_results.keys()),
                                          temp,
-                                         target='build',
                                          outdir=outdir)
         except Exception as e:
             print(f'Warning: failed to write weekly bundle: {e}',

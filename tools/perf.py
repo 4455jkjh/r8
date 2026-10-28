@@ -491,32 +491,33 @@ def GetWeeklyBundleRunName(benchmarks, target=None):
     return f'{run_id}-{benchmarks_hash}'
 
 
-# Weekly bundles hold all results of one perf.py run on one commit:
-#   weekly/WwwYyy/HASH/RUN.json for main commits, in the ISO week of the commit,
-#   weekly/WwwYyy/try/HASH/RUN.json for try commits, in the ISO week of their
-#       merge base with main,
-#   weekly/releases/BRANCH/HASH/RUN.json for release branch commits.
-def GetWeeklyBundleLocation(commit, run_name, is_try):
+# Weekly bundles hold all results of one target from one perf.py run on one
+# commit:
+#   weekly/TARGET/WwwYyy/HASH/RUN.json for main commits, in the ISO week of the
+#       commit,
+#   weekly/TARGET/WwwYyy/try/HASH/RUN.json for try commits, in the ISO week of
+#       their merge base with main,
+#   weekly/TARGET/releases/BRANCH/HASH/RUN.json for release branch commits.
+def GetWeeklyBundleLocation(commit, target, run_name, is_try):
     if is_try:
         merge_base = subprocess.check_output(
             ['git', 'merge-base',
              commit.parent_hash(), 'origin/main']).decode('utf-8').strip()
         parent = historic_run.git_commit_from_hash(merge_base)
         week = GetIsoWeekFolder(parent.committer_timestamp())
-        return (f'{WEEKLY_PREFIX}/{week}/try/{commit.hash()}/{run_name}.json',
-                merge_base)
+        return (f'{WEEKLY_PREFIX}/{target}/{week}/try/{commit.hash()}/'
+                f'{run_name}.json', merge_base)
     branch = commit.branch()
     if branch and branch != 'main':
-        return (f'{WEEKLY_PREFIX}/releases/{branch}/{commit.hash()}/'
+        return (f'{WEEKLY_PREFIX}/{target}/releases/{branch}/{commit.hash()}/'
                 f'{run_name}.json', None)
     week = GetIsoWeekFolder(commit.committer_timestamp())
-    return f'{WEEKLY_PREFIX}/{week}/{commit.hash()}/{run_name}.json', None
+    return (f'{WEEKLY_PREFIX}/{target}/{week}/{commit.hash()}/{run_name}.json',
+            None)
 
 
 def ArchiveWeeklyBundle(benchmark_results,
-                        benchmarks,
                         temp,
-                        target=None,
                         version=None,
                         is_try=False,
                         outdir=None):
@@ -528,9 +529,7 @@ def ArchiveWeeklyBundle(benchmark_results,
             return
     else:
         commit = utils.get_HEAD_commit()
-    run_name = GetWeeklyBundleRunName(benchmarks, target=target)
-    location, parent_hash = GetWeeklyBundleLocation(commit, run_name, is_try)
-    commit_info = {
+    base_commit_info = {
         'author': commit.author_name(),
         'hash': commit.hash(),
         'submitted': commit.committer_timestamp(),
@@ -538,22 +537,32 @@ def ArchiveWeeklyBundle(benchmark_results,
     }
     commit_version = commit.version()
     if commit_version:
-        commit_info['version'] = commit_version
-    if parent_hash:
-        commit_info['parent_hash'] = parent_hash
-    bundle = {
-        'commit': commit_info,
-        'run': {
-            'name': run_name,
-            'time': int(time.time()),
-        },
-        # Results by target and benchmark, in the format of result.json.
-        'benchmarks': benchmark_results,
-    }
-    bundle_file = os.path.join(temp, 'weekly_bundle.json')
-    with open(bundle_file, 'w') as f:
-        json.dump(bundle, f)
-    ArchiveOutputFile(bundle_file, location, outdir=outdir)
+        base_commit_info['version'] = commit_version
+    run_time = int(time.time())
+    for target, target_benchmarks in benchmark_results.items():
+        if not target_benchmarks:
+            continue
+        run_name = GetWeeklyBundleRunName(target_benchmarks.keys(),
+                                          target=target)
+        location, parent_hash = GetWeeklyBundleLocation(commit, target,
+                                                        run_name, is_try)
+        commit_info = dict(base_commit_info)
+        if parent_hash:
+            commit_info['parent_hash'] = parent_hash
+        bundle = {
+            'commit': commit_info,
+            'run': {
+                'name': run_name,
+                'time': run_time,
+            },
+            'target': target,
+            # Results by benchmark, in the format of result.json.
+            'benchmarks': target_benchmarks,
+        }
+        bundle_file = os.path.join(temp, f'weekly_bundle_{target}.json')
+        with open(bundle_file, 'w') as f:
+            json.dump(bundle, f)
+        ArchiveOutputFile(bundle_file, location, outdir=outdir)
 
 
 def ArchiveOutputFile(file, dest, bucket=BUCKET, header=None, outdir=None):
@@ -697,9 +706,7 @@ def main():
         if weekly_bundle_results:
             try:
                 ArchiveWeeklyBundle(weekly_bundle_results,
-                                    options.benchmarks,
                                     temp,
-                                    target=options.target,
                                     version=options.version,
                                     is_try=options.is_try,
                                     outdir=options.outdir)
