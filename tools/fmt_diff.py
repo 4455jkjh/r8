@@ -34,6 +34,7 @@ FULLY_FORMATTED_DIRECTORIES = (
     'src/test/bootstrap',
     'src/test/examplesAndroidOLegacy',
     'src/test/examplesAndroidP',
+    'src/test/java17',
 )
 
 
