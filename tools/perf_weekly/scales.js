@@ -1,0 +1,119 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+import chart from "./chart.js";
+import state from "./state.js";
+
+function get() {
+  const scales = {};
+  scales.x = {
+    ticks: {
+      callback: function (val, index) {
+        const commit = chart.getFilteredCommit(val);
+        return new Date(commit.submitted * 1000).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        });
+      },
+    },
+  };
+  if (state.hasLegend("Dex size")) {
+    scales.y = {
+      position: "left",
+      title: {
+        display: true,
+        text: "Dex size (bytes)",
+      },
+    };
+  } else {
+    console.assert(!state.hasLegend("Instruction size"));
+    console.assert(!state.hasLegend("Composable size"));
+    console.assert(!state.hasLegend("Oat size"));
+  }
+  console.assert(state.hasLegend("Runtime"));
+  console.assert(state.hasLegend("Runtime variance"));
+  console.assert(state.hasLegend("Warmup"));
+  scales.y_runtime = {
+    position: state.hasLegend("Dex size") ? "right" : "left",
+    title: {
+      display: true,
+      text: "Runtime (seconds)",
+    },
+  };
+  if (state.hasLegend("GC old count") || state.hasLegend("GC young count")) {
+    scales.y_gc_count = {
+      position: "left",
+      title: {
+        display: true,
+        text: "GC count",
+      },
+    };
+  }
+  if (
+    state.hasLegend("Instruction size") ||
+    state.hasLegend("Composable size")
+  ) {
+    scales.y_ins_code_size = {
+      position: "left",
+      title: {
+        display: true,
+        text: "Instruction size (bytes)",
+      },
+    };
+  }
+  if (state.hasLegend("Oat size")) {
+    scales.y_oat_code_size = {
+      position: "left",
+      title: {
+        display: true,
+        text: "Oat size (bytes)",
+      },
+    };
+  }
+  if (state.hasLegend("Resource size")) {
+    scales.y_resource_size = {
+      position: "left",
+      title: {
+        display: true,
+        text: "Resource size (bytes)",
+      },
+    };
+  }
+  return scales;
+}
+
+function update(scales) {
+  if (scales.y) {
+    scales.y.display = state.isLegendSelected("Dex size");
+  }
+  if (scales.y_gc_count) {
+    scales.y_gc_count.display =
+      state.isLegendSelected("GC old count") ||
+      state.isLegendSelected("GC young count");
+  }
+  if (scales.y_ins_code_size) {
+    scales.y_ins_code_size.display =
+      state.isLegendSelected("Instruction size") ||
+      state.isLegendSelected("Composable size");
+  }
+  if (scales.y_oat_code_size) {
+    scales.y_oat_code_size.display = state.isLegendSelected("Oat size");
+  }
+  if (scales.y_resource_size) {
+    scales.y_resource_size.display = state.isLegendSelected("Resource size");
+  }
+  if (scales.y_runtime) {
+    scales.y_runtime.display =
+      state.isLegendSelected("Runtime") ||
+      state.isLegendSelected("Runtime variance") ||
+      state.isLegendSelected("Warmup") ||
+      state.isLegendSelected("GC old time") ||
+      state.isLegendSelected("GC young time");
+  }
+}
+
+export default {
+  get: get,
+  update: update,
+};
