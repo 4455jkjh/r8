@@ -30,7 +30,10 @@ GOOGLE_KOTLIN_FORMAT_DIR = os.path.join(defines.THIRD_PARTY, 'google',
 GOOGLE_KOTLIN_FORMAT_JAR = os.path.join(GOOGLE_KOTLIN_FORMAT_DIR,
                                         'ktfmt-0.54-jar-with-dependencies.jar')
 
-FULLY_FORMATTED_DIRECTORIES = ('src/test/bootstrap',)
+FULLY_FORMATTED_DIRECTORIES = (
+    'src/test/bootstrap',
+    'src/test/examplesAndroidP',
+)
 
 
 def requires_full_formatting(file_path):
