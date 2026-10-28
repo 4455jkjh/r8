@@ -25,32 +25,32 @@ public class Lambdas {
     R get(P1 a, P2 b, P3 c);
   }
 
-  public synchronized static void acceptStringSupplier(Supplier<String> s) {
+  public static synchronized void acceptStringSupplier(Supplier<String> s) {
     System.out.println(s.get());
   }
 
-  public synchronized static <T> void acceptGenericSupplier(Supplier<T> s) {
+  public static synchronized <T> void acceptGenericSupplier(Supplier<T> s) {
     System.out.println(s.get());
   }
 
-  public synchronized static void acceptIntSupplier(IntSupplier s) {
+  public static synchronized void acceptIntSupplier(IntSupplier s) {
     System.out.println(s.get());
   }
 
-  public synchronized static void acceptStringConsumer(Consumer<String> s, String arg) {
+  public static synchronized void acceptStringConsumer(Consumer<String> s, String arg) {
     s.put(arg);
   }
 
-  public synchronized static <T> void acceptGenericConsumer(Consumer<T> s, T arg) {
+  public static synchronized <T> void acceptGenericConsumer(Consumer<T> s, T arg) {
     s.put(arg);
   }
 
-  public synchronized static void acceptIntConsumer(IntConsumer s, int arg) {
+  public static synchronized void acceptIntConsumer(IntConsumer s, int arg) {
     s.put(arg);
   }
 
-  public synchronized static <R, P1, P2, P3>
-  void acceptMultiFunction(MultiFunction<R, P1, P2, P3> s, P1 a, P2 b, P3 c) {
+  public static synchronized <R, P1, P2, P3> void acceptMultiFunction(
+      MultiFunction<R, P1, P2, P3> s, P1 a, P2 b, P3 c) {
     System.out.println(s.get(a, b, c));
   }
 }
