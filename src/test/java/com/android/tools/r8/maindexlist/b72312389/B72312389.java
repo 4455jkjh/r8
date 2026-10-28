@@ -9,7 +9,6 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.BaseCommand;
 import com.android.tools.r8.DexIndexedConsumer;
@@ -61,7 +60,6 @@ public class B72312389 extends TestBase {
 
   @Test
   public void testGenerateMainDexList() throws Exception {
-    assumeFalse(ToolHelper.isWindows());
     TestDiagnosticMessagesImpl diagnostics = new TestDiagnosticMessagesImpl();
     GenerateMainDexListCommand.Builder builder = GenerateMainDexListCommand.builder(diagnostics);
     buildInstrumentationTestCaseApplication(builder);
@@ -75,7 +73,6 @@ public class B72312389 extends TestBase {
 
   @Test
   public void testR8ForceProguardCompatibility() throws Exception {
-    assumeFalse(ToolHelper.isWindows());
     Box<String> mainDexList = new Box<>();
     // Build a app with a class extending InstrumentationTestCase and including both the junit
     // and the Android library.
@@ -109,7 +106,6 @@ public class B72312389 extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    assumeFalse(ToolHelper.isWindows());
     testForR8(Backend.DEX)
         .apply(b -> buildInstrumentationTestCaseApplication(b.getBuilder()))
         .setMinApi(AndroidApiLevel.B)

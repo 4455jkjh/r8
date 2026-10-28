@@ -336,12 +336,28 @@ public object ThirdPartyDeps {
       type = DependencyType.X20,
     )
   public val androidJars: List<ThirdPartyDependency> = getThirdPartyAndroidJars()
-  public val androidVMs: List<ThirdPartyDependency> = getThirdPartyAndroidVms()
   public val apiDatabase: ThirdPartyDependency =
     ThirdPartyDependency(
       "apiDatabase",
       Paths.get("third_party", "api_database", "api_database").toFile(),
     )
+  public val artDefault: ThirdPartyDependency = getThirdPartyAndroidVm("art")
+  public val art5_1_1: ThirdPartyDependency = getThirdPartyAndroidVm("art-5.1.1")
+  public val art6_0_1: ThirdPartyDependency = getThirdPartyAndroidVm("art-6.0.1")
+  public val art7_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("art-7.0.0")
+  public val art8_1_0: ThirdPartyDependency = getThirdPartyAndroidVm("art-8.1.0")
+  public val art9_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("art-9.0.0")
+  public val art10_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("art-10.0.0")
+  public val art12_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-12.0.0-beta4")
+  public val art13_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-13.0.0")
+  public val art14_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-14.0.0-beta3")
+  public val art15_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-15.0.0-beta2")
+  public val art16_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-16.0.0")
+  public val art16_1_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-16.1.0")
+  public val art17_0_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-17.0.0-beta4")
+  public val art17_1_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-17.1.0")
+  public val art17_2_0: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-17.2.0")
+  public val artMaster: ThirdPartyDependency = getThirdPartyAndroidVm("host", "art-master")
   public val artTests: ThirdPartyDependency =
     ThirdPartyDependency("art-tests", Paths.get("tests", "2017-10-04", "art").toFile())
   public val artTestsLegacy: ThirdPartyDependency =
@@ -438,6 +454,8 @@ public object ThirdPartyDeps {
     )
   public val dagger: ThirdPartyDependency =
     ThirdPartyDependency("dagger", Paths.get("third_party", "dagger", "2.41").toFile())
+  public val dalvik4_0_4: ThirdPartyDependency = getThirdPartyAndroidVm("dalvik-4.0.4")
+  public val dalvik4_4_4: ThirdPartyDependency = getThirdPartyAndroidVm("dalvik")
   public val dartSdk: ThirdPartyDependency =
     ThirdPartyDependency("dart-sdk", Paths.get("third_party", "dart-sdk").toFile())
   public val examples: ThirdPartyDependency =
@@ -802,39 +820,15 @@ private fun getThirdPartyDex2Oat(version: String): ThirdPartyDependency {
   return ThirdPartyDependency(
     "dex2oat-$version",
     Paths.get("third_party", "dex2oat", version).toFile(),
+    missingOnWindows = true,
   )
 }
 
-private fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
-  return listOf(
-      listOf("host", "art-master"),
-      listOf("host", "art-17.2.0"),
-      listOf("host", "art-17.1.0"),
-      listOf("host", "art-17.0.0-beta4"),
-      listOf("host", "art-16.1.0"),
-      listOf("host", "art-16.0.0"),
-      listOf("host", "art-15.0.0-beta2"),
-      listOf("host", "art-14.0.0-beta3"),
-      listOf("host", "art-13.0.0"),
-      listOf("host", "art-12.0.0-beta4"),
-      listOf("art-10.0.0"),
-      listOf("art-5.1.1"),
-      listOf("art-6.0.1"),
-      listOf("art-7.0.0"),
-      listOf("art-8.1.0"),
-      listOf("art-9.0.0"),
-      listOf("art"),
-      listOf("dalvik-4.0.4"),
-      listOf("dalvik"),
-    )
-    .map(::getThirdPartyAndroidVm)
-}
-
-private fun getThirdPartyAndroidVm(version: List<String>): ThirdPartyDependency {
+private fun getThirdPartyAndroidVm(vararg version: String): ThirdPartyDependency {
   return ThirdPartyDependency(
     version.last(),
-    Paths.get("tools", "linux", *version.slice(0..version.size - 2).toTypedArray(), version.last())
-      .toFile(),
+    Paths.get("tools", "linux", *version).toFile(),
+    missingOnWindows = true,
   )
 }
 

@@ -61,6 +61,23 @@ public class TestDeps {
     dependencies.put("AAPT2", null);
     dependencies.put("AGSA", null);
     dependencies.put("API_DATABASE", null);
+    dependencies.put("ART_DEFAULT", null);
+    dependencies.put("ART_5_1_1", null);
+    dependencies.put("ART_6_0_1", null);
+    dependencies.put("ART_7_0_0", null);
+    dependencies.put("ART_8_1_0", null);
+    dependencies.put("ART_9_0_0", null);
+    dependencies.put("ART_10_0_0", null);
+    dependencies.put("ART_12_0_0", null);
+    dependencies.put("ART_13_0_0", null);
+    dependencies.put("ART_14_0_0", null);
+    dependencies.put("ART_15_0_0", null);
+    dependencies.put("ART_16_0_0", null);
+    dependencies.put("ART_16_1_0", null);
+    dependencies.put("ART_17_0_0", null);
+    dependencies.put("ART_17_1_0", null);
+    dependencies.put("ART_17_2_0", null);
+    dependencies.put("ART_MASTER", null);
     dependencies.put("ART_TESTS", null);
     dependencies.put("ART_TESTS_LEGACY", null);
     dependencies.put("BOOKSTORY", null);
@@ -81,6 +98,8 @@ public class TestDeps {
     dependencies.put("COMPOSE_SAMPLES_REPLY", null);
     dependencies.put("CORE_LAMBDA_STUBS", null);
     dependencies.put("DAGGER", null);
+    dependencies.put("DALVIK_4_0_4", null);
+    dependencies.put("DALVIK_4_4_4", null);
     dependencies.put("DEPENDENCIES", null);
     dependencies.put("DESUGAR_JDK_LIBS_11", null);
     dependencies.put("DESUGAR_JDK_LIBS_8", null);
@@ -191,6 +210,74 @@ public class TestDeps {
     return getDependencyPath("API_DATABASE", "resources", "api_database.ser");
   }
 
+  public static Path getArtDefaultDir() {
+    return getDependency("ART_DEFAULT");
+  }
+
+  public static Path getArt5_1_1Dir() {
+    return getDependency("ART_5_1_1");
+  }
+
+  public static Path getArt6_0_1Dir() {
+    return getDependency("ART_6_0_1");
+  }
+
+  public static Path getArt7_0_0Dir() {
+    return getDependency("ART_7_0_0");
+  }
+
+  public static Path getArt8_1_0Dir() {
+    return getDependency("ART_8_1_0");
+  }
+
+  public static Path getArt9_0_0Dir() {
+    return getDependency("ART_9_0_0");
+  }
+
+  public static Path getArt10_0_0Dir() {
+    return getDependency("ART_10_0_0");
+  }
+
+  public static Path getArt12_0_0Dir() {
+    return getDependency("ART_12_0_0");
+  }
+
+  public static Path getArt13_0_0Dir() {
+    return getDependency("ART_13_0_0");
+  }
+
+  public static Path getArt14_0_0Dir() {
+    return getDependency("ART_14_0_0");
+  }
+
+  public static Path getArt15_0_0Dir() {
+    return getDependency("ART_15_0_0");
+  }
+
+  public static Path getArt16_0_0Dir() {
+    return getDependency("ART_16_0_0");
+  }
+
+  public static Path getArt16_1_0Dir() {
+    return getDependency("ART_16_1_0");
+  }
+
+  public static Path getArt17_0_0Dir() {
+    return getDependency("ART_17_0_0");
+  }
+
+  public static Path getArt17_1_0Dir() {
+    return getDependency("ART_17_1_0");
+  }
+
+  public static Path getArt17_2_0Dir() {
+    return getDependency("ART_17_2_0");
+  }
+
+  public static Path getArtMasterDir() {
+    return getDependency("ART_MASTER");
+  }
+
   public static Path getArtTestsDir() {
     return getDependency("ART_TESTS");
   }
@@ -277,6 +364,14 @@ public class TestDeps {
 
   public static Path getDaggerPath(String... path) {
     return getDependencyPath("DAGGER", path);
+  }
+
+  public static Path getDalvik4_0_4Dir() {
+    return getDependency("DALVIK_4_0_4");
+  }
+
+  public static Path getDalvik4_4_4Dir() {
+    return getDependency("DALVIK_4_4_4");
   }
 
   public static Path getDesugarJdkLibs11Jar() {

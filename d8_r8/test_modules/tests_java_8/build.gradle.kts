@@ -76,6 +76,7 @@ dependencies {
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "agsa"))
+  runtimeOnlyData(project(":third_party", "art5_1_1"))
   runtimeOnlyData(project(":third_party", "artTests"))
   runtimeOnlyData(project(":third_party", "bookstory"))
   runtimeOnlyData(project(":third_party", "bundletool"))

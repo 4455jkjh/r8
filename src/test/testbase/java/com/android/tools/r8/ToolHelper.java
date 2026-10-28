@@ -94,6 +94,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
@@ -979,27 +980,27 @@ public class ToolHelper {
     }
   }
 
-  private static final Map<DexVm, String> ART_DIRS =
-      ImmutableMap.<DexVm, String>builder()
-          .put(DexVm.ART_DEFAULT, "art")
-          .put(DexVm.ART_MASTER_HOST, "host/art-master")
-          .put(DexVm.ART_17_2_0_HOST, "host/art-17.2.0")
-          .put(DexVm.ART_17_1_0_HOST, "host/art-17.1.0")
-          .put(DexVm.ART_17_0_0_HOST, "host/art-17.0.0-beta4")
-          .put(DexVm.ART_16_1_0_HOST, "host/art-16.1.0")
-          .put(DexVm.ART_16_0_0_HOST, "host/art-16.0.0")
-          .put(DexVm.ART_15_0_0_HOST, "host/art-15.0.0-beta2")
-          .put(DexVm.ART_14_0_0_HOST, "host/art-14.0.0-beta3")
-          .put(DexVm.ART_13_0_0_HOST, "host/art-13.0.0")
-          .put(DexVm.ART_12_0_0_HOST, "host/art-12.0.0-beta4")
-          .put(DexVm.ART_10_0_0_HOST, "art-10.0.0")
-          .put(DexVm.ART_9_0_0_HOST, "art-9.0.0")
-          .put(DexVm.ART_8_1_0_HOST, "art-8.1.0")
-          .put(DexVm.ART_7_0_0_HOST, "art-7.0.0")
-          .put(DexVm.ART_6_0_1_HOST, "art-6.0.1")
-          .put(DexVm.ART_5_1_1_HOST, "art-5.1.1")
-          .put(DexVm.ART_4_4_4_HOST, "dalvik")
-          .put(DexVm.ART_4_0_4_HOST, "dalvik-4.0.4")
+  private static final Map<DexVm, Supplier<Path>> ART_DIRS =
+      ImmutableMap.<DexVm, Supplier<Path>>builder()
+          .put(DexVm.ART_DEFAULT, TestDeps::getArtDefaultDir)
+          .put(DexVm.ART_MASTER_HOST, TestDeps::getArtMasterDir)
+          .put(DexVm.ART_17_2_0_HOST, TestDeps::getArt17_2_0Dir)
+          .put(DexVm.ART_17_1_0_HOST, TestDeps::getArt17_1_0Dir)
+          .put(DexVm.ART_17_0_0_HOST, TestDeps::getArt17_0_0Dir)
+          .put(DexVm.ART_16_1_0_HOST, TestDeps::getArt16_1_0Dir)
+          .put(DexVm.ART_16_0_0_HOST, TestDeps::getArt16_0_0Dir)
+          .put(DexVm.ART_15_0_0_HOST, TestDeps::getArt15_0_0Dir)
+          .put(DexVm.ART_14_0_0_HOST, TestDeps::getArt14_0_0Dir)
+          .put(DexVm.ART_13_0_0_HOST, TestDeps::getArt13_0_0Dir)
+          .put(DexVm.ART_12_0_0_HOST, TestDeps::getArt12_0_0Dir)
+          .put(DexVm.ART_10_0_0_HOST, TestDeps::getArt10_0_0Dir)
+          .put(DexVm.ART_9_0_0_HOST, TestDeps::getArt9_0_0Dir)
+          .put(DexVm.ART_8_1_0_HOST, TestDeps::getArt8_1_0Dir)
+          .put(DexVm.ART_7_0_0_HOST, TestDeps::getArt7_0_0Dir)
+          .put(DexVm.ART_6_0_1_HOST, TestDeps::getArt6_0_1Dir)
+          .put(DexVm.ART_5_1_1_HOST, TestDeps::getArt5_1_1Dir)
+          .put(DexVm.ART_4_4_4_HOST, TestDeps::getDalvik4_4_4Dir)
+          .put(DexVm.ART_4_0_4_HOST, TestDeps::getDalvik4_0_4Dir)
           .build();
   private static final Map<DexVm, String> ART_BINARY_VERSIONS =
       ImmutableMap.<DexVm, String>builder()
@@ -1115,35 +1116,11 @@ public class ToolHelper {
   }
 
   private static Path getDexVmPath(DexVm vm) {
-    DexVm.Version version = vm.getVersion();
-    Path base = Paths.get(TOOLS_DIR, "linux");
-    switch (version) {
-      case DEFAULT:
-        return base.resolve("art");
-      case V4_0_4:
-      case V4_4_4:
-      case V5_1_1:
-      case V6_0_1:
-      case V7_0_0:
-      case V8_1_0:
-      case V9_0_0:
-      case V10_0_0:
-        return base.resolve("art-" + version);
-      case V12_0_0:
-        return base.resolve("host").resolve("art-12.0.0-beta4");
-      case V13_0_0:
-      case V14_0_0:
-      case V15_0_0:
-      case V16_0_0:
-      case V16_1_0:
-      case V17_0_0:
-      case V17_1_0:
-      case V17_2_0:
-      case MASTER:
-        return base.resolve("host").resolve("art-" + version);
-      default:
-        throw new Unreachable();
+    Supplier<Path> dir = ART_DIRS.get(vm);
+    if (dir == null) {
+      throw new IllegalStateException("Does not support dex vm: " + vm);
     }
+    return dir.get();
   }
 
   private static Path getDexVmLibPath(DexVm vm) {
@@ -1208,15 +1185,7 @@ public class ToolHelper {
   }
 
   public static String getArtDir(DexVm version) {
-    String dir = ART_DIRS.get(version);
-    if (dir == null) {
-      throw new IllegalStateException("Does not support dex vm: " + version);
-    }
-    if (isLinux()) {
-      return TOOLS_DIR + "linux/" + dir;
-    }
-    fail("Unsupported platform, we currently only support linux: " + getPlatform());
-    return ""; //never here
+    return getDexVmPath(version).toString();
   }
 
   public static String getArtBinary(DexVm version) {
@@ -1542,10 +1511,6 @@ public class ToolHelper {
       return false;
     }
     return true;
-  }
-
-  public static boolean isDex2OatSupported() {
-    return !isWindows();
   }
 
   public static Path getClassPathForTests() {
@@ -2406,7 +2371,6 @@ public class ToolHelper {
 
   public static ProcessResult runDex2OatRaw(Path dexFile, Path oatFile, Path temp, DexVm targetVm)
       throws IOException {
-    Assume.assumeTrue(ToolHelper.isDex2OatSupported());
     assert Files.exists(dexFile);
     assert ByteStreams.toByteArray(Files.newInputStream(dexFile)).length > 0;
     assert SUPPORTED_DEX2OAT_VMS.stream()

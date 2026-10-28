@@ -86,6 +86,40 @@ registerTestDep("agsa", ThirdPartyDeps.agsa, "AGSA")
 
 registerTestDep("apiDatabase", ThirdPartyDeps.apiDatabase, "API_DATABASE")
 
+registerTestDep("artDefault", ThirdPartyDeps.artDefault, "ART_DEFAULT")
+
+registerTestDep("art5_1_1", ThirdPartyDeps.art5_1_1, "ART_5_1_1")
+
+registerTestDep("art6_0_1", ThirdPartyDeps.art6_0_1, "ART_6_0_1")
+
+registerTestDep("art7_0_0", ThirdPartyDeps.art7_0_0, "ART_7_0_0")
+
+registerTestDep("art8_1_0", ThirdPartyDeps.art8_1_0, "ART_8_1_0")
+
+registerTestDep("art9_0_0", ThirdPartyDeps.art9_0_0, "ART_9_0_0")
+
+registerTestDep("art10_0_0", ThirdPartyDeps.art10_0_0, "ART_10_0_0")
+
+registerTestDep("art12_0_0", ThirdPartyDeps.art12_0_0, "ART_12_0_0")
+
+registerTestDep("art13_0_0", ThirdPartyDeps.art13_0_0, "ART_13_0_0")
+
+registerTestDep("art14_0_0", ThirdPartyDeps.art14_0_0, "ART_14_0_0")
+
+registerTestDep("art15_0_0", ThirdPartyDeps.art15_0_0, "ART_15_0_0")
+
+registerTestDep("art16_0_0", ThirdPartyDeps.art16_0_0, "ART_16_0_0")
+
+registerTestDep("art16_1_0", ThirdPartyDeps.art16_1_0, "ART_16_1_0")
+
+registerTestDep("art17_0_0", ThirdPartyDeps.art17_0_0, "ART_17_0_0")
+
+registerTestDep("art17_1_0", ThirdPartyDeps.art17_1_0, "ART_17_1_0")
+
+registerTestDep("art17_2_0", ThirdPartyDeps.art17_2_0, "ART_17_2_0")
+
+registerTestDep("artMaster", ThirdPartyDeps.artMaster, "ART_MASTER")
+
 registerTestDep("artTests", ThirdPartyDeps.artTests, "ART_TESTS")
 
 registerTestDep("artTestsLegacy", ThirdPartyDeps.artTestsLegacy, "ART_TESTS_LEGACY")
@@ -149,6 +183,10 @@ registerTestDep("composeSamplesReply", ThirdPartyDeps.composeSamplesReply, "COMP
 registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
 
 registerTestDep("dagger", ThirdPartyDeps.dagger, "DAGGER")
+
+registerTestDep("dalvik4_0_4", ThirdPartyDeps.dalvik4_0_4, "DALVIK_4_0_4")
+
+registerTestDep("dalvik4_4_4", ThirdPartyDeps.dalvik4_4_4, "DALVIK_4_4_4")
 
 registerTestDep("desugarJdkLibs11", ThirdPartyDeps.desugarJdkLibs11, "DESUGAR_JDK_LIBS_11")
 
