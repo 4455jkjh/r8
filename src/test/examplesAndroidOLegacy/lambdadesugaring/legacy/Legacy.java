@@ -39,8 +39,7 @@ public class Legacy {
     T foo(T o1);
   }
 
-  public interface BH extends BI<String> {
-  }
+  public interface BH extends BI<String> {}
 
   public interface BK<T extends A> extends BI<T> {
     T foo(T o1);
