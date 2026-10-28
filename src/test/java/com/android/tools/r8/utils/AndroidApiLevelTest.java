@@ -4,8 +4,11 @@
 
 package com.android.tools.r8.utils;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -37,6 +40,10 @@ public class AndroidApiLevelTest extends TestBase {
     assertSame(AndroidApiLevel.CINNAMON_BUN, AndroidApiLevel.getAndroidApiLevel(37, 0));
     assertSame(AndroidApiLevel.CINNAMON_BUN_1, AndroidApiLevel.getAndroidApiLevel(37, 1));
     assertSame(AndroidApiLevel.CINNAMON_BUN_2, AndroidApiLevel.getAndroidApiLevel(37, 2));
+    assertSame(AndroidApiLevel.MAIN, AndroidApiLevel.getAndroidApiLevel(37, 3));
+    assertSame(AndroidApiLevel.MAIN, AndroidApiLevel.getAndroidApiLevel(38, 0));
+    assertSame(AndroidApiLevel.MAIN, AndroidApiLevel.getAndroidApiLevel(38, 1));
+    assertSame(AndroidApiLevel.MAIN, AndroidApiLevel.getAndroidApiLevel(10000, 0));
   }
 
   @Test
@@ -55,8 +62,34 @@ public class AndroidApiLevelTest extends TestBase {
 
   @Test
   public void testIllegal() {
+    assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(0, 0));
+    assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(-1, 0));
+    assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(35, -1));
     assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(35, 1));
     assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(36, 2));
-    assertThrows(IllegalArgumentException.class, () -> AndroidApiLevel.getAndroidApiLevel(37, 3));
+  }
+
+  @Test
+  public void testResolveAndroidApiLevel() {
+    UncheckedApiLevel v = new UncheckedApiLevel(35, 0);
+    ResolvedAndroidApiLevel resolvedV = AndroidApiLevel.resolveAndroidApiLevel(v);
+    assertTrue(resolvedV.isKnown());
+    assertFalse(resolvedV.isFuture());
+    assertFalse(resolvedV.isInvalid());
+    assertSame(AndroidApiLevel.V, resolvedV.asKnown().getApiLevel());
+
+    UncheckedApiLevel invalid = new UncheckedApiLevel(35, 1);
+    ResolvedAndroidApiLevel resolvedInvalid = AndroidApiLevel.resolveAndroidApiLevel(invalid);
+    assertFalse(resolvedInvalid.isKnown());
+    assertFalse(resolvedInvalid.isFuture());
+    assertTrue(resolvedInvalid.isInvalid());
+    assertNull(resolvedInvalid.asKnown());
+
+    UncheckedApiLevel future = new UncheckedApiLevel(38, 0);
+    ResolvedAndroidApiLevel resolvedFuture = AndroidApiLevel.resolveAndroidApiLevel(future);
+    assertFalse(resolvedFuture.isKnown());
+    assertTrue(resolvedFuture.isFuture());
+    assertFalse(resolvedFuture.isInvalid());
+    assertNull(resolvedFuture.asKnown());
   }
 }

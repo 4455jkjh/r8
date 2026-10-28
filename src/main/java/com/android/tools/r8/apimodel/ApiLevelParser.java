@@ -6,6 +6,7 @@ package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.ResolvedAndroidApiLevel;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 
@@ -30,11 +31,11 @@ public class ApiLevelParser {
 
   public static <E extends Throwable> AndroidApiLevel getAndroidApiLevel(
       UncheckedApiLevel unchecked, ThrowingConsumer<String, E> onError) throws E {
-    AndroidApiLevel apiLevel = AndroidApiLevel.getAndroidApiLevel(unchecked, onError);
-    if (apiLevel == null) {
-      return null;
+    ResolvedAndroidApiLevel resolved = AndroidApiLevel.resolveAndroidApiLevel(unchecked);
+    if (resolved.isKnown()) {
+      return resolved.asKnown().getApiLevel();
     }
-    if (apiLevel.isGreaterThan(AndroidApiLevel.LATEST)) {
+    if (resolved.isFuture()) {
       onError.accept(
           "Unsupported Android API level '"
               + unchecked
@@ -43,6 +44,8 @@ public class ApiLevelParser {
               + " are not supported");
       return null;
     }
-    return apiLevel;
+    assert resolved.isInvalid();
+    onError.accept("Invalid Android API level: " + unchecked);
+    return null;
   }
 }

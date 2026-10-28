@@ -8,12 +8,15 @@ import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
+import java.util.Map;
 
 /** Android API level description */
 @SuppressWarnings("AssignmentExpression")
 public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   private static final List<AndroidApiLevel> valuesSorted;
+  private static final Map<UncheckedApiLevel, ResolvedAndroidApiLevel.Known> knownApiLevels;
 
   public static final AndroidApiLevel B;
   public static final AndroidApiLevel B_1_1;
@@ -128,6 +131,15 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     assert EXTENSION.isGreaterThan(LATEST);
     assert EXTENSION.isGreaterThan(MAIN);
     assert MAIN.isGreaterThan(LATEST);
+
+    ImmutableMap.Builder<UncheckedApiLevel, ResolvedAndroidApiLevel.Known> knownApiLevelsBuilder =
+        ImmutableMap.builder();
+    for (AndroidApiLevel level : valuesSorted) {
+      if (level.isLessThanOrEqualTo(LATEST)) {
+        knownApiLevelsBuilder.put(level.asUnchecked(), ResolvedAndroidApiLevel.known(level));
+      }
+    }
+    knownApiLevels = knownApiLevelsBuilder.build();
   }
 
   private final int major;
@@ -215,6 +227,18 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     }
   }
 
+  public static ResolvedAndroidApiLevel resolveAndroidApiLevel(UncheckedApiLevel apiLevel) {
+    assert apiLevel != null;
+    ResolvedAndroidApiLevel.Known known = knownApiLevels.get(apiLevel);
+    if (known != null) {
+      return known;
+    }
+    if (apiLevel.isGreaterThan(LATEST.asUnchecked())) {
+      return ResolvedAndroidApiLevel.future();
+    }
+    return ResolvedAndroidApiLevel.invalid();
+  }
+
   @Deprecated
   @SuppressWarnings("InlineMeSuggester")
   public static AndroidApiLevel getAndroidApiLevel(int major) {
@@ -222,12 +246,25 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   }
 
   public static AndroidApiLevel getAndroidApiLevel(UncheckedApiLevel apiLevel) {
-    return getAndroidApiLevel(apiLevel.getMajor(), apiLevel.getMinor());
+    return getAndroidApiLevel(
+        apiLevel,
+        message -> {
+          throw new IllegalArgumentException(message);
+        });
   }
 
   public static <E extends Throwable> AndroidApiLevel getAndroidApiLevel(
       UncheckedApiLevel apiLevel, ThrowingConsumer<String, E> onError) throws E {
-    return getAndroidApiLevel(apiLevel.getMajor(), apiLevel.getMinor(), onError);
+    ResolvedAndroidApiLevel resolved = resolveAndroidApiLevel(apiLevel);
+    if (resolved.isKnown()) {
+      return resolved.asKnown().getApiLevel();
+    }
+    if (resolved.isFuture()) {
+      return MAIN;
+    }
+    assert resolved.isInvalid();
+    onError.accept("Invalid Android API level: " + apiLevel);
+    return null;
   }
 
   public UncheckedApiLevel asUnchecked() {
@@ -248,217 +285,11 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
 
   public static <E extends Throwable> AndroidApiLevel getAndroidApiLevel(
       int major, int minor, ThrowingConsumer<String, E> onError) throws E {
-    assert CINNAMON_BUN_2.isEqualTo(
-        LATEST); // This has to be updated when new API levels are added.
-    switch (major) {
-      case 1:
-        if (minor == 0) {
-          return B;
-        }
-        break;
-      case 2:
-        if (minor == 0) {
-          return B_1_1;
-        }
-        break;
-      case 3:
-        if (minor == 0) {
-          return C;
-        }
-        break;
-      case 4:
-        if (minor == 0) {
-          return D;
-        }
-        break;
-      case 5:
-        if (minor == 0) {
-          return E;
-        }
-        break;
-      case 6:
-        if (minor == 0) {
-          return E_0_1;
-        }
-        break;
-      case 7:
-        if (minor == 0) {
-          return E_MR1;
-        }
-        break;
-      case 8:
-        if (minor == 0) {
-          return F;
-        }
-        break;
-      case 9:
-        if (minor == 0) {
-          return G;
-        }
-        break;
-      case 10:
-        if (minor == 0) {
-          return G_MR1;
-        }
-        break;
-      case 11:
-        if (minor == 0) {
-          return H;
-        }
-        break;
-      case 12:
-        if (minor == 0) {
-          return H_MR1;
-        }
-        break;
-      case 13:
-        if (minor == 0) {
-          return H_MR2;
-        }
-        break;
-      case 14:
-        if (minor == 0) {
-          return I;
-        }
-        break;
-      case 15:
-        if (minor == 0) {
-          return I_MR1;
-        }
-        break;
-      case 16:
-        if (minor == 0) {
-          return J;
-        }
-        break;
-      case 17:
-        if (minor == 0) {
-          return J_MR1;
-        }
-        break;
-      case 18:
-        if (minor == 0) {
-          return J_MR2;
-        }
-        break;
-      case 19:
-        if (minor == 0) {
-          return K;
-        }
-        break;
-      case 20:
-        if (minor == 0) {
-          return K_WATCH;
-        }
-        break;
-      case 21:
-        if (minor == 0) {
-          return L;
-        }
-        break;
-      case 22:
-        if (minor == 0) {
-          return L_MR1;
-        }
-        break;
-      case 23:
-        if (minor == 0) {
-          return M;
-        }
-        break;
-      case 24:
-        if (minor == 0) {
-          return N;
-        }
-        break;
-      case 25:
-        if (minor == 0) {
-          return N_MR1;
-        }
-        break;
-      case 26:
-        if (minor == 0) {
-          return O;
-        }
-        break;
-      case 27:
-        if (minor == 0) {
-          return O_MR1;
-        }
-        break;
-      case 28:
-        if (minor == 0) {
-          return P;
-        }
-        break;
-      case 29:
-        if (minor == 0) {
-          return Q;
-        }
-        break;
-      case 30:
-        if (minor == 0) {
-          return R;
-        }
-        break;
-      case 31:
-        if (minor == 0) {
-          return S;
-        }
-        break;
-      case 32:
-        if (minor == 0) {
-          return Sv2;
-        }
-        break;
-      case 33:
-        if (minor == 0) {
-          return T;
-        }
-        break;
-      case 34:
-        if (minor == 0) {
-          return U;
-        }
-        break;
-      case 35:
-        if (minor == 0) {
-          return V;
-        }
-        break;
-      case 36:
-        if (minor == 0) {
-          return BAKLAVA;
-        }
-        if (minor == 1) {
-          return BAKLAVA_1;
-        }
-        break;
-      case 37:
-        if (minor == 0) {
-          return CINNAMON_BUN;
-        }
-        if (minor == 1) {
-          return CINNAMON_BUN_1;
-        }
-        if (minor == 2) {
-          return CINNAMON_BUN_2;
-        }
-        break;
-      case 38:
-        if (minor == 0) {
-          return MAIN;
-        }
-        break;
-      default:
-        // All future versions (e.g. platforms API 10_000 returns MAIN).
-        if (major > 0) {
-          return MAIN;
-        }
-        break;
+    if (major <= 0 || minor < 0) {
+      onError.accept("Invalid Android API level: " + getNumericString(major, minor));
+      return null;
     }
-    onError.accept("Unsupported or invalid Android API level: " + getNumericString(major, minor));
-    return null;
+    return getAndroidApiLevel(new UncheckedApiLevel(major, minor), onError);
   }
 
   /**

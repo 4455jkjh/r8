@@ -193,10 +193,39 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
     assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("36.-1"));
     assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("abc"));
     assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("36.abc"));
-    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("35.1"));
+    try {
+      ApiLevelParser.parse("35.1");
+      fail();
+    } catch (ApiDatabaseGeneratorException e) {
+      assertEquals("Invalid Android API level: 35.1", e.getMessage());
+    }
+    try {
+      ApiLevelParser.parse("35.2");
+      fail();
+    } catch (ApiDatabaseGeneratorException e) {
+      assertEquals("Invalid Android API level: 35.2", e.getMessage());
+    }
+    try {
+      ApiLevelParser.parse("36.2");
+      fail();
+    } catch (ApiDatabaseGeneratorException e) {
+      assertEquals("Invalid Android API level: 36.2", e.getMessage());
+    }
+    try {
+      ApiLevelParser.parse("37.3");
+      fail();
+    } catch (ApiDatabaseGeneratorException e) {
+      assertEquals(
+          "Unsupported Android API level '37.3': versions above "
+              + AndroidApiLevel.LATEST.getNumericString()
+              + " are not supported",
+          e.getMessage());
+    }
     assertThrows(
         ApiDatabaseGeneratorException.class,
         () -> ApiLevelParser.parse(AndroidApiLevel.MAIN.getNumericString()));
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("38.1"));
+    assertThrows(ApiDatabaseGeneratorException.class, () -> ApiLevelParser.parse("65.65"));
     assertThrows(
         ApiDatabaseGeneratorException.class,
         () -> ApiLevelParser.parse(AndroidApiLevel.EXTENSION.getNumericString()));
