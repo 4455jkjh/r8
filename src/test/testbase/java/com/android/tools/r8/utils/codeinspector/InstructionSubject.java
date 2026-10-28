@@ -51,6 +51,10 @@ public interface InstructionSubject {
 
   boolean isInvokeDynamic();
 
+  default InvokeDynamicInstructionSubject asInvokeDynamic() {
+    return null;
+  }
+
   boolean isInvokeRange();
 
   default boolean isInvokeSpecialOrDirect() {

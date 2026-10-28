@@ -72,7 +72,7 @@ public class StringConcatRemover extends CodeRewriterPass {
     boolean canUseInvokeCustom =
         appView
             .options()
-            .canUseInvokeCustomWithIndyStringConcat(
+            .canUseInvokeCustomWithStringConcatFactory(
                 code.context().getDefinition().getClassFileVersion());
     while (iterator.hasNext()) {
       Instruction current = iterator.next();

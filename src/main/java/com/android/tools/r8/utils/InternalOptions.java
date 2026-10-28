@@ -2749,6 +2749,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public CfVersion supportedCfVersionForTesting = null;
 
     public boolean forceIntTypeForClassIdField = false;
+
+    public boolean enableStringConcatFactoryForDex = false;
   }
 
   public boolean forTesting(Supplier<Boolean> test) {
@@ -2889,10 +2891,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return hasFeaturePresentFrom(invokeCustomApiLevel());
   }
 
-  public boolean canUseInvokeCustomWithIndyStringConcat(CfVersion cfVersion) {
-    return isGeneratingClassFiles()
-        && cfVersion.isGreaterThanOrEqualTo(CfVersion.V9)
-        && !isCfDesugaring();
+  public boolean canUseInvokeCustomWithStringConcatFactory(CfVersion cfVersion) {
+    return (isGeneratingClassFiles()
+            && cfVersion.isGreaterThanOrEqualTo(CfVersion.V9)
+            && !isCfDesugaring())
+        || (isGeneratingDex() && getTestingOptions().enableStringConcatFactoryForDex);
   }
 
   public static AndroidApiLevel constantDynamicApiLevel() {

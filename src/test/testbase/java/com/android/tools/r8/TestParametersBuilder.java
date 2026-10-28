@@ -161,6 +161,10 @@ public class TestParametersBuilder {
 
   /** Add specific runtime if available. */
   public TestParametersBuilder withDexRuntime(DexVm.Version runtime) {
+    if (runtime == DexVm.Version.MAIN) {
+      hasDexRuntimeFilter = true;
+      return withFilter(p -> p.isDexRuntime() && p.getDexRuntimeVersion().isEqualTo(runtime));
+    }
     return withDexRuntimeFilter(vm -> vm == runtime);
   }
 

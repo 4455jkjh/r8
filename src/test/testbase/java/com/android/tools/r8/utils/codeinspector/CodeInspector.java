@@ -512,7 +512,11 @@ public class CodeInspector {
       SwitchPayloadResolver switchPayloadResolver) {
     DexInstructionSubject dexInst = new DexInstructionSubject(instruction, method);
     if (dexInst.isInvoke()) {
-      return new InvokeDexInstructionSubject(this, instruction, method);
+      if (dexInst.isInvokeCustom()) {
+        return new InvokeDynamicDexInstructionSubject(instruction, method);
+      } else {
+        return new InvokeDexInstructionSubject(this, instruction, method);
+      }
     } else if (dexInst.isFieldAccess()) {
       return new FieldAccessDexInstructionSubject(this, instruction, method);
     } else if (dexInst.isNewInstance()) {
@@ -531,7 +535,11 @@ public class CodeInspector {
   InstructionSubject createInstructionSubject(CfInstruction instruction, MethodSubject method) {
     CfInstructionSubject cfInst = new CfInstructionSubject(instruction, method);
     if (cfInst.isInvoke()) {
-      return new InvokeCfInstructionSubject(this, instruction, method);
+      if (cfInst.isInvokeDynamic()) {
+        return new InvokeDynamicCfInstructionSubject(instruction, method);
+      } else {
+        return new InvokeCfInstructionSubject(this, instruction, method);
+      }
     } else if (cfInst.isFieldAccess()) {
       return new FieldAccessCfInstructionSubject(this, instruction, method);
     } else if (cfInst.isNewInstance()) {
