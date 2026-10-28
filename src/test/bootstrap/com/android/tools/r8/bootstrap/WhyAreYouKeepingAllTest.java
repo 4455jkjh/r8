@@ -34,10 +34,9 @@ public class WhyAreYouKeepingAllTest extends TestBase {
           Paths.get(ToolHelper.SOURCE_DIR, "/main/keep.txt"),
           Paths.get(ToolHelper.SOURCE_DIR, "/main/discard.txt"));
 
-  private static final String WHY_ARE_YOU_KEEPING_ALL = StringUtils.lines(
-      "-whyareyoukeeping class ** { *; }",
-      "-whyareyoukeeping @interface ** { *; }"
-  );
+  private static final String WHY_ARE_YOU_KEEPING_ALL =
+      StringUtils.lines(
+          "-whyareyoukeeping class ** { *; }", "-whyareyoukeeping @interface ** { *; }");
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {

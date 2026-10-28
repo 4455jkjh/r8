@@ -30,6 +30,15 @@ GOOGLE_KOTLIN_FORMAT_DIR = os.path.join(defines.THIRD_PARTY, 'google',
 GOOGLE_KOTLIN_FORMAT_JAR = os.path.join(GOOGLE_KOTLIN_FORMAT_DIR,
                                         'ktfmt-0.54-jar-with-dependencies.jar')
 
+FULLY_FORMATTED_DIRECTORIES = ('src/test/bootstrap',)
+
+
+def requires_full_formatting(file_path):
+    norm = file_path.replace('\\', '/')
+    return any(norm == d or norm.startswith(d + '/')
+               for d in FULLY_FORMATTED_DIRECTORIES)
+
+
 GOOGLE_YAPF_DIR = os.path.join(defines.THIRD_PARTY, 'google', 'yapf',
                                '20231013')
 GOOGLE_YAPF = os.path.join(GOOGLE_YAPF_DIR, 'yapf')
@@ -436,9 +445,19 @@ def check_java_files(files,
     if not files:
         return []
     if upstream_for_diff_formatting is not None:
-        return check_java_files_precise_diff(files,
-                                             upstream_for_diff_formatting,
-                                             fix_formatting=fix_formatting)
+        full_files = [f for f in files if requires_full_formatting(f)]
+        diff_files = [f for f in files if not requires_full_formatting(f)]
+        errors = []
+        if full_files:
+            errors.extend(
+                check_java_files_full(full_files,
+                                      fix_formatting=fix_formatting))
+        if diff_files:
+            errors.extend(
+                check_java_files_precise_diff(diff_files,
+                                              upstream_for_diff_formatting,
+                                              fix_formatting=fix_formatting))
+        return errors
     else:
         return check_java_files_full(files, fix_formatting=fix_formatting)
 
