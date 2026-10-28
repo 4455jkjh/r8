@@ -27,21 +27,28 @@ interface IB {
 
 interface I {
 
-  I DEFAULT = new I() {{
-    System.out.println("0: " + sFoo(false, this));
-  }};
+  I DEFAULT =
+      new I() {
+        {
+          System.out.println("0: " + sFoo(false, this));
+        }
+      };
 
   static String xFoo() {
     return "x>" + sFoo(true, null);
   }
 
   private static String sFoo(boolean simple, I it) {
-    return simple ? "s"
-        : ("s>" + it.iFoo(true) + ">" + new I() {
-          public String dFoo() {
-            return "a";
-          }
-        }.dFoo());
+    return simple
+        ? "s"
+        : ("s>"
+            + it.iFoo(true)
+            + ">"
+            + new I() {
+              public String dFoo() {
+                return "a";
+              }
+            }.dFoo());
   }
 
   private String iFoo(boolean skip) {

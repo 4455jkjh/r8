@@ -11,8 +11,9 @@ public class VarHandleTests {
   private static boolean staticField = true;
 
   public static void test() throws NoSuchFieldException, IllegalAccessException {
-    VarHandle vb = MethodHandles.lookup()
-        .findStaticVarHandle(VarHandleTests.class, "staticField", boolean.class);
+    VarHandle vb =
+        MethodHandles.lookup()
+            .findStaticVarHandle(VarHandleTests.class, "staticField", boolean.class);
     System.out.println((boolean) vb.get());
     vb.set(false);
     System.out.println((boolean) vb.get());

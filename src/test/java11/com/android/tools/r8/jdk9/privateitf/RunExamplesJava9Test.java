@@ -149,13 +149,11 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
     return getTestParameters().withDexRuntimes().build();
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   private boolean failsOn(Map<DexVm.Version, List<String>> failsOn, String name) {
     DexVm.Version vmVersion = parameters.getDexRuntimeVersion();
-    return failsOn.containsKey(vmVersion)
-        && failsOn.get(vmVersion).contains(name);
+    return failsOn.containsKey(vmVersion) && failsOn.get(vmVersion).contains(name);
   }
 
   private boolean expectedToFail(String name) {
@@ -218,8 +216,9 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
   abstract RunExamplesJava9Test<B>.TestRunner<?> test(
       String testName, String packageName, String mainClass, List<Path> inputFiles);
 
-  void execute(String testName,
-      String qualifiedMainClass, Path[] jars, Path[] dexes, List<String> args) throws IOException {
+  void execute(
+      String testName, String qualifiedMainClass, Path[] jars, Path[] dexes, List<String> args)
+      throws IOException {
 
     boolean expectedToFail = expectedToFail(testName);
     if (expectedToFail) {
@@ -254,5 +253,4 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
           output.equals(jvmResult.replace("\r", "")));
     }
   }
-
 }

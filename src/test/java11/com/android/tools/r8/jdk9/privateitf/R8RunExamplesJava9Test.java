@@ -29,11 +29,13 @@ public class R8RunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Build
 
     @Override
     R8TestRunner withKeepAll() {
-      return withBuilderTransformation(builder ->
-          builder
-              .setDisableTreeShaking(true)
-              .setDisableMinification(true)
-              .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown()));
+      return withBuilderTransformation(
+          builder ->
+              builder
+                  .setDisableTreeShaking(true)
+                  .setDisableMinification(true)
+                  .addProguardConfiguration(
+                      ImmutableList.of("-keepattributes *"), Origin.unknown()));
     }
 
     @Override

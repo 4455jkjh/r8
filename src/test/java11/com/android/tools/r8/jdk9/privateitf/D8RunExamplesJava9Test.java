@@ -50,4 +50,3 @@ public class D8RunExamplesJava9Test extends RunExamplesJava9Test<D8Command.Build
     return new D8TestRunner(testName, packageName, mainClass, inputFiles);
   }
 }
-
