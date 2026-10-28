@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.dagger;
 
+import static com.android.tools.r8.utils.internal.PredicateUtils.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -55,14 +56,13 @@ public class DaggerBasicSingletonUsingProvidesTest extends DaggerBasicTestBase {
         ImmutableSet.<String>builder()
             .add(
                 "basic.I1Impl2",
-                "basic.I2Impl2",
-                "basic.I3Impl2",
                 "basic.MainUsingProvides",
                 "dagger.internal.DoubleCheck",
                 "javax.inject.Provider");
     assertEquals(
         expectedClasses.build(),
         inspector.allClasses().stream()
+            .filter(not(FoundClassSubject::isCompilerSynthesized))
             .map(FoundClassSubject::getOriginalTypeName)
             .filter(name -> !name.contains("Factory"))
             .collect(Collectors.toSet()));
@@ -102,13 +102,19 @@ public class DaggerBasicSingletonUsingProvidesTest extends DaggerBasicTestBase {
                         target.equals("1.8") || parameters.isDexRuntime(),
                         i ->
                             i.assertIsCompleteMergeGroup(
+                                    "basic.I1Impl2",
+                                    "basic.I2Impl2",
+                                    "basic.I3Impl2",
                                     "basic.ModuleUsingProvides_I1Factory",
                                     "basic.ModuleUsingProvides_I2Factory",
                                     "basic.ModuleUsingProvides_I3Factory")
                                 .assertIsCompleteMergeGroup(
                                     "basic.ModuleUsingProvides_I1Factory$InstanceHolder",
                                     "basic.ModuleUsingProvides_I2Factory$InstanceHolder",
-                                    "basic.ModuleUsingProvides_I3Factory$InstanceHolder"))
+                                    "basic.ModuleUsingProvides_I3Factory$InstanceHolder"),
+                        i ->
+                            i.assertIsCompleteMergeGroup(
+                                "basic.I1Impl2", "basic.I2Impl2", "basic.I3Impl2"))
                     .assertNoOtherClassesMerged())
         .addVerticallyMergedClassesInspector(
             inspector ->

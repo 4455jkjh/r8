@@ -2092,6 +2092,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
             "com.android.tools.r8.enableSameFilePolicy", false);
     private boolean enableSyntheticMerging = true;
 
+    // TODO(b/418674622): Enable check-cast-rewriting.
+    public boolean enableCheckCastRewriting = false;
+
     // Used in tests to enable horizontal class merging when compiling to class files.
     public void enableForTesting() {
       disable = OptionalBool.FALSE;

@@ -74,6 +74,11 @@ public class BasicBlockIterator implements ListIterator<BasicBlock> {
     return next();
   }
 
+  public BasicBlock positionBeforeSubsequentBlock(BasicBlock block) {
+    nextUntil(block);
+    return previous();
+  }
+
   @SuppressWarnings("ReferenceEquality")
   public BasicBlock previousUntil(BasicBlock stoppingCriterion) {
     return previousUntil(block -> block == stoppingCriterion);
@@ -81,6 +86,15 @@ public class BasicBlockIterator implements ListIterator<BasicBlock> {
 
   public BasicBlock previousUntil(Predicate<BasicBlock> predicate) {
     return IteratorUtils.previousUntil(this, predicate);
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  public BasicBlock nextUntil(BasicBlock stoppingCriterion) {
+    return nextUntil(block -> block == stoppingCriterion);
+  }
+
+  public BasicBlock nextUntil(Predicate<BasicBlock> predicate) {
+    return IteratorUtils.nextUntil(this, predicate);
   }
 
   @Override

@@ -17,8 +17,12 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
+import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.horizontalclassmerging.code.SyntheticInitializerConverter;
+import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.LirConverter;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
+import com.android.tools.r8.ir.conversion.finalizer.IRToLirFinalizer;
 import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions;
@@ -26,9 +30,12 @@ import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.shaking.RuntimeTypeCheckInfo;
+import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
@@ -114,7 +121,7 @@ public class HorizontalClassMerger {
 
     // Determine which classes need a class id field.
     List<ClassMerger.Builder> classMergerBuilders = createClassMergerBuilders(groups);
-    initializeClassIdFields(classMergerBuilders);
+    initializeClassIdFields(classMergerBuilders, runtimeTypeCheckInfo);
 
     // Ensure that all allocations of classes that end up needing a class id use a constructor on
     // the class itself.
@@ -173,7 +180,6 @@ public class HorizontalClassMerger {
 
     // Must rewrite AppInfoWithLiveness before pruning the merged classes, to ensure that allocation
     // sites, fields accesses, etc. are correctly transferred to the target classes.
-    DexApplication newApplication = getNewApplication(mergedClasses, timing);
     if (appView.enableWholeProgramOptimizations()) {
       // Finalize synthetic code.
       transformIncompleteCode(groups, horizontalClassMergerGraphLens, executorService);
@@ -181,7 +187,13 @@ public class HorizontalClassMerger {
       AppView<AppInfoWithClassHierarchy> appViewWithClassHierarchy = appView.withClassHierarchy();
       KeepInfoCollection keepInfo = appView.getKeepInfo();
       keepInfo.mutate(mutator -> mutator.removeKeepInfoForMergedClasses(prunedItems));
+
+      // Lens rewrite AppInfoWithLiveness and bring the profile collection additions up-to-date.
       appView.rewriteWithLens(horizontalClassMergerGraphLens, executorService, timing);
+      profileCollectionAdditions
+          .setArtProfileCollection(appView.getArtProfileCollection())
+          .setStartupProfile(appView.getStartupProfile());
+
       new IdentifierMinifier(appViewWithClassHierarchy)
           .rewriteDexItemBasedConstStringInStaticFields(executorService);
       if (appView.options().partialSubCompilationConfiguration != null)
@@ -191,13 +203,18 @@ public class HorizontalClassMerger {
             .asR8()
             .commitDexingOutputClasses(appViewWithClassHierarchy);
       LirConverter.rewriteLirWithLens(appViewWithClassHierarchy, timing, executorService);
+      finalizeSynthetics(
+          horizontalClassMergerGraphLens,
+          mergedClasses,
+          profileCollectionAdditions,
+          executorService,
+          timing);
       if (appView.options().partialSubCompilationConfiguration != null)
         appView
             .options()
             .partialSubCompilationConfiguration
             .asR8()
             .uncommitDexingOutputClasses(appViewWithClassHierarchy);
-      appView.rebuildAppInfo(timing, newApplication);
     } else {
       SyntheticItems syntheticItems = appView.appInfo().getSyntheticItems();
       assert !syntheticItems.hasPendingSyntheticClasses();
@@ -208,15 +225,19 @@ public class HorizontalClassMerger {
                   .appInfo()
                   .rebuildWithCommittedItems(
                       syntheticItems.commitRewrittenWithLens(
-                          newApplication, horizontalClassMergerGraphLens, timing)));
+                          getNewApplication(mergedClasses, timing),
+                          horizontalClassMergerGraphLens,
+                          timing)));
+
+      // Lens rewrite AppInfo and bring the profile collection additions up-to-date.
       appView.rewriteWithD8Lens(horizontalClassMergerGraphLens, timing);
+      profileCollectionAdditions
+          .setArtProfileCollection(appView.getArtProfileCollection())
+          .setStartupProfile(appView.getStartupProfile());
     }
 
     // Amend art profile collection.
-    profileCollectionAdditions
-        .setArtProfileCollection(appView.getArtProfileCollection())
-        .setStartupProfile(appView.getStartupProfile())
-        .commit(appView);
+    profileCollectionAdditions.commit(appView);
 
     // Record where the synthesized $r8$classId fields are read and written.
     if (fieldAccessInfoCollectionModifier != null) {
@@ -268,6 +289,78 @@ public class HorizontalClassMerger {
       }
     }
     return builder.build();
+  }
+
+  /**
+   * The horizontal class merger may synthesize a single helper method for rewriting check-casts.
+   */
+  private void finalizeSynthetics(
+      HorizontalClassMergerGraphLens horizontalClassMergerGraphLens,
+      HorizontallyMergedClasses mergedClasses,
+      ProfileCollectionAdditions profileCollectionAdditions,
+      ExecutorService executorService,
+      Timing timing)
+      throws ExecutionException {
+    assert appView.hasClassHierarchy();
+
+    // Prune merged classes and commit pending synthetics.
+    appView.rebuildAppInfo(timing, getNewApplication(mergedClasses, timing));
+
+    ProgramMethod throwClassCastExceptionIfNotEqualsMethod =
+        horizontalClassMergerGraphLens.unsetThrowClassCastExceptionIfNotEqualsMethod();
+    if (throwClassCastExceptionIfNotEqualsMethod == null) {
+      // Nothing to finalize.
+      return;
+    }
+
+    try (Timing t0 = timing.begin("Finalize synthetics")) {
+      List<ProgramMethod> synthesizedMethods = new ArrayList<>(1);
+      appView
+          .getSyntheticItems()
+          .getCommitted()
+          .forEachMethodFlattened(
+              (type, method) ->
+                  synthesizedMethods.add(
+                      method.lookupDefinition(appView::definitionFor).getMethod()));
+      assert synthesizedMethods.size() == 1;
+
+      // Convert synthetic method to output format.
+      ProgramMethod synthesizedMethod = ListUtils.first(synthesizedMethods);
+      IRCode code =
+          synthesizedMethod.buildIR(appView, MethodConversionOptions.forLirPhase(appView));
+      synthesizedMethod.setCode(
+          new IRToLirFinalizer(appView)
+              .finalizeCode(code, BytecodeMetadataProvider.empty(), timing),
+          appView);
+
+      // Finalize synthetics and bring the profile collection additions up-to-date.
+      SyntheticFinalization.finalizeWithLiveness(appView.withLiveness(), executorService, timing);
+      profileCollectionAdditions
+          .setArtProfileCollection(appView.getArtProfileCollection())
+          .setStartupProfile(appView.getStartupProfile());
+
+      // Rewrite LIR that references the internal synthetic method.
+      ProgramMethodSet synthesizedMethodCallers =
+          horizontalClassMergerGraphLens.unsetThrowClassCastExceptionIfNotEqualsMethodCallers();
+      assert !synthesizedMethodCallers.isEmpty();
+      LirConverter.rewriteLirWithUnappliedLens(
+          appView.withClassHierarchy(), synthesizedMethodCallers::contains, executorService);
+      appView.clearCodeRewritings(executorService, timing);
+
+      // Add synthesized method to profile(s).
+      DexMethod externalSynthesizedMethodReference =
+          appView
+              .graphLens()
+              .getRenamedMethodSignature(
+                  synthesizedMethod.getReference(), horizontalClassMergerGraphLens);
+      assert externalSynthesizedMethodReference.isNotIdenticalTo(synthesizedMethod.getReference());
+      ProgramMethod externalSynthesizedMethod =
+          appView.definitionFor(externalSynthesizedMethodReference).asProgramMethod();
+      for (ProgramMethod synthesizedMethodCaller : synthesizedMethodCallers) {
+        profileCollectionAdditions.addMethodAndHolderIfContextIsInProfile(
+            externalSynthesizedMethod, synthesizedMethodCaller);
+      }
+    }
   }
 
   private void transformIncompleteCode(
@@ -369,9 +462,12 @@ public class HorizontalClassMerger {
     return classMergerBuilders;
   }
 
-  private void initializeClassIdFields(List<ClassMerger.Builder> classMergerBuilders) {
+  private void initializeClassIdFields(
+      List<ClassMerger.Builder> classMergerBuilders, RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     for (ClassMerger.Builder classMergerBuilder : classMergerBuilders) {
-      classMergerBuilder.initializeVirtualMethodMergers().initializeClassIdField();
+      classMergerBuilder
+          .initializeVirtualMethodMergers()
+          .initializeClassIdField(runtimeTypeCheckInfo);
     }
   }
 
