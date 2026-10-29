@@ -54,16 +54,16 @@ public class SplitBlockTest extends IrInjectionTestBase {
 
     String returnType = "int";
     List<String> parameters = ImmutableList.of("int", "int");
-    MethodSignature signature = builder.addStaticMethod(
-        returnType,
-        DEFAULT_METHOD_NAME,
-        parameters,
-        0,
-        "    add-int             p0, p0, p0",
-        "    sub-int             p1, p1, p0",
-        "    mul-int             p0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            returnType,
+            DEFAULT_METHOD_NAME,
+            parameters,
+            0,
+            "    add-int             p0, p0, p0",
+            "    sub-int             p1, p1, p0",
+            "    mul-int             p0, p0, p1",
+            "    return              p0");
 
     builder.addMainMethod(
         3,
@@ -73,8 +73,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     AppView<AppInfo> appView = computeAppView(builder.build());
 
@@ -160,29 +159,29 @@ public class SplitBlockTest extends IrInjectionTestBase {
       throws Exception {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    String secondGuard = twoGuards ?
-        "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
+    String secondGuard =
+        twoGuards ? "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
 
     String returnType = "int";
     List<String> parameters = ImmutableList.of("int", "int");
-    MethodSignature signature = builder.addStaticMethod(
-        returnType,
-        DEFAULT_METHOD_NAME,
-        parameters,
-        0,
-        "    :try_start",
-        "    add-int             p0, p0, p0",
-        "    add-int             p1, p1, p1",
-        "    div-int             p0, p0, p1",
-        "    :try_end",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        secondGuard,
-        "    :return",
-        "    return              p0",
-        "    :catch",
-        "    const/4             p0, -1",
-        "    goto :return"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            returnType,
+            DEFAULT_METHOD_NAME,
+            parameters,
+            0,
+            "    :try_start",
+            "    add-int             p0, p0, p0",
+            "    add-int             p1, p1, p1",
+            "    div-int             p0, p0, p1",
+            "    :try_end",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            secondGuard,
+            "    :return",
+            "    return              p0",
+            "    :catch",
+            "    const/4             p0, -1",
+            "    goto :return");
 
     builder.addMainMethod(
         3,
@@ -192,8 +191,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     AppView<?> appView = computeAppView(builder.build());
 
@@ -295,18 +293,18 @@ public class SplitBlockTest extends IrInjectionTestBase {
 
     String returnType = "int";
     List<String> parameters = ImmutableList.of("int", "int");
-    MethodSignature signature = builder.addStaticMethod(
-        returnType,
-        DEFAULT_METHOD_NAME,
-        parameters,
-        0,
-        "    if-eq               p0, p1, :eq",
-        "    const/4             p0, 1",
-        "    return              p0",
-        "    :eq",
-        "    const/4             p0, 0",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            returnType,
+            DEFAULT_METHOD_NAME,
+            parameters,
+            0,
+            "    if-eq               p0, p1, :eq",
+            "    const/4             p0, 1",
+            "    return              p0",
+            "    :eq",
+            "    const/4             p0, 0",
+            "    return              p0");
 
     builder.addMainMethod(
         3,
@@ -316,8 +314,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     AppView<?> appView = computeAppView(builder.build());
 
@@ -409,27 +406,27 @@ public class SplitBlockTest extends IrInjectionTestBase {
 
     String returnType = "int";
     List<String> parameters = ImmutableList.of("int");
-    MethodSignature signature = builder.addStaticMethod(
-        returnType,
-        DEFAULT_METHOD_NAME,
-        parameters,
-        0,
-        "    packed-switch       p0, :packed_switch_data",
-        "    const/4             p0, 0x5",
-        "    goto                :return",
-        "    :case_0",
-        "    const/4             p0, 0x2",
-        "    goto                :return",
-        "    :case_1",
-        "    const/4             p0, 0x3",
-        "    :return",
-        "    return              p0",
-        "    :packed_switch_data",
-        "    .packed-switch 0x0",
-        "      :case_0",
-        "      :case_1",
-        "    .end packed-switch"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            returnType,
+            DEFAULT_METHOD_NAME,
+            parameters,
+            0,
+            "    packed-switch       p0, :packed_switch_data",
+            "    const/4             p0, 0x5",
+            "    goto                :return",
+            "    :case_0",
+            "    const/4             p0, 0x2",
+            "    goto                :return",
+            "    :case_1",
+            "    const/4             p0, 0x3",
+            "    :return",
+            "    return              p0",
+            "    :packed_switch_data",
+            "    .packed-switch 0x0",
+            "      :case_0",
+            "      :case_1",
+            "    .end packed-switch");
 
     builder.addMainMethod(
         2,
@@ -438,8 +435,7 @@ public class SplitBlockTest extends IrInjectionTestBase {
         "    invoke-static       { v1 }, LTest;->method(I)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     AppView<?> appView = computeAppView(builder.build());
 

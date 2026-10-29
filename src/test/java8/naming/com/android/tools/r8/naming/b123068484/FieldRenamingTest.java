@@ -97,12 +97,12 @@ public class FieldRenamingTest extends TestBase {
 
     methodSubject
         .iterateInstructions(InstructionSubject::isInstanceGet)
-        .forEachRemaining(instructionSubject -> {
-          String fieldName = instructionSubject.getField().name.toString();
-          // All of those field references will be renamed.
-          assertNotEquals("strField", fieldName);
-          assertEquals(fld.getFinalName(), fieldName);
-        });
+        .forEachRemaining(
+            instructionSubject -> {
+              String fieldName = instructionSubject.getField().name.toString();
+              // All of those field references will be renamed.
+              assertNotEquals("strField", fieldName);
+              assertEquals(fld.getFinalName(), fieldName);
+            });
   }
-
 }

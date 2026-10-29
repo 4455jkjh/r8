@@ -44,15 +44,14 @@ public class NotDiamondTest extends TestBase {
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(
-            "1", "5", "1", "5");
+        .assertSuccessWithOutputLines("1", "5", "1", "5");
   }
 
   private void inspect(CodeInspector inspector) {
     for (FoundMethodSubject method : inspector.clazz(Main.class).allMethods()) {
       if (!method.getOriginalMethodName().equals("main")) {
         long count = method.streamInstructions().filter(InstructionSubject::isIf).count();
-        assertEquals( 1, count);
+        assertEquals(1, count);
       }
     }
   }

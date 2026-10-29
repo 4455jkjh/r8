@@ -3,5 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.naming.b80083341;
 
-public class AnotherClass {
-}
+public class AnotherClass {}

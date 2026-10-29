@@ -28,4 +28,3 @@ public class MoveToHostFieldOnlyTestClass {
     Object x = HostOkFieldOnly.INSTANCE;
   }
 }
-

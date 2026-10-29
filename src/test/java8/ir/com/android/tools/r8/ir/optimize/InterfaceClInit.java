@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize;
 
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -13,7 +12,7 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class InterfaceClInit extends TestBase {
-  static String EXPECTED= "i = 42";
+  static String EXPECTED = "i = 42";
   private final TestParameters parameters;
 
   @Parameterized.Parameters(name = "{0}")
@@ -47,7 +46,7 @@ public class InterfaceClInit extends TestBase {
 
 class TestClass implements InterfaceWithStaticBlock {
   @Override
-  public void foobar() { }
+  public void foobar() {}
 
   public static void main(String[] args) {
     UsedFromStatic.i = 42;
@@ -57,6 +56,7 @@ class TestClass implements InterfaceWithStaticBlock {
 
 interface InterfaceWithStaticBlock {
   int i = UsedFromStatic.i;
+
   void foobar();
 }
 

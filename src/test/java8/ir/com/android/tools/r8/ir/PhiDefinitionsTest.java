@@ -6,8 +6,7 @@ package com.android.tools.r8.ir;
 public class PhiDefinitionsTest {
 
   public static Class[] CLASSES = {
-      PhiDefinitionsTest.class,
-      MethodWriter.class,
+    PhiDefinitionsTest.class, MethodWriter.class,
   };
 
   static class MethodWriter {

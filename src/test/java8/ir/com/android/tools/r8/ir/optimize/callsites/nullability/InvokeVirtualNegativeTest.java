@@ -142,11 +142,11 @@ public class InvokeVirtualNegativeTest extends TestBase {
     public static void main(String... args) {
       A a = new A();
       test(a); // calls A.m() with null.
-      a.m(a);  // calls A.m() with non-null instance.
+      a.m(a); // calls A.m() with non-null instance.
 
       B b = new B();
       test(b); // calls B.m() with null.
-      b.m(b);  // calls B.m() with non-null instance
+      b.m(b); // calls B.m() with non-null instance
     }
 
     @NeverInline

@@ -135,10 +135,10 @@ public class InvokeVirtualNegativeTest extends TestBase {
   static class Main {
     public static void main(String... args) {
       A a = new A();
-      test(a);    // calls A.m() with "null".
+      test(a); // calls A.m() with "null".
       a.m("nul"); // calls A.m() with "nul".
       B b = new B();
-      test(b);    // calls B.m() with "null".
+      test(b); // calls B.m() with "null".
       b.m("nul"); // calls B.m() with "nul".
     }
 

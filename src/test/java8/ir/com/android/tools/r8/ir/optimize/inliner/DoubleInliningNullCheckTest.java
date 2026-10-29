@@ -52,7 +52,7 @@ public class DoubleInliningNullCheckTest extends TestBase {
 
   static class TestClass {
     public static void main(String... args) {
-      String[] array = new String[] { "1", "2", "3" };
+      String[] array = new String[] {"1", "2", "3"};
       System.out.println(ArrayUtil.contains(array, "3"));
     }
   }

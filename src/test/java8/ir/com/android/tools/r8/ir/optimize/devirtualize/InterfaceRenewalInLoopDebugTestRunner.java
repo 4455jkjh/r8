@@ -57,7 +57,9 @@ public class InterfaceRenewalInLoopDebugTestRunner extends DebugTestBase {
     verifyNotDevirtualized(methodSubject);
 
     DebugTestConfig config = result.debugConfig(parameters.getRuntime());
-    runDebugTest(config, MAIN.getCanonicalName(),
+    runDebugTest(
+        config,
+        MAIN.getCanonicalName(),
         breakpoint(MAIN.getCanonicalName(), "booRunner", 37),
         run(),
         // At line 37
@@ -108,5 +110,4 @@ public class InterfaceRenewalInLoopDebugTestRunner extends DebugTestBase {
         && method.proto.returnType.isVoidType()
         && method.name.toString().equals("foo");
   }
-
 }

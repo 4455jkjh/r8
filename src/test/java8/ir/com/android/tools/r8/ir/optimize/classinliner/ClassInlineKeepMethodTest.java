@@ -74,5 +74,4 @@ public class ClassInlineKeepMethodTest extends TestBase {
       new ShouldBeKept().shouldBeKept();
     }
   }
-
 }

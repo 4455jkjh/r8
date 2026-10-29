@@ -57,9 +57,12 @@ public class TestMain extends Super {
     Function<Integer, Integer> lambda = x -> x + 2;
     printInteger(lambda.apply(4));
 
-    List<Integer> list =  new ArrayList<>();
+    List<Integer> list = new ArrayList<>();
     list.add(5);
-    list.forEach(e -> { System.out.println(e + 2);});
+    list.forEach(
+        e -> {
+          System.out.println(e + 2);
+        });
 
     instanceInThisPackage.useSupplier(instanceInThisPackage::supplyNull);
     instanceInOtherPackage.useSupplier(instanceInOtherPackage::supplyNull);

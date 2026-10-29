@@ -106,12 +106,13 @@ public class B111893131 extends TestBase {
     ClassSubject classSubject = inspector.clazz(TestClass.class);
     assertThat(classSubject, isPresent());
     DexClass clazz = classSubject.getDexProgramClass();
-    clazz.forEachMethod(encodedMethod -> {
-      Code code = encodedMethod.getCode();
-      assertTrue(code.isDexCode());
-      DexCode dexCode = code.asDexCode();
-      verifyAbsenceOfStringBuilderAppend(dexCode.instructions);
-    });
+    clazz.forEachMethod(
+        encodedMethod -> {
+          Code code = encodedMethod.getCode();
+          assertTrue(code.isDexCode());
+          DexCode dexCode = code.asDexCode();
+          verifyAbsenceOfStringBuilderAppend(dexCode.instructions);
+        });
   }
 
   private void verifyAbsenceOfStringBuilderAppend(DexInstruction[] instructions) {

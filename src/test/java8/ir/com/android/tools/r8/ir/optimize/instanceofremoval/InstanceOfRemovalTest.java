@@ -55,7 +55,7 @@ public class InstanceOfRemovalTest extends TestBase {
     }
 
     public static A[] getAarrayForFoo() {
-      return new A[] { };
+      return new A[] {};
     }
 
     public static A getBForFoo() {
@@ -66,7 +66,9 @@ public class InstanceOfRemovalTest extends TestBase {
       return new B[0];
     }
 
-    public static A getNullForFoo() { return null; }
+    public static A getNullForFoo() {
+      return null;
+    }
 
     @NeverInline
     private static void bar() {
@@ -89,7 +91,7 @@ public class InstanceOfRemovalTest extends TestBase {
 
     @NeverInline
     public static A[] getAarrayForBar() {
-      return new A[] { new A(), new B() };
+      return new A[] {new A(), new B()};
     }
 
     @NeverInline

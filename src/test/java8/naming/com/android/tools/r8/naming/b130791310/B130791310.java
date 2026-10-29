@@ -81,11 +81,9 @@ public class B130791310 extends TestBase {
   private static final Class<?> MAIN = TestClass.class;
   private static final List<Class<?>> CLASSES =
       ImmutableList.of(MAIN, SomeLogic.class, SomeInterface.class, SomeClass.class);
-  private static final String RULES = StringUtils.lines(
-      "-keepnames class **.SomeLogic {",
-      "  **.SomeInterface someMethod(**.SomeClass);",
-      "}"
-  );
+  private static final String RULES =
+      StringUtils.lines(
+          "-keepnames class **.SomeLogic {", "  **.SomeInterface someMethod(**.SomeClass);", "}");
 
   private final boolean enableClassMerging;
   private final boolean onlyForceInlining;

@@ -58,14 +58,9 @@ class NameThenLengthTestClass {
 
 @RunWith(Parameterized.class)
 public class NameThenLengthTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "NameThenLengthTestClass",
-      "23",
-      "23",
-      "NameThenLengthTestClass",
-      "23",
-      "23"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          "NameThenLengthTestClass", "23", "23", "NameThenLengthTestClass", "23", "23");
   private static final Class<?> MAIN = NameThenLengthTestClass.class;
 
   @Parameterized.Parameters(name = "{0}")

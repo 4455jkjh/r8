@@ -117,16 +117,15 @@ public class ProguardMapReaderTest extends TestBase {
   @Test
   public void parseQuestionMarkMethod() throws IOException {
     // Regression test for b/120856784
-    String mapping =
-        "com.c.c.b -> com.c.c.b:\n" +
-            "    1287:1287:int ?(int,int) -> ?";
+    String mapping = "com.c.c.b -> com.c.c.b:\n" + "    1287:1287:int ?(int,int) -> ?";
     ClassNameMapper.mapperFromString(mapping);
 
     // From some other proguard generated map
-    mapping = "com.moat.analytics.mobile.cha.b -> com.moat.analytics.mobile.cha.b:\n"
-        + "    com.moat.analytics.mobile.cha.MoatAdEventType[] ? -> ?\n"
-        + "    java.util.HashMap ? -> ?\n"
-        + "    java.util.HashSet ?? -> ??\n";
+    mapping =
+        "com.moat.analytics.mobile.cha.b -> com.moat.analytics.mobile.cha.b:\n"
+            + "    com.moat.analytics.mobile.cha.MoatAdEventType[] ? -> ?\n"
+            + "    java.util.HashMap ? -> ?\n"
+            + "    java.util.HashSet ?? -> ??\n";
     ClassNameMapper.mapperFromString(mapping);
   }
 

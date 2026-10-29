@@ -134,10 +134,12 @@ public class TypeAnalysisTest extends SmaliTestBase {
             .method(
                 new MethodSignature("subtractConstants8bitRegisters", "int", ImmutableList.of()));
     IRCode irCode = subtractSubject.buildIR();
-    forEachOutValue(irCode, (v, l) -> {
-      // v9 <- 9 (INT_OR_FLOAT), which is never used later, hence imprecise.
-      assertEither(l, SINGLE, INT, NULL);
-    });
+    forEachOutValue(
+        irCode,
+        (v, l) -> {
+          // v9 <- 9 (INT_OR_FLOAT), which is never used later, hence imprecise.
+          assertEither(l, SINGLE, INT, NULL);
+        });
   }
 
   // A couple branches, along with some recursive calls.

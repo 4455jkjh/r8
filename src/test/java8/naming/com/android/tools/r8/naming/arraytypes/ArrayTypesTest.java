@@ -50,19 +50,20 @@ public class ArrayTypesTest extends TestBase {
             DescriptorUtils.getInternalNameFromJavaType(A.class.getTypeName()));
     arrayTypeDescriptor = "[" + arrayBaseTypeDescriptor;
     generatedTestClassName = packageName + "." + "GeneratedTestClass";
-    expectedOutput = StringUtils.lines(
-        "javac code:",
-        "Length: EQ",
-        "Hashcode: EQ",
-        "toString: EQ",
-        "ASM code:",
-        "Clones: NE",
-        "Hashcode: EQ",
-        "Compare with Object: true",
-        "Compare with array type: true",
-        "toString: true",
-        "Got expected exception",
-        "Done");
+    expectedOutput =
+        StringUtils.lines(
+            "javac code:",
+            "Length: EQ",
+            "Hashcode: EQ",
+            "toString: EQ",
+            "ASM code:",
+            "Clones: NE",
+            "Hashcode: EQ",
+            "Compare with Object: true",
+            "Compare with array type: true",
+            "toString: true",
+            "Got expected exception",
+            "Done");
   }
 
   private void runR8Test(boolean enableMinification) throws Exception {
@@ -92,9 +93,7 @@ public class ArrayTypesTest extends TestBase {
     // Rename the array type (keep it in the same package for access reasons).
     Path mappingFile = temp.newFile("mapping.txt").toPath();
     FileUtils.writeTextFile(
-        mappingFile,
-        StringUtils.lines(
-            A.class.getTypeName() + " -> " + packageName + ".a:"));
+        mappingFile, StringUtils.lines(A.class.getTypeName() + " -> " + packageName + ".a:"));
 
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class, A.class)
@@ -131,11 +130,13 @@ public class ArrayTypesTest extends TestBase {
         null);
 
     {
-      mv = classWriter.visitMethod(
-          Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
-          "test", "(" + arrayTypeDescriptor + ")V",
-          null,
-          null);
+      mv =
+          classWriter.visitMethod(
+              Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+              "test",
+              "(" + arrayTypeDescriptor + ")V",
+              null,
+              null);
 
       mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       mv.visitLdcInsn("ASM code:");
@@ -153,11 +154,14 @@ public class ArrayTypesTest extends TestBase {
           Opcodes.INVOKEVIRTUAL, arrayTypeDescriptor, "clone", "()Ljava/lang/Object;", false);
       mv.visitVarInsn(Opcodes.ASTORE, 2);
 
-      printCompareObjectsIdentical("Clones: ", mv, (mvCopy) -> {
-        assert mv == mvCopy;
-        mv.visitVarInsn(Opcodes.ALOAD, 1);
-        mv.visitVarInsn(Opcodes.ALOAD, 2);
-      });
+      printCompareObjectsIdentical(
+          "Clones: ",
+          mv,
+          (mvCopy) -> {
+            assert mv == mvCopy;
+            mv.visitVarInsn(Opcodes.ALOAD, 1);
+            mv.visitVarInsn(Opcodes.ALOAD, 2);
+          });
 
       printCompareIntegers(
           "Hashcode: ",
@@ -173,37 +177,66 @@ public class ArrayTypesTest extends TestBase {
                 Opcodes.INVOKEVIRTUAL, arrayTypeDescriptor, "hashCode", "()I", false);
           });
 
-      printBoolean("Compare with Object: ", mv, (mvCopy) -> {
-        assert mv == mvCopy;
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(
-            Opcodes.INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false);
-      });
+      printBoolean(
+          "Compare with Object: ",
+          mv,
+          (mvCopy) -> {
+            assert mv == mvCopy;
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "java/lang/Object",
+                "equals",
+                "(Ljava/lang/Object;)Z",
+                false);
+          });
 
-      printBoolean("Compare with array type: ", mv, (mvCopy) -> {
-        assert mv == mvCopy;
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(
-            Opcodes.INVOKEVIRTUAL, arrayTypeDescriptor, "equals", "(Ljava/lang/Object;)Z", false);
-      });
+      printBoolean(
+          "Compare with array type: ",
+          mv,
+          (mvCopy) -> {
+            assert mv == mvCopy;
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                arrayTypeDescriptor,
+                "equals",
+                "(Ljava/lang/Object;)Z",
+                false);
+          });
 
-      printBoolean("toString: ", mv, (mvCopy) -> {
-        assert mv == mvCopy;
-        // Invoke toString using both java.lang.Object and array type an holder.
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(
-            Opcodes.INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false);
+      printBoolean(
+          "toString: ",
+          mv,
+          (mvCopy) -> {
+            assert mv == mvCopy;
+            // Invoke toString using both java.lang.Object and array type an holder.
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "java/lang/Object",
+                "toString",
+                "()Ljava/lang/String;",
+                false);
 
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(
-            Opcodes.INVOKEVIRTUAL, arrayTypeDescriptor, "toString", "()Ljava/lang/String;", false);
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                arrayTypeDescriptor,
+                "toString",
+                "()Ljava/lang/String;",
+                false);
 
-        // Compare the toString strings.
-        mv.visitMethodInsn(
-            Opcodes.INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false);
-      });
+            // Compare the toString strings.
+            mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "java/lang/Object",
+                "equals",
+                "(Ljava/lang/Object;)Z",
+                false);
+          });
 
       // Finally invoke a method not present on an array type.
       mv.visitVarInsn(Opcodes.ALOAD, 0);
@@ -290,9 +323,7 @@ public class ArrayTypesTest extends TestBase {
   }
 }
 
-class A {
-
-}
+class A {}
 
 class Main {
 
@@ -318,7 +349,7 @@ class Main {
         Class.forName(Main.class.getPackage().getName() + "." + "GeneratedTestClass");
     Method testMethod = generatedTestClass.getDeclaredMethod("test", array.getClass());
     try {
-      testMethod.invoke(null, new Object[]{array});
+      testMethod.invoke(null, new Object[] {array});
     } catch (java.lang.reflect.InvocationTargetException e) {
       System.out.println("Got expected exception");
     }

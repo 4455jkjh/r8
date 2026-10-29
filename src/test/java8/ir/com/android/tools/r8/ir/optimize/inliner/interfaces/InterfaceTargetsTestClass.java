@@ -29,12 +29,10 @@ public class InterfaceTargetsTestClass {
   }
 
   public static class BaseA {
-    public void foo() {
-    }
+    public void foo() {}
   }
 
-  public static class DerivedA extends BaseA implements IfaceA {
-  }
+  public static class DerivedA extends BaseA implements IfaceA {}
 
   public static String testInterfaceA(IfaceA iface) {
     if (iface != null) {
@@ -47,12 +45,10 @@ public class InterfaceTargetsTestClass {
     void foo();
   }
 
-  public abstract static class BaseB implements IfaceB {
-  }
+  public abstract static class BaseB implements IfaceB {}
 
   public static class DerivedB extends BaseB {
-    public void foo() {
-    }
+    public void foo() {}
   }
 
   public static String testInterfaceB(IfaceB iface) {
@@ -67,15 +63,12 @@ public class InterfaceTargetsTestClass {
   }
 
   public interface IfaceC2 extends IfaceC {
-    default void foo() {
-    }
+    default void foo() {}
   }
 
-  public abstract static class BaseC implements IfaceC {
-  }
+  public abstract static class BaseC implements IfaceC {}
 
-  public static class DerivedC extends BaseC implements IfaceC2 {
-  }
+  public static class DerivedC extends BaseC implements IfaceC2 {}
 
   public static String testInterfaceC(IfaceC iface) {
     if (iface != null) {
@@ -89,8 +82,7 @@ public class InterfaceTargetsTestClass {
   }
 
   public static class BaseD implements IfaceD {
-    public void foo() {
-    }
+    public void foo() {}
   }
 
   public static String testInterfaceD(IfaceD iface) {

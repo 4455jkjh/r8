@@ -79,11 +79,7 @@ class StringInMonitorTestMain {
 @RunWith(Parameterized.class)
 public class StringInMonitorTest extends TestBase {
   private static final Class<?> MAIN = StringInMonitorTestMain.class;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "1st sync",
-      "oom",
-      "2nd sync"
-  );
+  private static final String JAVA_OUTPUT = StringUtils.lines("1st sync", "oom", "2nd sync");
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -113,8 +109,11 @@ public class StringInMonitorTest extends TestBase {
     MethodSubject mainMethod = mainClass.mainMethod();
     assertThat(mainMethod, isPresent());
 
-    long count = Streams.stream(mainMethod.iterateInstructions(
-        i -> i.isConstString("1st sync", JumboStringMode.ALLOW))).count();
+    long count =
+        Streams.stream(
+                mainMethod.iterateInstructions(
+                    i -> i.isConstString("1st sync", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedConstStringCount1, count);
 
     // TODO(b/122302789): CfInstruction#getOffset()
@@ -142,8 +141,9 @@ public class StringInMonitorTest extends TestBase {
 
     MethodSubject sync = mainClass.uniqueMethodWithOriginalName("sync");
     assertThat(sync, isPresent());
-    count = Streams.stream(sync.iterateInstructions(
-        i -> i.isConstString("", JumboStringMode.ALLOW))).count();
+    count =
+        Streams.stream(sync.iterateInstructions(i -> i.isConstString("", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedConstStringCount2, count);
 
     // In CF, we don't explicitly add monitor-{enter|exit} and catch-all for synchronized methods.
@@ -170,8 +170,11 @@ public class StringInMonitorTest extends TestBase {
 
     MethodSubject oom = mainClass.uniqueMethodWithOriginalName("oom");
     assertThat(oom, isPresent());
-    count = Streams.stream(oom.iterateInstructions(
-        i -> i.isConstString("this-string-will-not-be-loaded.", JumboStringMode.ALLOW))).count();
+    count =
+        Streams.stream(
+                oom.iterateInstructions(
+                    i -> i.isConstString("this-string-will-not-be-loaded.", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedConstStringCount3, count);
   }
 
@@ -213,5 +216,4 @@ public class StringInMonitorTest extends TestBase {
     int expectedConstStringCount3 = parameters.isCfRuntime() ? 2 : 1;
     test(result, 2, 2, expectedConstStringCount3);
   }
-
 }

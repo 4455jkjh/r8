@@ -52,12 +52,14 @@ public class StringBuilderStoredToDeadFieldTest extends TestBase {
     assertThat(main, isPresent());
 
     assertTrue(
-        mainMethod.streamInstructions().noneMatch(
-            i -> i.isInvoke()
-                && i.getMethod().holder.toDescriptorString().contains("StringBuilder")));
+        mainMethod
+            .streamInstructions()
+            .noneMatch(
+                i ->
+                    i.isInvoke()
+                        && i.getMethod().holder.toDescriptorString().contains("StringBuilder")));
     assertTrue(
-        mainMethod.streamInstructions().noneMatch(
-            i -> i.isConstString(JumboStringMode.ALLOW)));
+        mainMethod.streamInstructions().noneMatch(i -> i.isConstString(JumboStringMode.ALLOW)));
   }
 
   static class TestClass {

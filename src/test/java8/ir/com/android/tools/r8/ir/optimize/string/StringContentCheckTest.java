@@ -27,70 +27,70 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class StringContentCheckTest extends TestBase {
   private static final String STRING_DESCRIPTOR = "Ljava/lang/String;";
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      // s1, contains(String)
-      "true",
-      // s1, startsWith(String)
-      "true",
-      // s1, endsWith(String)
-      "true",
-      // s1, equals(String)
-      "true",
-      // s1, equalsIgnoreCase(String)
-      "true",
-      // s1, contentEquals(CharSequence)
-      "true",
-      // s1, contentEquals(StringBuffer)
-      "true",
-      // s1, indexOf(int)
-      "3",
-      // s1, indexOf(String)
-      "4",
-      // s1, lastIndexOf(int)
-      "16",
-      // s1, lastIndexOf(String)
-      "17",
-      // s1, compareTo(String)
-      "true",
-      // s1, compareToIgnoreCase(String)
-      "true",
-      // s1, substring(int)
-      "prefix",
-      // s1, substring(int, int)
-      "suffix",
-      // s1, substring(int, int)
-      "-suffix",
-      // s2, contains(String)
-      "false",
-      // s2, startsWith(String)
-      "false",
-      // s2, endsWith(String)
-      "false",
-      // s2, equals(String)
-      "false",
-      // s2, equalsIgnoreCase(String)
-      "false",
-      // s2, contentEquals(CharSequence)
-      "false",
-      // s2, contentEquals(StringBuffer)
-      "false",
-      // s2, indexOf(int)
-      "-1",
-      // s2, indexOf(String)
-      "-1",
-      // s2, lastIndexOf(int)
-      "-1",
-      // s2, lastIndexOf(String)
-      "-1",
-      // s2, compareTo(String)
-      "false",
-      // s2, compareToIgnoreCase(String)
-      "false",
-      // s2, substring(int, int)
-      "SUFFIX",
-      // argCouldBeNull
-      "false"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          // s1, contains(String)
+          "true",
+          // s1, startsWith(String)
+          "true",
+          // s1, endsWith(String)
+          "true",
+          // s1, equals(String)
+          "true",
+          // s1, equalsIgnoreCase(String)
+          "true",
+          // s1, contentEquals(CharSequence)
+          "true",
+          // s1, contentEquals(StringBuffer)
+          "true",
+          // s1, indexOf(int)
+          "3",
+          // s1, indexOf(String)
+          "4",
+          // s1, lastIndexOf(int)
+          "16",
+          // s1, lastIndexOf(String)
+          "17",
+          // s1, compareTo(String)
+          "true",
+          // s1, compareToIgnoreCase(String)
+          "true",
+          // s1, substring(int)
+          "prefix",
+          // s1, substring(int, int)
+          "suffix",
+          // s1, substring(int, int)
+          "-suffix",
+          // s2, contains(String)
+          "false",
+          // s2, startsWith(String)
+          "false",
+          // s2, endsWith(String)
+          "false",
+          // s2, equals(String)
+          "false",
+          // s2, equalsIgnoreCase(String)
+          "false",
+          // s2, contentEquals(CharSequence)
+          "false",
+          // s2, contentEquals(StringBuffer)
+          "false",
+          // s2, indexOf(int)
+          "-1",
+          // s2, indexOf(String)
+          "-1",
+          // s2, lastIndexOf(int)
+          "-1",
+          // s2, lastIndexOf(String)
+          "-1",
+          // s2, compareTo(String)
+          "false",
+          // s2, compareToIgnoreCase(String)
+          "false",
+          // s2, substring(int, int)
+          "SUFFIX",
+          // argCouldBeNull
+          "false");
   private static final Class<?> MAIN = TestClass.class;
 
   @Parameters(name = "{0}")
@@ -129,12 +129,16 @@ public class StringContentCheckTest extends TestBase {
   }
 
   private long countStringContentChecker(MethodSubject method) {
-    return method.streamInstructions().filter(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return isStringContentChecker(instructionSubject.getMethod());
-      }
-      return false;
-    }).count();
+    return method
+        .streamInstructions()
+        .filter(
+            instructionSubject -> {
+              if (instructionSubject.isInvoke()) {
+                return isStringContentChecker(instructionSubject.getMethod());
+              }
+              return false;
+            })
+        .count();
   }
 
   private void test(TestRunResult<?> result, int expectedStringContentCheckerCount)

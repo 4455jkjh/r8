@@ -75,4 +75,3 @@ public class TrivialTestClass {
     System.out.println(SimpleWithLazyInit.getInstance().bar(next()));
   }
 }
-

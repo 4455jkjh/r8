@@ -75,8 +75,13 @@ public class InvalidRootsTestClass {
 
   @KeepConstantArguments
   private void neverReturnsNormallyExtra(String prefix, NeverReturnsNormally a) {
-    throw new RuntimeException("neverReturnsNormallyExtra(" +
-        prefix + ", " + (a == null ? "null" : a.foo()) + "): " + next());
+    throw new RuntimeException(
+        "neverReturnsNormallyExtra("
+            + prefix
+            + ", "
+            + (a == null ? "null" : a.foo())
+            + "): "
+            + next());
   }
 
   @NoHorizontalClassMerging
@@ -111,8 +116,8 @@ public class InvalidRootsTestClass {
   }
 
   private void notInlinedExtraMethod(String prefix, A a) {
-    System.out.println("notInlinedExtraMethod(" +
-        prefix + ", " + (a == null ? "null" : a.foo()) + "): " + next());
+    System.out.println(
+        "notInlinedExtraMethod(" + prefix + ", " + (a == null ? "null" : a.foo()) + "): " + next());
     if (a != null) {
       throw new RuntimeException(
           "notInlinedExtraMethod(" + prefix + ", " + a.foo() + "): " + next());

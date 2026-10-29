@@ -10,10 +10,10 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject.JumboStringMode;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,9 +79,12 @@ public class StringSwitchCaseRemovalWithCompileTimeHashCodeTest extends TestBase
   static class TestClass {
     private static String test(String input) {
       switch (input) {
-        case "foo": return "FOO";
-        case "bar": return "BAR";
-        default: return "UNKNOWN";
+        case "foo":
+          return "FOO";
+        case "bar":
+          return "BAR";
+        default:
+          return "UNKNOWN";
       }
     }
 

@@ -57,19 +57,27 @@ public class ForNameRenamingTest extends TestBase {
     assertThat(mainMethod, isPresent());
 
     assertTrue(
-        mainMethod.streamInstructions()
-            .noneMatch(i -> i.isConstString(
-                "com.android.tools.r8.naming.ForNameRenamingTest$Boo", JumboStringMode.ALLOW)));
+        mainMethod
+            .streamInstructions()
+            .noneMatch(
+                i ->
+                    i.isConstString(
+                        "com.android.tools.r8.naming.ForNameRenamingTest$Boo",
+                        JumboStringMode.ALLOW)));
     assertTrue(
-        mainMethod.streamInstructions()
+        mainMethod
+            .streamInstructions()
             .anyMatch(i -> i.isConstString(boo.getFinalName(), JumboStringMode.ALLOW)));
   }
 
   static class Main {
     public static void main(String... args) throws Exception {
       Class<?> a = Class.forName("com.android.tools.r8.naming.ForNameRenamingTest$Boo");
-      Class<?> b = Class.forName(
-          "com.android.tools.r8.naming.ForNameRenamingTest$Boo", true, Boo.class.getClassLoader());
+      Class<?> b =
+          Class.forName(
+              "com.android.tools.r8.naming.ForNameRenamingTest$Boo",
+              true,
+              Boo.class.getClassLoader());
       System.out.println(a.getSimpleName().equals(b.getSimpleName()));
     }
   }

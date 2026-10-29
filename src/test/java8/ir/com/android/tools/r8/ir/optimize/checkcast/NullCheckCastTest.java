@@ -28,11 +28,9 @@ class NullCheckCastTestMain {
   }
 }
 
-class Base {
-}
+class Base {}
 
-class SubClass extends Base {
-}
+class SubClass extends Base {}
 
 @RunWith(Parameterized.class)
 public class NullCheckCastTest extends TestBase {
@@ -74,8 +72,9 @@ public class NullCheckCastTest extends TestBase {
     assertThat(mainMethod, isPresent());
 
     // Check if the check-cast is gone.
-    assertTrue(Streams.stream(mainMethod.iterateInstructions())
-        .noneMatch(InstructionSubject::isCheckCast));
+    assertTrue(
+        Streams.stream(mainMethod.iterateInstructions())
+            .noneMatch(InstructionSubject::isCheckCast));
 
     // As check-cast is gone, other types can be discarded, too.
     ClassSubject classSubject = inspector.clazz(Base.class);
@@ -83,5 +82,4 @@ public class NullCheckCastTest extends TestBase {
     classSubject = inspector.clazz(SubClass.class);
     assertThat(classSubject, not(isPresent()));
   }
-
 }

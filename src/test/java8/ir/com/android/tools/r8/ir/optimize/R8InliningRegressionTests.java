@@ -81,5 +81,4 @@ public class R8InliningRegressionTests extends TestBase {
     }
     assertEquals("JVM and ART output differ", javaResult.stdout, artOutput);
   }
-
 }

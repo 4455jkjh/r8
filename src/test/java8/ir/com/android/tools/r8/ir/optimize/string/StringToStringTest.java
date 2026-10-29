@@ -27,10 +27,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class StringToStringTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "constant-x",
-      "R8"
-  );
+  private static final String JAVA_OUTPUT = StringUtils.lines("constant-x", "R8");
   private static final Class<?> MAIN = TestClass.class;
   private static final String STRING_DESCRIPTOR = "Ljava/lang/String;";
 
@@ -59,12 +56,16 @@ public class StringToStringTest extends TestBase {
   }
 
   private long countStringToString(MethodSubject method) {
-    return method.streamInstructions().filter(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return isStringToString(instructionSubject.getMethod());
-      }
-      return false;
-    }).count();
+    return method
+        .streamInstructions()
+        .filter(
+            instructionSubject -> {
+              if (instructionSubject.isInvoke()) {
+                return isStringToString(instructionSubject.getMethod());
+              }
+              return false;
+            })
+        .count();
   }
 
   private void test(TestRunResult<?> result, int expectedStringToStringCount) throws Exception {

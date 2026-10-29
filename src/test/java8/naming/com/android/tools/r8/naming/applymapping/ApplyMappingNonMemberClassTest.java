@@ -18,15 +18,17 @@ public class ApplyMappingNonMemberClassTest extends TestBase {
   static class Enclosing {
     @NeverInline
     void foo() {
-      Runnable r = new Runnable() {
-        @Override
-        public void run() {
-          System.out.println("Anonymous run");
-        }
-      };
+      Runnable r =
+          new Runnable() {
+            @Override
+            public void run() {
+              System.out.println("Anonymous run");
+            }
+          };
 
       class Local {
         Runnable r;
+
         Local(Runnable r) {
           this.r = r;
         }
@@ -46,13 +48,13 @@ public class ApplyMappingNonMemberClassTest extends TestBase {
     }
   }
 
-  private static final String pgMap = StringUtils.lines(
-      Enclosing.class.getName() + " -> a:",
-      Enclosing.class.getName() + "$1 -> a$1:",
-      Enclosing.class.getName() + "$1Local -> a$a:",
-      "  void run() -> a",
-      C.class.getName() + " -> Main:"
-  );
+  private static final String pgMap =
+      StringUtils.lines(
+          Enclosing.class.getName() + " -> a:",
+          Enclosing.class.getName() + "$1 -> a$1:",
+          Enclosing.class.getName() + "$1Local -> a$a:",
+          "  void run() -> a",
+          C.class.getName() + " -> Main:");
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {

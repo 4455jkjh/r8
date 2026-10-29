@@ -75,9 +75,11 @@ public class InvokeStaticWithNullOutvalueTest extends TestBase {
       assertThat(oo, isPresent());
       assertTrue(oo.isStatic());
       assertTrue(
-          oo.streamInstructions().anyMatch(
-              i -> i.isInvokeVirtual()
-                  && i.getMethod().toSourceString().contains("PrintStream.println")));
+          oo.streamInstructions()
+              .anyMatch(
+                  i ->
+                      i.isInvokeVirtual()
+                          && i.getMethod().toSourceString().contains("PrintStream.println")));
     }
   }
 

@@ -36,8 +36,7 @@ public class BasicBlockIteratorTest extends SmaliTestBase {
     return getTestParameters().withNoneRuntime().build();
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   public BasicBlockIteratorTest(TestParameters parameters) {
     parameters.assertNoneRuntime();
@@ -46,24 +45,22 @@ public class BasicBlockIteratorTest extends SmaliTestBase {
   /**
    * Simple test IR, which has three blocks:
    *
-   * First block: Argument instructions
-   * Second block: Add instruction
-   * Third block: Return instruction
-   *
+   * <p>First block: Argument instructions Second block: Add instruction Third block: Return
+   * instruction
    */
   IRCode simpleCode() throws Exception {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
     String returnType = "int";
     List<String> parameters = ImmutableList.of("int", "int");
-    MethodSignature signature = builder.addStaticMethod(
-        returnType,
-        DEFAULT_METHOD_NAME,
-        parameters,
-        1,
-        "    add-int             v0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            returnType,
+            DEFAULT_METHOD_NAME,
+            parameters,
+            1,
+            "    add-int             v0, p0, p1",
+            "    return              p0");
 
     AndroidApp application = buildApplication(builder);
     InternalOptions options = new InternalOptions();

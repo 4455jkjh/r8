@@ -62,7 +62,8 @@ public class DeterminismAnalysisTest extends AnalysisTestBase {
 
   private Consumer<IRCode> checkAnalysisResult(boolean expectedResult) {
     return code -> {
-      assertEquals(expectedResult,
+      assertEquals(
+          expectedResult,
           DeterminismAnalysis.returnValueOnlyDependsOnArguments(appView.withLiveness(), code));
     };
   }

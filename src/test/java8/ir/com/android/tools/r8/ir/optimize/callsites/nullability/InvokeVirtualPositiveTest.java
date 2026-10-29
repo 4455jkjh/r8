@@ -136,10 +136,10 @@ public class InvokeVirtualPositiveTest extends TestBase {
   static class Main {
     public static void main(String... args) {
       A a = System.currentTimeMillis() > 0 ? new A() : new B();
-      a.m(a);  // calls A.m() with non-null instance.
+      a.m(a); // calls A.m() with non-null instance.
 
-      A b = new B();  // with the exact type:
-      b.m(null);      // calls B.m() with null.
+      A b = new B(); // with the exact type:
+      b.m(null); // calls B.m() with null.
     }
   }
 }

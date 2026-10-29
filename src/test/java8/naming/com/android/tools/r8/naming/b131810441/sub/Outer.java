@@ -9,12 +9,13 @@ public class Outer {
   private Runnable runner;
 
   private Outer(int x) {
-    runner = new Runnable() {
-      @Override
-      public void run() {
-        System.out.println("Outer#<init>(" + x + ")");
-      }
-    };
+    runner =
+        new Runnable() {
+          @Override
+          public void run() {
+            System.out.println("Outer#<init>(" + x + ")");
+          }
+        };
   }
 
   public static Outer create(int x) {

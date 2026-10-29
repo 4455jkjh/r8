@@ -26,8 +26,7 @@ public class FieldUpdater {
 
     Random random = new Random();
     int next = random.nextInt();
-    AtomicIntegerFieldUpdater f1Updater =
-        AtomicIntegerFieldUpdater.newUpdater(A.class, "f1");
+    AtomicIntegerFieldUpdater f1Updater = AtomicIntegerFieldUpdater.newUpdater(A.class, "f1");
     f1Updater.set(a, next);
     B viaF3 = a.f3;
     viaF3.f1 = next;

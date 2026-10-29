@@ -80,8 +80,8 @@ public class UnusedArgumentsMixedWidthTest extends UnusedArgumentsTestBase {
           Assert.assertTrue(
               method.getFinalName().equals("main")
                   || (method.getFinalSignature().parameters.length == 1
-                  && (method.getFinalSignature().parameters[0].equals("int")
-                      || method.getFinalSignature().parameters[0].equals("long"))));
+                      && (method.getFinalSignature().parameters[0].equals("int")
+                          || method.getFinalSignature().parameters[0].equals("long"))));
         });
   }
 }

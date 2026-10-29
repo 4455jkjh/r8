@@ -50,8 +50,9 @@ public class MemberValuePropagationTest extends TestBase {
     clazz.forAllMethods(
         methodSubject -> {
           assertTrue(
-              methodSubject.streamInstructions().noneMatch(
-                  i -> i.isInstancePut() || i.isStaticPut()));
+              methodSubject
+                  .streamInstructions()
+                  .noneMatch(i -> i.isInstancePut() || i.isStaticPut()));
         });
   }
 

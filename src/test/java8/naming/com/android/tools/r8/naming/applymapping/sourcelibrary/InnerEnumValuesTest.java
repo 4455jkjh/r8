@@ -27,8 +27,8 @@ public class InnerEnumValuesTest extends TestBase {
 
   private static final Class<?> MAIN = TestApp.class;
   private static final String RENAMED_NAME = "x.y.z$ie";
-  private static final String EXPECTED_OUTPUT = StringUtils.lines(
-      "STATE_A", "STATE_B", "STATE_A", "STATE_B");
+  private static final String EXPECTED_OUTPUT =
+      StringUtils.lines("STATE_A", "STATE_B", "STATE_A", "STATE_B");
 
   private static Path mappingFile;
   private final TestParameters parameters;
@@ -63,15 +63,15 @@ public class InnerEnumValuesTest extends TestBase {
 
   @Test
   public void b124177369() throws Exception {
-    CodeInspector inspector = testForR8(parameters.getBackend())
-        .addProgramClassesAndInnerClasses(
-            Outer.class)
-        .addProgramClasses(MAIN)
-        .addKeepMainRule(MAIN)
-        .addKeepRules("-applymapping " + mappingFile.toAbsolutePath())
-        .run(parameters.getRuntime(), MAIN)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT)
-        .inspector();
+    CodeInspector inspector =
+        testForR8(parameters.getBackend())
+            .addProgramClassesAndInnerClasses(Outer.class)
+            .addProgramClasses(MAIN)
+            .addKeepMainRule(MAIN)
+            .addKeepRules("-applymapping " + mappingFile.toAbsolutePath())
+            .run(parameters.getRuntime(), MAIN)
+            .assertSuccessWithOutput(EXPECTED_OUTPUT)
+            .inspector();
     ClassSubject enumSubject = inspector.clazz(RENAMED_NAME);
     assertThat(enumSubject, isPresent());
     FieldSubject fieldX = enumSubject.uniqueFieldWithOriginalName("STATE_A");

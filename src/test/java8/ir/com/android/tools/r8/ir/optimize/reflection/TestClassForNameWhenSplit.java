@@ -26,7 +26,7 @@ public class TestClassForNameWhenSplit extends ReflectionOptimizerTestBase {
   private final TestParameters parameters;
   private final String EXPECTED = "caught";
 
-  @Parameters(name="{0}")
+  @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters().withDexRuntimes().withAllApiLevels().build();
   }
@@ -88,7 +88,8 @@ public class TestClassForNameWhenSplit extends ReflectionOptimizerTestBase {
       try {
         // Ensure clinit has been assumed triggered
         new Foobar();
-      } catch (NoClassDefFoundError e) { }
+      } catch (NoClassDefFoundError e) {
+      }
       // It is not valid to replace this with just classForName, even if we see that there is only
       // a trivial clinit or the fact that we have already triggered it above.
       Class<?> foobar =

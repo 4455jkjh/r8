@@ -56,9 +56,11 @@ public class CompanionAsArgumentTest extends TestBase {
     MethodSubject foo = companion.uniqueMethodWithOriginalName("foo");
     assertThat(foo, isPresent());
     assertTrue(
-        foo.streamInstructions().anyMatch(
-            i -> i.isInvokeVirtual()
-                && i.getMethod().toSourceString().contains("PrintStream.println")));
+        foo.streamInstructions()
+            .anyMatch(
+                i ->
+                    i.isInvokeVirtual()
+                        && i.getMethod().toSourceString().contains("PrintStream.println")));
 
     // Nothing migrated from Companion to Host.
     ClassSubject host = inspector.clazz(Host.class);

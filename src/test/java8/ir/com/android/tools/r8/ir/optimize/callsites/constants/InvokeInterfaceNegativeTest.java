@@ -100,8 +100,8 @@ public class InvokeInterfaceNegativeTest extends TestBase {
   static class Main {
     public static void main(String... args) {
       I i = new A();
-      i.m("null");  // calls A.m() with "null".
-      i.m("nul");   // calls A.m() with "nul".
+      i.m("null"); // calls A.m() with "null".
+      i.m("nul"); // calls A.m() with "nul".
     }
   }
 }

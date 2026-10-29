@@ -20,8 +20,8 @@ public class C {
     }
   }
 
-  public final static class F {
-    public final static F I = new F();
+  public static final class F {
+    public static final F I = new F();
 
     public int getX() {
       return 123;

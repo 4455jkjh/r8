@@ -122,12 +122,13 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
           inspector.clazz(invokedMethod.holder.toSourceString());
       assertThat(invokedMethodHolderSubject, isPresent());
       assertEquals(minification, invokedMethodHolderSubject.isRenamed());
-      MethodSubject invokedMethodSubject = invokedMethodHolderSubject.method(
-          invokedMethod.proto.returnType.toSourceString(),
-          invokedMethod.name.toString(),
-          Arrays.stream(invokedMethod.proto.parameters.values)
-              .map(DexType::toSourceString)
-              .collect(Collectors.toList()));
+      MethodSubject invokedMethodSubject =
+          invokedMethodHolderSubject.method(
+              invokedMethod.proto.returnType.toSourceString(),
+              invokedMethod.name.toString(),
+              Arrays.stream(invokedMethod.proto.parameters.values)
+                  .map(DexType::toSourceString)
+                  .collect(Collectors.toList()));
       assertThat(invokedMethodSubject, isPresent());
       assertEquals(minification, invokedMethodSubject.isRenamed());
       if (invokedMethodSubject.getOriginalMethodName().startsWith("check")
@@ -145,7 +146,8 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
       TestKotlinClass testMain,
       String targetClassName,
       String targetFieldName,
-      String targetMethodName) throws Exception {
+      String targetMethodName)
+      throws Exception {
     String mainClassName = testMain.getClassName();
     TestRunResult<?> result =
         testForR8(Backend.DEX)
@@ -190,9 +192,10 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
     }
 
     targetClassName = FOLDER + "." + targetClassName;
-    ClassSubject clazz = minification
-        ? checkClassIsRenamed(codeInspector, targetClassName)
-        : checkClassIsNotRenamed(codeInspector, targetClassName);
+    ClassSubject clazz =
+        minification
+            ? checkClassIsRenamed(codeInspector, targetClassName)
+            : checkClassIsNotRenamed(codeInspector, targetClassName);
     if (minification) {
       checkFieldIsRenamed(clazz, targetFieldName);
       checkMethodIsRenamed(clazz, targetMethodName);
@@ -201,5 +204,4 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
       checkMethodIsNotRenamed(clazz, targetMethodName);
     }
   }
-
 }

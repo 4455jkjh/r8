@@ -40,7 +40,7 @@ public class B87341268 extends TestBase {
 
 class TestClassForB87341268 {
   int loop(String arg) {
-    long[] array = { 0L, 1L, 2L };
+    long[] array = {0L, 1L, 2L};
     int length = -1;
     while (true) {
       try {

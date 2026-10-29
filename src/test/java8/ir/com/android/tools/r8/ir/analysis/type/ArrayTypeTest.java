@@ -50,8 +50,7 @@ public class ArrayTypeTest extends AnalysisTestBase {
   @Test
   public void testJoinOfArraysForPrimitivesSmallerThanInt() {
     buildAndCheckIR(
-        "joinOfArraysForPrimitivesSmallerThanInt",
-        joinOfArraysForPrimitivesSmallerThanInt());
+        "joinOfArraysForPrimitivesSmallerThanInt", joinOfArraysForPrimitivesSmallerThanInt());
   }
 
   private static Consumer<IRCode> arrayTestInspector() {

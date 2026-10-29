@@ -56,8 +56,8 @@ public abstract class AnalysisTestBase extends TestBase {
     this(parameters, mainClass.getTypeName(), classes);
   }
 
-  public AnalysisTestBase(
-      TestParameters parameters, String mainClassName, Class<?>... classes) throws Exception {
+  public AnalysisTestBase(TestParameters parameters, String mainClassName, Class<?>... classes)
+      throws Exception {
     if (parameters.isCfRuntime()) {
       this.app =
           buildClassesWithTestingAnnotations(classes)

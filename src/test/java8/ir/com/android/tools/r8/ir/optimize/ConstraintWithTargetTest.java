@@ -63,21 +63,16 @@ public class ConstraintWithTargetTest extends TestBase {
 
   @Test
   public void meetNeverIsNever() {
-    assertEquals(never(),
-        meet(never(), always()));
-    assertEquals(never(),
-        meet(always(), never()));
-    assertEquals(never(),
-        meet(never(), element(Constraint.SAMECLASS, factory.objectType)));
+    assertEquals(never(), meet(never(), always()));
+    assertEquals(never(), meet(always(), never()));
+    assertEquals(never(), meet(never(), element(Constraint.SAMECLASS, factory.objectType)));
   }
 
   @Test
   public void meetAlwaysIsUnit() {
     ConstraintWithTarget o = element(Constraint.SUBCLASS, factory.objectType);
-    assertEquals(o,
-        meet(always(), o));
-    assertEquals(o,
-        meet(o, always()));
+    assertEquals(o, meet(always(), o));
+    assertEquals(o, meet(o, always()));
   }
 
   @Test
@@ -86,12 +81,9 @@ public class ConstraintWithTargetTest extends TestBase {
     ConstraintWithTarget c0 = element(Constraint.SAMECLASS, s);
     ConstraintWithTarget c1 = element(Constraint.PACKAGE, s);
     ConstraintWithTarget c2 = element(Constraint.SUBCLASS, s);
-    assertEquals(c0,
-        meet(c1, c0));
-    assertEquals(c0,
-        meet(c0, c2));
-    assertEquals(c1,
-        meet(c2, c1));
+    assertEquals(c0, meet(c1, c0));
+    assertEquals(c0, meet(c0, c2));
+    assertEquals(c1, meet(c2, c1));
   }
 
   @Test
@@ -100,51 +92,36 @@ public class ConstraintWithTargetTest extends TestBase {
     DexType b = factory.createType("Ljava/lang/StringBuilder;");
     ConstraintWithTarget c1 = element(Constraint.SAMECLASS, s);
     ConstraintWithTarget c2 = element(Constraint.SAMECLASS, b);
-    assertEquals(never(),
-        meet(c1, c2));
+    assertEquals(never(), meet(c1, c2));
 
     ConstraintWithTarget c0 = element(Constraint.PACKAGE, factory.objectType);
-    assertEquals(c1,
-        meet(c0, c1));
-    assertEquals(c2,
-        meet(c0, c2));
+    assertEquals(c1, meet(c0, c1));
+    assertEquals(c2, meet(c0, c2));
 
     c0 = element(Constraint.SUBCLASS, factory.objectType);
-    assertEquals(c1,
-        meet(c0, c1));
-    assertEquals(c2,
-        meet(c0, c2));
+    assertEquals(c1, meet(c0, c1));
+    assertEquals(c2, meet(c0, c2));
 
     c1 = element(Constraint.PACKAGE, s);
     c2 = element(Constraint.PACKAGE, b);
-    assertEquals(c1,
-        meet(c0, c1));
-    assertEquals(c2,
-        meet(c0, c2));
-    assertEquals(c1,
-        meet(c1, c2));
-    assertEquals(c2,
-        meet(c2, c1));
+    assertEquals(c1, meet(c0, c1));
+    assertEquals(c2, meet(c0, c2));
+    assertEquals(c1, meet(c1, c2));
+    assertEquals(c2, meet(c2, c1));
 
     DexType t = factory.createType("Ljava/lang/reflect/Type;");
     DexType c = factory.createType("Ljava/lang/Class;");
     c1 = element(Constraint.SUBCLASS, t);
     c2 = element(Constraint.SUBCLASS, c);
-    assertEquals(c2,
-        meet(c1, c2));
-    assertEquals(c2,
-        meet(c2, c1));
+    assertEquals(c2, meet(c1, c2));
+    assertEquals(c2, meet(c2, c1));
   }
-
 
   @Test
   public void b111080693() {
-    ConstraintWithTarget c1 =
-        element(Constraint.SUBCLASS, factory.createType("Ljava/lang/Class;"));
+    ConstraintWithTarget c1 = element(Constraint.SUBCLASS, factory.createType("Ljava/lang/Class;"));
     ConstraintWithTarget c2 =
         element(Constraint.PACKAGE, factory.createType("Ljava/lang/reflect/Type;"));
-    assertEquals(never(),
-        meet(c1, c2));
+    assertEquals(never(), meet(c1, c2));
   }
-
 }

@@ -53,11 +53,10 @@ public class InvokeStaticPositiveTest extends TestBase {
     ClassSubject main = inspector.clazz(MAIN);
     assertThat(main, isPresent());
 
-      // Verify that the "nul" argument has been propagated to the test() method.
-      MethodSubject mainMethodSubject = main.mainMethod();
-      assertThat(mainMethodSubject, isPresent());
-      assertTrue(
-          mainMethodSubject.streamInstructions().noneMatch(InstructionSubject::isConstString));
+    // Verify that the "nul" argument has been propagated to the test() method.
+    MethodSubject mainMethodSubject = main.mainMethod();
+    assertThat(mainMethodSubject, isPresent());
+    assertTrue(mainMethodSubject.streamInstructions().noneMatch(InstructionSubject::isConstString));
 
     MethodSubject test = main.uniqueMethodWithOriginalName("test");
     assertThat(test, isPresent());

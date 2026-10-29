@@ -5,6 +5,7 @@ package com.android.tools.r8.naming.b123068484.data;
 
 public class Concrete2 extends Abs {
   Object otherField;
+
   public Concrete2(String x) {
     super(x);
     otherField = new Exception("Concrete2::<init>");

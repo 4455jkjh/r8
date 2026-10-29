@@ -72,7 +72,7 @@ public class B128656974 extends TestBase {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
       return greeting + System.lineSeparator() + a;
     }
   }

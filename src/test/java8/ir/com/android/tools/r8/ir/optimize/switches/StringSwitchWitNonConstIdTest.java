@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.switches;
 
-
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;

@@ -47,5 +47,4 @@ public class NonNullParamAfterInvokeStatic {
     checkViaIntrinsic(arg1);
     checkAtOneLevelHigher(arg2);
   }
-
 }

@@ -105,7 +105,8 @@ class MessageLoader {
   }
 
   static class StaticInternString {
-    public final static String INTERN = "intern";
+    public static final String INTERN = "intern";
+
     @NeverInline
     public static String getIntern() {
       return INTERN;
@@ -113,7 +114,8 @@ class MessageLoader {
   }
 
   static class StaticInternString2 {
-    public final static String INTERN = "intern";
+    public static final String INTERN = "intern";
+
     @NeverInline
     public static String getIntern() {
       return INTERN;
@@ -124,36 +126,36 @@ class MessageLoader {
 @RunWith(Parameterized.class)
 public class StringCanonicalizationTest extends TestBase {
   private static final Class<?> MAIN = MessageLoader.class;
-  private static final String EXPECTED = StringUtils.lines(
-      "1st-tag/1",
-      "1st-tag$2",
-      "1st-tag/3",
-      "1st-tag$4",
-      "1st-tag/5",
-      "1st-tag$6",
-      "1st-tag/7",
-      "1st-tag$8",
-      "2nd-tag/1",
-      "2nd-tag$2",
-      "2nd-tag/3",
-      "2nd-tag$4",
-      "2nd-tag/5",
-      "2nd-tag$6",
-      "2nd-tag/7",
-      "2nd-tag$8",
-      "3rd-tag$0",
-      "3rd-tag$1",
-      "3rd-tag$2",
-      "3rd-tag$3",
-      "3rd-tag$4",
-      "3rd-tag$5",
-      "3rd-tag$6",
-      "3rd-tag$7",
-      "false",
-      "true",
-      "true",
-      "true"
-  );
+  private static final String EXPECTED =
+      StringUtils.lines(
+          "1st-tag/1",
+          "1st-tag$2",
+          "1st-tag/3",
+          "1st-tag$4",
+          "1st-tag/5",
+          "1st-tag$6",
+          "1st-tag/7",
+          "1st-tag$8",
+          "2nd-tag/1",
+          "2nd-tag$2",
+          "2nd-tag/3",
+          "2nd-tag$4",
+          "2nd-tag/5",
+          "2nd-tag$6",
+          "2nd-tag/7",
+          "2nd-tag$8",
+          "3rd-tag$0",
+          "3rd-tag$1",
+          "3rd-tag$2",
+          "3rd-tag$3",
+          "3rd-tag$4",
+          "3rd-tag$5",
+          "3rd-tag$6",
+          "3rd-tag$7",
+          "false",
+          "true",
+          "true",
+          "true");
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -173,30 +175,43 @@ public class StringCanonicalizationTest extends TestBase {
       int expectedConstStringCount1,
       int expectedConstStringCount2,
       int expectedInternCount,
-      int expectedStringOpsCount) throws Exception {
+      int expectedStringOpsCount)
+      throws Exception {
     String main = MessageLoader.class.getCanonicalName();
-    result
-        .run(parameters.getRuntime(), main)
-        .assertSuccessWithOutput(EXPECTED);
+    result.run(parameters.getRuntime(), main).assertSuccessWithOutput(EXPECTED);
 
     CodeInspector codeInspector = result.inspector();
     ClassSubject mainClass = codeInspector.clazz(main);
     MethodSubject mainMethod = mainClass.mainMethod();
     assertThat(mainMethod, isPresent());
-    long count = Streams.stream(mainMethod.iterateInstructions(
-        i -> i.isConstString("1st-tag", JumboStringMode.ALLOW))).count();
+    long count =
+        Streams.stream(
+                mainMethod.iterateInstructions(
+                    i -> i.isConstString("1st-tag", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedConstStringCount0, count);
-    count = Streams.stream(mainMethod.iterateInstructions(
-        i -> i.isConstString("2nd-tag", JumboStringMode.ALLOW))).count();
+    count =
+        Streams.stream(
+                mainMethod.iterateInstructions(
+                    i -> i.isConstString("2nd-tag", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedConstStringCount1, count);
-    count = Streams.stream(mainMethod.iterateInstructions(
-        i -> i.isConstString("3rd-tag", JumboStringMode.ALLOW))).count();
+    count =
+        Streams.stream(
+                mainMethod.iterateInstructions(
+                    i -> i.isConstString("3rd-tag", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedConstStringCount2, count);
-    count = Streams.stream(mainMethod.iterateInstructions(
-        i -> i.isConstString("intern", JumboStringMode.ALLOW))).count();
+    count =
+        Streams.stream(
+                mainMethod.iterateInstructions(
+                    i -> i.isConstString("intern", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedInternCount, count);
-    count = Streams.stream(mainMethod.iterateInstructions(
-        i -> i.isConstString("x", JumboStringMode.ALLOW))).count();
+    count =
+        Streams.stream(
+                mainMethod.iterateInstructions(i -> i.isConstString("x", JumboStringMode.ALLOW)))
+            .count();
     assertEquals(expectedStringOpsCount, count);
   }
 

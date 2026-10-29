@@ -27,8 +27,7 @@ import java.util.Collection;
 import org.junit.Test;
 
 class GetName0Class {
-  static class InnerClass {
-  }
+  static class InnerClass {}
 
   interface Itf {
     void foo();
@@ -109,100 +108,100 @@ class GetName0Main {
 
 public class GetNameTest extends GetNameTestBase {
   private Collection<Path> classPaths;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      // getName
-      "com.android.tools.r8.ir.optimize.reflection.GetName0Class",
-      // getTypeName
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.GetName0Class",
-      // getCanonicalName
-      "com.android.tools.r8.ir.optimize.reflection.GetName0Class",
-      // getSimpleName
-      "GetName0Class",
-      // getName, inner
-      "com.android.tools.r8.ir.optimize.reflection.GetName0Class$InnerClass",
-      // getTypeName, inner
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.GetName0Class$InnerClass",
-      // getCanonicalName, inner
-      "com.android.tools.r8.ir.optimize.reflection.GetName0Class.InnerClass",
-      // getSimpleName, inner
-      "InnerClass",
-      // getName, array
-      "[Lcom.android.tools.r8.ir.optimize.reflection.GetName0Class;",
-      // getTypeName, array
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.GetName0Class[]",
-      // getCanonicalName, array
-      "com.android.tools.r8.ir.optimize.reflection.GetName0Class[]",
-      // getSimpleName, array
-      "GetName0Class[]",
-      // getName, anonymous
-      "com.android.tools.r8.ir.optimize.reflection.GetName0Class$1",
-      // getTypeName, anonymous
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.GetName0Class$1",
-      // getCanonicalName, anonymous
-      "-Returned-null-",
-      // getSimpleName, anonymous
-      "-Returned-empty-",
-      // getName, local
-      "com.android.tools.r8.ir.optimize.reflection.GetName0Class$2",
-      // getTypeName, local
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.GetName0Class$2",
-      // getCanonicalName, local
-      "-Returned-null-",
-      // getSimpleName, local
-      "-Returned-empty-"
-  );
-  private static final String RENAMED_OUTPUT = StringUtils.lines(
-      // getName
-      "com.android.tools.r8.ir.optimize.reflection.c",
-      // getTypeName
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.c",
-      // getCanonicalName
-      "com.android.tools.r8.ir.optimize.reflection.c",
-      // getSimpleName
-      "c",
-      // getName, inner
-      "com.android.tools.r8.ir.optimize.reflection.c$a",
-      // getTypeName, inner
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.c$a",
-      // getCanonicalName, inner
-      "com.android.tools.r8.ir.optimize.reflection.c.a",
-      // getSimpleName, inner
-      "a",
-      // getName, array
-      "[Lcom.android.tools.r8.ir.optimize.reflection.c;",
-      // getTypeName, array
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.c[]",
-      // getCanonicalName, array
-      "com.android.tools.r8.ir.optimize.reflection.c[]",
-      // getSimpleName, array
-      "c[]",
-      // getName, anonymous
-      "com.android.tools.r8.ir.optimize.reflection.a",
-      // getTypeName, anonymous
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.a",
-      // getCanonicalName, anonymous
-      "-Returned-null-",
-      // getSimpleName, anonymous
-      "-Returned-empty-",
-      // getName, local
-      "com.android.tools.r8.ir.optimize.reflection.b",
-      // getTypeName, local
-      // TODO(b/119426668): desugar Type#getTypeName
-      // "com.android.tools.r8.ir.optimize.reflection.b,
-      // getCanonicalName, local
-      "-Returned-null-",
-      // getSimpleName, local
-      "-Returned-empty-"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          // getName
+          "com.android.tools.r8.ir.optimize.reflection.GetName0Class",
+          // getTypeName
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.GetName0Class",
+          // getCanonicalName
+          "com.android.tools.r8.ir.optimize.reflection.GetName0Class",
+          // getSimpleName
+          "GetName0Class",
+          // getName, inner
+          "com.android.tools.r8.ir.optimize.reflection.GetName0Class$InnerClass",
+          // getTypeName, inner
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.GetName0Class$InnerClass",
+          // getCanonicalName, inner
+          "com.android.tools.r8.ir.optimize.reflection.GetName0Class.InnerClass",
+          // getSimpleName, inner
+          "InnerClass",
+          // getName, array
+          "[Lcom.android.tools.r8.ir.optimize.reflection.GetName0Class;",
+          // getTypeName, array
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.GetName0Class[]",
+          // getCanonicalName, array
+          "com.android.tools.r8.ir.optimize.reflection.GetName0Class[]",
+          // getSimpleName, array
+          "GetName0Class[]",
+          // getName, anonymous
+          "com.android.tools.r8.ir.optimize.reflection.GetName0Class$1",
+          // getTypeName, anonymous
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.GetName0Class$1",
+          // getCanonicalName, anonymous
+          "-Returned-null-",
+          // getSimpleName, anonymous
+          "-Returned-empty-",
+          // getName, local
+          "com.android.tools.r8.ir.optimize.reflection.GetName0Class$2",
+          // getTypeName, local
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.GetName0Class$2",
+          // getCanonicalName, local
+          "-Returned-null-",
+          // getSimpleName, local
+          "-Returned-empty-");
+  private static final String RENAMED_OUTPUT =
+      StringUtils.lines(
+          // getName
+          "com.android.tools.r8.ir.optimize.reflection.c",
+          // getTypeName
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.c",
+          // getCanonicalName
+          "com.android.tools.r8.ir.optimize.reflection.c",
+          // getSimpleName
+          "c",
+          // getName, inner
+          "com.android.tools.r8.ir.optimize.reflection.c$a",
+          // getTypeName, inner
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.c$a",
+          // getCanonicalName, inner
+          "com.android.tools.r8.ir.optimize.reflection.c.a",
+          // getSimpleName, inner
+          "a",
+          // getName, array
+          "[Lcom.android.tools.r8.ir.optimize.reflection.c;",
+          // getTypeName, array
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.c[]",
+          // getCanonicalName, array
+          "com.android.tools.r8.ir.optimize.reflection.c[]",
+          // getSimpleName, array
+          "c[]",
+          // getName, anonymous
+          "com.android.tools.r8.ir.optimize.reflection.a",
+          // getTypeName, anonymous
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.a",
+          // getCanonicalName, anonymous
+          "-Returned-null-",
+          // getSimpleName, anonymous
+          "-Returned-empty-",
+          // getName, local
+          "com.android.tools.r8.ir.optimize.reflection.b",
+          // getTypeName, local
+          // TODO(b/119426668): desugar Type#getTypeName
+          // "com.android.tools.r8.ir.optimize.reflection.b,
+          // getCanonicalName, local
+          "-Returned-null-",
+          // getSimpleName, local
+          "-Returned-empty-");
   private static final Class<?> MAIN = GetName0Main.class;
 
   public GetNameTest(TestParameters parameters, boolean enableMinification) throws Exception {
@@ -221,8 +220,7 @@ public class GetNameTest extends GetNameTestBase {
   @Test
   public void testJVMOutput() throws Exception {
     assumeTrue(
-        "Only run JVM reference on CF runtimes",
-        parameters.isCfRuntime() && !enableMinification);
+        "Only run JVM reference on CF runtimes", parameters.isCfRuntime() && !enableMinification);
     testForJvm(parameters)
         .addTestClasspath()
         .run(parameters.getRuntime(), MAIN)

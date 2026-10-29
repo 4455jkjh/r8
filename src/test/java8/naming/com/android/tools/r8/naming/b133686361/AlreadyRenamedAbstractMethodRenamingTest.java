@@ -35,7 +35,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class AlreadyRenamedAbstractMethodRenamingTest extends TestBase {
 
-  static abstract class Base implements Runnable {
+  abstract static class Base implements Runnable {
     @NeverInline
     public abstract void a();
 
@@ -66,6 +66,7 @@ public class AlreadyRenamedAbstractMethodRenamingTest extends TestBase {
     static Runnable createInstance() {
       return System.currentTimeMillis() > 0 ? new Sub1() : new Sub2();
     }
+
     public static void main(String... args) {
       Runnable instance = createInstance();
       instance.run();

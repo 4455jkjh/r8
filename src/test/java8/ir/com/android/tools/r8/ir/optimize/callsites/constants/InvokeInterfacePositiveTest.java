@@ -123,7 +123,7 @@ public class InvokeInterfacePositiveTest extends TestBase {
   static class Main {
     public static void main(String... args) {
       I i = System.currentTimeMillis() > 0 ? new A() : new B();
-      i.m("nul");  // calls A.m() with "nul".
+      i.m("nul"); // calls A.m() with "nul".
     }
   }
 }

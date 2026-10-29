@@ -43,7 +43,10 @@ public class EscapeAnalysisForNameReflectionTest extends AnalysisTestBase {
   public EscapeAnalysisForNameReflectionTest(TestParameters parameters) throws Exception {
     super(
         parameters,
-        TestClass.class.getTypeName(), TestClass.class, Helper.class, NamingInterface.class);
+        TestClass.class.getTypeName(),
+        TestClass.class,
+        Helper.class,
+        NamingInterface.class);
   }
 
   private static Predicate<Instruction> invokesMethodWithName(String name) {
@@ -74,16 +77,16 @@ public class EscapeAnalysisForNameReflectionTest extends AnalysisTestBase {
           assertNotNull(v);
           EscapeAnalysis escapeAnalysis =
               new EscapeAnalysis(
-                  appView,
-                  StringOptimizerEscapeAnalysisConfigurationForTesting.getInstance());
+                  appView, StringOptimizerEscapeAnalysisConfigurationForTesting.getInstance());
           Set<Instruction> escapeRoutes = escapeAnalysis.computeEscapeRoutes(code, v);
           assertEquals(2, escapeRoutes.size());
           assertTrue(
-              escapeRoutes.stream().allMatch(
-                  instr ->
-                      instr.isThrow()
-                          || (instr.isInvokeDirect()
-                              && invokesMethodWithName("<init>").test(instr))));
+              escapeRoutes.stream()
+                  .allMatch(
+                      instr ->
+                          instr.isThrow()
+                              || (instr.isInvokeDirect()
+                                  && invokesMethodWithName("<init>").test(instr))));
         });
   }
 
@@ -126,16 +129,13 @@ public class EscapeAnalysisForNameReflectionTest extends AnalysisTestBase {
 
   @Test
   public void testEscapeViaListPut() {
-    buildAndCheckIR(
-        "escapeViaListPut",
-        checkEscapingName(true, invokesMethodWithName("add")));
+    buildAndCheckIR("escapeViaListPut", checkEscapingName(true, invokesMethodWithName("add")));
   }
 
   @Test
   public void testEscapeViaListArgumentPut() {
     buildAndCheckIR(
-        "escapeViaListArgumentPut",
-        checkEscapingName(true, invokesMethodWithName("add")));
+        "escapeViaListArgumentPut", checkEscapingName(true, invokesMethodWithName("add")));
   }
 
   @Test
@@ -230,14 +230,17 @@ public class EscapeAnalysisForNameReflectionTest extends AnalysisTestBase {
   }
 
   private static InvokeVirtual getSimpleNameCall(IRCode code) {
-    return getMatchingInstruction(code, instruction -> {
-      if (instruction.isInvokeVirtual()) {
-        DexMethod invokedMethod = instruction.asInvokeVirtual().getInvokedMethod();
-        return invokedMethod.holder.toDescriptorString().equals("Ljava/lang/Class;")
-            && invokedMethod.name.toString().equals("getSimpleName");
-      }
-      return false;
-    }).asInvokeVirtual();
+    return getMatchingInstruction(
+            code,
+            instruction -> {
+              if (instruction.isInvokeVirtual()) {
+                DexMethod invokedMethod = instruction.asInvokeVirtual().getInvokedMethod();
+                return invokedMethod.holder.toDescriptorString().equals("Ljava/lang/Class;")
+                    && invokedMethod.name.toString().equals("getSimpleName");
+              }
+              return false;
+            })
+        .asInvokeVirtual();
   }
 
   static class Helper {

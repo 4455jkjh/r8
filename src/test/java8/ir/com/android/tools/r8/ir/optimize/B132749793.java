@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize;
 
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -51,7 +50,7 @@ public class B132749793 extends TestBase {
 
 class TestB132749793 implements InterfaceWithStaticAndDefault {
   @Override
-  public void foobar() { }
+  public void foobar() {}
 
   public static void main(String[] args) {
     HasStaticField.i = 42;
@@ -61,9 +60,11 @@ class TestB132749793 implements InterfaceWithStaticAndDefault {
 
 interface InterfaceWithStaticAndDefault {
   int i = HasStaticField.i;
+
   default void foo() {
     System.out.println(i);
   }
+
   void foobar();
 }
 

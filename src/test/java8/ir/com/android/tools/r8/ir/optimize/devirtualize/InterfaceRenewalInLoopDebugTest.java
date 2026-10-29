@@ -40,7 +40,7 @@ class InterfaceRenewalInLoopDebugTest {
       local.foo();
 
       if (i > 0) {
-        local = l.get(i-1);
+        local = l.get(i - 1);
       }
     }
   }
@@ -49,5 +49,4 @@ class InterfaceRenewalInLoopDebugTest {
     String[] boos = {"a", "b", "c"};
     booRunner(boos);
   }
-
 }

@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.fields;
 
-
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;

@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.analysis.type;
 
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.internal.BooleanUtils;

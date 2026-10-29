@@ -66,9 +66,11 @@ public class InstanceInsideCompanionTest extends TestBase {
     assertThat(foo, isPresent());
     assertTrue(foo.isStatic());
     assertTrue(
-        foo.streamInstructions().anyMatch(
-            i -> i.isInvokeVirtual()
-                && i.getMethod().toSourceString().contains("PrintStream.println")));
+        foo.streamInstructions()
+            .anyMatch(
+                i ->
+                    i.isInvokeVirtual()
+                        && i.getMethod().toSourceString().contains("PrintStream.println")));
   }
 
   @NeverClassInline

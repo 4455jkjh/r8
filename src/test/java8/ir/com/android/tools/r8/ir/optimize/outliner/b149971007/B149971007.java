@@ -19,12 +19,12 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dexsplitter.SplitterTestBase;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -228,7 +228,9 @@ public class B149971007 extends SplitterTestBase {
     }
 
     public static void feature(int i)
-        throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
+        throws ClassNotFoundException,
+            NoSuchMethodException,
+            InvocationTargetException,
             IllegalAccessException {
       Class<?> featureClass = Class.forName(featureClassName());
       Method featureMethod = featureClass.getMethod("feature", int.class);

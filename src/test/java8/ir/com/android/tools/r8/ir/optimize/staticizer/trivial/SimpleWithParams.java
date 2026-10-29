@@ -11,8 +11,7 @@ import com.android.tools.r8.NoHorizontalClassMerging;
 public class SimpleWithParams {
   static SimpleWithParams INSTANCE = new SimpleWithParams(123);
 
-  SimpleWithParams(int i) {
-  }
+  SimpleWithParams(int i) {}
 
   @NeverInline
   String foo() {

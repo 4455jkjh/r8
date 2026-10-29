@@ -80,7 +80,8 @@ public class GenericSignatureParserTest extends TestBase {
     }
   }
 
-  public void parseSimpleError(BiConsumer<GenericSignatureParser<String>, String> parse,
+  public void parseSimpleError(
+      BiConsumer<GenericSignatureParser<String>, String> parse,
       Consumer<GenericSignatureFormatError> errorChecker) {
     try {
       String signature = "X";
@@ -102,12 +103,16 @@ public class GenericSignatureParserTest extends TestBase {
     parseSimpleError(
         GenericSignatureParser::parseFieldSignature,
         e -> assertTrue(e.getMessage().startsWith("Expected L, [ or T at position 2")));
-    parseSimpleError(GenericSignatureParser::parseMethodSignature,
+    parseSimpleError(
+        GenericSignatureParser::parseMethodSignature,
         e -> assertTrue(e.getMessage().startsWith("Expected ( at position 1")));
   }
 
-  private void parseSignature(String signature, Set<Integer> validPrefixes,
-      Consumer<String> parser, ReGenerateGenericSignatureRewriter rewriter) {
+  private void parseSignature(
+      String signature,
+      Set<Integer> validPrefixes,
+      Consumer<String> parser,
+      ReGenerateGenericSignatureRewriter rewriter) {
     for (int i = 0; i < 2; i++) {
       parser.accept(signature);
       assertEquals(signature, rewriter.getRenamedSignature());
@@ -117,7 +122,7 @@ public class GenericSignatureParserTest extends TestBase {
       try {
         if (validPrefixes == null || !validPrefixes.contains(i)) {
           parser.accept(signature.substring(0, i));
-          fail("Successfully parsed " + signature.substring(0, i) + " (position " + i +")");
+          fail("Successfully parsed " + signature.substring(0, i) + " (position " + i + ")");
         }
       } catch (GenericSignatureFormatError e) {
         assertTrue(e.getMessage().contains("at position " + (i + 1)));
@@ -187,10 +192,9 @@ public class GenericSignatureParserTest extends TestBase {
     }
   }
 
-
   public void forBasicTypes(Consumer<String> consumer) {
     for (char c : "BCDFIJSZ".toCharArray()) {
-      consumer.accept(new String(new char[]{c}));
+      consumer.accept(new String(new char[] {c}));
     }
   }
 
@@ -214,13 +218,15 @@ public class GenericSignatureParserTest extends TestBase {
     for (int i = 0; i < 3; i++) {
       arrayPrefix.append("[");
       forBasicTypes(t -> consumer.accept(arrayPrefix.toString() + t, null));
-      forClassSignatures((x, y) -> {
-        consumer.accept(arrayPrefix.toString() + x, y);
-      });
-      forTypeVariableSignatures((x, y) -> {
-        consumer.accept(arrayPrefix.toString() + x, y);
-      });
-      //consumer.accept();
+      forClassSignatures(
+          (x, y) -> {
+            consumer.accept(arrayPrefix.toString() + x, y);
+          });
+      forTypeVariableSignatures(
+          (x, y) -> {
+            consumer.accept(arrayPrefix.toString() + x, y);
+          });
+      // consumer.accept();
     }
   }
 
@@ -271,7 +277,8 @@ public class GenericSignatureParserTest extends TestBase {
     // class C<T extends AbstractList<T> & List<T> & Iterator<T>> { ... }.
     consumer.accept(
         "<T:Ljava/util/AbstractList<TT;>;:Ljava/util/List<TT;>;:Ljava/util/Iterator<TT;>;>"
-            + "Ljava/lang/Object;", null);
+            + "Ljava/lang/Object;",
+        null);
 
     // class C<T,U> { ... }.
     consumer.accept("<T:U:>Ljava/lang/Object;", null);
@@ -292,10 +299,12 @@ public class GenericSignatureParserTest extends TestBase {
     // class C<T> extends java.util.AbstractList<T>
     consumer.accept("<T:Ljava/lang/Object;>Ljava/util/AbstractList<TT;>;", null);
     // class C<T> extends java.util.AbstractList<T> implements List<T>
-    consumer.accept("<T:Ljava/lang/Object;>Ljava/util/AbstractList<TT;>;Ljava/util/List<TT;>;",
+    consumer.accept(
+        "<T:Ljava/lang/Object;>Ljava/util/AbstractList<TT;>;Ljava/util/List<TT;>;",
         ImmutableSet.of(51));
     // class C<T> extends java.util.AbstractList<T> implements List<T>, Iterator<T>
-    consumer.accept("<T:Ljava/lang/Object;>Ljava/util/AbstractList<TT;>"
+    consumer.accept(
+        "<T:Ljava/lang/Object;>Ljava/util/AbstractList<TT;>"
             + ";Ljava/util/List<TT;>;Ljava/util/Iterator<TT;>;",
         ImmutableSet.of(51, 72));
 
@@ -309,11 +318,11 @@ public class GenericSignatureParserTest extends TestBase {
     //   class ExtendsInner extends Inner {
     //   }
     // }
-    consumer.accept("<T:Ljava/lang/Object;>Ljava/lang/Object;", null);  // Outer signature.
+    consumer.accept("<T:Ljava/lang/Object;>Ljava/lang/Object;", null); // Outer signature.
     // Inner has no signature.
     // InnerInner has no signature.
-    consumer.accept("LOuter<TT;>.Inner.InnerInner;", null);  // ExtendsInnerInner signature.
-    consumer.accept("LOuter<TT;>.Inner;", null);  // ExtendsInner signature.
+    consumer.accept("LOuter<TT;>.Inner.InnerInner;", null); // ExtendsInnerInner signature.
+    consumer.accept("LOuter<TT;>.Inner;", null); // ExtendsInner signature.
 
     // class Outer<T> {
     //   class Inner<T> {
@@ -442,19 +451,20 @@ public class GenericSignatureParserTest extends TestBase {
       }
     }
 
-    List<GenericSignatureAction<String>> throwingActions = ImmutableList.of(
-        new ThrowsInParsedSymbol<>(() -> new GenericSignatureFormatError("ERROR")),
-        new ThrowsInParsedSymbol<>(() -> new Error("ERROR")),
-        new ThrowsInParsedIdentifier<>(() -> new GenericSignatureFormatError("ERROR")),
-        new ThrowsInParsedIdentifier<>(() -> new Error("ERROR")),
-        new ThrowsInParsedTypeName<>(() -> new GenericSignatureFormatError("ERROR")),
-        new ThrowsInParsedTypeName<>(() -> new Error("ERROR")),
-        new ThrowsInParsedInnerTypeName<>(() -> new GenericSignatureFormatError("ERROR")),
-        new ThrowsInParsedInnerTypeName<>(() -> new Error("ERROR")),
-        new ThrowsInStart<>(() -> new GenericSignatureFormatError("ERROR")),
-        new ThrowsInStart<>(() -> new Error("ERROR")),
-        new ThrowsInStop<>(() -> new GenericSignatureFormatError("ERROR")),
-        new ThrowsInStop<>(() -> new Error("ERROR")));
+    List<GenericSignatureAction<String>> throwingActions =
+        ImmutableList.of(
+            new ThrowsInParsedSymbol<>(() -> new GenericSignatureFormatError("ERROR")),
+            new ThrowsInParsedSymbol<>(() -> new Error("ERROR")),
+            new ThrowsInParsedIdentifier<>(() -> new GenericSignatureFormatError("ERROR")),
+            new ThrowsInParsedIdentifier<>(() -> new Error("ERROR")),
+            new ThrowsInParsedTypeName<>(() -> new GenericSignatureFormatError("ERROR")),
+            new ThrowsInParsedTypeName<>(() -> new Error("ERROR")),
+            new ThrowsInParsedInnerTypeName<>(() -> new GenericSignatureFormatError("ERROR")),
+            new ThrowsInParsedInnerTypeName<>(() -> new Error("ERROR")),
+            new ThrowsInStart<>(() -> new GenericSignatureFormatError("ERROR")),
+            new ThrowsInStart<>(() -> new Error("ERROR")),
+            new ThrowsInStop<>(() -> new GenericSignatureFormatError("ERROR")),
+            new ThrowsInStop<>(() -> new Error("ERROR")));
 
     int plainErrorCount = 0;
     for (GenericSignatureAction<String> action : throwingActions) {
@@ -468,8 +478,8 @@ public class GenericSignatureParserTest extends TestBase {
           assertEquals("ERROR", e.getMessage());
         } else {
           plainErrorCount++;
-          assertEquals("Unknown error parsing "
-              + errorMessageType + " signature: ERROR", e.getMessage());
+          assertEquals(
+              "Unknown error parsing " + errorMessageType + " signature: ERROR", e.getMessage());
         }
       }
     }
@@ -479,8 +489,11 @@ public class GenericSignatureParserTest extends TestBase {
   @Test
   public void failingParseAction() throws Exception {
     // These signatures hits all action callbacks.
-    failingParseAction(parser -> parser.parseClassSignature(
-        "<U:Ljava/lang/Object;>LOuter<TT;>.Inner;Ljava/util/List<TU;>;"), "class");
+    failingParseAction(
+        parser ->
+            parser.parseClassSignature(
+                "<U:Ljava/lang/Object;>LOuter<TT;>.Inner;Ljava/util/List<TU;>;"),
+        "class");
     failingParseAction(
         parser -> parser.parseFieldSignature("LOuter$InnerInterface<TU;>.Inner;"), "field");
     failingParseAction(

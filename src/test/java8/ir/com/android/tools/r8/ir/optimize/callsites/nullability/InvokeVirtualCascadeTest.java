@@ -55,7 +55,7 @@ public class InvokeVirtualCascadeTest extends TestBase {
 
     MethodSubject a_m = a.uniqueMethodWithOriginalName("m");
     assertThat(a_m, isPresent());
-      assertTrue(a_m.streamInstructions().noneMatch(InstructionSubject::isIf));
+    assertTrue(a_m.streamInstructions().noneMatch(InstructionSubject::isIf));
 
     ClassSubject b = inspector.clazz(B.class);
     assertThat(b, isPresent());
@@ -109,11 +109,11 @@ public class InvokeVirtualCascadeTest extends TestBase {
     public static void main(String... args) {
       A a = new A();
       test(a, a); // calls A.m() with non-null instance.
-      a.m(a);  // calls A.m() with non-null instance.
+      a.m(a); // calls A.m() with non-null instance.
 
       B b = new B();
       test(b, b); // calls B.m() with non-null instance.
-      b.m(b);  // calls B.m() with non-null instance.
+      b.m(b); // calls B.m() with non-null instance.
     }
 
     @NeverInline

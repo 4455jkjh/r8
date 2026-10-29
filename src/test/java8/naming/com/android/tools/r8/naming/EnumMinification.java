@@ -118,6 +118,7 @@ class Main2 {
     System.out.print(java.lang.Enum.valueOf(Enum.class, "VALUE1"));
   }
 }
+
 /* Dump of javac generated code from the following enum class (the one just above):
  *
  *  package com.android.tools.r8.naming;

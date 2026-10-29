@@ -10,6 +10,5 @@ public class HostConflictField {
 
   static CandidateConflictField INSTANCE = new CandidateConflictField();
 
-  @NeverPropagateValue
-  public String field;
+  @NeverPropagateValue public String field;
 }

@@ -35,6 +35,7 @@ public class TestClass extends Super implements Interface {
   private int y(IntSupplier x) {
     return x.getAsInt();
   }
+
   int x() {
     return y(super::returnFive);
   }

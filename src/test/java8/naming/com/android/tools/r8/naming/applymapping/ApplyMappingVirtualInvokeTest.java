@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.naming.applymapping;
 
-
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;

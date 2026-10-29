@@ -80,10 +80,7 @@ public class SeedMapperTests extends TestBase {
   public void testDuplicateSourceMethods() throws IOException {
     Path applyMappingFile =
         getApplyMappingFile(
-            "A.B.C -> a:",
-            "  int aaaa(B) -> a",
-            "  int aaaa(B) -> a",
-            "A.B.D -> b:");
+            "A.B.C -> a:", "  int aaaa(B) -> a", "  int aaaa(B) -> a", "A.B.D -> b:");
     TestDiagnosticMessagesImpl testDiagnosticMessages = new TestDiagnosticMessagesImpl();
     Reporter reporter = new Reporter(testDiagnosticMessages);
     try {
@@ -105,11 +102,7 @@ public class SeedMapperTests extends TestBase {
   @Test
   public void testDuplicateSourceFields() throws IOException {
     Path applyMappingFile =
-        getApplyMappingFile(
-            "A.B.C -> a:",
-            "  int aaaa -> a",
-            "  int aaaa -> a",
-            "A.B.D -> b:");
+        getApplyMappingFile("A.B.C -> a:", "  int aaaa -> a", "  int aaaa -> a", "A.B.D -> b:");
     TestDiagnosticMessagesImpl testDiagnosticMessages = new TestDiagnosticMessagesImpl();
     Reporter reporter = new Reporter(testDiagnosticMessages);
     try {
@@ -162,11 +155,7 @@ public class SeedMapperTests extends TestBase {
   @Ignore("b/136697829")
   public void testDuplicateMethodTargets() throws IOException {
     Path applyMappingFile =
-        getApplyMappingFile(
-            "A.B.C -> a:",
-            "  int foo(A) -> a",
-            "  int bar(A) -> a",
-            "A.B.D -> b:");
+        getApplyMappingFile("A.B.C -> a:", "  int foo(A) -> a", "  int bar(A) -> a", "A.B.D -> b:");
     TestDiagnosticMessagesImpl testDiagnosticMessages = new TestDiagnosticMessagesImpl();
     Reporter reporter = new Reporter(testDiagnosticMessages);
     try {

@@ -48,6 +48,7 @@ public class DoubleInliningInvokeSuperTest extends TestBase {
   @NoVerticalClassMerging
   static class A {
     int x;
+
     @NeverInline
     A foo(int x) {
       this.x = x;
@@ -98,5 +99,4 @@ public class DoubleInliningInvokeSuperTest extends TestBase {
       System.out.println(instance.anotherWrapper(8).x);
     }
   }
-
 }

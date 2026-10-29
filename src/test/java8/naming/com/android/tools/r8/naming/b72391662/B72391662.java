@@ -65,39 +65,39 @@ public class B72391662 extends ProguardCompatibilityTestBase {
               ? new Shrinker[] {Shrinker.R8_CF, Shrinker.R8_COMPAT_CF}
               : new Shrinker[] {Shrinker.R8, Shrinker.R8_COMPAT};
       for (Shrinker shrinker : shrinkers) {
-      for (boolean useRepackagePrefix : new boolean[] {false, true}) {
-        String repackagePrefix;
-        if (useRepackagePrefix) {
-          switch (shrinker) {
-            case R8:
-              repackagePrefix = "r8";
-              break;
-            case R8_COMPAT:
-              repackagePrefix = "rc";
-              break;
-            case R8_CF:
-              repackagePrefix = "r8cf";
-              break;
-            case R8_COMPAT_CF:
-              repackagePrefix = "rccf";
-              break;
-            default:
-              assert false;
-              throw new Unreachable();
+        for (boolean useRepackagePrefix : new boolean[] {false, true}) {
+          String repackagePrefix;
+          if (useRepackagePrefix) {
+            switch (shrinker) {
+              case R8:
+                repackagePrefix = "r8";
+                break;
+              case R8_COMPAT:
+                repackagePrefix = "rc";
+                break;
+              case R8_CF:
+                repackagePrefix = "r8cf";
+                break;
+              case R8_COMPAT_CF:
+                repackagePrefix = "rccf";
+                break;
+              default:
+                assert false;
+                throw new Unreachable();
+            }
+          } else {
+            repackagePrefix = null;
           }
-        } else {
-          repackagePrefix = null;
-        }
-        for (boolean allowAccessModification : new boolean[] {false, true}) {
-          for (boolean minify : new boolean[] {false, true}) {
+          for (boolean allowAccessModification : new boolean[] {false, true}) {
+            for (boolean minify : new boolean[] {false, true}) {
               result.add(
                   new Object[] {
                     parameters, shrinker, repackagePrefix, allowAccessModification, minify
                   });
+            }
           }
         }
       }
-    }
     }
     return result;
   }
@@ -119,22 +119,22 @@ public class B72391662 extends ProguardCompatibilityTestBase {
   public void test_keepAll() throws Exception {
     Class<?> mainClass = TestMain.class;
     String keep = !minify ? "-keep" : "-keep,allowobfuscation";
-    List<String> config = ImmutableList.of(
-        "-printmapping",
-        repackagePrefix != null ? "-repackageclasses '" + repackagePrefix + "'" : "",
-        allowAccessModification ? "-allowaccessmodification" : "",
-        !minify ? "-dontobfuscate" : "",
-        "-keep class " + mainClass.getCanonicalName() + " {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        keep + " class " + TestClass.class.getCanonicalName() + " {",
-        "  *;",
-        "}",
-        keep + " class " + OtherPackageTestClass.class.getCanonicalName() + " {",
-        "  *;",
-        "}",
-        "-dontwarn java.lang.invoke.*"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-printmapping",
+            repackagePrefix != null ? "-repackageclasses '" + repackagePrefix + "'" : "",
+            allowAccessModification ? "-allowaccessmodification" : "",
+            !minify ? "-dontobfuscate" : "",
+            "-keep class " + mainClass.getCanonicalName() + " {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            keep + " class " + TestClass.class.getCanonicalName() + " {",
+            "  *;",
+            "}",
+            keep + " class " + OtherPackageTestClass.class.getCanonicalName() + " {",
+            "  *;",
+            "}",
+            "-dontwarn java.lang.invoke.*");
 
     AndroidApp app = runShrinker(shrinker, CLASSES, config);
     assertEquals(
@@ -177,22 +177,22 @@ public class B72391662 extends ProguardCompatibilityTestBase {
   public void test_keepNonPublic() throws Exception {
     Class<?> mainClass = TestMain.class;
     String keep = !minify ? "-keep" : "-keep,allowobfuscation";
-    List<String> config = ImmutableList.of(
-        "-printmapping",
-        repackagePrefix != null ? "-repackageclasses '" + repackagePrefix + "'" : "",
-        allowAccessModification ? "-allowaccessmodification" : "",
-        !minify ? "-dontobfuscate" : "",
-        "-keep class " + mainClass.getCanonicalName() + " {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        keep + " class " + TestClass.class.getCanonicalName() + " {",
-        "  !public <methods>;",
-        "}",
-        keep + " class " + OtherPackageTestClass.class.getCanonicalName() + " {",
-        "  !public <methods>;",
-        "}",
-        "-dontwarn java.lang.invoke.*"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-printmapping",
+            repackagePrefix != null ? "-repackageclasses '" + repackagePrefix + "'" : "",
+            allowAccessModification ? "-allowaccessmodification" : "",
+            !minify ? "-dontobfuscate" : "",
+            "-keep class " + mainClass.getCanonicalName() + " {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            keep + " class " + TestClass.class.getCanonicalName() + " {",
+            "  !public <methods>;",
+            "}",
+            keep + " class " + OtherPackageTestClass.class.getCanonicalName() + " {",
+            "  !public <methods>;",
+            "}",
+            "-dontwarn java.lang.invoke.*");
 
     AndroidApp app = runShrinker(shrinker, CLASSES, config);
     assertEquals(
@@ -226,22 +226,22 @@ public class B72391662 extends ProguardCompatibilityTestBase {
   public void test_keepPublic() throws Exception {
     Class<?> mainClass = TestMain.class;
     String keep = !minify ? "-keep" : "-keep,allowobfuscation";
-    Iterable<String> config = ImmutableList.of(
-        "-printmapping",
-        repackagePrefix != null ? "-repackageclasses '" + repackagePrefix + "'" : "",
-        allowAccessModification ? "-allowaccessmodification" : "",
-        !minify ? "-dontobfuscate" : "",
-        "-keep class " + mainClass.getCanonicalName() + " {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        keep + " class " + TestClass.class.getCanonicalName() + " {",
-        "  public <methods>;",
-        "}",
-        keep + " class " + OtherPackageTestClass.class.getCanonicalName() + " {",
-        "  public <methods>;",
-        "}",
-        "-dontwarn java.lang.invoke.*"
-    );
+    Iterable<String> config =
+        ImmutableList.of(
+            "-printmapping",
+            repackagePrefix != null ? "-repackageclasses '" + repackagePrefix + "'" : "",
+            allowAccessModification ? "-allowaccessmodification" : "",
+            !minify ? "-dontobfuscate" : "",
+            "-keep class " + mainClass.getCanonicalName() + " {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            keep + " class " + TestClass.class.getCanonicalName() + " {",
+            "  public <methods>;",
+            "}",
+            keep + " class " + OtherPackageTestClass.class.getCanonicalName() + " {",
+            "  public <methods>;",
+            "}",
+            "-dontwarn java.lang.invoke.*");
     if (shrinker.isR8()) {
       config =
           Iterables.concat(

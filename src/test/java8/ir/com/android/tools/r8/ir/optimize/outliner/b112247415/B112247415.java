@@ -49,8 +49,7 @@ class TestClass {
   }
 
   Act toActDefault() {
-    return new Act() {
-    };
+    return new Act() {};
   }
 }
 

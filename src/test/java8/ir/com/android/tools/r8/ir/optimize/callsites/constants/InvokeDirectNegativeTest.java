@@ -76,7 +76,7 @@ public class InvokeDirectNegativeTest extends TestBase {
     public static void main(String... args) {
       Main obj = new Main();
       obj.test("null"); // calls test with "null".
-      obj.test("nul");  // calls test with "nul".
+      obj.test("nul"); // calls test with "nul".
     }
 
     @NeverInline

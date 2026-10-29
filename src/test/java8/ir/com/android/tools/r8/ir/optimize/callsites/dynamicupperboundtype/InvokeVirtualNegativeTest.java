@@ -100,7 +100,9 @@ public class InvokeVirtualNegativeTest extends TestBase {
   }
 
   static class Base {}
+
   static class Sub1 extends Base {}
+
   static class Sub2 extends Base {}
 
   @NoVerticalClassMerging

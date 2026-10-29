@@ -28,8 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-class IncrementalA {
-}
+class IncrementalA {}
 
 class IncrementalMain {
   public static void main(String... args) {
@@ -74,23 +73,12 @@ class ConstClassMain {
 
 @RunWith(Parameterized.class)
 public class ConstClassCanonicalizationTest extends TestBase {
-  private static final String INCREMENTAL_OUTPUT = StringUtils.lines(
-      "IncrementalA",
-      "IncrementalA",
-      "IncrementalA"
-  );
+  private static final String INCREMENTAL_OUTPUT =
+      StringUtils.lines("IncrementalA", "IncrementalA", "IncrementalA");
 
   private static final Class<?> MAIN = ConstClassMain.class;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "Outer",
-      "Inner",
-      "ConstClassMain",
-      "Outer",
-      "Inner",
-      "14",
-      "5",
-      "5"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines("Outer", "Inner", "ConstClassMain", "Outer", "Inner", "14", "5", "5");
   private static final int ORIGINAL_MAIN_COUNT = 2;
   private static final int ORIGINAL_OUTER_COUNT = 2;
   private static final int ORIGINAL_INNER_COUNT = 3;
@@ -162,15 +150,18 @@ public class ConstClassCanonicalizationTest extends TestBase {
     assertThat(mainMethod, isPresent());
     assertEquals(
         mainCount,
-        mainMethod.streamInstructions().filter(i -> i.isConstClass(MAIN.getTypeName()))
-            .count());
+        mainMethod.streamInstructions().filter(i -> i.isConstClass(MAIN.getTypeName())).count());
     assertEquals(
         outerCount,
-        mainMethod.streamInstructions().filter(i -> i.isConstClass(Outer.class.getTypeName()))
+        mainMethod
+            .streamInstructions()
+            .filter(i -> i.isConstClass(Outer.class.getTypeName()))
             .count());
     assertEquals(
         innerCount,
-        mainMethod.streamInstructions().filter(i -> i.isConstClass(Inner.class.getTypeName()))
+        mainMethod
+            .streamInstructions()
+            .filter(i -> i.isConstClass(Inner.class.getTypeName()))
             .count());
   }
 

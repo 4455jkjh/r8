@@ -247,9 +247,7 @@ public class ClassStaticizerTest extends TestBase {
   public void testMoveToHost_fieldOnly() throws Exception {
     Class<?> main = MoveToHostFieldOnlyTestClass.class;
     Class<?>[] classes = {
-        MoveToHostFieldOnlyTestClass.class,
-        HostOkFieldOnly.class,
-        CandidateOkFieldOnly.class
+      MoveToHostFieldOnlyTestClass.class, HostOkFieldOnly.class, CandidateOkFieldOnly.class
     };
     R8TestMultiRunResult result =
         testForR8(parameters.getBackend())
@@ -266,9 +264,7 @@ public class ClassStaticizerTest extends TestBase {
     CodeInspector inspector = result.inspector();
     ClassSubject clazz = inspector.clazz(main);
 
-    assertEquals(
-        Lists.newArrayList(),
-        references(clazz, "testOk_fieldOnly", "void"));
+    assertEquals(Lists.newArrayList(), references(clazz, "testOk_fieldOnly", "void"));
 
     assertThat(inspector.clazz(CandidateOkFieldOnly.class), not(isPresent()));
   }
@@ -277,15 +273,15 @@ public class ClassStaticizerTest extends TestBase {
   public void testMoveToHost() throws Exception {
     Class<?> main = MoveToHostTestClass.class;
     Class<?>[] classes = {
-        MoveToHostTestClass.class,
-        HostOk.class,
-        CandidateOk.class,
-        HostOkSideEffects.class,
-        CandidateOkSideEffects.class,
-        HostConflictMethod.class,
-        CandidateConflictMethod.class,
-        HostConflictField.class,
-        CandidateConflictField.class
+      MoveToHostTestClass.class,
+      HostOk.class,
+      CandidateOk.class,
+      HostOkSideEffects.class,
+      CandidateOkSideEffects.class,
+      HostConflictMethod.class,
+      CandidateConflictMethod.class,
+      HostConflictField.class,
+      CandidateConflictField.class
     };
     String javaOutput = runOnJava(main);
     R8TestMultiRunResult result =
@@ -408,10 +404,7 @@ public class ClassStaticizerTest extends TestBase {
   @Test
   public void dualInlinedMethodRewritten() throws Exception {
     Class<?> main = DualCallTest.class;
-    Class<?>[] classes = {
-        DualCallTest.class,
-        Candidate.class
-    };
+    Class<?>[] classes = {DualCallTest.class, Candidate.class};
     String javaOutput = runOnJava(main);
     R8TestMultiRunResult result =
         testForR8(parameters.getBackend())

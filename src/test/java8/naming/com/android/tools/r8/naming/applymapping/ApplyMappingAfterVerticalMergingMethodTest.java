@@ -76,9 +76,7 @@ public class ApplyMappingAfterVerticalMergingMethodTest extends TestBase {
 
   private static final Class<?>[] LIBRARY_CLASSES = {LibraryBase.class, LibrarySubclass.class};
 
-  private static final Class<?>[] PROGRAM_CLASSES = {
-      ProgramClass.class
-  };
+  private static final Class<?>[] PROGRAM_CLASSES = {ProgramClass.class};
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {

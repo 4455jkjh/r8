@@ -61,5 +61,4 @@ public class B132897042 extends TestBase {
       }
     }
   }
-
 }
