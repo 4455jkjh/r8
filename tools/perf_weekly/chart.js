@@ -69,6 +69,13 @@ function getDataPercentageChange(context) {
     }
     previousValue = context.dataset.data[--j];
   } while (previousValue === undefined || isNaN(previousValue));
+  const benchmark = context.dataset.benchmark;
+  if (
+    benchmark &&
+    !state.hasSameDump(benchmark, getFilteredCommit(j), getFilteredCommit(i))
+  ) {
+    return null;
+  }
   return ((value - previousValue) / previousValue) * 100;
 }
 

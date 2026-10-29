@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 import chart from "./chart.js";
+import config from "./config.js";
 import dom from "./dom.js";
 import url from "./url.js";
 import weekly from "./weekly.js";
@@ -19,6 +20,74 @@ var cutSelectionSeq = 0;
 var recentMainCommits = [];
 var trendCommits = [];
 var targetName = "";
+var mainCommitsByHash = new Map();
+var releaseCutSubmittedByBranch = new Map();
+var dumpAlteringCommits = undefined;
+
+function buildDumpAlteringCommits() {
+  return (config.dumpAlteringCommits || []).map((entry) => {
+    const commit = mainCommitsByHash.get(entry.hash);
+    return {
+      hash: entry.hash,
+      submitted: entry.submitted ?? (commit ? commit.submitted : undefined),
+      benchmarks: new Set(entry.benchmarks || []),
+    };
+  });
+}
+
+function effectiveDumpTimestamp(commit) {
+  if (!commit) {
+    return 0;
+  }
+  if (commit.version) {
+    const parts = commit.version.split(".");
+    if (parts.length >= 2) {
+      const branch = `${parts[0]}.${parts[1]}`;
+      if (releaseCutSubmittedByBranch.has(branch)) {
+        return releaseCutSubmittedByBranch.get(branch);
+      }
+      const major = parseInt(parts[0], 10);
+      const minor = parseInt(parts[1], 10);
+      if (
+        !isNaN(major) &&
+        !isNaN(minor) &&
+        (major < 9 || (major === 9 && minor === 0))
+      ) {
+        return 0;
+      }
+    }
+  }
+  if (commit.parent_hash && mainCommitsByHash.has(commit.parent_hash)) {
+    return mainCommitsByHash.get(commit.parent_hash).submitted;
+  }
+  return commit.submitted || 0;
+}
+
+function getDumpRevision(benchmark, commit) {
+  if (!commit) {
+    return 0;
+  }
+  const ts = effectiveDumpTimestamp(commit);
+  let revision = 0;
+  for (const entry of dumpAlteringCommits) {
+    if (!entry.benchmarks.has(benchmark)) {
+      continue;
+    }
+    if (
+      commit.hash === entry.hash ||
+      (entry.submitted !== undefined && ts >= entry.submitted)
+    ) {
+      revision++;
+    }
+  }
+  return revision;
+}
+
+function hasSameDump(benchmark, commitA, commitB) {
+  return (
+    getDumpRevision(benchmark, commitA) === getDumpRevision(benchmark, commitB)
+  );
+}
 
 const benchmarks = new Set();
 const selectedBenchmarks = new Set();
@@ -120,6 +189,17 @@ function importCommits(target, includeTryCommits = false) {
       cutLoading = false;
       recentMainCommits = loaded.recentMainCommits || [];
       trendCommits = loaded.trendCommits || [];
+      mainCommitsByHash = new Map();
+      for (const c of loaded.mainHistory || []) {
+        mainCommitsByHash.set(c.hash, c);
+      }
+      for (const c of mainCommits) {
+        mainCommitsByHash.set(c.hash, c);
+      }
+      releaseCutSubmittedByBranch = new Map(
+        releaseCuts.map((c) => [c.branch, c.submitted]),
+      );
+      dumpAlteringCommits = buildDumpAlteringCommits();
       return processCommits(loaded.commits, tryCommits);
     });
 }
@@ -346,6 +426,7 @@ export default {
   getCommitDescriptionFromContext: getCommitDescriptionFromContext,
   handleKeyDownEvent: handleKeyDownEvent,
   hasLegend: hasLegend,
+  hasSameDump: hasSameDump,
   initializeBenchmarks: initializeBenchmarks,
   initializeLegends: initializeLegends,
   initializeZoom: initializeZoom,
