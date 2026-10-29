@@ -5,11 +5,9 @@
 package com.android.tools.r8.sample.simple;
 
 import android.app.Activity;
-import android.os.Bundle;
-import com.android.tools.r8.sample.simple.R;
-import java.util.ArrayList;
 import android.content.res.Resources;
-
+import android.os.Bundle;
+import java.util.ArrayList;
 
 public class R8Activity extends Activity {
   public void onCreate(Bundle savedInstanceState) {
@@ -19,7 +17,6 @@ public class R8Activity extends Activity {
     System.out.println(R.string.referenced_from_code);
     useResources();
   }
-
 
   public void useResources() {
     // Add usage of resource identifiers with ID's that would never

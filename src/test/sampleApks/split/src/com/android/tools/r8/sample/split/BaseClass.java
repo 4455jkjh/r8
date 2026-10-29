@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.sample.split;
 
-
 public class BaseClass {
 
   int initialValue;
@@ -21,7 +20,7 @@ public class BaseClass {
     return result;
   }
 
-   public int largeMethod(int x, int y) {
+  public int largeMethod(int x, int y) {
     int a = x + y;
     int b;
     int c;
