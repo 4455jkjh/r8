@@ -452,7 +452,13 @@ registerTestDep("rhinoAndroid", ThirdPartyDeps.rhinoAndroid, "RHINO_ANDROID")
 
 registerTestDep("smali", ThirdPartyDeps.smali, "SMALI")
 
+registerTestDep("opensourceNewpipe", ThirdPartyDeps.opensourceNewpipe, "OPENSOURCE_NEWPIPE")
+
+registerTestDep("signalAndroid", ThirdPartyDeps.signalAndroid, "SIGNAL_ANDROID")
+
 registerTestDep("systemUI", ThirdPartyDeps.systemUI, "SYSTEM_UI")
+
+registerTestDep("tachiyomi", ThirdPartyDeps.tachiyomi, "TACHIYOMI")
 
 registerTestDep("tivi", ThirdPartyDeps.tivi, "TIVI")
 

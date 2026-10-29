@@ -763,12 +763,30 @@ public object ThirdPartyDeps {
     ThirdPartyDependency("rhino-android", Paths.get("third_party", "rhino-android-1.1.1").toFile())
   public val smali: ThirdPartyDependency =
     ThirdPartyDependency("smali", Paths.get("third_party", "smali").toFile())
+  public val opensourceNewpipe: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "opensource-newpipe",
+      Paths.get("third_party", "opensource-apps", "newpipe").toFile(),
+      testOnly = true,
+    )
+  public val signalAndroid: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "signal-android",
+      Paths.get("third_party", "opensource-apps", "signal-android").toFile(),
+      testOnly = true,
+    )
   public val systemUI: ThirdPartyDependency =
     ThirdPartyDependency(
       "systemUI",
       Paths.get("third_party", "closedsource-apps", "systemui").toFile(),
       testOnly = true,
       type = DependencyType.X20,
+    )
+  public val tachiyomi: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "tachiyomi",
+      Paths.get("third_party", "opensource-apps", "tachiyomi").toFile(),
+      testOnly = true,
     )
   public val tivi: ThirdPartyDependency =
     ThirdPartyDependency("tivi", Paths.get("third_party", "opensource-apps", "tivi").toFile())
