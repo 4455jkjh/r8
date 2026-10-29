@@ -38,14 +38,14 @@ class TestClass {
 public class DeadFieldAfterAssumevaluesTest extends TestBase {
   private static final Class<?> MAIN = TestClass.class;
   private static final String EXPECTED_OUTPUT = StringUtils.lines("R8");
-  private static final String RULES = StringUtils.lines(
-      "-assumevalues class **.TestClass {",
-      "  static boolean HAS_R8 return true;",
-      "}",
-      "-assumenosideeffects class java.lang.Boolean {",
-      "  static boolean parseBoolean(java.lang.String);",
-      "}"
-  );
+  private static final String RULES =
+      StringUtils.lines(
+          "-assumevalues class **.TestClass {",
+          "  static boolean HAS_R8 return true;",
+          "}",
+          "-assumenosideeffects class java.lang.Boolean {",
+          "  static boolean parseBoolean(java.lang.String);",
+          "}");
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -74,8 +74,8 @@ public class DeadFieldAfterAssumevaluesTest extends TestBase {
     MethodSubject mainMethod = main.mainMethod();
     assertThat(mainMethod, isPresent());
     // After applying -assumevalues, no more branching in the main method.
-    assertTrue(mainMethod.streamInstructions()
-        .noneMatch(i -> i.isIf() || i.isIfEqz() || i.isIfNez()));
+    assertTrue(
+        mainMethod.streamInstructions().noneMatch(i -> i.isIf() || i.isIfEqz() || i.isIfNez()));
 
     FieldSubject hasR8 = main.uniqueFieldWithOriginalName("HAS_R8");
     assertThat(hasR8, not(isPresent()));

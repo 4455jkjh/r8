@@ -72,8 +72,7 @@ public class B115552239 extends TestBase {
   }
 
   @Test
-  public void noLowering()
-      throws IOException, CompilationFailedException, ExecutionException {
+  public void noLowering() throws IOException, CompilationFailedException, ExecutionException {
     MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.L.getMajor());
     boolean previousWasCmp = false;
     DexInstruction[] instructions = method.getMethod().getCode().asDexCode().instructions;

@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.regress.b71604169;
 
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;

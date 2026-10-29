@@ -19,4 +19,3 @@ public class SomeView {
     System.out.println(get(state));
   }
 }
-

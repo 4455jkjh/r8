@@ -8,25 +8,21 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR })
+@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.CLASS)
-@interface Keep {
-}
+@interface Keep {}
 
-class Data {
-}
+class Data {}
 
-class Handler {
-}
+class Handler {}
 
 class Outer {
 
   @Keep
   // Inner class should be private such that members are not single targeted.
-  final private static class Inner {
+  private static final class Inner {
 
-    @Keep
-    private final Data mData;
+    @Keep private final Data mData;
 
     public Inner() {
       mData = init();

@@ -33,10 +33,11 @@ public class SyntheticAndBridgeModifiersTest extends TestBase {
     parameters.assertNoneRuntime();
   }
 
-  static final List<Class<?>> CLASSES = ImmutableList.of(
-      SyntheticAndBridgeModifiersTestClass.class,
-      SyntheticAndBridgeModifiersTestClass.Super.class,
-      SyntheticAndBridgeModifiersTestClass.TestClass.class);
+  static final List<Class<?>> CLASSES =
+      ImmutableList.of(
+          SyntheticAndBridgeModifiersTestClass.class,
+          SyntheticAndBridgeModifiersTestClass.Super.class,
+          SyntheticAndBridgeModifiersTestClass.TestClass.class);
 
   private void runTest(String keepRules, Consumer<ClassSubject> classConsumer) throws Exception {
     testForProguard()
@@ -130,9 +131,7 @@ class SyntheticAndBridgeModifiersTestClass {
   // named this$X).
   class TestClass extends Super {
     // This will have a synthetic static accessor (javac named access$XXX).
-    private void test() {
-
-    }
+    private void test() {}
 
     // javac will create a forwarding bridge with signature 'Object x()'.
     String x() {

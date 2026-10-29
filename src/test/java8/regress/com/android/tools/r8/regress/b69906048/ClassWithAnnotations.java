@@ -14,8 +14,8 @@ public class ClassWithAnnotations {
 
   public static void main(String[] args) {
     try {
-      Method aMethod = ClassWithAnnotations.class
-          .getDeclaredMethod("aMethod", int.class, Object.class);
+      Method aMethod =
+          ClassWithAnnotations.class.getDeclaredMethod("aMethod", int.class, Object.class);
       Annotation[][] parameterAnnotations = aMethod.getParameterAnnotations();
       for (Annotation[] annotations : parameterAnnotations) {
         for (Annotation annotation : annotations) {

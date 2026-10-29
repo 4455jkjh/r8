@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.kotlin.lambda;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;

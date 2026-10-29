@@ -70,134 +70,122 @@ public class IfOnFieldTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void ifOnField_withoutNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **.MainUsesR {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        // R.id1 -> D1
-        "-if class **.R {",
-        "  public static int id1;",
-        "}",
-        "-keep class **.D1",
-        // R.id2 -> D2
-        "-if class **.R {",
-        "  public static int id2;",
-        "}",
-        "-keep class **.D2",
-        // R.id1 && R.id2 -> D
-        "-if class **.R {",
-        "  public static int id1;",
-        "  public static int id2;",
-        "}",
-        "-keep class **.D"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **.MainUsesR {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            // R.id1 -> D1
+            "-if class **.R {",
+            "  public static int id1;",
+            "}",
+            "-keep class **.D1",
+            // R.id2 -> D2
+            "-if class **.R {",
+            "  public static int id2;",
+            "}",
+            "-keep class **.D2",
+            // R.id1 && R.id2 -> D
+            "-if class **.R {",
+            "  public static int id1;",
+            "  public static int id2;",
+            "}",
+            "-keep class **.D");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        R1.class, R2.class, D.class, D2.class);
-    verifyClassesPresent(codeInspector,
-        R.class, D1.class);
+    verifyClassesAbsent(codeInspector, R1.class, R2.class, D.class, D2.class);
+    verifyClassesPresent(codeInspector, R.class, D1.class);
   }
 
   @Test
   public void ifOnField_withNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **.MainUsesR {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        "-if class **.R {",
-        "  public static int id?;",
-        "}",
-        "-keep class **.D<2>"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **.MainUsesR {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            "-if class **.R {",
+            "  public static int id?;",
+            "}",
+            "-keep class **.D<2>");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        R1.class, R2.class, D.class, D2.class);
-    verifyClassesPresent(codeInspector,
-        R.class, D1.class);
+    verifyClassesAbsent(codeInspector, R1.class, R2.class, D.class, D2.class);
+    verifyClassesPresent(codeInspector, R.class, D1.class);
   }
 
   @Test
   public void ifOnFieldWithCapture_withoutNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **.MainWithIf {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        "-if class **.R1 {",
-        "  public static int id*;",
-        "}",
-        "-keep class **.D1",
-        "-if class **.R2 {",
-        "  public static int id*;",
-        "}",
-        "-keep class **.D2"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **.MainWithIf {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            "-if class **.R1 {",
+            "  public static int id*;",
+            "}",
+            "-keep class **.D1",
+            "-if class **.R2 {",
+            "  public static int id*;",
+            "}",
+            "-keep class **.D2");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        R.class, D.class, R1.class, D1.class);
-    verifyClassesPresent(codeInspector,
-        R2.class, D2.class);
+    verifyClassesAbsent(codeInspector, R.class, D.class, R1.class, D1.class);
+    verifyClassesPresent(codeInspector, R2.class, D2.class);
   }
 
   @Test
   public void ifOnFieldWithCapture_withNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **.MainWithIf {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        "-if class **.R* {",
-        "  public static int id*;",
-        "}",
-        "-keep class **.D<2>"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **.MainWithIf {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            "-if class **.R* {",
+            "  public static int id*;",
+            "}",
+            "-keep class **.D<2>");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        R.class, D.class, R1.class, D1.class);
-    verifyClassesPresent(codeInspector,
-        R2.class, D2.class);
+    verifyClassesAbsent(codeInspector, R.class, D.class, R1.class, D1.class);
+    verifyClassesPresent(codeInspector, R2.class, D2.class);
   }
 
   @Test
   public void ifOnFieldWithInner_withoutNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **.MainWithInner {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        "-if class **$*R {",
-        "  public static int id1;",
-        "  public static int id2;",
-        "}",
-        "-keep class **$*D"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **.MainWithInner {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            "-if class **$*R {",
+            "  public static int id1;",
+            "  public static int id2;",
+            "}",
+            "-keep class **$*D");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        R.class, D.class, R1.class, D1.class, R2.class, D2.class);
-    verifyClassesPresent(codeInspector,
-        MainWithInner.InnerR.class, MainWithInner.InnerD.class);
+    verifyClassesAbsent(codeInspector, R.class, D.class, R1.class, D1.class, R2.class, D2.class);
+    verifyClassesPresent(codeInspector, MainWithInner.InnerR.class, MainWithInner.InnerD.class);
   }
 
   @Test
   public void ifOnFieldWithInner_withNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **.MainWithInner {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        "-if class **$*R {",
-        "  public static int id1;",
-        "  public static int id2;",
-        "}",
-        "-keep class <1>$<2>D"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **.MainWithInner {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            "-if class **$*R {",
+            "  public static int id1;",
+            "  public static int id2;",
+            "}",
+            "-keep class <1>$<2>D");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        R.class, D.class, R1.class, D1.class, R2.class, D2.class);
-    verifyClassesPresent(codeInspector,
-        MainWithInner.InnerR.class, MainWithInner.InnerD.class);
+    verifyClassesAbsent(codeInspector, R.class, D.class, R1.class, D1.class, R2.class, D2.class);
+    verifyClassesPresent(codeInspector, MainWithInner.InnerR.class, MainWithInner.InnerD.class);
   }
 
   @Test
@@ -219,8 +207,7 @@ public class IfOnFieldTest extends ProguardCompatibilityTestBase {
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     verifyClassesAbsent(codeInspector, D2.class);
-    verifyClassesPresent(codeInspector,
-        I.class, Impl.class, D1.class);
+    verifyClassesPresent(codeInspector, I.class, Impl.class, D1.class);
   }
 
   @Test
@@ -244,5 +231,4 @@ public class IfOnFieldTest extends ProguardCompatibilityTestBase {
     verifyClassesAbsent(codeInspector, D2.class);
     verifyClassesPresent(codeInspector, I.class, Impl.class, D1.class);
   }
-
 }

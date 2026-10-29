@@ -8,8 +8,9 @@ public class TestMainWithCheckCast {
 
   public static void main(String[] args) throws Exception {
     String thisPackage = TestMainWithCheckCast.class.getPackage().getName();
-    Object o = (TestClassWithDefaultConstructor)
-        Class.forName(thisPackage + ".TestClassWithDefaultConstructor").newInstance();
+    Object o =
+        (TestClassWithDefaultConstructor)
+            Class.forName(thisPackage + ".TestClassWithDefaultConstructor").newInstance();
     System.out.println("Instance of: " + o.getClass().getCanonicalName());
   }
 }

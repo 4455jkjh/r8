@@ -77,8 +77,9 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testCompanionProperty_primitivePropertyIsAlwaysInlined() throws Exception {
     final TestKotlinCompanionClass testedClass = COMPANION_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("properties.CompanionPropertiesKt",
-        "companionProperties_usePrimitiveProp");
+    String mainClass =
+        addMainToClasspath(
+            "properties.CompanionPropertiesKt", "companionProperties_usePrimitiveProp");
     runTest(PROPERTIES_PACKAGE_NAME, mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getOuterClassName()));
   }
@@ -86,8 +87,9 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testCompanionProperty_privatePropertyIsAlwaysInlined() throws Exception {
     final TestKotlinCompanionClass testedClass = COMPANION_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("properties.CompanionPropertiesKt",
-        "companionProperties_usePrivateProp");
+    String mainClass =
+        addMainToClasspath(
+            "properties.CompanionPropertiesKt", "companionProperties_usePrivateProp");
     runTest(PROPERTIES_PACKAGE_NAME, mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getOuterClassName()));
   }
@@ -95,8 +97,9 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testCompanionProperty_internalPropertyIsAlwaysInlined() throws Exception {
     final TestKotlinCompanionClass testedClass = COMPANION_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("properties.CompanionPropertiesKt",
-        "companionProperties_useInternalProp");
+    String mainClass =
+        addMainToClasspath(
+            "properties.CompanionPropertiesKt", "companionProperties_useInternalProp");
     runTest(PROPERTIES_PACKAGE_NAME, mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getOuterClassName()));
   }
@@ -104,8 +107,8 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testCompanionProperty_publicPropertyIsAlwaysInlined() throws Exception {
     final TestKotlinCompanionClass testedClass = COMPANION_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("properties.CompanionPropertiesKt",
-        "companionProperties_usePublicProp");
+    String mainClass =
+        addMainToClasspath("properties.CompanionPropertiesKt", "companionProperties_usePublicProp");
     runTest(PROPERTIES_PACKAGE_NAME, mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getOuterClassName()));
   }
@@ -113,8 +116,10 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testCompanionLateInitProperty_privatePropertyIsAlwaysInlined() throws Exception {
     final TestKotlinCompanionClass testedClass = COMPANION_LATE_INIT_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("properties.CompanionLateInitPropertiesKt",
-        "companionLateInitProperties_usePrivateLateInitProp");
+    String mainClass =
+        addMainToClasspath(
+            "properties.CompanionLateInitPropertiesKt",
+            "companionLateInitProperties_usePrivateLateInitProp");
     runTest(PROPERTIES_PACKAGE_NAME, mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getOuterClassName()));
   }
@@ -122,8 +127,10 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testCompanionLateInitProperty_internalPropertyIsAlwaysInlined() throws Exception {
     final TestKotlinCompanionClass testedClass = COMPANION_LATE_INIT_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("properties.CompanionLateInitPropertiesKt",
-        "companionLateInitProperties_useInternalLateInitProp");
+    String mainClass =
+        addMainToClasspath(
+            "properties.CompanionLateInitPropertiesKt",
+            "companionLateInitProperties_useInternalLateInitProp");
     runTest(PROPERTIES_PACKAGE_NAME, mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getOuterClassName()));
   }
@@ -131,8 +138,10 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testCompanionLateInitProperty_publicPropertyIsAlwaysInlined() throws Exception {
     final TestKotlinCompanionClass testedClass = COMPANION_LATE_INIT_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("properties.CompanionLateInitPropertiesKt",
-        "companionLateInitProperties_usePublicLateInitProp");
+    String mainClass =
+        addMainToClasspath(
+            "properties.CompanionLateInitPropertiesKt",
+            "companionLateInitProperties_usePublicLateInitProp");
     runTest(PROPERTIES_PACKAGE_NAME, mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getOuterClassName()));
   }
@@ -158,8 +167,8 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testAccessorFromPrivate() throws Exception {
     TestKotlinCompanionClass testedClass = ACCESSOR_COMPANION_PROPERTY_CLASS;
-    String mainClass = addMainToClasspath("accessors.AccessorKt",
-        "accessor_accessPropertyFromOuterClass");
+    String mainClass =
+        addMainToClasspath("accessors.AccessorKt", "accessor_accessPropertyFromOuterClass");
     runTest("accessors", mainClass)
         .inspect(
             inspector -> {
@@ -184,8 +193,9 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testPrivatePropertyAccessorForInnerClassCanBeInlined() throws Exception {
     TestKotlinClass testedClass = PROPERTY_ACCESS_FOR_INNER_CLASS;
-    String mainClass = addMainToClasspath(testedClass.className + "Kt",
-        "usePrivatePropertyAccessorFromInnerClass");
+    String mainClass =
+        addMainToClasspath(
+            testedClass.className + "Kt", "usePrivatePropertyAccessorFromInnerClass");
     runTest("accessors", mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getClassName()));
   }
@@ -193,8 +203,9 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testPrivateLateInitPropertyAccessorForInnerClassCanBeInlined() throws Exception {
     TestKotlinClass testedClass = PROPERTY_ACCESS_FOR_INNER_CLASS;
-    String mainClass = addMainToClasspath(testedClass.className + "Kt",
-        "usePrivateLateInitPropertyAccessorFromInnerClass");
+    String mainClass =
+        addMainToClasspath(
+            testedClass.className + "Kt", "usePrivateLateInitPropertyAccessorFromInnerClass");
     runTest("accessors", mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getClassName()));
   }
@@ -202,8 +213,8 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testAccessorForLambdaIsRemovedWhenNotUsed() throws Exception {
     TestKotlinClass testedClass = PROPERTY_ACCESS_FOR_LAMBDA_CLASS;
-    String mainClass = addMainToClasspath(testedClass.className + "Kt",
-        "noUseOfPropertyAccessorFromLambda");
+    String mainClass =
+        addMainToClasspath(testedClass.className + "Kt", "noUseOfPropertyAccessorFromLambda");
     runTest("accessors", mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getClassName()));
   }
@@ -211,8 +222,8 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
   @Test
   public void testAccessorForLambdaCanBeInlined() throws Exception {
     TestKotlinClass testedClass = PROPERTY_ACCESS_FOR_LAMBDA_CLASS;
-    String mainClass = addMainToClasspath(testedClass.className + "Kt",
-        "usePropertyAccessorFromLambda");
+    String mainClass =
+        addMainToClasspath(testedClass.className + "Kt", "usePropertyAccessorFromLambda");
     runTest("accessors", mainClass)
         .inspect(inspector -> checkClassIsRemoved(inspector, testedClass.getClassName()));
   }
@@ -224,25 +235,26 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
     ClassBuilder classBuilder = jasminBuilder.addClass("Foo");
     classBuilder.addDefaultConstructor();
     classBuilder.addStaticField("aField", "I", "5");
-    classBuilder.addMainMethod(
-        ".limit stack 1",
-        "invokestatic Foo$Inner/readField()V",
-        "return"
-    );
-    classBuilder.addStaticMethod("access$field", Collections.emptyList(), "I",
+    classBuilder.addMainMethod(".limit stack 1", "invokestatic Foo$Inner/readField()V", "return");
+    classBuilder.addStaticMethod(
+        "access$field",
+        Collections.emptyList(),
+        "I",
         ".limit stack 1",
         "getstatic Foo.aField I",
         "ireturn");
 
     classBuilder = jasminBuilder.addClass("Foo$Inner");
     classBuilder.addDefaultConstructor();
-    classBuilder.addStaticMethod("readField", Collections.emptyList(), "V",
+    classBuilder.addStaticMethod(
+        "readField",
+        Collections.emptyList(),
+        "V",
         ".limit stack 2",
         "getstatic java/lang/System.out Ljava/io/PrintStream;",
         "invokestatic Foo/access$field()I",
         "invokevirtual java/io/PrintStream/println(I)V",
-        "return"
-    );
+        "return");
 
     Path javaOutput = writeToJar(jasminBuilder);
     ProcessResult javaResult = ToolHelper.runJava(javaOutput, "Foo");
@@ -251,8 +263,9 @@ public class R8KotlinAccessorTest extends AbstractR8KotlinTestBase {
       Assert.fail();
     }
 
-    AndroidApp app = compileWithR8(jasminBuilder.build(),
-        keepMainProguardConfiguration("Foo") + "\n-dontobfuscate");
+    AndroidApp app =
+        compileWithR8(
+            jasminBuilder.build(), keepMainProguardConfiguration("Foo") + "\n-dontobfuscate");
     for (DexRuntime runtime : testParameters.getRuntime().asDexRuntimes()) {
       String artOutput = runOnArt(app, "Foo", runtime.getVm());
       assertEquals(javaResult.stdout, artOutput);

@@ -42,7 +42,9 @@ public class SimplifyIfNotNullKotlinTest extends AbstractR8KotlinTestBase {
   public void test_example1() throws Exception {
     final TestKotlinClass ex1 = new TestKotlinClass("non_null.Example1Kt");
     final MethodSignature testMethodSignature =
-        new MethodSignature("forMakeAndModel", "java.util.SortedMap",
+        new MethodSignature(
+            "forMakeAndModel",
+            "java.util.SortedMap",
             ImmutableList.of("java.util.Collection", STRING, STRING, "java.lang.Integer"));
 
     final String mainClassName = ex1.getClassName();

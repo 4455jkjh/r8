@@ -55,12 +55,17 @@ public final class IntegerBackportTest extends AbstractBackportTest {
 
   static final class Main extends MiniAssert {
     private static final int[] interestingValues = {
-        Integer.MIN_VALUE, Integer.MAX_VALUE,
-        Short.MIN_VALUE, Short.MAX_VALUE,
-        Byte.MIN_VALUE, Byte.MAX_VALUE,
-        0,
-        -1, 1,
-        -42, 42
+      Integer.MIN_VALUE,
+      Integer.MAX_VALUE,
+      Short.MIN_VALUE,
+      Short.MAX_VALUE,
+      Byte.MIN_VALUE,
+      Byte.MAX_VALUE,
+      0,
+      -1,
+      1,
+      -42,
+      42
     };
 
     public static void main(String[] args) {
@@ -261,14 +266,16 @@ public final class IntegerBackportTest extends AbstractBackportTest {
     private static void testToUnsignedStringWithRadix() {
       for (int value : interestingValues) {
         for (int radix = Character.MIN_RADIX; radix <= Character.MAX_RADIX; radix++) {
-          assertEquals(Long.toString(value & 0xffffffffL, radix),
-              Integer.toUnsignedString(value, radix));
+          assertEquals(
+              Long.toString(value & 0xffffffffL, radix), Integer.toUnsignedString(value, radix));
         }
 
         // Invalid radix values are ignored and 10 is used.
-        assertEquals(Long.toString(value & 0xffffffffL),
+        assertEquals(
+            Long.toString(value & 0xffffffffL),
             Integer.toUnsignedString(value, Character.MIN_RADIX - 1));
-        assertEquals(Long.toString(value & 0xffffffffL),
+        assertEquals(
+            Long.toString(value & 0xffffffffL),
             Integer.toUnsignedString(value, Character.MAX_RADIX + 1));
       }
     }

@@ -88,5 +88,4 @@ public class InterfaceToImplementingClassDependencyTest extends TestBase {
       }
     }
   }
-
 }

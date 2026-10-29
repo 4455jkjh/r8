@@ -9,9 +9,7 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-/**
- * Generates a main class that invokes a default method via a static invoke.
- */
+/** Generates a main class that invokes a default method via a static invoke. */
 public class MainDump implements Opcodes {
 
   public static byte[] dump() {
@@ -33,8 +31,9 @@ public class MainDump implements Opcodes {
       mv.visitEnd();
     }
     {
-      mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC + ACC_VARARGS, "main", "([Ljava/lang/String;)V",
-          null, null);
+      mv =
+          cw.visitMethod(
+              ACC_PUBLIC + ACC_STATIC + ACC_VARARGS, "main", "([Ljava/lang/String;)V", null, null);
       mv.visitCode();
       mv.visitMethodInsn(INVOKESTATIC, "Interface", "aMethod", "()V", false);
       mv.visitInsn(RETURN);
@@ -46,4 +45,3 @@ public class MainDump implements Opcodes {
     return cw.toByteArray();
   }
 }
-

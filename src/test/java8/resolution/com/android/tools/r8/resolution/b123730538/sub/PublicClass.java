@@ -3,5 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.resolution.b123730538.sub;
 
-public class PublicClass extends AbstractClass {
-}
+public class PublicClass extends AbstractClass {}

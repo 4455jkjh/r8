@@ -17,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.objectweb.asm.Opcodes;
+
 // This is a reproduction of b/153042496 in a java-only setting.
 
 @RunWith(Parameterized.class)

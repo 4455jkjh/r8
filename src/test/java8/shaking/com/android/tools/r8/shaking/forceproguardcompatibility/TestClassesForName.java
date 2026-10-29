@@ -4,33 +4,30 @@
 package com.android.tools.r8.shaking.forceproguardcompatibility;
 
 class TestClassWithDefaultConstructor {
-  public TestClassWithDefaultConstructor() {
-  }
+  public TestClassWithDefaultConstructor() {}
 
-  public TestClassWithDefaultConstructor(int i) {
-  }
+  public TestClassWithDefaultConstructor(int i) {}
 
-  public void method() {
-  }
+  public void method() {}
 }
 
 class TestClassWithoutDefaultConstructor {
-  public TestClassWithoutDefaultConstructor(int i) {
-  }
+  public TestClassWithoutDefaultConstructor(int i) {}
 
-  public void method() {
-  }
+  public void method() {}
 }
 
 class TestMainWithClassForName {
   private static void method1() throws Exception {
-    System.out.println(Class.forName(
-        "com.android.tools.r8.shaking.forceproguardcompatibility.TestClassWithoutDefaultConstructor"));
+    System.out.println(
+        Class.forName(
+            "com.android.tools.r8.shaking.forceproguardcompatibility.TestClassWithoutDefaultConstructor"));
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println(Class.forName(
-        "com.android.tools.r8.shaking.forceproguardcompatibility.TestClassWithDefaultConstructor"));
+    System.out.println(
+        Class.forName(
+            "com.android.tools.r8.shaking.forceproguardcompatibility.TestClassWithDefaultConstructor"));
     TestMainWithClassForName.method1();
   }
 }

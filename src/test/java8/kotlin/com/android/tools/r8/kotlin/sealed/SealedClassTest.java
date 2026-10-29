@@ -39,8 +39,7 @@ public class SealedClassTest extends KotlinTestBase {
 
   private static final KotlinCompileMemoizer compilationResults =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(
-              "com/android/tools/r8/kotlin/sealed/kt", "Format"));
+          getKotlinSourceFileFromResources("com/android/tools/r8/kotlin/sealed/kt", "Format"));
 
   @Test
   public void testRuntime() throws ExecutionException, CompilationFailedException, IOException {

@@ -32,7 +32,9 @@ class InitMatchingTestClass {
   // Trivial <clinit>
   static {
   }
+
   int field;
+
   public InitMatchingTestClass(int arg) {
     field = arg;
   }
@@ -40,12 +42,31 @@ class InitMatchingTestClass {
 
 @RunWith(Parameterized.class)
 public class InitMatchingTest extends TestBase {
-  public static final List<String> INIT_NAMES = ImmutableList.of(
-      "<random>", "<clinit>", "<init>", "<*init>", "<in*>", "<in*", "*init>", "<1>", "<<1>init>",
-      "void <clinit>", "void <init>", "void <*init>", "void <in*>", "void <in*", "void *init>",
-      "void <1>", "void <<1>init>", "public void <init>", "public void <*init>",
-      "public void <clinit>", "static void <clinit>", "XYZ <clinit>", "private XYZ <init>"
-  );
+  public static final List<String> INIT_NAMES =
+      ImmutableList.of(
+          "<random>",
+          "<clinit>",
+          "<init>",
+          "<*init>",
+          "<in*>",
+          "<in*",
+          "*init>",
+          "<1>",
+          "<<1>init>",
+          "void <clinit>",
+          "void <init>",
+          "void <*init>",
+          "void <in*>",
+          "void <in*",
+          "void *init>",
+          "void <1>",
+          "void <<1>init>",
+          "public void <init>",
+          "public void <*init>",
+          "public void <clinit>",
+          "static void <clinit>",
+          "XYZ <clinit>",
+          "private XYZ <init>");
 
   @Parameters(name = "{0} \"{1}\"")
   public static List<Object[]> data() {
@@ -64,16 +85,33 @@ public class InitMatchingTest extends TestBase {
     return "-keep class * { " + initName + "(...); }";
   }
 
-  private static final List<String> ALLOWED_INIT_NAMES_PG = ImmutableList.of(
-      "<init>", "void <clinit>", "void <init>", "void <1>", "public void <init>",
-      "void <*init>", "void <in*>", "void *init>", "public void <*init>",
-      "void <<1>init>", "public void <clinit>", "static void <clinit>",
-      "XYZ <clinit>", "private XYZ <init>");
-  private static final List<String> EFFECTIVE_INIT_NAMES_PG = ImmutableList.of(
-      "<init>", "void <init>", "public void <init>",
-      "void <*init>", "void <in*>", "void *init>", "public void <*init>");
-  private static final List<String> EFFECTIVE_CLINIT_NAMES_PG = ImmutableList.of(
-      "void <clinit>", "static void <clinit>", "void <*init>", "void *init>");
+  private static final List<String> ALLOWED_INIT_NAMES_PG =
+      ImmutableList.of(
+          "<init>",
+          "void <clinit>",
+          "void <init>",
+          "void <1>",
+          "public void <init>",
+          "void <*init>",
+          "void <in*>",
+          "void *init>",
+          "public void <*init>",
+          "void <<1>init>",
+          "public void <clinit>",
+          "static void <clinit>",
+          "XYZ <clinit>",
+          "private XYZ <init>");
+  private static final List<String> EFFECTIVE_INIT_NAMES_PG =
+      ImmutableList.of(
+          "<init>",
+          "void <init>",
+          "public void <init>",
+          "void <*init>",
+          "void <in*>",
+          "void *init>",
+          "public void <*init>");
+  private static final List<String> EFFECTIVE_CLINIT_NAMES_PG =
+      ImmutableList.of("void <clinit>", "static void <clinit>", "void <*init>", "void *init>");
 
   @BeforeClass
   public static void checkPGInitNames() {
@@ -100,7 +138,8 @@ public class InitMatchingTest extends TestBase {
       if (initName.equals("void <in*")) {
         assertThat(e.getMessage(), containsString("Missing closing angular bracket"));
       } else {
-        assertThat(e.getMessage(),
+        assertThat(
+            e.getMessage(),
             containsString("Expecting type and name instead of just '" + initName + "'"));
       }
       return;
@@ -126,13 +165,20 @@ public class InitMatchingTest extends TestBase {
   }
 
   // "[[access-flag]* void] <[cl]init>" is the only valid format. Plus legitimate back-references.
-  public static final List<String> ALLOWED_INIT_NAMES = ImmutableList.of(
-      "<clinit>", "<init>", "void <clinit>", "void <init>", "void <1>",
-      "public void <init>", "public void <clinit>", "static void <clinit>");
-  private static final List<String> EFFECTIVE_INIT_NAMES = ImmutableList.of(
-      "<init>", "void <init>", "public void <init>");
-  private static final List<String> EFFECTIVE_CLINIT_NAMES = ImmutableList.of(
-      "<clinit>", "void <clinit>", "static void <clinit>");
+  public static final List<String> ALLOWED_INIT_NAMES =
+      ImmutableList.of(
+          "<clinit>",
+          "<init>",
+          "void <clinit>",
+          "void <init>",
+          "void <1>",
+          "public void <init>",
+          "public void <clinit>",
+          "static void <clinit>");
+  private static final List<String> EFFECTIVE_INIT_NAMES =
+      ImmutableList.of("<init>", "void <init>", "public void <init>");
+  private static final List<String> EFFECTIVE_CLINIT_NAMES =
+      ImmutableList.of("<clinit>", "void <clinit>", "static void <clinit>");
 
   @BeforeClass
   public static void checkR8InitNames() {
@@ -156,19 +202,17 @@ public class InitMatchingTest extends TestBase {
     } catch (CompilationFailedException e) {
       assertFalse(ALLOWED_INIT_NAMES.contains(initName));
       if (initName.contains("XYZ")) {
-        assertThat(e.getCause().getMessage(),
-            containsString("Expected [access-flag]* void "));
+        assertThat(e.getCause().getMessage(), containsString("Expected [access-flag]* void "));
         return;
       }
-      assertThat(e.getCause().getMessage(),
+      assertThat(
+          e.getCause().getMessage(),
           containsString("Unexpected character '" + (initName.contains("<") ? "<" : ">") + "'"));
-      assertThat(e.getCause().getMessage(),
-          containsString("only allowed in the method name '<init>'"));
+      assertThat(
+          e.getCause().getMessage(), containsString("only allowed in the method name '<init>'"));
       return;
     }
-    result
-        .assertNoMessages()
-        .inspect(this::inspectR8);
+    result.assertNoMessages().inspect(this::inspectR8);
   }
 
   private void inspectR8(CodeInspector inspector) {

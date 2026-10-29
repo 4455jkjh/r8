@@ -34,8 +34,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 class SuperClass {
-  SuperClass(double a, double b, Object c) {
-  }
+  SuperClass(double a, double b, Object c) {}
 }
 
 class SubClass extends SuperClass {
@@ -64,9 +63,8 @@ public class B68378480 extends TestBase {
 
   private DexCode compileClassesGetSubClassInit(int minApi)
       throws IOException, CompilationFailedException {
-    D8Command.Builder builder = D8Command.builder()
-        .setMode(CompilationMode.RELEASE)
-        .setMinApiLevel(minApi);
+    D8Command.Builder builder =
+        D8Command.builder().setMode(CompilationMode.RELEASE).setMinApiLevel(minApi);
     List<Class> classes = ImmutableList.of(SuperClass.class, SubClass.class, Main.class);
     for (Class c : classes) {
       builder.addClassProgramData(ToolHelper.getClassAsBytes(c), Origin.unknown());

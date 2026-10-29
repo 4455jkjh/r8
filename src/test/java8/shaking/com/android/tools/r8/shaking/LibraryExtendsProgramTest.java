@@ -32,15 +32,19 @@ public class LibraryExtendsProgramTest extends TestBase {
 
   @Test(expected = CompilationFailedException.class)
   public void libraryClassExtendsProgramClass() throws Exception {
-    AndroidApp theApp = readClasses(ImmutableList.of(Main.class, SuperClass.class),
-        ImmutableList.of(SubClass.class, Interface.class));
+    AndroidApp theApp =
+        readClasses(
+            ImmutableList.of(Main.class, SuperClass.class),
+            ImmutableList.of(SubClass.class, Interface.class));
     compileWithR8(theApp, o -> o.ignoreMissingClasses = true);
   }
 
   @Test(expected = CompilationFailedException.class)
   public void libraryClassImplementsProgramInterface() throws Exception {
-    AndroidApp theApp = readClasses(ImmutableList.of(Main.class, Interface.class),
-        ImmutableList.of(SubClass.class, SuperClass.class));
+    AndroidApp theApp =
+        readClasses(
+            ImmutableList.of(Main.class, Interface.class),
+            ImmutableList.of(SubClass.class, SuperClass.class));
     compileWithR8(theApp, o -> o.ignoreMissingClasses = true);
   }
 }

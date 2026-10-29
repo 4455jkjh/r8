@@ -18,7 +18,9 @@ public class FeatureAPI {
   }
 
   public static void feature(int i)
-      throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
+      throws ClassNotFoundException,
+          NoSuchMethodException,
+          InvocationTargetException,
           IllegalAccessException {
     Class<?> featureKtClass = Class.forName(FeatureAPI.class.getPackage().getName() + ".FeatureKt");
     Method featureMethod = featureKtClass.getMethod("feature", int.class);

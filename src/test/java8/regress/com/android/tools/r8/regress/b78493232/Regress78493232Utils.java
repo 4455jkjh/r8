@@ -35,8 +35,13 @@ public class Regress78493232Utils {
       return;
     }
     System.out.println(
-        "After " + iterations + " iterations, expected \"" +
-        expected + "\", but got \"" + output + "\"");
+        "After "
+            + iterations
+            + " iterations, expected \""
+            + expected
+            + "\", but got \""
+            + output
+            + "\"");
     // Exit with code 0 to allow test to use ensureSameOutput().
     System.exit(0);
   }
@@ -48,8 +53,7 @@ public class Regress78493232Utils {
       return;
     }
     System.out.println(
-        "After " + iterations + " iterations, expected hash " +
-        expected + ", but got " + output);
+        "After " + iterations + " iterations, expected hash " + expected + ", but got " + output);
     System.out.println("staticIntA: " + a);
     System.out.println("staticIntB: " + b);
     System.out.print("staticIntByteArray: ");

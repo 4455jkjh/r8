@@ -50,15 +50,16 @@ public class KeptLambdaDesugaringTest extends TestBase {
     }
 
     public void method() {
-      Runnable runnable = () -> {
-        // The use of reflection will trigger Enqueuer.handleReflectiveBehavior.
-        try {
-          A.class.getDeclaredField("message");
-        } catch (NoSuchFieldException e) {
-          throw new RuntimeException(e);
-        }
-        System.out.print(message);
-      };
+      Runnable runnable =
+          () -> {
+            // The use of reflection will trigger Enqueuer.handleReflectiveBehavior.
+            try {
+              A.class.getDeclaredField("message");
+            } catch (NoSuchFieldException e) {
+              throw new RuntimeException(e);
+            }
+            System.out.print(message);
+          };
       runnable.run();
     }
   }

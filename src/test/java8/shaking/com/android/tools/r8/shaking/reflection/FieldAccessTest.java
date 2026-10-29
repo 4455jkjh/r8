@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 package com.android.tools.r8.shaking.reflection;
+
 import static com.android.tools.r8.references.Reference.fieldFromField;
 import static com.android.tools.r8.references.Reference.methodFromMethod;
 import static org.junit.Assert.assertEquals;
@@ -34,9 +35,8 @@ public class FieldAccessTest extends TestBase {
   }
 
   private boolean isInvokeGetField(InstructionSubject instruction) {
-    return
-        instruction.isInvoke()
-            && instruction.getMethod().qualifiedName().equals("java.lang.Class.getField");
+    return instruction.isInvoke()
+        && instruction.getMethod().qualifiedName().equals("java.lang.Class.getField");
   }
 
   private void runTest(Class<?> testClass) throws Exception {

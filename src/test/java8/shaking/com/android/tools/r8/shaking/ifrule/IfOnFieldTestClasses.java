@@ -3,14 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.ifrule;
 
-class D1 {
-}
+class D1 {}
 
-class D2 {
-}
+class D2 {}
 
-class D {
-}
+class D {}
 
 class R1 {
   public static int id1 = System.currentTimeMillis() >= 0 ? 1 : 0;
@@ -45,7 +42,7 @@ class Impl implements I {
 class MainUsesR {
   public static void main(String[] args) {
     System.out.println(R.id1);
-    //System.out.println(R.id2);
+    // System.out.println(R.id2);
   }
 }
 
@@ -68,8 +65,7 @@ class MainWithInner {
     public static int id2 = System.currentTimeMillis() >= 0 ? 2 : 0;
   }
 
-  public static class InnerD {
-  }
+  public static class InnerD {}
 
   public static void main(String[] args) {
     System.out.println(InnerR.id1);

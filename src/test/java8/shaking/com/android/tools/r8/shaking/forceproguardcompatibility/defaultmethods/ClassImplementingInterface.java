@@ -8,6 +8,6 @@ public class ClassImplementingInterface implements InterfaceWithDefaultMethods {
   public int method() {
     return 41;
   }
-  public void method2(String x, int y) {
-  }
+
+  public void method2(String x, int y) {}
 }

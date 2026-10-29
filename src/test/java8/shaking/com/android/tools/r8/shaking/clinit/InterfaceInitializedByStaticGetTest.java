@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking.clinit;
 
-
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;

@@ -43,9 +43,7 @@ public class KeepAttributesTest extends TestBase {
   @Test
   public void keepAllAttributesInDebugMode()
       throws ExecutionException, CompilationFailedException, IOException {
-    List<String> keepRules = ImmutableList.of(
-        "-keep class ** { *; }"
-    );
+    List<String> keepRules = ImmutableList.of("-keep class ** { *; }");
     MethodSubject mainMethod = compileRunAndGetMain(keepRules, CompilationMode.DEBUG);
     assertTrue(mainMethod.hasLineNumberTable());
     assertTrue(mainMethod.hasLocalVariableTable());
@@ -54,9 +52,7 @@ public class KeepAttributesTest extends TestBase {
   @Test
   public void discardAllAttributes()
       throws CompilationFailedException, IOException, ExecutionException {
-    List<String> keepRules = ImmutableList.of(
-        "-keep class ** { *; }"
-    );
+    List<String> keepRules = ImmutableList.of("-keep class ** { *; }");
     MethodSubject mainMethod = compileRunAndGetMain(keepRules, CompilationMode.RELEASE);
     // R8 now defaults to retain the line number table regardless of -keepattributes.
     assertEquals(doesNotHavePcSupport(), mainMethod.hasLineNumberTable());
@@ -70,9 +66,8 @@ public class KeepAttributesTest extends TestBase {
   @Test
   public void keepLineNumberTable()
       throws CompilationFailedException, IOException, ExecutionException {
-    List<String> keepRules = ImmutableList.of(
-        "-keepattributes " + ProguardKeepAttributes.LINE_NUMBER_TABLE
-    );
+    List<String> keepRules =
+        ImmutableList.of("-keepattributes " + ProguardKeepAttributes.LINE_NUMBER_TABLE);
     MethodSubject mainMethod = compileRunAndGetMain(keepRules, CompilationMode.RELEASE);
     assertEquals(doesNotHavePcSupport(), mainMethod.hasLineNumberTable());
     assertFalse(mainMethod.hasLocalVariableTable());

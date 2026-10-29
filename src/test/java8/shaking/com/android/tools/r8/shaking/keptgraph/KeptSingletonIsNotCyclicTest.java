@@ -76,8 +76,7 @@ public class KeptSingletonIsNotCyclicTest extends TestBase {
     MethodReference fooInitRef = Reference.methodFromMethod(fooClass.getDeclaredConstructor());
 
     FieldReference testFooFieldRef = Reference.fieldFromField(testClass.getDeclaredField("foo"));
-    MethodReference testInitRef =
-        Reference.methodFromMethod(testClass.getDeclaredConstructor());
+    MethodReference testInitRef = Reference.methodFromMethod(testClass.getDeclaredConstructor());
 
     MethodReference mainMethodRef =
         Reference.methodFromMethod(testClass.getDeclaredMethod("main", String[].class));
@@ -136,8 +135,7 @@ public class KeptSingletonIsNotCyclicTest extends TestBase {
   @NeverClassInline
   public static class TestStaticMethod {
 
-    @NeverPropagateValue
-    public FooStaticMethod foo;
+    @NeverPropagateValue public FooStaticMethod foo;
 
     public TestStaticMethod() {
       this.foo = FooStaticMethod.getInstance();
@@ -167,8 +165,7 @@ public class KeptSingletonIsNotCyclicTest extends TestBase {
   @NeverClassInline
   public static class TestStaticField {
 
-    @NeverPropagateValue
-    public FooStaticField foo;
+    @NeverPropagateValue public FooStaticField foo;
 
     public TestStaticField() {
       this.foo = FooStaticField.INSTANCE;

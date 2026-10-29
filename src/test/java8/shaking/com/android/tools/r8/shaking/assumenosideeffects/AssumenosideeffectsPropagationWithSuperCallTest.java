@@ -30,16 +30,12 @@ public class AssumenosideeffectsPropagationWithSuperCallTest extends TestBase {
       switch (this) {
         case SPECIFIC_RULES:
           return StringUtils.lines(
-              "-assumenosideeffects class **.*Sub* {",
-              "  *** debug(...);",
-              "}"
-          );
+              "-assumenosideeffects class **.*Sub* {", "  *** debug(...);", "}");
         case NON_SPECIFIC_RULES_WITH_EXTENDS:
           return StringUtils.lines(
               "-assumenosideeffects class * extends " + BaseClass.class.getTypeName() + " {",
               "  *** debug(...);",
-              "}"
-          );
+              "}");
         default:
           throw new Unreachable();
       }

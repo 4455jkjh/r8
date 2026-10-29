@@ -148,6 +148,7 @@ public class EffectivelyFinalStaticFieldsTest extends TestBase {
   @NoVerticalClassMerging
   static class StaticFieldWithInitialization_Z {
     static boolean alwaysFalse;
+
     @NeverInline
     static void not_clinit() {
       alwaysFalse = false;
@@ -155,9 +156,9 @@ public class EffectivelyFinalStaticFieldsTest extends TestBase {
   }
 
   @NeverClassInline
-  static class StaticFieldWithNonTrivialInitialization_Z
-      extends StaticFieldWithInitialization_Z {
+  static class StaticFieldWithNonTrivialInitialization_Z extends StaticFieldWithInitialization_Z {
     static boolean alwaysTrue;
+
     @NeverInline
     static void not_clinit() {
       alwaysTrue = alwaysFalse;
@@ -173,6 +174,7 @@ public class EffectivelyFinalStaticFieldsTest extends TestBase {
   @NeverClassInline
   static class StaticFieldWithInitialization_I {
     static int alwaysZero;
+
     static {
       alwaysZero = 0;
     }
@@ -201,6 +203,7 @@ public class EffectivelyFinalStaticFieldsTest extends TestBase {
   @NeverClassInline
   static class StaticFieldWithInitialization_L {
     static Object alwaysNull;
+
     @NeverInline
     static void not_clinit() {
       alwaysNull = null;

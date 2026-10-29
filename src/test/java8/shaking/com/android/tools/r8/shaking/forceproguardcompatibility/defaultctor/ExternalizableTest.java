@@ -44,8 +44,7 @@ final class ExternalizableDataClass implements Externalizable {
   private Object objectField;
 
   // Default constructor for deserialization
-  public ExternalizableDataClass() {
-  }
+  public ExternalizableDataClass() {}
 
   // Constructor for serialization
   public ExternalizableDataClass(byte byteField, Object objectField) {
@@ -80,8 +79,10 @@ final class ExternalizableDataClass implements Externalizable {
 
   private static Object readInternal(byte type, DataInput in) throws IOException {
     switch (type) {
-      case TYPE_1: return Delegate1.delegateRead(in);
-      case TYPE_2: return Delegate2.delegateRead(in);
+      case TYPE_1:
+        return Delegate1.delegateRead(in);
+      case TYPE_2:
+        return Delegate2.delegateRead(in);
       default:
         throw new InvalidClassException("Unknown type: " + type);
     }
@@ -280,27 +281,29 @@ public class ExternalizableTest extends ProguardCompatibilityTestBase {
   public void testExternalizable() throws Exception {
     String javaOutput = runOnJava(ExternalizableTestMain.class);
 
-    List<String> config = ImmutableList.of(
-        keepMainProguardConfiguration(ExternalizableTestMain.class),
-        // https://www.guardsquare.com/en/products/proguard/manual/examples#serializable
-        "-keepclassmembers class * implements java.io.Serializable {",
-        //"  private static final java.io.ObjectStreamField[] serialPersistentFields;",
-        "  private void writeObject(java.io.ObjectOutputStream);",
-        "  private void readObject(java.io.ObjectInputStream);",
-        "  java.lang.Object writeReplace();",
-        "  java.lang.Object readResolve();",
-        "}");
+    List<String> config =
+        ImmutableList.of(
+            keepMainProguardConfiguration(ExternalizableTestMain.class),
+            // https://www.guardsquare.com/en/products/proguard/manual/examples#serializable
+            "-keepclassmembers class * implements java.io.Serializable {",
+            // "  private static final java.io.ObjectStreamField[] serialPersistentFields;",
+            "  private void writeObject(java.io.ObjectOutputStream);",
+            "  private void readObject(java.io.ObjectInputStream);",
+            "  java.lang.Object writeReplace();",
+            "  java.lang.Object readResolve();",
+            "}");
 
     if (shrinker.isFullModeR8()) {
       // R8 full mode does not keep the default constructor unless explicitly specified.
-      config = ImmutableList.<String>builder()
-          .addAll(config)
-          .addAll(ImmutableList.of(
-              "-keepclassmembers class * implements java.io.Externalizable {",
-              "  public void <init>();",
-              "}"
-          ))
-          .build();
+      config =
+          ImmutableList.<String>builder()
+              .addAll(config)
+              .addAll(
+                  ImmutableList.of(
+                      "-keepclassmembers class * implements java.io.Externalizable {",
+                      "  public void <init>();",
+                      "}"))
+              .build();
     }
 
     AndroidApp processedApp = runShrinker(shrinker, CLASSES_FOR_EXTERNALIZABLE, config);
@@ -331,16 +334,17 @@ public class ExternalizableTest extends ProguardCompatibilityTestBase {
   private void testSerializable(boolean enableVerticalClassMerging) throws Exception {
     String javaOutput = runOnJava(SerializableTestMain.class);
 
-    List<String> config = ImmutableList.of(
-        keepMainProguardConfiguration(SerializableTestMain.class),
-        // https://www.guardsquare.com/en/products/proguard/manual/examples#serializable
-        "-keepclassmembers class * implements java.io.Serializable {",
-        //"  private static final java.io.ObjectStreamField[] serialPersistentFields;",
-        "  private void writeObject(java.io.ObjectOutputStream);",
-        "  private void readObject(java.io.ObjectInputStream);",
-        "  java.lang.Object writeReplace();",
-        "  java.lang.Object readResolve();",
-        "}");
+    List<String> config =
+        ImmutableList.of(
+            keepMainProguardConfiguration(SerializableTestMain.class),
+            // https://www.guardsquare.com/en/products/proguard/manual/examples#serializable
+            "-keepclassmembers class * implements java.io.Serializable {",
+            // "  private static final java.io.ObjectStreamField[] serialPersistentFields;",
+            "  private void writeObject(java.io.ObjectOutputStream);",
+            "  private void readObject(java.io.ObjectInputStream);",
+            "  java.lang.Object writeReplace();",
+            "  java.lang.Object readResolve();",
+            "}");
 
     AndroidApp processedApp =
         runShrinker(

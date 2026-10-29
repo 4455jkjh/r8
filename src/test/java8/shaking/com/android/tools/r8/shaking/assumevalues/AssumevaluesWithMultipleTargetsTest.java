@@ -83,42 +83,27 @@ public class AssumevaluesWithMultipleTargetsTest extends TestBase {
     RULE_THAT_DIRECTLY_REFERS_INTERFACE,
     RULE_WITH_IMPLEMENTS;
 
-    private static final String SEED_RULE = StringUtils.lines(
-        "-assumenosideeffects class **.Seed {",
-        "  static int seed() return 42;",
-        "}"
-    );
+    private static final String SEED_RULE =
+        StringUtils.lines(
+            "-assumenosideeffects class **.Seed {", "  static int seed() return 42;", "}");
 
     public String getKeepRule() {
       switch (this) {
         case RULE_THAT_DIRECTLY_REFERS_CLASS:
           return StringUtils.lines(
-              SEED_RULE,
-              "-assumevalues class **.Itf {",
-              "  int m() return 8;",
-              "}");
+              SEED_RULE, "-assumevalues class **.Itf {", "  int m() return 8;", "}");
         case RULE_THAT_DIRECTLY_REFERS_INTERFACE:
           return StringUtils.lines(
-              SEED_RULE,
-              "-assumevalues interface **.Itf {",
-              "  int m() return 8;",
-              "}");
+              SEED_RULE, "-assumevalues interface **.Itf {", "  int m() return 8;", "}");
         case RULE_WITH_IMPLEMENTS:
           return StringUtils.lines(
-              SEED_RULE,
-              "-assumevalues class * implements **.Itf {",
-              "  int m() return 8;",
-              "}");
+              SEED_RULE, "-assumevalues class * implements **.Itf {", "  int m() return 8;", "}");
       }
       throw new Unreachable();
     }
 
-    private static final String OUTPUT_WITH_FULL_REPLACEMENT = StringUtils.lines(
-        "8",
-        "8",
-        "8",
-        "The end"
-    );
+    private static final String OUTPUT_WITH_FULL_REPLACEMENT =
+        StringUtils.lines("8", "8", "8", "The end");
 
     public void inspect(CodeInspector inspector) {
       ClassSubject main = inspector.clazz(MAIN);
@@ -127,16 +112,18 @@ public class AssumevaluesWithMultipleTargetsTest extends TestBase {
       MethodSubject mainMethod = main.mainMethod();
       assertThat(mainMethod, isPresent());
       assertTrue(
-          mainMethod.streamInstructions().noneMatch(
-              i -> i.isInvoke() && i.getMethod().name.toString().equals("m")));
+          mainMethod
+              .streamInstructions()
+              .noneMatch(i -> i.isInvoke() && i.getMethod().name.toString().equals("m")));
 
       MethodSubject testInvokeInterface = main.uniqueMethodWithOriginalName("testInvokeInterface");
       assertThat(testInvokeInterface, isPresent());
       // With call site optimizations, the dynamic type of the argument is accurate (Impl1),
       // hence the accurate resolution of the method call, resulting in rule application.
       assertTrue(
-          testInvokeInterface.streamInstructions().noneMatch(
-              i -> i.isInvoke() && i.getMethod().name.toString().equals("m")));
+          testInvokeInterface
+              .streamInstructions()
+              .noneMatch(i -> i.isInvoke() && i.getMethod().name.toString().equals("m")));
     }
   }
 

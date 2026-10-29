@@ -89,13 +89,17 @@ public class KeepClassMembersTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void regress69028743() throws Exception {
-    runTest(MainUsingWithDefaultConstructor.class,
-        PureStaticClassWithDefaultConstructor.class, false);
-    runTest(MainUsingWithDefaultConstructor.class,
-        PureStaticClassWithDefaultConstructor.class, true);
-    runTest(MainUsingWithoutDefaultConstructor.class,
-        PureStaticClassWithoutDefaultConstructor.class, false);
-    runTest(MainUsingWithoutDefaultConstructor.class,
-        PureStaticClassWithoutDefaultConstructor.class, true);
+    runTest(
+        MainUsingWithDefaultConstructor.class, PureStaticClassWithDefaultConstructor.class, false);
+    runTest(
+        MainUsingWithDefaultConstructor.class, PureStaticClassWithDefaultConstructor.class, true);
+    runTest(
+        MainUsingWithoutDefaultConstructor.class,
+        PureStaticClassWithoutDefaultConstructor.class,
+        false);
+    runTest(
+        MainUsingWithoutDefaultConstructor.class,
+        PureStaticClassWithoutDefaultConstructor.class,
+        true);
   }
 }

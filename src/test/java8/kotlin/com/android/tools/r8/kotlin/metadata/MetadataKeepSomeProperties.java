@@ -41,7 +41,8 @@ public class MetadataKeepSomeProperties extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer libJars =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/metadata_pruned_fields", "Methods"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/metadata_pruned_fields", "Methods"));
 
   @Test
   public void testR8() throws Exception {

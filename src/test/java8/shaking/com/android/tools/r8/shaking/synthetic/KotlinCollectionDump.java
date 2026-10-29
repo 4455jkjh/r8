@@ -110,4 +110,3 @@ class Sub implements Opcodes {
     return classWriter.toByteArray();
   }
 }
-

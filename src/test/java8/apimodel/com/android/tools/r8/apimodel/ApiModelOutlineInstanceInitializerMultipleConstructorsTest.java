@@ -57,13 +57,13 @@ public class ApiModelOutlineInstanceInitializerMultipleConstructorsTest extends 
   @Test
   public void testD8Debug() throws Exception {
     parameters.assumeDexRuntime();
-      testForD8()
-          .setMode(CompilationMode.DEBUG)
-          .apply(this::setupTestBuilder)
-          .compile()
-          .addBootClasspathClasses(LibraryClass.class)
-          .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutputLines("Hello World!");
+    testForD8()
+        .setMode(CompilationMode.DEBUG)
+        .apply(this::setupTestBuilder)
+        .compile()
+        .addBootClasspathClasses(LibraryClass.class)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello World!");
   }
 
   @Test

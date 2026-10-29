@@ -58,9 +58,7 @@ public class NestVirtualMethodAccessTest extends TestBase {
 
   public Collection<byte[]> getTransformedClasses() throws Exception {
     return ImmutableList.of(
-        withNest(A.class)
-            .setPrivate(A.class.getDeclaredMethod("bar"))
-            .transform(),
+        withNest(A.class).setPrivate(A.class.getDeclaredMethod("bar")).transform(),
         withNest(B.class).transform());
   }
 

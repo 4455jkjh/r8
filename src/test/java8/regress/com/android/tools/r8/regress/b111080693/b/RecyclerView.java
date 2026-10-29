@@ -21,8 +21,7 @@ public class RecyclerView {
   }
 
   private class RecyclerViewDataObserver extends AdapterDataObserver {
-    RecyclerViewDataObserver() {
-    }
+    RecyclerViewDataObserver() {}
 
     @Override
     public void onChanged() {
@@ -37,6 +36,7 @@ public class RecyclerView {
     public void registerObserver(AdapterDataObserver observer) {
       mObservers.add(observer);
     }
+
     public void notifyChanged() {
       for (int i = mObservers.size() - 1; i >= 0; i--) {
         // The single target, RecyclerViewDataObserver#onChange is inlined, along with check-cast:
@@ -74,5 +74,4 @@ public class RecyclerView {
   public void setAdapter(Adapter adapter) {
     adapter.registerAdapterDataObserver(mObserver);
   }
-
 }

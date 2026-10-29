@@ -42,9 +42,7 @@ public class Regress78493232 extends AsmTestBase {
 
   // Main method to build a test jar for testing on device.
   public static void main(String[] args) throws IOException {
-    Path output = args.length > 0
-        ? Paths.get(args[0])
-        : Paths.get("Regress78493232.jar");
+    Path output = args.length > 0 ? Paths.get(args[0]) : Paths.get("Regress78493232.jar");
     ArchiveConsumer consumer = new ArchiveConsumer(output);
     consumer.accept(
         ByteDataView.of(Regress78493232Dump.dump()), Regress78493232Dump.CLASS_DESC, null);

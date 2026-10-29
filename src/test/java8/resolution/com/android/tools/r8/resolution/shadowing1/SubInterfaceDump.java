@@ -18,16 +18,21 @@ public class SubInterfaceDump implements Opcodes {
     MethodVisitor mv;
     AnnotationVisitor av0;
 
-    cw.visit(V1_8, ACC_ABSTRACT + ACC_INTERFACE, "SubInterface", null, "java/lang/Object",
-        new String[]{"Interface"});
+    cw.visit(
+        V1_8,
+        ACC_ABSTRACT + ACC_INTERFACE,
+        "SubInterface",
+        null,
+        "java/lang/Object",
+        new String[] {"Interface"});
 
     {
       mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "aMethod", "()V", null, null);
       mv.visitCode();
       mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       mv.visitLdcInsn("123");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
       mv.visitInsn(RETURN);
       mv.visitMaxs(2, 0);
       mv.visitEnd();
@@ -37,4 +42,3 @@ public class SubInterfaceDump implements Opcodes {
     return cw.toByteArray();
   }
 }
-

@@ -72,6 +72,7 @@ public class TryCatchTimeConversionTest extends DesugaredLibraryTestBase {
         .run(parameters.getRuntime(), TryCatchExecutor.class)
         .assertSuccessWithOutput(EXPECTED_RESULT_EXCEPTION);
   }
+
   @SuppressWarnings("WeakerAccess")
   static class BaselineExecutor {
 

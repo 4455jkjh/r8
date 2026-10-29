@@ -46,14 +46,20 @@ public class FieldTypeTest extends TestBase {
       JasminBuilder jasminBuilder, String name, String superName, String... interfaces) {
     ClassBuilder impl = jasminBuilder.addClass(name, superName, interfaces);
     impl.addDefaultConstructor();
-    impl.addVirtualMethod("foo", ImmutableList.of(), "V",
+    impl.addVirtualMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit locals 2",
         ".limit stack 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
         "ldc \"" + "foo" + "\"",
         "invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V",
         "return");
-    impl.addVirtualMethod("toString", ImmutableList.of(), "Ljava/lang/String;",
+    impl.addVirtualMethod(
+        "toString",
+        ImmutableList.of(),
+        "Ljava/lang/String;",
         ".limit locals 1",
         ".limit stack 2",
         "ldc \"" + impl.name + "\"",
@@ -85,7 +91,7 @@ public class FieldTypeTest extends TestBase {
         ".limit locals 1",
         ".limit stack 2",
         "aconst_null",
-        "putstatic " + client.name + "/" + a.name  + " " + "Ljava/lang/Object;",
+        "putstatic " + client.name + "/" + a.name + " " + "Ljava/lang/Object;",
         "new " + impl1.name,
         "dup",
         "invokespecial " + impl1.name + "/<init>()V",
@@ -96,8 +102,7 @@ public class FieldTypeTest extends TestBase {
         "dup",
         "invokespecial " + impl2.name + "/<init>()V",
         "putstatic " + client.name + "/" + obj2.name + " " + itf2.getDescriptor(),
-        "return"
-    );
+        "return");
 
     ClassBuilder mainClass = jasminBuilder.addClass("Main");
     mainClass.addMainMethod(
@@ -118,12 +123,12 @@ public class FieldTypeTest extends TestBase {
         "return");
 
     final String mainClassName = mainClass.name;
-    String proguardConfig = StringUtils.lines(
-        keepMainProguardConfiguration(mainClass.name, false, false),
-        // AGP default is to not turn optimizations on
-        "-dontoptimize",
-        "-keepclassmembers class " + client.name + " { static ** " + obj1.name + "; }"
-    );
+    String proguardConfig =
+        StringUtils.lines(
+            keepMainProguardConfiguration(mainClass.name, false, false),
+            // AGP default is to not turn optimizations on
+            "-dontoptimize",
+            "-keepclassmembers class " + client.name + " { static ** " + obj1.name + "; }");
 
     // Run input program on java.
     Path outputDirectory = temp.newFolder().toPath();
@@ -178,7 +183,7 @@ public class FieldTypeTest extends TestBase {
         ".limit locals 1",
         ".limit stack 2",
         "aconst_null",
-        "putstatic " + client.name + "/" + a.name  + " " + "Ljava/lang/Object;",
+        "putstatic " + client.name + "/" + a.name + " " + "Ljava/lang/Object;",
         "iconst_1",
         "anewarray " + impl1.name,
         // Unused, i.e., not read, field, yet still remained in the output.
@@ -187,8 +192,7 @@ public class FieldTypeTest extends TestBase {
         "dup",
         "invokespecial " + impl2.name + "/<init>()V",
         "putstatic " + client.name + "/" + obj2.name + " " + itf2.getDescriptor(),
-        "return"
-    );
+        "return");
 
     ClassBuilder mainClass = jasminBuilder.addClass("Main");
     mainClass.addMainMethod(
@@ -197,8 +201,7 @@ public class FieldTypeTest extends TestBase {
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
         "getstatic " + client.name + "/" + obj2.name + " " + itf2.getDescriptor(),
         "invokevirtual java/io/PrintStream/print(Ljava/lang/Object;)V",
-        "return"
-    );
+        "return");
 
     final String mainClassName = mainClass.name;
     String proguardConfig =

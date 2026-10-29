@@ -74,9 +74,7 @@ public class DefaultMethodAsOverrideWithLambdaTest extends TestBase {
     lookupResult.forEach(
         target -> targets.add(target.getDefinition().qualifiedName()), lambda -> fail());
     ImmutableSet<String> expected =
-        ImmutableSet.of(
-            A.class.getTypeName() + ".bar",
-            J.class.getTypeName() + ".bar");
+        ImmutableSet.of(A.class.getTypeName() + ".bar", J.class.getTypeName() + ".bar");
     assertEquals(expected, targets);
   }
 

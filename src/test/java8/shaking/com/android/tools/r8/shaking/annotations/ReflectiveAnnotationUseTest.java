@@ -39,22 +39,20 @@ public class ReflectiveAnnotationUseTest extends KotlinTestBase {
   private static final String IMPL_CLASS_NAME = "internal_annotation.Impl";
   private static final String KEEP_ANNOTATIONS = "-keepattributes *Annotation*";
 
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "Impl::toString",
-      "Impl::Annotation::field2.Impl::Annotation::field2(Impl::Annotation::field2:2)"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          "Impl::toString",
+          "Impl::Annotation::field2.Impl::Annotation::field2(Impl::Annotation::field2:2)");
 
-  private static final String OUTPUT_WITHOUT_ANNOTATION = StringUtils.lines(
-      "Impl::toString",
-      "null"
-  );
+  private static final String OUTPUT_WITHOUT_ANNOTATION =
+      StringUtils.lines("Impl::toString", "null");
 
-  private static final Map<String, String> EXPECTED_ANNOTATION_VALUES = ImmutableMap.of(
-      "f1", "2",
-      "f2", "Impl::Annotation::field2",
-      "f3", "3]",
-      "f4", "field4]"
-  );
+  private static final Map<String, String> EXPECTED_ANNOTATION_VALUES =
+      ImmutableMap.of(
+          "f1", "2",
+          "f2", "Impl::Annotation::field2",
+          "f3", "3]",
+          "f4", "field4]");
 
   private final TestParameters parameters;
   private final boolean minify;
@@ -245,5 +243,4 @@ public class ReflectiveAnnotationUseTest extends KotlinTestBase {
     }
     assertEquals(expectedFields.size(), count);
   }
-
 }

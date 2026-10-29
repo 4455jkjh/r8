@@ -29,7 +29,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 class A {
-  static public int a() {
+  public static int a() {
     try {
       String p = A.class.getPackage().getName();
       Class.forName(p + ".D");
@@ -40,8 +40,7 @@ class A {
   }
 }
 
-class D {
-}
+class D {}
 
 class Main {
   public static void main(String[] args) {

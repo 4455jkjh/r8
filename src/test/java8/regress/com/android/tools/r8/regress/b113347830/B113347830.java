@@ -7,11 +7,8 @@ import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import jasmin.ClassFile;
 import java.io.ByteArrayOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,8 +35,7 @@ public class B113347830 extends TestBase {
     jasminFile.readJasmin(
         new java.io.BufferedReader(
             new java.io.InputStreamReader(
-                CLASS.getResourceAsStream(NAME + ".j"),
-                java.nio.charset.StandardCharsets.UTF_8)),
+                CLASS.getResourceAsStream(NAME + ".j"), java.nio.charset.StandardCharsets.UTF_8)),
         "Test",
         false);
     ByteArrayOutputStream out = new ByteArrayOutputStream();

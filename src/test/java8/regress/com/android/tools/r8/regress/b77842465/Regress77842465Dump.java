@@ -47,9 +47,13 @@ public class Regress77842465Dump implements Opcodes {
     }
 
     {
-      mv = cw.visitMethod(ACC_PUBLIC + ACC_FINAL, "a",
-          "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;IJ)" + CLASS_DESC,
-          null, null);
+      mv =
+          cw.visitMethod(
+              ACC_PUBLIC + ACC_FINAL,
+              "a",
+              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;IJ)" + CLASS_DESC,
+              null,
+              null);
       mv.visitCode();
       Label l0 = new Label();
       Label l1 = new Label();
@@ -84,8 +88,8 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Date");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(DUP);
       mv.visitVarInsn(ASTORE, 23);
@@ -96,8 +100,8 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitJumpInsn(IFLE, l6);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Date");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(ICONST_0);
       mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;", true);
@@ -106,14 +110,13 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitVarInsn(ASTORE, 23);
       mv.visitJumpInsn(IFNULL, l6);
       mv.visitVarInsn(ALOAD, 23);
-      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "a", "(Ljava/lang/String;)J",
-          false);
+      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "a", "(Ljava/lang/String;)J", false);
       mv.visitVarInsn(LSTORE, 10);
       mv.visitLabel(l6);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Cache-Control");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(DUP);
       mv.visitVarInsn(ASTORE, 23);
@@ -124,8 +127,8 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitJumpInsn(IFLE, l7);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Cache-Control");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(ICONST_0);
       mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;", true);
@@ -137,8 +140,12 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitVarInsn(ISTORE, 7);
       mv.visitVarInsn(ALOAD, 23);
       mv.visitLdcInsn(",");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "split",
-          "(Ljava/lang/String;)[Ljava/lang/String;", false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL,
+          "java/lang/String",
+          "split",
+          "(Ljava/lang/String;)[Ljava/lang/String;",
+          false);
       mv.visitVarInsn(ASTORE, 23);
       mv.visitInsn(ICONST_0);
       mv.visitVarInsn(ISTORE, 24);
@@ -155,28 +162,28 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitInsn(DUP);
       mv.visitVarInsn(ASTORE, 25);
       mv.visitLdcInsn("no-cache");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
       Label l9 = new Label();
       mv.visitJumpInsn(IFNE, l9);
       mv.visitVarInsn(ALOAD, 25);
       mv.visitLdcInsn("no-store");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
       mv.visitJumpInsn(IFNE, l9);
       mv.visitVarInsn(ALOAD, 25);
       mv.visitLdcInsn("max-age=");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z", false);
       Label l10 = new Label();
       mv.visitJumpInsn(IFEQ, l10);
       mv.visitLabel(l0);
       mv.visitVarInsn(ALOAD, 25);
       mv.visitIntInsn(BIPUSH, 8);
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "substring", "(I)Ljava/lang/String;",
-          false);
-      mv.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "parseLong", "(Ljava/lang/String;)J",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "substring", "(I)Ljava/lang/String;", false);
+      mv.visitMethodInsn(
+          INVOKESTATIC, "java/lang/Long", "parseLong", "(Ljava/lang/String;)J", false);
       mv.visitVarInsn(LSTORE, 18);
       mv.visitLabel(l1);
       mv.visitJumpInsn(GOTO, l9);
@@ -185,48 +192,47 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "b", "()Ljava/lang/String;", false);
       mv.visitInsn(POP);
       mv.visitVarInsn(ALOAD, 25);
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Exception", "getMessage", "()Ljava/lang/String;",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/Exception", "getMessage", "()Ljava/lang/String;", false);
       mv.visitInsn(POP);
       mv.visitJumpInsn(GOTO, l9);
       mv.visitLabel(l10);
       mv.visitVarInsn(ALOAD, 25);
       mv.visitLdcInsn("stale-while-revalidate=");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z", false);
       Label l11 = new Label();
       mv.visitJumpInsn(IFEQ, l11);
       mv.visitLabel(l3);
       mv.visitVarInsn(ALOAD, 25);
       mv.visitIntInsn(BIPUSH, 23);
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "substring", "(I)Ljava/lang/String;",
-          false);
-      mv.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "parseLong", "(Ljava/lang/String;)J",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "substring", "(I)Ljava/lang/String;", false);
+      mv.visitMethodInsn(
+          INVOKESTATIC, "java/lang/Long", "parseLong", "(Ljava/lang/String;)J", false);
       mv.visitVarInsn(LSTORE, 20);
       mv.visitLabel(l4);
       mv.visitJumpInsn(GOTO, l9);
       mv.visitLabel(l5);
       mv.visitVarInsn(ASTORE, 25);
-      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "b", "()Ljava/lang/String;",
-          false);
+      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "b", "()Ljava/lang/String;", false);
       mv.visitInsn(POP);
       mv.visitVarInsn(ALOAD, 25);
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Exception", "getMessage", "()Ljava/lang/String;",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/Exception", "getMessage", "()Ljava/lang/String;", false);
       mv.visitInsn(POP);
       mv.visitJumpInsn(GOTO, l9);
       mv.visitLabel(l11);
       mv.visitVarInsn(ALOAD, 25);
       mv.visitLdcInsn("must-revalidate");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
       Label l12 = new Label();
       mv.visitJumpInsn(IFNE, l12);
       mv.visitVarInsn(ALOAD, 25);
       mv.visitLdcInsn("proxy-revalidate");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
       mv.visitJumpInsn(IFEQ, l9);
       mv.visitLabel(l12);
       mv.visitInsn(ICONST_1);
@@ -237,8 +243,8 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitLabel(l7);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Expires");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(DUP);
       mv.visitVarInsn(ASTORE, 23);
@@ -249,8 +255,8 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitJumpInsn(IFLE, l13);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Expires");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(ICONST_0);
       mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;", true);
@@ -259,14 +265,13 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitVarInsn(ASTORE, 23);
       mv.visitJumpInsn(IFNULL, l13);
       mv.visitVarInsn(ALOAD, 23);
-      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "a", "(Ljava/lang/String;)J",
-          false);
+      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "a", "(Ljava/lang/String;)J", false);
       mv.visitVarInsn(LSTORE, 12);
       mv.visitLabel(l13);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Last-Modified");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(DUP);
       mv.visitVarInsn(ASTORE, 23);
@@ -277,8 +282,8 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitJumpInsn(IFLE, l14);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("Last-Modified");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(ICONST_0);
       mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;", true);
@@ -287,14 +292,13 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitVarInsn(ASTORE, 23);
       mv.visitJumpInsn(IFNULL, l14);
       mv.visitVarInsn(ALOAD, 23);
-      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "a", "(Ljava/lang/String;)J",
-          false);
+      mv.visitMethodInsn(INVOKESTATIC, CLASS_INTERNAL, "a", "(Ljava/lang/String;)J", false);
       mv.visitInsn(POP2);
       mv.visitLabel(l14);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("ETag");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(DUP);
       mv.visitVarInsn(ASTORE, 23);
@@ -305,8 +309,8 @@ public class Regress77842465Dump implements Opcodes {
       mv.visitJumpInsn(IFLE, l15);
       mv.visitVarInsn(ALOAD, 3);
       mv.visitLdcInsn("ETag");
-      mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get",
-          "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+      mv.visitMethodInsn(
+          INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
       mv.visitTypeInsn(CHECKCAST, "java/util/List");
       mv.visitInsn(ICONST_0);
       mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;", true);
@@ -391,4 +395,3 @@ public class Regress77842465Dump implements Opcodes {
     return cw.toByteArray();
   }
 }
-

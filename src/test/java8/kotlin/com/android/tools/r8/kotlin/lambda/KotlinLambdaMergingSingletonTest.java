@@ -67,9 +67,7 @@ public class KotlinLambdaMergingSingletonTest extends KotlinTestBase {
     KotlinLambdasInInput lambdasInInput =
         KotlinLambdasInInput.create(getProgramFiles(), getTestName());
     assertEquals(
-        kotlinParameters.getLambdaGeneration().isInvokeDynamic()
-            ? 8
-            : 2,
+        kotlinParameters.getLambdaGeneration().isInvokeDynamic() ? 8 : 2,
         lambdasInInput.getNumberOfJStyleLambdas());
     assertEquals(
         kotlinParameters.getLambdaGeneration().isInvokeDynamic() ? 0 : 7,

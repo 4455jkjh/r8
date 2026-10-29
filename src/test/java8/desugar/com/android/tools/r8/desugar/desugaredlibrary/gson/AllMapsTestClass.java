@@ -38,6 +38,7 @@ public class AllMapsTestClass {
       }
     }
   }
+
   // Program class extending the library class HashMap, implementing Map.
   static class NullableHashMap<K, V> extends HashMap<K, V> {
     NullableHashMap() {
@@ -60,6 +61,7 @@ public class AllMapsTestClass {
       }
     }
   }
+
   // Program class implementing Map.
   static class NullableMap<K, V> implements Map<K, V> {
     private HashMap<K, V> map = new HashMap<>();
@@ -143,6 +145,7 @@ public class AllMapsTestClass {
       return Objects.hash(map);
     }
   }
+
   // Program class implementing ConcurrentMap.
   static class NullableConcurrentMap<K, V> implements ConcurrentMap<K, V> {
     private HashMap<K, V> map = new HashMap<>();

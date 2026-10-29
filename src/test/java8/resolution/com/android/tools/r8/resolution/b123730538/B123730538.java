@@ -3,10 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.resolution.b123730538;
 
-
-
-import com.android.tools.r8.resolution.b123730538.sub.AnotherPublicClass;
-
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,6 +17,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.resolution.b123730538.runner.PublicClassExtender;
 import com.android.tools.r8.resolution.b123730538.runner.Runner;
+import com.android.tools.r8.resolution.b123730538.sub.AnotherPublicClass;
 import com.android.tools.r8.resolution.b123730538.sub.PublicClass;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -59,15 +56,18 @@ public class B123730538 extends TestBase {
 
   @BeforeClass
   public static void setUpClass() {
-    CLASSES = ImmutableList.<Path>builder()
-        .add(ToolHelper.getClassFileForTestClassFromResources(Runner.class))
-        .add(ToolHelper.getClassFileForTestClassFromResources(PublicClassExtender.class))
-        // To access package-private classes, string lookups are used.
-        .add(ToolHelper.getResourceAsReadOnlyFile(Runner.class, "AnotherPublicClassExtender.class"))
-        .add(ToolHelper.getClassFileForTestClassFromResources(PublicClass.class))
-        .add(ToolHelper.getResourceAsReadOnlyFile(PublicClass.class, "AbstractClass.class"))
-        .add(ToolHelper.getClassFileForTestClassFromResources(AnotherPublicClass.class))
-        .build();
+    CLASSES =
+        ImmutableList.<Path>builder()
+            .add(ToolHelper.getClassFileForTestClassFromResources(Runner.class))
+            .add(ToolHelper.getClassFileForTestClassFromResources(PublicClassExtender.class))
+            // To access package-private classes, string lookups are used.
+            .add(
+                ToolHelper.getResourceAsReadOnlyFile(
+                    Runner.class, "AnotherPublicClassExtender.class"))
+            .add(ToolHelper.getClassFileForTestClassFromResources(PublicClass.class))
+            .add(ToolHelper.getResourceAsReadOnlyFile(PublicClass.class, "AbstractClass.class"))
+            .add(ToolHelper.getClassFileForTestClassFromResources(AnotherPublicClass.class))
+            .build();
   }
 
   @Test
@@ -122,5 +122,4 @@ public class B123730538 extends TestBase {
               assertEquals(foo.getFinalName(), methodName);
             });
   }
-
 }

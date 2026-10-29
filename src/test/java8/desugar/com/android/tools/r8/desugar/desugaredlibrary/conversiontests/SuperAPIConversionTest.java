@@ -99,8 +99,7 @@ public class SuperAPIConversionTest extends DesugaredLibraryTestBase {
     }
   }
 
-  static class A extends CustomLibClass {
-  }
+  static class A extends CustomLibClass {}
 
   static class B extends A {}
 

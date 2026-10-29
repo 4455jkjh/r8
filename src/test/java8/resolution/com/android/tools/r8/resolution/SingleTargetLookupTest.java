@@ -77,10 +77,10 @@ public class SingleTargetLookupTest extends AsmTestBase {
           ThirdSubClassOne.class,
           Main.class);
 
-  public static List<byte[]> ASM_CLASSES = ImmutableList.of(
-      getBytesFromAsmClass(IrrelevantInterfaceWithDefaultDump::dump),
-      getBytesFromAsmClass(ThirdSubClassTwoDump::dump)
-  );
+  public static List<byte[]> ASM_CLASSES =
+      ImmutableList.of(
+          getBytesFromAsmClass(IrrelevantInterfaceWithDefaultDump::dump),
+          getBytesFromAsmClass(ThirdSubClassTwoDump::dump));
 
   public SingleTargetLookupTest(
       TestParameters parameters,
@@ -117,27 +117,29 @@ public class SingleTargetLookupTest extends AsmTestBase {
   }
 
   private static Object[] singleTarget(String name, Class<?> receiverAndTarget) {
-    return new Object[]{name, receiverAndTarget, receiverAndTarget,
-        Collections.singletonList(receiverAndTarget)};
+    return new Object[] {
+      name, receiverAndTarget, receiverAndTarget, Collections.singletonList(receiverAndTarget)
+    };
   }
 
   private static Object[] singleTarget(String name, Class<?> receiver, Class<?> target) {
-    return new Object[]{name, receiver, target, Collections.singletonList(target)};
+    return new Object[] {name, receiver, target, Collections.singletonList(target)};
   }
 
-  private static Object[] singleTargetWithAbstracts(String name, Class<?> receiver,
-      Class<?> target, Class<?>... extras) {
-    return new Object[]{name, receiver, target,
-        ImmutableList.builder().add(target).add((Object[]) extras).build()};
+  private static Object[] singleTargetWithAbstracts(
+      String name, Class<?> receiver, Class<?> target, Class<?>... extras) {
+    return new Object[] {
+      name, receiver, target, ImmutableList.builder().add(target).add((Object[]) extras).build()
+    };
   }
 
   private static Object[] manyTargets(String name, Class<?> receiver, Class<?>... targets) {
-    return new Object[]{name, receiver, null, ImmutableList.copyOf(targets)};
+    return new Object[] {name, receiver, null, ImmutableList.copyOf(targets)};
   }
 
-  private static Object[] onlyUnreachableTargets(String name, Class<?> receiver,
-      Class<?>... targets) {
-    return new Object[]{name, receiver, null, ImmutableList.copyOf(targets)};
+  private static Object[] onlyUnreachableTargets(
+      String name, Class<?> receiver, Class<?>... targets) {
+    return new Object[] {name, receiver, null, ImmutableList.copyOf(targets)};
   }
 
   @Parameters(name = "{0}, {2}.{1} -> {3}")

@@ -14,7 +14,7 @@ public class TopLevelPolicy {
   }
 
   @NoAccessModification
-  private static abstract class IconState {
+  private abstract static class IconState {
     public String description;
   }
 

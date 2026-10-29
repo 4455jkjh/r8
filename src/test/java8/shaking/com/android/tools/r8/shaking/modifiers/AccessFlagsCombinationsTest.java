@@ -54,7 +54,6 @@ public class AccessFlagsCombinationsTest extends TestBase {
     boolean includeNonStatic =
         expect == Expect.NON_STATICS_ONLY || expect == Expect.BOTH_STATICS_AND_NON_STATICS;
 
-
     boolean includePublic = (flags & PPP) == 0 || (flags & Constants.ACC_PUBLIC) != 0;
     boolean includeProtected = (flags & PPP) == 0 || (flags & Constants.ACC_PROTECTED) != 0;
     boolean includePrivate = (flags & PPP) == 0 || (flags & Constants.ACC_PRIVATE) != 0;
@@ -174,37 +173,21 @@ public class AccessFlagsCombinationsTest extends TestBase {
     private int privateField;
     int packagePrivateField;
 
-    public static void publicStaticMethod() {
+    public static void publicStaticMethod() {}
 
-    }
+    protected static void protectedStaticMethod() {}
 
-    protected static void protectedStaticMethod() {
+    private static void privateStaticMethod() {}
 
-    }
+    static void packagePrivateStaticMethod() {}
 
-    private static void privateStaticMethod() {
+    public void publicMethod() {}
 
-    }
+    protected void protectedMethod() {}
 
-    static void packagePrivateStaticMethod() {
+    private void privateMethod() {}
 
-    }
-
-    public void publicMethod() {
-
-    }
-
-    protected void protectedMethod() {
-
-    }
-
-    private void privateMethod() {
-
-    }
-
-    void packagePrivateMethod() {
-
-    }
+    void packagePrivateMethod() {}
 
     public static void main(String[] args) {
       System.out.println("Hello, world");

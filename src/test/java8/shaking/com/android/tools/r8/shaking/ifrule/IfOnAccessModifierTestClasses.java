@@ -8,8 +8,7 @@ import com.android.tools.r8.NeverInline;
 
 @NeverClassInline
 class ClassForIf {
-  ClassForIf() {
-  }
+  ClassForIf() {}
 
   @NeverInline
   synchronized void nonPublicMethod() {
@@ -17,14 +16,13 @@ class ClassForIf {
   }
 
   @NeverInline
-  synchronized public void publicMethod() {
+  public synchronized void publicMethod() {
     System.out.println("ClassForIf::publicMethod");
   }
 }
 
 class ClassForSubsequent {
-  ClassForSubsequent() {
-  }
+  ClassForSubsequent() {}
 
   @NeverInline
   synchronized void nonPublicMethod() {
@@ -32,7 +30,7 @@ class ClassForSubsequent {
   }
 
   @NeverInline
-  synchronized public void publicMethod() {
+  public synchronized void publicMethod() {
     System.out.println("ClassForSubsequent::publicMethod");
   }
 }

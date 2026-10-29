@@ -33,5 +33,4 @@ public class KeepReasonsTest extends TestBase {
       assertNotNull(new GraphEdgeInfo(value).getInfoPrefix());
     }
   }
-
 }

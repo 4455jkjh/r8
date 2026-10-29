@@ -27,9 +27,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class AssumenosideeffectsPropagationWithoutMatchingDefinitionTest extends TestBase {
   private static final Class<?> MAIN = B137038659.class;
-  private static final String OUTPUT_WITHOUT_LOGGING = StringUtils.lines(
-      "The end"
-  );
+  private static final String OUTPUT_WITHOUT_LOGGING = StringUtils.lines("The end");
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -65,8 +63,9 @@ public class AssumenosideeffectsPropagationWithoutMatchingDefinitionTest extends
     MethodSubject mainMethod = main.mainMethod();
     assertThat(mainMethod, isPresent());
     assertTrue(
-        mainMethod.streamInstructions().noneMatch(
-            i -> i.isInvoke() && i.getMethod().name.toString().equals("debug")));
+        mainMethod
+            .streamInstructions()
+            .noneMatch(i -> i.isInvoke() && i.getMethod().name.toString().equals("debug")));
 
     MethodSubject testInvokeInterface = main.uniqueMethodWithOriginalName("testInvokeInterface");
     assertThat(testInvokeInterface, not(isPresent()));
@@ -74,6 +73,7 @@ public class AssumenosideeffectsPropagationWithoutMatchingDefinitionTest extends
 
   interface LoggerInterface {
     void debug(String message);
+
     void debug(String tag, String message);
   }
 
@@ -114,7 +114,7 @@ public class AssumenosideeffectsPropagationWithoutMatchingDefinitionTest extends
   }
 
   static class B137038659 {
-    final static String TAG = B137038659.class.getSimpleName();
+    static final String TAG = B137038659.class.getSimpleName();
 
     @NeverInline
     private static void testInvokeInterface(LoggerInterface logger, String message) {
@@ -125,7 +125,8 @@ public class AssumenosideeffectsPropagationWithoutMatchingDefinitionTest extends
 
     @NeverInline
     private static LoggerInterface getLogger() {
-      return System.currentTimeMillis() > 0 ? new SubImplementer()
+      return System.currentTimeMillis() > 0
+          ? new SubImplementer()
           : (System.nanoTime() > 0 ? new BaseImplementer() : new AnotherLogger());
     }
 

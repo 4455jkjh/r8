@@ -70,9 +70,7 @@ public class AbstractInMiddleTest extends TestBase {
     lookupResult.forEach(
         target -> targets.add(target.getDefinition().qualifiedName()), lambda -> fail());
     ImmutableSet<String> expected =
-        ImmutableSet.of(
-            A.class.getTypeName() + ".foo",
-            C.class.getTypeName() + ".foo");
+        ImmutableSet.of(A.class.getTypeName() + ".foo", C.class.getTypeName() + ".foo");
     assertEquals(expected, targets);
   }
 

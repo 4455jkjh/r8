@@ -6,8 +6,7 @@ package com.android.tools.r8.shaking.ifrule;
 import com.android.tools.r8.NoAccessModification;
 
 class EmptyMainClassForIfOnClassTests {
-  public static void main(String[] args) {
-  }
+  public static void main(String[] args) {}
 }
 
 // Precondition -> DependentUser -> Dependent
@@ -66,4 +65,3 @@ class Precondition {
     return bogus;
   }
 }
-

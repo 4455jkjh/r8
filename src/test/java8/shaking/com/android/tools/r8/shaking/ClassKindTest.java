@@ -76,8 +76,9 @@ public class ClassKindTest extends TestBase {
     }
     CodeInspector inspector = new CodeInspector(app);
     HashSet<java.lang.Class<?>> expected = Sets.newHashSet(classes);
-    CLASSES_TO_INCLUDE.forEach(c -> {
-      Assert.assertEquals(expected.contains(c), inspector.clazz(c).isPresent());
-    });
+    CLASSES_TO_INCLUDE.forEach(
+        c -> {
+          Assert.assertEquals(expected.contains(c), inspector.clazz(c).isPresent());
+        });
   }
 }

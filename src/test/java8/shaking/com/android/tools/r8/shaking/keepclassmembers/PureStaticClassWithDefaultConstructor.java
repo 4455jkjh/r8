@@ -12,8 +12,7 @@ public class PureStaticClassWithDefaultConstructor {
   public int i;
   public int j;
 
-  private PureStaticClassWithDefaultConstructor() {
-  }
+  private PureStaticClassWithDefaultConstructor() {}
 
   public static int getA() {
     return a;

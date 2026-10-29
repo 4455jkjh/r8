@@ -68,11 +68,13 @@ public class Main {
 
   @SuppressWarnings("unchecked")
   private static <T> T createProxyOfInterface(Class<T> iface) {
-    return (T) Proxy.newProxyInstance(
-        iface.getClassLoader(), new Class[]{iface},
-        (Object o, Method method, Object[] objects) -> {
-          System.out.println("Proxy");
-          return null;
-        });
+    return (T)
+        Proxy.newProxyInstance(
+            iface.getClassLoader(),
+            new Class[] {iface},
+            (Object o, Method method, Object[] objects) -> {
+              System.out.println("Proxy");
+              return null;
+            });
   }
 }

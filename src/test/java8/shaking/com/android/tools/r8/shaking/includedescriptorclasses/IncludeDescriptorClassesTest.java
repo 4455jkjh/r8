@@ -196,8 +196,8 @@ public class IncludeDescriptorClassesTest extends TestBase {
     }
   }
 
-    @Test
-    public void testKeepClassMemberNames() throws Exception {
+  @Test
+  public void testKeepClassMemberNames() throws Exception {
     for (Class<?> mainClass : mainClasses) {
       List<String> proguardConfig =
           ImmutableList.of(
@@ -216,26 +216,26 @@ public class IncludeDescriptorClassesTest extends TestBase {
                       .addKeepMainRule(mainClass)
                       .addKeepRules(proguardConfig));
 
-        boolean useNativeArgumentType =
-            mainClass == MainCallMethod1.class || mainClass == MainCallMethod3.class;
-        boolean useNativeReturnType =
-            mainClass == MainCallMethod2.class || mainClass == MainCallMethod3.class;
+      boolean useNativeArgumentType =
+          mainClass == MainCallMethod1.class || mainClass == MainCallMethod3.class;
+      boolean useNativeReturnType =
+          mainClass == MainCallMethod2.class || mainClass == MainCallMethod3.class;
 
-        result.assertRenamed(ClassWithNativeMethods.class);
-        if (useNativeArgumentType) {
-          result.assertKept(NativeArgumentType.class);
-        } else {
-          result.assertRemoved(NativeArgumentType.class);
-        }
-
-        if (useNativeReturnType) {
-          result.assertKept(NativeReturnType.class);
-        } else {
-          result.assertRemoved(NativeReturnType.class);
-        }
-
-        result.assertRemoved(InstanceFieldType.class);
-        result.assertRemoved(StaticFieldType.class);
+      result.assertRenamed(ClassWithNativeMethods.class);
+      if (useNativeArgumentType) {
+        result.assertKept(NativeArgumentType.class);
+      } else {
+        result.assertRemoved(NativeArgumentType.class);
       }
+
+      if (useNativeReturnType) {
+        result.assertKept(NativeReturnType.class);
+      } else {
+        result.assertRemoved(NativeReturnType.class);
+      }
+
+      result.assertRemoved(InstanceFieldType.class);
+      result.assertRemoved(StaticFieldType.class);
     }
+  }
 }

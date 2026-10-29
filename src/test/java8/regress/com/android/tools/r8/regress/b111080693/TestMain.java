@@ -9,8 +9,7 @@ import com.android.tools.r8.regress.b111080693.b.RecyclerView.Adapter;
 
 public class TestMain {
   static final class TestAdapter extends Adapter {
-    TestAdapter() {
-    }
+    TestAdapter() {}
   }
 
   public static void main(String[] args) {

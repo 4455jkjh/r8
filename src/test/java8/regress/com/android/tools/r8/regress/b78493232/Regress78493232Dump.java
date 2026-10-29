@@ -313,5 +313,4 @@ public class Regress78493232Dump implements Opcodes {
     mv.visitFieldInsn(GETSTATIC, CLASS_INTERNAL, "staticByteArray", "[B");
     mv.visitMethodInsn(INVOKESTATIC, UTILS_CLASS_INTERNAL, "getHash", "(II[B)I", false);
   }
-
 }

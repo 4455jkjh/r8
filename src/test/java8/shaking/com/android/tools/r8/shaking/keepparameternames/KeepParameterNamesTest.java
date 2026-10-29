@@ -42,9 +42,7 @@ public class KeepParameterNamesTest extends TestBase {
   @Parameterized.Parameters(name = "{0}, keepparameternames {1}, minification {2}")
   public static Collection<Object[]> data() {
     return buildParameters(
-        getTestParameters().withCfRuntimes().build(),
-        BooleanUtils.values(),
-        BooleanUtils.values());
+        getTestParameters().withCfRuntimes().build(), BooleanUtils.values(), BooleanUtils.values());
   }
 
   public KeepParameterNamesTest(

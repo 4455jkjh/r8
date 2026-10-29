@@ -15,12 +15,9 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.kotlin.KotlinMetadataWriter;
 import com.android.tools.r8.kotlin.metadata.KotlinMetadataTestBase;
-import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.internal.FileUtils;
-import java.nio.file.Paths;
 import java.util.List;
 import kotlin.metadata.jvm.KotlinClassMetadata;
 import org.junit.Test;
@@ -101,5 +98,6 @@ public class PartialCompilationKotlinMetadataTest extends KotlinMetadataTestBase
   }
 
   private static final KotlinCompileMemoizer compiledJars =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PartialCompilationKotlinMetadataTest.class, "Main"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PartialCompilationKotlinMetadataTest.class, "Main"));
 }

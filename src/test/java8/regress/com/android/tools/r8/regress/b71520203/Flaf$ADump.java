@@ -34,8 +34,8 @@ public class Flaf$ADump implements Opcodes {
       mv.visitCode();
       mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       mv.visitLdcInsn("foo");
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
       mv.visitInsn(RETURN);
       mv.visitMaxs(2, 1);
       mv.visitEnd();

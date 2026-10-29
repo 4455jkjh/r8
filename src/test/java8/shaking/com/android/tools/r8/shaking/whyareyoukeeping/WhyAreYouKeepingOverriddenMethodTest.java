@@ -63,8 +63,8 @@ public class WhyAreYouKeepingOverriddenMethodTest extends TestBase {
         .assertStdoutThatMatches(not(containsString(expectedNotContainingMessage(subClass))));
   }
 
-  private void testViaConsumer(
-      Class<?> main, Class<?> targetClass, Class<?> subClass) throws Exception {
+  private void testViaConsumer(Class<?> main, Class<?> targetClass, Class<?> subClass)
+      throws Exception {
     WhyAreYouKeepingConsumer graphConsumer = new WhyAreYouKeepingConsumer(null);
     testForR8(Backend.DEX)
         .addInnerClasses(WhyAreYouKeepingOverriddenMethodTest.class)

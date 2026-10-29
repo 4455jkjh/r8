@@ -70,7 +70,6 @@ public class MissingInterfaceTest extends TestBase {
             });
   }
 
-
   @Test
   public void test_passingInterfaceAsLib() throws Exception {
     Path lib = writeToJar(ImmutableList.of(ToolHelper.getClassAsBytes(GoingToBeMissed.class)));

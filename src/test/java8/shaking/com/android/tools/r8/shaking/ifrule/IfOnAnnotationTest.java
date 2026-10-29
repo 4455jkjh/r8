@@ -38,74 +38,71 @@ public class IfOnAnnotationTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void ifOnAnnotation_onTargetMethod_withoutNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keepattributes *Annotation*",
-        "-keep class **.Main* {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        // @UsedAnnotation <methods> -> UsedAnnotationDependent
-        "-if class **.*User {",
-        "  @**.UsedAnnotation <methods>;",
-        "}",
-        "-keep class **.UsedAnnotation*",
-        // @UnusedAnnotation <methods> -> UnusedAnnotationDependent
-        "-if class **.*User {",
-        "  @**.UnusedAnnotation <methods>;",
-        "}",
-        "-keep class **.UnusedAnnotation*"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keepattributes *Annotation*",
+            "-keep class **.Main* {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            // @UsedAnnotation <methods> -> UsedAnnotationDependent
+            "-if class **.*User {",
+            "  @**.UsedAnnotation <methods>;",
+            "}",
+            "-keep class **.UsedAnnotation*",
+            // @UnusedAnnotation <methods> -> UnusedAnnotationDependent
+            "-if class **.*User {",
+            "  @**.UnusedAnnotation <methods>;",
+            "}",
+            "-keep class **.UnusedAnnotation*");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        UnusedAnnotation.class, UnusedAnnotationDependent.class);
+    verifyClassesAbsent(codeInspector, UnusedAnnotation.class, UnusedAnnotationDependent.class);
     verifyClassesPresent(codeInspector, UsedAnnotation.class, UsedAnnotationDependent.class);
   }
 
   @Test
   public void ifOnAnnotation_onTargetMethod_withNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keepattributes *Annotation*",
-        "-keep class **.Main* {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        // @UsedAnnotation <methods> -> UsedAnnotationDependent
-        "-if class **.*User {",
-        "  @<1>.Used<2> <methods>;",
-        "}",
-        "-keep class <1>.Used<2>*",
-        // @UnusedAnnotation <methods> -> UnusedAnnotationDependent
-        "-if class **.*User {",
-        "  @<1>.Unused<2> <methods>;",
-        "}",
-        "-keep class <1>.Unused<2>*"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keepattributes *Annotation*",
+            "-keep class **.Main* {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            // @UsedAnnotation <methods> -> UsedAnnotationDependent
+            "-if class **.*User {",
+            "  @<1>.Used<2> <methods>;",
+            "}",
+            "-keep class <1>.Used<2>*",
+            // @UnusedAnnotation <methods> -> UnusedAnnotationDependent
+            "-if class **.*User {",
+            "  @<1>.Unused<2> <methods>;",
+            "}",
+            "-keep class <1>.Unused<2>*");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        UnusedAnnotation.class, UnusedAnnotationDependent.class);
+    verifyClassesAbsent(codeInspector, UnusedAnnotation.class, UnusedAnnotationDependent.class);
     verifyClassesPresent(codeInspector, UsedAnnotation.class, UsedAnnotationDependent.class);
   }
 
   @Test
   public void ifOnAnnotation_onDependentClass_withNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keepattributes *Annotation*",
-        "-keep class **.Main* {",
-        "  public static void main(java.lang.String[]);",
-        "}",
-        // @UsedAnnotation <methods> -> @UsedAnnotation
-        "-if class **.AnnotationUser {",
-        "  @**.*Annotation <methods>;",
-        "}",
-        "-keep @interface <2>.<3>Annotation",
-        // @*Annotation -> @*Annotation class *AnnotationDependent
-        "-if @interface **.*Annotation",
-        "-keep @<1>.<2>Annotation class <1>.*"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keepattributes *Annotation*",
+            "-keep class **.Main* {",
+            "  public static void main(java.lang.String[]);",
+            "}",
+            // @UsedAnnotation <methods> -> @UsedAnnotation
+            "-if class **.AnnotationUser {",
+            "  @**.*Annotation <methods>;",
+            "}",
+            "-keep @interface <2>.<3>Annotation",
+            // @*Annotation -> @*Annotation class *AnnotationDependent
+            "-if @interface **.*Annotation",
+            "-keep @<1>.<2>Annotation class <1>.*");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
-    verifyClassesAbsent(codeInspector,
-        UnusedAnnotation.class, UnusedAnnotationDependent.class);
+    verifyClassesAbsent(codeInspector, UnusedAnnotation.class, UnusedAnnotationDependent.class);
     verifyClassesPresent(codeInspector, UsedAnnotation.class, UsedAnnotationDependent.class);
   }
 }

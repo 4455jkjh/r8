@@ -11,8 +11,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
- * ASM dump of {@link ThirdSubClassTwo} with abstract flag removed and
- * {@link ThirdSubClassTwo#instanceMethod()} made static.
+ * ASM dump of {@link ThirdSubClassTwo} with abstract flag removed and {@link
+ * ThirdSubClassTwo#instanceMethod()} made static.
  */
 public class ThirdSubClassTwoDump implements Opcodes {
 
@@ -23,17 +23,24 @@ public class ThirdSubClassTwoDump implements Opcodes {
     MethodVisitor mv;
     AnnotationVisitor av0;
 
-    cw.visit(V1_8, ACC_PUBLIC + ACC_SUPER,
-        "com/android/tools/r8/resolution/singletarget/three/ThirdSubClassTwo", null,
-        "com/android/tools/r8/resolution/singletarget/three/ThirdAbstractTopClass", null);
+    cw.visit(
+        V1_8,
+        ACC_PUBLIC + ACC_SUPER,
+        "com/android/tools/r8/resolution/singletarget/three/ThirdSubClassTwo",
+        null,
+        "com/android/tools/r8/resolution/singletarget/three/ThirdAbstractTopClass",
+        null);
 
     {
       mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
       mv.visitCode();
       mv.visitVarInsn(ALOAD, 0);
-      mv.visitMethodInsn(INVOKESPECIAL,
-          "com/android/tools/r8/resolution/singletarget/three/ThirdAbstractTopClass", "<init>",
-          "()V", false);
+      mv.visitMethodInsn(
+          INVOKESPECIAL,
+          "com/android/tools/r8/resolution/singletarget/three/ThirdAbstractTopClass",
+          "<init>",
+          "()V",
+          false);
       mv.visitInsn(RETURN);
       mv.visitMaxs(1, 1);
       mv.visitEnd();
@@ -45,10 +52,10 @@ public class ThirdSubClassTwoDump implements Opcodes {
       mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       mv.visitLdcInsn(
           Type.getType("Lcom/android/tools/r8/resolution/singletarget/three/ThirdSubClassTwo;"));
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getCanonicalName",
-          "()Ljava/lang/String;", false);
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/Class", "getCanonicalName", "()Ljava/lang/String;", false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
       mv.visitInsn(RETURN);
       mv.visitMaxs(2, 1);
       mv.visitEnd();
@@ -60,10 +67,10 @@ public class ThirdSubClassTwoDump implements Opcodes {
       mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       mv.visitLdcInsn(
           Type.getType("Lcom/android/tools/r8/resolution/singletarget/three/ThirdSubClassTwo;"));
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getCanonicalName",
-          "()Ljava/lang/String;", false);
-      mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V",
-          false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/lang/Class", "getCanonicalName", "()Ljava/lang/String;", false);
+      mv.visitMethodInsn(
+          INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
       mv.visitInsn(RETURN);
       mv.visitMaxs(2, 1);
       mv.visitEnd();
@@ -74,4 +81,3 @@ public class ThirdSubClassTwoDump implements Opcodes {
     return cw.toByteArray();
   }
 }
-

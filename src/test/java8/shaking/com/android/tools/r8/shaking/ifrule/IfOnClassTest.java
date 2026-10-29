@@ -80,12 +80,12 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void ifThenKeep_withoutNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-if class **.Precondition",
-        "-keep,allowobfuscation class **.*User",
-        "-if class **.DependentUser",
-        "-keep,allowobfuscation class **.Dependent"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-if class **.Precondition",
+            "-keep,allowobfuscation class **.*User",
+            "-if class **.DependentUser",
+            "-keep,allowobfuscation class **.Dependent");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     if (!keepPrecondition) {
@@ -113,12 +113,12 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void ifThenKeep_withNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-if class **.Precondition",
-        "-keep,allowobfuscation class **.*User",
-        "-if class **.*User",
-        "-keep,allowobfuscation class <1>.<2>"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-if class **.Precondition",
+            "-keep,allowobfuscation class **.*User",
+            "-if class **.*User",
+            "-keep,allowobfuscation class <1>.<2>");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     if (!keepPrecondition) {
@@ -180,17 +180,17 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void ifThenKeepClassMembers_withoutNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-if class **.Precondition",
-        "-keepclassmembers,allowobfuscation class **.*User {",
-        "  static void callFoo(...);",
-        "}",
-        // If the member is kept, keep the enclosing class too.
-        "-if class **.*User {",
-        "  static void callFoo(...);",
-        "}",
-        "-keep,allowobfuscation class **.*User"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-if class **.Precondition",
+            "-keepclassmembers,allowobfuscation class **.*User {",
+            "  static void callFoo(...);",
+            "}",
+            // If the member is kept, keep the enclosing class too.
+            "-if class **.*User {",
+            "  static void callFoo(...);",
+            "}",
+            "-keep,allowobfuscation class **.*User");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     if (!keepPrecondition) {
@@ -225,17 +225,17 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void ifThenKeepClassMembers_withNthWildcard() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-if class **.Precondition",
-        "-keepclassmembers,allowobfuscation class **.*User {",
-        "  static void callFoo(...);",
-        "}",
-        // If the member is kept, keep the enclosing class too.
-        "-if class **.*User {",
-        "  static void callFoo(...);",
-        "}",
-        "-keep,allowobfuscation class <1>.<2>User"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-if class **.Precondition",
+            "-keepclassmembers,allowobfuscation class **.*User {",
+            "  static void callFoo(...);",
+            "}",
+            // If the member is kept, keep the enclosing class too.
+            "-if class **.*User {",
+            "  static void callFoo(...);",
+            "}",
+            "-keep,allowobfuscation class <1>.<2>User");
 
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     if (!keepPrecondition) {

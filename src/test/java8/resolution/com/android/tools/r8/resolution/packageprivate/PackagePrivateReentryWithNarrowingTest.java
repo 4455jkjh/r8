@@ -72,9 +72,7 @@ public class PackagePrivateReentryWithNarrowingTest extends TestBase {
     Set<String> targets = new HashSet<>();
     lookupResult.forEach(
         target -> targets.add(target.getDefinition().qualifiedName()), lambda -> fail());
-    ImmutableSet<String> expected =
-        ImmutableSet.of(
-            D.class.getTypeName() + ".bar");
+    ImmutableSet<String> expected = ImmutableSet.of(D.class.getTypeName() + ".bar");
     assertEquals(expected, targets);
   }
 
