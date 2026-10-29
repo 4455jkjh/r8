@@ -7,9 +7,7 @@ import memberrebinding4.subpackage.PublicInterface;
 
 public class Memberrebinding {
 
-  static class Inner implements PublicInterface {
-
-  }
+  static class Inner implements PublicInterface {}
 
   public static void main(String[] args) {
     test();

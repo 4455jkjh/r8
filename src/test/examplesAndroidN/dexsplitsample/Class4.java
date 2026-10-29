@@ -15,7 +15,10 @@ public class Class4 {
   }
 
   private void createLambda() {
-    useLambda((a) -> { return a + 2;});
+    useLambda(
+        (a) -> {
+          return a + 2;
+        });
   }
 
   interface LambdaInterface {

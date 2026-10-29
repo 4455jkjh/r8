@@ -4,5 +4,4 @@
 
 package interfacemethods;
 
-public class C2 implements I2 {
-}
+public class C2 implements I2 {}

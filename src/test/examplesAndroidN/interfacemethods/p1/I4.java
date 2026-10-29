@@ -4,5 +4,4 @@
 
 package interfacemethods.p1;
 
-public interface I4 extends I3 {
-}
+public interface I4 extends I3 {}
