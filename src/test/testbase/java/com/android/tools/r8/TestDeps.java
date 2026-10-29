@@ -192,6 +192,7 @@ public class TestDeps {
     dependencies.put("TIVI", null);
     dependencies.put("TUSKY", null);
     dependencies.put("YOUTUBE_21_40", null);
+    dependencies.put("YOUTUBE_21_40_D8_MERGE", null);
   }
 
   private static Path getDependency(String key) {
@@ -780,6 +781,10 @@ public class TestDeps {
 
   public static Path getYouTube2140Dir() {
     return getDependency("YOUTUBE_21_40");
+  }
+
+  public static Path getYouTube2140D8MergeDir() {
+    return getDependency("YOUTUBE_21_40_D8_MERGE");
   }
 
   public static Path getJunitJar() {

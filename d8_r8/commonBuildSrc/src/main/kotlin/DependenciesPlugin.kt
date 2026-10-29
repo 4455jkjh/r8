@@ -797,6 +797,13 @@ public object ThirdPartyDeps {
       testOnly = true,
       type = DependencyType.X20,
     )
+  public val youtube2140D8Merge: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "youtube-21.40-d8-merge",
+      Paths.get("third_party", "youtube", "youtube.android_21.40_d8_merge").toFile(),
+      testOnly = true,
+      type = DependencyType.X20,
+    )
 }
 
 private fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {

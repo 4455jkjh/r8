@@ -229,6 +229,9 @@ INTERNAL_SLOW_BENCHMARKS = {
         'targets': ['r8-full'],
         'enable_perf_size': True
     },
+    'YouTubeAppD8Merge': {
+        'targets': ['d8']
+    },
 }
 # A collection of benchmarks that should not be run on the bots, but can be used
 # for running locally.

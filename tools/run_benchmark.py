@@ -301,6 +301,7 @@ def run(options, r8jar, testjars):
         f'-DTEST_DEP_TIVI={utils.OPENSOURCE_DUMPS_DIR}/tivi',
         f'-DTEST_DEP_TUSKY={utils.OPENSOURCE_DUMPS_DIR}/android/tusky',
         f'-DTEST_DEP_YOUTUBE_21_40={utils.THIRD_PARTY}/youtube/youtube.android_21.40',
+        f'-DTEST_DEP_YOUTUBE_21_40_D8_MERGE={utils.THIRD_PARTY}/youtube/youtube.android_21.40_d8_merge',
     ])
     if options.iterations is not None:
         if options.iterations == 0:

@@ -466,6 +466,8 @@ registerTestDep("tusky", ThirdPartyDeps.tusky, "TUSKY")
 
 registerTestDep("youtube2140", ThirdPartyDeps.youtube2140, "YOUTUBE_21_40")
 
+registerTestDep("youtube2140D8Merge", ThirdPartyDeps.youtube2140D8Merge, "YOUTUBE_21_40_D8_MERGE")
+
 tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
 configurations.consumable("sharedDepsFiles") {

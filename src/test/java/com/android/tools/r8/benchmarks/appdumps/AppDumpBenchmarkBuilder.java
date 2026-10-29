@@ -6,6 +6,7 @@ package com.android.tools.r8.benchmarks.appdumps;
 import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.D8Command;
 import com.android.tools.r8.LibraryDesugaringTestConfiguration;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8FullTestBuilder;
@@ -67,6 +68,7 @@ public class AppDumpBenchmarkBuilder {
 
   private String name;
   private BenchmarkDependency dumpDependency;
+  private String pgMapInput;
   private int fromRevision = -1;
   private CompilationMode compilationMode;
   private boolean enableLibraryDesugaring = true;
@@ -149,6 +151,11 @@ public class AppDumpBenchmarkBuilder {
 
   public AppDumpBenchmarkBuilder setDumpDependency(BenchmarkDependency dependency) {
     this.dumpDependency = dependency;
+    return this;
+  }
+
+  public AppDumpBenchmarkBuilder setPgMapInput(String pgMapInput) {
+    this.pgMapInput = pgMapInput;
     return this;
   }
 
@@ -328,6 +335,10 @@ public class AppDumpBenchmarkBuilder {
 
   private String nameForMergePart() {
     return name + "Merge";
+  }
+
+  private Path getExtractedFile(BenchmarkEnvironment environment, String fileName) {
+    return dumpDependency.getRoot(environment).resolve(fileName);
   }
 
   private CompilerDump getExtractedDump(BenchmarkEnvironment environment) throws IOException {
@@ -591,6 +602,16 @@ public class AppDumpBenchmarkBuilder {
                               b.addOptionsModification(
                                   options ->
                                       options.getTestingOptions().forceDexContainerFormat = true))
+                      .applyIf(
+                          builder.pgMapInput != null,
+                          b -> {
+                            D8Command.Builder commandBuilder = b.getBuilder();
+                            commandBuilder.setProguardMapInputFile(
+                                builder.getExtractedFile(environment, builder.pgMapInput));
+                            Path outdir = environment.getTemp().newFolder().toPath();
+                            commandBuilder.setProguardMapConsumer(
+                                new StringConsumer.FileConsumer(outdir.resolve("mapping.txt")));
+                          })
                       .benchmarkCompile(results)
                       .applyIf(
                           environment.hasBuildOutputPath(),

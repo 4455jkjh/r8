@@ -149,6 +149,7 @@ dependencies {
   runtimeOnlyData(project(":third_party", "tivi"))
   runtimeOnlyData(project(":third_party", "tusky"))
   runtimeOnlyData(project(":third_party", "youtube2140"))
+  runtimeOnlyData(project(":third_party", "youtube2140D8Merge"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->
