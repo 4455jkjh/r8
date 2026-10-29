@@ -1,7 +1,6 @@
 // Copyright (c) 2020, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.graph.GenericSignatureCorrectnessHelper.SignatureEvaluationResult.INVALID_APPLICATION_COUNT;
@@ -25,6 +24,7 @@ import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
@@ -111,10 +111,22 @@ public class GenericSignatureCorrectnessHelper {
       return VALID;
     }
     SignatureEvaluationResult evaluationResult = VALID;
+    List<DexDefinition> clearActions = mode.clearIfInvalid() ? new ArrayList<>() : null;
     for (DexProgramClass clazz : programClasses) {
-      evaluationResult = evaluationResult.combine(evaluateSignaturesForClass(clazz));
+      evaluationResult = evaluationResult.combine(evaluateSignaturesForClass(clazz, clearActions));
+    }
+    if (clearActions != null) {
+      clearActions.forEach(this::processClearAction);
     }
     return evaluationResult;
+  }
+
+  private void processClearAction(DexDefinition definition) {
+    if (definition.isDexClass()) {
+      definition.asClass().clearClassSignature();
+    } else {
+      definition.asDexEncodedMember().clearGenericSignature();
+    }
   }
 
   public SignatureEvaluationResult evaluateSignaturesForClass(DexProgramClass clazz) {
@@ -122,7 +134,16 @@ public class GenericSignatureCorrectnessHelper {
         || !appView.options().parseSignatureAttribute()) {
       return VALID;
     }
+    List<DexDefinition> clearActions = mode.clearIfInvalid() ? new ArrayList<>() : null;
+    SignatureEvaluationResult result = evaluateSignaturesForClass(clazz, clearActions);
+    if (clearActions != null) {
+      clearActions.forEach(this::processClearAction);
+    }
+    return result;
+  }
 
+  private SignatureEvaluationResult evaluateSignaturesForClass(
+      DexProgramClass clazz, List<DexDefinition> clearActions) {
     TypeParameterContext typeParameterContext =
         contextBuilder.computeTypeParameterContext(appView, clazz.type, alwaysFalse());
 
@@ -148,7 +169,7 @@ public class GenericSignatureCorrectnessHelper {
                     clazz.getOrigin(),
                     result));
       }
-      clazz.clearClassSignature();
+      clearActions.add(clazz);
     }
     for (DexEncodedMethod method : clazz.methods()) {
       result =
@@ -175,7 +196,7 @@ public class GenericSignatureCorrectnessHelper {
                                   clazz.getOrigin(),
                                   invalidResult));
                     }
-                    method.clearGenericSignature();
+                    clearActions.add(method);
                   }));
     }
     for (DexEncodedField field : clazz.fields()) {
@@ -203,7 +224,7 @@ public class GenericSignatureCorrectnessHelper {
                                   clazz.getOrigin(),
                                   invalidResult));
                     }
-                    field.clearGenericSignature();
+                    clearActions.add(field);
                   }));
     }
     return result;
