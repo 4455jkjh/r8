@@ -31,8 +31,7 @@ class DexTryCatchSubject implements TryCatchSubject {
   @Override
   public RangeSubject getRange() {
     return new RangeSubject(
-        tryElement.startAddress,
-        tryElement.startAddress + tryElement.instructionCount - 1);
+        tryElement.startAddress, tryElement.startAddress + tryElement.instructionCount - 1);
   }
 
   @Override

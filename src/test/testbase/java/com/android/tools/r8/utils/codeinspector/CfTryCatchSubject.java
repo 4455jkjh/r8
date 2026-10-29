@@ -54,7 +54,7 @@ class CfTryCatchSubject implements TryCatchSubject {
   public boolean isCatching(String exceptionType) {
     for (DexType guardType : tryCatch.guards) {
       if (guardType.toString().equals(exceptionType)
-        || guardType.toDescriptorString().equals(exceptionType)) {
+          || guardType.toDescriptorString().equals(exceptionType)) {
         return true;
       }
     }

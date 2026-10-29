@@ -1879,8 +1879,7 @@ public class ClassFileTransformer {
   }
 
   public ClassFileTransformer setAnnotation(
-      MethodPredicate predicate,
-      Consumer<AnnotationBuilder> annotationBuilderConsumer) {
+      MethodPredicate predicate, Consumer<AnnotationBuilder> annotationBuilderConsumer) {
     return addClassTransformer(
         new ClassTransformer() {
           @Override

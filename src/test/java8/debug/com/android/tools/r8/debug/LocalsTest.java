@@ -67,11 +67,11 @@ public class LocalsTest extends DebugTestBase {
         breakpoint(className, methodName),
         run(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 10),
+        checkLine(SOURCE_FILE, 13),
         checkNoLocal(),
         stepOver(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 11),
+        checkLine(SOURCE_FILE, 14),
         checkNoLocal(),
         run());
   }
@@ -86,10 +86,10 @@ public class LocalsTest extends DebugTestBase {
         breakpoint(className, methodName),
         run(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 14),
+        checkLine(SOURCE_FILE, 17),
         checkNoLocal(),
         stepOver(),
-        checkLine(SOURCE_FILE, 15),
+        checkLine(SOURCE_FILE, 18),
         checkLocal("i", Value.createInt(Integer.MAX_VALUE)),
         run());
   }
@@ -108,14 +108,14 @@ public class LocalsTest extends DebugTestBase {
         breakpoint(className, methodName),
         run(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 19),
+        checkLine(SOURCE_FILE, 22),
         checkLocal("p", pValue),
         stepOver(),
-        checkLine(SOURCE_FILE, 20),
+        checkLine(SOURCE_FILE, 23),
         checkLocal("p", pValue),
         checkLocal("c", cValue),
         stepOver(),
-        checkLine(SOURCE_FILE, 21),
+        checkLine(SOURCE_FILE, 24),
         checkLocal("p", pValue),
         checkLocal("c", cValue),
         checkLocal("v", vValue),
@@ -137,16 +137,16 @@ public class LocalsTest extends DebugTestBase {
         breakpoint(className, methodName),
         run(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 19),
+        checkLine(SOURCE_FILE, 22),
         checkLocal("p", pValue),
         stepOver(),
-        checkLine(SOURCE_FILE, 20),
+        checkLine(SOURCE_FILE, 23),
         checkLocal("p", pValue),
         checkLocal("c", cValue),
         setLocal("c", newValue),
         checkLocal("c", newValue), // we should see the updated value
         stepOver(),
-        checkLine(SOURCE_FILE, 21),
+        checkLine(SOURCE_FILE, 24),
         checkLocal("p", pValue),
         checkLocal("c", newValue),
         checkLocal("v", vValue),
@@ -164,15 +164,15 @@ public class LocalsTest extends DebugTestBase {
         breakpoint(className, methodName),
         run(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 25),
+        checkLine(SOURCE_FILE, 28),
         checkNoLocal(),
         stepOver(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 26),
+        checkLine(SOURCE_FILE, 29),
         checkLocal("i", Value.createInt(0)),
         setLocal("i", newValueForI),
         stepOver(),
-        checkLine(SOURCE_FILE, 27),
+        checkLine(SOURCE_FILE, 30),
         checkLocal("i", newValueForI),
         checkLocal("f", Value.createFloat(0)),
         run());
@@ -190,15 +190,15 @@ public class LocalsTest extends DebugTestBase {
         breakpoint(className, methodName),
         run(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 31),
+        checkLine(SOURCE_FILE, 34),
         checkNoLocal(),
         stepOver(),
         checkMethod(className, methodName),
-        checkLine(SOURCE_FILE, 32),
+        checkLine(SOURCE_FILE, 35),
         checkLocal("i", oldValueForI),
         setLocal("i", newValueForI),
         stepOver(),
-        checkLine(SOURCE_FILE, 35),
+        checkLine(SOURCE_FILE, 38),
         checkLocal("i", newValueForI),
         run());
   }
@@ -214,7 +214,7 @@ public class LocalsTest extends DebugTestBase {
             state -> {
               // 1st breakpoint
               Assert.assertEquals("invokeRange", state.getMethodName());
-              Assert.assertEquals(60, state.getLineNumber());
+              Assert.assertEquals(63, state.getLineNumber());
               state.checkLocal("a", Value.createInt(12));
               state.checkLocal("b", Value.createInt(11));
               state.checkLocal("c", Value.createInt(10));
@@ -233,7 +233,7 @@ public class LocalsTest extends DebugTestBase {
             state -> {
               // 2nd breakpoint
               Assert.assertEquals("invokeRange", state.getMethodName());
-              Assert.assertEquals(60, state.getLineNumber());
+              Assert.assertEquals(63, state.getLineNumber());
               state.checkLocal("a", Value.createInt(6));
               state.checkLocal("b", Value.createInt(5));
               state.checkLocal("c", Value.createInt(4));
@@ -263,7 +263,7 @@ public class LocalsTest extends DebugTestBase {
         inspect(
             state -> {
               Assert.assertEquals("reverseRange", state.getMethodName());
-              Assert.assertEquals(56, state.getLineNumber());
+              Assert.assertEquals(59, state.getLineNumber());
               state.checkLocal("a", Value.createInt(1));
               state.checkLocal("b", Value.createInt(2));
               state.checkLocal("c", Value.createInt(3));
@@ -276,7 +276,7 @@ public class LocalsTest extends DebugTestBase {
         inspect(
             state -> {
               Assert.assertEquals("invokeRange", state.getMethodName());
-              Assert.assertEquals(60, state.getLineNumber());
+              Assert.assertEquals(63, state.getLineNumber());
               state.checkLocal("a", Value.createInt(7));
               state.checkLocal("b", Value.createInt(6));
               state.checkLocal("c", Value.createInt(5));
@@ -334,7 +334,7 @@ public class LocalsTest extends DebugTestBase {
         inspect(
             state -> {
               Assert.assertEquals("Locals.java", state.getSourceFile());
-              Assert.assertEquals(109, state.getLineNumber());
+              Assert.assertEquals(112, state.getLineNumber());
               // Verify that all arrays have the same value.
               arrayLocals.forEach(state::checkLocal);
             }),
@@ -347,7 +347,7 @@ public class LocalsTest extends DebugTestBase {
               final int lineNumber = state.getLineNumber();
               arrayLocals.forEach(state::checkLocal);
               // Stop when we reach the expected line.
-              return lineNumber == 127 && sourceFile.equals("Locals.java");
+              return lineNumber == 130 && sourceFile.equals("Locals.java");
             }),
         run());
   }
@@ -402,20 +402,20 @@ public class LocalsTest extends DebugTestBase {
         checkLocal("x", Value.createInt(initialValueOfX)),
         setLocal("x", Value.createInt(0)),
         // Single step until the catch handler triggers.
-        checkLine(SOURCE_FILE, 168),
-        stepOver(),
-        checkLine(SOURCE_FILE, 170),
-        stepOver(),
         checkLine(SOURCE_FILE, 171),
         stepOver(),
-        // At the catch handler, inspect the initial state of locals.
+        checkLine(SOURCE_FILE, 173),
+        stepOver(),
         checkLine(SOURCE_FILE, 174),
+        stepOver(),
+        // At the catch handler, inspect the initial state of locals.
+        checkLine(SOURCE_FILE, 177),
         checkLocal("x", Value.createInt(0)),
         getLocal("obj", value -> Assert.assertEquals(Tag.OBJECT_TAG, value.getTag())),
         checkLocal("l", Value.createLong(expectedValueOfL)),
         // Step onto first line of catch handler and inspect again, including the exception local.
         stepOver(),
-        checkLine(SOURCE_FILE, 175),
+        checkLine(SOURCE_FILE, 178),
         getLocal("e", value -> Assert.assertEquals(Tag.OBJECT_TAG, value.getTag())),
         checkLocal("x", Value.createInt(0)),
         getLocal("obj", value -> Assert.assertEquals(Tag.OBJECT_TAG, value.getTag())),
@@ -455,9 +455,9 @@ public class LocalsTest extends DebugTestBase {
 
   @Test
   public void testStepNonEmptyForLoopBody() throws Throwable {
-    final int LOOP_HEADER_LINE = 209;
-    final int LOOP_BODY_LINE = 210;
-    final int RETURN_LINE = 211;
+    final int LOOP_HEADER_LINE = 212;
+    final int LOOP_BODY_LINE = 213;
+    final int RETURN_LINE = 214;
     final Value N = Value.createInt(3);
     final Value I0 = Value.createInt(0);
     final Value I1 = Value.createInt(1);
@@ -509,20 +509,20 @@ public class LocalsTest extends DebugTestBase {
         CLASS_NAME,
         breakpoint(CLASS_NAME, "tempInCase"),
         run(),
-        checkLine(SOURCE_FILE, 217),
+        checkLine(SOURCE_FILE, 220),
         checkLocal("x", Value.createInt(42)),
         stepOver(),
-        checkLine(SOURCE_FILE, 218),
+        checkLine(SOURCE_FILE, 221),
         checkLocal("res", Value.createInt(0)),
         checkNoLocal("i"),
         stepOver(),
-        checkLine(SOURCE_FILE, 219),
+        checkLine(SOURCE_FILE, 222),
         stepOver(),
-        checkLine(SOURCE_FILE, 220),
+        checkLine(SOURCE_FILE, 223),
         checkLocal("rem", Value.createInt(42)),
         setLocal("rem", Value.createInt(1)),
         stepOver(),
-        checkLine(SOURCE_FILE, 222),
+        checkLine(SOURCE_FILE, 225),
         checkLocal("res", Value.createInt(0)),
         run());
   }
@@ -534,17 +534,17 @@ public class LocalsTest extends DebugTestBase {
         CLASS_NAME,
         breakpoint(CLASS_NAME, "localSwap"),
         run(),
-        checkLine(SOURCE_FILE, 240),
-        stepOver(),
-        checkLine(SOURCE_FILE, 242),
-        stepOver(),
         checkLine(SOURCE_FILE, 243),
+        stepOver(),
+        checkLine(SOURCE_FILE, 245),
+        stepOver(),
+        checkLine(SOURCE_FILE, 246),
         checkLocal("x", Value.createInt(1)),
         checkLocal("y", Value.createInt(2)),
         checkLocal("t", Value.createInt(1)),
         stepOver(),
         stepOver(),
-        checkLine(SOURCE_FILE, 246),
+        checkLine(SOURCE_FILE, 249),
         checkLocal("x", Value.createInt(2)),
         checkLocal("y", Value.createInt(1)),
         checkNoLocal("t"),
@@ -558,9 +558,9 @@ public class LocalsTest extends DebugTestBase {
         CLASS_NAME,
         breakpoint(CLASS_NAME, "argumentLiveAtReturn"),
         run(),
-        checkLine(SOURCE_FILE, 250),
+        checkLine(SOURCE_FILE, 253),
         stepOver(),
-        checkLine(SOURCE_FILE, 264),
+        checkLine(SOURCE_FILE, 267),
         checkLocal("x", Value.createInt(-1)),
         checkNoLocal("t"),
         run());
@@ -573,17 +573,17 @@ public class LocalsTest extends DebugTestBase {
         CLASS_NAME,
         breakpoint(CLASS_NAME, "switchRewriteToIfs"),
         run(),
-        checkLine(SOURCE_FILE, 269),
+        checkLine(SOURCE_FILE, 272),
         stepOver(),
-        checkLine(SOURCE_FILE, 270),
+        checkLine(SOURCE_FILE, 273),
         checkLocal("x", Value.createInt(1)),
         checkLocal("t", Value.createInt(2)),
         stepOver(),
-        checkLine(SOURCE_FILE, 271),
+        checkLine(SOURCE_FILE, 274),
         checkLocal("x", Value.createInt(2)),
         checkLocal("t", Value.createInt(2)),
         stepOver(),
-        checkLine(SOURCE_FILE, 273),
+        checkLine(SOURCE_FILE, 276),
         checkLocal("x", Value.createInt(4)),
         checkNoLocal("t"),
         run());
@@ -596,17 +596,17 @@ public class LocalsTest extends DebugTestBase {
         CLASS_NAME,
         breakpoint(CLASS_NAME, "switchRewriteToSwitches"),
         run(),
-        checkLine(SOURCE_FILE, 284),
+        checkLine(SOURCE_FILE, 287),
         stepOver(),
-        checkLine(SOURCE_FILE, 285),
+        checkLine(SOURCE_FILE, 288),
         checkLocal("x", Value.createInt(1)),
         checkLocal("t", Value.createInt(2)),
         stepOver(),
-        checkLine(SOURCE_FILE, 286),
+        checkLine(SOURCE_FILE, 289),
         checkLocal("x", Value.createInt(2)),
         checkLocal("t", Value.createInt(2)),
         stepOver(),
-        checkLine(SOURCE_FILE, 288),
+        checkLine(SOURCE_FILE, 291),
         checkLocal("x", Value.createInt(4)),
         checkNoLocal("t"),
         run());
@@ -619,15 +619,15 @@ public class LocalsTest extends DebugTestBase {
         CLASS_NAME,
         breakpoint(CLASS_NAME, "regression65039701"),
         run(),
-        checkLine(SOURCE_FILE, 306),
+        checkLine(SOURCE_FILE, 309),
         checkLocal("createIntNotLong", Value.createBoolean(true)),
         stepOver(),
-        checkLine(SOURCE_FILE, 307),
+        checkLine(SOURCE_FILE, 310),
         checkLocal("a"),
         stepOver(),
-        checkLine(SOURCE_FILE, 308),
+        checkLine(SOURCE_FILE, 311),
         stepOver(),
-        checkLine(SOURCE_FILE, 310),
+        checkLine(SOURCE_FILE, 313),
         run());
   }
 
@@ -638,16 +638,16 @@ public class LocalsTest extends DebugTestBase {
         CLASS_NAME,
         breakpoint(CLASS_NAME, "regression65066975"),
         run(),
-        checkLine(SOURCE_FILE, 314),
+        checkLine(SOURCE_FILE, 317),
         checkLocal("bit", Value.createBoolean(false)),
-        stepOver(),
-        checkLine(SOURCE_FILE, 315),
         stepOver(),
         checkLine(SOURCE_FILE, 318),
         stepOver(),
-        checkLine(SOURCE_FILE, 320),
-        stepOver(),
         checkLine(SOURCE_FILE, 321),
+        stepOver(),
+        checkLine(SOURCE_FILE, 323),
+        stepOver(),
+        checkLine(SOURCE_FILE, 324),
         run());
   }
 
@@ -660,16 +660,16 @@ public class LocalsTest extends DebugTestBase {
         className,
         breakpoint(className, methodName),
         run(),
-        checkLine(SOURCE_FILE, 334),
+        checkLine(SOURCE_FILE, 337),
         checkNoLocal("result"),
         stepOver(),
-        checkLine(SOURCE_FILE, 335),
+        checkLine(SOURCE_FILE, 338),
         checkLocal("result", Value.createInt(0)),
         stepOver(),
-        checkLine(SOURCE_FILE, 336),
+        checkLine(SOURCE_FILE, 339),
         checkLocal("result", Value.createInt(0)),
         stepOver(),
-        checkLine(SOURCE_FILE, 340),
+        checkLine(SOURCE_FILE, 343),
         checkLocal("result", Value.createInt(1)),
         run());
   }
@@ -683,15 +683,15 @@ public class LocalsTest extends DebugTestBase {
         className,
         breakpoint(className, methodName),
         run(),
-        checkLine(SOURCE_FILE, 324),
+        checkLine(SOURCE_FILE, 327),
         checkNoLocal("result1"),
         checkNoLocal("result2"),
         stepOver(),
-        checkLine(SOURCE_FILE, 325),
+        checkLine(SOURCE_FILE, 328),
         checkNoLocal("result1"),
         checkNoLocal("result2"),
         stepOver(),
-        checkLine(SOURCE_FILE, 326),
+        checkLine(SOURCE_FILE, 329),
         checkLocal("result1"),
         checkNoLocal("result2"),
         run());
@@ -706,32 +706,32 @@ public class LocalsTest extends DebugTestBase {
         className,
         breakpoint(className, methodName),
         run(),
-        checkLine(SOURCE_FILE, 344),
+        checkLine(SOURCE_FILE, 347),
         checkNoLocal("a"),
         checkNoLocal("b"),
         checkNoLocal("c"),
         checkNoLocal("d"),
         stepOver(),
-        checkLine(SOURCE_FILE, 345),
+        checkLine(SOURCE_FILE, 348),
         checkLocal("a", Value.createInt(1)),
         checkNoLocal("b"),
         checkNoLocal("c"),
         checkNoLocal("d"),
         stepOver(),
-        checkLine(SOURCE_FILE, 346),
+        checkLine(SOURCE_FILE, 349),
         checkLocal("a", Value.createInt(1)),
         checkLocal("b", Value.createInt(3)),
         checkNoLocal("c"),
         checkNoLocal("d"),
         stepOver(),
-        checkLine(SOURCE_FILE, 347),
+        checkLine(SOURCE_FILE, 350),
         checkLocal("a", Value.createInt(1)),
         checkLocal("b", Value.createInt(3)),
         checkLocal("c", Value.createInt(4)),
         checkNoLocal("d"),
         setLocal("a", Value.createInt(2)),
         stepOver(),
-        checkLine(SOURCE_FILE, 348),
+        checkLine(SOURCE_FILE, 351),
         checkLocal("a", Value.createInt(2)),
         checkLocal("b", Value.createInt(3)),
         checkLocal("c", Value.createInt(4)),
@@ -740,8 +740,8 @@ public class LocalsTest extends DebugTestBase {
   }
 
   /**
-   * Companion test with dex inspection
-   * {@link com.android.tools.r8.debuginfo.CodeGeneratorTestRunner#test2AddrInstruction}
+   * Companion test with dex inspection {@link
+   * com.android.tools.r8.debuginfo.CodeGeneratorTestRunner#test2AddrInstruction}
    */
   @Test
   public void testLocalUsedBy2AddrInstruction() throws Throwable {
@@ -752,22 +752,22 @@ public class LocalsTest extends DebugTestBase {
         className,
         breakpoint(className, methodName),
         run(),
-        checkLine(SOURCE_FILE, 352),
+        checkLine(SOURCE_FILE, 355),
         checkLocal("a", Value.createInt(1)),
         checkLocal("b", Value.createInt(2)),
         checkLocal("c", Value.createInt(6)),
         stepOver(),
-        checkLine(SOURCE_FILE, 353),
+        checkLine(SOURCE_FILE, 356),
         checkLocal("a", Value.createInt(3)),
         checkLocal("b", Value.createInt(2)),
         checkLocal("c", Value.createInt(6)),
         stepOver(),
-        checkLine(SOURCE_FILE, 354),
+        checkLine(SOURCE_FILE, 357),
         checkLocal("a", Value.createInt(3)),
         checkLocal("b", Value.createInt(8)),
         checkLocal("c", Value.createInt(6)),
         stepOver(),
-        checkLine(SOURCE_FILE, 355),
+        checkLine(SOURCE_FILE, 358),
         checkLocal("a", Value.createInt(3)),
         checkLocal("b", Value.createInt(8)),
         checkLocal("c", Value.createInt(11)),
@@ -780,30 +780,30 @@ public class LocalsTest extends DebugTestBase {
     final String methodName = "localVisibilityIntoLoop";
 
     List<Command> commands = new ArrayList<>();
-    commands.add(breakpoint(className, methodName, 360));
+    commands.add(breakpoint(className, methodName, 363));
     commands.add(run());
     commands.add(checkMethod(className, methodName));
-    commands.add(checkLine(SOURCE_FILE, 360));
+    commands.add(checkLine(SOURCE_FILE, 363));
     commands.add(stepOver());
-    commands.add(checkLine(SOURCE_FILE, 361));
+    commands.add(checkLine(SOURCE_FILE, 364));
     commands.add(checkNoLocal("Ai"));
     commands.add(checkNoLocal("Bi"));
     commands.add(checkNoLocal("i"));
     commands.add(stepOver());
     commands.add(checkMethod(className, methodName));
-    commands.add(checkLine(SOURCE_FILE, 362));
+    commands.add(checkLine(SOURCE_FILE, 365));
     commands.add(checkNoLocal("Ai"));
     commands.add(checkNoLocal("Bi"));
     commands.add(checkLocal("i", Value.createInt(0)));
     commands.add(stepOver());
     commands.add(checkMethod(className, methodName));
-    commands.add(checkLine(SOURCE_FILE, 363));
+    commands.add(checkLine(SOURCE_FILE, 366));
     commands.add(checkNoLocal("Ai"));
     commands.add(checkLocal("Bi"));
     commands.add(checkLocal("i", Value.createInt(0)));
     commands.add(stepOver());
     commands.add(checkMethod(className, methodName));
-    commands.add(checkLine(SOURCE_FILE, 364));
+    commands.add(checkLine(SOURCE_FILE, 367));
     commands.add(checkLocal("Ai"));
     commands.add(checkLocal("Bi"));
     commands.add(checkLocal("i", Value.createInt(0)));
@@ -811,7 +811,7 @@ public class LocalsTest extends DebugTestBase {
     commands.add(stepOver());
     commands.add(stepOver());
     commands.add(checkMethod(className, methodName));
-    commands.add(checkLine(SOURCE_FILE, 361));
+    commands.add(checkLine(SOURCE_FILE, 364));
     commands.add(checkNoLocal("Ai"));
     commands.add(checkNoLocal("Bi"));
     commands.add(checkLocal("i", Value.createInt(0)));

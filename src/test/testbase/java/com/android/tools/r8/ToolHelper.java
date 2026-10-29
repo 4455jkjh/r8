@@ -328,8 +328,8 @@ public class ToolHelper {
     ART_MAIN_HOST(Version.MAIN, Kind.HOST);
 
     private static final ImmutableMap<String, DexVm> SHORT_NAME_MAP =
-        Arrays.stream(DexVm.values()).collect(ImmutableMap.toImmutableMap(
-            DexVm::toString, Function.identity()));
+        Arrays.stream(DexVm.values())
+            .collect(ImmutableMap.toImmutableMap(DexVm::toString, Function.identity()));
 
     public enum Version {
       V4_0_4("4.0.4"),
@@ -503,7 +503,6 @@ public class ToolHelper {
     private final Version version;
     private final Kind kind;
   }
-
 
   public abstract static class CommandBuilder {
 
@@ -1303,9 +1302,7 @@ public class ToolHelper {
     throw new Unreachable("Unable to find a most recent android.jar");
   }
 
-  /**
-   * Get the junit jar bundled with the framework.
-   */
+  /** Get the junit jar bundled with the framework. */
   public static Path getFrameworkJunitJarPath(DexVm version) {
     return Paths.get(getArtDir(version), "framework", "junit.jar");
   }
@@ -1502,8 +1499,9 @@ public class ToolHelper {
 
   public static boolean artSupported() {
     if (!isLinux() && !isMac() && !isWindows()) {
-      System.err.println("Testing on your platform is not fully supported. " +
-          "Art does not work on on your platform.");
+      System.err.println(
+          "Testing on your platform is not fully supported. "
+              + "Art does not work on on your platform.");
       return false;
     }
     if (!isLinux() && getDexVmFromProperty().getKind() == Kind.HOST) {
@@ -1584,12 +1582,7 @@ public class ToolHelper {
       return copyResourceToTempFile(resourceUrl, fileName);
     } catch (IOException e) {
       throw new RuntimeException(
-          "Failed to copy resource "
-              + resourceName
-              + " relative to "
-              + clazz
-              + " to temp file",
-          e);
+          "Failed to copy resource " + resourceName + " relative to " + clazz + " to temp file", e);
     }
   }
 
@@ -1615,13 +1608,15 @@ public class ToolHelper {
     return getResourceAsReadOnlyFile(clazz, resourceName);
   }
 
-  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> clazz) throws IOException {
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(
+      ZipUtils.ZipBuilder builder, Class<?> clazz) throws IOException {
     String entryName = ZipUtils.zipEntryNameForClass(clazz);
     Path path = getClassFileForTestClassFromResources(clazz);
     return builder.addFile(entryName, path);
   }
 
-  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> anchor, String relativeClassName) throws IOException {
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(
+      ZipUtils.ZipBuilder builder, Class<?> anchor, String relativeClassName) throws IOException {
     String packagePath = anchor.getPackage().getName().replace('.', '/');
     String entryName = packagePath + "/" + relativeClassName + CLASS_EXTENSION;
     Path path = getResourceAsReadOnlyFile(anchor, relativeClassName + CLASS_EXTENSION);
@@ -1798,10 +1793,11 @@ public class ToolHelper {
 
   public static AndroidApp runR8(AndroidApp app, Consumer<InternalOptions> optionsConsumer)
       throws CompilationFailedException {
-    R8Command command = prepareR8CommandBuilder(app)
-        .setDisableTreeShaking(true)
-        .setDisableMinification(true)
-        .build();
+    R8Command command =
+        prepareR8CommandBuilder(app)
+            .setDisableTreeShaking(true)
+            .setDisableMinification(true)
+            .build();
     return runR8(command, optionsConsumer);
   }
 
@@ -1977,8 +1973,7 @@ public class ToolHelper {
   }
 
   public static void runLegacyResourceShrinker(
-      ResourceShrinker.Builder builder,
-      ReferenceChecker callback)
+      ResourceShrinker.Builder builder, ReferenceChecker callback)
       throws IOException, CompilationFailedException, ExecutionException {
     ResourceShrinker.Command command = builder.build();
     InternalOptions options = command.getInternalOptions();
@@ -2054,8 +2049,8 @@ public class ToolHelper {
     return runProcess(builder);
   }
 
-  public static ProcessResult runJavaNoVerify(
-      Path classpath, String mainClass, String... args) throws IOException {
+  public static ProcessResult runJavaNoVerify(Path classpath, String mainClass, String... args)
+      throws IOException {
     return runJavaNoVerify(
         Collections.singletonList(classpath), mainClass, Lists.newArrayList(args));
   }
@@ -2069,8 +2064,8 @@ public class ToolHelper {
       List<Path> classpath, String mainClass, List<String> args) throws IOException {
     String cp =
         classpath.stream().map(Path::toString).collect(Collectors.joining(CLASSPATH_SEPARATOR));
-    ArrayList<String> cmdline = Lists.newArrayList(
-        getJavaExecutable(), "-cp", cp, "-noverify", mainClass);
+    ArrayList<String> cmdline =
+        Lists.newArrayList(getJavaExecutable(), "-cp", cp, "-noverify", mainClass);
     cmdline.addAll(args);
     ProcessBuilder builder = new ProcessBuilder(cmdline);
     return runProcess(builder);
@@ -2153,12 +2148,14 @@ public class ToolHelper {
 
   private static ProcessResult forkJava(Path dir, Class clazz, List<String> args)
       throws IOException {
-    List<String> command = new ImmutableList.Builder<String>()
-        .add(getJavaExecutable())
-        .add("-cp").add(System.getProperty("java.class.path"))
-        .add(clazz.getCanonicalName())
-        .addAll(args)
-        .build();
+    List<String> command =
+        new ImmutableList.Builder<String>()
+            .add(getJavaExecutable())
+            .add("-cp")
+            .add(System.getProperty("java.class.path"))
+            .add(clazz.getCanonicalName())
+            .addAll(args)
+            .build();
     return runProcess(new ProcessBuilder(command).directory(dir.toFile()));
   }
 
@@ -2237,9 +2234,8 @@ public class ToolHelper {
     return runArtNoVerificationErrorsRaw(Collections.singletonList(file), mainClass, null, version);
   }
 
-  public static ProcessResult runArtNoVerificationErrorsRaw(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras,
-      DexVm version)
+  public static ProcessResult runArtNoVerificationErrorsRaw(
+      List<String> files, String mainClass, Consumer<ArtCommandBuilder> extras, DexVm version)
       throws IOException {
     ProcessResult result = runArtRaw(files, mainClass, extras, version, false);
     failOnProcessFailure(result);
@@ -2252,9 +2248,8 @@ public class ToolHelper {
     return runArtNoVerificationErrorsRaw(file, mainClass, version).stdout;
   }
 
-  public static String runArtNoVerificationErrors(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras,
-      DexVm version)
+  public static String runArtNoVerificationErrors(
+      List<String> files, String mainClass, Consumer<ArtCommandBuilder> extras, DexVm version)
       throws IOException {
     return runArtNoVerificationErrorsRaw(files, mainClass, extras, version).stdout;
   }
@@ -2304,7 +2299,9 @@ public class ToolHelper {
     return result.stdout;
   }
 
-  public static String checkArtOutputIdentical(List<String> files1, List<String> files2,
+  public static String checkArtOutputIdentical(
+      List<String> files1,
+      List<String> files2,
       String mainClass,
       Consumer<ArtCommandBuilder> extras,
       DexVm version)
@@ -2508,7 +2505,7 @@ public class ToolHelper {
       throws IOException {
     List<String> command = new ArrayList<>();
     command.add(proguardScript);
-    command.add("-forceprocessing");  // Proguard just checks the creation time on the in/out jars.
+    command.add("-forceprocessing"); // Proguard just checks the creation time on the in/out jars.
     command.add("-injars");
     command.add(inJar.toString());
     command.add("-libraryjars");

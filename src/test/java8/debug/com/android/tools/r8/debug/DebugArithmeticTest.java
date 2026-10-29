@@ -35,17 +35,13 @@ public class DebugArithmeticTest extends DebugTestBase {
         .debugConfig(parameters.getRuntime());
   }
 
-  /**
-   * Simple test that runs the debuggee until it exits.
-   */
+  /** Simple test that runs the debuggee until it exits. */
   @Test
   public void testRun() throws Throwable {
     runDebugTest(getConfig(), DEBUGGEE_CLASS, run());
   }
 
-  /**
-   * Tests that we do suspend on breakpoint then continue.
-   */
+  /** Tests that we do suspend on breakpoint then continue. */
   @Test
   public void testBreakpoint_Hit() throws Throwable {
     runDebugTest(
@@ -53,13 +49,11 @@ public class DebugArithmeticTest extends DebugTestBase {
         DEBUGGEE_CLASS,
         breakpoint(DEBUGGEE_CLASS, "bitwiseInts"),
         run(),
-        checkLine(SOURCE_FILE, 14),
+        checkLine(SOURCE_FILE, 17),
         run());
   }
 
-  /**
-   * Tests that we can check local variables at a suspension point (breakpoint).
-   */
+  /** Tests that we can check local variables at a suspension point (breakpoint). */
   @Test
   public void testLocalsOnBreakpoint() throws Throwable {
     runDebugTest(
@@ -67,7 +61,7 @@ public class DebugArithmeticTest extends DebugTestBase {
         DEBUGGEE_CLASS,
         breakpoint(DEBUGGEE_CLASS, "bitwiseInts"),
         run(),
-        checkLine(SOURCE_FILE, 14),
+        checkLine(SOURCE_FILE, 17),
         checkLocal("x", Value.createInt(12345)),
         checkLocal("y", Value.createInt(54321)),
         run());
@@ -83,7 +77,7 @@ public class DebugArithmeticTest extends DebugTestBase {
         DEBUGGEE_CLASS,
         breakpoint(DEBUGGEE_CLASS, "bitwiseInts"),
         run(),
-        checkLine(SOURCE_FILE, 14),
+        checkLine(SOURCE_FILE, 17),
         checkLocal("x", Value.createInt(12345)),
         checkLocal("y", Value.createInt(54321)),
         stepOver(),

@@ -174,7 +174,7 @@ public class SmaliTestBase extends TestBase {
   /**
    * Create an application with one method, and processed that application using R8.
    *
-   * Returns the processed method for inspection.
+   * <p>Returns the processed method for inspection.
    *
    * @param returnType the return type for the method
    * @param parameters the parameter types for the method
@@ -182,8 +182,8 @@ public class SmaliTestBase extends TestBase {
    * @param instructions instructions for the method
    * @return the processed method for inspection
    */
-  public AndroidApp singleMethodApplication(String returnType, List<String> parameters,
-      int locals, String... instructions) {
+  public AndroidApp singleMethodApplication(
+      String returnType, List<String> parameters, int locals, String... instructions) {
     // Build a one class method.
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
     builder.addStaticMethod(returnType, DEFAULT_METHOD_NAME, parameters, locals, instructions);
@@ -216,7 +216,7 @@ public class SmaliTestBase extends TestBase {
   /**
    * Create an application with one method, and processed that application using R8.
    *
-   * Returns the processed method for inspection.
+   * <p>Returns the processed method for inspection.
    *
    * @param returnType the return type for the method
    * @param parameters the parameter types for the method
@@ -224,11 +224,10 @@ public class SmaliTestBase extends TestBase {
    * @param instructions instructions for the method
    * @return the processed method for inspection
    */
-  public DexEncodedMethod oneMethodApplication(String returnType, List<String> parameters,
-      int locals, String... instructions) {
+  public DexEncodedMethod oneMethodApplication(
+      String returnType, List<String> parameters, int locals, String... instructions) {
     // Build a one class application.
-    AndroidApp application = singleMethodApplication(
-        returnType, parameters, locals, instructions);
+    AndroidApp application = singleMethodApplication(returnType, parameters, locals, instructions);
 
     // Process the application with R8.
     AndroidApp processdApplication;

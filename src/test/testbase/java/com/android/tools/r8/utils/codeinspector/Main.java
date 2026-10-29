@@ -13,11 +13,11 @@ import java.util.stream.Collectors;
 
 public class Main {
 
-  private static final String USAGE = StringUtils.joinLines(
-      "Usage: --method <qualified-name> <input>*",
-      "where <qualified-name> is a fully qualified name of a method (eg, foo.Bar.baz)",
-      "  and <input> is a series of input files (eg, .class, .dex, .jar, .zip or .apk)"
-  );
+  private static final String USAGE =
+      StringUtils.joinLines(
+          "Usage: --method <qualified-name> <input>*",
+          "where <qualified-name> is a fully qualified name of a method (eg, foo.Bar.baz)",
+          "  and <input> is a series of input files (eg, .class, .dex, .jar, .zip or .apk)");
 
   public static void main(String[] args) throws IOException {
     List<Path> inputs = new ArrayList<>();

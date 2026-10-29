@@ -209,8 +209,7 @@ public abstract class TestShrinkerBuilder<
   }
 
   public T addKeepClassRules(Class<?>... classes) {
-    return addKeepClassRules(
-        Arrays.stream(classes).map(Class::getTypeName).toArray(String[]::new));
+    return addKeepClassRules(Arrays.stream(classes).map(Class::getTypeName).toArray(String[]::new));
   }
 
   public T addKeepClassRules(String... classes) {

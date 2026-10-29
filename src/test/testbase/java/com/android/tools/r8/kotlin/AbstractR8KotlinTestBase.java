@@ -127,15 +127,17 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
 
   protected static void checkMethodsPresence(
       ClassSubject classSubject, Map<MethodSignature, Boolean> presenceMap) {
-    presenceMap.forEach(((methodSignature, isPresent) -> {
-      MethodSubject methodSubject = classSubject.method(methodSignature);
-      String methodDesc = methodSignature.toString();
-      String failureMessage = isPresent
-          ? "Method '" + methodDesc + "' should be present"
-          : "Method '" + methodDesc + "' should not be present";
+    presenceMap.forEach(
+        ((methodSignature, isPresent) -> {
+          MethodSubject methodSubject = classSubject.method(methodSignature);
+          String methodDesc = methodSignature.toString();
+          String failureMessage =
+              isPresent
+                  ? "Method '" + methodDesc + "' should be present"
+                  : "Method '" + methodDesc + "' should not be present";
 
-      assertEquals(failureMessage, isPresent, methodSubject.isPresent());
-    }));
+          assertEquals(failureMessage, isPresent, methodSubject.isPresent());
+        }));
   }
 
   protected ClassSubject checkClassIsKept(CodeInspector inspector, String className) {
@@ -227,16 +229,12 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
 
   protected String keepClassMethod(String className, MethodSignature methodSignature) {
     return StringUtils.lines(
-        "-keep class " + className + " {",
-        methodSignature.toString() + ";",
-        "}");
+        "-keep class " + className + " {", methodSignature.toString() + ";", "}");
   }
 
   protected String neverInlineMethod(String className, MethodSignature methodSignature) {
     return StringUtils.lines(
-        "-neverinline class " + className + " {",
-        methodSignature.toString() + ";",
-        "}");
+        "-neverinline class " + className + " {", methodSignature.toString() + ";", "}");
   }
 
   protected R8TestMultiRunResult runTest(String folder, String mainClass) throws Exception {
@@ -295,13 +293,19 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
 
   protected void checkMethodPresenceInInput(
       String className, MethodSignature methodSignature, boolean isPresent) {
-    boolean foundMethod = AsmUtils.doesMethodExist(classpath, className,
-        methodSignature.name, methodSignature.toDescriptor());
+    boolean foundMethod =
+        AsmUtils.doesMethodExist(
+            classpath, className, methodSignature.name, methodSignature.toDescriptor());
     if (isPresent != foundMethod) {
       throw new AssertionError(
-          "Method " + methodSignature.name + methodSignature.toDescriptor()
-              + " " + (foundMethod ? "exists" : "does not exist")
-              + " in input class " + className + " but is expected to be "
+          "Method "
+              + methodSignature.name
+              + methodSignature.toDescriptor()
+              + " "
+              + (foundMethod ? "exists" : "does not exist")
+              + " in input class "
+              + className
+              + " but is expected to be "
               + (isPresent ? "present" : "absent"));
     }
   }
@@ -311,8 +315,13 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
     boolean foundField = AsmUtils.doesFieldExist(classpath, className, fieldName, fieldType);
     if (isPresent != foundField) {
       throw new AssertionError(
-          "Field " + fieldName + " " + (foundField ? "exists" : "does not exist")
-              + " in input class " + className + " but is expected to be "
+          "Field "
+              + fieldName
+              + " "
+              + (foundField ? "exists" : "does not exist")
+              + " in input class "
+              + className
+              + " but is expected to be "
               + (isPresent ? "present" : "absent"));
     }
   }

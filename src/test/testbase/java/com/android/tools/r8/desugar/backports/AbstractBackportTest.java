@@ -313,14 +313,17 @@ public abstract class AbstractBackportTest extends TestBase {
     AndroidApiLevel apiLevel = parameters.getApiLevel();
     long expectedTargetInvokes = getTargetInvokesCount(apiLevel);
     long actualTargetInvokes = javaInvokeStatics.size();
-    assertEquals("Expected "
-        + expectedTargetInvokes
-        + " invokes on "
-        + targetClass.getName()
-        + " but found "
-        + actualTargetInvokes
-        + ": "
-        + javaInvokeStatics, expectedTargetInvokes, actualTargetInvokes);
+    assertEquals(
+        "Expected "
+            + expectedTargetInvokes
+            + " invokes on "
+            + targetClass.getName()
+            + " but found "
+            + actualTargetInvokes
+            + ": "
+            + javaInvokeStatics,
+        expectedTargetInvokes,
+        actualTargetInvokes);
 
     List<InstructionSubject> javaStaticGets =
         testSubject.allMethods().stream()

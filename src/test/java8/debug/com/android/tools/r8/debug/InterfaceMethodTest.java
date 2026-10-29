@@ -85,22 +85,22 @@ public class InterfaceMethodTest extends DebugTestBase {
     commands.add(breakpoint(debuggeeClass, "testDefaultMethod"));
     commands.add(run());
     commands.add(checkMethod(debuggeeClass, "testDefaultMethod"));
-    commands.add(checkLine(TEST_SOURCE_FILE, 22));
+    commands.add(checkLine(TEST_SOURCE_FILE, 25));
 
     // Step into the default method.
     commands.add(stepInto(INTELLIJ_FILTER));
-    commands.add(checkLine(INTERFACE_SOURCE_FILE, 9));
+    commands.add(checkLine(INTERFACE_SOURCE_FILE, 12));
     commands.add(checkMethod(defaultMethodContainerClass, defaultMethodName));
     commands.add(checkLocal(defaultMethodThisName));
     commands.add(checkLocal(parameterName));
     commands.add(stepOver(INTELLIJ_FILTER));
-    commands.add(checkLine(INTERFACE_SOURCE_FILE, 10));
+    commands.add(checkLine(INTERFACE_SOURCE_FILE, 13));
     commands.add(checkMethod(defaultMethodContainerClass, defaultMethodName));
     commands.add(checkLocal(defaultMethodThisName));
     commands.add(checkLocal(parameterName));
     commands.add(checkLocal(localVariableName));
     commands.add(run());
-    commands.add(run()  /* resume after 2nd breakpoint */);
+    commands.add(run() /* resume after 2nd breakpoint */);
 
     runDebugTest(config, debuggeeClass, commands);
   }
@@ -123,7 +123,7 @@ public class InterfaceMethodTest extends DebugTestBase {
     commands.add(run());
     commands.add(run() /* resume after 1st breakpoint */);
     commands.add(checkMethod(debuggeeClass, "testDefaultMethod"));
-    commands.add(checkLine(TEST_SOURCE_FILE, 22));
+    commands.add(checkLine(TEST_SOURCE_FILE, 25));
     commands.add(stepInto());
     commands.add(
         checkMethod(typeName(DebugInterfaceMethod.class) + "$OverrideImpl", "doSomething"));
@@ -164,17 +164,17 @@ public class InterfaceMethodTest extends DebugTestBase {
     commands.add(breakpoint(debuggeeClass, "testStaticMethod"));
     commands.add(run());
     commands.add(checkMethod(debuggeeClass, "testStaticMethod"));
-    commands.add(checkLine(TEST_SOURCE_FILE, 26));
+    commands.add(checkLine(TEST_SOURCE_FILE, 29));
 
     // Step into static method.
     commands.add(stepInto());
-    commands.add(checkLine(INTERFACE_SOURCE_FILE, 14));
+    commands.add(checkLine(INTERFACE_SOURCE_FILE, 17));
     commands.add(checkMethod(staticMethodContainerClass, staticMethodName));
     commands.add(checkNoLocal("this"));
     commands.add(checkNoLocal("-this"));
     commands.add(checkLocal(parameterName));
     commands.add(stepOver());
-    commands.add(checkLine(INTERFACE_SOURCE_FILE, 15));
+    commands.add(checkLine(INTERFACE_SOURCE_FILE, 18));
     commands.add(checkLocal(parameterName));
     commands.add(run());
 

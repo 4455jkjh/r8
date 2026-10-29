@@ -43,11 +43,11 @@ public class LambdaTest extends DebugTestBase {
         breakpoint(DEBUGGEE_CLASS, initialMethodName),
         run(),
         checkMethod(DEBUGGEE_CLASS, initialMethodName),
-        checkLine(SOURCE_FILE, 14),
+        checkLine(SOURCE_FILE, 17),
         checkLocals("i"),
         checkNoLocal("j"),
         stepInto(INTELLIJ_FILTER),
-        checkLine(SOURCE_FILE, 18),
+        checkLine(SOURCE_FILE, 21),
         checkLocals("i", "j"),
         run());
   }
@@ -61,10 +61,10 @@ public class LambdaTest extends DebugTestBase {
         breakpoint(DEBUGGEE_CLASS, initialMethodName),
         run(),
         checkMethod(DEBUGGEE_CLASS, initialMethodName),
-        checkLine(SOURCE_FILE, 34),
+        checkLine(SOURCE_FILE, 37),
         checkLocals("i", "a", "b"),
         stepInto(INTELLIJ_FILTER),
-        checkLine(SOURCE_FILE, 39),
+        checkLine(SOURCE_FILE, 42),
         checkLocals("a", "b"),
         run());
   }
@@ -78,10 +78,10 @@ public class LambdaTest extends DebugTestBase {
         breakpoint(DEBUGGEE_CLASS, initialMethodName),
         run(),
         checkMethod(DEBUGGEE_CLASS, initialMethodName),
-        checkLine(SOURCE_FILE, 22),
+        checkLine(SOURCE_FILE, 25),
         stepInto(INTELLIJ_FILTER),
         checkMethod(DEBUGGEE_CLASS, "returnOne"),
-        checkLine(SOURCE_FILE, 30),
+        checkLine(SOURCE_FILE, 33),
         checkNoLocal(),
         run());
   }
@@ -95,16 +95,15 @@ public class LambdaTest extends DebugTestBase {
         breakpoint(DEBUGGEE_CLASS, initialMethodName),
         run(),
         checkMethod(DEBUGGEE_CLASS, initialMethodName),
-        checkLine(SOURCE_FILE, 48),
+        checkLine(SOURCE_FILE, 51),
         stepInto(INTELLIJ_FILTER),
         inspect(t -> Assert.assertTrue(t.getMethodName().startsWith("lambda$"))),
         stepInto(INTELLIJ_FILTER),
         checkMethod(DEBUGGEE_CLASS, "concatObjects"),
-        checkLine(SOURCE_FILE, 59),
+        checkLine(SOURCE_FILE, 62),
         checkLocal("objects"),
         run());
   }
 
-  private static void doNothing(JUnit3Wrapper jUnit3Wrapper) {
-  }
+  private static void doNothing(JUnit3Wrapper jUnit3Wrapper) {}
 }

@@ -68,8 +68,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
   private final String name;
   private final DexTool toolchain;
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
   private boolean expectedException = false;
 
   public enum DexTool {
@@ -243,25 +242,26 @@ public abstract class R8RunArtTestsTest extends TestBase {
           .build();
 
   // Tests that are never compiled or run.
-  private static List<String> skipAltogether = ImmutableList.of(
-      // Those tests contains an invalid type hierarchy, which we cannot currently handle.
-      "065-mismatched-implements",
-      "066-mismatched-super",
-      // This test contains invalid dex code that reads uninitialized registers after an
-      // an instruction that would in any case throw (implicit via aget null 0).
-      "706-jit-skip-compilation",
-      // This test uses a user defined class loader to validate correct execution order
-      // between loadclass event and the execution of a static method.
-      // This does not work when performing inlining across classes.
-      "496-checker-inlining-class-loader",
-      // These all test OOM behavior and segfault doing GC on some machines. We just ignore them.
-      "080-oom-throw",
-      "080-oom-fragmentation",
-      "159-app-image-fields",
-      "163-app-image-methods",
-      "061-out-of-memory",
-      "617-clinit-oome"
-  );
+  private static List<String> skipAltogether =
+      ImmutableList.of(
+          // Those tests contains an invalid type hierarchy, which we cannot currently handle.
+          "065-mismatched-implements",
+          "066-mismatched-super",
+          // This test contains invalid dex code that reads uninitialized registers after an
+          // an instruction that would in any case throw (implicit via aget null 0).
+          "706-jit-skip-compilation",
+          // This test uses a user defined class loader to validate correct execution order
+          // between loadclass event and the execution of a static method.
+          // This does not work when performing inlining across classes.
+          "496-checker-inlining-class-loader",
+          // These all test OOM behavior and segfault doing GC on some machines. We just ignore
+          // them.
+          "080-oom-throw",
+          "080-oom-fragmentation",
+          "159-app-image-fields",
+          "163-app-image-methods",
+          "061-out-of-memory",
+          "617-clinit-oome");
 
   // Tests that may produce different output on consecutive runs or when processed or not.
   private static Multimap<String, TestCondition> outputMayDiffer =
@@ -280,185 +280,185 @@ public abstract class R8RunArtTestsTest extends TestBase {
 
   // Tests that make use of agents/native code.
   // Our test setup does not handle flags/linking of these.
-  private static List<String> usesNativeAgentCode = ImmutableList.of(
-      "497-inlining-and-class-loader",
-      "626-const-class-linking",
-      "642-fp-callees",
-      "660-clinit",
-      "909-attach-agent",
-      "914-hello-obsolescence",
-      "915-obsolete-2",
-      "916-obsolete-jit",
-      "917-fields-transformation",
-      "918-fields",
-      "919-obsolete-fields",
-      "920-objects",
-      "921-hello-failure",
-      "922-properties",
-      "923-monitors",
-      "924-threads",
-      "925-threadgroups",
-      "926-multi-obsolescence",
-      "927-timers",
-      "928-jni-table",
-      "929-search",
-      "930-hello-retransform",
-      "931-agent-thread",
-      "932-transform-saves",
-      "933-misc-events",
-      "934-load-transform",
-      "935-non-retransformable",
-      "936-search-onload",
-      "937-hello-retransform-package",
-      "938-load-transform-bcp",
-      "939-hello-transformation-bcp",
-      "940-recursive-obsolete",
-      "941-recurive-obsolete-jit",
-      "942-private-recursive",
-      "943-private-recursive-jit",
-      "944-transform-classloaders",
-      "945-obsolete-native",
-      "946-obsolete-throw",
-      "947-reflect-method",
-      "948-change-annotations",
-      "949-in-memory-transform",
-      "950-redefine-intrinsic",
-      "951-threaded-obsolete",
-      "980-redefine-object",
-      "1900-track-alloc",
-      "1901-get-bytecodes",
-      "1902-suspend",
-      "1903-suspend-self",
-      "1904-double-suspend",
-      "1906-suspend-list-me-first",
-      "1907-suspend-list-self-twice",
-      "1909-per-agent-tls",
-      "1910-transform-with-default",
-      "1911-get-local-var-table",
-      "1912-get-set-local-primitive",
-      "1913-get-set-local-objects",
-      "1914-get-local-instance",
-      "1915-get-set-local-current-thread",
-      "1916-get-set-current-frame",
-      "1917-get-stack-frame",
-      "1919-vminit-thread-start-timing",
-      "1920-suspend-native-monitor",
-      "1921-suspend-native-recursive-monitor",
-      "1922-owned-monitors-info",
-      "1923-frame-pop",
-      "1924-frame-pop-toggle",
-      "1925-self-frame-pop",
-      "1926-missed-frame-pop",
-      "1927-exception-event",
-      "1928-exception-event-exception",
-      "1929-exception-catch-exception",
-      "1930-monitor-info",
-      "1931-monitor-events",
-      "1932-monitor-events-misc",
-      "1933-monitor-current-contended",
-      "1934-jvmti-signal-thread",
-      "1935-get-set-current-frame-jit",
-      "1936-thread-end-events",
-      // These tests need a library name as parameter
-      "164-resolution-trampoline-dex-cache",
-      "597-deopt-invoke-stub",
-      "597-deopt-busy-loop",
-      "661-oat-writer-layout",
-      "661-classloader-allocator",
-      "664-aget-verifier"
-  );
+  private static List<String> usesNativeAgentCode =
+      ImmutableList.of(
+          "497-inlining-and-class-loader",
+          "626-const-class-linking",
+          "642-fp-callees",
+          "660-clinit",
+          "909-attach-agent",
+          "914-hello-obsolescence",
+          "915-obsolete-2",
+          "916-obsolete-jit",
+          "917-fields-transformation",
+          "918-fields",
+          "919-obsolete-fields",
+          "920-objects",
+          "921-hello-failure",
+          "922-properties",
+          "923-monitors",
+          "924-threads",
+          "925-threadgroups",
+          "926-multi-obsolescence",
+          "927-timers",
+          "928-jni-table",
+          "929-search",
+          "930-hello-retransform",
+          "931-agent-thread",
+          "932-transform-saves",
+          "933-misc-events",
+          "934-load-transform",
+          "935-non-retransformable",
+          "936-search-onload",
+          "937-hello-retransform-package",
+          "938-load-transform-bcp",
+          "939-hello-transformation-bcp",
+          "940-recursive-obsolete",
+          "941-recurive-obsolete-jit",
+          "942-private-recursive",
+          "943-private-recursive-jit",
+          "944-transform-classloaders",
+          "945-obsolete-native",
+          "946-obsolete-throw",
+          "947-reflect-method",
+          "948-change-annotations",
+          "949-in-memory-transform",
+          "950-redefine-intrinsic",
+          "951-threaded-obsolete",
+          "980-redefine-object",
+          "1900-track-alloc",
+          "1901-get-bytecodes",
+          "1902-suspend",
+          "1903-suspend-self",
+          "1904-double-suspend",
+          "1906-suspend-list-me-first",
+          "1907-suspend-list-self-twice",
+          "1909-per-agent-tls",
+          "1910-transform-with-default",
+          "1911-get-local-var-table",
+          "1912-get-set-local-primitive",
+          "1913-get-set-local-objects",
+          "1914-get-local-instance",
+          "1915-get-set-local-current-thread",
+          "1916-get-set-current-frame",
+          "1917-get-stack-frame",
+          "1919-vminit-thread-start-timing",
+          "1920-suspend-native-monitor",
+          "1921-suspend-native-recursive-monitor",
+          "1922-owned-monitors-info",
+          "1923-frame-pop",
+          "1924-frame-pop-toggle",
+          "1925-self-frame-pop",
+          "1926-missed-frame-pop",
+          "1927-exception-event",
+          "1928-exception-event-exception",
+          "1929-exception-catch-exception",
+          "1930-monitor-info",
+          "1931-monitor-events",
+          "1932-monitor-events-misc",
+          "1933-monitor-current-contended",
+          "1934-jvmti-signal-thread",
+          "1935-get-set-current-frame-jit",
+          "1936-thread-end-events",
+          // These tests need a library name as parameter
+          "164-resolution-trampoline-dex-cache",
+          "597-deopt-invoke-stub",
+          "597-deopt-busy-loop",
+          "661-oat-writer-layout",
+          "661-classloader-allocator",
+          "664-aget-verifier");
 
   // Tests with custom run.
-  private static List<String> customRun = ImmutableList.of(
-      "000-nop",
-      "018-stack-overflow",
-      "055-enum-performance",
-      "071-dexfile-map-clean",
-      "091-override-package-private-method",
-      "103-string-append",
-      "115-native-bridge",
-      "116-nodex2oat",
-      "117-nopatchoat",
-      "118-noimage-dex2oat",
-      "119-noimage-patchoat",
-      "126-miranda-multidex",
-      "127-checker-secondarydex",
-      "131-structural-change",
-      "133-static-invoke-super",
-      "134-nodex2oat-nofallback",
-      "137-cfi",
-      "138-duplicate-classes-check2",
-      "146-bad-interface",
-      "147-stripped-dex-fallback",
-      "304-method-tracing",
-      "529-checker-unresolved",
-      "555-checker-regression-x86const",
-      "569-checker-pattern-replacement",
-      "570-checker-osr",
-      "574-irreducible-and-constant-area",
-      "577-profile-foreign-dex",
-      "595-profile-saving",
-      "597-deopt-new-string",
-      "608-checker-unresolved-lse",
-      "613-inlining-dex-cache",
-      "636-wrong-static-access",
-      "900-hello-plugin",
-      "901-hello-ti-agent",
-      "902-hello-transformation",
-      "910-methods",
-      "911-get-stack-trace",
-      "912-classes",
-      "913-heaps"
-  );
+  private static List<String> customRun =
+      ImmutableList.of(
+          "000-nop",
+          "018-stack-overflow",
+          "055-enum-performance",
+          "071-dexfile-map-clean",
+          "091-override-package-private-method",
+          "103-string-append",
+          "115-native-bridge",
+          "116-nodex2oat",
+          "117-nopatchoat",
+          "118-noimage-dex2oat",
+          "119-noimage-patchoat",
+          "126-miranda-multidex",
+          "127-checker-secondarydex",
+          "131-structural-change",
+          "133-static-invoke-super",
+          "134-nodex2oat-nofallback",
+          "137-cfi",
+          "138-duplicate-classes-check2",
+          "146-bad-interface",
+          "147-stripped-dex-fallback",
+          "304-method-tracing",
+          "529-checker-unresolved",
+          "555-checker-regression-x86const",
+          "569-checker-pattern-replacement",
+          "570-checker-osr",
+          "574-irreducible-and-constant-area",
+          "577-profile-foreign-dex",
+          "595-profile-saving",
+          "597-deopt-new-string",
+          "608-checker-unresolved-lse",
+          "613-inlining-dex-cache",
+          "636-wrong-static-access",
+          "900-hello-plugin",
+          "901-hello-ti-agent",
+          "902-hello-transformation",
+          "910-methods",
+          "911-get-stack-trace",
+          "912-classes",
+          "913-heaps");
 
   // Tests with C++ code (JNI)
-  private static List<String> useJNI = ImmutableList.of(
-      "004-JniTest",
-      "004-NativeAllocations",
-      "004-ReferenceMap",
-      "004-SignalTest",
-      "004-StackWalk",
-      "004-ThreadStress",
-      "004-UnsafeTest",
-      "044-proxy",
-      "051-thread",
-      "115-native-bridge",
-      "117-nopatchoat",
-      "136-daemon-jni-shutdown",
-      "137-cfi",
-      "139-register-natives",
-      "141-class-unload",
-      "148-multithread-gc-annotations",
-      "149-suspend-all-stress",
-      "154-gc-loop",
-      "155-java-set-resolved-type",
-      "157-void-class",
-      "158-app-image-class-table",
-      "454-get-vreg",
-      "457-regs",
-      "461-get-reference-vreg",
-      "466-get-live-vreg",
-      "497-inlining-and-class-loader",
-      "543-env-long-ref",
-      "566-polymorphic-inlining",
-      "570-checker-osr",
-      "595-profile-saving",
-      "596-app-images",
-      "597-deopt-new-string",
-      "616-cha",
-      "616-cha-abstract",
-      "616-cha-interface",
-      "616-cha-interface-default",
-      "616-cha-miranda",
-      "616-cha-regression-proxy-method",
-      "616-cha-native",
-      "616-cha-proxy-method-inline",
-      "626-const-class-linking",
-      "626-set-resolved-string",
-      "900-hello-plugin",
-      "901-hello-ti-agent",
-      "1337-gc-coverage"
-  );
+  private static List<String> useJNI =
+      ImmutableList.of(
+          "004-JniTest",
+          "004-NativeAllocations",
+          "004-ReferenceMap",
+          "004-SignalTest",
+          "004-StackWalk",
+          "004-ThreadStress",
+          "004-UnsafeTest",
+          "044-proxy",
+          "051-thread",
+          "115-native-bridge",
+          "117-nopatchoat",
+          "136-daemon-jni-shutdown",
+          "137-cfi",
+          "139-register-natives",
+          "141-class-unload",
+          "148-multithread-gc-annotations",
+          "149-suspend-all-stress",
+          "154-gc-loop",
+          "155-java-set-resolved-type",
+          "157-void-class",
+          "158-app-image-class-table",
+          "454-get-vreg",
+          "457-regs",
+          "461-get-reference-vreg",
+          "466-get-live-vreg",
+          "497-inlining-and-class-loader",
+          "543-env-long-ref",
+          "566-polymorphic-inlining",
+          "570-checker-osr",
+          "595-profile-saving",
+          "596-app-images",
+          "597-deopt-new-string",
+          "616-cha",
+          "616-cha-abstract",
+          "616-cha-interface",
+          "616-cha-interface-default",
+          "616-cha-miranda",
+          "616-cha-regression-proxy-method",
+          "616-cha-native",
+          "616-cha-proxy-method-inline",
+          "626-const-class-linking",
+          "626-set-resolved-string",
+          "900-hello-plugin",
+          "901-hello-ti-agent",
+          "1337-gc-coverage");
 
   private static List<String> expectedToFailRunWithArtNonDefault =
       ImmutableList.of(
@@ -628,9 +628,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
   // Tests where the R8/D8 output runs in Art but the original does not.
   private static Multimap<String, TestCondition> failingRunWithArtOriginalOnly =
       new ImmutableListMultimap.Builder<String, TestCondition>()
-          .put("095-switch-MAX_INT",
-              TestCondition.match(
-                  TestCondition.runtimes(DexVm.Version.V4_0_4)))
+          .put(
+              "095-switch-MAX_INT",
+              TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_0_4)))
           .build();
 
   // Tests where the output of R8 fails when run with Art.
@@ -1055,65 +1055,64 @@ public abstract class R8RunArtTestsTest extends TestBase {
   // Tests that does not have dex input for some toolchains.
   private static Multimap<String, TestCondition> noInputDex =
       new ImmutableListMultimap.Builder<String, TestCondition>()
-          .put("914-hello-obsolescence", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("915-obsolete-2", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("916-obsolete-jit", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("919-obsolete-fields", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("926-multi-obsolescence", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("941-recurive-obsolete-jit", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("940-recursive-obsolete", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("942-private-recursive", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("943-private-recursive-jit", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("945-obsolete-native", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("948-change-annotations", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("952-invoke-custom", TestCondition.match(
-              TestCondition.tools(DexTool.NONE, DexTool.DX),
-              LEGACY_RUNTIME))
-          .put("952-invoke-custom-kinds",
-              TestCondition.match(TestCondition.tools(DexTool.DX)))
-          .put("979-const-method-handle",
-              TestCondition.match(TestCondition.tools(DexTool.DX)))
+          .put(
+              "914-hello-obsolescence",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "915-obsolete-2",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "916-obsolete-jit",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "919-obsolete-fields",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "926-multi-obsolescence",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "941-recurive-obsolete-jit",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "940-recursive-obsolete",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "942-private-recursive",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "943-private-recursive-jit",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "945-obsolete-native",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "948-change-annotations",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put(
+              "952-invoke-custom",
+              TestCondition.match(TestCondition.tools(DexTool.NONE, DexTool.DX), LEGACY_RUNTIME))
+          .put("952-invoke-custom-kinds", TestCondition.match(TestCondition.tools(DexTool.DX)))
+          .put("979-const-method-handle", TestCondition.match(TestCondition.tools(DexTool.DX)))
           .build();
 
   // Tests that does not have valid input for us to be compatible with dx running.
-  private static List<String> noInputJar = ImmutableList.of(
-      "097-duplicate-method", // No input class files.
-      "630-safecast-array", // No input class files.
-      "801-VoidCheckCast", // No input class files.
-      "804-class-extends-itself", // No input class files.
-      "972-iface-super-multidex", // Based on multiple smali files
-      "973-default-multidex", // Based on multiple smali files.
-      "974-verify-interface-super", // No input class files.
-      "975-iface-private", // No input class files.
-      "976-conflict-no-methods", // No input class files
-      "978-virtual-interface", // No input class files
-      "663-odd-dex-size", // No input class files
-      "663-odd-dex-size2", // No input class files
-      "663-odd-dex-size3", // No input class files
-      "663-odd-dex-size4" // No input class files
-  );
+  private static List<String> noInputJar =
+      ImmutableList.of(
+          "097-duplicate-method", // No input class files.
+          "630-safecast-array", // No input class files.
+          "801-VoidCheckCast", // No input class files.
+          "804-class-extends-itself", // No input class files.
+          "972-iface-super-multidex", // Based on multiple smali files
+          "973-default-multidex", // Based on multiple smali files.
+          "974-verify-interface-super", // No input class files.
+          "975-iface-private", // No input class files.
+          "976-conflict-no-methods", // No input class files
+          "978-virtual-interface", // No input class files
+          "663-odd-dex-size", // No input class files
+          "663-odd-dex-size2", // No input class files
+          "663-odd-dex-size3", // No input class files
+          "663-odd-dex-size4" // No input class files
+          );
 
   // Tests to skip on some conditions
   private static final Multimap<String, TestCondition> testToSkip =
@@ -1171,17 +1170,17 @@ public abstract class R8RunArtTestsTest extends TestBase {
           // Has tests in submethods, which we should not inline.
           "625-checker-licm-regressions");
 
-  private static List<String> requireClassInliningToBeDisabled = ImmutableList.of(
-      // Test is registered to be failing (failingRunWithArt), it fails only on 4.0.4
-      // (because of a bug in this version of dalvik) but succeeds on later versions.
-      // If class inliner us enabled it actually works fine on 4.0.4 since the class
-      // instantiation is properly inlined.
-      "301-abstract-protected",
-      // Test depends on exception produced for missing method or similar cases, but
-      // after class inlining removes class instantiations and references the exception
-      // is not produced.
-      "435-new-instance"
-  );
+  private static List<String> requireClassInliningToBeDisabled =
+      ImmutableList.of(
+          // Test is registered to be failing (failingRunWithArt), it fails only on 4.0.4
+          // (because of a bug in this version of dalvik) but succeeds on later versions.
+          // If class inliner us enabled it actually works fine on 4.0.4 since the class
+          // instantiation is properly inlined.
+          "301-abstract-protected",
+          // Test depends on exception produced for missing method or similar cases, but
+          // after class inlining removes class instantiations and references the exception
+          // is not produced.
+          "435-new-instance");
 
   private static List<String> hasMissingClasses =
       ImmutableList.of(
@@ -1267,53 +1266,53 @@ public abstract class R8RunArtTestsTest extends TestBase {
           "162-method-resolution", options -> options.testing.disableStackMapVerification = true,
           "435-new-instance", options -> options.testing.allowTypeErrors = true);
 
-  private static List<String> failuresToTriage = ImmutableList.of(
-      // Dex file input into a jar file, not yet supported by the test framework.
-      "663-odd-dex-size",
-      "663-odd-dex-size2",
-      "663-odd-dex-size3",
-      "663-odd-dex-size4",
+  private static List<String> failuresToTriage =
+      ImmutableList.of(
+          // Dex file input into a jar file, not yet supported by the test framework.
+          "663-odd-dex-size",
+          "663-odd-dex-size2",
+          "663-odd-dex-size3",
+          "663-odd-dex-size4",
 
-      // This is flaky.
-      "104-growth-limit",
+          // This is flaky.
+          "104-growth-limit",
 
-      // Various failures.
-      "138-duplicate-classes-check",
-      "461-get-reference-vreg",
-      "629-vdex-speed",
-      "638-no-line-number",
-      "647-jni-get-field-id",
-      "649-vdex-duplicate-method",
-      "652-deopt-intrinsic",
-      "655-jit-clinit",
-      "656-annotation-lookup-generic-jni",
-      "656-loop-deopt",
-      "707-checker-invalid-profile",
-      "708-jit-cache-churn",
+          // Various failures.
+          "138-duplicate-classes-check",
+          "461-get-reference-vreg",
+          "629-vdex-speed",
+          "638-no-line-number",
+          "647-jni-get-field-id",
+          "649-vdex-duplicate-method",
+          "652-deopt-intrinsic",
+          "655-jit-clinit",
+          "656-annotation-lookup-generic-jni",
+          "656-loop-deopt",
+          "707-checker-invalid-profile",
+          "708-jit-cache-churn",
 
-      // These use "native trace".
-      "981-dedup-original-dex",
-      "982-ok-no-retransform",
-      "983-source-transform-verify",
-      "984-obsolete-invoke",
-      "985-re-obsolete",
-      "986-native-method-bind",
-      "987-agent-bind",
-      "988-method-trace",
-      "989-method-trace-throw",
-      "990-field-trace",
-      "991-field-trace-2",
-      "992-source-data",
-      "993-breakpoints",
-      "994-breakpoint-line",
-      "995-breakpoints-throw",
-      "996-breakpoint-obsolete",
-      "997-single-step",
+          // These use "native trace".
+          "981-dedup-original-dex",
+          "982-ok-no-retransform",
+          "983-source-transform-verify",
+          "984-obsolete-invoke",
+          "985-re-obsolete",
+          "986-native-method-bind",
+          "987-agent-bind",
+          "988-method-trace",
+          "989-method-trace-throw",
+          "990-field-trace",
+          "991-field-trace-2",
+          "992-source-data",
+          "993-breakpoints",
+          "994-breakpoint-line",
+          "995-breakpoints-throw",
+          "996-breakpoint-obsolete",
+          "997-single-step",
 
-      // These two fail with missing *-hostdex.jar files.
-      "648-inline-caches-unresolved",
-      "998-redefine-use-after-free"
-  );
+          // These two fail with missing *-hostdex.jar files.
+          "648-inline-caches-unresolved",
+          "998-redefine-use-after-free");
 
   private static class TestSpecification {
 
@@ -1485,12 +1484,14 @@ public abstract class R8RunArtTestsTest extends TestBase {
       }
 
       // Collect the test that we should skip in this configuration because there is no dex input
-      skipTest.addAll(collectTestsMatchingConditions(
-          dexTool, compilerUnderTest, version, compilationMode, noInputDex));
+      skipTest.addAll(
+          collectTestsMatchingConditions(
+              dexTool, compilerUnderTest, version, compilationMode, noInputDex));
 
       // Collect the test that we should skip in this configuration
-      skipTest.addAll(collectTestsMatchingConditions(
-          dexTool, compilerUnderTest, version, compilationMode, testToSkip));
+      skipTest.addAll(
+          collectTestsMatchingConditions(
+              dexTool, compilerUnderTest, version, compilationMode, testToSkip));
 
       // Collect the test that we should skip in this configuration.
       skipArt.addAll(
@@ -1666,10 +1667,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
 
     @Override
     public int hashCode() {
-      return Objects.hash(
-          disableInlining,
-          disableClassInlining,
-          hasMissingClasses);
+      return Objects.hash(disableInlining, disableClassInlining, hasMissingClasses);
     }
   }
 
@@ -1786,25 +1784,25 @@ public abstract class R8RunArtTestsTest extends TestBase {
           D8.run(builder.build());
           break;
         }
-      case D8: {
-        assert keepRulesFile == null : "Keep-rules file specified for D8.";
+      case D8:
+        {
+          assert keepRulesFile == null : "Keep-rules file specified for D8.";
           D8Command.Builder builder =
               D8Command.builder()
                   .setMode(mode)
                   .addProgramFiles(ListUtils.map(fileNames, Paths::get))
                   .setOutput(Paths.get(resultPath), OutputMode.DexIndexed)
                   .setDisableDesugaring(compilationOptions.disableDesugaring);
-        AndroidApiLevel minSdkVersion = needMinSdkVersion.get(name);
-        if (minSdkVersion != null) {
+          AndroidApiLevel minSdkVersion = needMinSdkVersion.get(name);
+          if (minSdkVersion != null) {
             builder.setMinApiLevel(minSdkVersion.asUnchecked());
-          builder.addLibraryFiles(ToolHelper.getAndroidJar(minSdkVersion));
-        } else {
-          builder
-              .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.getDefault()));
-        }
+            builder.addLibraryFiles(ToolHelper.getAndroidJar(minSdkVersion));
+          } else {
+            builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.getDefault()));
+          }
           ToolHelper.runD8(builder, compilationOptions::accept);
-        break;
-      }
+          break;
+        }
       case R8:
       case R8CF:
         {
@@ -1868,8 +1866,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
 
     if (specification == null) {
       if (dexVm.getVersion() == DexVm.Version.DEFAULT) {
-        throw new RuntimeException("Test " + name + " has no specification for toolchain"
-            + toolchain + ".");
+        throw new RuntimeException(
+            "Test " + name + " has no specification for toolchain" + toolchain + ".");
       } else {
         // For older VMs the test might not exist, as the tests are currently generates from the
         // directories present in the art test directory for AOSP master.
@@ -1895,8 +1893,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
       inputFiles = addFileTree(inputFiles, new File(specification.directory, "jasmin_classes2"));
     } else {
       inputFiles =
-          specification.directory.listFiles((File file) ->
-              file.getName().endsWith(".dex") && !file.getName().startsWith("jasmin"));
+          specification.directory.listFiles(
+              (File file) ->
+                  file.getName().endsWith(".dex") && !file.getName().startsWith("jasmin"));
     }
 
     List<String> fileNames = new ArrayList<>();
@@ -2006,15 +2005,13 @@ public abstract class R8RunArtTestsTest extends TestBase {
       File processedFile;
 
       // Collect the generated dex files.
-      File[] outputFiles =
-          resultDir.listFiles((File file) -> file.getName().endsWith(".dex"));
+      File[] outputFiles = resultDir.listFiles((File file) -> file.getName().endsWith(".dex"));
       if (outputFiles.length == 1) {
         // Just run Art on classes.dex.
         processedFile = outputFiles[0];
       } else {
         // Run Art on JAR file with multiple dex files.
-        processedFile
-            = temp.getRoot().toPath().resolve(specification.name + ".jar").toFile();
+        processedFile = temp.getRoot().toPath().resolve(specification.name + ".jar").toFile();
         buildJar(outputFiles, processedFile);
       }
 
@@ -2030,8 +2027,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
       try {
         output = ToolHelper.runArt(builder);
       } catch (AssertionError e) {
-        addDexInformationToVerificationError(fileNames, processedFile,
-            specification.resolveFile("classes.dex"), e);
+        addDexInformationToVerificationError(
+            fileNames, processedFile, specification.resolveFile("classes.dex"), e);
         throw e;
       }
       if (specification.failsOnRun) {
@@ -2046,7 +2043,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
         com.google.common.io.Files.asByteSink(actualFile).write(output.getBytes(Charsets.UTF_8));
         ProcessBuilder processBuilder = new ProcessBuilder();
         processBuilder.command(
-            specification.resolveFile("check").toString(), expectedFile.toString(),
+            specification.resolveFile("check").toString(),
+            expectedFile.toString(),
             actualFile.toString());
         ProcessResult result = ToolHelper.runProcess(processBuilder);
         if (result.exitCode != 0 && !specification.failsWithArtOutput) {
@@ -2084,10 +2082,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
   }
 
   private void failWithDexDiff(File originalFile, File processedFile) throws IOException {
-    CodeInspector inspectOriginal =
-        new CodeInspector(originalFile.toPath().toAbsolutePath());
-    CodeInspector inspectProcessed =
-        new CodeInspector(processedFile.toPath().toAbsolutePath());
+    CodeInspector inspectOriginal = new CodeInspector(originalFile.toPath().toAbsolutePath());
+    CodeInspector inspectProcessed = new CodeInspector(processedFile.toPath().toAbsolutePath());
     StringBuilder builderOriginal = new StringBuilder();
     StringBuilder builderProcessed = new StringBuilder();
     inspectOriginal.forAllClasses((clazz) -> builderOriginal.append(clazz.dumpMethods()));
@@ -2097,21 +2093,27 @@ public abstract class R8RunArtTestsTest extends TestBase {
   }
 
   private void addDexInformationToVerificationError(
-      Collection<String> inputFiles, File processedFile, File referenceFile,
+      Collection<String> inputFiles,
+      File processedFile,
+      File referenceFile,
       AssertionError verificationError) {
     List<ComparisonFailure> errors;
     try {
       // Parse all the verification errors.
       CodeInspector processed = new CodeInspector(processedFile.toPath());
-      CodeInspector original = DEX_COMPARE_WITH_DEX_REFERENCE_ON_FAILURE
-          ? new CodeInspector(referenceFile.toPath())
-          : new CodeInspector(inputFiles.stream().map(Paths::get).collect(Collectors.toList()));
+      CodeInspector original =
+          DEX_COMPARE_WITH_DEX_REFERENCE_ON_FAILURE
+              ? new CodeInspector(referenceFile.toPath())
+              : new CodeInspector(inputFiles.stream().map(Paths::get).collect(Collectors.toList()));
       List<ArtErrorInfo> errorInfo = ArtErrorParser.parse(verificationError.getMessage());
-      errors = ListUtils.map(errorInfo, (error) ->
-          new ComparisonFailure(
-              error.getMessage(),
-              "ORIGINAL\n" + error.dump(original, false) + "\nEND ORIGINAL",
-              "PROCESSED\n" + error.dump(processed, true) + "\nEND PROCESSED"));
+      errors =
+          ListUtils.map(
+              errorInfo,
+              (error) ->
+                  new ComparisonFailure(
+                      error.getMessage(),
+                      "ORIGINAL\n" + error.dump(original, false) + "\nEND ORIGINAL",
+                      "PROCESSED\n" + error.dump(processed, true) + "\nEND PROCESSED"));
     } catch (Throwable e) {
       System.err.println("Failed to add extra dex information to the verification error:");
       e.printStackTrace();

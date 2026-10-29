@@ -7,7 +7,7 @@ package com.android.tools.r8.kotlin;
 /**
  * Represents the definition of a Kotlin companion class.
  *
- * <p>See https://kotlinlang.org/docs/reference/object-declarations.html#companion-objects</p>
+ * <p>See https://kotlinlang.org/docs/reference/object-declarations.html#companion-objects
  */
 public class TestKotlinCompanionClass extends TestKotlinClass {
 

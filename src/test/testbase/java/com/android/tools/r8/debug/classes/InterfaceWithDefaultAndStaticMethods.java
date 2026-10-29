@@ -2,6 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// Absolute line numbers are used in InterfaceMethodTest.java.
+// @formatter:off
+
 package com.android.tools.r8.debug.classes;
 
 public interface InterfaceWithDefaultAndStaticMethods {

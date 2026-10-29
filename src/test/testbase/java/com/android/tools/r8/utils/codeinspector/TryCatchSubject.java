@@ -8,7 +8,9 @@ import java.util.stream.Stream;
 
 public interface TryCatchSubject {
   RangeSubject getRange();
+
   boolean isCatching(String exceptionType);
+
   boolean hasCatchAll();
 
   Stream<TypeSubject> streamGuards();

@@ -38,10 +38,10 @@ public class MultipleReturnsTest extends DebugTestBase {
         breakpoint(CLASS_NAME, "multipleReturns"),
         run(),
         stepOver(),
-        checkLine(SOURCE_FILE, 18), // this should be the 1st return statement
+        checkLine(SOURCE_FILE, 21), // this should be the 1st return statement
         run(),
         stepOver(),
-        checkLine(SOURCE_FILE, 20), // this should be the 2nd return statement
+        checkLine(SOURCE_FILE, 23), // this should be the 2nd return statement
         run());
   }
 }

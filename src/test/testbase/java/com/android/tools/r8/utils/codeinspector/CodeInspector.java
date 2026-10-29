@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.codeinspector;
 
-import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 import static com.android.tools.r8.utils.codeinspector.CodeInspector.ClassType.ANY;
 import static com.android.tools.r8.utils.codeinspector.CodeInspector.ClassType.PROGRAM;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.StringResource;
@@ -45,11 +45,11 @@ import com.android.tools.r8.retrace.internal.MappingSupplierInternalImpl;
 import com.android.tools.r8.retrace.internal.RetracerImpl;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.BiMapContainer;
-import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject.JumboStringMode;
+import com.android.tools.r8.utils.internal.BiMapContainer;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;

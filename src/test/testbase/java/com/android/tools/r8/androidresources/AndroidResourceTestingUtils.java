@@ -176,6 +176,7 @@ public class AndroidResourceTestingUtils {
       this.javaFilePath = javaFilePath;
       this.classFileData = classFileData;
     }
+
     public Path getJavaFilePath() {
       return javaFilePath;
     }
@@ -917,5 +918,4 @@ public class AndroidResourceTestingUtils {
   // The XML document <x/> as a proto packed with AAPT2
   public static final byte[] TINY_PROTO_XML =
       new byte[] {0xa, 0x3, 0x1a, 0x1, 0x78, 0x1a, 0x2, 0x8, 0x1};
-
 }

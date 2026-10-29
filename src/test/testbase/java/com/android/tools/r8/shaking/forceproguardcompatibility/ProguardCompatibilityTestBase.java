@@ -37,10 +37,7 @@ public class ProguardCompatibilityTestBase extends TestBase {
     R8_CF;
 
     public boolean isR8() {
-      return this == R8_COMPAT
-          || this == R8_COMPAT_CF
-          || this == R8
-          || this == R8_CF;
+      return this == R8_COMPAT || this == R8_COMPAT_CF || this == R8 || this == R8_CF;
     }
 
     public boolean isCompatR8() {
@@ -52,8 +49,7 @@ public class ProguardCompatibilityTestBase extends TestBase {
     }
 
     public boolean isFullModeR8() {
-      return this == R8
-          || this == R8_CF;
+      return this == R8 || this == R8_CF;
     }
 
     public boolean generatesDex() {
@@ -208,16 +204,14 @@ public class ProguardCompatibilityTestBase extends TestBase {
     return new CodeInspector(runR8Compat(programClasses, proguardConfig, null, configure, backend));
   }
 
-  protected void verifyClassesPresent(
-      CodeInspector codeInspector, Class<?>... classesOfInterest) {
+  protected void verifyClassesPresent(CodeInspector codeInspector, Class<?>... classesOfInterest) {
     for (Class klass : classesOfInterest) {
       ClassSubject c = codeInspector.clazz(klass);
       assertThat(c, isPresent());
     }
   }
 
-  protected void verifyClassesAbsent(
-      CodeInspector codeInspector, Class<?>... classesOfInterest) {
+  protected void verifyClassesAbsent(CodeInspector codeInspector, Class<?>... classesOfInterest) {
     for (Class klass : classesOfInterest) {
       ClassSubject c = codeInspector.clazz(klass);
       assertThat(c, not(isPresent()));

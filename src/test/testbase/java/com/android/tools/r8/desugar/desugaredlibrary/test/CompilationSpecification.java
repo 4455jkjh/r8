@@ -46,10 +46,7 @@ public enum CompilationSpecification {
   private final CompilationMode programCompilationMode;
 
   CompilationSpecification(
-      boolean programShrink,
-      boolean l8Shrink,
-      boolean cfToCf,
-      CompilationMode mode) {
+      boolean programShrink, boolean l8Shrink, boolean cfToCf, CompilationMode mode) {
     this.programShrink = programShrink;
     this.l8Shrink = l8Shrink;
     this.cfToCf = cfToCf;

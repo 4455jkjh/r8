@@ -44,9 +44,9 @@ public class ExceptionTest extends DebugTestBase {
         className,
         breakpoint(className, "catchException"),
         run(),
-        checkLine(SOURCE_FILE, 11), // line of the method call throwing the exception
+        checkLine(SOURCE_FILE, 14), // line of the method call throwing the exception
         stepOver(),
-        checkLine(SOURCE_FILE, 13), // first line in the catch handler
+        checkLine(SOURCE_FILE, 16), // first line in the catch handler
         checkLocal("e"),
         run());
   }
@@ -67,12 +67,12 @@ public class ExceptionTest extends DebugTestBase {
         className,
         breakpoint(className, "catchException"),
         run(),
-        checkLine(SOURCE_FILE, 11), // line of the method call throwing the exception
+        checkLine(SOURCE_FILE, 14), // line of the method call throwing the exception
         stepOver(),
-        applyIf(art15OrOlder, () -> checkLine(SOURCE_FILE, 12)), // line of the catch declaration
+        applyIf(art15OrOlder, () -> checkLine(SOURCE_FILE, 15)), // line of the catch declaration
         applyIf(art15OrOlder, () -> checkNoLocal("e")),
         applyIf(art15OrOlder, this::stepOver),
-        checkLine(SOURCE_FILE, 13), // first line in the catch handler
+        checkLine(SOURCE_FILE, 16), // first line in the catch handler
         checkLocal("e"),
         run());
   }
