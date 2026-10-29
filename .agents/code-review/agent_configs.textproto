@@ -41,6 +41,7 @@ configs: {
 configs: {
   id: "code-review-agent"
   display_name: "Code Review Agent"
+  skills: "r8-cl-review"
   use_default_subagents: true
   include_filters: {
     path_regex: ".*"
