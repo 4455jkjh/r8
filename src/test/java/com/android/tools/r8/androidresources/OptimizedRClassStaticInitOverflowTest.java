@@ -136,6 +136,33 @@ public class OptimizedRClassStaticInitOverflowTest extends TestBase {
   }
 
   @Test
+  public void testR8WithoutInliningOfStaticInitMethods() throws Exception {
+    testForR8(parameters)
+        .addProgramClasses(TestClass.class)
+        .addAndroidResources(splitResources)
+        .enableOptimizedShrinking()
+        .addKeepMainRule(TestClass.class)
+        .addKeepRules("-neverinline class " + R.class.getTypeName() + "$* { void staticInit*(); }")
+        .enableProguardTestOptions()
+        .compile()
+        .inspectShrunkenResources(this::assertShrunkenResources)
+        .inspect(
+            inspector -> {
+              // The staticInit<N>() methods are not inlined into <clinit>(), so the fields they
+              // initialize are not analyzed and the reads of these fields are not removed.
+              ClassSubject rString = inspector.clazz(R.string.class);
+              assertThat(rString, isPresent());
+              assertThat(rString.uniqueMethodWithOriginalName("staticInit0"), isPresent());
+              assertThat(rString.uniqueMethodWithOriginalName("staticInit1"), isPresent());
+              assertThat(rString.uniqueFieldWithOriginalName("used_clinit"), isAbsent());
+              assertThat(rString.uniqueFieldWithOriginalName("used_0"), isPresent());
+              assertThat(rString.uniqueFieldWithOriginalName("used_1"), isPresent());
+            })
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutput(expectedOutput(splitResources));
+  }
+
+  @Test
   public void testR8Debug() throws Exception {
     AndroidTestResource testResources = splitResources;
     testForR8(parameters)
