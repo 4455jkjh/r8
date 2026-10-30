@@ -13,6 +13,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoFactory;
 import java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,8 +51,9 @@ public class InstanceInitializerDescriptionEqualsTest extends TestBase {
     DexMethod instanceInitializer =
         factory.createInstanceInitializer(factory.createType("LA;"), parameterType);
     InstanceInitializerDescription.Builder builder =
-        new InstanceInitializerDescription.Builder(factory, instanceInitializer);
+        new InstanceInitializerDescription.Builder(
+            factory, instanceInitializer, new InstanceFieldInitializationInfoFactory());
     builder.addInvokeConstructor(factory.objectMembers.constructor, Collections.emptyList());
-    return builder.build();
+    return builder.build().getDescription();
   }
 }

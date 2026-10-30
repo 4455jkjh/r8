@@ -6,7 +6,7 @@ package com.android.tools.r8.assistant.cli;
 import com.android.tools.r8.ParseFlagInfo;
 import com.android.tools.r8.ParseFlagInfoImpl;
 import com.android.tools.r8.ParseFlagPrinter;
-import com.android.tools.r8.Version;
+import com.android.tools.r8.R8AssistantVersion;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintStream;
@@ -151,7 +151,7 @@ public final class AssistantCommandLine {
       return getUsage(commands);
     }
     if (args.get(0).equals(VERSION)) {
-      return "R8 Assistant " + Version.getVersionString() + StringUtils.LINE_SEPARATOR;
+      return "R8 Assistant " + R8AssistantVersion.getVersionString() + StringUtils.LINE_SEPARATOR;
     }
     return AssistantCommands.find(commands, args.get(0)).getUsage();
   }

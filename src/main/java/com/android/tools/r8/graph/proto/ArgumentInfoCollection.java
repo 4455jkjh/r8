@@ -199,6 +199,7 @@ public class ArgumentInfoCollection {
           });
       return builder
           .setArgumentInfosSize(argumentInfosSize)
+          .setArgumentPermutation(argumentPermutation)
           .setIsConvertedToStaticMethod(isConvertedToStaticMethod())
           .build();
     }

@@ -186,6 +186,12 @@ def main():
     except Exception as e:
         print('Warning: CI dashboard deploy failed: %s' % e, file=sys.stderr)
 
+    try:
+        from perf_weekly import deploy as perf_deploy
+        perf_deploy.deploy_perf_page()
+    except Exception as e:
+        print('Warning: perf page deploy failed: %s' % e, file=sys.stderr)
+
     if found_errors:
         return 1
     return 0

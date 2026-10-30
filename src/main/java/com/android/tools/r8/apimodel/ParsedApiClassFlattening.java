@@ -8,6 +8,9 @@ import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
+import com.android.tools.r8.utils.internal.SemiInfiniteRangeSet;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -15,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class ParsedApiClassFlattening {
+public class ParsedApiClassFlattening<T extends Ordered<T>> {
 
   /**
    * Returns a new list of classes where the class hierarchy has been flattened. Classes will be
@@ -26,24 +29,28 @@ public class ParsedApiClassFlattening {
    * <p>Note that since {@link ParsedApiClass} does not inform whether methods are static or not,
    * this is a superset of the actual members present.
    */
-  public static Collection<ParsedApiClass<ApiVersionSet>> flatten(
-      Collection<ParsedApiClass<ApiRange>> parsedApiClasses) throws ApiDatabaseGeneratorException {
-    return new ParsedApiClassFlattening(parsedApiClasses).flatten();
+  public static <T extends Ordered<T>> Collection<ParsedApiClass<SemiInfiniteRangeSet<T>>> flatten(
+      Collection<ParsedApiClass<SemiInfiniteRange<T>>> parsedApiClasses)
+      throws ApiDatabaseGeneratorException {
+    return new ParsedApiClassFlattening<>(parsedApiClasses).flatten();
   }
 
-  private final Map<ClassReference, ParsedApiClass<ApiRange>> classMap = new LinkedHashMap<>();
-  private final Map<ClassReference, ParsedApiClass<ApiVersionSet>> flattenedCache =
+  private final Map<ClassReference, ParsedApiClass<SemiInfiniteRange<T>>> classMap =
+      new LinkedHashMap<>();
+  private final Map<ClassReference, ParsedApiClass<SemiInfiniteRangeSet<T>>> flattenedCache =
       new LinkedHashMap<>();
   private final Set<ClassReference> visited = new HashSet<>();
 
-  private ParsedApiClassFlattening(Collection<ParsedApiClass<ApiRange>> parsedApiClasses) {
-    for (ParsedApiClass<ApiRange> clazz : parsedApiClasses) {
+  private ParsedApiClassFlattening(
+      Collection<ParsedApiClass<SemiInfiniteRange<T>>> parsedApiClasses) {
+    for (ParsedApiClass<SemiInfiniteRange<T>> clazz : parsedApiClasses) {
       classMap.put(clazz.getClassReference(), clazz);
     }
   }
 
   /** Returns flattened classes with all inherited members except from Object. */
-  private Collection<ParsedApiClass<ApiVersionSet>> flatten() throws ApiDatabaseGeneratorException {
+  private Collection<ParsedApiClass<SemiInfiniteRangeSet<T>>> flatten()
+      throws ApiDatabaseGeneratorException {
     for (ClassReference ref : classMap.keySet()) {
       flattenClass(ref);
     }
@@ -51,7 +58,7 @@ public class ParsedApiClassFlattening {
   }
 
   /** Returns a flattened class of {@code ref} with all inherited members except from Object. */
-  private ParsedApiClass<ApiVersionSet> flattenClass(ClassReference ref)
+  private ParsedApiClass<SemiInfiniteRangeSet<T>> flattenClass(ClassReference ref)
       throws ApiDatabaseGeneratorException {
     if (flattenedCache.containsKey(ref)) {
       return flattenedCache.get(ref);
@@ -60,20 +67,20 @@ public class ParsedApiClassFlattening {
     if (!classMap.containsKey(ref)) {
       throw new ApiDatabaseGeneratorException("Missing class: " + ref);
     }
-    ParsedApiClass<ApiRange> original = classMap.get(ref);
+    ParsedApiClass<SemiInfiniteRange<T>> original = classMap.get(ref);
 
     if (visited.contains(ref)) {
       throw new ApiDatabaseGeneratorException("Class hierarchy cycle found that includes " + ref);
     }
     visited.add(ref);
 
-    ParsedApiClass<ApiVersionSet> flattened =
+    ParsedApiClass<SemiInfiniteRangeSet<T>> flattened =
         new ParsedApiClass<>(original.getClassReference(), original.getData());
     original.forEachSupertype(flattened::registerSupertype);
     original.forEachInterface(flattened::registerInterface);
 
-    Map<MethodReference, ApiVersionSet> flattenedMethods = new LinkedHashMap<>();
-    Map<FieldTypelessReference, ApiVersionSet> flattenedFields = new LinkedHashMap<>();
+    Map<MethodReference, SemiInfiniteRangeSet<T>> flattenedMethods = new LinkedHashMap<>();
+    Map<FieldTypelessReference, SemiInfiniteRangeSet<T>> flattenedFields = new LinkedHashMap<>();
 
     // Original members.
     original.forEachMethod(flattenedMethods::put);
@@ -108,18 +115,18 @@ public class ParsedApiClassFlattening {
     return flattened;
   }
 
-  private static void inheritMembers(
+  private static <T extends Ordered<T>> void inheritMembers(
       ClassReference child,
-      ParsedApiClass<ApiVersionSet> parent,
-      ApiVersionSet inheritanceRange,
-      Map<MethodReference, ApiVersionSet> childMethods,
-      Map<FieldTypelessReference, ApiVersionSet> childFields) {
+      ParsedApiClass<SemiInfiniteRangeSet<T>> parent,
+      SemiInfiniteRangeSet<T> inheritanceRange,
+      Map<MethodReference, SemiInfiniteRangeSet<T>> childMethods,
+      Map<FieldTypelessReference, SemiInfiniteRangeSet<T>> childFields) {
     parent.forEachMethod(
         (methodRef, methodRange) -> {
           if (methodRef.getMethodName().equals("<init>")) {
             return;
           }
-          ApiVersionSet inheritedRange = inheritanceRange.intersect(methodRange);
+          SemiInfiniteRangeSet<T> inheritedRange = inheritanceRange.intersect(methodRange);
           if (inheritedRange == null) {
             return;
           }
@@ -128,7 +135,7 @@ public class ParsedApiClassFlattening {
 
     parent.forEachField(
         (fieldRef, fieldRange) -> {
-          ApiVersionSet inheritedRange = inheritanceRange.intersect(fieldRange);
+          SemiInfiniteRangeSet<T> inheritedRange = inheritanceRange.intersect(fieldRange);
           if (inheritedRange == null) {
             return;
           }
@@ -147,9 +154,11 @@ public class ParsedApiClassFlattening {
         child, methodRef.getMethodName(), methodRef.getFormalTypes(), methodRef.getReturnType());
   }
 
-  private static void mergeMethod(
-      Map<MethodReference, ApiVersionSet> methods, MethodReference newMethod, ApiVersionSet range) {
-    ApiVersionSet existingMethod = methods.get(newMethod);
+  private static <T extends Ordered<T>> void mergeMethod(
+      Map<MethodReference, SemiInfiniteRangeSet<T>> methods,
+      MethodReference newMethod,
+      SemiInfiniteRangeSet<T> range) {
+    SemiInfiniteRangeSet<T> existingMethod = methods.get(newMethod);
     if (existingMethod != null) {
       methods.put(newMethod, existingMethod.union(range));
     } else {
@@ -157,11 +166,11 @@ public class ParsedApiClassFlattening {
     }
   }
 
-  private static void mergeField(
-      Map<FieldTypelessReference, ApiVersionSet> fields,
+  private static <T extends Ordered<T>> void mergeField(
+      Map<FieldTypelessReference, SemiInfiniteRangeSet<T>> fields,
       FieldTypelessReference newField,
-      ApiVersionSet range) {
-    ApiVersionSet existingField = fields.get(newField);
+      SemiInfiniteRangeSet<T> range) {
+    SemiInfiniteRangeSet<T> existingField = fields.get(newField);
     if (existingField != null) {
       fields.put(newField, existingField.union(range));
     } else {

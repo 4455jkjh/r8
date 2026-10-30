@@ -14,16 +14,16 @@ import java.util.Map;
 /**
  * Represents the definition of a Kotlin class.
  *
- * <p>See https://kotlinlang.org/docs/reference/classes.html</p>
+ * <p>See https://kotlinlang.org/docs/reference/classes.html
  */
 public class TestKotlinClass {
 
   /**
-   * This is the suffix appended by Kotlin compiler to getter and setter method names of
-   * internal properties.
+   * This is the suffix appended by Kotlin compiler to getter and setter method names of internal
+   * properties.
    *
-   * It must match the string passed in command-line option "-module-name" of Kotlin compiler. The
-   * default value is "main".
+   * <p>It must match the string passed in command-line option "-module-name" of Kotlin compiler.
+   * The default value is "main".
    */
   private static final String KOTLIN_MODULE_NAME = "main";
 
@@ -112,8 +112,8 @@ public class TestKotlinClass {
     return getSetterForProperty(property, property.getVisibility() == Visibility.INTERNAL);
   }
 
-  public MemberNaming.MethodSignature getGetterAccessorForProperty(String propertyName,
-      AccessorKind accessorKind) {
+  public MemberNaming.MethodSignature getGetterAccessorForProperty(
+      String propertyName, AccessorKind accessorKind) {
     KotlinProperty property = getProperty(propertyName);
     String getterName = computeGetterName(propertyName);
     // Unlike normal getter, module name is not appended for accessor method of internal property.
@@ -127,8 +127,8 @@ public class TestKotlinClass {
     return new MemberNaming.MethodSignature(getterName, property.type, argumentTypes);
   }
 
-  public MemberNaming.MethodSignature getSetterAccessorForProperty(String propertyName,
-      AccessorKind accessorKind) {
+  public MemberNaming.MethodSignature getSetterAccessorForProperty(
+      String propertyName, AccessorKind accessorKind) {
     KotlinProperty property = getProperty(propertyName);
     String setterName = computeSetterName(propertyName);
     // Unlike normal setter, module name is not appended for accessor method of internal property.
@@ -142,8 +142,8 @@ public class TestKotlinClass {
     return new MemberNaming.MethodSignature(setterName, "void", argumentTypes);
   }
 
-  protected final MemberNaming.MethodSignature getGetterForProperty(KotlinProperty property,
-      boolean applyMangling) {
+  protected final MemberNaming.MethodSignature getGetterForProperty(
+      KotlinProperty property, boolean applyMangling) {
     String type = property.type;
     String getterName = computeGetterName(property.name);
     if (applyMangling) {
@@ -152,18 +152,19 @@ public class TestKotlinClass {
     return new MemberNaming.MethodSignature(getterName, type, Collections.emptyList());
   }
 
-  protected final MemberNaming.MethodSignature getSetterForProperty(KotlinProperty property,
-      boolean applyMangling) {
+  protected final MemberNaming.MethodSignature getSetterForProperty(
+      KotlinProperty property, boolean applyMangling) {
     String setterName = computeSetterName(property.name);
     if (applyMangling) {
       setterName = appendInternalSuffix(setterName);
     }
-    return new MemberNaming.MethodSignature(setterName, "void",
-        Collections.singleton(property.getType()));
+    return new MemberNaming.MethodSignature(
+        setterName, "void", Collections.singleton(property.getType()));
   }
 
   private static String computeGetterName(String propertyName) {
-    if (propertyName.length() > 2 && propertyName.startsWith("is")
+    if (propertyName.length() > 2
+        && propertyName.startsWith("is")
         && (propertyName.charAt(2) == '_' || Character.isUpperCase(propertyName.charAt(2)))) {
       // Getter for property "isAbc" is "isAbc".
       return propertyName;
@@ -184,5 +185,4 @@ public class TestKotlinClass {
   private String wrapWithAccessorPrefixAndSuffix(AccessorKind accessorKind, String methodName) {
     return "access$" + methodName + "$" + accessorKind.getAccessorSuffix();
   }
-
 }

@@ -2092,6 +2092,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
             "com.android.tools.r8.enableSameFilePolicy", false);
     private boolean enableSyntheticMerging = true;
 
+    // TODO(b/418674622): Enable check-cast-rewriting.
+    public boolean enableCheckCastRewriting = false;
+
     // Used in tests to enable horizontal class merging when compiling to class files.
     public void enableForTesting() {
       disable = OptionalBool.FALSE;
@@ -2746,6 +2749,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public CfVersion supportedCfVersionForTesting = null;
 
     public boolean forceIntTypeForClassIdField = false;
+
+    public boolean enableStringConcatFactoryForDex = false;
   }
 
   public boolean forTesting(Supplier<Boolean> test) {
@@ -2886,10 +2891,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return hasFeaturePresentFrom(invokeCustomApiLevel());
   }
 
-  public boolean canUseInvokeCustomWithIndyStringConcat(CfVersion cfVersion) {
-    return isGeneratingClassFiles()
-        && cfVersion.isGreaterThanOrEqualTo(CfVersion.V9)
-        && !isCfDesugaring();
+  public boolean canUseInvokeCustomWithStringConcatFactory(CfVersion cfVersion) {
+    return (isGeneratingClassFiles()
+            && cfVersion.isGreaterThanOrEqualTo(CfVersion.V9)
+            && !isCfDesugaring())
+        || (isGeneratingDex() && getTestingOptions().enableStringConcatFactoryForDex);
   }
 
   public static AndroidApiLevel constantDynamicApiLevel() {

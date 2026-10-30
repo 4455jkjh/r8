@@ -5,13 +5,14 @@
 package com.android.tools.r8.ir.optimize.unusedarguments;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.KeepConstantArguments;
+import com.android.tools.r8.KeepUnusedReturnValue;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
-import org.junit.Assert;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -30,6 +31,7 @@ public class UnusedArgumentsMixedTest extends UnusedArgumentsTestBase {
       return a;
     }
 
+    @KeepUnusedReturnValue
     @NeverInline
     public static Object a(Object a, int b) {
       return a;
@@ -41,6 +43,7 @@ public class UnusedArgumentsMixedTest extends UnusedArgumentsTestBase {
       return c;
     }
 
+    @KeepUnusedReturnValue
     @NeverInline
     public static Object a(Object a, int b, Object c) {
       return c;
@@ -57,7 +60,7 @@ public class UnusedArgumentsMixedTest extends UnusedArgumentsTestBase {
   @Override
   public void configure(R8FullTestBuilder builder) {
     super.configure(builder);
-    builder.enableConstantArgumentAnnotations();
+    builder.enableConstantArgumentAnnotations().enableKeepUnusedReturnValueAnnotations();
   }
 
   @Override
@@ -74,15 +77,12 @@ public class UnusedArgumentsMixedTest extends UnusedArgumentsTestBase {
   public void inspectTestClass(ClassSubject clazz) {
     assertEquals(5, clazz.allMethods().size());
     clazz.forAllMethods(
-        method -> {
-          Assert.assertTrue(
-              method.getFinalName().equals("main")
-                  || (method.getFinalSignature().parameters.length == 1
-                      && (method.getFinalSignature().parameters[0].equals("int")
-                          || method
-                              .getFinalSignature()
-                              .parameters[0]
-                              .equals("java.lang.Integer"))));
-        });
+        method ->
+            assertTrue(
+                method.getFinalName().equals("main")
+                    || (method.getFinalSignature().parameters.length == 1
+                        && method.getFinalSignature().parameters[0].equals("int"))
+                    || (method.getFinalSignature().parameters.length == 1
+                        && method.getFinalSignature().parameters[0].equals("java.lang.Integer"))));
   }
 }

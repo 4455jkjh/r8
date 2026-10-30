@@ -11,6 +11,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.NoAccessModification;
+import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -61,6 +62,7 @@ class ConcreteChecker extends AbstractChecker {
   // This should not be conflict with AbstractChecker#check due to the access control.
   // check() -> y
   @NoAccessModification
+  @NoMethodStaticizing
   private void check() {
     System.out.println("ConcreteChecker#check:" + tag);
   }
@@ -129,6 +131,7 @@ public class MemberResolutionTest extends TestBase {
             .addKeepRules("-applymapping " + mapPath)
             .enableMemberValuePropagationAnnotations()
             .enableNoAccessModificationAnnotationsForMembers()
+            .enableNoMethodStaticizingAnnotations()
             .enableNoVerticalClassMergingAnnotations()
             .addOptionsModification(options -> options.inlinerOptions().enableInlining = false)
             .setMinApi(parameters)

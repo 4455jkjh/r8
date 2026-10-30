@@ -12,13 +12,10 @@ import org.apache.harmony.jpda.tests.framework.jdwp.JDWPConstants.Error;
 import org.apache.harmony.jpda.tests.framework.jdwp.ReplyPacket;
 import org.apache.harmony.jpda.tests.framework.jdwp.VmMirror;
 
-/**
- * Utils for JDWP mirror.
- */
+/** Utils for JDWP mirror. */
 public abstract class VmMirrorUtils {
 
-  private VmMirrorUtils() {
-  }
+  private VmMirrorUtils() {}
 
   public static void checkReply(ReplyPacket replyPacket) {
     checkReply(replyPacket, Error.NONE);
@@ -27,17 +24,23 @@ public abstract class VmMirrorUtils {
   public static void checkReply(ReplyPacket replyPacket, int expectedErrorCode) {
     if (replyPacket.getErrorCode() != expectedErrorCode) {
       throw new AssertionError(
-          "Expected error code " + JDWPConstants.Error.getName(expectedErrorCode) + " ("
-              + expectedErrorCode + ") but received " + JDWPConstants.Error
-              .getName(expectedErrorCode) + " (" + expectedErrorCode + ")");
+          "Expected error code "
+              + JDWPConstants.Error.getName(expectedErrorCode)
+              + " ("
+              + expectedErrorCode
+              + ") but received "
+              + JDWPConstants.Error.getName(expectedErrorCode)
+              + " ("
+              + expectedErrorCode
+              + ")");
     }
-
   }
 
   public static String getMethodName(VmMirror mirror, long classID, long methodID) {
-    CommandPacket packet = new CommandPacket(
-        JDWPCommands.ReferenceTypeCommandSet.CommandSetID,
-        ReferenceTypeCommandSet.MethodsWithGenericCommand);
+    CommandPacket packet =
+        new CommandPacket(
+            JDWPCommands.ReferenceTypeCommandSet.CommandSetID,
+            ReferenceTypeCommandSet.MethodsWithGenericCommand);
     packet.setNextValueAsReferenceTypeID(classID);
     ReplyPacket reply = mirror.performCommand(packet);
     checkReply(reply);
@@ -58,9 +61,10 @@ public abstract class VmMirrorUtils {
   }
 
   public static String getMethodSignature(VmMirror mirror, long classID, long methodID) {
-    CommandPacket command = new CommandPacket(
-        ReferenceTypeCommandSet.CommandSetID,
-        ReferenceTypeCommandSet.MethodsWithGenericCommand);
+    CommandPacket command =
+        new CommandPacket(
+            ReferenceTypeCommandSet.CommandSetID,
+            ReferenceTypeCommandSet.MethodsWithGenericCommand);
     command.setNextValueAsReferenceTypeID(classID);
     ReplyPacket reply = mirror.performCommand(command);
     checkReply(reply);
@@ -82,5 +86,4 @@ public abstract class VmMirrorUtils {
     assert reply.isAllDataRead();
     return null;
   }
-
 }

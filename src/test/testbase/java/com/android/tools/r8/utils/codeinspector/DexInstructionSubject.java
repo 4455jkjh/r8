@@ -297,7 +297,8 @@ public class DexInstructionSubject implements InstructionSubject {
         || isInvokeInterface()
         || isInvokeDirect()
         || isInvokeSuper()
-        || isInvokeStatic();
+        || isInvokeStatic()
+        || isInvokeCustom();
   }
 
   @Override

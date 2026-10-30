@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ReflectiveOperationJsonParser {
 
@@ -30,6 +31,13 @@ public class ReflectiveOperationJsonParser {
   }
 
   public List<ReflectiveEvent> parse(Path file) throws IOException {
+    return parse(file, null);
+  }
+
+  // Parses the file, passing the lines that cannot be parsed, such as malformed lines and events of
+  // unknown types, to the consumer. Throws for such lines if the consumer is null.
+  public List<ReflectiveEvent> parse(Path file, Consumer<String> skippedLineConsumer)
+      throws IOException {
     List<ReflectiveEvent> result = new ArrayList<>();
     Int2ReferenceMap<ReflectiveEvent> eventsById = new Int2ReferenceOpenHashMap<>();
     List<String> lines = Files.readAllLines(file);
@@ -37,33 +45,46 @@ public class ReflectiveOperationJsonParser {
       if (line.trim().isEmpty()) {
         continue;
       }
-      JsonObject event = JsonParser.parseString(line).getAsJsonObject();
-      if (event.isEmpty()) {
-        continue;
-      }
-      JsonElement returnedElement = event.get("returned");
-      if (returnedElement != null) {
-        ReflectiveEvent returnedEvent = eventsById.get(returnedElement.getAsInt());
-        if (returnedEvent != null) {
-          returnedEvent.addResult(toResult(event.get("result")));
+      try {
+        parseLine(line, result, eventsById);
+      } catch (RuntimeException e) {
+        if (skippedLineConsumer == null) {
+          throw e;
         }
-        continue;
+        skippedLineConsumer.accept(line);
       }
-      ReflectiveEventType eventType = ReflectiveEventType.valueOf(event.get("event").getAsString());
-      JsonElement stackElement = event.get("stack");
-      String[] stack = stackElement != null ? toStringArray(stackElement) : null;
-      JsonElement argsElement = event.get("args");
-      String[] args = argsElement != null ? toStringArray(argsElement) : null;
-      ReflectiveEvent reflectiveEvent =
-          ReflectiveEvent.instantiate(eventType, stack, args, factory);
-      JsonElement idElement = event.get("id");
-      if (idElement != null) {
-        reflectiveEvent.setId(idElement.getAsInt());
-        eventsById.put(reflectiveEvent.getId(), reflectiveEvent);
-      }
-      result.add(reflectiveEvent);
     }
     return result;
+  }
+
+  private void parseLine(
+      String line, List<ReflectiveEvent> result, Int2ReferenceMap<ReflectiveEvent> eventsById) {
+    JsonObject event = JsonParser.parseString(line).getAsJsonObject();
+    if (event.isEmpty()) {
+      return;
+    }
+    JsonElement returnedElement = event.get("returned");
+    if (returnedElement != null) {
+      ReflectiveEvent returnedEvent = eventsById.get(returnedElement.getAsInt());
+      if (returnedEvent != null) {
+        returnedEvent.addResult(toResult(event.get("result")));
+      }
+      return;
+    }
+    ReflectiveEventType eventType = ReflectiveEventType.valueOf(event.get("event").getAsString());
+    JsonElement stackElement = event.get("stack");
+    String[] stack = stackElement != null ? toStringArray(stackElement) : null;
+    JsonElement argsElement = event.get("args");
+    String[] args = argsElement != null ? toStringArray(argsElement) : null;
+    ReflectiveEvent reflectiveEvent = ReflectiveEvent.instantiate(eventType, stack, args, factory);
+    JsonElement idElement = event.get("id");
+    if (idElement != null) {
+      reflectiveEvent.setId(idElement.getAsInt());
+      // Overwrite any earlier event with the same id (e.g. in concatenated multi-process logs)
+      // so subsequent returned lines attach to the latest request with that id.
+      eventsById.put(reflectiveEvent.getId(), reflectiveEvent);
+    }
+    result.add(reflectiveEvent);
   }
 
   private Object toResult(JsonElement resultElement) {

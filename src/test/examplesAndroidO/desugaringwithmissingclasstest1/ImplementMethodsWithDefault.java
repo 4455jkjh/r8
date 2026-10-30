@@ -6,5 +6,4 @@ package desugaringwithmissingclasstest1;
 import desugaringwithmissingclasslib1.A;
 import desugaringwithmissingclasslib2.B;
 
-public class ImplementMethodsWithDefault implements A, B {
-}
+public class ImplementMethodsWithDefault implements A, B {}

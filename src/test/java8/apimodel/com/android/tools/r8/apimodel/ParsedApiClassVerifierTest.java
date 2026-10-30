@@ -12,10 +12,11 @@ import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.apimodel.ParsedApiClassVerifier.ApiRangeSetOperations;
+import com.android.tools.r8.apimodel.ParsedApiClassVerifier.SemiInfiniteRangeSetOperations;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import org.junit.Test;
@@ -43,38 +44,45 @@ public class ParsedApiClassVerifierTest extends TestBase {
       Reference.classFromBinaryName("com/example/InterfaceI");
   private static final ClassReference classCRef =
       Reference.classFromBinaryName("com/example/ClassC");
-  private static final ApiRange rangeB = new ApiRange(AndroidApiLevel.B);
-  private static final ApiRange rangeL = new ApiRange(AndroidApiLevel.L);
+  private static final SemiInfiniteRange<AndroidApiLevel> rangeB =
+      SemiInfiniteRange.startingAt(AndroidApiLevel.B);
+  private static final SemiInfiniteRange<AndroidApiLevel> rangeL =
+      SemiInfiniteRange.startingAt(AndroidApiLevel.L);
 
-  private static void verify(Collection<ParsedApiClass<ApiRange>> classes)
+  private static void verify(Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classes)
       throws ApiDatabaseGeneratorException {
-    ParsedApiClassVerifier.verify(classes, new ApiRangeSetOperations());
+    ParsedApiClassVerifier.verify(classes, new SemiInfiniteRangeSetOperations<>());
   }
 
-  private ParsedApiClass<ApiRange> createObject() {
-    ParsedApiClass<ApiRange> object = new ParsedApiClass<>(objectRef, rangeB);
+  private ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> createObject() {
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object =
+        new ParsedApiClass<>(objectRef, rangeB);
     object.registerMethod(Reference.method(objectRef, "<init>", ImmutableList.of(), null), rangeB);
     return object;
   }
 
   @Test
   public void testValid() throws Exception {
-    ParsedApiClass<ApiRange> object = createObject();
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
 
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeB);
     apiClassA.registerSupertype(objectRef, rangeB);
     apiClassA.registerMethod(
         Reference.method(classARef, "<init>", ImmutableList.of(), null), rangeB);
 
-    ParsedApiClass<ApiRange> apiClassB = new ParsedApiClass<>(classBRef, rangeL);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassB =
+        new ParsedApiClass<>(classBRef, rangeL);
     apiClassB.registerSupertype(classARef, rangeL);
     apiClassB.registerMethod(
         Reference.method(classBRef, "<init>", ImmutableList.of(), null), rangeL);
 
-    ParsedApiClass<ApiRange> apiInterfaceI = new ParsedApiClass<>(interfaceIRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiInterfaceI =
+        new ParsedApiClass<>(interfaceIRef, rangeB);
     apiInterfaceI.registerSupertype(objectRef, rangeB);
 
-    ParsedApiClass<ApiRange> apiClassC = new ParsedApiClass<>(classCRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassC =
+        new ParsedApiClass<>(classCRef, rangeB);
     apiClassC.registerSupertype(objectRef, rangeB);
     apiClassC.registerInterface(interfaceIRef, rangeB);
     apiClassC.registerMethod(
@@ -85,7 +93,8 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testMissingSupertype() {
-    ParsedApiClass<ApiRange> apiClassB = new ParsedApiClass<>(classBRef, rangeL);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassB =
+        new ParsedApiClass<>(classBRef, rangeL);
     apiClassB.registerSupertype(classARef, rangeL);
 
     ApiDatabaseGeneratorException e =
@@ -98,9 +107,10 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testMissingInterface() {
-    ParsedApiClass<ApiRange> object = createObject();
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
 
-    ParsedApiClass<ApiRange> apiClassC = new ParsedApiClass<>(classCRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassC =
+        new ParsedApiClass<>(classCRef, rangeB);
     apiClassC.registerSupertype(objectRef, rangeB);
     apiClassC.registerInterface(interfaceIRef, rangeB);
 
@@ -114,8 +124,9 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testInvalidMemberRangeIntro() {
-    ParsedApiClass<ApiRange> object = createObject();
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeL);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeL);
     apiClassA.registerSupertype(objectRef, rangeL);
     // Method introduced before class (B < L)
     apiClassA.registerMethod(Reference.method(classARef, "foo", ImmutableList.of(), null), rangeB);
@@ -131,9 +142,11 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testInvalidMemberRangeRemoved() {
-    ParsedApiClass<ApiRange> object = createObject();
-    ApiRange rangeBtoL = new ApiRange(AndroidApiLevel.B, AndroidApiLevel.L);
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeBtoL);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
+    SemiInfiniteRange<AndroidApiLevel> rangeBtoL =
+        new SemiInfiniteRange<>(AndroidApiLevel.B, AndroidApiLevel.L);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeBtoL);
     apiClassA.registerSupertype(objectRef, rangeBtoL);
     apiClassA.registerMethod(Reference.method(classARef, "foo", ImmutableList.of(), null), rangeB);
 
@@ -148,11 +161,13 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testInvalidSupertypeRelationRange() {
-    ParsedApiClass<ApiRange> object = createObject();
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeB);
     apiClassA.registerSupertype(objectRef, rangeB);
 
-    ParsedApiClass<ApiRange> apiClassB = new ParsedApiClass<>(classBRef, rangeL);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassB =
+        new ParsedApiClass<>(classBRef, rangeL);
     apiClassB.registerSupertype(classARef, rangeB);
 
     ApiDatabaseGeneratorException e =
@@ -168,12 +183,15 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testInvalidSupertypeClassRange() {
-    ParsedApiClass<ApiRange> object = createObject();
-    ApiRange rangeBtoL = new ApiRange(AndroidApiLevel.B, AndroidApiLevel.L);
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeBtoL);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
+    SemiInfiniteRange<AndroidApiLevel> rangeBtoL =
+        new SemiInfiniteRange<>(AndroidApiLevel.B, AndroidApiLevel.L);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeBtoL);
     apiClassA.registerSupertype(objectRef, rangeBtoL);
 
-    ParsedApiClass<ApiRange> apiClassB = new ParsedApiClass<>(classBRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassB =
+        new ParsedApiClass<>(classBRef, rangeB);
     // B extends A during [Android B, infinity[, but A is removed at L
     apiClassB.registerSupertype(classARef, rangeB);
 
@@ -190,18 +208,21 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testMultipleInheritanceClass() {
-    ParsedApiClass<ApiRange> object = createObject();
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeB);
     apiClassA.registerSupertype(objectRef, rangeB);
     apiClassA.registerMethod(
         Reference.method(classARef, "<init>", ImmutableList.of(), null), rangeB);
 
-    ParsedApiClass<ApiRange> apiClassB = new ParsedApiClass<>(classBRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassB =
+        new ParsedApiClass<>(classBRef, rangeB);
     apiClassB.registerSupertype(objectRef, rangeB);
     apiClassB.registerMethod(
         Reference.method(classBRef, "<init>", ImmutableList.of(), null), rangeB);
 
-    ParsedApiClass<ApiRange> apiClassC = new ParsedApiClass<>(classCRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassC =
+        new ParsedApiClass<>(classCRef, rangeB);
     apiClassC.registerSupertype(classARef, rangeB);
     apiClassC.registerSupertype(classBRef, rangeB); // Multiple inheritance
     apiClassC.registerMethod(
@@ -218,15 +239,18 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testMultipleInheritanceInterface() throws Exception {
-    ParsedApiClass<ApiRange> object = createObject();
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
 
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeB);
     apiClassA.registerSupertype(objectRef, rangeB);
 
-    ParsedApiClass<ApiRange> apiClassB = new ParsedApiClass<>(classBRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassB =
+        new ParsedApiClass<>(classBRef, rangeB);
     apiClassB.registerSupertype(objectRef, rangeB);
 
-    ParsedApiClass<ApiRange> apiClassC = new ParsedApiClass<>(classCRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassC =
+        new ParsedApiClass<>(classCRef, rangeB);
     apiClassC.registerSupertype(classARef, rangeB);
     apiClassC.registerSupertype(classBRef, rangeB);
     // C has no <init> and is not forced to be CLASS, so it is inferred as INTERFACE.
@@ -237,16 +261,19 @@ public class ParsedApiClassVerifierTest extends TestBase {
 
   @Test
   public void testClassExtendsInterface() {
-    ParsedApiClass<ApiRange> object = createObject();
-    ParsedApiClass<ApiRange> apiInterfaceI = new ParsedApiClass<>(interfaceIRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> object = createObject();
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiInterfaceI =
+        new ParsedApiClass<>(interfaceIRef, rangeB);
     apiInterfaceI.registerSupertype(objectRef, rangeB);
 
-    ParsedApiClass<ApiRange> apiClassA = new ParsedApiClass<>(classARef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassA =
+        new ParsedApiClass<>(classARef, rangeB);
     apiClassA.registerSupertype(interfaceIRef, rangeB); // Class extends interface
     apiClassA.registerMethod(
         Reference.method(classARef, "<init>", ImmutableList.of(), null), rangeB);
 
-    ParsedApiClass<ApiRange> apiClassC = new ParsedApiClass<>(classCRef, rangeB);
+    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClassC =
+        new ParsedApiClass<>(classCRef, rangeB);
     apiClassC.registerSupertype(objectRef, rangeB);
     apiClassC.registerInterface(interfaceIRef, rangeB); // Forces I to be INTERFACE
     apiClassC.registerMethod(

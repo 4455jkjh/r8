@@ -33,7 +33,6 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -254,11 +253,11 @@ public class ArgumentPropagator implements ReprocessingOptimization {
 
     // Using the computed optimization info, build a graph lens that describes the mapping from
     // methods with constant parameters to methods with the constant parameters removed.
-    Set<DexProgramClass> affectedClasses = SetUtils.newConcurrentHashSet();
+    Set<DexProgramClass> affectedClasses = ConcurrentHashMap.newKeySet();
     ArgumentPropagatorGraphLens graphLens =
         new ArgumentPropagatorProgramOptimizer(
                 appView, immediateSubtypingInfo, interfaceDispatchOutsideProgram)
-            .run(stronglyConnectedProgramComponents, affectedClasses::add, executorService, timing);
+            .run(stronglyConnectedProgramComponents, affectedClasses, executorService, timing);
 
     // Find all the code objects that need reprocessing.
     new ArgumentPropagatorMethodReprocessingEnqueuer(

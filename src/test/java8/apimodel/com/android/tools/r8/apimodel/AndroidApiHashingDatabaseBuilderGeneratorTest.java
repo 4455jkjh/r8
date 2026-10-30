@@ -54,6 +54,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.BiConsumerUtils;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import com.android.tools.r8.utils.internal.TriConsumerUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
@@ -95,16 +96,18 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   }
 
   private static Map<ApiDatabaseEntry, AndroidApiLevel> computeEntries(
-      Collection<ParsedApiClass<ApiRange>> apiClasses) throws Exception {
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses) throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
         AndroidApiHashingDatabaseBuilderGenerator.generateEntries(apiClasses);
     verifyAgainstJar(apiClasses, databaseEntries, API_LEVEL);
     return databaseEntries;
   }
 
-  private static Collection<ParsedApiClass<ApiRange>> cachedParsedApiClasses = null;
+  private static Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>>
+      cachedParsedApiClasses = null;
 
-  private static Collection<ParsedApiClass<ApiRange>> loadParsedApiClasses() throws Exception {
+  private static Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>>
+      loadParsedApiClasses() throws Exception {
     if (cachedParsedApiClasses == null) {
       ApiDatabaseGeneratorCommand command =
           ApiDatabaseGeneratorCommand.builder()
@@ -186,16 +189,18 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     };
   }
 
-  private static Trimmer<ApiDatabaseGeneratorException> addJarAssertions(JarTrimmer jarTrimmer) {
+  private static Trimmer<SemiInfiniteRange<AndroidApiLevel>, ApiDatabaseGeneratorException>
+      addJarAssertions(JarTrimmer jarTrimmer) {
     Map<String, Boolean> expectedTrimmedPackages = new HashMap<>();
     ApiJarInfo jarInfo = jarTrimmer.getJarInfo();
     expectedTrimmedPackages.put("junit/", false);
     expectedTrimmedPackages.put("android/test/", false);
     expectedTrimmedPackages.put("com/android/internal/", false);
-    TrimmerListener listener =
-        new TrimmerListener() {
+    TrimmerListener<SemiInfiniteRange<AndroidApiLevel>> listener =
+        new TrimmerListener<SemiInfiniteRange<AndroidApiLevel>>() {
           @Override
-          public void skipClass(ClassReference clazz, ApiRange range, SkipAnswer answer) {
+          public void skipClass(
+              ClassReference clazz, SemiInfiniteRange<AndroidApiLevel> range, SkipAnswer answer) {
             String classBinaryName = clazz.getBinaryName();
             for (String pkg : expectedTrimmedPackages.keySet()) {
               if (classBinaryName.startsWith(pkg)) {
@@ -209,7 +214,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
           @Override
           public void skipExtends(
-              ClassReference clazz, ClassReference supertype, ApiRange range, SkipAnswer answer) {
+              ClassReference clazz,
+              ClassReference supertype,
+              SemiInfiniteRange<AndroidApiLevel> range,
+              SkipAnswer answer) {
             assertEquals(
                 "No extends should be skipped: " + clazz + ", " + supertype,
                 SkipAnswer.KEEP,
@@ -218,7 +226,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
           @Override
           public void skipImplements(
-              ClassReference clazz, ClassReference supertype, ApiRange range, SkipAnswer answer) {
+              ClassReference clazz,
+              ClassReference supertype,
+              SemiInfiniteRange<AndroidApiLevel> range,
+              SkipAnswer answer) {
             assertEquals(
                 "No implements should be skipped: " + clazz + ", " + supertype,
                 SkipAnswer.KEEP,
@@ -227,7 +238,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
           @Override
           public void skipMethod(
-              ClassReference clazz, MethodReference method, ApiRange range, SkipAnswer answer) {
+              ClassReference clazz,
+              MethodReference method,
+              SemiInfiniteRange<AndroidApiLevel> range,
+              SkipAnswer answer) {
             if (answer == SkipAnswer.SKIP) {
               try {
                 assertTrue(
@@ -246,7 +260,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           public void skipField(
               ClassReference clazz,
               FieldTypelessReference field,
-              ApiRange range,
+              SemiInfiniteRange<AndroidApiLevel> range,
               SkipAnswer answer) {
             assertEquals("No fields should be skipped: " + field, SkipAnswer.KEEP, answer);
           }
@@ -264,7 +278,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   @SuppressWarnings("SameParameterValue")
   private static void verifyAgainstJar(
-      Collection<ParsedApiClass<ApiRange>> apiClasses,
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
       AndroidApiLevel androidJarApiLevel)
       throws Exception {
@@ -283,32 +297,34 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   private static void ensureAllPublicMethodsAreMapped(
       AppView<AppInfoWithClassHierarchy> appView,
-      Collection<ParsedApiClass<ApiRange>> apiClasses,
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
       AndroidApiLevel apiLevel,
       Path androidJar) {
-    Map<ClassReference, ParsedApiClass<ApiRange>> lookupMap = new HashMap<>();
+    Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> lookupMap =
+        new HashMap<>();
     Map<ClassReference, Map<DexMethod, AndroidApiLevel>> methodMap = new HashMap<>();
     Map<ClassReference, Map<FieldTypelessReference, AndroidApiLevel>> fieldMap = new HashMap<>();
     DexItemFactory factory = appView.dexItemFactory();
 
-    for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
+    for (ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass : apiClasses) {
       lookupMap.put(apiClass.getClassReference(), apiClass);
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
       apiClass.forEachMethod(
           (method, apiRange) ->
-              methodsForApiClass.put(factory.createMethod(method), apiRange.intro));
+              methodsForApiClass.put(factory.createMethod(method), apiRange.start));
       methodMap.put(apiClass.getClassReference(), methodsForApiClass);
 
       Map<FieldTypelessReference, AndroidApiLevel> fieldsForApiClass = new HashMap<>();
       apiClass.forEachField(
-          (fieldReference, apiRange) -> fieldsForApiClass.put(fieldReference, apiRange.intro));
+          (fieldReference, apiRange) -> fieldsForApiClass.put(fieldReference, apiRange.start));
       fieldMap.put(apiClass.getClassReference(), fieldsForApiClass);
     }
 
     Map<DexType, String> missingMemberInformation = new IdentityHashMap<>();
     for (DexLibraryClass clazz : appView.app().asDirect().libraryClasses()) {
-      ParsedApiClass<ApiRange> parsedApiClass = lookupMap.get(clazz.getClassReference());
+      ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> parsedApiClass =
+          lookupMap.get(clazz.getClassReference());
       if (parsedApiClass == null) {
         if (clazz.isPublic()) {
           missingMemberInformation.put(clazz.getType(), "Could not be found in " + androidJar);
@@ -610,7 +626,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     Set<String> knownMissingClasses = getKnownMissingClasses();
     Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
     CodeInspector inspector = new CodeInspector(androidJar);
-    Collection<ParsedApiClass<ApiRange>> parsedApiClasses = loadParsedApiClasses();
+    Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> parsedApiClasses =
+        loadParsedApiClasses();
     DexItemFactory factory = inspector.getFactory();
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     AndroidApiLevelHashingDatabaseImpl androidApiLevelDatabase =
@@ -628,7 +645,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           }
           DexType type = factory.createType(classReference.getDescriptor());
           AndroidApiLevel apiLevel = androidApiLevelDatabase.getTypeApiLevel(type);
-          assertEquals(parsedApiClass.getData().intro, apiLevel);
+          assertEquals(parsedApiClass.getData().start, apiLevel);
         });
 
     assertThat(missingClasses, matchesItemsOneToOne(knownMissingClasses));

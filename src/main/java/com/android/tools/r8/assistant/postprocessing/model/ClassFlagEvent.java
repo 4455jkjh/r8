@@ -22,6 +22,10 @@ public class ClassFlagEvent extends ReflectiveEvent {
     classFlag = ClassFlag.valueOf(args[1]);
   }
 
+  public DexType getHolder() {
+    return holder;
+  }
+
   public ClassFlag getClassFlag() {
     return classFlag;
   }

@@ -4,6 +4,10 @@
 
 -keep public class com.android.tools.r8.R8Assistant { public static void main(java.lang.String[]); }
 
+-keep public class com.android.tools.r8.R8AssistantVersion {
+  public static final java.lang.String LABEL;
+  public static java.lang.String getVersionString();
+}
 -keep public class com.android.tools.r8.Version { public static final java.lang.String LABEL; }
 -keep public class com.android.tools.r8.Version { public static java.lang.String getVersionString(); }
 -keep public class com.android.tools.r8.Version { public static int getMajorVersion(); }

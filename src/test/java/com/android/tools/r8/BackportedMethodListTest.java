@@ -29,14 +29,15 @@ public class BackportedMethodListTest extends TestBase {
     LIBRARY_DESUGAR_11
   }
 
-  @Parameterized.Parameters(name = "Mode: {0}")
-  public static Object[] data() {
-    return Mode.values();
+  @Parameterized.Parameters(name = "{0}, Mode: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(getTestParameters().withNoneRuntime().build(), Mode.values());
   }
 
   private final Mode mode;
 
-  public BackportedMethodListTest(Mode mode) {
+  public BackportedMethodListTest(TestParameters parameters, Mode mode) {
+    parameters.assertNoneRuntime();
     this.mode = mode;
   }
 

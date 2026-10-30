@@ -7,13 +7,14 @@ package com.android.tools.r8.synthesis;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import com.android.tools.r8.KeepUnusedArguments;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +48,7 @@ public class MethodCollisionAfterSyntheticSharingTest extends TestBase {
                 .addOptionsModification(
                     options -> options.testing.enableSyntheticSharing = enableSyntheticSharing)
                 .enableInliningAnnotations()
+                .enableUnusedArgumentAnnotations()
                 .noClassInliningOfSynthetics()
                 .noHorizontalClassMergingOfSynthetics()
                 .setMinApi(parameters)
@@ -98,12 +100,14 @@ public class MethodCollisionAfterSyntheticSharingTest extends TestBase {
       m(otherRunnableInDisguise);
     }
 
+    @KeepUnusedArguments
     @NeverInline
     static void m(Object otherRunnableInDisguise) {
       Runnable otherRunnable = (Runnable) otherRunnableInDisguise;
       otherRunnable.run();
     }
 
+    @KeepUnusedArguments
     @NeverInline
     static void m(Runnable runnable) {
       runnable.run();

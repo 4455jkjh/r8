@@ -118,11 +118,11 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
         breakpoint(className, methodName),
         run(),
         checkMethod(className, methodName),
-        checkLine(TEST_FILE, 10),
+        checkLine(TEST_FILE, 13),
         checkNoLocal(),
         stepOver(),
         checkMethod(className, methodName),
-        checkLine(TEST_FILE, 11),
+        checkLine(TEST_FILE, 14),
         checkNoLocal(),
         run());
   }
@@ -137,10 +137,10 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
         breakpoint(className, "multipleReturns"),
         run(),
         stepOver(),
-        checkLine(TEST_FILE, 18), // this should be the 1st return statement
+        checkLine(TEST_FILE, 21), // this should be the 1st return statement
         run(),
         stepOver(),
-        checkLine(TEST_FILE, 20), // this should be the 2nd return statement
+        checkLine(TEST_FILE, 23), // this should be the 2nd return statement
         run());
   }
 }

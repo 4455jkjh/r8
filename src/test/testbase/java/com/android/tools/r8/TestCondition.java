@@ -34,7 +34,7 @@ public class TestCondition {
     ART_V17_1_0,
     ART_V17_2_0,
     ART_DEFAULT,
-    ART_MASTER,
+    ART_MAIN,
     JAVA;
 
     static Runtime fromDexVmVersion(DexVm.Version version) {
@@ -75,8 +75,8 @@ public class TestCondition {
           return ART_V17_2_0;
         case DEFAULT:
           return ART_DEFAULT;
-        case MASTER:
-          return ART_MASTER;
+        case MAIN:
+          return ART_MAIN;
         default:
           throw new Unreachable();
       }

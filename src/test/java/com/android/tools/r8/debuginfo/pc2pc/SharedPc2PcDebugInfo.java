@@ -74,6 +74,9 @@ public class SharedPc2PcDebugInfo extends TestBase {
                 assertTrue(shared == null || debugInfo == shared);
                 shared = debugInfo;
               }
+              DexEncodedMethod m5Method = clazz.uniqueMethodWithOriginalName("m5").getMethod();
+              DexDebugInfo m5DebugInfo = m5Method.getCode().asDexCode().getDebugInfo();
+              assertTrue(m5DebugInfo.isEventBasedInfo());
               DexEncodedMethod mainMethod = clazz.mainMethod().getMethod();
               DexDebugInfo mainDebugInfo = mainMethod.getCode().asDexCode().getDebugInfo();
               if (enableShareDebugInfoForDifferentParameterSizes
@@ -115,11 +118,19 @@ public class SharedPc2PcDebugInfo extends TestBase {
       out2.println();
     }
 
+    public static void m5() {
+      long t = System.nanoTime();
+      if ((t ^ (t >>> 1) ^ (t >>> 2) ^ (t >>> 3)) == 123456789L) {
+        System.out.println("m5");
+      }
+    }
+
     public static void main(String[] args) {
       m1();
       m2();
       m3();
       m4();
+      m5();
     }
   }
 }

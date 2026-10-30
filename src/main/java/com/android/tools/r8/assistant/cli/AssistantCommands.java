@@ -15,6 +15,9 @@ public final class AssistantCommands {
   public static List<AssistantCommand> createAll() {
     List<AssistantCommand> commands = new ArrayList<>();
     commands.add(new InstrumentCommand());
+    commands.add(new SuggestCommand());
+    commands.add(new DiffCommand());
+    commands.add(new QueryCommand());
     return commands;
   }
 

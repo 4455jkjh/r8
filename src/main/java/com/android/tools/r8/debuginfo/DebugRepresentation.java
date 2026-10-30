@@ -247,6 +247,10 @@ public class DebugRepresentation {
       this.normalCost = normalCost;
     }
 
+    int getSaved() {
+      return converted ? normalCost - pcEventCount(pc) : 0;
+    }
+
     @Override
     public String toString() {
       return "pc="
@@ -327,6 +331,10 @@ public class DebugRepresentation {
         normalCost += costInfo.cost;
       }
 
+      int getSaved() {
+        return converted.getSaved();
+      }
+
       void flush() {
         if (flushedPc < converted.pc) {
           groups.put(converted.pc, converted);
@@ -387,10 +395,11 @@ public class DebugRepresentation {
         }
         state.add(current);
         int costToConvert = pcEventCount(currentPc);
+        int saved = state.normalCost - costToConvert;
         boolean canExpand =
             isWithinExpansionThreshold(threshold, currentPc, state.methods, state.normalCost);
-        state.update(
-            currentPc, canExpand && (forcePcBasedEncoding || state.normalCost > costToConvert));
+        boolean convertToPc = canExpand && (forcePcBasedEncoding || saved > state.getSaved());
+        state.update(currentPc, convertToPc);
       }
       state.flush();
       return new ConversionInfo(

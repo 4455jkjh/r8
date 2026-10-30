@@ -28,17 +28,30 @@ public class TestGenerator {
 
   private static final String STRING_CONCAT_FACTORY = "java/lang/invoke/StringConcatFactory";
 
-  private static final Handle MAKE_CONCAT_WITH_CONSTANTS = new Handle(
-      Opcodes.H_INVOKESTATIC, STRING_CONCAT_FACTORY, "makeConcatWithConstants",
-      MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
-          MethodType.class, String.class, Object[].class).toMethodDescriptorString(),
-      false);
+  private static final Handle MAKE_CONCAT_WITH_CONSTANTS =
+      new Handle(
+          Opcodes.H_INVOKESTATIC,
+          STRING_CONCAT_FACTORY,
+          "makeConcatWithConstants",
+          MethodType.methodType(
+                  CallSite.class,
+                  MethodHandles.Lookup.class,
+                  String.class,
+                  MethodType.class,
+                  String.class,
+                  Object[].class)
+              .toMethodDescriptorString(),
+          false);
 
-  private static final Handle MAKE_CONCAT = new Handle(
-      Opcodes.H_INVOKESTATIC, STRING_CONCAT_FACTORY, "makeConcat",
-      MethodType.methodType(CallSite.class, MethodHandles.Lookup.class,
-          String.class, MethodType.class).toMethodDescriptorString(),
-      false);
+  private static final Handle MAKE_CONCAT =
+      new Handle(
+          Opcodes.H_INVOKESTATIC,
+          STRING_CONCAT_FACTORY,
+          "makeConcat",
+          MethodType.methodType(
+                  CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class)
+              .toMethodDescriptorString(),
+          false);
 
   public static void main(String[] args) throws IOException {
     assert args.length == 2;
@@ -57,16 +70,20 @@ public class TestGenerator {
       cr.accept(
           new ClassVisitor(Opcodes.ASM7, cw) {
             @Override
-            public MethodVisitor visitMethod(int access,
-                final String methodName, String desc, String signature, String[] exceptions) {
+            public MethodVisitor visitMethod(
+                int access,
+                final String methodName,
+                String desc,
+                String signature,
+                String[] exceptions) {
               MethodVisitor mv = super.visitMethod(access, methodName, desc, signature, exceptions);
               return new MethodVisitor(Opcodes.ASM7, mv) {
                 private List<Object> recentConstants = new ArrayList<>();
 
                 @Override
                 public void visitLdcInsn(Object cst) {
-                  if (!recentConstants.isEmpty() ||
-                      (cst instanceof String && ((String) cst).startsWith(RECIPE_PREFIX))) {
+                  if (!recentConstants.isEmpty()
+                      || (cst instanceof String && ((String) cst).startsWith(RECIPE_PREFIX))) {
                     // Add the constant, don't push anything on stack.
                     recentConstants.add(cst);
                     return;
@@ -87,11 +104,11 @@ public class TestGenerator {
                   // Replace calls to 'makeConcat(...)' with appropriate `invokedynamic`.
                   if (opcode == Opcodes.INVOKESTATIC && name.equals("makeConcatWithConstants")) {
                     if (recentConstants.isEmpty()) {
-                      throw new AssertionError("No constants detected in `" +
-                          methodName + "`: call to " + name + desc);
+                      throw new AssertionError(
+                          "No constants detected in `" + methodName + "`: call to " + name + desc);
                     }
-                    recentConstants.set(0,
-                        ((String) recentConstants.get(0)).substring(RECIPE_PREFIX.length()));
+                    recentConstants.set(
+                        0, ((String) recentConstants.get(0)).substring(RECIPE_PREFIX.length()));
 
                     mv.visitInvokeDynamicInsn(
                         MAKE_CONCAT_WITH_CONSTANTS.getName(),
@@ -112,8 +129,7 @@ public class TestGenerator {
                           descr, this.getClass().getClassLoader());
                   return methodType
                       .dropParameterTypes(
-                          methodType.parameterCount() - paramsToRemove,
-                          methodType.parameterCount())
+                          methodType.parameterCount() - paramsToRemove, methodType.parameterCount())
                       .toMethodDescriptorString();
                 }
 
@@ -224,7 +240,8 @@ public class TestGenerator {
                 }
               };
             }
-          }, 0);
+          },
+          0);
       try (OutputStream output =
           Files.newOutputStream(outputClassNamePath, StandardOpenOption.CREATE)) {
         output.write(cw.toByteArray());

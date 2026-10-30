@@ -133,7 +133,6 @@ public class PlaywrightTestBase extends TestBase {
     }
   }
 
-
   private static Path resolveChromeExecutable() {
     Path chromeDir = TestDeps.getChromeHeadlessDir();
     boolean isMac = ToolHelper.isMac();

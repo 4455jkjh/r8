@@ -1,0 +1,315 @@
+/* // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+ * for details. All rights reserved. Use of this source code is governed by a
+ * BSD-style license that can be found in the LICENSE file.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Roboto", sans-serif;
+  margin: 8px;
+  color: #0f172a;
+}
+
+#page-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+#main-panel {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+div#branch-selector,
+div#runtime-fn,
+div#try-selector {
+  border-right: 1px grey solid;
+  float: right;
+  margin-right: 12pt;
+  padding-right: 12pt;
+}
+
+div#days-selector {
+  float: right;
+}
+
+#trend-sidebar {
+  flex: 0 0 320px;
+  width: 320px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.sidebar-nav-link {
+  flex: 1 1 0;
+  text-align: center;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+  text-decoration: none;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+
+.sidebar-nav-link:hover {
+  background: #f1f5f9;
+}
+
+.sidebar-nav-link.is-active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+.sidebar-header {
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sidebar-cut-select {
+  padding: 1px 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sidebar-cut-select:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.sidebar-cut-select:focus-visible {
+  outline: 2px solid #0284c7;
+  outline-offset: 1px;
+}
+
+.sidebar-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #475569;
+}
+
+.sidebar-commit-link {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: #0369a1;
+  text-decoration: none;
+}
+
+.sidebar-commit-link:hover {
+  text-decoration: underline;
+}
+
+.sidebar-empty {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #475569;
+}
+
+.trend-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  padding: 7px 9px;
+}
+
+.trend-card + .trend-card {
+  margin-top: 6px;
+}
+
+.trend-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trend-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.trend-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.trend-good {
+  background: #dcfce7;
+  color: #14532d;
+  border: 1px solid #86efac;
+}
+
+.trend-bad {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border: 1px solid #fca5a5;
+}
+
+.trend-flat {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.trend-good-text {
+  color: #15803d;
+}
+
+.trend-bad-text {
+  color: #b91c1c;
+}
+
+.trend-flat-text {
+  color: #475569;
+}
+
+.trend-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #475569;
+}
+
+.trend-counts {
+  font-weight: 600;
+}
+
+.trend-split {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 11px;
+  color: #475569;
+}
+
+.trend-movers {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.trend-mover-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.trend-mover-group-label {
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.trend-mover-empty {
+  padding: 1px 4px;
+  font-size: 11px;
+  font-style: italic;
+  color: #94a3b8;
+}
+
+.trend-mover {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 4px;
+  margin: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: left;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.trend-mover:hover {
+  background: #f1f5f9;
+}
+
+.trend-mover.is-selected {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  font-weight: 600;
+}
+
+.trend-mover-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.trend-mover-val {
+  flex: 0 0 auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 1050px) {
+  #page-layout {
+    flex-direction: column;
+  }
+
+  #trend-sidebar {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}

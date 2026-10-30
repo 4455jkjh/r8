@@ -6,6 +6,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import os
+import re
 from subprocess import CalledProcessError, DEVNULL, PIPE, Popen, STDOUT, check_call, check_output
 import sys
 
@@ -29,9 +30,23 @@ GOOGLE_KOTLIN_FORMAT_DIR = os.path.join(defines.THIRD_PARTY, 'google',
 GOOGLE_KOTLIN_FORMAT_JAR = os.path.join(GOOGLE_KOTLIN_FORMAT_DIR,
                                         'ktfmt-0.54-jar-with-dependencies.jar')
 
-FMT_IGNORE = {
-    'src/test/java/com/android/tools/r8/kotlin/metadata/inline_class_fun_descriptor_classes_app/main.kt'
-}
+FULLY_FORMATTED_DIRECTORIES = (
+    'src/test/bootstrap',
+    'src/test/examplesAndroidO',
+    'src/test/examplesAndroidOLegacy',
+    'src/test/examplesAndroidP',
+    'src/test/java11',
+    'src/test/java17',
+    'src/test/kotlinR8TestResources',
+    'src/test/testbase',
+)
+
+
+def requires_full_formatting(file_path):
+    norm = file_path.replace('\\', '/')
+    return any(norm == d or norm.startswith(d + '/')
+               for d in FULLY_FORMATTED_DIRECTORIES)
+
 
 GOOGLE_YAPF_DIR = os.path.join(defines.THIRD_PARTY, 'google', 'yapf',
                                '20231013')
@@ -81,8 +96,8 @@ def get_changed_files(upstream, file_predicate=None):
     changed_files = check_output(['git', 'diff', '--name-only',
                                   upstream]).decode('utf-8').splitlines()
     return [
-        f for f in changed_files if f not in FMT_IGNORE and
-        (file_predicate is None or file_predicate(f)) and os.path.exists(f)
+        f for f in changed_files
+        if (file_predicate is None or file_predicate(f)) and os.path.exists(f)
     ]
 
 
@@ -93,14 +108,14 @@ def get_dir_files(directory, file_predicate=None):
               file=sys.stderr)
         return []
     if os.path.isfile(directory):
-        if directory not in FMT_IGNORE and predicate(directory):
+        if predicate(directory):
             return [directory]
         return []
     files = []
     for root, _, filenames in os.walk(directory):
         for filename in filenames:
             file_path = os.path.join(root, filename)
-            if file_path not in FMT_IGNORE and predicate(file_path):
+            if predicate(file_path):
                 files.append(file_path)
     return files
 
@@ -156,9 +171,20 @@ class PythonRuntime:
 
 
 def get_java_format_base_command():
-    java_bin = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
-    return google_java_format_diff.get_base_command(java_bin,
-                                                    GOOGLE_JAVA_FORMAT_JAR)
+    java_exec = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
+    return [
+        java_exec,
+        # Disable hsperfdata to prevent lock contention on /tmp/hsperfdata_<user> during parallel execution.
+        '-XX:+PerfDisableSharedMem',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED',
+        '--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED',
+        '-jar',
+        GOOGLE_JAVA_FORMAT_JAR,
+    ]
 
 
 def get_kotlin_format_base_command():
@@ -181,6 +207,209 @@ def get_git_upstream():
     return check_output(['git', 'cl', 'upstream']).decode('utf-8').strip()
 
 
+FORMATTER_TAG_RE = re.compile(r'(?://|/\*)\s*@formatter:(off|on)\b')
+KTFMT_DISABLE_TAG_RE = re.compile(r'(?://|/\*)\s*ktfmt:disable-file\b')
+
+
+def is_kotlin_file_disabled(file_path):
+    if not os.path.exists(file_path):
+        return False
+    with open(file_path, 'rb') as f:
+        content = f.read()
+    if b'ktfmt:disable-file' not in content:
+        return False
+    return bool(
+        KTFMT_DISABLE_TAG_RE.search(content.decode('utf-8', errors='ignore')))
+
+
+# Scans `filename` for `@formatter:off` and `@formatter:on` comments.
+# Returns:
+#   - None: if `@formatter:off` never appears in the file (the entire file is enabled).
+#   - list of (start_line, end_line) 1-based inclusive tuples: the enabled line ranges
+#     when `@formatter:off` is used (empty list `[]` if the entire file is disabled).
+def get_enabled_ranges(filename):
+    if not os.path.exists(filename):
+        return []
+
+    with open(filename, 'rb') as f:
+        raw_content = f.read()
+    if b'@formatter:off' not in raw_content:
+        return None
+
+    enabled_ranges = []
+    enabled = True
+    start_line = 1
+    saw_formatter_off = False
+    line_num = 0
+
+    for line_num, line in enumerate(raw_content.decode('utf-8').splitlines(),
+                                    start=1):
+        if '@formatter:' in line:
+            match = FORMATTER_TAG_RE.search(line)
+            if match:
+                state = match.group(1)
+                if state == 'off':
+                    saw_formatter_off = True
+                    if enabled:
+                        if start_line < line_num:
+                            enabled_ranges.append((start_line, line_num - 1))
+                        enabled = False
+                elif state == 'on' and not enabled:
+                    enabled = True
+                    start_line = line_num + 1
+
+    if not saw_formatter_off:
+        return None
+
+    if enabled and start_line <= line_num:
+        enabled_ranges.append((start_line, line_num))
+
+    return enabled_ranges
+
+
+def intersect_ranges(ranges_a, ranges_b):
+    intersection = []
+    for a_start, a_end in ranges_a:
+        for b_start, b_end in ranges_b:
+            start = max(a_start, b_start)
+            end = min(a_end, b_end)
+            if start <= end:
+                intersection.append((start, end))
+    return intersection
+
+
+# Filters `diff_ranges` (a list of 1-based inclusive (start_line, end_line) tuples)
+# against the enabled regions of `filename`, excluding any lines inside
+# `@formatter:off` ... `@formatter:on` blocks.
+def filter_diff_ranges(filename, diff_ranges):
+    enabled_ranges = get_enabled_ranges(filename)
+    if enabled_ranges is None:
+        return diff_ranges
+    return intersect_ranges(diff_ranges, enabled_ranges)
+
+
+def ranges_to_cli_args(line_ranges):
+    args = []
+    for start, end in line_ranges:
+        args.extend(['-lines', f'{start}:{end}'])
+    return args
+
+
+def cli_args_to_ranges(lines_args):
+    ranges = []
+    for i in range(1, len(lines_args), 2):
+        start_str, end_str = lines_args[i].split(':')
+        ranges.append((int(start_str), int(end_str)))
+    return ranges
+
+
+def run_command(command):
+    p = Popen(command, stdout=PIPE, stderr=PIPE, stdin=DEVNULL)
+    stdout, stderr = p.communicate()
+    return p.returncode, stdout.decode('utf-8'), stderr.decode('utf-8')
+
+
+def format_java_file(filename, base_command, line_ranges, fix_formatting):
+    if not os.path.exists(filename):
+        return []
+    command = base_command[:]
+    if fix_formatting:
+        command.append('-i')
+    if line_ranges:
+        command.extend(ranges_to_cli_args(line_ranges))
+    command.append(filename)
+    returncode, stdout, stderr = run_command(command)
+    if returncode != 0:
+        err_msg = stderr if stderr else "Unknown error"
+        return [f"Java formatting error on {filename}:\n{err_msg}"]
+
+    if not fix_formatting:
+        diff_string = google_java_format_diff.create_diff(filename, stdout)
+        if diff_string:
+            return [diff_string]
+    return []
+
+
+def segment_java_diff(diff_text, prefix_strip):
+    lines_by_file = google_java_format_diff.parse_diff(diff_text.splitlines(),
+                                                       p=prefix_strip)
+    partial_files = []
+    for filename, lines_args in lines_by_file.items():
+        diff_ranges = cli_args_to_ranges(lines_args)
+        filtered_ranges = filter_diff_ranges(filename, diff_ranges)
+        if filtered_ranges:
+            partial_files.append((filename, filtered_ranges))
+    return partial_files
+
+
+def segment_java_files(files):
+    full_files = []
+    partial_files = []
+    for file_path in files:
+        enabled_ranges = get_enabled_ranges(file_path)
+        if enabled_ranges is None:
+            full_files.append(file_path)
+        elif enabled_ranges:
+            partial_files.append((file_path, enabled_ranges))
+    return full_files, partial_files
+
+
+def format_partial_java_files(partial_files, base_command, fix_formatting):
+    if not partial_files:
+        return []
+    errors = []
+    for file_path, line_ranges in partial_files:
+        errors.extend(
+            format_java_file(file_path, base_command, line_ranges,
+                             fix_formatting))
+    return errors
+
+
+def apply_batch_java_formatting(files, base_command):
+    returncode, _, stderr = run_command(base_command + ['-i'] + files)
+    if returncode != 0:
+        err_msg = stderr if stderr else "Unknown error"
+        return [f"Java formatting error:\n{err_msg}"]
+    return []
+
+
+def check_batch_java_formatting(files, base_command):
+    returncode, stdout, stderr = run_command(
+        base_command + ['--dry-run', '--set-exit-if-changed'] + files)
+    errors = []
+    if returncode != 0:
+        if stdout:
+            for file_path in stdout.splitlines():
+                errors.extend(
+                    format_java_file(file_path, base_command, None, False))
+        if stderr:
+            errors.append(f"Java formatting error:\n{stderr}")
+        elif not errors and not stdout:
+            errors.append("Java formatting error:\nUnknown error")
+    return errors
+
+
+def format_batch_java_files(files, base_command, fix_formatting):
+    if not files:
+        return []
+    if fix_formatting:
+        return apply_batch_java_formatting(files, base_command)
+    else:
+        return check_batch_java_formatting(files, base_command)
+
+
+def run_java_formatting(full_files, partial_files, fix_formatting):
+    if not full_files and not partial_files:
+        return []
+    base_command = get_java_format_base_command()
+    errors = []
+    errors.extend(
+        format_partial_java_files(partial_files, base_command, fix_formatting))
+    errors.extend(
+        format_batch_java_files(full_files, base_command, fix_formatting))
+    return errors
+
+
 def prepare_check_java_files():
     utils.ensure_google_download(GOOGLE_JAVA_FORMAT_DIR)
 
@@ -193,8 +422,6 @@ def check_java_files_precise_diff(files, upstream, fix_formatting=False):
         return [
             "Error: Upstream branch/commit must be specified for per-line Java formatting."
         ]
-    if not files:
-        return []
     try:
         git_diff_cmd = ['git', 'diff', '-U0', '--no-color', upstream, '--'
                        ] + files
@@ -207,46 +434,15 @@ def check_java_files_precise_diff(files, upstream, fix_formatting=False):
     if not diff_text.strip():
         return []
 
-    java_bin = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
-    return google_java_format_diff.format_diff(diff_text,
-                                               GOOGLE_JAVA_FORMAT_JAR,
-                                               java_bin,
-                                               fix_formatting=fix_formatting,
-                                               prefix_strip=1)
+    partial_files = segment_java_diff(diff_text, prefix_strip=1)
+    return run_java_formatting([], partial_files, fix_formatting)
 
 
 # This function must be threadsafe.
 # prepare_check_java_files() must be called first.
 def check_java_files_full(files, fix_formatting=False):
-    if not files:
-        return []
-    cmd = get_java_format_base_command()
-    if fix_formatting:
-        cmd.extend(['-i'] + files)
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, stdin=DEVNULL)
-        _, stderr = proc.communicate()
-        if proc.returncode != 0:
-            err_msg = stderr.decode('utf-8') if stderr else "Unknown error"
-            return [f"Java formatting error:\n{err_msg}"]
-        return []
-    else:
-        cmd.extend(['--dry-run', '--set-exit-if-changed'] + files)
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, stdin=DEVNULL)
-        stdout, stderr = proc.communicate()
-        errors = []
-        if proc.returncode != 0:
-            if stdout:
-                base_command = get_java_format_base_command()
-                for file_path in stdout.decode('utf-8').splitlines():
-                    errors.extend(
-                        google_java_format_diff.format_file(
-                            file_path, base_command, fix_formatting=False))
-            if stderr:
-                errors.append(
-                    f"Java formatting error:\n{stderr.decode('utf-8')}")
-            elif not errors and not stdout:
-                errors.append("Java formatting error:\nUnknown error")
-        return errors
+    full_files, partial_files = segment_java_files(files)
+    return run_java_formatting(full_files, partial_files, fix_formatting)
 
 
 # This function must be threadsafe.
@@ -255,10 +451,22 @@ def check_java_files_full(files, fix_formatting=False):
 def check_java_files(files,
                      fix_formatting=False,
                      upstream_for_diff_formatting=None):
+    if not files:
+        return []
     if upstream_for_diff_formatting is not None:
-        return check_java_files_precise_diff(files,
-                                             upstream_for_diff_formatting,
-                                             fix_formatting=fix_formatting)
+        full_files = [f for f in files if requires_full_formatting(f)]
+        diff_files = [f for f in files if not requires_full_formatting(f)]
+        errors = []
+        if full_files:
+            errors.extend(
+                check_java_files_full(full_files,
+                                      fix_formatting=fix_formatting))
+        if diff_files:
+            errors.extend(
+                check_java_files_precise_diff(diff_files,
+                                              upstream_for_diff_formatting,
+                                              fix_formatting=fix_formatting))
+        return errors
     else:
         return check_java_files_full(files, fix_formatting=fix_formatting)
 
@@ -270,6 +478,9 @@ def prepare_check_kotlin_files():
 # This function must be threadsafe.
 # prepare_check_kotlin_files() must be called first.
 def check_kotlin_files(files, format_style, fix_formatting=False):
+    files = [f for f in files if not is_kotlin_file_disabled(f)]
+    if not files:
+        return []
     cmd = get_kotlin_format_base_command() + [format_style]
     if not fix_formatting:
         cmd.append('-n')
@@ -349,10 +560,11 @@ def check(files,
     web_files = []
 
     for file_path in files:
-        if file_path in FMT_IGNORE or not os.path.exists(file_path):
+        if not os.path.exists(file_path):
             pass
         elif is_kotlin_file(file_path):
-            kotlin_files.append(file_path)
+            if not is_kotlin_file_disabled(file_path):
+                kotlin_files.append(file_path)
         elif is_java_file(file_path):
             java_files.append(file_path)
         elif is_python_file(file_path):

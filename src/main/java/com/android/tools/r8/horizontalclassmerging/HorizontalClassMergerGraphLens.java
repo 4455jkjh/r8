@@ -5,23 +5,34 @@
 package com.android.tools.r8.horizontalclassmerging;
 
 import static com.android.tools.r8.ir.conversion.ExtraUnusedParameter.computeExtraUnusedParameters;
+import static com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimizations.CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNotEquals;
 
+import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.ClassMergerGraphLens;
+import com.android.tools.r8.contexts.CompilationContext.UniqueContext;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMember;
 import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.FieldLookupResult;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.MethodLookupResult;
+import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
+import com.android.tools.r8.graph.proto.ArgumentPermutation;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.conversion.ExtraConstantParameter;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
+import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneHashMap;
 import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneMap;
@@ -31,6 +42,8 @@ import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyT
 import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyToOneRepresentativeMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,12 +52,23 @@ import java.util.Set;
 public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
 
   private final Map<DexMethod, ExtraConstantParameter> methodExtraParameters;
+  // Maps original instance initializers to the argument permutations applied when canonicalizing
+  // and merging equivalent constructors.
+  private final Map<DexMethod, ArgumentPermutation> methodArgumentPermutations;
   private final HorizontallyMergedClasses mergedClasses;
+
+  // Deterministic unique context for synthesizing a throwClassCastExceptionIfNotEquals() synthetic
+  // helper method.
+  private final UniqueContext uniqueContext;
+  private volatile ProgramMethod throwClassCastExceptionIfNotEqualsMethod;
+  private ProgramMethodSet throwClassCastExceptionIfNotEqualsMethodCallers =
+      ProgramMethodSet.createConcurrent();
 
   private HorizontalClassMergerGraphLens(
       AppView<?> appView,
       HorizontallyMergedClasses mergedClasses,
       Map<DexMethod, ExtraConstantParameter> methodExtraParameters,
+      Map<DexMethod, ArgumentPermutation> methodArgumentPermutations,
       BidirectionalManyToOneRepresentativeMap<DexField, DexField> fieldMap,
       BidirectionalManyToOneMap<DexMethod, DexMethod> methodMap,
       BidirectionalManyToOneRepresentativeMap<DexMethod, DexMethod> newMethodSignatures) {
@@ -55,7 +79,17 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
         mergedClasses.getBidirectionalMap(),
         newMethodSignatures);
     this.methodExtraParameters = methodExtraParameters;
+    this.methodArgumentPermutations = methodArgumentPermutations;
     this.mergedClasses = mergedClasses;
+    DexProgramClass deterministicMergeTarget =
+        appView
+            .definitionFor(ListUtils.sort(mergedClasses.getTargets(), DexType::compareTo).get(0))
+            .asProgramClass();
+    this.uniqueContext =
+        appView
+            .createProcessorContext()
+            .createMainThreadContext()
+            .createUniqueContext(deterministicMergeTarget);
   }
 
   DexMethod getNextMethodToInvoke(DexMethod method) {
@@ -66,6 +100,51 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
   @Override
   public DexType getPreviousClassType(DexType type) {
     return type;
+  }
+
+  // Synthesizes a throwClassCastExceptionIfNotEquals() synthetic helper method if one has not
+  // already been synthesized. This may be called concurrently from lens code rewriting.
+  public DexMethod ensureThrowClassCastExceptionIfNotEqualsMethod(ProgramMethod context) {
+    if (throwClassCastExceptionIfNotEqualsMethod == null) {
+      synchronized (this) {
+        if (throwClassCastExceptionIfNotEqualsMethod == null) {
+          DexItemFactory factory = appView.dexItemFactory();
+          SyntheticItems syntheticItems = appView.getSyntheticItems();
+          throwClassCastExceptionIfNotEqualsMethod =
+              syntheticItems.createMethod(
+                  naming -> naming.THROW_CCE_IF_NOT_EQUALS,
+                  uniqueContext,
+                  appView,
+                  builder ->
+                      builder
+                          .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+                          .setApiLevelForCode(appView.computedMinApiLevel())
+                          .setApiLevelForDefinition(appView.computedMinApiLevel())
+                          .setClassFileVersion(CfVersion.V1_6)
+                          .setCode(
+                              m ->
+                                  CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNotEquals(
+                                      factory, m))
+                          .setProto(
+                              factory.createProto(
+                                  factory.voidType, factory.intType, factory.intType)));
+        }
+      }
+    }
+    throwClassCastExceptionIfNotEqualsMethodCallers.add(context);
+    return throwClassCastExceptionIfNotEqualsMethod.getReference();
+  }
+
+  public ProgramMethod unsetThrowClassCastExceptionIfNotEqualsMethod() {
+    ProgramMethod result = throwClassCastExceptionIfNotEqualsMethod;
+    throwClassCastExceptionIfNotEqualsMethod = null;
+    return result;
+  }
+
+  public ProgramMethodSet unsetThrowClassCastExceptionIfNotEqualsMethodCallers() {
+    ProgramMethodSet result = throwClassCastExceptionIfNotEqualsMethodCallers;
+    throwClassCastExceptionIfNotEqualsMethodCallers = null;
+    return result;
   }
 
   @Override
@@ -148,21 +227,32 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
       RewrittenPrototypeDescription prototypeChanges,
       DexMethod previousMethod,
       DexMethod newMethod) {
+    if (!previousMethod.isInstanceInitializer(dexItemFactory())) {
+      assert !methodArgumentPermutations.containsKey(previousMethod);
+      assert previousMethod.getArity() == newMethod.getArity();
+      return prototypeChanges;
+    }
+    List<ExtraParameter> extraParameters = Collections.emptyList();
     if (newMethod.getArity() > previousMethod.getArity()) {
-      assert dexItemFactory().isConstructor(previousMethod);
-      RewrittenPrototypeDescription collisionResolution =
-          RewrittenPrototypeDescription.createForExtraParameters(
-              computeExtraUnusedParameters(previousMethod, newMethod));
+      extraParameters = new ArrayList<>(computeExtraUnusedParameters(previousMethod, newMethod));
       ExtraConstantParameter extraParameter = methodExtraParameters.get(previousMethod);
       if (extraParameter != null) {
-        List<ExtraParameter> extraParameters =
-            (List<ExtraParameter>) collisionResolution.getExtraParameters();
         extraParameters.set(0, extraParameter);
       }
-      return prototypeChanges.combine(collisionResolution);
     }
-    assert newMethod.getArity() == previousMethod.getArity();
-    return prototypeChanges;
+    // Account for any parameters permuted during instance initializer canonicalization before
+    // computing extra parameters (such as the synthetic class ID parameter or extra unused
+    // parameters added for signature collision resolution).
+    ArgumentInfoCollection argumentInfoCollection = ArgumentInfoCollection.empty();
+    if (methodArgumentPermutations.containsKey(previousMethod)) {
+      argumentInfoCollection =
+          ArgumentInfoCollection.builder()
+              .setArgumentInfosSize(previousMethod.getNumberOfArguments(false))
+              .setArgumentPermutation(methodArgumentPermutations.get(previousMethod))
+              .build();
+    }
+    return prototypeChanges.combine(
+        RewrittenPrototypeDescription.create(extraParameters, null, argumentInfoCollection));
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -196,6 +286,8 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
         newMethodSignatures = BidirectionalManyToOneRepresentativeHashMap.newIdentityHashMap();
     private final Map<DexMethod, ExtraConstantParameter> methodExtraParameters =
         new IdentityHashMap<>();
+    private final Map<DexMethod, ArgumentPermutation> methodArgumentPermutations =
+        new IdentityHashMap<>();
 
     private final MutableBidirectionalManyToOneMap<DexMethod, DexMethod> pendingMethodMapUpdates =
         BidirectionalManyToOneHashMap.newIdentityHashMap();
@@ -225,6 +317,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
           appView,
           mergedClasses,
           methodExtraParameters,
+          methodArgumentPermutations,
           newFieldSignatures,
           methodMap,
           newMethodSignatures);
@@ -367,10 +460,17 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
      * where many constructors are merged into a single constructor. The synthesized constructor
      * therefore does not have a unique reverse constructor.
      */
-    void mapMergedConstructor(DexMethod from, DexMethod to, ExtraConstantParameter extraParameter) {
+    void mapMergedConstructor(
+        DexMethod from,
+        DexMethod to,
+        ExtraConstantParameter extraParameter,
+        ArgumentPermutation argumentPermutation) {
       mapMethod(from, to);
       if (extraParameter != null) {
         methodExtraParameters.put(from, extraParameter);
+      }
+      if (!argumentPermutation.isDefault()) {
+        methodArgumentPermutations.put(from, argumentPermutation);
       }
     }
   }

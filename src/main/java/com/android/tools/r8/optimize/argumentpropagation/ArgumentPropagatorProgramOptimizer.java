@@ -35,8 +35,6 @@ import com.android.tools.r8.ir.analysis.value.DefiniteBitsLongNumberValue;
 import com.android.tools.r8.ir.analysis.value.SingleValue;
 import com.android.tools.r8.ir.conversion.ExtraUnusedIntParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedNullParameter;
-import com.android.tools.r8.ir.optimize.info.CallSiteOptimizationInfo;
-import com.android.tools.r8.ir.optimize.info.ConcreteCallSiteOptimizationInfo;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorGraphLens.Builder;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ParameterRemovalUtils;
 import com.android.tools.r8.optimize.utils.ConcurrentNonProgramMethodsCollection;
@@ -80,7 +78,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 
@@ -194,7 +191,7 @@ public class ArgumentPropagatorProgramOptimizer {
   @SuppressWarnings("BadImport")
   public ArgumentPropagatorGraphLens run(
       List<Set<DexProgramClass>> stronglyConnectedProgramComponents,
-      Consumer<DexProgramClass> affectedClassConsumer,
+      Set<DexProgramClass> affectedClasses,
       ExecutorService executorService,
       Timing timing)
       throws ExecutionException {
@@ -211,7 +208,7 @@ public class ArgumentPropagatorProgramOptimizer {
                         classes,
                         interfaceDispatchOutsideProgram.getOrDefault(
                             classes, DexMethodSignatureSet.empty()),
-                        affectedClassConsumer),
+                        affectedClasses),
             appView.options().getThreadingModule(),
             executorService);
     eventConsumer.finished(appView);
@@ -280,7 +277,7 @@ public class ArgumentPropagatorProgramOptimizer {
     private ArgumentPropagatorGraphLens.Builder optimize(
         Set<DexProgramClass> stronglyConnectedProgramClasses,
         DexMethodSignatureSet interfaceDispatchOutsideProgram,
-        Consumer<DexProgramClass> affectedClassConsumer) {
+        Set<DexProgramClass> affectedClasses) {
       // First reserve pinned method signatures.
       reservePinnedMethodSignatures(stronglyConnectedProgramClasses);
 
@@ -301,7 +298,7 @@ public class ArgumentPropagatorProgramOptimizer {
           Comparator.comparing(DexClass::getType));
       for (DexProgramClass clazz : stronglyConnectedProgramClassesWithDeterministicOrder) {
         if (visitClass(clazz, interfaceDispatchOutsideProgram, partialGraphLensBuilder)) {
-          affectedClassConsumer.accept(clazz);
+          affectedClasses.add(clazz);
         }
       }
       return partialGraphLensBuilder;
@@ -519,21 +516,29 @@ public class ArgumentPropagatorProgramOptimizer {
           // OK, this parameter is unused.
           continue;
         }
-        CallSiteOptimizationInfo optimizationInfo = method.getOptimizationInfo().getArgumentInfos();
-        if (optimizationInfo.isConcreteCallSiteOptimizationInfo()) {
-          ConcreteCallSiteOptimizationInfo concreteOptimizationInfo =
-              optimizationInfo.asConcreteCallSiteOptimizationInfo();
-          AbstractValue abstractValue =
-              concreteOptimizationInfo.getAbstractArgumentValue(argumentIndex);
-          if (abstractValue.isSingleValue()
-              && abstractValue.asSingleValue().isMaterializableInContext(appView, method)) {
-            // OK, this parameter has a constant value and can be removed.
-            continue;
-          }
+        AbstractValue abstractValue = getAbstractArgumentValue(method, argumentIndex);
+        if (abstractValue.isSingleValue()
+            && abstractValue.asSingleValue().isMaterializableInContext(appView, method)) {
+          // OK, this parameter has a constant value and can be removed.
+          continue;
         }
         return false;
       }
       return true;
+    }
+
+    private AbstractValue getAbstractArgumentValue(ProgramMethod method, int argumentIndex) {
+      assert method.getDefinition().isStatic() || argumentIndex > 0;
+      DexType argumentType = method.getArgumentType(argumentIndex);
+      if (argumentType.isAlwaysNull(appView)
+          && appView.getKeepInfo(method).isArgumentPropagationAllowed(options)
+          && appView.getKeepInfo(method).isConstantArgumentOptimizationAllowed(options)) {
+        return appView.abstractValueFactory().createNullValue(argumentType);
+      }
+      return method
+          .getOptimizationInfo()
+          .getArgumentInfos()
+          .getAbstractArgumentValue(argumentIndex);
     }
 
     @SuppressWarnings("ReferenceEquality")
@@ -1173,7 +1178,6 @@ public class ArgumentPropagatorProgramOptimizer {
             .setIsConvertedToStaticMethod();
       }
 
-      CallSiteOptimizationInfo optimizationInfo = method.getOptimizationInfo().getArgumentInfos();
       for (int parameterIndex = 0;
           parameterIndex < method.getParameters().size();
           parameterIndex++) {
@@ -1190,7 +1194,7 @@ public class ArgumentPropagatorProgramOptimizer {
             continue;
           }
 
-          AbstractValue abstractValue = optimizationInfo.getAbstractArgumentValue(argumentIndex);
+          AbstractValue abstractValue = getAbstractArgumentValue(method, argumentIndex);
           if (abstractValue.isSingleValue()
               && abstractValue.asSingleValue().isMaterializableInContext(appView, method)) {
             parameterChangesBuilder.addArgumentInfo(

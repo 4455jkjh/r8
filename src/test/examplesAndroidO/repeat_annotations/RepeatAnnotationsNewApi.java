@@ -10,8 +10,7 @@ public class RepeatAnnotationsNewApi {
   @NumberAnnotation(number = 1)
   @NumberAnnotation(number = 2)
   @NumberAnnotation(number = 3)
-  class Inner {
-  }
+  class Inner {}
 
   public static void main(String[] args) {
     NumberAnnotation[] annotations = Inner.class.getAnnotationsByType(NumberAnnotation.class);

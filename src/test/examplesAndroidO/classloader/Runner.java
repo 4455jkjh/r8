@@ -3,9 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package classloader;
 
-import java.lang.reflect.Method;
-
 import dalvik.system.PathClassLoader;
+import java.lang.reflect.Method;
 
 // Command line application which take three arguments:
 //
@@ -31,6 +30,6 @@ public class Runner {
 
   private static void runMain(Class<?> clazz, String[] args) throws Exception {
     Method m = clazz.getMethod("main", String[].class);
-    m.invoke(null, new Object[] { args });
+    m.invoke(null, new Object[] {args});
   }
 }

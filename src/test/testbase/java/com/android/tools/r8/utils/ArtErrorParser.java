@@ -70,9 +70,11 @@ public class ArtErrorParser {
     }
   }
 
-  public static abstract class ArtErrorInfo {
+  public abstract static class ArtErrorInfo {
     public abstract int consumedLines();
+
     public abstract String getMessage();
+
     public abstract String dump(CodeInspector inspector, boolean markLocation);
   }
 
@@ -86,9 +88,13 @@ public class ArtErrorParser {
     public final List<Long> locations;
     private final int consumedLines;
 
-    public ArtMethodError(String className,
-        String methodName, String methodReturn, List<String> methodFormals,
-        String methodSignature, String errorMessage,
+    public ArtMethodError(
+        String className,
+        String methodName,
+        String methodReturn,
+        List<String> methodFormals,
+        String methodSignature,
+        String errorMessage,
         List<Long> locations,
         int consumedLines) {
       this.className = className;
@@ -109,7 +115,8 @@ public class ArtErrorParser {
     @Override
     public String getMessage() {
       StringBuilder builder = new StringBuilder();
-      builder.append("\n")
+      builder
+          .append("\n")
           .append(VERIFICATION_ERROR_HEADER)
           .append(methodSignature)
           .append(":\n")
@@ -222,8 +229,15 @@ public class ArtErrorParser {
     String[] qualifiedName = parseQualifiedName(input);
     List<String> methodFormals = parseTypeList(input);
     List<Long> locations = parseLocations(errorMessage);
-    return new ArtMethodError(getClassName(qualifiedName), getMethodName(qualifiedName),
-        methodReturn, methodFormals, methodSig, errorMessage, locations, currentLine - line);
+    return new ArtMethodError(
+        getClassName(qualifiedName),
+        getMethodName(qualifiedName),
+        methodReturn,
+        methodFormals,
+        methodSig,
+        errorMessage,
+        locations,
+        currentLine - line);
   }
 
   private static String getClassName(String[] parts) {

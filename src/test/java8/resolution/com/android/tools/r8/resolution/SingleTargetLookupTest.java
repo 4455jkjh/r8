@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.AsmTestBase;
 import com.android.tools.r8.TestAppViewBuilder;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -36,8 +37,10 @@ import com.android.tools.r8.resolution.singletarget.two.OtherSubSubClassOne;
 import com.android.tools.r8.resolution.singletarget.two.OtherSubSubClassTwo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryModeledPredicate;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.List;
@@ -80,10 +83,12 @@ public class SingleTargetLookupTest extends AsmTestBase {
   );
 
   public SingleTargetLookupTest(
+      TestParameters parameters,
       String methodName,
       Class<?> invokeReceiver,
       Class<?> singleTargetHolderOrNull,
       List<Class<?>> virtualTargetHolders) {
+    parameters.assertNoneRuntime();
     this.methodName = methodName;
     this.invokeReceiver = invokeReceiver;
     this.singleTargetHolderOrNull = singleTargetHolderOrNull;
@@ -135,51 +140,61 @@ public class SingleTargetLookupTest extends AsmTestBase {
     return new Object[]{name, receiver, null, ImmutableList.copyOf(targets)};
   }
 
-  @Parameters(name = "{1}.{0} -> {2}")
+  @Parameters(name = "{0}, {2}.{1} -> {3}")
   public static List<Object[]> getData() {
-    return ImmutableList.copyOf(
-        new Object[][] {
-          singleTarget("singleTargetAtTop", AbstractTopClass.class),
-          singleTargetWithAbstracts(
-              "singleShadowingOverride", AbstractTopClass.class, AbstractSubClass.class),
-          manyTargets(
-              "abstractTargetAtTop",
-              AbstractTopClass.class,
-              SubSubClassOne.class,
-              SubSubClassTwo.class),
-          singleTargetWithAbstracts(
-              "overridenInAbstractClassOnly", AbstractTopClass.class, AbstractTopClass.class),
-          onlyUnreachableTargets("overridenInAbstractClassOnly", SubSubClassThree.class),
-          manyTargets(
-              "overriddenInTwoSubTypes",
-              AbstractTopClass.class,
-              SubSubClassOne.class,
-              SubSubClassTwo.class),
-          manyTargets(
-              "definedInTwoSubTypes",
-              AbstractTopClass.class,
-              SubSubClassOne.class,
-              SubSubClassTwo.class),
-          onlyUnreachableTargets("staticMethod", AbstractTopClass.class),
-          manyTargets("overriddenInTwoSubTypes", OtherAbstractTopClass.class),
-          manyTargets("abstractOverriddenInTwoSubTypes", OtherAbstractTopClass.class),
-          manyTargets("overridesOnDifferentLevels", OtherAbstractTopClass.class),
-          singleTarget("defaultMethod", AbstractTopClass.class, InterfaceWithDefault.class),
-          manyTargets(
-              "overriddenDefault",
-              AbstractTopClass.class,
-              InterfaceWithDefault.class,
-              SubSubClassTwo.class),
-          singleTarget("overriddenDefault", SubSubClassTwo.class),
-          singleTarget("overriddenByIrrelevantInterface", AbstractTopClass.class),
-          singleTarget(
-              "overriddenByIrrelevantInterface", SubSubClassOne.class, AbstractTopClass.class),
-          singleTarget(
-              "overriddenInOtherInterface", AbstractTopClass.class, InterfaceWithDefault.class),
-          manyTargets("abstractMethod", ThirdAbstractTopClass.class),
-          noVirtualSingleTarget("instanceMethod", ThirdAbstractTopClass.class),
-          noVirtualSingleTarget("otherInstanceMethod", ThirdAbstractTopClass.class),
-        });
+    return ListUtils.flatMap(
+        getTestParameters().withNoneRuntime().build(),
+        parameters ->
+            ListUtils.map(
+                new Object[][] {
+                  singleTarget("singleTargetAtTop", AbstractTopClass.class),
+                  singleTargetWithAbstracts(
+                      "singleShadowingOverride", AbstractTopClass.class, AbstractSubClass.class),
+                  manyTargets(
+                      "abstractTargetAtTop",
+                      AbstractTopClass.class,
+                      SubSubClassOne.class,
+                      SubSubClassTwo.class),
+                  singleTargetWithAbstracts(
+                      "overridenInAbstractClassOnly",
+                      AbstractTopClass.class,
+                      AbstractTopClass.class),
+                  onlyUnreachableTargets("overridenInAbstractClassOnly", SubSubClassThree.class),
+                  manyTargets(
+                      "overriddenInTwoSubTypes",
+                      AbstractTopClass.class,
+                      SubSubClassOne.class,
+                      SubSubClassTwo.class),
+                  manyTargets(
+                      "definedInTwoSubTypes",
+                      AbstractTopClass.class,
+                      SubSubClassOne.class,
+                      SubSubClassTwo.class),
+                  onlyUnreachableTargets("staticMethod", AbstractTopClass.class),
+                  manyTargets("overriddenInTwoSubTypes", OtherAbstractTopClass.class),
+                  manyTargets("abstractOverriddenInTwoSubTypes", OtherAbstractTopClass.class),
+                  manyTargets("overridesOnDifferentLevels", OtherAbstractTopClass.class),
+                  singleTarget("defaultMethod", AbstractTopClass.class, InterfaceWithDefault.class),
+                  manyTargets(
+                      "overriddenDefault",
+                      AbstractTopClass.class,
+                      InterfaceWithDefault.class,
+                      SubSubClassTwo.class),
+                  singleTarget("overriddenDefault", SubSubClassTwo.class),
+                  singleTarget("overriddenByIrrelevantInterface", AbstractTopClass.class),
+                  singleTarget(
+                      "overriddenByIrrelevantInterface",
+                      SubSubClassOne.class,
+                      AbstractTopClass.class),
+                  singleTarget(
+                      "overriddenInOtherInterface",
+                      AbstractTopClass.class,
+                      InterfaceWithDefault.class),
+                  manyTargets("abstractMethod", ThirdAbstractTopClass.class),
+                  noVirtualSingleTarget("instanceMethod", ThirdAbstractTopClass.class),
+                  noVirtualSingleTarget("otherInstanceMethod", ThirdAbstractTopClass.class),
+                },
+                row -> ObjectArrays.concat(parameters, row)));
   }
 
   private static DexType toType(Class<?> clazz, AppInfo appInfo) {

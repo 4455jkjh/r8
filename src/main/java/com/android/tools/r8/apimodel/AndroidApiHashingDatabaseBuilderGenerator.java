@@ -17,6 +17,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.IntBox;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -65,40 +66,44 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
 
   /** The returned map has hash-independent iteration. */
   public static Map<ApiDatabaseEntry, AndroidApiLevel> generateEntries(
-      Collection<ParsedApiClass<ApiRange>> apiClasses) throws GenerationException {
+      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses)
+      throws GenerationException {
     return new EntryBuilder().addEntriesFor(apiClasses).build();
   }
 
   private static class EntryBuilder {
     final Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = new LinkedHashMap<>();
 
-    EntryBuilder addEntriesFor(Collection<ParsedApiClass<ApiRange>> apiClasses)
+    EntryBuilder addEntriesFor(
+        Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses)
         throws GenerationException {
-      for (ParsedApiClass<ApiRange> apiClass : apiClasses) {
+      for (ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass : apiClasses) {
         addEntriesFor(apiClass);
       }
       return this;
     }
 
-    void addEntriesFor(ParsedApiClass<ApiRange> apiClass) throws GenerationException {
+    void addEntriesFor(ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass)
+        throws GenerationException {
       addEntry(apiClass.getClassReference(), apiClass.getData());
       apiClass.forEachMethodThrowing(this::addEntry);
       apiClass.forEachFieldThrowing(this::addEntry);
     }
 
-    private void addEntry(ClassReference classReference, ApiRange range)
+    private void addEntry(ClassReference classReference, SemiInfiniteRange<AndroidApiLevel> range)
         throws GenerationException {
-      addEntry(ApiDatabaseEntry.of(classReference), range.intro, classReference);
+      addEntry(ApiDatabaseEntry.of(classReference), range.start, classReference);
     }
 
-    private void addEntry(MethodReference methodReference, ApiRange range)
+    private void addEntry(MethodReference methodReference, SemiInfiniteRange<AndroidApiLevel> range)
         throws GenerationException {
-      addEntry(ApiDatabaseEntry.of(methodReference), range.intro, methodReference);
+      addEntry(ApiDatabaseEntry.of(methodReference), range.start, methodReference);
     }
 
-    private void addEntry(FieldTypelessReference fieldReference, ApiRange range)
+    private void addEntry(
+        FieldTypelessReference fieldReference, SemiInfiniteRange<AndroidApiLevel> range)
         throws GenerationException {
-      addEntry(ApiDatabaseEntry.of(fieldReference), range.intro, fieldReference);
+      addEntry(ApiDatabaseEntry.of(fieldReference), range.start, fieldReference);
     }
 
     private void addEntry(
@@ -315,10 +320,6 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
       }
       temp.write(intToShortEncodedByteArray(uniqueDescriptorForReference.length));
       temp.write(uniqueDescriptorForReference);
-      if (pair.getSecond() == AndroidApiLevel.MAIN
-          || pair.getSecond() == AndroidApiLevel.EXTENSION) {
-        throw new GenerationException("Invalid API level for database entry: " + pair.getSecond());
-      }
       temp.write(AndroidApiDataAccess.serializeApiLevel(pair.getSecond()));
     }
     byte[] tempArray = temp.toByteArray();

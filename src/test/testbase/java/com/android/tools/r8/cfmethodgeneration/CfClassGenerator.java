@@ -394,4 +394,3 @@ public abstract class CfClassGenerator extends CodeGenerationBase {
     FileUtils.writeToFile(getGeneratedFile(), null, generateClass().getBytes());
   }
 }
-

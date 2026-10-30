@@ -5,10 +5,12 @@
 package com.android.tools.r8.optimize.argumentpropagation;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.FieldLookupResult;
+import com.android.tools.r8.graph.lens.MethodLookupResult;
 import com.android.tools.r8.graph.lens.NestedGraphLens;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
@@ -91,13 +93,27 @@ public class ArgumentPropagatorGraphLens extends NestedGraphLens {
     return newPrototypeChanges;
   }
 
+  private boolean isConvertedToStaticMethod(DexMethod method) {
+    return hasPrototypeChanges(method)
+        && getPrototypeChanges(method).getArgumentInfoCollection().isConvertedToStaticMethod();
+  }
+
+  @Override
+  protected DexMethod internalDescribeLookupMethodReference(
+      MethodLookupResult previous, DexMethod rewrittenReboundReference) {
+    if (isConvertedToStaticMethod(rewrittenReboundReference)) {
+      DexClass holder = appView.definitionFor(rewrittenReboundReference.getHolderType());
+      if (holder != null && holder.isInterface()) {
+        return rewrittenReboundReference;
+      }
+    }
+    return super.internalDescribeLookupMethodReference(previous, rewrittenReboundReference);
+  }
+
   @Override
   protected InvokeType mapInvocationType(
       DexMethod newMethod, DexMethod newReboundMethod, DexMethod originalMethod, InvokeType type) {
-    return hasPrototypeChanges(newReboundMethod)
-            && getPrototypeChanges(newReboundMethod)
-                .getArgumentInfoCollection()
-                .isConvertedToStaticMethod()
+    return isConvertedToStaticMethod(newReboundMethod)
         ? InvokeType.STATIC
         : super.mapInvocationType(newMethod, newReboundMethod, originalMethod, type);
   }

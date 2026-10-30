@@ -8,8 +8,10 @@ import com.android.tools.r8.cf.code.CfSafeCheckCast;
 import com.android.tools.r8.dex.code.DexCheckCast;
 import com.android.tools.r8.dex.code.DexSafeCheckCast;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
 
@@ -19,8 +21,17 @@ public class SafeCheckCast extends CheckCast {
     super(dest, value, type);
   }
 
+  public SafeCheckCast(Value dest, Value value, DexType type, boolean ignoreCompatRules) {
+    super(dest, value, type, ignoreCompatRules);
+  }
+
   public static Builder builder() {
     return new Builder();
+  }
+
+  @Override
+  public Builder newBuilder() {
+    return builder();
   }
 
   @Override
@@ -31,6 +42,11 @@ public class SafeCheckCast extends CheckCast {
   @Override
   public void buildLir(LirBuilder<Value, ?> builder) {
     builder.addSafeCheckCast(getType(), object());
+  }
+
+  @Override
+  void internalRegisterUse(UseRegistry<?> registry, DexClassAndMethod context) {
+    registry.registerSafeCheckCast(getType());
   }
 
   @Override
@@ -61,7 +77,7 @@ public class SafeCheckCast extends CheckCast {
 
     @Override
     public CheckCast build() {
-      return amend(new SafeCheckCast(outValue, object, castType));
+      return amend(new SafeCheckCast(outValue, object, castType, ignoreCompatRules));
     }
   }
 }

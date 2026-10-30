@@ -17,11 +17,13 @@ import static com.android.tools.r8.ir.code.Opcodes.RETURN;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.graph.proto.ArgumentPermutation;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
@@ -38,39 +40,37 @@ import java.util.List;
 
 public class InstanceInitializerAnalysis {
 
-  public static InstanceInitializerDescription analyze(
-      AppView<? extends AppInfoWithClassHierarchy> appView,
-      HorizontalMergeGroup group,
-      InstanceInitializer instanceInitializer) {
-    if (instanceInitializer.isAbsent()) {
-      InstanceInitializerDescription.Builder builder =
-          InstanceInitializerDescription.builder(appView, instanceInitializer.getReference());
-      DexMethod invokedConstructor =
-          instanceInitializer
-              .getReference()
-              .withHolder(group.getSuperType(), appView.dexItemFactory());
-      List<InstanceFieldInitializationInfo> invokedConstructorArguments = new ArrayList<>();
-      for (int argumentIndex = 1;
-          argumentIndex < invokedConstructor.getNumberOfArguments(false);
-          argumentIndex++) {
-        invokedConstructorArguments.add(
-            appView
-                .instanceFieldInitializationInfoFactory()
-                .createArgumentInitializationInfo(argumentIndex));
-      }
-      builder.addInvokeConstructor(invokedConstructor, invokedConstructorArguments);
-      return builder.build();
-    } else {
-      return analyze(appView, group, instanceInitializer.asPresent().getMethod());
+  /**
+   * Pairs a canonicalized {@link InstanceInitializerDescription} with the {@link
+   * ArgumentPermutation} describing how the analyzed constructor's parameters were permuted to
+   * match the canonicalized description.
+   */
+  public static class InstanceInitializerAnalysisResult {
+
+    private final InstanceInitializerDescription description;
+    private final ArgumentPermutation argumentPermutation;
+
+    public InstanceInitializerAnalysisResult(
+        InstanceInitializerDescription description, ArgumentPermutation argumentPermutation) {
+      this.description = description;
+      this.argumentPermutation = argumentPermutation;
+    }
+
+    public InstanceInitializerDescription getDescription() {
+      return description;
+    }
+
+    public ArgumentPermutation getArgumentPermutation() {
+      return argumentPermutation;
     }
   }
 
-  public static InstanceInitializerDescription analyze(
+  public static InstanceInitializerAnalysisResult analyze(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       HorizontalMergeGroup group,
       ProgramMethod instanceInitializer) {
     InstanceInitializerDescription.Builder builder =
-        InstanceInitializerDescription.builder(appView, instanceInitializer);
+        InstanceInitializerDescription.builder(appView, instanceInitializer.getReference());
     IRCode code = instanceInitializer.buildIR(appView, MethodConversionOptions.nonConverting());
     GraphLens codeLens = instanceInitializer.getDefinition().getCode().getCodeLens(appView);
     WorkList<BasicBlock> workList = WorkList.newIdentityWorkList(code.entryBlock());
@@ -124,10 +124,11 @@ public class InstanceInitializerAnalysis {
                 return invalid();
               }
 
-              ProgramField targetField = group.getTargetInstanceField(sourceField);
-              assert targetField != null;
+              DexEncodedField mergedField =
+                  group.getInstanceFieldMap().get(sourceField.getDefinition());
+              assert mergedField != null;
 
-              builder.addInstancePut(targetField.getReference(), initializationInfo);
+              builder.addInstancePut(mergedField.getReference(), initializationInfo);
               break;
             }
 
@@ -168,7 +169,7 @@ public class InstanceInitializerAnalysis {
                 arguments.add(initializationInfo);
               }
 
-              if (!builder.addInvokeConstructor(invokedMethod, arguments)) {
+              if (!builder.addInvokeConstructor(lensRewrittenInvokedMethod, arguments)) {
                 return invalid();
               }
             }
@@ -214,7 +215,7 @@ public class InstanceInitializerAnalysis {
     return null;
   }
 
-  private static InstanceInitializerDescription invalid() {
+  private static InstanceInitializerAnalysisResult invalid() {
     return null;
   }
 

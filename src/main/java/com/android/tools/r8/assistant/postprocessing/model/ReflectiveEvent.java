@@ -37,6 +37,10 @@ public abstract class ReflectiveEvent {
   }
 
   protected static DexType toType(String javaType, DexItemFactory factory) {
+    if (javaType.startsWith("[")) {
+      // Class.getName() writes array types as descriptors with dots, e.g. [Ljava.lang.String;.
+      return factory.createType(javaType.replace('.', '/'));
+    }
     return factory.createType(DescriptorUtils.javaTypeToDescriptor(javaType));
   }
 
@@ -179,6 +183,14 @@ public abstract class ReflectiveEvent {
     return null;
   }
 
+  public boolean isClassOperation() {
+    return false;
+  }
+
+  public ClassOperation asClassOperation() {
+    return null;
+  }
+
   public abstract String getContentsString();
 
   public abstract boolean isKeptBy(KeepInfoCollectionExported keepInfoCollectionExported);
@@ -212,19 +224,13 @@ public abstract class ReflectiveEvent {
       case CLASS_FOR_NAME:
         return new ClassForName(eventType, stack, args);
       case CLASS_GET_COMPONENT_TYPE:
-        break;
       case CLASS_GET_PACKAGE:
-        break;
       case CLASS_IS_ASSIGNABLE_FROM:
-        break;
       case CLASS_GET_SUPERCLASS:
-        break;
       case CLASS_AS_SUBCLASS:
-        break;
       case CLASS_IS_INSTANCE:
-        break;
       case CLASS_CAST:
-        break;
+        return new ClassOperation(eventType, stack, args, factory);
       case CLASS_FLAG:
         return new ClassFlagEvent(eventType, stack, args, factory);
       case ATOMIC_FIELD_UPDATER_NEW_UPDATER:

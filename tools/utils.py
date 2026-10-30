@@ -103,6 +103,7 @@ R8_TESTS_DEPS_JAR = os.path.join(LIBS, 'test_deps_all.jar')
 R8LIB_TESTS_DEPS_JAR = R8_TESTS_DEPS_JAR
 MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8lib.zip')
 KEEPANNNO_TOOLS_MAVEN_ZIP_LIB = os.path.join(LIBS, 'keepanno-toolslib.zip')
+R8_ASSISTANT_MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8-assistantlib.zip')
 LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP = os.path.join(
     CUSTOM_CONVERSION_DIR, 'library_desugar_conversions_legacy.jar')
 LIBRARY_DESUGAR_CONVERSIONS_ZIP = os.path.join(
@@ -167,7 +168,6 @@ USER_HOME = os.path.expanduser('~')
 CLOUD_STORAGE_URL = 'https://storage.googleapis.com'
 R8_DEPS_URL = '%s/r8-deps' % CLOUD_STORAGE_URL
 R8_INTERNAL_DEPS_BUCKET = 'gs://r8-internal-deps'
-R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'
 
 ARCHIVE_DETAILS = os.path.join(BUILD, 'archive_details.json')
 

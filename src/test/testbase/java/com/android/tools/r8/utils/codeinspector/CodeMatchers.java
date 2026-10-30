@@ -418,10 +418,6 @@ public class CodeMatchers {
   }
 
   public static long getServiceLoaderLoads(CodeInspector inspector) {
-    return inspector
-        .streamInstructions()
-        .filter(CodeMatchers::isServiceLoaderLoad)
-        .count();
+    return inspector.streamInstructions().filter(CodeMatchers::isServiceLoaderLoad).count();
   }
 }
-

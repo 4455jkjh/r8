@@ -29,10 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * This class is used to run tests on devices (or emulators)
- * using ddmlib.
- */
+/** This class is used to run tests on devices (or emulators) using ddmlib. */
 public class DeviceRunner {
 
   private static final boolean VERBOSE = false;
@@ -79,8 +76,7 @@ public class DeviceRunner {
     }
 
     @Override
-    public void flush() {
-    }
+    public void flush() {}
 
     @Override
     public boolean isCancelled() {
@@ -98,8 +94,7 @@ public class DeviceRunner {
     }
 
     @Override
-    public void flush() {
-    }
+    public void flush() {}
 
     @Override
     public boolean isCancelled() {
@@ -182,15 +177,15 @@ public class DeviceRunner {
       ensureAdbRoot(device);
 
       // Remove trailing '\n' returned by emulator
-      File testsRootDirFile = new File(device.getMountPoint(IDevice.MNT_DATA).replace("\n", ""),
-          "r8-tests-" + uuid);
+      File testsRootDirFile =
+          new File(device.getMountPoint(IDevice.MNT_DATA).replace("\n", ""), "r8-tests-" + uuid);
       String testsRootDir = convertToTargetPath(testsRootDirFile);
 
-      String testScriptPathOnTarget = convertToTargetPath(
-          new File(testsRootDirFile, TEST_SCRIPT_NAME));
+      String testScriptPathOnTarget =
+          convertToTargetPath(new File(testsRootDirFile, TEST_SCRIPT_NAME));
 
-      ClasspathPair destFilePaths = installTestFiles(device, testsRootDirFile,
-          testScriptPathOnTarget);
+      ClasspathPair destFilePaths =
+          installTestFiles(device, testsRootDirFile, testScriptPathOnTarget);
 
       File rootDir = new File(device.getMountPoint(IDevice.MNT_ROOT).replace("\n", ""));
 
@@ -198,10 +193,21 @@ public class DeviceRunner {
       // https://code.google.com/p/android/issues/detail?id=3254
       // Use go team hack to work this around
       // https://code.google.com/p/go/source/browse/misc/arm/a
-      executeShellCommand(testScriptPathOnTarget + ' ' + uuid + ' ' + Joiner.on(' ').join(
-          buildCommandLine(rootDir, testsRootDir, destFilePaths.bootclasspath,
-              destFilePaths.classpath)), device, new ShellOutputReceiver(outRedirectStream),
-          /* maxTimeToOutputResponse = */10000);
+      executeShellCommand(
+          testScriptPathOnTarget
+              + ' '
+              + uuid
+              + ' '
+              + Joiner.on(' ')
+                  .join(
+                      buildCommandLine(
+                          rootDir,
+                          testsRootDir,
+                          destFilePaths.bootclasspath,
+                          destFilePaths.classpath)),
+          device,
+          new ShellOutputReceiver(outRedirectStream),
+          /* maxTimeToOutputResponse= */ 10000);
       exitStatus = getExitStatus(device, testsRootDir);
       log("Exit status: " + exitStatus);
 
@@ -218,8 +224,7 @@ public class DeviceRunner {
     }
 
     // Convert target line separator to whatever host is for output comparison-based tests
-    String outputAsString = outRedirectStream.toString()
-        .replace("\n", ToolHelper.LINE_SEPARATOR);
+    String outputAsString = outRedirectStream.toString().replace("\n", ToolHelper.LINE_SEPARATOR);
 
     return new ToolHelper.ProcessResult(exitStatus, outputAsString, "");
   }
@@ -248,9 +253,7 @@ public class DeviceRunner {
       String userDefinedPathToSdk = System.getProperty("ANDROID_SDK_HOME");
       if (userDefinedPathToSdk != null) {
         throw new DeviceRunnerConfigurationException(
-            "Adb not found. Check SDK location '"
-                + userDefinedPathToSdk
-                + "'");
+            "Adb not found. Check SDK location '" + userDefinedPathToSdk + "'");
       } else {
         throw new DeviceRunnerConfigurationException(
             "Adb not found. Set either PATH or ANDROID_SDK_HOME environment variable");
@@ -274,8 +277,8 @@ public class DeviceRunner {
   /**
    * @return path of classpath and bootclasspath files on device
    */
-  private ClasspathPair installTestFiles(IDevice device, File testsRootDirFile,
-      String testScriptPathOnTarget) throws IOException {
+  private ClasspathPair installTestFiles(
+      IDevice device, File testsRootDirFile, String testScriptPathOnTarget) throws IOException {
 
     String testsRootDir = convertToTargetPath(testsRootDirFile);
 
@@ -283,22 +286,21 @@ public class DeviceRunner {
     String[] destFileBootCpPaths = new String[bootClasspath.size()];
 
     executeShellCommand("mkdir " + testsRootDir, device);
-    executeShellCommand(
-        "rm " + testsRootDir + FileListingService.FILE_SEPARATOR + "*", device);
+    executeShellCommand("rm " + testsRootDir + FileListingService.FILE_SEPARATOR + "*", device);
     executePushCommand(TEST_SCRIPT_FILE.getAbsolutePath(), testScriptPathOnTarget, device);
     executeShellCommand("chmod 777 " + testScriptPathOnTarget, device);
 
     int i = 0;
     for (File f : bootClasspath) {
-      destFileBootCpPaths[i] = convertToTargetPath(
-          new File(testsRootDirFile, "f" + i + "_" + f.getName()));
+      destFileBootCpPaths[i] =
+          convertToTargetPath(new File(testsRootDirFile, "f" + i + "_" + f.getName()));
       executePushCommand(f.getAbsolutePath(), destFileBootCpPaths[i], device);
       i++;
     }
     i = 0;
     for (File f : classpath) {
-      desFilePaths[i] = convertToTargetPath(
-          new File(testsRootDirFile, "f" + i + "_" + f.getName()));
+      desFilePaths[i] =
+          convertToTargetPath(new File(testsRootDirFile, "f" + i + "_" + f.getName()));
       executePushCommand(f.getAbsolutePath(), desFilePaths[i], device);
       i++;
     }
@@ -307,8 +309,7 @@ public class DeviceRunner {
 
   private int getExitStatus(IDevice device, String testsRootDir) throws IOException {
     File exitStatusFile = createTempFile("exitStatus", "");
-    executePullCommand(
-        testsRootDir + "/exitStatus", exitStatusFile.getAbsolutePath(), device);
+    executePullCommand(testsRootDir + "/exitStatus", exitStatusFile.getAbsolutePath(), device);
 
     try (BufferedReader br = new BufferedReader(new FileReader(exitStatusFile))) {
       String readLine = br.readLine();
@@ -321,10 +322,8 @@ public class DeviceRunner {
 
   @SuppressWarnings("deprecation")
   private void executeShellCommand(
-      String command,
-      IDevice device,
-      ShellOutputReceiver hostOutput,
-      int maxTimeToOutputResponse) throws IOException {
+      String command, IDevice device, ShellOutputReceiver hostOutput, int maxTimeToOutputResponse)
+      throws IOException {
     log("adb -s " + device.getSerialNumber() + " shell " + command);
     try {
       if (maxTimeToOutputResponse != -1) {
@@ -336,18 +335,16 @@ public class DeviceRunner {
         | ShellCommandUnresponsiveException
         | TimeoutException
         | AdbCommandRejectedException e) {
-      throw new IOException(
-          "Failed to execute shell command: '" + command + "'", e);
+      throw new IOException("Failed to execute shell command: '" + command + "'", e);
     }
   }
 
-  private void executeShellCommand(String command, IDevice device)
-      throws IOException {
+  private void executeShellCommand(String command, IDevice device) throws IOException {
     executeShellCommand(command, device, hostOutput, -1);
   }
 
-  private void executePushCommand(
-      String srcFile, String destFile, IDevice device) throws IOException {
+  private void executePushCommand(String srcFile, String destFile, IDevice device)
+      throws IOException {
     log("adb -s " + device.getSerialNumber() + " push " + srcFile + " " + destFile);
     try {
       device.pushFile(srcFile, destFile);
@@ -357,8 +354,8 @@ public class DeviceRunner {
     }
   }
 
-  private void executePullCommand(
-      String srcFile, String destFile, IDevice device) throws IOException {
+  private void executePullCommand(String srcFile, String destFile, IDevice device)
+      throws IOException {
     log("adb -s " + device.getSerialNumber() + " pull " + srcFile + " " + destFile);
     try {
       device.pullFile(srcFile, destFile);
@@ -385,7 +382,6 @@ public class DeviceRunner {
     }
     return adbLocation;
   }
-
 
   private void ensureAdbRoot(IDevice device) throws IOException {
     boolean isRoot;
@@ -486,8 +482,8 @@ public class DeviceRunner {
     }
   }
 
-  private List<String> buildCommandLine(File rootDir, String testRootDir,
-      String[] bootClasspathFiles, String[] classpathFiles) {
+  private List<String> buildCommandLine(
+      File rootDir, String testRootDir, String[] bootClasspathFiles, String[] classpathFiles) {
     List<String> result = new ArrayList<>();
 
     result.add(convertToTargetPath(new File(rootDir, "/bin/dalvikvm")));
@@ -505,16 +501,21 @@ public class DeviceRunner {
 
     if (classpathFiles.length > 0) {
       result.add("-cp");
-      result.add(Joiner.on(PATH_SEPARATOR_CHAR).join(
-          Arrays.asList(classpathFiles).stream()
-              .map(filePath -> convertToTargetPath(new File(filePath)))
-              .collect(Collectors.toList())));
+      result.add(
+          Joiner.on(PATH_SEPARATOR_CHAR)
+              .join(
+                  Arrays.asList(classpathFiles).stream()
+                      .map(filePath -> convertToTargetPath(new File(filePath)))
+                      .collect(Collectors.toList())));
     }
     if (bootClasspathFiles.length > 0) {
-      result.add("-Xbootclasspath:" + Joiner.on(PATH_SEPARATOR_CHAR).join(
-          Arrays.asList(bootClasspathFiles).stream()
-              .map(filePath -> convertToTargetPath(new File(filePath)))
-              .collect(Collectors.toList())));
+      result.add(
+          "-Xbootclasspath:"
+              + Joiner.on(PATH_SEPARATOR_CHAR)
+                  .join(
+                      Arrays.asList(bootClasspathFiles).stream()
+                          .map(filePath -> convertToTargetPath(new File(filePath)))
+                          .collect(Collectors.toList())));
     }
 
     if (mainClass != null) {

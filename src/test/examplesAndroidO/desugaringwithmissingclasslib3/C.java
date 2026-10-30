@@ -5,5 +5,4 @@ package desugaringwithmissingclasslib3;
 
 import desugaringwithmissingclasslib1.A;
 
-public class C implements A {
-}
+public class C implements A {}

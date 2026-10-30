@@ -9,11 +9,9 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
-class ArgumentType {
-}
+class ArgumentType {}
 
-class ReturnType {
-}
+class ReturnType {}
 
 interface I {
   default ReturnType targetMethodTest4(ArgumentType arg) {
@@ -22,11 +20,9 @@ interface I {
   }
 }
 
-class Middle implements I {
-}
+class Middle implements I {}
 
-class Sub extends Middle {
-}
+class Sub extends Middle {}
 
 interface I2 {
   default ReturnType targetMethodTest5(ArgumentType arg) {
@@ -57,8 +53,7 @@ public class InvokeCustom {
     System.out.println(mhGetStatic.invoke());
   }
 
-  private static void targetMethodTest3(MethodType mt)
-      throws Throwable {
+  private static void targetMethodTest3(MethodType mt) throws Throwable {
     System.out.println("MethodType: " + mt.toString());
   }
 

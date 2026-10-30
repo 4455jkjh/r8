@@ -920,6 +920,10 @@ a {
   background: rgba(245, 243, 255, 0.62);
 }
 
+.branch-card.branch-running {
+  background: rgba(254, 243, 199, 0.55);
+}
+
 .branch-card:hover {
   background: var(--bg-muted);
 }
@@ -972,6 +976,11 @@ a {
   color: var(--green-head-fg);
 }
 
+.status-tag.tag-running {
+  background: var(--amber-bg);
+  color: var(--amber-fg);
+}
+
 .branch-fail-names {
   font-size: 0.8rem;
   font-weight: 700;
@@ -988,6 +997,10 @@ a {
 
 .branch-fail-names.is-ok {
   color: var(--green-solid);
+}
+
+.branch-fail-names.is-running {
+  color: var(--amber-fg);
 }
 
 .branch-fail-more {

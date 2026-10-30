@@ -18,22 +18,18 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-/**
- * Utilities to lookup symbols in a classpath using ASM.
- */
+/** Utilities to lookup symbols in a classpath using ASM. */
 public final class AsmUtils {
 
-  private AsmUtils() {
-  }
+  private AsmUtils() {}
 
   public static boolean doesClassExist(List<Path> classpath, String className) {
     byte[] classData = loadClassBytesFromClasspath(classpath, className);
     return classData != null;
   }
 
-  public static boolean doesMethodExist(List<Path> classpath, String className,
-      String methodName,
-      String methodDescriptor) {
+  public static boolean doesMethodExist(
+      List<Path> classpath, String className, String methodName, String methodDescriptor) {
     MethodFinder classVisitor = new MethodFinder(methodName, methodDescriptor);
     visitClass(classpath, className, classVisitor);
     return classVisitor.foundMethod;
@@ -52,8 +48,8 @@ public final class AsmUtils {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-        String[] exceptions) {
+    public MethodVisitor visitMethod(
+        int access, String name, String desc, String signature, String[] exceptions) {
       if (name.equals(methodName) && desc.equals(methodDescriptor)) {
         assert !foundMethod;
         foundMethod = true;
@@ -62,9 +58,8 @@ public final class AsmUtils {
     }
   }
 
-  public static boolean doesFieldExist(List<Path> classpath, String className,
-      String fieldName,
-      String fieldType) {
+  public static boolean doesFieldExist(
+      List<Path> classpath, String className, String fieldName, String fieldType) {
     FieldFinder classVisitor = new FieldFinder(fieldName, fieldType);
     visitClass(classpath, className, classVisitor);
     return classVisitor.foundField;
@@ -83,8 +78,8 @@ public final class AsmUtils {
     }
 
     @Override
-    public FieldVisitor visitField(int access, String name, String desc, String signature,
-        Object value) {
+    public FieldVisitor visitField(
+        int access, String name, String desc, String signature, Object value) {
       if (name.equals(fieldName) && desc.equals(fieldDescriptor)) {
         assert !foundField;
         foundField = true;
@@ -93,11 +88,12 @@ public final class AsmUtils {
     }
   }
 
-  private static void visitClass(List<Path> classpath, String className,
-      ClassVisitor classVisitor) {
+  private static void visitClass(
+      List<Path> classpath, String className, ClassVisitor classVisitor) {
     byte[] classData = loadClassBytesFromClasspath(classpath, className);
-    new ClassReader(classData).accept(classVisitor,
-        ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+    new ClassReader(classData)
+        .accept(
+            classVisitor, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
   }
 
   private static byte[] loadClassBytesFromClasspath(List<Path> classpath, String className) {
@@ -135,10 +131,8 @@ public final class AsmUtils {
             throw new AssertionError(e);
           }
         }
-
       }
     }
     return null;
   }
-
 }

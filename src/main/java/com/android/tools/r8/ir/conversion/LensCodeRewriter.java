@@ -59,6 +59,7 @@ import com.android.tools.r8.graph.proto.ArgumentInfo;
 import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.graph.proto.RewrittenTypeInfo;
+import com.android.tools.r8.horizontalclassmerging.HorizontallyMergedClasses;
 import com.android.tools.r8.ir.analysis.type.DestructivePhiTypeUpdater;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.Nullability;
@@ -78,6 +79,8 @@ import com.android.tools.r8.ir.code.FieldGet;
 import com.android.tools.r8.ir.code.FieldInstruction;
 import com.android.tools.r8.ir.code.FieldPut;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.If;
+import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.InitClass;
 import com.android.tools.r8.ir.code.InstanceGet;
 import com.android.tools.r8.ir.code.InstanceOf;
@@ -89,6 +92,7 @@ import com.android.tools.r8.ir.code.InvokeCustom;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeMultiNewArray;
 import com.android.tools.r8.ir.code.InvokePolymorphic;
+import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.MoveException;
@@ -745,13 +749,114 @@ public class LensCodeRewriter {
           case CHECK_CAST:
             {
               CheckCast checkCast = current.asCheckCast();
-              new InstructionReplacer(code, current, iterator, affectedPhis, affectedValues)
-                  .replaceInstructionIfTypeChanged(
-                      checkCast.getType(),
-                      (t, v) ->
-                          new CheckCast(v, checkCast.object(), t, checkCast.ignoreCompatRules()),
-                      graphLens,
-                      codeLens);
+              Instruction replacement =
+                  new InstructionReplacer(code, current, iterator, affectedPhis, affectedValues)
+                      .replaceInstructionIfTypeChanged(
+                          checkCast.getType(),
+                          (t, v) ->
+                              checkCast
+                                  .newBuilder()
+                                  .setCastType(t)
+                                  .setIgnoreCompatRules(checkCast.ignoreCompatRules())
+                                  .setObject(checkCast.object())
+                                  .setOutValue(v)
+                                  .build(),
+                          graphLens,
+                          codeLens);
+              if (!checkCast.isSafeCheckCast()
+                  && graphLens.isHorizontalClassMergerGraphLens()
+                  && (replacement != null
+                      || appView
+                          .horizontallyMergedClasses()
+                          .hasClassIdField(checkCast.getType()))) {
+                CheckCast rewrittenCheckCast =
+                    replacement != null ? replacement.asCheckCast() : checkCast;
+                if (!rewrittenCheckCast.outValue().isAlwaysNull(appView)) {
+                  HorizontallyMergedClasses horizontallyMergedClasses =
+                      appView.horizontallyMergedClasses();
+
+                  // Get the class id from the object.
+                  InstanceGet instanceGet =
+                      InstanceGet.builder()
+                          .setField(
+                              horizontallyMergedClasses.getClassIdField(
+                                  rewrittenCheckCast.getType()))
+                          .setFreshOutValue(code, TypeElement.getInt())
+                          .setObject(rewrittenCheckCast.outValue())
+                          .setPosition(checkCast)
+                          .build();
+
+                  // Load the class id of the source class.
+                  ConstNumber constNumber =
+                      ConstNumber.builder()
+                          .setFreshOutValue(code, TypeElement.getInt())
+                          .setValue(horizontallyMergedClasses.getClassId(checkCast.getType()))
+                          .setPositionForNonThrowingInstruction(checkCast.getPosition(), options)
+                          .build();
+
+                  // Call a synthetic helper method that throws a ClassCastException if the loaded
+                  // class id is different from the class id of the source class.
+                  InvokeStatic invoke =
+                      InvokeStatic.builder()
+                          .setArguments(instanceGet.outValue(), constNumber.outValue())
+                          .setIsInterface(false)
+                          .setMethod(
+                              graphLens
+                                  .asHorizontalClassMergerGraphLens()
+                                  .ensureThrowClassCastExceptionIfNotEqualsMethod(method))
+                          .setPosition(checkCast)
+                          .build();
+
+                  if (rewrittenCheckCast.outValue().isNeverNull()) {
+                    iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+                        code, blocks, ImmutableList.of(instanceGet, constNumber, invoke), options);
+                  } else {
+                    If ifNe = new If(IfType.EQ, rewrittenCheckCast.outValue());
+                    ifNe.setPosition(Position.none());
+
+                    BasicBlock ifBlock = iterator.split(code, blocks);
+                    assert !ifBlock.hasCatchHandlers();
+
+                    BasicBlock nullBlock = ifBlock.listIterator().split(code, blocks);
+                    assert !nullBlock.hasCatchHandlers();
+
+                    BasicBlock nonNullBlock = nullBlock.listIterator().split(code, blocks);
+                    assert !nonNullBlock.hasCatchHandlers();
+                    assert blocks.peekPrevious() == nonNullBlock;
+
+                    BasicBlock nonNullContinuationBlock =
+                        nonNullBlock.listIterator().split(code, blocks);
+                    assert !nonNullContinuationBlock.hasCatchHandlers();
+
+                    BasicBlock continuationBlock =
+                        nonNullContinuationBlock.listIterator().split(code, blocks);
+                    if (block.hasCatchHandlers()) {
+                      nonNullBlock.copyCatchHandlers(code, blocks, block, options);
+                      continuationBlock.copyCatchHandlers(code, blocks, block, options);
+                    }
+
+                    ifBlock.exit().replace(ifNe);
+                    ifBlock.link(nonNullBlock);
+                    assert ifNe.targetFromNonNullObject() == nonNullBlock;
+                    assert ifNe.targetFromNullObject() == nullBlock;
+
+                    nullBlock.detachAllSuccessors();
+                    nullBlock.link(continuationBlock);
+
+                    blocks.positionAfterPreviousBlock(nonNullBlock);
+                    nonNullBlock
+                        .listIterator()
+                        .addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+                            code,
+                            blocks,
+                            ImmutableList.of(instanceGet, constNumber, invoke),
+                            options);
+
+                    blocks.positionBeforeSubsequentBlock(continuationBlock);
+                    assert blocks.peekNext() == continuationBlock;
+                  }
+                }
+              }
             }
             break;
 
@@ -1001,6 +1106,12 @@ public class LensCodeRewriter {
     for (UnusedArgument unusedArgument : unusedArguments) {
       InstructionListIterator instructionIterator =
           unusedArgument.getBlock().listIterator(unusedArgument.getNext());
+      if (unusedArgument.outValue().hasSingleUniqueUser()
+          && unusedArgument.outValue().singleUniqueUser().isAssume()) {
+        Instruction assume = unusedArgument.outValue().singleUniqueUser();
+        assert !assume.outValue().hasAnyUsers();
+        assume.removeOrReplaceByDebugLocalRead();
+      }
       if (unusedArgument.outValue().hasAnyUsers()) {
         // This is an unused argument with a default value. The unused argument is an operand of the
         // phi. This use is eliminated after constant propagation + branch pruning. We eliminate the

@@ -75,7 +75,7 @@ public class InvokeSpecialToImmediateInterfaceTest extends TestBase {
         // TODO(b/313065227): Should succeed.
         .applyIfDexRuntime(
             parameters.isCfRuntime(),
-            runResult -> runResult.assertFailureWithErrorThatThrows(NoSuchMethodError.class),
+            runResult -> runResult.assertFailureWithErrorThatThrows(NullPointerException.class),
             Version::isDalvik,
             runResult -> runResult.assertFailureWithErrorThatThrows(VerifyError.class),
             version -> !version.isDalvik() && parameters.canUseDefaultAndStaticInterfaceMethods(),

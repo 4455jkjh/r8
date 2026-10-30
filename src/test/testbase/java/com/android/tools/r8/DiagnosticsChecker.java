@@ -116,8 +116,12 @@ public class DiagnosticsChecker implements DiagnosticsHandler {
     checkContains(snippet, handler.infos);
   }
 
-  public static Diagnostic checkDiagnostic(Diagnostic diagnostic, Consumer<Origin> originChecker,
-      int lineStart, int columnStart, String... messageParts) {
+  public static Diagnostic checkDiagnostic(
+      Diagnostic diagnostic,
+      Consumer<Origin> originChecker,
+      int lineStart,
+      int columnStart,
+      String... messageParts) {
     if (originChecker != null) {
       originChecker.accept(diagnostic.getOrigin());
     }
@@ -134,20 +138,22 @@ public class DiagnosticsChecker implements DiagnosticsHandler {
       assertEquals(columnStart, position.getColumn());
     }
     for (String part : messageParts) {
-      assertTrue(diagnostic.getDiagnosticMessage() + " doesn't contain \"" + part + "\"",
+      assertTrue(
+          diagnostic.getDiagnosticMessage() + " doesn't contain \"" + part + "\"",
           diagnostic.getDiagnosticMessage().contains(part));
     }
     return diagnostic;
   }
 
-  public static Diagnostic checkDiagnostic(Diagnostic diagnostic, Consumer<Origin> originChecker,
-      String... messageParts) {
+  public static Diagnostic checkDiagnostic(
+      Diagnostic diagnostic, Consumer<Origin> originChecker, String... messageParts) {
     if (originChecker != null) {
       originChecker.accept(diagnostic.getOrigin());
     }
     assertEquals(diagnostic.getPosition(), Position.UNKNOWN);
     for (String part : messageParts) {
-      assertTrue(diagnostic.getDiagnosticMessage() + " doesn't contain \"" + part + "\"",
+      assertTrue(
+          diagnostic.getDiagnosticMessage() + " doesn't contain \"" + part + "\"",
           diagnostic.getDiagnosticMessage().contains(part));
     }
     return diagnostic;
@@ -155,6 +161,7 @@ public class DiagnosticsChecker implements DiagnosticsHandler {
 
   static class PathOriginChecker implements Consumer<Origin> {
     private final Path path;
+
     PathOriginChecker(Path path) {
       this.path = path;
     }
@@ -168,19 +175,28 @@ public class DiagnosticsChecker implements DiagnosticsHandler {
     }
   }
 
-  public static Diagnostic checkDiagnostic(Diagnostic diagnostic, Path path,
-      int lineStart, int columnStart, String... messageParts) {
-    return checkDiagnostic(diagnostic, new PathOriginChecker(path), lineStart, columnStart,
-        messageParts);
+  public static Diagnostic checkDiagnostic(
+      Diagnostic diagnostic, Path path, int lineStart, int columnStart, String... messageParts) {
+    return checkDiagnostic(
+        diagnostic, new PathOriginChecker(path), lineStart, columnStart, messageParts);
   }
 
-  public static Diagnostic checkDiagnostics(List<Diagnostic> diagnostics, int index, Path path,
-      int lineStart, int columnStart, String... messageParts) {
+  public static Diagnostic checkDiagnostics(
+      List<Diagnostic> diagnostics,
+      int index,
+      Path path,
+      int lineStart,
+      int columnStart,
+      String... messageParts) {
     return checkDiagnostic(diagnostics.get(index), path, lineStart, columnStart, messageParts);
   }
 
-  public static Diagnostic checkDiagnostics(List<Diagnostic> diagnostics, Path path,
-      int lineStart, int columnStart, String... messageParts) {
+  public static Diagnostic checkDiagnostics(
+      List<Diagnostic> diagnostics,
+      Path path,
+      int lineStart,
+      int columnStart,
+      String... messageParts) {
     assertEquals(1, diagnostics.size());
     return checkDiagnostics(diagnostics, 0, path, lineStart, columnStart, messageParts);
   }

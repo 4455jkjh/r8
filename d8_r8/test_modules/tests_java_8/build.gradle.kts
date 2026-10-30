@@ -76,6 +76,7 @@ dependencies {
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "agsa"))
+  runtimeOnlyData(project(":third_party", "art5_1_1"))
   runtimeOnlyData(project(":third_party", "artTests"))
   runtimeOnlyData(project(":third_party", "bookstory"))
   runtimeOnlyData(project(":third_party", "bundletool"))
@@ -141,10 +142,14 @@ dependencies {
   runtimeOnlyData(project(":third_party", "rhino"))
   runtimeOnlyData(project(":third_party", "rhinoAndroid"))
   runtimeOnlyData(project(":third_party", "smali"))
+  runtimeOnlyData(project(":third_party", "opensourceNewpipe"))
+  runtimeOnlyData(project(":third_party", "signalAndroid"))
   runtimeOnlyData(project(":third_party", "systemUI"))
+  runtimeOnlyData(project(":third_party", "tachiyomi"))
   runtimeOnlyData(project(":third_party", "tivi"))
   runtimeOnlyData(project(":third_party", "tusky"))
   runtimeOnlyData(project(":third_party", "youtube2140"))
+  runtimeOnlyData(project(":third_party", "youtube2140D8Merge"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->

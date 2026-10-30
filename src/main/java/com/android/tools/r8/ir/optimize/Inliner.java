@@ -71,6 +71,7 @@ import com.android.tools.r8.utils.collections.LongLivedProgramMethodSetBuilder;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -357,9 +358,18 @@ public class Inliner {
           && this.targetHolder == o.targetHolder;
     }
 
-    @SuppressWarnings("ReferenceEquality")
     public static ConstraintWithTarget deriveConstraint(
         ProgramMethod context, DexType targetHolder, AccessFlags<?> flags, AppView<?> appView) {
+      return deriveConstraint(context, targetHolder, flags, appView, null);
+    }
+
+    @SuppressWarnings("ReferenceEquality")
+    public static ConstraintWithTarget deriveConstraint(
+        ProgramMethod context,
+        DexType targetHolder,
+        AccessFlags<?> flags,
+        AppView<?> appView,
+        Value receiver) {
       if (flags.isPublic()) {
         return ALWAYS;
       } else if (flags.isPrivate()) {
@@ -376,6 +386,11 @@ public class Inliner {
           // Even though protected, this is visible via the same package from the context.
           return new ConstraintWithTarget(Constraint.PACKAGE, targetHolder);
         } else if (appView.isSubtype(context.getHolderType(), targetHolder).isTrue()) {
+          if (appView.options().isGeneratingClassFiles()
+              && receiver != null
+              && !receiver.getAliasedValue().isThis()) {
+            return new ConstraintWithTarget(Constraint.SAMECLASS, context.getHolderType());
+          }
           return new ConstraintWithTarget(Constraint.SUBCLASS, targetHolder);
         }
         return NEVER;
@@ -464,9 +479,13 @@ public class Inliner {
           return NEVER;
         }
         assert other.constraint == Constraint.SUBCLASS;
-        if (allNestMembersSubtypeOf(one.targetHolder, other.targetHolder, appView)) {
+        if (!appView.options().isGeneratingClassFiles()
+            && allNestMembersSubtypeOf(one.targetHolder, other.targetHolder, appView)) {
           // Then, SAMENEST is a more restrictive constraint.
           return one;
+        }
+        if (appView.isSubtype(one.targetHolder, other.targetHolder).isTrue()) {
+          return new ConstraintWithTarget(Constraint.SAMECLASS, one.targetHolder);
         }
         return NEVER;
       }
@@ -1060,13 +1079,13 @@ public class Inliner {
         timing);
   }
 
-  public void performInlining(
+  public boolean performInlining(
       ProgramMethod method,
       IRCode code,
       OptimizationFeedback feedback,
       MethodProcessor methodProcessor,
       Timing timing) {
-    performInlining(
+    return performInlining(
         method,
         code,
         feedback,
@@ -1075,7 +1094,7 @@ public class Inliner {
         createDefaultInliningReasonStrategy(methodProcessor));
   }
 
-  public void performInlining(
+  public boolean performInlining(
       ProgramMethod method,
       IRCode code,
       OptimizationFeedback feedback,
@@ -1092,11 +1111,11 @@ public class Inliner {
             }
           }
         };
-    performInlining(
+    return performInlining(
         method, code, feedback, methodProcessor, timing, inliningReasonStrategy, invokeSupplier);
   }
 
-  public void performInlining(
+  public boolean performInlining(
       ProgramMethod method,
       IRCode code,
       OptimizationFeedback feedback,
@@ -1109,17 +1128,19 @@ public class Inliner {
     InliningIRProvider inliningIRProvider =
         new InliningIRProvider(appView, method, code, lensCodeRewriter, methodProcessor);
     assert inliningIRProvider.verifyIRCacheIsEmpty();
-    performInliningImpl(
-        oracle,
-        method,
-        code,
-        invokeSupplier,
-        feedback,
-        inliningIRProvider,
-        methodProcessor,
-        timing);
+    boolean changed =
+        performInliningImpl(
+            oracle,
+            method,
+            code,
+            invokeSupplier,
+            feedback,
+            inliningIRProvider,
+            methodProcessor,
+            timing);
     code.removeRedundantBlocks();
     assert code.isConsistentSSA(appView);
+    return changed;
   }
 
   public InliningReasonStrategy createDefaultInliningReasonStrategy(
@@ -1141,7 +1162,7 @@ public class Inliner {
   }
 
   @SuppressWarnings("ReferenceEquality")
-  private void performInliningImpl(
+  private boolean performInliningImpl(
       InliningOracle oracle,
       ProgramMethod context,
       IRCode code,
@@ -1156,6 +1177,7 @@ public class Inliner {
     ClassInitializationAnalysis classInitializationAnalysis =
         new ClassInitializationAnalysis(appView, code);
     Deque<BasicBlock> inlineeStack = new ArrayDeque<>();
+    BooleanBox changed = new BooleanBox();
     while (blockIterator.hasNext()) {
       BasicBlock block = blockIterator.next();
       if (!inlineeStack.isEmpty() && inlineeStack.peekFirst() == block) {
@@ -1169,30 +1191,32 @@ public class Inliner {
           context,
           block,
           (invoke, iterator) ->
-              inlineInvokes(
-                  oracle,
-                  context,
-                  code,
-                  feedback,
-                  inliningIRProvider,
-                  methodProcessor,
-                  timing,
-                  blockIterator,
-                  iterator,
-                  invoke,
-                  blocksToRemove,
-                  classInitializationAnalysis,
-                  inlineeStack));
+              changed.or(
+                  inlineInvokes(
+                      oracle,
+                      context,
+                      code,
+                      feedback,
+                      inliningIRProvider,
+                      methodProcessor,
+                      timing,
+                      blockIterator,
+                      iterator,
+                      invoke,
+                      blocksToRemove,
+                      classInitializationAnalysis,
+                      inlineeStack)));
     }
     assert inlineeStack.isEmpty();
     code.removeBlocks(blocksToRemove);
     classInitializationAnalysis.finish();
     code.removeAllDeadAndTrivialPhis(affectedValues);
     affectedValues.narrowingWithAssumeRemoval(appView, code);
+    return changed.isTrue();
   }
 
   @SuppressWarnings("ReferenceEquality")
-  private void inlineInvokes(
+  private boolean inlineInvokes(
       InliningOracle oracle,
       ProgramMethod context,
       IRCode code,
@@ -1214,18 +1238,18 @@ public class Inliner {
         appView.appInfo().resolveMethodLegacy(invokedMethod, invoke.getInterfaceBit());
     if (!maybeFailedResolutionResult.isSingleResolution()) {
       notifyInvokeNotInlined(invoke, maybeFailedResolutionResult);
-      return;
+      return false;
     }
 
     SingleResolutionResult<?> resolutionResult = maybeFailedResolutionResult.asSingleResolution();
     if (resolutionResult.isAccessibleFrom(context, appView).isPossiblyFalse()) {
       notifyInvokeNotInlined(invoke, resolutionResult);
-      return;
+      return false;
     }
 
     if (tryInlineMethodWithoutSideEffects(
         code, iterator, invoke, resolutionResult.getResolutionPair())) {
-      return;
+      return true;
     }
 
     // TODO(b/156853206): Should not duplicate resolution.
@@ -1233,7 +1257,7 @@ public class Inliner {
     if (singleTarget == null) {
       notifyInvokeNotInlined(invoke, resolutionResult);
       WhyAreYouNotInliningReporter.handleInvokeWithUnknownTarget(this, invoke, appView, context);
-      return;
+      return false;
     }
 
     InliningOracle singleTargetOracle = getSingleTargetOracle(invoke, singleTarget, oracle);
@@ -1258,25 +1282,25 @@ public class Inliner {
     if (inlineResult == null) {
       notifyInvokeNotInlined(invoke, resolutionResult);
       assert whyAreYouNotInliningReporter.unsetReasonHasBeenReportedFlag();
-      return;
+      return false;
     }
 
     if (inlineResult.isRetryAction()) {
       enqueueMethodForReprocessing(context);
-      return;
+      return false;
     }
 
     InlineAction action = inlineResult.asInlineAction();
     if (action.reason == Reason.MULTI_CALLER_CANDIDATE) {
       notifyInvokeNotInlined(invoke, resolutionResult);
       assert methodProcessor.isPrimaryMethodProcessor();
-      return;
+      return false;
     }
 
     if (!singleTargetOracle.stillHasBudget(action, whyAreYouNotInliningReporter)) {
       notifyInvokeNotInlined(invoke, resolutionResult);
       assert whyAreYouNotInliningReporter.unsetReasonHasBeenReportedFlag();
-      return;
+      return false;
     }
 
     timing.begin("Build inlinee");
@@ -1286,7 +1310,7 @@ public class Inliner {
         action, code, inlinee, invoke, block, whyAreYouNotInliningReporter)) {
       notifyInvokeNotInlined(invoke, resolutionResult);
       assert whyAreYouNotInliningReporter.unsetReasonHasBeenReportedFlag();
-      return;
+      return false;
     }
 
     // Verify this code went through the full pipeline.
@@ -1359,6 +1383,7 @@ public class Inliner {
         blockIterator.next();
       }
     }
+    return true;
   }
 
   protected void inlineInvoke(

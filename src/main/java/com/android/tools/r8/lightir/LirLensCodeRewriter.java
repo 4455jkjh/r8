@@ -32,6 +32,7 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.finalizer.IRToLirFinalizer;
 import com.android.tools.r8.ir.desugar.apimodel.ApiInvokeOutlinerDesugaring.InstructionKind;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.R8LibraryDesugaringGraphLens;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.lightir.LirBuilder.NameComputationPayload;
@@ -168,7 +169,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
 
   private boolean hasPotentialNonTrivialInvokeRewriting(
       DexMethod method, InvokeType type, MethodLookupResult result) {
-    if (graphLens.isHorizontalClassMergerGraphLens()) {
+    if (graphLens.isArgumentPropagatorGraphLens() || graphLens.isHorizontalClassMergerGraphLens()) {
       return !result.getPrototypeChanges().isEmpty();
     }
     if (graphLens.isProtoNormalizerLens()) {
@@ -265,11 +266,17 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
 
   @Override
   public void onCheckCast(DexType type, EV value, boolean ignoreCompatRules) {
-    if (graphLens.isLirToLirDesugaringLens()
-        && graphLens
-            .asLirToLirDesugaringLens()
-            .needsApiOutlining(InstructionKind.CHECKCAST, type, context)) {
-      addTypeInstructionToRewrite(type);
+    if (graphLens.isHorizontalClassMergerGraphLens()) {
+      DexType rewrittenType = graphLens.lookupType(type, codeLens);
+      if (rewrittenType.isNotIdenticalTo(type)
+          || appView.horizontallyMergedClasses().hasClassIdField(type)) {
+        addTypeInstructionToRewrite(type);
+      }
+    } else if (graphLens.isLirToLirDesugaringLens()) {
+      R8LibraryDesugaringGraphLens desugaringLens = graphLens.asLirToLirDesugaringLens();
+      if (desugaringLens.needsApiOutlining(InstructionKind.CHECKCAST, type, context)) {
+        addTypeInstructionToRewrite(type);
+      }
     }
   }
 
@@ -492,6 +499,11 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   private boolean hasNonTrivialMethodChanges() {
+    if (graphLens.isArgumentPropagatorGraphLens()) {
+      RewrittenPrototypeDescription prototypeChanges =
+          graphLens.lookupPrototypeChangesForMethodDefinition(context.getReference(), codeLens);
+      return !prototypeChanges.isEmpty();
+    }
     if (graphLens.isClassMergerLens()) {
       RewrittenPrototypeDescription prototypeChanges =
           graphLens.lookupPrototypeChangesForMethodDefinition(context.getReference(), codeLens);
@@ -572,6 +584,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     MethodProcessor methodProcessor = null;
     new LensCodeRewriter(appViewWithClassHierarchy)
         .rewrite(code, context, methodProcessor, graphLens, codeLens, timing);
+    new DeadCodeRemover(appView).run(code, timing);
     IRToLirFinalizer finalizer = new IRToLirFinalizer(appView);
     LirCode<?> rewritten = finalizer.finalizeCode(code, BytecodeMetadataProvider.empty(), timing);
     timing.end();
@@ -619,7 +632,9 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
             hasFieldReference
                 && (graphLens.isClassMergerLens() || graphLens.isLirToLirDesugaringLens());
         boolean hasPotentialRewrittenTypeInstruction =
-            hasTypeReference && graphLens.isLirToLirDesugaringLens();
+            hasTypeReference
+                && (graphLens.isHorizontalClassMergerGraphLens()
+                    || graphLens.isLirToLirDesugaringLens());
         if (hasDexItemBasedConstString
             || hasPotentialRewrittenFieldInstruction
             || hasPotentialRewrittenMethod

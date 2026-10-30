@@ -5,31 +5,37 @@ package com.android.tools.r8.internal;
 
 import com.android.tools.r8.Disassemble;
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 // Invoke R8 on the dex files extracted from GMSCore.apk to disassemble the dex code.
 @RunWith(Parameterized.class)
 public class GMSCoreV10DisassemblerTest extends GMSCoreCompilationTestBase {
 
-  @Parameters(name = "deobfuscate: {0} smali: {1}")
-  public static Iterable<Object[]> data() {
-    return Arrays.asList(
-        new Object[][] {{false, false}, {false, true}, {true, false}, {true, true}});
+  @Parameters(name = "{0}, deobfuscate: {1} smali: {2}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        BooleanUtils.values(),
+        BooleanUtils.values());
   }
 
-  @Parameter(0)
-  public boolean deobfuscate;
+  private final boolean deobfuscate;
+  private final boolean smali;
 
-  @Parameter(1)
-  public boolean smali;
+  public GMSCoreV10DisassemblerTest(TestParameters parameters, boolean deobfuscate, boolean smali) {
+    parameters.assertNoneRuntime();
+    this.deobfuscate = deobfuscate;
+    this.smali = smali;
+  }
 
   @Test
   public void testDisassemble() throws Exception {

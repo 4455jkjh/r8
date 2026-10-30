@@ -16,6 +16,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.NoReturnTypeStrengthening;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.R8FullTestBuilder;
@@ -96,6 +97,7 @@ public class MainDexDevirtualizerTest extends TestBase {
     Box<String> mainDexStringList = new Box<>("");
     testForR8(parameters.getBackend())
         .addProgramClasses(I.class, Provider.class, A.class, Main.class)
+        .enableNoMethodStaticizingAnnotations()
         .enableNoReturnTypeStrengtheningAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .enableInliningAnnotations()
@@ -156,6 +158,7 @@ public class MainDexDevirtualizerTest extends TestBase {
 
     @Override
     @NeverInline
+    @NoMethodStaticizing
     public void foo() {
       System.out.println("A::foo");
     }

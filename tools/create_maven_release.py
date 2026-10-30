@@ -105,6 +105,46 @@ KEEPANNO_TOOLS_POMTEMPLATE = Template("""<project
 </project>
 """)
 
+R8_ASSISTANT_POMTEMPLATE = Template("""<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.android.tools</groupId>
+  <artifactId>r8-assistant</artifactId>
+  <version>$version</version>
+  <name>R8 Assistant</name>
+  <description>
+  A command line tool that instruments Android apps to record reflection and
+  helps narrow and verify keep rules.
+  </description>
+  <url>http://r8.googlesource.com/r8</url>
+  <inceptionYear>2025</inceptionYear>
+  <licenses>
+    <license>
+      <name>BSD-3-Clause</name>
+      <url>https://opensource.org/licenses/BSD-3-Clause</url>
+      <distribution>repo</distribution>
+    </license>$library_licenses
+  </licenses>
+  <dependencies>
+  </dependencies>
+  <developers>
+    <developer>
+      <name>The Android Open Source Project</name>
+    </developer>
+  </developers>
+  <scm>
+    <connection>
+      https://r8.googlesource.com/r8.git
+    </connection>
+    <url>
+      https://r8.googlesource.com/r8
+    </url>
+  </scm>
+</project>
+""")
+
 DESUGAR_CONFIGUATION_POMTEMPLATE = Template("""<project
     xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -169,6 +209,9 @@ def parse_options(argv):
     group.add_argument('--desugar-configuration-jdk11-nio',
                        action='store_true',
                        help='Build desugar library configuration (JDK-11 nio)')
+    group.add_argument('--r8-assistant',
+                       action='store_true',
+                       help='Build the r8-assistant maven zip')
     return result.parse_args(argv)
 
 
@@ -182,6 +225,21 @@ def determine_version():
                 result = result[:result.find('"')]
                 return result
     raise Exception('Unable to determine version.')
+
+
+def determine_r8_assistant_version():
+    version_file = join(utils.SRC_ROOT, 'com', 'android', 'tools', 'r8',
+                        'R8AssistantVersion.java')
+    with open(version_file, 'r') as file:
+        for line in file:
+            if 'final String LABEL ' in line:
+                result = line[line.find('"') + 1:]
+                result = result[:result.find('"')]
+                utils.check_basic_semver_version(result,
+                                                 'in ' + version_file,
+                                                 allowPrerelease=True)
+                return result
+    raise Exception('Unable to determine R8 Assistant version.')
 
 
 def determine_keepanno_tools_version():
@@ -364,6 +422,34 @@ def generate_keepanno_tools_maven_zip(out,
         generate_maven_zip('keepanno-tools', version, pom_file, file_copy, out)
 
 
+def generate_r8_assistant_maven_zip(out,
+                                    version_file=None,
+                                    skip_gradle_build=False):
+    if not skip_gradle_build:
+        gradle.run_gradle([
+            utils.GRADLE_TASK_CONSOLIDATED_LICENSE,
+            utils.GRADLE_TASK_R8_ASSISTANT,
+            '-Pno_internal',
+        ])
+    version = determine_r8_assistant_version()
+    with utils.TempDir() as tmp_dir:
+        file_copy = join(tmp_dir, 'copy_of_jar.jar')
+        copyfile(utils.R8_ASSISTANT_LIB_JAR, file_copy)
+
+        if version_file:
+            with zipfile.ZipFile(file_copy, 'a') as zip:
+                zip.write(version_file, basename(version_file))
+
+        # Generate the pom file.
+        pom_file = join(tmp_dir, 'r8-assistant.pom')
+        write_pom_file(R8_ASSISTANT_POMTEMPLATE,
+                       pom_file,
+                       version,
+                       library_licenses=generate_library_licenses())
+        # Write the maven zip file.
+        generate_maven_zip('r8-assistant', version, pom_file, file_copy, out)
+
+
 # Write the desugaring configuration of a jar file with the following content:
 #  java/
 #    util/
@@ -474,6 +560,8 @@ def main(argv):
             options.out, utils.DESUGAR_CONFIGURATION_JDK11_NIO,
             utils.DESUGAR_IMPLEMENTATION_JDK11,
             utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP)
+    elif options.r8_assistant:
+        generate_r8_assistant_maven_zip(options.out)
     else:
         generate_r8_maven_zip(options.out)
         generate_keepanno_maven_zip(options.out)

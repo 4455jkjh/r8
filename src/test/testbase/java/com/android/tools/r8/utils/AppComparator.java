@@ -133,21 +133,22 @@ public class AppComparator extends TestBase {
     // Collect all classes from both inspectors, indexed by finalDescriptor.
     Map<String, Pair<FoundClassSubject>> allClasses = new HashMap<>();
 
-    BiConsumer<CodeInspector, Boolean> collectClasses = (inspector, selectFirst) -> {
-      inspector.forAllClasses(
-          clazz -> {
-            String finalDescriptor = clazz.getFinalDescriptor();
-            allClasses.compute(
-                finalDescriptor,
-                (k, v) -> {
-                  if (v == null) {
-                    v = new Pair<>();
-                  }
-                  v.set(selectFirst, clazz);
-                  return v;
-                });
-          });
-    };
+    BiConsumer<CodeInspector, Boolean> collectClasses =
+        (inspector, selectFirst) -> {
+          inspector.forAllClasses(
+              clazz -> {
+                String finalDescriptor = clazz.getFinalDescriptor();
+                allClasses.compute(
+                    finalDescriptor,
+                    (k, v) -> {
+                      if (v == null) {
+                        v = new Pair<>();
+                      }
+                      v.set(selectFirst, clazz);
+                      return v;
+                    });
+              });
+        };
 
     collectClasses.accept(inspect1, true);
     collectClasses.accept(inspect2, false);
@@ -165,21 +166,22 @@ public class AppComparator extends TestBase {
       // Collect all fields for this class from both apps.
       Map<FieldSignature, Pair<FoundFieldSubject>> allFields = new HashMap<>();
 
-      BiConsumer<FoundClassSubject, Boolean> collectFields = (classSubject, selectFirst) -> {
-        classSubject.forAllFields(
-            f -> {
-              FieldSignature fs = f.getFinalSignature();
-              allFields.compute(
-                  fs,
-                  (k, v) -> {
-                    if (v == null) {
-                      v = new Pair<>();
-                    }
-                    v.set(selectFirst, f);
-                    return v;
-                  });
-            });
-      };
+      BiConsumer<FoundClassSubject, Boolean> collectFields =
+          (classSubject, selectFirst) -> {
+            classSubject.forAllFields(
+                f -> {
+                  FieldSignature fs = f.getFinalSignature();
+                  allFields.compute(
+                      fs,
+                      (k, v) -> {
+                        if (v == null) {
+                          v = new Pair<>();
+                        }
+                        v.set(selectFirst, f);
+                        return v;
+                      });
+                });
+          };
 
       collectFields.accept(class1, true);
       collectFields.accept(class2, false);
@@ -203,21 +205,22 @@ public class AppComparator extends TestBase {
       // Collect all methods for this class from both apps.
       Map<MethodSignature, Pair<FoundMethodSubject>> allMethods = new HashMap<>();
 
-      BiConsumer<FoundClassSubject, Boolean> collectMethods = (classSubject, selectFirst) -> {
-        classSubject.forAllMethods(
-            m -> {
-              MethodSignature fs = m.getFinalSignature();
-              allMethods.compute(
-                  fs,
-                  (k, v) -> {
-                    if (v == null) {
-                      v = new Pair<>();
-                    }
-                    v.set(selectFirst, m);
-                    return v;
-                  });
-            });
-      };
+      BiConsumer<FoundClassSubject, Boolean> collectMethods =
+          (classSubject, selectFirst) -> {
+            classSubject.forAllMethods(
+                m -> {
+                  MethodSignature fs = m.getFinalSignature();
+                  allMethods.compute(
+                      fs,
+                      (k, v) -> {
+                        if (v == null) {
+                          v = new Pair<>();
+                        }
+                        v.set(selectFirst, m);
+                        return v;
+                      });
+                });
+          };
 
       collectMethods.accept(class1, true);
       collectMethods.accept(class2, false);
@@ -257,7 +260,7 @@ public class AppComparator extends TestBase {
         System.out.println("-------------------------------------");
         for (int i = 0; i < methodsNotMatching.size(); i += 2) {
           FoundMethodSubject method1 = methodsNotMatching.get(i);
-          FoundMethodSubject method2 = methodsNotMatching.get(i +  1);
+          FoundMethodSubject method2 = methodsNotMatching.get(i + 1);
           System.out.println("Full method for " + method1.toString() + ": ");
           System.out.println(method1.getMethod().codeToString());
           System.out.println(method2.getMethod().codeToString());
@@ -275,8 +278,7 @@ public class AppComparator extends TestBase {
       InstructionSubject instr1 = it1.next();
       InstructionSubject instr2 = it2.next();
       assertEquals(
-          instr1 instanceof DexInstructionSubject,
-          instr2 instanceof DexInstructionSubject);
+          instr1 instanceof DexInstructionSubject, instr2 instanceof DexInstructionSubject);
       if (!instr1.equals(instr2)) {
         if (identical) {
           System.out.println("DIFF in " + method1.toString() + ":");

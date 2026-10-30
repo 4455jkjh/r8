@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 /**
  * Represents the definition of a Kotlin data class.
  *
- * <p>See https://kotlinlang.org/docs/reference/data-classes.html</p>
+ * <p>See https://kotlinlang.org/docs/reference/data-classes.html
  */
 class TestKotlinDataClass extends TestKotlinClass {
 
@@ -31,8 +31,8 @@ class TestKotlinDataClass extends TestKotlinClass {
     KotlinProperty property = getProperty(name);
 
     String componentName = "component" + Integer.toString(property.getIndex() + 1);
-    return new MemberNaming.MethodSignature(componentName, property.getType(),
-        Collections.emptyList());
+    return new MemberNaming.MethodSignature(
+        componentName, property.getType(), Collections.emptyList());
   }
 
   public MemberNaming.MethodSignature getCopySignature() {
@@ -56,7 +56,6 @@ class TestKotlinDataClass extends TestKotlinClass {
     copyDefaultParameterTypes.addAll(propertiesTypes);
     copyDefaultParameterTypes.add("int");
     copyDefaultParameterTypes.add("java.lang.Object");
-    return new MemberNaming.MethodSignature("copy$default", className,
-        copyDefaultParameterTypes);
+    return new MemberNaming.MethodSignature("copy$default", className, copyDefaultParameterTypes);
   }
 }

@@ -43,65 +43,65 @@ public class FinallyBlockTest extends DebugTestBase {
         CLASS,
         breakpoint(CLASS, method),
         run(),
-        checkLine(FILE, 10),
-        stepOver(),
-        checkLine(FILE, 12),
-        stepOver(),
-        checkLine(FILE, 20),
-        stepOver(),
-        checkLine(FILE, 21),
-        stepOver(),
-        checkLine(FILE, 22),
-        stepOver(),
-        checkLine(FILE, 27), // return in callFinallyBlock
-        run(),
-        checkLine(FILE, 10),
-        stepOver(),
-        checkLine(FILE, 12),
-        stepOver(),
         checkLine(FILE, 13),
         stepOver(),
-        checkLine(FILE, 15), // catch AE
+        checkLine(FILE, 15),
+        stepOver(),
+        checkLine(FILE, 23),
+        stepOver(),
+        checkLine(FILE, 24),
+        stepOver(),
+        checkLine(FILE, 25),
+        stepOver(),
+        checkLine(FILE, 30), // return in callFinallyBlock
+        run(),
+        checkLine(FILE, 13),
+        stepOver(),
+        checkLine(FILE, 15),
         stepOver(),
         checkLine(FILE, 16),
         stepOver(),
-        checkLine(FILE, 20),
+        checkLine(FILE, 18), // catch AE
         stepOver(),
-        checkLine(FILE, 21),
+        checkLine(FILE, 19),
         stepOver(),
-        checkLine(FILE, 22),
+        checkLine(FILE, 23),
         stepOver(),
-        checkLine(FILE, 27), // return in callFinallyBlock
+        checkLine(FILE, 24),
+        stepOver(),
+        checkLine(FILE, 25),
+        stepOver(),
+        checkLine(FILE, 30), // return in callFinallyBlock
         run(),
-        checkLine(FILE, 10),
-        stepOver(),
-        checkLine(FILE, 12),
-        stepOver(),
         checkLine(FILE, 13),
         stepOver(),
-        checkLine(FILE, 17), // catch RE
+        checkLine(FILE, 15),
         stepOver(),
-        checkLine(FILE, 18),
+        checkLine(FILE, 16),
         stepOver(),
-        checkLine(FILE, 20),
+        checkLine(FILE, 20), // catch RE
         stepOver(),
         checkLine(FILE, 21),
         stepOver(),
-        checkLine(FILE, 22),
+        checkLine(FILE, 23),
         stepOver(),
-        checkLine(FILE, 27), // return in callFinallyBlock
+        checkLine(FILE, 24),
+        stepOver(),
+        checkLine(FILE, 25),
+        stepOver(),
+        checkLine(FILE, 30), // return in callFinallyBlock
         run(),
-        checkLine(FILE, 10),
+        checkLine(FILE, 13),
         stepOver(),
-        checkLine(FILE, 12),
+        checkLine(FILE, 15),
         stepOver(),
-        checkLine(FILE, 13), // throw without catch
+        checkLine(FILE, 16), // throw without catch
         stepOver(),
-        checkLine(FILE, 20), // finally
+        checkLine(FILE, 23), // finally
         // Don't single step here as some Java compilers generate line entry 19 and some don't.
-        breakpoint(CLASS, "callFinallyBlock", 28),
+        breakpoint(CLASS, "callFinallyBlock", 31),
         run(),
-        checkLine(FILE, 28), // catch in callFinallyBlock
+        checkLine(FILE, 31), // catch in callFinallyBlock
         run());
   }
 }

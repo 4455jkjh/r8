@@ -98,9 +98,7 @@ public abstract class MethodsTestBase extends TestBase {
       throws Throwable {
     runTest(
         ImmutableList.of(
-            keepRules,
-            keepMainProguardConfiguration(getMainClass()),
-            "-dontobfuscate"),
+            keepRules, keepMainProguardConfiguration(getMainClass()), "-dontobfuscate"),
         inspector,
         expected);
   }

@@ -151,8 +151,10 @@ public class SingleCallerInliner {
                       appView.apiLevelCompute().computeInitialMinApiLevel(appView.options()));
             }
             IRCode code = method.buildIR(appView, MethodConversionOptions.forLirPhase(appView));
-            inliner.performInlining(
-                method, code, getSimpleFeedback(), methodProcessor, Timing.empty());
+            if (!inliner.performInlining(
+                method, code, getSimpleFeedback(), methodProcessor, Timing.empty())) {
+              return;
+            }
             LirCode<Integer> lirCode =
                 new IRToLirFinalizer(appView)
                     .finalizeCode(code, BytecodeMetadataProvider.empty(), Timing.empty());

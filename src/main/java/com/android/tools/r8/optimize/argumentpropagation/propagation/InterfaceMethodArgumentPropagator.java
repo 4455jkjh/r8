@@ -51,8 +51,15 @@ public class InterfaceMethodArgumentPropagator extends MethodArgumentPropagator 
   public InterfaceMethodArgumentPropagator(
       AppView<AppInfoWithLiveness> appView,
       ImmediateProgramSubtypingInfo immediateSubtypingInfo,
-      MethodStateCollectionByReference methodStates,
       Consumer<DexMethodSignature> interfaceDispatchOutsideProgram) {
+    this(appView, immediateSubtypingInfo, interfaceDispatchOutsideProgram, null);
+  }
+
+  public InterfaceMethodArgumentPropagator(
+      AppView<AppInfoWithLiveness> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo,
+      Consumer<DexMethodSignature> interfaceDispatchOutsideProgram,
+      MethodStateCollectionByReference methodStates) {
     super(appView, immediateSubtypingInfo, methodStates);
     this.appViewWithLiveness = appView;
     this.interfaceDispatchOutsideProgram = interfaceDispatchOutsideProgram;
@@ -106,7 +113,8 @@ public class InterfaceMethodArgumentPropagator extends MethodArgumentPropagator 
     // Add any argument information for virtual methods on the current interface to the state.
     interfaceDefinition.forEachProgramVirtualMethod(
         method -> {
-          MethodState methodState = methodStates.get(method);
+          MethodState methodState =
+              methodStates != null ? methodStates.get(method) : MethodState.unknown();
           if (methodState.isBottom()) {
             return;
           }
@@ -150,6 +158,9 @@ public class InterfaceMethodArgumentPropagator extends MethodArgumentPropagator 
                   assert resolutionResult.isSingleResolution();
                   if (!resolutionResult.getResolutionPair().isProgramMethod()) {
                     interfaceDispatchOutsideProgram.accept(interfaceMethod);
+                    return;
+                  }
+                  if (methodStates == null) {
                     return;
                   }
 

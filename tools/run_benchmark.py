@@ -286,6 +286,7 @@ def run(options, r8jar, testjars):
         f'-DTEST_DEP_COMPOSE_SAMPLES_OWL={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/owl',
         f'-DTEST_DEP_COMPOSE_SAMPLES_REPLY={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/reply',
         f'-DTEST_DEP_DESUGAR_LIBRARY_RELEASE_2_0_3={utils.THIRD_PARTY}/openjdk/desugar_jdk_libs_releases/2.0.3',
+        f'-DTEST_DEP_DEX2OAT_36_0={utils.THIRD_PARTY}/dex2oat/36.0',
         f'-DTEST_DEP_FEEDER={utils.OPENSOURCE_DUMPS_DIR}/android/feeder',
         f'-DTEST_DEP_FOSSIFY_FILE_MANAGER={utils.OPENSOURCE_DUMPS_DIR}/android/fossify-filemanager',
         f'-DTEST_DEP_JAVA_8_RUNTIME={utils.THIRD_PARTY}/openjdk/openjdk-rt-1.8',
@@ -300,6 +301,7 @@ def run(options, r8jar, testjars):
         f'-DTEST_DEP_TIVI={utils.OPENSOURCE_DUMPS_DIR}/tivi',
         f'-DTEST_DEP_TUSKY={utils.OPENSOURCE_DUMPS_DIR}/android/tusky',
         f'-DTEST_DEP_YOUTUBE_21_40={utils.THIRD_PARTY}/youtube/youtube.android_21.40',
+        f'-DTEST_DEP_YOUTUBE_21_40_D8_MERGE={utils.THIRD_PARTY}/youtube/youtube.android_21.40_d8_merge',
     ])
     if options.iterations is not None:
         if options.iterations == 0:

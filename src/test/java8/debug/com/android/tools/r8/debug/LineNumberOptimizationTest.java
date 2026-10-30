@@ -21,7 +21,7 @@ import org.junit.runners.Parameterized;
 public class LineNumberOptimizationTest extends DebugTestBase {
 
   private static final int[] ORIGINAL_LINE_NUMBERS_DEBUG = {
-    22, 9, 10, 30, 31, 11, 23, 14, 15, 24, 18, 19
+    25, 12, 13, 33, 34, 14, 26, 17, 18, 27, 21, 22
   };
 
   private static final String CLASS1 = typeName(LineNumberOptimization1.class);

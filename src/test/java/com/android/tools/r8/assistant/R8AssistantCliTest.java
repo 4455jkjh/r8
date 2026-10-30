@@ -159,6 +159,81 @@ public class R8AssistantCliTest extends TestBase {
   }
 
   @Test
+  public void testSuggestDiffAndQueryOnJar() throws Exception {
+    Path log = temp.newFile("log.jsonl").toPath();
+    FileUtils.writeTextFile(
+        log,
+        "{\"event\":\"CLASS_FOR_NAME\",\"id\":1,"
+            + "\"stack\":[\"com.example.App.run(App.java:10)\"],"
+            + "\"args\":[\"com.example.Plugin\",\"true\",\"dalvik.system.PathClassLoader\"]}",
+        "{\"returned\":1,\"result\":\"com.example.Plugin\"}",
+        "{\"event\":\"CLASS_GET_FIELD\",\"id\":2,"
+            + "\"stack\":[\"com.example.App.run(App.java:11)\"],"
+            + "\"args\":[\"java.lang.String\",\"com.example.User\",\"name\"]}",
+        "{\"returned\":2,\"result\":\"java.lang.String name\"}");
+
+    ProcessResult suggestResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."),
+            ToolHelper.R8_ASSISTANT_LIB_JAR,
+            Arrays.asList("suggest", "--log", log.toString()));
+    assertEquals(suggestResult.toString(), 0, suggestResult.exitCode);
+    assertEquals("", suggestResult.stderr);
+    assertThat(suggestResult.stdout, containsString("-keep class com.example.Plugin"));
+    assertThat(suggestResult.stdout, containsString("-keepclassmembers class com.example.User"));
+
+    Path rules = temp.newFile("rules.pro").toPath();
+    FileUtils.writeTextFile(
+        rules,
+        "-keep class com.example.**",
+        "-keepclassmembers class com.example.** {",
+        "    !private java.lang.String name;",
+        "}");
+    Path proposed = temp.newFile("proposed.pro").toPath();
+    ProcessResult diffResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."),
+            ToolHelper.R8_ASSISTANT_LIB_JAR,
+            Arrays.asList(
+                "diff",
+                "--log",
+                log.toString(),
+                "--rules",
+                rules.toString(),
+                "--output",
+                proposed.toString()));
+    assertEquals(diffResult.toString(), 0, diffResult.exitCode);
+    assertEquals("", diffResult.stderr);
+    String proposedContent = FileUtils.readTextFile(proposed, StandardCharsets.UTF_8);
+    assertThat(proposedContent, containsString("-keep class com.example.Plugin"));
+    assertThat(
+        proposedContent,
+        containsString(
+            "-keepclassmembers class com.example.User {\n    !private java.lang.String name;\n}"));
+
+    ProcessResult rerunDiffResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."),
+            ToolHelper.R8_ASSISTANT_LIB_JAR,
+            Arrays.asList("diff", "--log", log.toString(), "--rules", proposed.toString()));
+    assertEquals(rerunDiffResult.toString(), 0, rerunDiffResult.exitCode);
+    assertEquals("", rerunDiffResult.stderr);
+    assertThat(rerunDiffResult.stdout, containsString("Rules: 2 (2 justified)"));
+
+    ProcessResult queryResult =
+        ToolHelper.forkJavaWithJar(
+            Paths.get("."),
+            ToolHelper.R8_ASSISTANT_LIB_JAR,
+            Arrays.asList("query", "--log", log.toString(), "--class", "com.example.User"));
+    assertEquals(queryResult.toString(), 0, queryResult.exitCode);
+    assertEquals("", queryResult.stderr);
+    assertThat(
+        queryResult.stdout,
+        containsString("[returned] Class.getField com.example.User.name (CLASS_GET_FIELD)"));
+    assertThat(queryResult.stdout, containsString("1 of 2 events match."));
+  }
+
+  @Test
   public void testRuntimeDexOnlyContainsRuntimeClasses() throws Exception {
     // The runtime is injected into instrumented apps, and ReflectiveInstrumentation only skips
     // classes in the runtime package. A class outside it could collide with app classes and would

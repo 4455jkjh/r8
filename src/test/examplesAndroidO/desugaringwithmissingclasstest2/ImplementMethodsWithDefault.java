@@ -6,5 +6,4 @@ package desugaringwithmissingclasstest2;
 import desugaringwithmissingclasslib2.B;
 import desugaringwithmissingclasslib3.C;
 
-public class ImplementMethodsWithDefault extends C implements B {
-}
+public class ImplementMethodsWithDefault extends C implements B {}

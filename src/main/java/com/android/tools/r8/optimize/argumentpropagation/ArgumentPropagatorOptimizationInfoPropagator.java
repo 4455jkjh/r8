@@ -119,9 +119,9 @@ public class ArgumentPropagatorOptimizationInfoPropagator {
     new InterfaceMethodArgumentPropagator(
             appView,
             immediateSubtypingInfo,
-            methodStates,
             signature ->
-                interfaceDispatchOutsideProgram.accept(stronglyConnectedComponent, signature))
+                interfaceDispatchOutsideProgram.accept(stronglyConnectedComponent, signature),
+            methodStates)
         .run(stronglyConnectedComponent);
     timing.end();
 

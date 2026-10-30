@@ -6,6 +6,7 @@ package com.android.tools.r8.graph.genericsignature;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
@@ -183,6 +184,65 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
         SignatureEvaluationResult.INVALID_SUPER_TYPE);
   }
 
+  @Test
+  public void testInvalidEnclosingMethodSignature() throws Exception {
+    Class<?> enclosedClass = Class.forName(EnclosingClass.class.getTypeName() + "$1");
+    for (boolean evaluateEnclosingFirst : new boolean[] {true, false}) {
+      AppView<AppInfoWithLiveness> appView =
+          computeAppViewWithLiveness(
+              buildClasses(Base.class, enclosedClass)
+                  .addClassProgramData(
+                      transformer(EnclosingClass.class)
+                          .setGenericSignature(
+                              MethodPredicate.onName("enclosingMethod"),
+                              existing ->
+                                  existing.replace(
+                                      binaryName(Base.class), binaryName(enclosedClass)))
+                          .transform())
+                  .addLibraryFile(TestDeps.getJava8RuntimeJar())
+                  .build(),
+              Timing.empty(),
+              factory ->
+                  ProguardConfiguration.builder(
+                          factory, new Reporter(new TestDiagnosticMessagesImpl()))
+                      .addKeepAttributePatterns(ImmutableList.of(ProguardKeepAttributes.SIGNATURE))
+                      .buildForTesting());
+      GenericSignatureContextBuilder contextBuilder =
+          GenericSignatureContextBuilder.create(appView);
+      GenericSignatureCorrectnessHelper check =
+          GenericSignatureCorrectnessHelper.createForInitialCheck(appView, contextBuilder);
+      DexProgramClass enclosingProgramClass =
+          appView
+              .definitionFor(
+                  appView
+                      .dexItemFactory()
+                      .createType(
+                          DescriptorUtils.javaTypeToDescriptor(EnclosingClass.class.getTypeName())))
+              .asProgramClass();
+      DexProgramClass enclosedProgramClass =
+          appView
+              .definitionFor(
+                  appView
+                      .dexItemFactory()
+                      .createType(
+                          DescriptorUtils.javaTypeToDescriptor(enclosedClass.getTypeName())))
+              .asProgramClass();
+      assertNotNull(enclosingProgramClass);
+      assertNotNull(enclosedProgramClass);
+      List<DexProgramClass> classes =
+          evaluateEnclosingFirst
+              ? ImmutableList.of(enclosingProgramClass, enclosedProgramClass)
+              : ImmutableList.of(enclosedProgramClass, enclosingProgramClass);
+      assertEquals(SignatureEvaluationResult.INVALID_APPLICATION_COUNT, check.run(classes));
+      assertTrue(
+          enclosingProgramClass
+              .lookupDirectMethod(method -> method.getName().isEqualTo("enclosingMethod"))
+              .getGenericSignature()
+              .hasNoSignature());
+      assertTrue(enclosedProgramClass.getClassSignature().hasSignature());
+    }
+  }
+
   private void runTest(
       List<Class<?>> classes,
       List<byte[]> transformations,
@@ -259,4 +319,11 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
   public static class OtherBase<T> {}
 
   public abstract static class ClassWithInvalidSuperType<T> extends Base<T> /* OtherBase<T> */ {}
+
+  public static class EnclosingClass {
+
+    public static <T> Base<T> enclosingMethod() {
+      return new Base<T>() {};
+    }
+  }
 }

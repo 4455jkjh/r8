@@ -22,8 +22,8 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.retrace.RetraceFrameElement;
 import com.android.tools.r8.retrace.RetraceFrameResult;
 import com.android.tools.r8.retrace.RetracedMethodReference;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.Visibility;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -197,7 +197,9 @@ public class Matchers {
       @Override
       public void describeMismatchSafely(final Subject subject, Description description) {
         description
-            .appendText(type(subject) + " ").appendValue(name(subject)).appendText(" was not");
+            .appendText(type(subject) + " ")
+            .appendValue(name(subject))
+            .appendText(" was not");
       }
     };
   }
@@ -216,8 +218,7 @@ public class Matchers {
 
       @Override
       public void describeMismatchSafely(final Subject subject, Description description) {
-        description
-            .appendText(type(subject) + " ").appendValue(name(subject)).appendText(" was");
+        description.appendText(type(subject) + " ").appendValue(name(subject)).appendText(" was");
       }
     };
   }
@@ -497,10 +498,7 @@ public class Matchers {
       @Override
       public void describeMismatchSafely(
           final KmFunctionSubject kmFunction, Description description) {
-        description
-            .appendText("kmFunction ")
-            .appendValue(kmFunction)
-            .appendText(" was not");
+        description.appendText("kmFunction ").appendValue(kmFunction).appendText(" was not");
       }
     };
   }
@@ -520,10 +518,7 @@ public class Matchers {
       @Override
       public void describeMismatchSafely(
           final KmPropertySubject kmProperty, Description description) {
-        description
-            .appendText("kmProperty ")
-            .appendValue(kmProperty)
-            .appendText(" was not");
+        description.appendText("kmProperty ").appendValue(kmProperty).appendText(" was not");
       }
     };
   }

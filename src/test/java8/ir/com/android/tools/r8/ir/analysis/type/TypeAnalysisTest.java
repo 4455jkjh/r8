@@ -11,6 +11,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestDeps;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
@@ -32,8 +33,10 @@ import com.android.tools.r8.smali.SmaliTestBase;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ObjectArrays;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,13 +61,15 @@ public class TypeAnalysisTest extends SmaliTestBase {
   private final String smaliFileName;
   private final BiConsumer<AppView<?>, CodeInspector> inspection;
 
-  public TypeAnalysisTest(String test, BiConsumer<AppView<?>, CodeInspector> inspection) {
+  public TypeAnalysisTest(
+      TestParameters parameters, String test, BiConsumer<AppView<?>, CodeInspector> inspection) {
+    parameters.assertNoneRuntime();
     dirName = test.substring(0, test.lastIndexOf('/'));
     smaliFileName = test.substring(test.lastIndexOf('/') + 1) + ".dex";
     this.inspection = inspection;
   }
 
-  @Parameters(name = "{0}")
+  @Parameters(name = "{0}, {1}")
   public static Collection<Object[]> data() {
     List<String> tests =
         Arrays.asList(
@@ -92,9 +97,12 @@ public class TypeAnalysisTest extends SmaliTestBase {
     List<Object[]> testCases = new ArrayList<>();
     for (String test : tests) {
       BiConsumer<AppView<?>, CodeInspector> inspection = inspections.get(test);
-      testCases.add(new Object[]{test, inspection});
+      testCases.add(new Object[] {test, inspection});
     }
-    return testCases;
+    return ListUtils.flatMap(
+        getTestParameters().withNoneRuntime().build(),
+        parameters ->
+            ListUtils.map(testCases, testCase -> ObjectArrays.concat(parameters, testCase)));
   }
 
   @Test

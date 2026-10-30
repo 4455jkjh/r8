@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.ifrule;
 
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.forceproguardcompatibility.ProguardCompatibilityTestBase;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -37,13 +38,16 @@ public class IfOnFieldTest extends ProguardCompatibilityTestBase {
 
   private final Shrinker shrinker;
 
-  public IfOnFieldTest(Shrinker shrinker) {
+  public IfOnFieldTest(TestParameters parameters, Shrinker shrinker) {
+    parameters.assertNoneRuntime();
     this.shrinker = shrinker;
   }
 
-  @Parameters(name = "shrinker: {0}")
-  public static Collection<Object> data() {
-    return ImmutableList.of(Shrinker.R8, Shrinker.R8_CF);
+  @Parameters(name = "{0}, shrinker: {1}")
+  public static Collection<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        ImmutableList.of(Shrinker.R8, Shrinker.R8_CF));
   }
 
   private String adaptConfiguration(String proguardConfig) {

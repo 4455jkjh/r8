@@ -144,6 +144,12 @@ public class EnqueuerReflectiveIdentificationEventConsumer
               enqueuer.markVirtualMethodAsReachable(
                   virtualMethod.getReference(), true, context, reason);
             });
+      } else {
+        clazz.forEachProgramVirtualMethod(
+            virtualMethod ->
+                enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
+                    virtualMethod,
+                    KeepMethodInfo.newEmptyJoiner().allowCodeReplacement().disallowOptimization()));
       }
 
       // Repeat for all super interfaces.

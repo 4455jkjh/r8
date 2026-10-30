@@ -54,8 +54,12 @@ public abstract class TryWithResources {
     @Override
     public void close() throws IOException {
       Class<? extends Resource> cls = this.getClass();
-      System.out.println("Closing " + tag + " (" +
-          cls.getName().substring(TryWithResources.class.getName().length() + 1) + ")");
+      System.out.println(
+          "Closing "
+              + tag
+              + " ("
+              + cls.getName().substring(TryWithResources.class.getName().length() + 1)
+              + ")");
     }
   }
 
@@ -74,7 +78,7 @@ public abstract class TryWithResources {
 
     private void test(int level) throws Throwable {
       try (RegularResource a = new RegularResource("a" + level);
-           RegularResource b = new RegularResource("b" + level)) {
+          RegularResource b = new RegularResource("b" + level)) {
         if (level > 0) {
           try {
             test(level - 1);
@@ -108,7 +112,7 @@ public abstract class TryWithResources {
 
     private void test(int level) throws Throwable {
       try (FailingResource a = new FailingResource("a" + level);
-           FailingResource b = new FailingResource("b" + level)) {
+          FailingResource b = new FailingResource("b" + level)) {
         if (level > 0) {
           try {
             test(level - 1);
@@ -142,7 +146,7 @@ public abstract class TryWithResources {
 
     private void test(int level) throws RuntimeException {
       try (RegularResource a = new RegularResource("a" + level);
-           RegularResource b = new RegularResource("b" + level)) {
+          RegularResource b = new RegularResource("b" + level)) {
         if (level > 0) {
           try {
             test(level - 1);

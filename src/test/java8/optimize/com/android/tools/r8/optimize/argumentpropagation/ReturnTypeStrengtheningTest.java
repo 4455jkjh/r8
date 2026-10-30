@@ -60,13 +60,12 @@ public class ReturnTypeStrengtheningTest extends TestBase {
                   aClassSubject.getFinalName(),
                   getMethodSubject.getProgramMethod().getReturnType().getTypeName());
 
-              // Method consume(I) should be rewritten to consume(A).
+              // Method consume(I) should be rewritten to consume(A), which allows inlining A.m(),
+              // after which the unused parameter is removed.
               MethodSubject testBMethodSubject =
                   mainClassSubject.uniqueMethodWithOriginalName("consume");
               assertThat(testBMethodSubject, isPresent());
-              assertEquals(
-                  aClassSubject.getFinalName(),
-                  testBMethodSubject.getProgramMethod().getParameter(0).getTypeName());
+              assertEquals(0, testBMethodSubject.getParameters().size());
 
               // There should be no casts in the application.
               for (FoundClassSubject classSubject : inspector.allClasses()) {

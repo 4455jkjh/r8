@@ -5,8 +5,7 @@ package lambdadesugaring.other;
 
 public class OtherRefs {
   public static class PublicInit {
-    public PublicInit() {
-    }
+    public PublicInit() {}
 
     @Override
     public String toString() {

@@ -5,16 +5,12 @@ package incremental;
 
 public class IncrementallyCompiled {
   class A implements B {
-    class AB implements B.BA {
-    }
+    class AB implements B.BA {}
   }
 
   interface B {
-    interface BA {
-    }
+    interface BA {}
   }
 
-  static class C {
-  }
+  static class C {}
 }
-

@@ -9,6 +9,9 @@ import com.android.tools.r8.apimodel.jar.ApiClassInfo;
 import com.android.tools.r8.apimodel.jar.ApiJarInfo;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -23,25 +26,23 @@ public class ParsedApiClassTrimming {
     }
   }
 
-  public interface Trimmer<E extends Throwable> {
-    SkipAnswer skipClass(ClassReference clazz, ApiRange range) throws E;
+  public interface Trimmer<D, E extends Throwable> {
+    SkipAnswer skipClass(ClassReference clazz, D range) throws E;
 
-    SkipAnswer skipExtends(ClassReference clazz, ClassReference supertype, ApiRange range) throws E;
+    SkipAnswer skipExtends(ClassReference clazz, ClassReference supertype, D range) throws E;
 
-    SkipAnswer skipImplements(ClassReference clazz, ClassReference supertype, ApiRange range)
-        throws E;
+    SkipAnswer skipImplements(ClassReference clazz, ClassReference supertype, D range) throws E;
 
-    SkipAnswer skipMethod(ClassReference clazz, MethodReference method, ApiRange range) throws E;
+    SkipAnswer skipMethod(ClassReference clazz, MethodReference method, D range) throws E;
 
-    SkipAnswer skipField(ClassReference clazz, FieldTypelessReference field, ApiRange range)
-        throws E;
+    SkipAnswer skipField(ClassReference clazz, FieldTypelessReference field, D range) throws E;
 
     void done() throws E;
   }
 
-  public static <E extends Throwable> Collection<ParsedApiClass<ApiRange>> trim(
-      Collection<ParsedApiClass<ApiRange>> classes, Trimmer<E> trimmer) throws E {
-    var result = new ArrayList<ParsedApiClass<ApiRange>>();
+  public static <D, E extends Throwable> Collection<ParsedApiClass<D>> trim(
+      Collection<ParsedApiClass<D>> classes, Trimmer<D, E> trimmer) throws E {
+    var result = new ArrayList<ParsedApiClass<D>>();
     for (var clazz : classes) {
       if (trimmer.skipClass(clazz.getClassReference(), clazz.getData()) == SkipAnswer.KEEP) {
         result.add(trim(clazz, trimmer));
@@ -51,8 +52,8 @@ public class ParsedApiClassTrimming {
     return result;
   }
 
-  private static <E extends Throwable> ParsedApiClass<ApiRange> trim(
-      ParsedApiClass<ApiRange> clazz, Trimmer<E> trimmer) throws E {
+  private static <D, E extends Throwable> ParsedApiClass<D> trim(
+      ParsedApiClass<D> clazz, Trimmer<D, E> trimmer) throws E {
     var holdingClass = clazz.getClassReference();
     var trimmedClass = new ParsedApiClass<>(holdingClass, clazz.getData());
     clazz.forEachSupertypeThrowing(
@@ -82,33 +83,36 @@ public class ParsedApiClassTrimming {
     return trimmedClass;
   }
 
-  public static class RemovedTrimmer implements Trimmer<RuntimeException> {
+  public static class RemovedTrimmer<T extends Ordered<T>>
+      implements Trimmer<SemiInfiniteRange<T>, RuntimeException> {
 
     @Override
-    public SkipAnswer skipClass(ClassReference clazz, ApiRange range) {
-      return range.isRemoved() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+    public SkipAnswer skipClass(ClassReference clazz, SemiInfiniteRange<T> range) {
+      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
     }
 
     @Override
-    public SkipAnswer skipExtends(ClassReference clazz, ClassReference supertype, ApiRange range) {
-      return range.isRemoved() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+    public SkipAnswer skipExtends(
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<T> range) {
+      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
     }
 
     @Override
     public SkipAnswer skipImplements(
-        ClassReference clazz, ClassReference supertype, ApiRange range) {
-      return range.isRemoved() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<T> range) {
+      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
     }
 
     @Override
-    public SkipAnswer skipMethod(ClassReference clazz, MethodReference method, ApiRange range) {
-      return range.isRemoved() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+    public SkipAnswer skipMethod(
+        ClassReference clazz, MethodReference method, SemiInfiniteRange<T> range) {
+      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
     }
 
     @Override
     public SkipAnswer skipField(
-        ClassReference clazz, FieldTypelessReference field, ApiRange range) {
-      return range.isRemoved() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+        ClassReference clazz, FieldTypelessReference field, SemiInfiniteRange<T> range) {
+      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
     }
 
     @Override
@@ -118,7 +122,7 @@ public class ParsedApiClassTrimming {
   }
 
   public static class JarTrimmer
-      implements ParsedApiClassTrimming.Trimmer<ApiDatabaseGeneratorException> {
+      implements Trimmer<SemiInfiniteRange<AndroidApiLevel>, ApiDatabaseGeneratorException> {
     private final ApiJarInfo jarInfo;
 
     public JarTrimmer(ApiJarInfo jarInfo) {
@@ -130,12 +134,13 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipClass(ClassReference clazz, ApiRange range) {
+    public SkipAnswer skipClass(ClassReference clazz, SemiInfiniteRange<AndroidApiLevel> range) {
       return SkipAnswer.skipIf(!jarInfo.hasClass(clazz));
     }
 
     @Override
-    public SkipAnswer skipExtends(ClassReference clazz, ClassReference supertype, ApiRange range) {
+    public SkipAnswer skipExtends(
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<AndroidApiLevel> range) {
       ApiClassInfo info = jarInfo.getClassInfo(clazz);
       if (info == null) {
         return SkipAnswer.SKIP;
@@ -148,7 +153,7 @@ public class ParsedApiClassTrimming {
 
     @Override
     public SkipAnswer skipImplements(
-        ClassReference clazz, ClassReference supertype, ApiRange range) {
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<AndroidApiLevel> range) {
       ApiClassInfo info = jarInfo.getClassInfo(clazz);
       if (info == null) {
         return SkipAnswer.SKIP;
@@ -160,7 +165,8 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipMethod(ClassReference clazz, MethodReference method, ApiRange range)
+    public SkipAnswer skipMethod(
+        ClassReference clazz, MethodReference method, SemiInfiniteRange<AndroidApiLevel> range)
         throws ApiDatabaseGeneratorException {
       return SkipAnswer.skipIf(
           !jarInfo.hasMethod(
@@ -168,7 +174,10 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipField(ClassReference clazz, FieldTypelessReference field, ApiRange range)
+    public SkipAnswer skipField(
+        ClassReference clazz,
+        FieldTypelessReference field,
+        SemiInfiniteRange<AndroidApiLevel> range)
         throws ApiDatabaseGeneratorException {
       return SkipAnswer.skipIf(!jarInfo.hasField(clazz.getBinaryName(), field.getFieldName()));
     }
@@ -179,43 +188,39 @@ public class ParsedApiClassTrimming {
     }
   }
 
-  public interface TrimmerListener {
-    void skipClass(ClassReference clazz, ApiRange range, SkipAnswer answer);
+  public interface TrimmerListener<D> {
+    void skipClass(ClassReference clazz, D range, SkipAnswer answer);
 
-    void skipExtends(
-        ClassReference clazz, ClassReference supertype, ApiRange range, SkipAnswer answer);
+    void skipExtends(ClassReference clazz, ClassReference supertype, D range, SkipAnswer answer);
 
-    void skipImplements(
-        ClassReference clazz, ClassReference supertype, ApiRange range, SkipAnswer answer);
+    void skipImplements(ClassReference clazz, ClassReference supertype, D range, SkipAnswer answer);
 
-    void skipMethod(
-        ClassReference clazz, MethodReference method, ApiRange range, SkipAnswer answer);
+    void skipMethod(ClassReference clazz, MethodReference method, D range, SkipAnswer answer);
 
-    void skipField(
-        ClassReference clazz, FieldTypelessReference field, ApiRange range, SkipAnswer answer);
+    void skipField(ClassReference clazz, FieldTypelessReference field, D range, SkipAnswer answer);
 
     void done();
   }
 
-  public static class ListeningDecorator<E extends Throwable> implements Trimmer<E> {
+  public static class ListeningDecorator<D, E extends Throwable> implements Trimmer<D, E> {
 
-    private final Trimmer<E> trimmer;
-    private final TrimmerListener listener;
+    private final Trimmer<D, E> trimmer;
+    private final TrimmerListener<D> listener;
 
-    public ListeningDecorator(Trimmer<E> trimmer, TrimmerListener listener) {
+    public ListeningDecorator(Trimmer<D, E> trimmer, TrimmerListener<D> listener) {
       this.trimmer = trimmer;
       this.listener = listener;
     }
 
     @Override
-    public SkipAnswer skipClass(ClassReference clazz, ApiRange range) throws E {
+    public SkipAnswer skipClass(ClassReference clazz, D range) throws E {
       var result = trimmer.skipClass(clazz, range);
       listener.skipClass(clazz, range, result);
       return result;
     }
 
     @Override
-    public SkipAnswer skipExtends(ClassReference clazz, ClassReference supertype, ApiRange range)
+    public SkipAnswer skipExtends(ClassReference clazz, ClassReference supertype, D range)
         throws E {
       var result = trimmer.skipExtends(clazz, supertype, range);
       listener.skipExtends(clazz, supertype, range, result);
@@ -223,7 +228,7 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipImplements(ClassReference clazz, ClassReference supertype, ApiRange range)
+    public SkipAnswer skipImplements(ClassReference clazz, ClassReference supertype, D range)
         throws E {
       var result = trimmer.skipImplements(clazz, supertype, range);
       listener.skipImplements(clazz, supertype, range, result);
@@ -231,15 +236,14 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipMethod(ClassReference clazz, MethodReference method, ApiRange range)
-        throws E {
+    public SkipAnswer skipMethod(ClassReference clazz, MethodReference method, D range) throws E {
       var result = trimmer.skipMethod(clazz, method, range);
       listener.skipMethod(clazz, method, range, result);
       return result;
     }
 
     @Override
-    public SkipAnswer skipField(ClassReference clazz, FieldTypelessReference field, ApiRange range)
+    public SkipAnswer skipField(ClassReference clazz, FieldTypelessReference field, D range)
         throws E {
       var result = trimmer.skipField(clazz, field, range);
       listener.skipField(clazz, field, range, result);

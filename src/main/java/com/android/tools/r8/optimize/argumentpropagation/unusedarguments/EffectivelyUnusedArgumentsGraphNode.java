@@ -20,6 +20,7 @@ class EffectivelyUnusedArgumentsGraphNode {
   private final Set<EffectivelyUnusedArgumentsGraphNode> predecessors = Sets.newIdentityHashSet();
   private final Set<EffectivelyUnusedArgumentsGraphNode> successors = Sets.newIdentityHashSet();
 
+  private boolean nullable = true;
   private boolean unoptimizable;
 
   EffectivelyUnusedArgumentsGraphNode(ProgramMethod method, int argumentIndex) {
@@ -73,12 +74,16 @@ class EffectivelyUnusedArgumentsGraphNode {
   }
 
   boolean isNullable() {
-    if (method.getDefinition().isInstance() && argumentIndex == 0) {
+    if (!nullable) {
       return false;
     }
     DynamicType dynamicType =
         method.getOptimizationInfo().getArgumentInfos().getDynamicType(argumentIndex);
     return dynamicType.getNullability().isNullable();
+  }
+
+  void setNotNull() {
+    nullable = false;
   }
 
   boolean isUnoptimizable() {

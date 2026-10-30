@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -42,6 +43,7 @@ public class EffectivelyFinalFieldCanonicalizationTest extends TestBase {
         .addKeepMainRule(TestClass.class)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
         .setMinApi(parameters)
         .compile()
         .inspect(this::inspect)
@@ -79,6 +81,7 @@ public class EffectivelyFinalFieldCanonicalizationTest extends TestBase {
     }
 
     @NeverInline
+    @NoMethodStaticizing
     void print(String message) {
       System.out.println(tag + " " + message);
     }

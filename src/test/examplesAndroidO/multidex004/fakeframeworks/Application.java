@@ -6,8 +6,5 @@ package multidex004.fakeframeworks;
 
 public class Application extends Context {
 
-  protected void attachBaseContext(Context context) {
-
-  }
-
+  protected void attachBaseContext(Context context) {}
 }

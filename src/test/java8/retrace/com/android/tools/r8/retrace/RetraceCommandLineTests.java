@@ -13,6 +13,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.Version;
@@ -52,17 +53,20 @@ public class RetraceCommandLineTests extends TestBase {
   private static final String WAITING_MESSAGE =
       "Waiting for stack-trace input..." + StringUtils.LINE_SEPARATOR;
 
-
+  private final TestParameters parameters;
   private final boolean testExternal;
   private final boolean testPartition;
 
-  @Parameters(name = "external: {0}, partition: {1}")
+  @Parameters(name = "{0}, partition: {1}")
   public static List<Object[]> data() {
-    return buildParameters(BooleanUtils.values(), BooleanUtils.values());
+    return buildParameters(
+        getTestParameters().withNoneRuntime().withDefaultCfRuntime().build(),
+        BooleanUtils.values());
   }
 
-  public RetraceCommandLineTests(boolean testExternal, boolean testPartition) {
-    this.testExternal = testExternal;
+  public RetraceCommandLineTests(TestParameters parameters, boolean testPartition) {
+    this.parameters = parameters;
+    this.testExternal = parameters.isCfRuntime();
     this.testPartition = testPartition;
   }
 
@@ -362,7 +366,7 @@ public class RetraceCommandLineTests extends TestBase {
       assumeTrue(ToolHelper.isTestingR8Lib());
       assertTrue(Files.exists(ToolHelper.R8LIB_JAR));
       List<String> command = new ArrayList<>();
-      command.add(ToolHelper.getSystemJavaExecutable());
+      command.add(parameters.getRuntime().asCf().getJavaExecutable().toString());
       command.add("-ea");
       command.add("-cp");
       command.add(RetraceTests.getRetraceClasspath());

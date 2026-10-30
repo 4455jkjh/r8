@@ -14,7 +14,6 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneHashMap;
@@ -22,10 +21,13 @@ import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneMap
 import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyToOneMap;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 
 public class HorizontalMergeGroup extends MergeGroup implements Collection<DexProgramClass> {
@@ -57,6 +59,17 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
   public HorizontalMergeGroup(Iterable<DexProgramClass> classes) {
     this();
     Iterables.addAll(this.classes, classes);
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  public void acceptClassIds(ObjIntConsumer<DexProgramClass> consumer) {
+    int nextClassId = 0;
+    consumer.accept(target, nextClassId++);
+    for (DexProgramClass clazz : classes) {
+      if (clazz != target) {
+        consumer.accept(clazz, nextClassId++);
+      }
+    }
   }
 
   public void applyMetadataFrom(HorizontalMergeGroup group) {
@@ -147,11 +160,18 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
 
   public void selectInstanceFieldMap(AppView<? extends AppInfoWithClassHierarchy> appView) {
     assert hasTarget();
+    // Maps each instance field of the group to the field it is merged into. The target fields are
+    // mapped to themselves, and so are the source fields that have no matching field.
     MutableBidirectionalManyToOneMap<DexEncodedField, DexEncodedField> instanceFieldMap =
         BidirectionalManyToOneHashMap.newLinkedHashMap();
+    List<DexEncodedField> mergedFields = new ArrayList<>(target.instanceFields());
+    for (DexEncodedField targetField : mergedFields) {
+      instanceFieldMap.put(targetField, targetField);
+    }
     forEachSource(
         source ->
-            ClassInstanceFieldsMerger.mapFields(appView, source, target, instanceFieldMap::put));
+            ClassInstanceFieldsMerger.mapFields(
+                appView, source, mergedFields, instanceFieldMap::put));
     setInstanceFieldMap(instanceFieldMap);
   }
 
@@ -178,17 +198,6 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
 
   public DexProgramClass getTarget() {
     return target;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  public ProgramField getTargetInstanceField(ProgramField field) {
-    assert hasTarget();
-    assert hasInstanceFieldMap();
-    if (field.getHolder() == getTarget()) {
-      return field;
-    }
-    DexEncodedField targetField = getInstanceFieldMap().get(field.getDefinition());
-    return new ProgramField(getTarget(), targetField);
   }
 
   public void selectTarget(AppView<?> appView) {

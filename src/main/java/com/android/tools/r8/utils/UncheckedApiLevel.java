@@ -5,6 +5,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.structural.Ordered;
 
 public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
@@ -28,14 +29,57 @@ public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
   }
 
   public static UncheckedApiLevel parse(String apiLevel) {
+    return parse(
+        apiLevel,
+        message -> {
+          throw new IllegalArgumentException(message);
+        });
+  }
+
+  public static <E extends Throwable> UncheckedApiLevel parse(
+      String apiLevel, ThrowingConsumer<String, E> onError) throws E {
+    if (!apiLevel.matches("\\d+(\\.\\d+)?")) {
+      onError.accept(
+          "Invalid API version '" + apiLevel + "': must be of the form '<int>' or '<int>.<int>'");
+      return null;
+    }
     int dotPosition = apiLevel.indexOf('.');
+    Integer major;
+    Integer minor;
     if (dotPosition == -1) {
-      return new UncheckedApiLevel(Integer.parseInt(apiLevel), 0);
+      major = parseInt(apiLevel, onError);
+      if (major == null) {
+        return null;
+      }
+      minor = 0;
     } else {
-      String majorApiLevel = apiLevel.substring(0, dotPosition);
-      String minorApiLevel = apiLevel.substring(dotPosition + 1);
-      return new UncheckedApiLevel(
-          Integer.parseInt(majorApiLevel), Integer.parseInt(minorApiLevel));
+      major = parseInt(apiLevel.substring(0, dotPosition), onError);
+      if (major == null) {
+        return null;
+      }
+      minor = parseInt(apiLevel.substring(dotPosition + 1), onError);
+      if (minor == null) {
+        return null;
+      }
+    }
+    if (major <= 0) {
+      onError.accept("Invalid API version '" + apiLevel + "': major version must be positive");
+      return null;
+    }
+    if (minor < 0) {
+      onError.accept("Invalid API version '" + apiLevel + "': minor version must be non-negative");
+      return null;
+    }
+    return new UncheckedApiLevel(major, minor);
+  }
+
+  private static <E extends Throwable> Integer parseInt(
+      String value, ThrowingConsumer<String, E> onError) throws E {
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      onError.accept("Invalid API version '" + value + "': cannot be parsed as an integer");
+      return null;
     }
   }
 

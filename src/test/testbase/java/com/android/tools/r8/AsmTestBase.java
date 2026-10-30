@@ -34,11 +34,12 @@ public class AsmTestBase extends TestBase {
     AndroidApp app = buildAndroidApp(classes);
     Consumer<InternalOptions> setMinApiLevel = o -> o.setMinApiLevel(apiLevel);
     ProcessResult javaResult = runOnJavaRaw(main, Arrays.asList(classes), args);
-    Consumer<ArtCommandBuilder> cmdBuilder = builder -> {
-      for (String arg : args) {
-        builder.appendProgramArgument(arg);
-      }
-    };
+    Consumer<ArtCommandBuilder> cmdBuilder =
+        builder -> {
+          for (String arg : args) {
+            builder.appendProgramArgument(arg);
+          }
+        };
     ProcessResult d8Result = runOnArtRaw(compileWithD8(app, setMinApiLevel), main, cmdBuilder, vm);
     ProcessResult r8Result = runOnArtRaw(compileWithR8(app, setMinApiLevel), main, cmdBuilder, vm);
     ProcessResult r8ShakenResult =

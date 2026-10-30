@@ -520,7 +520,7 @@ public class IRConverter {
       // Mark abstract methods as processed as well.
       definition.markProcessed(ConstraintWithTarget.NEVER);
     }
-    return Timing.empty();
+    return timing;
   }
 
   private static void invertConditionalsForTesting(IRCode code) {
@@ -567,13 +567,13 @@ public class IRConverter {
 
     if (!needsIRConversion(method, conversionOptions) || options.skipIR) {
       feedback.markProcessed(method.getDefinition(), ConstraintWithTarget.NEVER);
-      return Timing.empty();
+      return timing;
     }
 
     IRCode code = method.buildIR(appView, conversionOptions);
     if (code == null) {
       feedback.markProcessed(method.getDefinition(), ConstraintWithTarget.NEVER);
-      return Timing.empty();
+      return timing;
     }
     return optimize(
         code, feedback, conversionOptions, methodProcessor, methodProcessingContext, timing);

@@ -1064,8 +1064,8 @@ public class DexParser<T extends DexClass> {
     int debugInfoOff = dexReader.getUint();
     int insnsSize = dexReader.getUint();
     short[] code = new short[insnsSize];
-    Try[] tries = new Try[triesSize];
-    TryHandler[] handlers = new TryHandler[0];
+    Try[] tries = triesSize == 0 ? Try.EMPTY_ARRAY : new Try[triesSize];
+    TryHandler[] handlers = TryHandler.EMPTY_ARRAY;
 
     if (insnsSize != 0) {
       for (int i = 0; i < insnsSize; i++) {

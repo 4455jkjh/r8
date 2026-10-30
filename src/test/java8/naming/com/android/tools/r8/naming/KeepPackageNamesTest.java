@@ -11,6 +11,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.naming.keeppackagenames.Top;
 import com.android.tools.r8.naming.keeppackagenames.sub.SubClass;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -68,14 +69,15 @@ public class KeepPackageNamesTest extends TestBase {
     }
   }
 
-  @Parameterized.Parameters(name = "{0}")
-  public static Object[] parameters() {
-    return TestConfig.values();
+  @Parameterized.Parameters(name = "{0}, {1}")
+  public static List<Object[]> parameters() {
+    return buildParameters(getTestParameters().withNoneRuntime().build(), TestConfig.values());
   }
 
   private final TestConfig config;
 
-  public KeepPackageNamesTest(TestConfig config) {
+  public KeepPackageNamesTest(TestParameters parameters, TestConfig config) {
+    parameters.assertNoneRuntime();
     this.config = config;
   }
 

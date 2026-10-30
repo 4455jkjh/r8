@@ -58,9 +58,8 @@ public class EquivalentConstructorsWithClassIdAndDifferentArgumentOrderMergingTe
             inspector -> {
               ClassSubject aClassSubject = inspector.clazz(A.class);
               assertThat(aClassSubject, isPresent());
-              // TODO(b/189296638): Enable constructor merging by changing the constructor.
               assertEquals(
-                  4, aClassSubject.allMethods(FoundMethodSubject::isInstanceInitializer).size());
+                  1, aClassSubject.allMethods(FoundMethodSubject::isInstanceInitializer).size());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("C0", "D1");

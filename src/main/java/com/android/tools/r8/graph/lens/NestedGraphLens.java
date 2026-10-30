@@ -190,11 +190,7 @@ public class NestedGraphLens extends DefaultNonIdentityGraphLens {
       //  that only subclasses which are known to need it actually do it?
       DexMethod rewrittenReboundReference = previous.getRewrittenReboundReference(methodMap);
       DexMethod rewrittenReference =
-          previous.getReference() == previous.getReboundReference()
-              ? rewrittenReboundReference
-              : // This assumes that the holder will always be moved in lock-step with the method!
-              rewrittenReboundReference.withHolder(
-                  getNextClassType(previous.getReference().getHolderType()), dexItemFactory());
+          internalDescribeLookupMethodReference(previous, rewrittenReboundReference);
       return MethodLookupResult.builder(this, codeLens)
           .setReference(rewrittenReference)
           .setReboundReference(rewrittenReboundReference)
@@ -246,6 +242,15 @@ public class NestedGraphLens extends DefaultNonIdentityGraphLens {
     RewrittenPrototypeDescription lookup =
         getPrevious().lookupPrototypeChangesForMethodDefinition(previous, codeLens);
     return internalDescribePrototypeChanges(lookup, previous, method);
+  }
+
+  protected DexMethod internalDescribeLookupMethodReference(
+      MethodLookupResult previous, DexMethod rewrittenReboundReference) {
+    return previous.getReference().isIdenticalTo(previous.getReboundReference())
+        ? rewrittenReboundReference
+        // This assumes that the holder will always be moved in lock-step with the method!
+        : rewrittenReboundReference.withHolder(
+            getNextClassType(previous.getReference().getHolderType()), dexItemFactory());
   }
 
   protected RewrittenPrototypeDescription internalDescribePrototypeChanges(

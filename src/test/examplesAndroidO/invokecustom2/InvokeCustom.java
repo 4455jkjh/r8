@@ -22,6 +22,7 @@ abstract class Super {
 public class InvokeCustom extends Super implements Runnable {
 
   public InvokeCustom() {}
+
   public InvokeCustom(int i) {
     System.out.println("InvokeCustom.<init>(" + i + ")");
   }
@@ -30,8 +31,8 @@ public class InvokeCustom extends Super implements Runnable {
     System.out.println("Hello World!");
   }
 
-  private static void targetMethodTest2(boolean z, byte b, char c, short s, int i, float f, long l,
-      double d, String str) {
+  private static void targetMethodTest2(
+      boolean z, byte b, char c, short s, int i, float f, long l, double d, String str) {
     System.out.println(z);
     System.out.println(b);
     System.out.println(c);
@@ -92,21 +93,26 @@ public class InvokeCustom extends Super implements Runnable {
     int oldValue = (int) getter.invokeExact();
     setter.invokeExact(NEW_VALUE);
     int newValue = (int) getter.invokeExact();
-    System.out.print("checkStaticFieldTest9: old " + oldValue + " new " + newValue +
-        " expected " + NEW_VALUE + " ");
+    System.out.print(
+        "checkStaticFieldTest9: old "
+            + oldValue
+            + " new "
+            + newValue
+            + " expected "
+            + NEW_VALUE
+            + " ");
     System.out.println((newValue == NEW_VALUE) ? "OK" : "ERROR");
   }
 
   private float fieldTest9 = 0.0f;
 
-  private void checkFieldTest9(MethodHandle getter, MethodHandle setter)
-      throws Throwable {
+  private void checkFieldTest9(MethodHandle getter, MethodHandle setter) throws Throwable {
     final float NEW_VALUE = 1.99e-19f;
     float oldValue = (float) getter.invokeExact(this);
     setter.invokeExact(this, NEW_VALUE);
     float newValue = (float) getter.invokeExact(this);
-    System.out.print("checkFieldTest9: old " + oldValue + " new " + newValue +
-        " expected " + NEW_VALUE + " ");
+    System.out.print(
+        "checkFieldTest9: old " + oldValue + " new " + newValue + " expected " + NEW_VALUE + " ");
     System.out.println((newValue == NEW_VALUE) ? "OK" : "ERROR");
   }
 
@@ -140,8 +146,7 @@ public class InvokeCustom extends Super implements Runnable {
   }
 
   public static CallSite bsmCreateCallSite(
-      MethodHandles.Lookup caller, String name, MethodType type, MethodHandle mh)
-      throws Throwable {
+      MethodHandles.Lookup caller, String name, MethodType type, MethodHandle mh) throws Throwable {
     System.out.println("bsmCreateCallSite [" + mh + "]");
     return new ConstantCallSite(mh);
   }
@@ -150,14 +155,29 @@ public class InvokeCustom extends Super implements Runnable {
     System.out.println("InvokeCustom.privateMethodTest9()");
   }
 
-  public static CallSite bsmLookupTest9(MethodHandles.Lookup caller, String name, MethodType type,
-      MethodHandle staticGetter,  MethodHandle staticSetter,
-      MethodHandle fieldGetter, MethodHandle fieldSetter,
-      MethodHandle instanceInvoke, MethodHandle constructor,
-      MethodHandle interfaceInvoke, MethodHandle privateInvoke)
+  public static CallSite bsmLookupTest9(
+      MethodHandles.Lookup caller,
+      String name,
+      MethodType type,
+      MethodHandle staticGetter,
+      MethodHandle staticSetter,
+      MethodHandle fieldGetter,
+      MethodHandle fieldSetter,
+      MethodHandle instanceInvoke,
+      MethodHandle constructor,
+      MethodHandle interfaceInvoke,
+      MethodHandle privateInvoke)
       throws Throwable {
-    System.out.println("bsmLookupTest9 [" + staticGetter + ", " + staticSetter + ", " +
-        fieldGetter + ", " + fieldSetter + "]");
+    System.out.println(
+        "bsmLookupTest9 ["
+            + staticGetter
+            + ", "
+            + staticSetter
+            + ", "
+            + fieldGetter
+            + ", "
+            + fieldSetter
+            + "]");
     System.out.println(name + " " + type);
 
     // Check constant method handles passed can be invoked.
@@ -178,9 +198,9 @@ public class InvokeCustom extends Super implements Runnable {
   }
 
   public static void lambdaTest() {
-    List<String> strings = Arrays.asList(new String[] { "Three", "One", "FortyTwo" });
-    String sample = strings.stream().filter(x -> "One".equals(x.trim()))
-        .map(String::trim).findAny().orElse("");
+    List<String> strings = Arrays.asList(new String[] {"Three", "One", "FortyTwo"});
+    String sample =
+        strings.stream().filter(x -> "One".equals(x.trim())).map(String::trim).findAny().orElse("");
     strings.stream().forEach(System.out::println);
   }
 }

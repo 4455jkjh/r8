@@ -663,6 +663,12 @@ public class SyntheticFinalization {
                               && appView.appInfoWithLiveness().wasPruned(candidateType)) {
                             return true;
                           }
+                          if (appView
+                              .graphLens()
+                              .lookupClassType(candidateType, GraphLens.getIdentityLens())
+                              .isNotIdenticalTo(candidateType)) {
+                            return true;
+                          }
                           return equivalences.containsKey(candidateType);
                         });
             equivalences.put(representativeType, group);

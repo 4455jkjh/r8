@@ -9,8 +9,7 @@ public class RepeatAnnotations {
   @NumberAnnotation(number = 1)
   @NumberAnnotation(number = 2)
   @NumberAnnotation(number = 3)
-  class Inner {
-  }
+  class Inner {}
 
   public static void main(String[] args) {
     NumberAnnotations annotations = Inner.class.getAnnotation(NumberAnnotations.class);

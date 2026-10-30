@@ -35,8 +35,7 @@ public class ArtCommandBuilderTest extends TestBase {
     return getTestParameters().withDexRuntimes().build();
   }
 
-  private static final String SCRIPT =
-      System.getProperty("os.name").startsWith("Linux") ? "/bin/bash " : "tools/docker/run.sh ";
+  private static final String SCRIPT = "/bin/bash ";
   private static final String FORK_JOIN_PARALLELISM =
       " -Djava.util.concurrent.ForkJoinPool.common.parallelism="
           + Math.max(1, Runtime.getRuntime().availableProcessors() - 1);

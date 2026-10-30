@@ -181,7 +181,9 @@ public class SanityCheck extends TestBase {
     if (mapping != null && name.startsWith(SRV_PREFIX)) {
       String obfuscatedName = name.substring(SRV_PREFIX.length());
       String originalName =
-          mapping.getObfuscatedToOriginalMapping().original
+          mapping
+              .getObfuscatedToOriginalMapping()
+              .original
               .getOrDefault(obfuscatedName, obfuscatedName);
       if (originalName.equals(METADATA_EXTENSION)) {
         return true;

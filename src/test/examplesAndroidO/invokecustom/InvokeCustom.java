@@ -77,8 +77,8 @@ public class InvokeCustom extends Super implements I {
     System.out.println("Hello World!");
   }
 
-  private static void targetMethodTest2(boolean z, byte b, char c, short s, int i, float f, long l,
-      double d, String str) {
+  private static void targetMethodTest2(
+      boolean z, byte b, char c, short s, int i, float f, long l, double d, String str) {
     System.out.println(z);
     System.out.println(b);
     System.out.println(c);
@@ -90,8 +90,7 @@ public class InvokeCustom extends Super implements I {
     System.out.println(str);
   }
 
-  private static void targetMethodTest3() {
-  }
+  private static void targetMethodTest3() {}
 
   public static CallSite bsmLookupStatic(MethodHandles.Lookup caller, String name, MethodType type)
       throws NoSuchMethodException, IllegalAccessException {
@@ -130,8 +129,7 @@ public class InvokeCustom extends Super implements I {
   }
 
   public static CallSite bsmCreateCallSite(
-      MethodHandles.Lookup caller, String name, MethodType type, MethodHandle mh)
-      throws Throwable {
+      MethodHandles.Lookup caller, String name, MethodType type, MethodHandle mh) throws Throwable {
     return new ConstantCallSite(mh);
   }
 }

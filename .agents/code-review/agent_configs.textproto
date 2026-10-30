@@ -1,0 +1,49 @@
+# Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+# for details. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
+configs: {
+  id: "r8-cl-review-nits"
+  display_name: "R8 Nits & API Usage"
+  description: "R8/D8 review lens for style, naming, comments, imports, dead code, R8 helper APIs, collections, test builders, and commit hygiene."
+  skills: "r8-cl-review-nits"
+  include_filters: {
+    project: "r8"
+    path_regex: ".*"
+  }
+  automatic: true
+}
+
+configs: {
+  id: "r8-cl-review-correctness"
+  display_name: "R8 Correctness"
+  description: "R8/D8 review lens for logic slips, null/missing cases, error handling, nondeterminism, concurrency, overflow/encoding, API-level gating, keep-rule/mapping semantics, and test validity."
+  skills: "r8-cl-review-correctness"
+  include_filters: {
+    project: "r8"
+    path_regex: ".*"
+  }
+  automatic: true
+}
+
+configs: {
+  id: "r8-cl-review-invariants"
+  display_name: "R8 Compiler & IR Invariants"
+  description: "R8/D8 review lens for IR/LIR/CF/DEX and pipeline invariants (SSA, catch handlers, positions, types, GraphLens, Enqueuer/KeepInfo, resolution, synthetics, desugaring, class merging, and D8/R8/R8-partial modes)."
+  skills: "r8-cl-review-invariants"
+  include_filters: {
+    project: "r8"
+    path_regex: ".*"
+  }
+  automatic: true
+}
+
+configs: {
+  id: "code-review-agent"
+  display_name: "Code Review Agent"
+  skills: "r8-cl-review"
+  use_default_subagents: true
+  include_filters: {
+    path_regex: ".*"
+  }
+}

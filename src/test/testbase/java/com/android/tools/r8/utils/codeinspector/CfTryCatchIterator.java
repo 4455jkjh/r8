@@ -31,5 +31,4 @@ class CfTryCatchIterator implements TryCatchIterator {
   public TryCatchSubject next() {
     return codeInspector.createTryCatchSubject(cfCode, iterator.next());
   }
-
 }

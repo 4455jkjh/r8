@@ -59,8 +59,7 @@ public class HorizontalClassMergingOfInitArgumentTypesTest extends TestBase {
     compileResult
         .inspect(
             inspector -> {
-              int expectedNumberOfSynthetics =
-                  2 - BooleanUtils.intValue(enableHorizontalClassMerging);
+              int expectedNumberOfSynthetics = enableHorizontalClassMerging ? 2 : 4;
               assertEquals(3 + expectedNumberOfSynthetics, inspector.allClasses().size());
               assertThat(inspector.clazz(Main.class), isPresent());
               assertThat(inspector.clazz(A.class), isPresent());

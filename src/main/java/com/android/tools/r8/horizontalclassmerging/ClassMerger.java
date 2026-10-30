@@ -32,6 +32,7 @@ import com.android.tools.r8.ir.analysis.value.NumberFromIntervalValue;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
+import com.android.tools.r8.shaking.RuntimeTypeCheckInfo;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -99,8 +100,7 @@ public class ClassMerger {
   }
 
   void buildClassIdentifierMap() {
-    classIdentifiers.put(group.getTarget().getType(), 0);
-    group.forEachSource(clazz -> classIdentifiers.put(clazz.getType(), classIdentifiers.size()));
+    group.acceptClassIds((clazz, classId) -> classIdentifiers.put(clazz.getType(), classId));
     group.setClassIdentifiers(classIdentifiers);
   }
 
@@ -328,7 +328,12 @@ public class ClassMerger {
     group.forEachSource(
         clazz -> {
           clazz.forEachInstanceField(
-              field -> prunedItemsBuilder.addRemovedField(field.getReference()));
+              field -> {
+                // Source fields that are moved to the target class are not removed.
+                if (!group.getInstanceFieldMap().containsValue(field)) {
+                  prunedItemsBuilder.addRemovedField(field.getReference());
+                }
+              });
           clazz.clearInstanceFields();
         });
     group.getTarget().setInstanceFields(classInstanceFieldsMerger.merge());
@@ -434,14 +439,23 @@ public class ClassMerger {
       return virtualMethodMergerBuilders;
     }
 
-    public void initializeClassIdField() {
-      boolean requiresClassIdField =
-          virtualMethodMergers.stream()
-              .anyMatch(virtualMethodMerger -> !virtualMethodMerger.isNopOrTrivial());
-      if (requiresClassIdField) {
+    public void initializeClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
+      if (requiresClassIdField(runtimeTypeCheckInfo)) {
         assert appView.enableWholeProgramOptimizations();
         createClassIdField();
       }
+    }
+
+    private boolean requiresClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
+      if (runtimeTypeCheckInfo != null
+          && Iterables.any(group, runtimeTypeCheckInfo::isCheckCastType)) {
+        return true;
+      }
+      if (virtualMethodMergers.stream()
+          .anyMatch(virtualMethodMerger -> !virtualMethodMerger.isNopOrTrivial())) {
+        return true;
+      }
+      return false;
     }
 
     private void createClassIdField() {

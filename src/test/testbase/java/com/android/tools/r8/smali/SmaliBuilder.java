@@ -28,8 +28,8 @@ public class SmaliBuilder {
     public final String returnType;
     public final List<String> parameterTypes;
 
-    public MethodSignature(String clazz, String name, String returnType,
-        List<String> parameterTypes) {
+    public MethodSignature(
+        String clazz, String name, String returnType, List<String> parameterTypes) {
       this.clazz = clazz;
       this.name = name;
       this.returnType = returnType;
@@ -214,8 +214,7 @@ public class SmaliBuilder {
         "    .locals 0",
         "    invoke-direct {p0}, " + superDescriptor + "-><init>()V",
         "    return-void",
-        "  .end method"
-    );
+        "  .end method");
   }
 
   public void addStaticField(String name, String type, String defaultValue) {
@@ -250,8 +249,13 @@ public class SmaliBuilder {
     getSource(currentClassName).add(builder.toString());
   }
 
-  private MethodSignature addMethod(String flags, String returnType, String name,
-      List<String> parameters, int locals, String code) {
+  private MethodSignature addMethod(
+      String flags,
+      String returnType,
+      String name,
+      List<String> parameters,
+      int locals,
+      String code) {
     StringBuilder builder = new StringBuilder();
     builder.append(".method ");
     if (flags != null && flags.length() > 0) {
@@ -394,7 +398,6 @@ public class SmaliBuilder {
   public AndroidApp build() throws IOException, RecognitionException, ExecutionException {
     return AndroidApp.builder().addDexProgramData(compile(), Origin.unknown()).build();
   }
-
 
   @Override
   public String toString() {

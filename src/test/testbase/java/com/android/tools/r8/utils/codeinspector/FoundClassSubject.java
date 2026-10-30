@@ -115,7 +115,8 @@ public class FoundClassSubject extends ClassSubject {
     }
     DexProto proto =
         codeInspector.dexItemFactory.createProto(
-            codeInspector.toDexType(codeInspector.getObfuscatedTypeName(returnType)), parameterTypes);
+            codeInspector.toDexType(codeInspector.getObfuscatedTypeName(returnType)),
+            parameterTypes);
     if (getNaming() != null) {
       Signature signature =
           new MethodSignature(name, returnType, parameters.toArray(StringUtils.EMPTY_ARRAY));
@@ -596,8 +597,9 @@ public class FoundClassSubject extends ClassSubject {
     } catch (KotlinMetadataException e) {
       throw new RuntimeException(e);
     }
-    assertTrue(metadata instanceof KotlinClassMetadata.FileFacade
-        || metadata instanceof KotlinClassMetadata.MultiFileClassPart);
+    assertTrue(
+        metadata instanceof KotlinClassMetadata.FileFacade
+            || metadata instanceof KotlinClassMetadata.MultiFileClassPart);
     if (metadata instanceof KotlinClassMetadata.FileFacade) {
       KotlinClassMetadata.FileFacade kFile = (KotlinClassMetadata.FileFacade) metadata;
       return new FoundKmPackageSubject(codeInspector, getDexProgramClass(), kFile.getKmPackage());

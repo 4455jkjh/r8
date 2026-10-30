@@ -497,7 +497,7 @@ public class DefaultInliningOracle implements InliningOracle {
 
     if (!singleTarget
         .getDefinition()
-        .isInliningCandidate(appView, method, whyAreYouNotInliningReporter)) {
+        .isInliningCandidate(appView, method, whyAreYouNotInliningReporter, invoke)) {
       return null;
     }
 

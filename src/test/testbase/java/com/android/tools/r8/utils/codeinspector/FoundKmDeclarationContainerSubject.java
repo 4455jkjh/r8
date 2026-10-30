@@ -21,15 +21,17 @@ import kotlin.metadata.jvm.JvmMethodSignature;
 public interface FoundKmDeclarationContainerSubject extends KmDeclarationContainerSubject {
 
   CodeInspector codeInspector();
+
   KmDeclarationContainer getKmDeclarationContainer();
 
   @Override
   default List<String> getParameterTypeDescriptorsInFunctions() {
     return getKmDeclarationContainer().getFunctions().stream()
-        .flatMap(kmFunction ->
-            kmFunction.getValueParameters().stream()
-                .map(kmValueParameter -> getDescriptorFromKmType(kmValueParameter.getType()))
-                .filter(Objects::nonNull))
+        .flatMap(
+            kmFunction ->
+                kmFunction.getValueParameters().stream()
+                    .map(kmValueParameter -> getDescriptorFromKmType(kmValueParameter.getType()))
+                    .filter(Objects::nonNull))
         .collect(Collectors.toList());
   }
 
@@ -117,10 +119,11 @@ public interface FoundKmDeclarationContainerSubject extends KmDeclarationContain
   @Override
   default List<ClassSubject> getParameterTypesInFunctions() {
     return getKmDeclarationContainer().getFunctions().stream()
-        .flatMap(kmFunction ->
-            kmFunction.getValueParameters().stream()
-                .map(kmValueParameter -> getClassSubjectFromKmType(kmValueParameter.getType()))
-                .filter(ClassSubject::isPresent))
+        .flatMap(
+            kmFunction ->
+                kmFunction.getValueParameters().stream()
+                    .map(kmValueParameter -> getClassSubjectFromKmType(kmValueParameter.getType()))
+                    .filter(ClassSubject::isPresent))
         .collect(Collectors.toList());
   }
 

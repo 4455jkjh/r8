@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.MethodLookupResult;
+import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.SingleConstValue;
 import com.android.tools.r8.ir.analysis.value.SingleDexItemBasedStringValue;
@@ -125,13 +126,28 @@ public class IncompleteMergedInstanceInitializerCode extends IncompleteHorizonta
             instanceFieldAssignmentsPre,
             lens);
 
-    // Load constructor arguments.
+    // Load constructor arguments. If the parent class was also horizontally merged, its
+    // constructor may have had its parameters permuted and/or extra parameters appended.
     MethodLookupResult parentConstructorLookup =
         lens.lookupInvokeDirect(parentConstructor, method, appView.codeLens());
-    List<Value> parentConstructorArgumentValues = new ArrayList<>();
+    ArgumentInfoCollection parentConstructorArgumentInfo =
+        parentConstructorLookup.getPrototypeChanges().getArgumentInfoCollection();
+    assert !parentConstructorArgumentInfo.hasRemovedArguments();
+    int numberOfParentArguments = 1 + parentConstructorArguments.size();
+    List<Value> parentConstructorArgumentValues =
+        new ArrayList<>(
+            numberOfParentArguments
+                + parentConstructorLookup.getPrototypeChanges().getExtraParameters().size());
     parentConstructorArgumentValues.add(receiverValue);
-    int parentConstructorArgumentIndex = 0;
-    for (InstanceFieldInitializationInfo initializationInfo : parentConstructorArguments) {
+    for (int i = 1; i < numberOfParentArguments; i++) {
+      parentConstructorArgumentValues.add(null);
+    }
+    for (int i = 0; i < parentConstructorArguments.size(); i++) {
+      int newArgumentIndex = parentConstructorArgumentInfo.getNewArgumentIndex(i + 1);
+      InstanceFieldInitializationInfo initializationInfo = parentConstructorArguments.get(i);
+      DexType parentParameterType =
+          parentConstructorLookup.getReference().getParameter(newArgumentIndex - 1);
+      Box<Value> argValueBox = new Box<>();
       instructionIndex =
           addLirInstructionsForInitializationInfo(
               appView,
@@ -140,11 +156,32 @@ public class IncompleteMergedInstanceInitializerCode extends IncompleteHorizonta
               initializationInfo,
               argumentValues,
               instructionIndex,
-              parentConstructorLookup.getReference().getParameter(parentConstructorArgumentIndex),
-              parentConstructorArgumentValues::add);
-      parentConstructorArgumentIndex++;
+              parentParameterType,
+              argValueBox::set);
+      Value argValue = argValueBox.get();
+      // If the argument type on this merged constructor was generalized (e.g., to Object) and is
+      // not a subtype of the parent constructor's parameter type, insert a SafeCheckCast so the
+      // invoke-direct on the parent constructor remains well-typed.
+      if (initializationInfo.isArgumentInitializationInfo()) {
+        int argumentIndex = initializationInfo.asArgumentInitializationInfo().getArgumentIndex();
+        if (argumentIndex > 0) {
+          DexType argumentType = method.getArgumentType(argumentIndex);
+          if (argumentType.isClassType()
+              && !appView.appInfo().isSubtype(argumentType, parentParameterType)) {
+            TypeElement newArgValueTypeElement =
+                parentParameterType.toTypeElement(appView, argValue.getType().nullability());
+            Value newArgValue = Value.createNoDebugLocal(instructionIndex, newArgValueTypeElement);
+            strategy.defineValue(newArgValue, newArgValue.getNumber());
+            lirBuilder.addSafeCheckCast(parentParameterType, argValue);
+            argValue = newArgValue;
+            instructionIndex++;
+          }
+        }
+      }
+      parentConstructorArgumentValues.set(newArgumentIndex, argValue);
     }
 
+    int parentConstructorArgumentIndex = numberOfParentArguments - 1;
     for (ExtraParameter extraParameter :
         parentConstructorLookup.getPrototypeChanges().getExtraParameters()) {
       instructionIndex =

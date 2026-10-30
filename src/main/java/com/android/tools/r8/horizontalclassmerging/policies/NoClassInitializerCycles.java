@@ -504,7 +504,9 @@ public class NoClassInitializerCycles extends MultiClassPolicyWithPreprocessing<
       }
 
       private boolean isClassAlreadyInitializedInCurrentContext(DexProgramClass clazz) {
-        return appView().appInfo().isSubtype(getContext().getHolder(), clazz);
+        return clazz.getType().isIdenticalTo(getContext().getHolderType())
+            || (!clazz.isInterface()
+                && appView().appInfo().isSubtype(getContext().getHolder(), clazz));
       }
 
       private void triggerClassInitializer(DexProgramClass root) {

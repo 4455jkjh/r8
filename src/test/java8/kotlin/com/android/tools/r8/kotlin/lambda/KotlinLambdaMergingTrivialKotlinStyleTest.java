@@ -118,10 +118,13 @@ public class KotlinLambdaMergingTrivialKotlinStyleTest extends KotlinTestBase {
               kotlinParameters.getLambdaGeneration().isClass(),
               i ->
                   i.assertIsCompleteMergeGroup(
-                      lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                          getTestName(), "MainKt$testStateless$11"),
-                      lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                          getTestName(), "MainKt$testStateless$12")),
+                          Reference.classFromTypeName("kotlin.Unit"),
+                          Reference.classFromTypeName("kotlin.jvm.internal.ReflectionFactory"))
+                      .assertIsCompleteMergeGroup(
+                          lambdasInInput.getKStyleLambdaReferenceFromTypeName(
+                              getTestName(), "MainKt$testStateless$11"),
+                          lambdasInInput.getKStyleLambdaReferenceFromTypeName(
+                              getTestName(), "MainKt$testStateless$12")),
               i ->
                   i.assertIsCompleteMergeGroup(
                       syntheticItems.syntheticLambdaClass(mainKt, 0),

@@ -86,7 +86,7 @@ public class ApiAmendmentsParser {
       throw new RuntimeException("Invalid class amendment at line " + lineNumber);
     }
     ClassReference classReference = Reference.classFromDescriptor(parts[1]);
-    AndroidApiLevel apiLevel = AndroidApiLevel.parseAndroidApiLevel(parts[2]);
+    AndroidApiLevel apiLevel = parseApiLevel(parts[2], lineNumber);
     amendments.addClass(classReference, apiLevel);
   }
 
@@ -98,7 +98,7 @@ public class ApiAmendmentsParser {
     ClassReference holder = Reference.classFromDescriptor(parts[1]);
     String name = parts[2];
     String descriptor = parts[3];
-    AndroidApiLevel apiLevel = AndroidApiLevel.parseAndroidApiLevel(parts[4]);
+    AndroidApiLevel apiLevel = parseApiLevel(parts[4], lineNumber);
     amendments.addMethod(Reference.methodFromDescriptor(holder, name, descriptor), apiLevel);
   }
 
@@ -109,8 +109,16 @@ public class ApiAmendmentsParser {
     }
     ClassReference holder = Reference.classFromDescriptor(parts[1]);
     String name = parts[2];
-    AndroidApiLevel apiLevel = AndroidApiLevel.parseAndroidApiLevel(parts[3]);
+    AndroidApiLevel apiLevel = parseApiLevel(parts[3], lineNumber);
     amendments.addField(new FieldTypelessReference(holder, name), apiLevel);
+  }
+
+  private static AndroidApiLevel parseApiLevel(String apiLevel, int lineNumber) {
+    return ApiLevelParser.parse(
+        apiLevel,
+        message -> {
+          throw new RuntimeException(message + " at line " + lineNumber);
+        });
   }
 
   public static JarAmendments parseJarAmendments(InputStream inputStream) throws IOException {

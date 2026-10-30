@@ -138,9 +138,7 @@ public class R8CFRunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Bui
     }
   }
 
-  private static List<String> expectedFailures =
-      ImmutableList.of(
-      );
+  private static List<String> expectedFailures = ImmutableList.of();
 
   private boolean expectedToFailCf(String testName) {
     System.out.println(testName + " " + expectedFailures.contains(testName));

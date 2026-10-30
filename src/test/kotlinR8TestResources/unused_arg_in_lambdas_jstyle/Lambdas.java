@@ -9,8 +9,8 @@ public class Lambdas {
     R get(P1 a, P2 b, P3 c);
   }
 
-  public synchronized static <R, P1, P2, P3>
-  void acceptMultiFunction(MultiFunction<R, P1, P2, P3> s, P1 a, P2 b, P3 c) {
+  public static synchronized <R, P1, P2, P3> void acceptMultiFunction(
+      MultiFunction<R, P1, P2, P3> s, P1 a, P2 b, P3 c) {
     System.out.println(s.get(a, b, c));
   }
 }

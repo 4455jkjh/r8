@@ -94,6 +94,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
@@ -323,12 +324,12 @@ public class ToolHelper {
     ART_17_1_0_HOST(Version.V17_1_0, Kind.HOST),
     ART_17_2_0_TARGET(Version.V17_2_0, Kind.TARGET),
     ART_17_2_0_HOST(Version.V17_2_0, Kind.HOST),
-    ART_MASTER_TARGET(Version.MASTER, Kind.TARGET),
-    ART_MASTER_HOST(Version.MASTER, Kind.HOST);
+    ART_MAIN_TARGET(Version.MAIN, Kind.TARGET),
+    ART_MAIN_HOST(Version.MAIN, Kind.HOST);
 
     private static final ImmutableMap<String, DexVm> SHORT_NAME_MAP =
-        Arrays.stream(DexVm.values()).collect(ImmutableMap.toImmutableMap(
-            DexVm::toString, Function.identity()));
+        Arrays.stream(DexVm.values())
+            .collect(ImmutableMap.toImmutableMap(DexVm::toString, Function.identity()));
 
     public enum Version {
       V4_0_4("4.0.4"),
@@ -350,7 +351,7 @@ public class ToolHelper {
       V17_0_0("17.0.0"),
       V17_1_0("17.1.0"),
       V17_2_0("17.2.0"),
-      MASTER("master");
+      MAIN("main");
 
       /** This should generally be the latest DEX VM fully supported. */
       // TODO(b/204855476): Rename to DEFAULT alias once the checked in VM is removed.
@@ -427,15 +428,15 @@ public class ToolHelper {
         return V17_2_0;
       }
 
-      public static Version master() {
-        return MASTER;
+      public static Version main() {
+        return MAIN;
       }
 
       static {
-        // Ensure first is always first and last is always last except for master.
+        // Ensure first is always first and last is always last except for main.
         assert Arrays.stream(values()).allMatch(v -> v == first() || v.compareTo(first()) > 0);
         assert Arrays.stream(values())
-            .allMatch(v -> v == last() || v == master() || v.compareTo(last()) < 0);
+            .allMatch(v -> v == last() || v == main() || v.compareTo(last()) < 0);
       }
     }
 
@@ -503,7 +504,6 @@ public class ToolHelper {
     private final Kind kind;
   }
 
-
   public abstract static class CommandBuilder {
 
     protected List<String> options = new ArrayList<>();
@@ -548,9 +548,7 @@ public class ToolHelper {
       List<String> result = new ArrayList<>();
       // The art script _must_ be run with bash, bots default to /bin/dash for /bin/sh, so
       // explicitly set it;
-      if (shouldUseDocker()) {
-        result.add("tools/docker/run.sh");
-      } else if (isLinux()) {
+      if (isLinux()) {
         result.add("/bin/bash");
       }
       result.add(getExecutable());
@@ -593,8 +591,6 @@ public class ToolHelper {
       return String.join(" ", command());
     }
 
-    protected abstract boolean shouldUseDocker();
-
     protected abstract String getExecutable();
   }
 
@@ -610,11 +606,6 @@ public class ToolHelper {
         assert ART_BINARY_VERSIONS.containsKey(version);
       }
       this.version = version;
-    }
-
-    @Override
-    protected boolean shouldUseDocker() {
-      return isMac();
     }
 
     public void setNoCaching(boolean noCaching) {
@@ -988,32 +979,32 @@ public class ToolHelper {
     }
   }
 
-  private static final Map<DexVm, String> ART_DIRS =
-      ImmutableMap.<DexVm, String>builder()
-          .put(DexVm.ART_DEFAULT, "art")
-          .put(DexVm.ART_MASTER_HOST, "host/art-master")
-          .put(DexVm.ART_17_2_0_HOST, "host/art-17.2.0")
-          .put(DexVm.ART_17_1_0_HOST, "host/art-17.1.0")
-          .put(DexVm.ART_17_0_0_HOST, "host/art-17.0.0-beta4")
-          .put(DexVm.ART_16_1_0_HOST, "host/art-16.1.0")
-          .put(DexVm.ART_16_0_0_HOST, "host/art-16.0.0")
-          .put(DexVm.ART_15_0_0_HOST, "host/art-15.0.0-beta2")
-          .put(DexVm.ART_14_0_0_HOST, "host/art-14.0.0-beta3")
-          .put(DexVm.ART_13_0_0_HOST, "host/art-13.0.0")
-          .put(DexVm.ART_12_0_0_HOST, "host/art-12.0.0-beta4")
-          .put(DexVm.ART_10_0_0_HOST, "art-10.0.0")
-          .put(DexVm.ART_9_0_0_HOST, "art-9.0.0")
-          .put(DexVm.ART_8_1_0_HOST, "art-8.1.0")
-          .put(DexVm.ART_7_0_0_HOST, "art-7.0.0")
-          .put(DexVm.ART_6_0_1_HOST, "art-6.0.1")
-          .put(DexVm.ART_5_1_1_HOST, "art-5.1.1")
-          .put(DexVm.ART_4_4_4_HOST, "dalvik")
-          .put(DexVm.ART_4_0_4_HOST, "dalvik-4.0.4")
+  private static final Map<DexVm, Supplier<Path>> ART_DIRS =
+      ImmutableMap.<DexVm, Supplier<Path>>builder()
+          .put(DexVm.ART_DEFAULT, TestDeps::getArtDefaultDir)
+          .put(DexVm.ART_MAIN_HOST, TestDeps::getArtMainDir)
+          .put(DexVm.ART_17_2_0_HOST, TestDeps::getArt17_2_0Dir)
+          .put(DexVm.ART_17_1_0_HOST, TestDeps::getArt17_1_0Dir)
+          .put(DexVm.ART_17_0_0_HOST, TestDeps::getArt17_0_0Dir)
+          .put(DexVm.ART_16_1_0_HOST, TestDeps::getArt16_1_0Dir)
+          .put(DexVm.ART_16_0_0_HOST, TestDeps::getArt16_0_0Dir)
+          .put(DexVm.ART_15_0_0_HOST, TestDeps::getArt15_0_0Dir)
+          .put(DexVm.ART_14_0_0_HOST, TestDeps::getArt14_0_0Dir)
+          .put(DexVm.ART_13_0_0_HOST, TestDeps::getArt13_0_0Dir)
+          .put(DexVm.ART_12_0_0_HOST, TestDeps::getArt12_0_0Dir)
+          .put(DexVm.ART_10_0_0_HOST, TestDeps::getArt10_0_0Dir)
+          .put(DexVm.ART_9_0_0_HOST, TestDeps::getArt9_0_0Dir)
+          .put(DexVm.ART_8_1_0_HOST, TestDeps::getArt8_1_0Dir)
+          .put(DexVm.ART_7_0_0_HOST, TestDeps::getArt7_0_0Dir)
+          .put(DexVm.ART_6_0_1_HOST, TestDeps::getArt6_0_1Dir)
+          .put(DexVm.ART_5_1_1_HOST, TestDeps::getArt5_1_1Dir)
+          .put(DexVm.ART_4_4_4_HOST, TestDeps::getDalvik4_4_4Dir)
+          .put(DexVm.ART_4_0_4_HOST, TestDeps::getDalvik4_0_4Dir)
           .build();
   private static final Map<DexVm, String> ART_BINARY_VERSIONS =
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "bin/art")
-          .put(DexVm.ART_MASTER_HOST, "bin/art")
+          .put(DexVm.ART_MAIN_HOST, "bin/art")
           .put(DexVm.ART_17_2_0_HOST, "bin/art")
           .put(DexVm.ART_17_1_0_HOST, "bin/art")
           .put(DexVm.ART_17_0_0_HOST, "bin/art")
@@ -1124,35 +1115,11 @@ public class ToolHelper {
   }
 
   private static Path getDexVmPath(DexVm vm) {
-    DexVm.Version version = vm.getVersion();
-    Path base = Paths.get(TOOLS_DIR, "linux");
-    switch (version) {
-      case DEFAULT:
-        return base.resolve("art");
-      case V4_0_4:
-      case V4_4_4:
-      case V5_1_1:
-      case V6_0_1:
-      case V7_0_0:
-      case V8_1_0:
-      case V9_0_0:
-      case V10_0_0:
-        return base.resolve("art-" + version);
-      case V12_0_0:
-        return base.resolve("host").resolve("art-12.0.0-beta4");
-      case V13_0_0:
-      case V14_0_0:
-      case V15_0_0:
-      case V16_0_0:
-      case V16_1_0:
-      case V17_0_0:
-      case V17_1_0:
-      case V17_2_0:
-      case MASTER:
-        return base.resolve("host").resolve("art-" + version);
-      default:
-        throw new Unreachable();
+    Supplier<Path> dir = ART_DIRS.get(vm);
+    if (dir == null) {
+      throw new IllegalStateException("Does not support dex vm: " + vm);
     }
+    return dir.get();
   }
 
   private static Path getDexVmLibPath(DexVm vm) {
@@ -1187,7 +1154,7 @@ public class ToolHelper {
       case V17_0_0:
       case V17_1_0:
       case V17_2_0:
-      case MASTER:
+      case MAIN:
         return "arm64";
       case V12_0_0:
         return "x86_64";
@@ -1217,16 +1184,7 @@ public class ToolHelper {
   }
 
   public static String getArtDir(DexVm version) {
-    String dir = ART_DIRS.get(version);
-    if (dir == null) {
-      throw new IllegalStateException("Does not support dex vm: " + version);
-    }
-    if (isLinux() || isMac()) {
-      // The Linux version is used on Mac, where it is run in a Docker container.
-      return TOOLS_DIR + "linux/" + dir;
-    }
-    fail("Unsupported platform, we currently only support mac and linux: " + getPlatform());
-    return ""; //never here
+    return getDexVmPath(version).toString();
   }
 
   public static String getArtBinary(DexVm version) {
@@ -1344,9 +1302,7 @@ public class ToolHelper {
     throw new Unreachable("Unable to find a most recent android.jar");
   }
 
-  /**
-   * Get the junit jar bundled with the framework.
-   */
+  /** Get the junit jar bundled with the framework. */
   public static Path getFrameworkJunitJarPath(DexVm version) {
     return Paths.get(getArtDir(version), "framework", "junit.jar");
   }
@@ -1369,8 +1325,6 @@ public class ToolHelper {
     return Paths.get(System.getProperty("java.io.tmpdir"), "r8-temp");
   }
 
-  // For non-Linux platforms create the temporary directory in the repository root to simplify
-  // running Art in a docker container
   public static TemporaryFolder getTemporaryFolderForTest() {
     String tmpDir = System.getProperty("test_dir");
     if (tmpDir == null) {
@@ -1436,7 +1390,7 @@ public class ToolHelper {
 
   public static AndroidApiLevel getMinApiLevelForDexVm(DexVm dexVm) {
     switch (dexVm.version) {
-      case MASTER:
+      case MAIN:
         return AndroidApiLevel.MAIN;
       case V17_2_0:
         return AndroidApiLevel.CINNAMON_BUN_2;
@@ -1481,7 +1435,7 @@ public class ToolHelper {
 
   static final Map<AndroidApiLevel, DexVm.Version> apiLevelToDexVmVersion =
       ImmutableMap.<AndroidApiLevel, DexVm.Version>builder()
-          .put(AndroidApiLevel.MAIN, DexVm.Version.MASTER)
+          .put(AndroidApiLevel.MAIN, DexVm.Version.MAIN)
           .put(AndroidApiLevel.CINNAMON_BUN_2, DexVm.Version.V17_2_0)
           .put(AndroidApiLevel.CINNAMON_BUN_1, DexVm.Version.V17_1_0)
           .put(AndroidApiLevel.CINNAMON_BUN, DexVm.Version.V17_0_0)
@@ -1545,19 +1499,16 @@ public class ToolHelper {
 
   public static boolean artSupported() {
     if (!isLinux() && !isMac() && !isWindows()) {
-      System.err.println("Testing on your platform is not fully supported. " +
-          "Art does not work on on your platform.");
+      System.err.println(
+          "Testing on your platform is not fully supported. "
+              + "Art does not work on on your platform.");
       return false;
     }
-    if (isWindows() && getDexVmFromProperty().getKind() == Kind.HOST) {
-      System.err.println("Testing on host is not supported on Windows.");
+    if (!isLinux() && getDexVmFromProperty().getKind() == Kind.HOST) {
+      System.err.println("Testing on host is not supported on " + getPlatform() + ".");
       return false;
     }
     return true;
-  }
-
-  public static boolean isDex2OatSupported() {
-    return !isWindows();
   }
 
   public static Path getClassPathForTests() {
@@ -1631,12 +1582,7 @@ public class ToolHelper {
       return copyResourceToTempFile(resourceUrl, fileName);
     } catch (IOException e) {
       throw new RuntimeException(
-          "Failed to copy resource "
-              + resourceName
-              + " relative to "
-              + clazz
-              + " to temp file",
-          e);
+          "Failed to copy resource " + resourceName + " relative to " + clazz + " to temp file", e);
     }
   }
 
@@ -1662,13 +1608,15 @@ public class ToolHelper {
     return getResourceAsReadOnlyFile(clazz, resourceName);
   }
 
-  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> clazz) throws IOException {
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(
+      ZipUtils.ZipBuilder builder, Class<?> clazz) throws IOException {
     String entryName = ZipUtils.zipEntryNameForClass(clazz);
     Path path = getClassFileForTestClassFromResources(clazz);
     return builder.addFile(entryName, path);
   }
 
-  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> anchor, String relativeClassName) throws IOException {
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(
+      ZipUtils.ZipBuilder builder, Class<?> anchor, String relativeClassName) throws IOException {
     String packagePath = anchor.getPackage().getName().replace('.', '/');
     String entryName = packagePath + "/" + relativeClassName + CLASS_EXTENSION;
     Path path = getResourceAsReadOnlyFile(anchor, relativeClassName + CLASS_EXTENSION);
@@ -1845,10 +1793,11 @@ public class ToolHelper {
 
   public static AndroidApp runR8(AndroidApp app, Consumer<InternalOptions> optionsConsumer)
       throws CompilationFailedException {
-    R8Command command = prepareR8CommandBuilder(app)
-        .setDisableTreeShaking(true)
-        .setDisableMinification(true)
-        .build();
+    R8Command command =
+        prepareR8CommandBuilder(app)
+            .setDisableTreeShaking(true)
+            .setDisableMinification(true)
+            .build();
     return runR8(command, optionsConsumer);
   }
 
@@ -2024,8 +1973,7 @@ public class ToolHelper {
   }
 
   public static void runLegacyResourceShrinker(
-      ResourceShrinker.Builder builder,
-      ReferenceChecker callback)
+      ResourceShrinker.Builder builder, ReferenceChecker callback)
       throws IOException, CompilationFailedException, ExecutionException {
     ResourceShrinker.Command command = builder.build();
     InternalOptions options = command.getInternalOptions();
@@ -2101,8 +2049,8 @@ public class ToolHelper {
     return runProcess(builder);
   }
 
-  public static ProcessResult runJavaNoVerify(
-      Path classpath, String mainClass, String... args) throws IOException {
+  public static ProcessResult runJavaNoVerify(Path classpath, String mainClass, String... args)
+      throws IOException {
     return runJavaNoVerify(
         Collections.singletonList(classpath), mainClass, Lists.newArrayList(args));
   }
@@ -2116,8 +2064,8 @@ public class ToolHelper {
       List<Path> classpath, String mainClass, List<String> args) throws IOException {
     String cp =
         classpath.stream().map(Path::toString).collect(Collectors.joining(CLASSPATH_SEPARATOR));
-    ArrayList<String> cmdline = Lists.newArrayList(
-        getJavaExecutable(), "-cp", cp, "-noverify", mainClass);
+    ArrayList<String> cmdline =
+        Lists.newArrayList(getJavaExecutable(), "-cp", cp, "-noverify", mainClass);
     cmdline.addAll(args);
     ProcessBuilder builder = new ProcessBuilder(cmdline);
     return runProcess(builder);
@@ -2200,12 +2148,14 @@ public class ToolHelper {
 
   private static ProcessResult forkJava(Path dir, Class clazz, List<String> args)
       throws IOException {
-    List<String> command = new ImmutableList.Builder<String>()
-        .add(getJavaExecutable())
-        .add("-cp").add(System.getProperty("java.class.path"))
-        .add(clazz.getCanonicalName())
-        .addAll(args)
-        .build();
+    List<String> command =
+        new ImmutableList.Builder<String>()
+            .add(getJavaExecutable())
+            .add("-cp")
+            .add(System.getProperty("java.class.path"))
+            .add(clazz.getCanonicalName())
+            .addAll(args)
+            .build();
     return runProcess(new ProcessBuilder(command).directory(dir.toFile()));
   }
 
@@ -2284,9 +2234,8 @@ public class ToolHelper {
     return runArtNoVerificationErrorsRaw(Collections.singletonList(file), mainClass, null, version);
   }
 
-  public static ProcessResult runArtNoVerificationErrorsRaw(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras,
-      DexVm version)
+  public static ProcessResult runArtNoVerificationErrorsRaw(
+      List<String> files, String mainClass, Consumer<ArtCommandBuilder> extras, DexVm version)
       throws IOException {
     ProcessResult result = runArtRaw(files, mainClass, extras, version, false);
     failOnProcessFailure(result);
@@ -2299,9 +2248,8 @@ public class ToolHelper {
     return runArtNoVerificationErrorsRaw(file, mainClass, version).stdout;
   }
 
-  public static String runArtNoVerificationErrors(List<String> files, String mainClass,
-      Consumer<ArtCommandBuilder> extras,
-      DexVm version)
+  public static String runArtNoVerificationErrors(
+      List<String> files, String mainClass, Consumer<ArtCommandBuilder> extras, DexVm version)
       throws IOException {
     return runArtNoVerificationErrorsRaw(files, mainClass, extras, version).stdout;
   }
@@ -2351,7 +2299,9 @@ public class ToolHelper {
     return result.stdout;
   }
 
-  public static String checkArtOutputIdentical(List<String> files1, List<String> files2,
+  public static String checkArtOutputIdentical(
+      List<String> files1,
+      List<String> files2,
       String mainClass,
       Consumer<ArtCommandBuilder> extras,
       DexVm version)
@@ -2418,7 +2368,6 @@ public class ToolHelper {
 
   public static ProcessResult runDex2OatRaw(Path dexFile, Path oatFile, Path temp, DexVm targetVm)
       throws IOException {
-    Assume.assumeTrue(ToolHelper.isDex2OatSupported());
     assert Files.exists(dexFile);
     assert ByteStreams.toByteArray(Files.newInputStream(dexFile)).length > 0;
     assert SUPPORTED_DEX2OAT_VMS.stream()
@@ -2470,22 +2419,21 @@ public class ToolHelper {
 
   private static ProcessResult runDex2OatV13AndNewer(
       Path dexFile, Path oatFile, Path temp, DexVm vm) throws IOException {
-    String versionString;
+    Path dex2oatDir;
     if (vm.version == DexVm.Version.V13_0_0) {
-      versionString = "33.10";
+      dex2oatDir = TestDeps.getDex2Oat33_10Dir();
     } else if (vm.version == DexVm.Version.V15_0_0) {
-      versionString = "35.14";
+      dex2oatDir = TestDeps.getDex2Oat35_14Dir();
     } else if (vm.version == DexVm.Version.V16_0_0 || vm.version == DexVm.Version.V16_1_0) {
-      versionString = "36.0";
+      dex2oatDir = TestDeps.getDex2Oat36_0Dir();
     } else if (vm.version == DexVm.Version.V17_0_0
         || vm.version == DexVm.Version.V17_1_0
         || vm.version == DexVm.Version.V17_2_0) {
-      versionString = "head";
+      dex2oatDir = TestDeps.getDex2OatHeadDir();
     } else {
       throw new Unreachable();
     }
 
-    Path dex2oatDir = Paths.get(THIRD_PARTY_DIR, "dex2oat", versionString);
     List<String> command = new ArrayList<>();
     command.add(
         dex2oatDir
@@ -2500,7 +2448,7 @@ public class ToolHelper {
     command.add("--dex-file=" + dexFile.toAbsolutePath());
     command.add("--copy-dex-files=always");
 
-    if (!versionString.equals("33.10")) {
+    if (vm.version != DexVm.Version.V13_0_0) {
       command.add("--runtime-arg");
       command.add("-Xgc:CMC");
     }
@@ -2536,7 +2484,7 @@ public class ToolHelper {
                 .toAbsolutePath());
     command.add("--oat-file=" + oatFile.toAbsolutePath());
     command.add("--app-image-file=" + temp.resolve("classes.art").toAbsolutePath());
-    if (!versionString.equals("33.10")) {
+    if (vm.version != DexVm.Version.V13_0_0) {
       command.add("--force-allow-oj-inlines");
     }
     command.add("--instruction-set=" + getArchString(vm));
@@ -2557,7 +2505,7 @@ public class ToolHelper {
       throws IOException {
     List<String> command = new ArrayList<>();
     command.add(proguardScript);
-    command.add("-forceprocessing");  // Proguard just checks the creation time on the in/out jars.
+    command.add("-forceprocessing"); // Proguard just checks the creation time on the in/out jars.
     command.add("-injars");
     command.add(inJar.toString());
     command.add("-libraryjars");

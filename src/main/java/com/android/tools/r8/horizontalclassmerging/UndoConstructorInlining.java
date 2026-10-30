@@ -177,18 +177,20 @@ public class UndoConstructorInlining {
     }
 
     void run(ExecutorService executorService) throws ExecutionException {
+      ProgramMethodSet deferredMethods = ProgramMethodSet.createConcurrentSorted();
       ThreadUtils.processItems(
           appView.appInfo().classes(),
-          this::processClass,
+          clazz -> processClass(clazz, deferredMethods),
           appView.options().getThreadingModule(),
           executorService);
+      deferredMethods.forEach(method -> processMethod(method, null));
       commitPendingConstructors();
       profileCollectionAdditions.commit(appView);
     }
 
-    private void processClass(DexProgramClass clazz) {
+    private void processClass(DexProgramClass clazz, ProgramMethodSet deferredMethods) {
       clazz.forEachProgramMethodMatching(
-          method -> filterMethod(clazz, method), this::processMethod);
+          method -> filterMethod(clazz, method), method -> processMethod(method, deferredMethods));
     }
 
     private boolean filterMethod(DexProgramClass clazz, DexEncodedMethod method) {
@@ -198,9 +200,9 @@ public class UndoConstructorInlining {
               clazz, method, method.getCode().asLirCode(), ensureConstructorsOnClasses);
     }
 
-    private void processMethod(ProgramMethod method) {
+    private void processMethod(ProgramMethod method, ProgramMethodSet deferredMethods) {
       LirCode<Integer> code = method.getDefinition().getCode().asLirCode();
-      LirCode<Integer> rewritten = rewriteLir(method, code);
+      LirCode<Integer> rewritten = rewriteLir(method, code, deferredMethods);
       if (ObjectUtils.notIdentical(code, rewritten)) {
         method.setCode(rewritten, appView);
       }
@@ -222,7 +224,8 @@ public class UndoConstructorInlining {
               constant instanceof DexType && ensureConstructorsOnClasses.containsKey(constant));
     }
 
-    private LirCode<Integer> rewriteLir(ProgramMethod method, LirCode<Integer> code) {
+    private LirCode<Integer> rewriteLir(
+        ProgramMethod method, LirCode<Integer> code, ProgramMethodSet deferredMethods) {
       // Create a mapping from new-instance value index -> new-instance type (limited to the types
       // of interest).
       Int2ReferenceMap<DexType> allocationsOfInterest = getAllocationsOfInterest(method, code);
@@ -239,6 +242,10 @@ public class UndoConstructorInlining {
         if (info == null) {
           continue;
         }
+        if (deferredMethods != null && !canGetOrCreateConstructorConcurrently(info)) {
+          deferredMethods.add(method);
+          return code;
+        }
         ProgramMethod newInvokedMethod =
             getStronglyConnectedComponent(info.getProgramClass())
                 .getOrCreateConstructor(
@@ -249,6 +256,7 @@ public class UndoConstructorInlining {
                     profileCollectionAdditions);
         if (newInvokedMethod.getArity() != info.getInvokedMethod().getArity()) {
           assert newInvokedMethod.getArity() > info.getInvokedMethod().getArity();
+          assert deferredMethods == null;
           return rewriteIR(method, code);
         }
         int constantIndex =
@@ -427,6 +435,19 @@ public class UndoConstructorInlining {
       return !appView
           .appInfo()
           .isSubtype(invokedMethod.getHolderType(), requiredConstructorClass.getType());
+    }
+
+    // Returns false when creating a constructor on `clazz` for `target` may collide with another
+    // constructor on `clazz` and therefore require appending extra unused arguments in a
+    // deterministic order:
+    // 1) `target` is declared on a superclass above `clazz.superType`, so another superclass
+    //    constructor with the same proto may also need a synthesized constructor on `clazz`.
+    // 2) `clazz` already declares a constructor with `target`'s proto.
+    private boolean canGetOrCreateConstructorConcurrently(InvokeDirectInfo info) {
+      DexProgramClass clazz = info.getProgramClass();
+      DexMethod target = info.getInvokedMethod();
+      return target.getHolderType().isIdenticalTo(clazz.getSuperType())
+          && clazz.lookupDirectMethod(target.withHolder(clazz, appView.dexItemFactory())) == null;
     }
 
     private StronglyConnectedComponent getStronglyConnectedComponent(DexProgramClass clazz) {

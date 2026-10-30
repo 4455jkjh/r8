@@ -42,30 +42,28 @@ To reproduce that AOSP state, use the following commands:
   <continue with repo sync as above>
 
 
-art-master (Currently Android U)
---------------------------------
-Build from master, build spec included. Art at 31b98e9ce8fbb56c3507c8e7718881efa1ce9f63.
+art-main (currently from 2026/10/23)
+------------------------------------
+Build from main, build spec included. Art at 783fe5bccb6ce37baadce37f33c683bb3502c24b.
 
 repo sync -cq -j24
 source build/envsetup.sh
-lunch aosp_redfin-userdebug
-m -j48
-m -j48 build-art
-m -j48 test-art-host
+lunch aosp_akita-trunk_staging-userdebug
+m clean
+m systemimage
+SISO_EXPERIMENTS=ignore-missing-targets art/tools/art_build.py --build-art-host-gtests --build-art-host-run-tests tzdata_icu_res_files_host_prebuilts tzdata_host tzdata_host_tzdata_apex tzlookup.xml_host_tzdata_apex tz_version_host tz_version_host_tzdata_apex libjavacrypto-host libjdwp-host
 repo manifest -r -o build_spec.xml
 
-Collected into tools/linux/host/art-master. The "host" path element is checked
+Collected into tools/linux/host/art-main. The "host" path element is checked
 by the script for running Art.
 
   cd <r8 checkout>
   scripts/update-host-art.sh \
-     --android-checkout <...>/android/tm-dev \
-     --art-dir host/art-master \
-     --android-product redfin
+     --android-checkout <checkout> \
+     --art-dir host/art-main
+     --android-product akita
 
-(cd tools/linux/host; upload_to_google_storage.py -a --bucket r8-deps art-master)
-
-repo init -b udc-preview1-release
+  (cd tools/linux/host; upload_to_google_storage.py -a --bucket r8-deps art-main)
 
 
 art-17.2.0 (Android Cinnamon Bun 2)

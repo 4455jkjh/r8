@@ -6,8 +6,10 @@ package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import com.android.tools.r8.utils.internal.collections.DisjointSets;
 import com.android.tools.r8.utils.internal.collections.Pair;
+import com.android.tools.r8.utils.internal.structural.Ordered;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,14 +24,15 @@ public class ParsedApiClassVerifier {
     boolean isDisjointWith(D a, D b);
   }
 
-  public static class ApiRangeSetOperations implements SetOperations<ApiRange> {
+  public static class SemiInfiniteRangeSetOperations<T extends Ordered<T>>
+      implements SetOperations<SemiInfiniteRange<T>> {
     @Override
-    public boolean isSubsetOf(ApiRange a, ApiRange b) {
+    public boolean isSubsetOf(SemiInfiniteRange<T> a, SemiInfiniteRange<T> b) {
       return a.isWithin(b);
     }
 
     @Override
-    public boolean isDisjointWith(ApiRange a, ApiRange b) {
+    public boolean isDisjointWith(SemiInfiniteRange<T> a, SemiInfiniteRange<T> b) {
       return !a.isOverlappingWith(b);
     }
   }

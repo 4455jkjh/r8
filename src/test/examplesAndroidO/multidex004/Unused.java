@@ -4,5 +4,4 @@
 
 package multidex004;
 
-public class Unused {
-}
+public class Unused {}

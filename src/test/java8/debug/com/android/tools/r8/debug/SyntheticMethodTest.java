@@ -62,13 +62,13 @@ public class SyntheticMethodTest extends DebugTestBase {
     commands.add(
         breakpoint(typeName(InnerAccessors.class) + "$Inner", "callPrivateMethodInOuterClass"));
     commands.add(run());
-    commands.add(checkLine(sourceFile, 15));
-    commands.add(stepInto(stepFilter));  // skip synthetic accessor
+    commands.add(checkLine(sourceFile, 18));
+    commands.add(stepInto(stepFilter)); // skip synthetic accessor
     if (stepFilter == NO_FILTER) {
       commands.add(stepInto(stepFilter));
     }
     commands.add(checkMethod(debuggeeClass, "privateMethod"));
-    commands.add(checkLine(sourceFile, 10));
+    commands.add(checkLine(sourceFile, 13));
     commands.add(run());
     runDebugTest(getConfig(), debuggeeClass, commands);
   }
@@ -79,8 +79,8 @@ public class SyntheticMethodTest extends DebugTestBase {
     List<Command> commands = new ArrayList<>();
     commands.add(breakpoint(debuggeeClass, "testGenericBridge"));
     commands.add(run());
-    commands.add(checkLine(sourceFile, 23));
-    commands.add(stepInto(stepFilter));  // skip synthetic accessor
+    commands.add(checkLine(sourceFile, 26));
+    commands.add(stepInto(stepFilter)); // skip synthetic accessor
     String implementationClassName = debuggeeClass + "$StringImpl";
     String methodName = "get";
     if (stepFilter == NO_FILTER) {
@@ -88,7 +88,7 @@ public class SyntheticMethodTest extends DebugTestBase {
       commands.add(stepInto(stepFilter));
     }
     commands.add(checkMethod(implementationClassName, methodName, "(Ljava/lang/String;)V"));
-    commands.add(checkLine(sourceFile, 18));
+    commands.add(checkLine(sourceFile, 21));
     commands.add(run());
     runDebugTest(getConfig(), debuggeeClass, commands);
   }

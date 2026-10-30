@@ -7,6 +7,8 @@ import static com.android.tools.r8.dex.Constants.DEX_MAGIC_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.EncodedValueUtils;
@@ -21,26 +23,29 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class EncodedFloatingValueTest {
+public class EncodedFloatingValueTest extends TestBase {
   private final double value;
 
-  public EncodedFloatingValueTest(double value) {
+  public EncodedFloatingValueTest(TestParameters parameters, double value) {
+    parameters.assertNoneRuntime();
     this.value = value;
   }
 
-  @Parameters(name = "{0}")
-  public static Collection<Double> data() {
-    return Arrays.asList(
-        0.0,
-        1.0,
-        0.5,
-        LongUtils.decodeDouble(1), // Lowest bit is 1 in double
-        LongUtils.decodeDouble(0x10), // Bits on byte boundary are 1.
-        LongUtils.decodeDouble(0x08),
-        LongUtils.decodeDouble(4607071218809329336L), // Test a real long (regression).
-        (double) (IntUtils.decodeFloat(1)), // Lowest bit is 1 in float
-        (double) (IntUtils.decodeFloat(0x10)), // Bits on byte boundary are 1
-        (double) (IntUtils.decodeFloat(0x08)));
+  @Parameters(name = "{0}, {1}")
+  public static Collection<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        Arrays.asList(
+            0.0,
+            1.0,
+            0.5,
+            LongUtils.decodeDouble(1), // Lowest bit is 1 in double
+            LongUtils.decodeDouble(0x10), // Bits on byte boundary are 1.
+            LongUtils.decodeDouble(0x08),
+            LongUtils.decodeDouble(4607071218809329336L), // Test a real long (regression).
+            (double) (IntUtils.decodeFloat(1)), // Lowest bit is 1 in float
+            (double) (IntUtils.decodeFloat(0x10)), // Bits on byte boundary are 1
+            (double) (IntUtils.decodeFloat(0x08))));
   }
 
   // Create a DexReader with correct file magic followed by the argument bytes. Positions the

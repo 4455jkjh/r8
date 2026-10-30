@@ -9,14 +9,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,6 +49,7 @@ public class ClassInlinerWithSimpleSuperTypeTest extends TestBase {
         .addKeepMainRule(TestClass.class)
         .addOptionsModification(options -> options.enableClassInlining = enableClassInlining)
         .enableInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .setMinApi(parameters)
         .compile()
@@ -101,6 +103,7 @@ public class ClassInlinerWithSimpleSuperTypeTest extends TestBase {
     }
 
     @NeverInline
+    @NoMethodStaticizing
     void method() {
       System.out.println(greeting);
     }

@@ -61,6 +61,23 @@ public class TestDeps {
     dependencies.put("AAPT2", null);
     dependencies.put("AGSA", null);
     dependencies.put("API_DATABASE", null);
+    dependencies.put("ART_DEFAULT", null);
+    dependencies.put("ART_5_1_1", null);
+    dependencies.put("ART_6_0_1", null);
+    dependencies.put("ART_7_0_0", null);
+    dependencies.put("ART_8_1_0", null);
+    dependencies.put("ART_9_0_0", null);
+    dependencies.put("ART_10_0_0", null);
+    dependencies.put("ART_12_0_0", null);
+    dependencies.put("ART_13_0_0", null);
+    dependencies.put("ART_14_0_0", null);
+    dependencies.put("ART_15_0_0", null);
+    dependencies.put("ART_16_0_0", null);
+    dependencies.put("ART_16_1_0", null);
+    dependencies.put("ART_17_0_0", null);
+    dependencies.put("ART_17_1_0", null);
+    dependencies.put("ART_17_2_0", null);
+    dependencies.put("ART_MAIN", null);
     dependencies.put("ART_TESTS", null);
     dependencies.put("ART_TESTS_LEGACY", null);
     dependencies.put("BOOKSTORY", null);
@@ -81,6 +98,8 @@ public class TestDeps {
     dependencies.put("COMPOSE_SAMPLES_REPLY", null);
     dependencies.put("CORE_LAMBDA_STUBS", null);
     dependencies.put("DAGGER", null);
+    dependencies.put("DALVIK_4_0_4", null);
+    dependencies.put("DALVIK_4_4_4", null);
     dependencies.put("DEPENDENCIES", null);
     dependencies.put("DESUGAR_JDK_LIBS_11", null);
     dependencies.put("DESUGAR_JDK_LIBS_8", null);
@@ -91,6 +110,10 @@ public class TestDeps {
     dependencies.put("DESUGAR_LIBRARY_RELEASE_1_1_1", null);
     dependencies.put("DESUGAR_LIBRARY_RELEASE_1_1_5", null);
     dependencies.put("DESUGAR_LIBRARY_RELEASE_2_0_3", null);
+    dependencies.put("DEX2OAT_33_10", null);
+    dependencies.put("DEX2OAT_35_14", null);
+    dependencies.put("DEX2OAT_36_0", null);
+    dependencies.put("DEX2OAT_HEAD", null);
     dependencies.put("EXAMPLES", null);
     dependencies.put("EXAMPLES_ANDROID_N", null);
     dependencies.put("EXAMPLES_ANDROID_O", null);
@@ -169,6 +192,7 @@ public class TestDeps {
     dependencies.put("TIVI", null);
     dependencies.put("TUSKY", null);
     dependencies.put("YOUTUBE_21_40", null);
+    dependencies.put("YOUTUBE_21_40_D8_MERGE", null);
   }
 
   private static Path getDependency(String key) {
@@ -185,6 +209,74 @@ public class TestDeps {
 
   public static Path getApiDatabasePath() {
     return getDependencyPath("API_DATABASE", "resources", "api_database.ser");
+  }
+
+  public static Path getArtDefaultDir() {
+    return getDependency("ART_DEFAULT");
+  }
+
+  public static Path getArt5_1_1Dir() {
+    return getDependency("ART_5_1_1");
+  }
+
+  public static Path getArt6_0_1Dir() {
+    return getDependency("ART_6_0_1");
+  }
+
+  public static Path getArt7_0_0Dir() {
+    return getDependency("ART_7_0_0");
+  }
+
+  public static Path getArt8_1_0Dir() {
+    return getDependency("ART_8_1_0");
+  }
+
+  public static Path getArt9_0_0Dir() {
+    return getDependency("ART_9_0_0");
+  }
+
+  public static Path getArt10_0_0Dir() {
+    return getDependency("ART_10_0_0");
+  }
+
+  public static Path getArt12_0_0Dir() {
+    return getDependency("ART_12_0_0");
+  }
+
+  public static Path getArt13_0_0Dir() {
+    return getDependency("ART_13_0_0");
+  }
+
+  public static Path getArt14_0_0Dir() {
+    return getDependency("ART_14_0_0");
+  }
+
+  public static Path getArt15_0_0Dir() {
+    return getDependency("ART_15_0_0");
+  }
+
+  public static Path getArt16_0_0Dir() {
+    return getDependency("ART_16_0_0");
+  }
+
+  public static Path getArt16_1_0Dir() {
+    return getDependency("ART_16_1_0");
+  }
+
+  public static Path getArt17_0_0Dir() {
+    return getDependency("ART_17_0_0");
+  }
+
+  public static Path getArt17_1_0Dir() {
+    return getDependency("ART_17_1_0");
+  }
+
+  public static Path getArt17_2_0Dir() {
+    return getDependency("ART_17_2_0");
+  }
+
+  public static Path getArtMainDir() {
+    return getDependency("ART_MAIN");
   }
 
   public static Path getArtTestsDir() {
@@ -275,6 +367,14 @@ public class TestDeps {
     return getDependencyPath("DAGGER", path);
   }
 
+  public static Path getDalvik4_0_4Dir() {
+    return getDependency("DALVIK_4_0_4");
+  }
+
+  public static Path getDalvik4_4_4Dir() {
+    return getDependency("DALVIK_4_4_4");
+  }
+
   public static Path getDesugarJdkLibs11Jar() {
     return getDependencyPath("DESUGAR_JDK_LIBS_11", "desugar_jdk_libs.jar");
   }
@@ -313,6 +413,22 @@ public class TestDeps {
 
   public static Path getDesugarLibraryRelease2_0_3Dir() {
     return getDependency("DESUGAR_LIBRARY_RELEASE_2_0_3");
+  }
+
+  public static Path getDex2Oat33_10Dir() {
+    return getDependency("DEX2OAT_33_10");
+  }
+
+  public static Path getDex2Oat35_14Dir() {
+    return getDependency("DEX2OAT_35_14");
+  }
+
+  public static Path getDex2Oat36_0Dir() {
+    return getDependency("DEX2OAT_36_0");
+  }
+
+  public static Path getDex2OatHeadDir() {
+    return getDependency("DEX2OAT_HEAD");
   }
 
   public static Path getExamplesDir() {
@@ -665,6 +781,10 @@ public class TestDeps {
 
   public static Path getYouTube2140Dir() {
     return getDependency("YOUTUBE_21_40");
+  }
+
+  public static Path getYouTube2140D8MergeDir() {
+    return getDependency("YOUTUBE_21_40_D8_MERGE");
   }
 
   public static Path getJunitJar() {

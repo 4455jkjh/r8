@@ -6,6 +6,7 @@ package com.android.tools.r8.maindexlist.checkdiscard;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -37,14 +38,15 @@ public class MainDexListCheckDiscard extends TestBase {
   private static final List<Class<?>> CLASSES =
       ImmutableList.of(HelloWorldMain.class, MainDexClass.class, NonMainDexClass.class);
 
-  @Parameters(name = "{0}")
-  public static Object[] parameters() {
-    return Command.values();
+  @Parameters(name = "{0}, {1}")
+  public static List<Object[]> parameters() {
+    return buildParameters(getTestParameters().withNoneRuntime().build(), Command.values());
   }
 
   private final Command command;
 
-  public MainDexListCheckDiscard(Command command) {
+  public MainDexListCheckDiscard(TestParameters parameters, Command command) {
+    parameters.assertNoneRuntime();
     this.command = command;
   }
 

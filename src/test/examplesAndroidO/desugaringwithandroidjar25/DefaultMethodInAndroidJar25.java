@@ -16,10 +16,12 @@ public class DefaultMethodInAndroidJar25 {
 
 class ClassWithDefaultPlatformMethods implements Collection<String> {
   private final ArrayList<String> list =
-      new ArrayList<String>() {{
-        add("First");
-        add("Second");
-      }};
+      new ArrayList<String>() {
+        {
+          add("First");
+          add("Second");
+        }
+      };
 
   static void test() {
     ClassWithDefaultPlatformMethods instance = new ClassWithDefaultPlatformMethods();

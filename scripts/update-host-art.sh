@@ -17,9 +17,9 @@
 
 set -e
 
-ANDROID_CHECKOUT=~/android/master
+ANDROID_CHECKOUT=~/android/main
 ANDROID_PRODUCT=akita
-ART_DIR=host/art-master
+ART_DIR=host/art-main
 DEST_ROOT=tools/linux
 
 function usage {

@@ -5,9 +5,11 @@ package intrinsics_identifiers;
 
 class ToBeRenamedClass {
   String toBeRenamedField = "SUFFIX";
+
   String toBeRenamedMethod(String arg) {
     return arg + toBeRenamedField;
   }
+
   void updateField(String arg) {
     toBeRenamedField = arg;
   }

@@ -1078,7 +1078,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   }
 
   public boolean hasCfByteCodePassThroughMethods() {
-    return !cfByteCodePassThrough.isEmpty();
+    return !cfByteCodePassThrough.isEmpty() || options().testing.cfByteCodePassThrough != null;
   }
 
   @SuppressWarnings("ReferenceEquality")
