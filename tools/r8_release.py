@@ -382,8 +382,14 @@ Test: n/a"""
         with utils.ChangedWorkingDirectory(tools_buildsrc):
             if not options.use_existing_work_branch:
                 subprocess.check_call(['repo', 'start', change_name])
+            r8_versions_toml = os.path.join('base', 'r8.versions.toml')
             libs_versions_toml = os.path.join('base', 'libs.versions.toml')
-            if os.path.exists(libs_versions_toml):
+            if os.path.exists(r8_versions_toml):
+                sed(r'r8 = "com\.android\.tools:r8:[^"]+"',
+                    f'r8 = "com.android.tools:r8:{version}"', r8_versions_toml)
+            elif os.path.exists(libs_versions_toml):
+                # TODO(b/562732980): Remove this branch, as no release branch
+                # will have libs.versions.toml without r8.versions.toml.
                 sed(r'r8 = "com\.android\.tools:r8:[^"]+"',
                     f'r8 = "com.android.tools:r8:{version}"',
                     libs_versions_toml)
