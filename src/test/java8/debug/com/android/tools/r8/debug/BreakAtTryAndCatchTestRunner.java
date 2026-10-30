@@ -70,14 +70,14 @@ public class BreakAtTryAndCatchTestRunner extends DebugTestBase {
     runDebugTest(
         config,
         NAME,
-        breakpoint(NAME, "foo", 10),
+        breakpoint(NAME, "foo", 14),
         run(),
-        checkLine(FILE, 10), // hit line entry, bar does not throw
+        checkLine(FILE, 14), // hit line entry, bar does not throw
         run(),
-        checkLine(FILE, 10), // hit line entry, bar does throw
-        breakpoint(NAME, "main", 31),
+        checkLine(FILE, 14), // hit line entry, bar does throw
+        breakpoint(NAME, "main", 35),
         run(),
-        checkLine(FILE, 31), // No more hits on line, continue to main.
+        checkLine(FILE, 35), // No more hits on line, continue to main.
         run());
   }
 }

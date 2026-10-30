@@ -152,14 +152,14 @@ public class ContinuousSteppingTest extends DebugTestBase {
   // Returns a list of classes with a "public static void main(String[])" method in the given jar
   // file.
   private static List<String> getAllMainClassesFromJar(Path pathToJar) throws IOException {
-    JarInputStream jarInputStream = new JarInputStream(Files.newInputStream(pathToJar,
-        StandardOpenOption.READ));
+    JarInputStream jarInputStream =
+        new JarInputStream(Files.newInputStream(pathToJar, StandardOpenOption.READ));
     final URL url = pathToJar.toUri().toURL();
     assert pathToJar.toFile().exists();
     assert pathToJar.toFile().isFile();
     List<String> mainClasses = new ArrayList<>();
-    ClassLoader loader = new URLClassLoader(new URL[]{url},
-        Thread.currentThread().getContextClassLoader());
+    ClassLoader loader =
+        new URLClassLoader(new URL[] {url}, Thread.currentThread().getContextClassLoader());
 
     try {
       JarEntry entry;
@@ -168,14 +168,17 @@ public class ContinuousSteppingTest extends DebugTestBase {
         if (entryName.endsWith(FileUtils.CLASS_EXTENSION)) {
           String className =
               entryName.substring(0, entryName.length() - FileUtils.CLASS_EXTENSION.length());
-          className = className.replace(DescriptorUtils.DESCRIPTOR_PACKAGE_SEPARATOR,
-              DescriptorUtils.JAVA_PACKAGE_SEPARATOR);
+          className =
+              className.replace(
+                  DescriptorUtils.DESCRIPTOR_PACKAGE_SEPARATOR,
+                  DescriptorUtils.JAVA_PACKAGE_SEPARATOR);
           try {
             Class<?> cls = loader.loadClass(className);
             if (cls != null) {
-              long mainMethodsCount = Arrays.stream(cls.getMethods())
-                  .filter(ContinuousSteppingTest::isMainMethod)
-                  .count();
+              long mainMethodsCount =
+                  Arrays.stream(cls.getMethods())
+                      .filter(ContinuousSteppingTest::isMainMethod)
+                      .count();
               if (mainMethodsCount == 1) {
                 // Add class to the list
                 mainClasses.add(className);

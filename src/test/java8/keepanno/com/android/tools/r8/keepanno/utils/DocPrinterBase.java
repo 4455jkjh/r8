@@ -4,11 +4,11 @@
 
 package com.android.tools.r8.keepanno.utils;
 
-import java.util.function.Consumer;
 import com.google.common.html.HtmlEscapers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class DocPrinterBase<T> {

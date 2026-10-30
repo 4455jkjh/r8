@@ -32,8 +32,7 @@ public class EmptyLineAfterJoinTestRunner extends DebugTestBase {
 
   @Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
-    DelayedDebugTestConfig cf =
-        temp -> new CfDebugTestConfig().addPaths(getInputJar(temp));
+    DelayedDebugTestConfig cf = temp -> new CfDebugTestConfig().addPaths(getInputJar(temp));
     Function<DexRuntime, DelayedDebugTestConfig> d8 =
         dexRuntime ->
             temp -> new D8DebugTestConfig(dexRuntime).compileAndAdd(temp, getInputJar(temp));
@@ -60,19 +59,19 @@ public class EmptyLineAfterJoinTestRunner extends DebugTestBase {
     runDebugTest(
         config,
         NAME,
-        breakpoint(NAME, "foo", 13),
+        breakpoint(NAME, "foo", 17),
         run(),
-        checkLine(FILE, 13),
+        checkLine(FILE, 17),
         checkLocal("x"),
         stepOver(),
-        checkLine(FILE, 14),
+        checkLine(FILE, 18),
         checkLocal("x"),
         stepOver(),
-        checkLine(FILE, 16),
+        checkLine(FILE, 20),
         checkNoLocal("x"),
         checkNoLocal("y"),
         stepOver(),
-        checkLine(FILE, 17),
+        checkLine(FILE, 21),
         checkNoLocal("x"),
         checkLocal("y"),
         run());

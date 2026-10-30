@@ -7,6 +7,7 @@ package com.android.tools.r8.keepanno.utils;
 import static com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.getUnqualifiedName;
 import static com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.quote;
 
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.keepanno.doctests.ForApiDocumentationTest;
 import com.android.tools.r8.keepanno.doctests.GenericSignaturePrinter;
 import com.android.tools.r8.keepanno.doctests.MainMethodsDocumentationTest;
@@ -16,7 +17,6 @@ import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.EnumRefer
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Generator;
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Group;
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.GroupMember;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -38,8 +38,7 @@ public class KeepAnnoMarkdownGenerator {
 
   public static void generateMarkdownDoc(Generator generator, Path projectRoot) {
     try {
-      new KeepAnnoMarkdownGenerator(generator)
-          .internalGenerateMarkdownDoc(projectRoot);
+      new KeepAnnoMarkdownGenerator(generator).internalGenerateMarkdownDoc(projectRoot);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

@@ -622,7 +622,6 @@ public class KeepItemAnnotationGenerator {
       return new EnumReference(enumClass, valueName);
     }
 
-
     public void withIndent(Runnable fn) {
       indent += 2;
       fn.run();

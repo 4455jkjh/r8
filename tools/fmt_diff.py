@@ -38,6 +38,7 @@ FULLY_FORMATTED_DIRECTORIES = (
     'src/test/examplesAndroidP',
     'src/test/java11',
     'src/test/java17',
+    'src/test/java8',
     'src/test/kotlinR8TestResources',
     'src/test/sampleApks',
     'src/test/testbase',

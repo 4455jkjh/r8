@@ -5,7 +5,7 @@
 package com.android.tools.r8.debug;
 
 public class DoNotCrashOnAccessToThis {
-  private String[] array = new String[] { "asdf" };
+  private String[] array = new String[] {"asdf"};
 
   public int length() {
     return array.length;
@@ -31,6 +31,5 @@ public class DoNotCrashOnAccessToThis {
     } catch (ArrayIndexOutOfBoundsException e) {
       System.out.println("Caught ArrayIndexOutOfBoundsException");
     }
-
   }
 }

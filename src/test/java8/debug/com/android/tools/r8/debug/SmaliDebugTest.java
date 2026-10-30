@@ -44,6 +44,7 @@ public class SmaliDebugTest extends DebugTestBase {
   /**
    * Simple test to check setup works for the Java source, ala:
    *
+   * <pre>
    * static int method(int x) {
    *   if (x != 0) {
    *     return x
@@ -51,6 +52,7 @@ public class SmaliDebugTest extends DebugTestBase {
    *     return 42;
    *   }
    * }
+   * </pre>
    */
   @Test
   public void testSimpleIf() throws Throwable {
@@ -74,12 +76,15 @@ public class SmaliDebugTest extends DebugTestBase {
         run());
   }
 
-  private List<Path> buildSimpleIf(String methodName)
-      throws Throwable {
+  private List<Path> buildSimpleIf(String methodName) throws Throwable {
     SmaliBuilder builder = new SmaliBuilder();
     builder.addClass(CLASS);
     builder.setSourceFile(FILE);
-    builder.addStaticMethod("int", methodName, Collections.singletonList("int"), 0,
+    builder.addStaticMethod(
+        "int",
+        methodName,
+        Collections.singletonList("int"),
+        0,
         ".param p0, \"x\"    # I",
         ".line 1",
         "    if-eqz p0, :onzero",
@@ -90,7 +95,8 @@ public class SmaliDebugTest extends DebugTestBase {
         "    const p0, 42",
         "    return p0");
 
-    builder.addMainMethod(2,
+    builder.addMainMethod(
+        2,
         "    const v0, 0",
         "    invoke-static       { v0 }, L" + CLASS + ";->" + methodName + "(I)I",
         "    move-result         v1",
@@ -101,8 +107,7 @@ public class SmaliDebugTest extends DebugTestBase {
         "    move-result         v1",
         "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
     return buildAndRun(builder);
   }
 
@@ -172,12 +177,15 @@ public class SmaliDebugTest extends DebugTestBase {
         run());
   }
 
-  private List<Path> buildJumpAfterLineChange(String methodName)
-      throws Throwable {
+  private List<Path> buildJumpAfterLineChange(String methodName) throws Throwable {
     SmaliBuilder builder = new SmaliBuilder();
     builder.addClass(CLASS);
     builder.setSourceFile(FILE);
-    builder.addStaticMethod("int", methodName, Collections.singletonList("int"), 2,
+    builder.addStaticMethod(
+        "int",
+        methodName,
+        Collections.singletonList("int"),
+        2,
         ".param p0, \"x\"    # I",
         ".line 1",
         "    const v0, 0",
@@ -195,7 +203,8 @@ public class SmaliDebugTest extends DebugTestBase {
         ".line 5",
         "    return v0");
 
-    builder.addMainMethod(2,
+    builder.addMainMethod(
+        2,
         "    const v0, 0",
         "    invoke-static       { v0 }, L" + CLASS + ";->" + methodName + "(I)I",
         "    move-result         v1",
@@ -206,8 +215,7 @@ public class SmaliDebugTest extends DebugTestBase {
         "    move-result         v1",
         "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
     return buildAndRun(builder);
   }
 

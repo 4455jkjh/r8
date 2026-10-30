@@ -33,8 +33,8 @@ public class R8DebugNonMinifiedProgramTestRunner extends DebugTestBase {
     this.parameters = parameters;
   }
 
-  private static BiFunction<Backend, AndroidApiLevel, R8TestCompileResult> compiledDebug
-      = memoizeBiFunction(R8DebugNonMinifiedProgramTestRunner::compileDebug);
+  private static BiFunction<Backend, AndroidApiLevel, R8TestCompileResult> compiledDebug =
+      memoizeBiFunction(R8DebugNonMinifiedProgramTestRunner::compileDebug);
 
   private static R8TestCompileResult compileDebug(Backend backend, AndroidApiLevel apiLevel)
       throws Exception {
@@ -70,7 +70,9 @@ public class R8DebugNonMinifiedProgramTestRunner extends DebugTestBase {
 
     DebugTestConfig debugTestConfig = compileResult.debugConfig(parameters.getRuntime());
     assertNull("For this test the map file must not be present!", debugTestConfig.getProguardMap());
-    runDebugTest(debugTestConfig, CLASS,
+    runDebugTest(
+        debugTestConfig,
+        CLASS,
         breakpoint(CLASS.getTypeName(), "main"),
         run(),
         checkLine(12),

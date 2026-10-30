@@ -86,8 +86,7 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
   }
 
   protected static byte[] setAnnotationOnClass(
-      ClassFileTransformer transformer,
-      Consumer<AnnotationBuilder> builderConsumer) {
+      ClassFileTransformer transformer, Consumer<AnnotationBuilder> builderConsumer) {
     return transformer.setAnnotation(builderConsumer).transform();
   }
 
@@ -130,9 +129,7 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
       return classFileBytes;
     }
     return setAnnotationOnMethod(
-        transformer(classFileBytes, classReference),
-        methodPredicate,
-        builderConsumer);
+        transformer(classFileBytes, classReference), methodPredicate, builderConsumer);
   }
 
   protected static byte[] setAnnotationOnField(

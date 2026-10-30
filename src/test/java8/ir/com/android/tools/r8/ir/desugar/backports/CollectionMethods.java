@@ -48,7 +48,6 @@ public class CollectionMethods {
 
   public static <K, V> Map.Entry<K, V> mapEntry(K key, V value) {
     return new AbstractMap.SimpleImmutableEntry<>(
-        Objects.requireNonNull(key),
-        Objects.requireNonNull(value));
+        Objects.requireNonNull(key), Objects.requireNonNull(value));
   }
 }

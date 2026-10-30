@@ -168,8 +168,7 @@ public class KeepUsesReflectionForInstantiationAnyArgsConstructorTest
         ImmutableList.of(KeptClass.class),
         ImmutableList.of(
             setAnnotationOnClass(
-                AnyConstructor.class,
-                builder -> buildAnyConstructor(builder, KeptClass.class))),
+                AnyConstructor.class, builder -> buildAnyConstructor(builder, KeptClass.class))),
         getExpectedRulesJava(AnyConstructor.class));
   }
 
