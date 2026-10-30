@@ -33,7 +33,8 @@ public class BranchDiamondInverter extends FinalizerRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code) {
-    return code.blocks.size() >= 2;
+    return appView.options().getTestingOptions().enableBranchDiamondInverter
+        && code.blocks.size() >= 2;
   }
 
   @Override

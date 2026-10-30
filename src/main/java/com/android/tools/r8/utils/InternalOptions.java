@@ -2353,6 +2353,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableSimplifyNonBooleanCondition =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableSimplifyNonBooleanCondition", true);
+    public boolean enableFreeExpiredRegistersBeforeInvokeRangeAllocation =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableFreeExpiredRegistersBeforeInvokeRangeAllocation", true);
     public boolean enableKnownBooleanShiftDiamondSimplification =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKnownBooleanShiftDiamondSimplification", true);
@@ -2360,6 +2363,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableRemoveRedundantDebugPositionsInTrivialGotosCollapser",
             true);
+    public boolean enableBranchDiamondInverter =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableBranchDiamondInverter", true);
+    public boolean enable2AddrHintsForLogicalBinop =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enable2AddrHintsForLogicalBinop", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
