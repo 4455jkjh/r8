@@ -68,6 +68,7 @@ public class AppDumpBenchmarkBuilder {
 
   private String name;
   private BenchmarkDependency dumpDependency;
+  private String dumpName;
   private String pgMapInput;
   private int fromRevision = -1;
   private CompilationMode compilationMode;
@@ -151,6 +152,11 @@ public class AppDumpBenchmarkBuilder {
 
   public AppDumpBenchmarkBuilder setDumpDependency(BenchmarkDependency dependency) {
     this.dumpDependency = dependency;
+    return this;
+  }
+
+  public AppDumpBenchmarkBuilder setDumpName(String dumpName) {
+    this.dumpName = dumpName;
     return this;
   }
 
@@ -337,13 +343,20 @@ public class AppDumpBenchmarkBuilder {
     return name + "Merge";
   }
 
+  private String getDumpName() {
+    if (dumpName != null) {
+      assert !enableResourceShrinking;
+      return dumpName;
+    }
+    return enableResourceShrinking ? "dump_app_res.zip" : "dump_app.zip";
+  }
+
   private Path getExtractedFile(BenchmarkEnvironment environment, String fileName) {
     return dumpDependency.getRoot(environment).resolve(fileName);
   }
 
   private CompilerDump getExtractedDump(BenchmarkEnvironment environment) throws IOException {
-    String dumpName = enableResourceShrinking ? "dump_app_res.zip" : "dump_app.zip";
-    Path dump = dumpDependency.getRoot(environment).resolve(dumpName);
+    Path dump = getExtractedFile(environment, getDumpName());
     return CompilerDump.fromArchive(dump, environment.getTemp().newFolder().toPath());
   }
 
