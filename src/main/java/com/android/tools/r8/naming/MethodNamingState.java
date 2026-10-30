@@ -80,30 +80,31 @@ class MethodNamingState<KeyType> extends MethodNamingStateBase<KeyType, Internal
   }
 
   boolean isAvailable(DexString candidate, DexMethod method) {
-    Set<Wrapper<DexMethod>> usedBy = getUsedBy(candidate, method);
-    if (usedBy != null && usedBy.contains(MethodSignatureEquivalence.get().wrap(method))) {
-      return true;
+    boolean isUsed = false;
+    Wrapper<DexMethod> wrapped = MethodSignatureEquivalence.get().wrap(method);
+    for (MethodNamingState<KeyType> state = this; state != null; state = state.parentNamingState) {
+      InternalNewNameState internalState = state.getInternalState(method);
+      Set<Wrapper<DexMethod>> usedBy =
+          internalState != null ? internalState.getUsedBy(candidate) : null;
+      if (usedBy != null) {
+        if (usedBy.contains(wrapped)) {
+          return true;
+        }
+        isUsed = true;
+        for (Wrapper<DexMethod> used : usedBy) {
+          if (used.get().getProto().isIdenticalTo(method.getProto())) {
+            return false;
+          }
+        }
+      }
     }
-    boolean isReserved = reservationState.isReserved(candidate, method);
-    if (!isReserved && usedBy == null) {
-      return true;
+    if (!reservationState.isReserved(candidate, method)) {
+      return !isUsed;
     }
     // We now have a reserved name. We therefore have to check if the reservation is
     // equal to candidate, otherwise the candidate is not available.
     Set<DexString> methodReservedNames = reservationState.getReservedNamesFor(method);
     return methodReservedNames != null && methodReservedNames.contains(candidate);
-  }
-
-  private Set<Wrapper<DexMethod>> getUsedBy(DexString name, DexMethod method) {
-    InternalNewNameState internalState = getInternalState(method);
-    Set<Wrapper<DexMethod>> nameUsedBy = null;
-    if (internalState != null) {
-      nameUsedBy = internalState.getUsedBy(name);
-    }
-    if (nameUsedBy == null && parentNamingState != null) {
-      return parentNamingState.getUsedBy(name, method);
-    }
-    return nameUsedBy;
   }
 
   private DexString getAssignedName(DexMethod method) {
