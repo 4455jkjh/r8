@@ -22,16 +22,23 @@ public final class ApiDatabaseGeneratorCommand {
   private final List<Path> xmlPaths;
   private final Path outputPath;
   private final boolean amend;
+  private final boolean allowFutureVersions;
   private final Reporter reporter;
   private final boolean printHelp;
   private final boolean printVersion;
 
   private ApiDatabaseGeneratorCommand(
-      List<Path> jarPaths, List<Path> xmlPaths, Path outputPath, boolean amend, Reporter reporter) {
+      List<Path> jarPaths,
+      List<Path> xmlPaths,
+      Path outputPath,
+      boolean amend,
+      boolean allowFutureVersions,
+      Reporter reporter) {
     this.jarPaths = jarPaths;
     this.xmlPaths = xmlPaths;
     this.outputPath = outputPath;
     this.amend = amend;
+    this.allowFutureVersions = allowFutureVersions;
     this.reporter = reporter;
     this.printHelp = false;
     this.printVersion = false;
@@ -42,6 +49,7 @@ public final class ApiDatabaseGeneratorCommand {
     this.xmlPaths = Collections.emptyList();
     this.outputPath = null;
     this.amend = false;
+    this.allowFutureVersions = false;
     this.reporter = new Reporter();
     this.printHelp = printHelp;
     this.printVersion = printVersion;
@@ -65,6 +73,10 @@ public final class ApiDatabaseGeneratorCommand {
 
   public boolean shouldAmend() {
     return amend;
+  }
+
+  public boolean allowFutureVersions() {
+    return allowFutureVersions;
   }
 
   public Path getOutputPath() {
@@ -101,6 +113,7 @@ public final class ApiDatabaseGeneratorCommand {
     private final List<Path> xmlPaths = new ArrayList<>();
     private Path outputPath = null;
     private boolean amend = true;
+    private boolean allowFutureVersions = false;
     private boolean printHelp = false;
     private boolean printVersion = false;
     private final Reporter reporter;
@@ -139,6 +152,11 @@ public final class ApiDatabaseGeneratorCommand {
       return this;
     }
 
+    public Builder setAllowFutureVersions(boolean allowFutureVersions) {
+      this.allowFutureVersions = allowFutureVersions;
+      return this;
+    }
+
     public Builder setPrintHelp(boolean printHelp) {
       this.printHelp = printHelp;
       return this;
@@ -167,7 +185,8 @@ public final class ApiDatabaseGeneratorCommand {
               outputPath = Paths.get(".", "api_database.ser");
             }
             box.set(
-                new ApiDatabaseGeneratorCommand(jarPaths, xmlPaths, outputPath, amend, reporter));
+                new ApiDatabaseGeneratorCommand(
+                    jarPaths, xmlPaths, outputPath, amend, allowFutureVersions, reporter));
           },
           (message, cause, cancelled) -> new ApiDatabaseGeneratorException(message, cause));
       return box.get();

@@ -51,6 +51,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.BiConsumerUtils;
@@ -189,18 +190,18 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     };
   }
 
-  private static Trimmer<SemiInfiniteRange<AndroidApiLevel>, ApiDatabaseGeneratorException>
-      addJarAssertions(JarTrimmer jarTrimmer) {
+  private static Trimmer<SemiInfiniteRange<UncheckedApiLevel>, ApiDatabaseGeneratorException>
+      addJarAssertions(JarTrimmer<SemiInfiniteRange<UncheckedApiLevel>> jarTrimmer) {
     Map<String, Boolean> expectedTrimmedPackages = new HashMap<>();
     ApiJarInfo jarInfo = jarTrimmer.getJarInfo();
     expectedTrimmedPackages.put("junit/", false);
     expectedTrimmedPackages.put("android/test/", false);
     expectedTrimmedPackages.put("com/android/internal/", false);
-    TrimmerListener<SemiInfiniteRange<AndroidApiLevel>> listener =
-        new TrimmerListener<SemiInfiniteRange<AndroidApiLevel>>() {
+    TrimmerListener<SemiInfiniteRange<UncheckedApiLevel>> listener =
+        new TrimmerListener<SemiInfiniteRange<UncheckedApiLevel>>() {
           @Override
           public void skipClass(
-              ClassReference clazz, SemiInfiniteRange<AndroidApiLevel> range, SkipAnswer answer) {
+              ClassReference clazz, SemiInfiniteRange<UncheckedApiLevel> range, SkipAnswer answer) {
             String classBinaryName = clazz.getBinaryName();
             for (String pkg : expectedTrimmedPackages.keySet()) {
               if (classBinaryName.startsWith(pkg)) {
@@ -216,7 +217,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           public void skipExtends(
               ClassReference clazz,
               ClassReference supertype,
-              SemiInfiniteRange<AndroidApiLevel> range,
+              SemiInfiniteRange<UncheckedApiLevel> range,
               SkipAnswer answer) {
             assertEquals(
                 "No extends should be skipped: " + clazz + ", " + supertype,
@@ -228,7 +229,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           public void skipImplements(
               ClassReference clazz,
               ClassReference supertype,
-              SemiInfiniteRange<AndroidApiLevel> range,
+              SemiInfiniteRange<UncheckedApiLevel> range,
               SkipAnswer answer) {
             assertEquals(
                 "No implements should be skipped: " + clazz + ", " + supertype,
@@ -240,7 +241,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           public void skipMethod(
               ClassReference clazz,
               MethodReference method,
-              SemiInfiniteRange<AndroidApiLevel> range,
+              SemiInfiniteRange<UncheckedApiLevel> range,
               SkipAnswer answer) {
             if (answer == SkipAnswer.SKIP) {
               try {
@@ -260,7 +261,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           public void skipField(
               ClassReference clazz,
               FieldTypelessReference field,
-              SemiInfiniteRange<AndroidApiLevel> range,
+              SemiInfiniteRange<UncheckedApiLevel> range,
               SkipAnswer answer) {
             assertEquals("No fields should be skipped: " + field, SkipAnswer.KEEP, answer);
           }

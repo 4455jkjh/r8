@@ -9,10 +9,12 @@ import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator;
 import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator.GenerationException;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingException;
+import com.android.tools.r8.apimodel.FieldTypelessReference;
 import com.android.tools.r8.apimodel.ParsedApiClass;
 import com.android.tools.r8.apimodel.ParsedApiClassFlattening;
 import com.android.tools.r8.apimodel.ParsedApiClassMapping;
 import com.android.tools.r8.apimodel.ParsedApiClassMapping.GreatestEndingRangeMapper;
+import com.android.tools.r8.apimodel.ParsedApiClassMapping.Mapper;
 import com.android.tools.r8.apimodel.ParsedApiClassMerging;
 import com.android.tools.r8.apimodel.ParsedApiClassSorting;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming;
@@ -26,8 +28,12 @@ import com.android.tools.r8.apimodel.jar.ApiJarMerging;
 import com.android.tools.r8.apimodel.jar.ApiJarReader;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionUtils;
+import com.android.tools.r8.utils.ResolvedAndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import com.android.tools.r8.utils.internal.SemiInfiniteRangeSet;
 import java.io.IOException;
@@ -48,8 +54,8 @@ public class ApiDatabaseGenerator {
       ApiDatabaseGeneratorCommand command,
       AmendmentListener amendmentListener,
       Function<
-              JarTrimmer,
-              Trimmer<SemiInfiniteRange<AndroidApiLevel>, ApiDatabaseGeneratorException>>
+              JarTrimmer<SemiInfiniteRange<UncheckedApiLevel>>,
+              Trimmer<SemiInfiniteRange<UncheckedApiLevel>, ApiDatabaseGeneratorException>>
           jarTrimmerWrapper)
       throws ApiDatabaseGeneratorException {
     if (command.isPrintHelp()) {
@@ -70,8 +76,8 @@ public class ApiDatabaseGenerator {
       ApiDatabaseGeneratorCommand command,
       AmendmentListener amendmentListener,
       Function<
-              JarTrimmer,
-              Trimmer<SemiInfiniteRange<AndroidApiLevel>, ApiDatabaseGeneratorException>>
+              JarTrimmer<SemiInfiniteRange<UncheckedApiLevel>>,
+              Trimmer<SemiInfiniteRange<UncheckedApiLevel>, ApiDatabaseGeneratorException>>
           jarTrimmerWrapper)
       throws ApiDatabaseGeneratorException {
     try {
@@ -87,10 +93,13 @@ public class ApiDatabaseGenerator {
       Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> generateClasses(
           ApiDatabaseGeneratorCommand command,
           AmendmentListener amendmentListener,
-          Function<JarTrimmer, Trimmer<SemiInfiniteRange<AndroidApiLevel>, E>> jarTrimmerWrapper)
+          Function<
+                  JarTrimmer<SemiInfiniteRange<UncheckedApiLevel>>,
+                  Trimmer<SemiInfiniteRange<UncheckedApiLevel>, E>>
+              jarTrimmerWrapper)
           throws ApiDatabaseGeneratorException, E {
     try {
-      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classes =
+      Collection<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classes =
           extractClasses(command);
       classes = ParsedApiClassMerging.merge(classes, command.getDiagnosticsHandler());
 
@@ -100,24 +109,89 @@ public class ApiDatabaseGenerator {
       if (command.shouldAmend()) {
         amendApiData(classes, jarInfo, amendmentListener);
       }
-      Collection<ParsedApiClass<SemiInfiniteRangeSet<AndroidApiLevel>>> flattenedClasses =
+      Collection<ParsedApiClass<SemiInfiniteRangeSet<UncheckedApiLevel>>> flattenedClasses =
           flattenHierarchy(classes);
       classes = ParsedApiClassMapping.map(flattenedClasses, new GreatestEndingRangeMapper<>());
-      classes = ParsedApiClassTrimming.trim(classes, new RemovedTrimmer<>());
-      Trimmer<SemiInfiniteRange<AndroidApiLevel>, E> jarTrimmer =
-          jarTrimmerWrapper.apply(new JarTrimmer(jarInfo));
+      classes =
+          ParsedApiClassTrimming.trim(classes, new RemovedTrimmer(command.allowFutureVersions()));
+      Trimmer<SemiInfiniteRange<UncheckedApiLevel>, E> jarTrimmer =
+          jarTrimmerWrapper.apply(new JarTrimmer<>(jarInfo));
       classes = ParsedApiClassTrimming.trim(classes, jarTrimmer);
       classes = ParsedApiClassSorting.sorted(classes);
       ParsedApiClassVerifier.verify(classes, new SemiInfiniteRangeSetOperations<>());
-      return classes;
+      return ParsedApiClassMapping.map(classes, new AndroidApiLevelMapper());
     } catch (ParsingException | IOException e) {
       throw new ApiDatabaseGeneratorException("Failed to generate API classes", e);
     }
   }
 
-  private static Collection<ParsedApiClass<SemiInfiniteRangeSet<AndroidApiLevel>>> flattenHierarchy(
-      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classes)
-      throws ApiDatabaseGeneratorException {
+  private static class AndroidApiLevelMapper
+      implements Mapper<
+          SemiInfiniteRange<UncheckedApiLevel>,
+          SemiInfiniteRange<AndroidApiLevel>,
+          ApiDatabaseGeneratorException> {
+
+    private AndroidApiLevel mapLevel(UncheckedApiLevel apiLevel)
+        throws ApiDatabaseGeneratorException {
+      ResolvedAndroidApiLevel resolved = AndroidApiLevel.resolveAndroidApiLevel(apiLevel);
+      if (resolved.isKnown()) {
+        return resolved.asKnown().getApiLevel();
+      }
+      throw new ApiDatabaseGeneratorException("Invalid Android API level: " + apiLevel);
+    }
+
+    private SemiInfiniteRange<AndroidApiLevel> mapRange(SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return new SemiInfiniteRange<>(
+          mapLevel(range.start), range.hasEnd() ? mapLevel(range.end) : null);
+    }
+
+    @Override
+    public SemiInfiniteRange<AndroidApiLevel> mapClass(
+        ClassReference clazz, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return mapRange(range);
+    }
+
+    @Override
+    public SemiInfiniteRange<AndroidApiLevel> mapExtends(
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return mapRange(range);
+    }
+
+    @Override
+    public SemiInfiniteRange<AndroidApiLevel> mapImplements(
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return mapRange(range);
+    }
+
+    @Override
+    public SemiInfiniteRange<AndroidApiLevel> mapMethod(
+        ClassReference clazz, MethodReference method, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return mapRange(range);
+    }
+
+    @Override
+    public SemiInfiniteRange<AndroidApiLevel> mapField(
+        ClassReference clazz,
+        FieldTypelessReference field,
+        SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return mapRange(range);
+    }
+
+    @Override
+    public void done() {
+      // Do nothing.
+    }
+  }
+
+  private static Collection<ParsedApiClass<SemiInfiniteRangeSet<UncheckedApiLevel>>>
+      flattenHierarchy(Collection<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classes)
+          throws ApiDatabaseGeneratorException {
     try {
       return ParsedApiClassFlattening.flatten(classes);
     } catch (ApiDatabaseGeneratorException e) {
@@ -126,7 +200,7 @@ public class ApiDatabaseGenerator {
   }
 
   private static void amendApiData(
-      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classes,
+      Collection<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classes,
       ApiJarInfo jarInfo,
       AmendmentListener amendmentListener)
       throws ApiDatabaseGeneratorException, IOException {
@@ -139,11 +213,11 @@ public class ApiDatabaseGenerator {
     }
   }
 
-  private static List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> extractClasses(
+  private static List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> extractClasses(
       ApiDatabaseGeneratorCommand command) throws ParsingException {
-    List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> allParsed = new ArrayList<>();
+    List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> allParsed = new ArrayList<>();
     for (Path xmlPath : command.getXmlPaths()) {
-      List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> parsed =
+      List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> parsed =
           AndroidApiVersionsXmlParser.parse(xmlPath);
       allParsed.addAll(parsed);
     }

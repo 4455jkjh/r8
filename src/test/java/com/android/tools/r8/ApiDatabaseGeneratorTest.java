@@ -434,6 +434,123 @@ public class ApiDatabaseGeneratorTest extends TestBase {
         diagnosticMessage(containsString("Unexpected argument: " + txtFile)));
   }
 
+  @Test
+  public void testFutureVersionsRejectedByDefault() throws Exception {
+    Path apiVersionsXml =
+        writeApiXmlWithObject(
+            "api-versions.xml",
+            "  <class name=\"android/Foo\" since=\"38\">",
+            "    <extends name=\"java/lang/Object\"/>",
+            "  </class>");
+    Path dummyJar = writeJar("dummy.jar", new JarClassBuilder("android/Foo", "java/lang/Object"));
+    Path outputDb = temp.newFile("api_database.ser").toPath();
+
+    TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder(diagnosticsHandler)
+            .addXmlPath(apiVersionsXml)
+            .addJarPath(dummyJar)
+            .setOutputPath(outputDb)
+            .setAmend(false)
+            .build();
+
+    try {
+      ApiDatabaseGenerator.run(command);
+      fail("Expected failure when encountering future version");
+    } catch (ApiDatabaseGeneratorException e) {
+      assertEquals(
+          "Unsupported Android API level '38': versions above "
+              + AndroidApiLevel.LATEST.getNumericString()
+              + " are not supported",
+          e.getCause().getMessage());
+      diagnosticsHandler.assertErrorsMatch(
+          diagnosticMessage(
+              containsString(
+                  "Unsupported Android API level '38': versions above "
+                      + AndroidApiLevel.LATEST.getNumericString()
+                      + " are not supported")));
+    }
+  }
+
+  @Test
+  public void testAllowFutureVersionsIgnoresFutureEntries() throws Exception {
+    Path apiVersionsXml =
+        writeApiXmlWithObject(
+            "api-versions.xml",
+            "  <class name=\"android/KnownClass\" since=\"30\">",
+            "    <extends name=\"java/lang/Object\"/>",
+            "    <method name=\"knownMethod()V\" since=\"31\"/>",
+            "    <method name=\"futureMethod()V\" since=\"38\"/>",
+            "    <method name=\"removedAtFutureMethod()V\" since=\"31\" removed=\"38\"/>",
+            "    <field name=\"futureField\" since=\"38\"/>",
+            "  </class>",
+            "  <class name=\"android/FutureClass\" since=\"38\">",
+            "    <extends name=\"java/lang/Object\"/>",
+            "    <method name=\"futureClassMethod()V\" since=\"38\"/>",
+            "  </class>",
+            "  <class name=\"android/FutureClassRemoved\" since=\"38\" removed=\"39\">",
+            "    <extends name=\"java/lang/Object\"/>",
+            "    <method name=\"removedMethod()V\" since=\"38\"/>",
+            "  </class>");
+    Path dummyJar =
+        writeJar(
+            "dummy.jar",
+            new JarClassBuilder("android/KnownClass", "java/lang/Object")
+                .addMethod("knownMethod()V")
+                .addMethod("futureMethod()V")
+                .addMethod("removedAtFutureMethod()V")
+                .addField("futureField"),
+            new JarClassBuilder("android/FutureClass", "java/lang/Object")
+                .addMethod("futureClassMethod()V"),
+            new JarClassBuilder("android/FutureClassRemoved", "java/lang/Object")
+                .addMethod("removedMethod()V"));
+    Path outputDb = temp.newFile("api_database.ser").toPath();
+
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder()
+            .addXmlPath(apiVersionsXml)
+            .addJarPath(dummyJar)
+            .setOutputPath(outputDb)
+            .setAmend(false)
+            .setAllowFutureVersions(true)
+            .build();
+
+    Map<ApiDatabaseEntry, AndroidApiLevel> entries =
+        AndroidApiHashingDatabaseBuilderGenerator.generateEntries(
+            ApiDatabaseGenerator.generateClasses(
+                command, AmendmentListener.empty(), trimmer -> trimmer));
+
+    assertEquals(
+        AndroidApiLevel.R,
+        entries.get(ApiDatabaseEntry.of(Reference.classFromTypeName("android.KnownClass"))));
+    assertEquals(
+        AndroidApiLevel.S,
+        entries.get(
+            ApiDatabaseEntry.of(
+                Reference.methodFromDescriptor("Landroid/KnownClass;", "knownMethod", "()V"))));
+    assertNull(
+        entries.get(
+            ApiDatabaseEntry.of(
+                Reference.methodFromDescriptor("Landroid/KnownClass;", "futureMethod", "()V"))));
+    assertNull(
+        entries.get(
+            ApiDatabaseEntry.of(
+                Reference.methodFromDescriptor(
+                    "Landroid/KnownClass;", "removedAtFutureMethod", "()V"))));
+    assertNull(
+        entries.get(
+            ApiDatabaseEntry.of(
+                Reference.field(
+                    Reference.classFromTypeName("android.KnownClass"),
+                    "futureField",
+                    Reference.classFromTypeName("java.lang.Object")))));
+    assertNull(
+        entries.get(ApiDatabaseEntry.of(Reference.classFromTypeName("android.FutureClass"))));
+    assertNull(
+        entries.get(
+            ApiDatabaseEntry.of(Reference.classFromTypeName("android.FutureClassRemoved"))));
+  }
+
   private Path writeApiXml(String filename, String... contentLines) throws Exception {
     Path file = temp.newFile(filename).toPath();
     String xml =

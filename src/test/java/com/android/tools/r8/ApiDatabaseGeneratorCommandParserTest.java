@@ -50,6 +50,10 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
                 + " information.",
             "                          # This option disables that and processes inputs directly as"
                 + " they are.",
+            "  --allow-future-versions # Allow future Android API versions in the XML inputs. Note"
+                + " that this option",
+            "                          # allows them, but leaves them essentially ignored in the"
+                + " output.",
             "  --map-diagnostics[:<type>] <from-level> <to-level>",
             "                          # Map diagnostics of <type> (default any) reported as"
                 + " <from-level> to",
@@ -145,5 +149,17 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
     assertEquals(
         Arrays.asList(sdkDir.resolve("data").resolve("api-versions.xml"), extraXml),
         command.getXmlPaths());
+  }
+
+  @Test
+  public void testParseAllowFutureVersions() throws Exception {
+    Path jarFile = temp.newFile("android.jar").toPath();
+    Path xmlFile = temp.newFile("api-versions.xml").toPath();
+    String[] args = {
+      "--jar", jarFile.toString(), "--xml", xmlFile.toString(), "--allow-future-versions"
+    };
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.parse(args, CommandLineOrigin.INSTANCE).build();
+    org.junit.Assert.assertTrue(command.allowFutureVersions());
   }
 }
