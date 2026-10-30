@@ -145,6 +145,10 @@ def ensure_internal_dependencies(benchmark, quiet=False):
         utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
                                                'closedsource-apps', 'systemui'),
                                   quiet=quiet)
+    elif 'YouTubeAppD8Merge' in benchmark:
+        utils.ensure_x20_download(os.path.join(
+            utils.THIRD_PARTY, 'youtube', 'youtube.android_21.40_d8_merge'),
+                                  quiet=quiet)
     elif 'YouTube' in benchmark:
         utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY, 'youtube',
                                                'youtube.android_21.40'),
@@ -274,6 +278,8 @@ def run(options, r8jar, testjars):
     cmd.extend([
         f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
         f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',
+        # Remember to update ensure_internal_dependencies() above when adding
+        # or updating internal benchmark dependencies below.
         f'-DTEST_DEP_AGSA={utils.THIRD_PARTY}/closedsource-apps/agsa/20250412-v16.14.47',
         f'-DTEST_DEP_BOOKSTORY={utils.OPENSOURCE_DUMPS_DIR}/android/bookstory',
         f'-DTEST_DEP_CHROME_BENCHMARK={utils.OPENSOURCE_DUMPS_DIR}/chrome',
