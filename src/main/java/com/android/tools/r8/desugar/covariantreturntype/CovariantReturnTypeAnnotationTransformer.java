@@ -25,6 +25,7 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodProcessorEventConsumer;
 import com.android.tools.r8.ir.synthetic.ForwardMethodBuilder;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.ForEachable;
 import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.ArrayList;
@@ -122,7 +123,7 @@ public final class CovariantReturnTypeAnnotationTransformer {
   }
 
   public void processMethods(
-      Map<DexProgramClass, List<ProgramMethod>> methodsToProcess,
+      Map<DexProgramClass, ProgramMethodSet> methodsToProcess,
       CovariantReturnTypeAnnotationTransformerEventConsumer eventConsumer,
       ExecutorService executorService)
       throws ExecutionException {
@@ -130,7 +131,7 @@ public final class CovariantReturnTypeAnnotationTransformer {
         methodsToProcess,
         (clazz, methods) -> {
           List<ProgramMethod> sortedMethods =
-              ListUtils.destructiveSort(methods, Comparator.comparing(ProgramMethod::getReference));
+              ListUtils.sort(methods, Comparator.comparing(ProgramMethod::getReference));
           processClass(clazz, sortedMethods::forEach, eventConsumer);
         },
         appView.options().getThreadingModule(),

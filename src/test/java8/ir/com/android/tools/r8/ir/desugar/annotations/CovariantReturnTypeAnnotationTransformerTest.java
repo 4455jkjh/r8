@@ -8,7 +8,6 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
 import static com.android.tools.r8.utils.codeinspector.AssertUtils.assertFailsCompilation;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentIf;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -283,13 +282,6 @@ public class CovariantReturnTypeAnnotationTransformerTest extends AsmTestBase {
   }
 
   static void checkPresenceOfSyntheticMethods(CodeInspector inspector) {
-    checkPresenceOfSyntheticMethods(inspector, true, true);
-  }
-
-  static void checkPresenceOfSyntheticMethods(
-      CodeInspector inspector,
-      boolean expectedOnConcreteClasses,
-      boolean expectedOnAbstractClasses) {
     // Get classes A, B, and C.
     ClassSubject clazzA = inspector.clazz(A.class.getCanonicalName());
     assertThat(clazzA, isPresent());
@@ -319,19 +311,19 @@ public class CovariantReturnTypeAnnotationTransformerTest extends AsmTestBase {
     // Check that a synthetic method has been added to class B.
     MethodSubject methodB2 =
         clazzB.method(B.class.getCanonicalName(), "method", Collections.emptyList());
-    assertThat(methodB2, isPresentIf(expectedOnConcreteClasses));
-    assertTrue(!expectedOnConcreteClasses || methodB2.getMethod().isSyntheticMethod());
+    assertThat(methodB2, isPresent());
+    assertTrue(methodB2.getMethod().isSyntheticMethod());
 
     // Check that two synthetic methods have been added to class C.
     MethodSubject methodC2 =
         clazzC.method(B.class.getCanonicalName(), "method", Collections.emptyList());
-    assertThat(methodC2, isPresentIf(expectedOnConcreteClasses));
-    assertTrue(!expectedOnConcreteClasses || methodC2.getMethod().isSyntheticMethod());
+    assertThat(methodC2, isPresent());
+    assertTrue(methodC2.getMethod().isSyntheticMethod());
 
     MethodSubject methodC3 =
         clazzC.method(C.class.getCanonicalName(), "method", Collections.emptyList());
-    assertThat(methodC3, isPresentIf(expectedOnConcreteClasses));
-    assertTrue(!expectedOnConcreteClasses || methodC3.getMethod().isSyntheticMethod());
+    assertThat(methodC3, isPresent());
+    assertTrue(methodC3.getMethod().isSyntheticMethod());
 
     // Get classes D, E, and F.
     ClassSubject clazzD = inspector.clazz(D.class.getCanonicalName());
@@ -362,19 +354,19 @@ public class CovariantReturnTypeAnnotationTransformerTest extends AsmTestBase {
     // Check that a synthetic method has been added to class E.
     MethodSubject methodE2 =
         clazzE.method(E.class.getCanonicalName(), "method", Collections.emptyList());
-    assertThat(methodE2, isPresentIf(expectedOnAbstractClasses));
-    assertTrue(!expectedOnAbstractClasses || methodE2.getMethod().isSyntheticMethod());
+    assertThat(methodE2, isPresent());
+    assertTrue(methodE2.getMethod().isSyntheticMethod());
 
     // Check that two synthetic methods have been added to class F.
     MethodSubject methodF2 =
         clazzF.method(E.class.getCanonicalName(), "method", Collections.emptyList());
-    assertThat(methodF2, isPresentIf(expectedOnConcreteClasses));
-    assertTrue(!expectedOnConcreteClasses || methodF2.getMethod().isSyntheticMethod());
+    assertThat(methodF2, isPresent());
+    assertTrue(methodF2.getMethod().isSyntheticMethod());
 
     MethodSubject methodF3 =
         clazzF.method(F.class.getCanonicalName(), "method", Collections.emptyList());
-    assertThat(methodF3, isPresentIf(expectedOnConcreteClasses));
-    assertTrue(!expectedOnConcreteClasses || methodF3.getMethod().isSyntheticMethod());
+    assertThat(methodF3, isPresent());
+    assertTrue(methodF3.getMethod().isSyntheticMethod());
   }
 
   private String getExpectedOutput() {

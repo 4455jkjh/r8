@@ -90,7 +90,7 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
     R8TestCompileResult r8CompileResult =
         compileWithR8(
             testBuilder -> testBuilder.addDontObfuscate().addDontOptimize().addDontShrink());
-    testOnRuntime(r8CompileResult, false);
+    testOnRuntime(r8CompileResult);
   }
 
   @Test
@@ -98,7 +98,7 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
     R8TestCompileResult r8CompileResult =
         compileWithR8(
             testBuilder -> testBuilder.addKeepRules("-keep public class * { public <methods>; }"));
-    testOnRuntime(r8CompileResult, true);
+    testOnRuntime(r8CompileResult);
   }
 
   @Test
@@ -189,6 +189,7 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
         ImmutableList.of(
             Reference.methodFromMethod(B.class.getDeclaredMethod("method")),
             Reference.methodFromMethod(C.class.getDeclaredMethod("method")),
+            Reference.methodFromMethod(E.class.getDeclaredMethod("method")),
             Reference.methodFromMethod(F.class.getDeclaredMethod("method")));
     List<String> messages =
         ListUtils.map(
@@ -206,13 +207,11 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
     diagnostics.assertErrorsMatch(matchers);
   }
 
-  private void testOnRuntime(R8TestCompileResult r8CompileResult, boolean isShrinking)
-      throws Exception {
+  private void testOnRuntime(R8TestCompileResult r8CompileResult) throws Exception {
     r8CompileResult.inspect(
         inspector -> {
           checkPresenceOfCovariantAnnotations(inspector, false);
-          // TODO(b/579606706): Should be checkPresenceOfSyntheticMethods(inspector).
-          checkPresenceOfSyntheticMethods(inspector, !isShrinking, false);
+          checkPresenceOfSyntheticMethods(inspector);
         });
     Path r8CompileResultZip = r8CompileResult.writeToZip();
     testForD8()
@@ -234,8 +233,6 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
         .compile()
         .addRunClasspathFiles(r8CompileResultZip)
         .run(parameters.getRuntime(), Client.class)
-        // TODO(b/579606706): Should succeed with output lines "a=A", "b=B", "c=C", "d=F", "e=F",
-        //  "f=F".
-        .assertFailureWithErrorThatThrows(NoSuchMethodError.class);
+        .assertSuccessWithOutputLines("a=A", "b=B", "c=C", "d=F", "e=F", "f=F");
   }
 }
