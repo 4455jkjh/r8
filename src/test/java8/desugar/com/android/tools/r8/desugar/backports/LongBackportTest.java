@@ -38,13 +38,19 @@ public final class LongBackportTest extends AbstractBackportTest {
 
   static final class Main extends MiniAssert {
     private static final long[] interestingValues = {
-        Long.MIN_VALUE, Long.MAX_VALUE,
-        Integer.MIN_VALUE, Integer.MAX_VALUE,
-        Short.MIN_VALUE, Short.MAX_VALUE,
-        Byte.MIN_VALUE, Byte.MAX_VALUE,
-        0L,
-        -1L, 1L,
-        -42L, 42L
+      Long.MIN_VALUE,
+      Long.MAX_VALUE,
+      Integer.MIN_VALUE,
+      Integer.MAX_VALUE,
+      Short.MIN_VALUE,
+      Short.MAX_VALUE,
+      Byte.MIN_VALUE,
+      Byte.MAX_VALUE,
+      0L,
+      -1L,
+      1L,
+      -42L,
+      42L
     };
 
     public static void main(String[] args) {
@@ -235,14 +241,16 @@ public final class LongBackportTest extends AbstractBackportTest {
     private static void testToUnsignedStringWithRadix() {
       for (long value : interestingValues) {
         for (int radix = Character.MIN_RADIX; radix <= Character.MAX_RADIX; radix++) {
-          assertEquals(unsignedLongToBigInteger(value).toString(radix),
-              Long.toUnsignedString(value, radix));
+          assertEquals(
+              unsignedLongToBigInteger(value).toString(radix), Long.toUnsignedString(value, radix));
         }
 
         // Invalid radix values are ignored and 10 is used.
-        assertEquals(unsignedLongToBigInteger(value).toString(),
+        assertEquals(
+            unsignedLongToBigInteger(value).toString(),
             Long.toUnsignedString(value, Character.MIN_RADIX - 1));
-        assertEquals(unsignedLongToBigInteger(value).toString(),
+        assertEquals(
+            unsignedLongToBigInteger(value).toString(),
             Long.toUnsignedString(value, Character.MAX_RADIX + 1));
       }
     }

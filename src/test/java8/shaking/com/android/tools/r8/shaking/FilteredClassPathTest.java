@@ -63,23 +63,48 @@ public class FilteredClassPathTest extends TestBase {
 
   @Test
   public void testFilterMatching() {
-    testPath(ImmutableList.of("!boo"),
-        ImmutableList.of("bool", "bo"),
-        ImmutableList.of("boo"));
-    testPath(ImmutableList.of("!*.boo"),
-        ImmutableList.of("zoo.bar", "Fish.bool", "Cat.bo", "boo", "path/zoo.boo",
-            "zoo.bool", "zoo.bo"),
+    testPath(ImmutableList.of("!boo"), ImmutableList.of("bool", "bo"), ImmutableList.of("boo"));
+    testPath(
+        ImmutableList.of("!*.boo"),
+        ImmutableList.of(
+            "zoo.bar", "Fish.bool", "Cat.bo", "boo", "path/zoo.boo", "zoo.bool", "zoo.bo"),
         ImmutableList.of("mi.boo", ".boo"));
-    testPath(ImmutableList.of("!*s/*.boo"),
-        ImmutableList.of("zoo.bar", "Fish.bool", "Cat.bo", "boo", "path/zoo.boo", "sx/a.boo",
-            "ass/boo", "s/x/.boo", "s/s/s.boo", "s/zoo.bool"),
+    testPath(
+        ImmutableList.of("!*s/*.boo"),
+        ImmutableList.of(
+            "zoo.bar",
+            "Fish.bool",
+            "Cat.bo",
+            "boo",
+            "path/zoo.boo",
+            "sx/a.boo",
+            "ass/boo",
+            "s/x/.boo",
+            "s/s/s.boo",
+            "s/zoo.bool"),
         ImmutableList.of("mi.boo", ".boo", "ass/a.boo", "s/.boo", "asis/sos.boo"));
-    testPath(ImmutableList.of("!**s/*.boo"),
-        ImmutableList.of("zoo.bar", "Fish.bool", "Cat.bo", "boo", "path/zoo.boo", "sx/a.boo",
-            "ass/boo", "s/x/.boo", "s/zoo.bool"),
-        ImmutableList.of("mi.boo", ".boo", "ass/a.boo", "s/.boo", "asis/sos.boo", "s/s/s.boo",
+    testPath(
+        ImmutableList.of("!**s/*.boo"),
+        ImmutableList.of(
+            "zoo.bar",
+            "Fish.bool",
+            "Cat.bo",
+            "boo",
+            "path/zoo.boo",
+            "sx/a.boo",
+            "ass/boo",
+            "s/x/.boo",
+            "s/zoo.bool"),
+        ImmutableList.of(
+            "mi.boo",
+            ".boo",
+            "ass/a.boo",
+            "s/.boo",
+            "asis/sos.boo",
+            "s/s/s.boo",
             "xyz/abz/ass/.boo"));
-    testPath(ImmutableList.of("!*.boo", "*.bar", "*.baz"),
+    testPath(
+        ImmutableList.of("!*.boo", "*.bar", "*.baz"),
         ImmutableList.of("sinz.bar", "song.baz", ".baz", ".bar"),
         ImmutableList.of("sinz.boo", ".boo", ".bang", "goo.bang", "s/foo.baz"));
   }
@@ -89,11 +114,14 @@ public class FilteredClassPathTest extends TestBase {
       Function<AndroidApp, List<String>> getter)
       throws IOException {
     Path androidJar = ToolHelper.getDefaultAndroidJar();
-    AndroidApp app = setter.apply(
-        AndroidApp.builder(),
-        Collections.singletonList(makeFilteredClassPath(
-            androidJar, ImmutableList.of("!java/lang/**.class", "java/util/**.class"))))
-        .build();
+    AndroidApp app =
+        setter
+            .apply(
+                AndroidApp.builder(),
+                Collections.singletonList(
+                    makeFilteredClassPath(
+                        androidJar, ImmutableList.of("!java/lang/**.class", "java/util/**.class"))))
+            .build();
     List<String> descriptors = getter.apply(app);
     Assert.assertTrue(descriptors.stream().noneMatch(s -> s.startsWith("Ljava/lang")));
     Assert.assertTrue(descriptors.stream().anyMatch(s -> s.startsWith("Ljava/util")));
@@ -109,8 +137,7 @@ public class FilteredClassPathTest extends TestBase {
               Iterables.getOnlyElement(app.getLibraryResourceProviders());
           List<ProgramResource> resources =
               ListUtils.map(provider.getClassDescriptors(), provider::getProgramResource);
-          return resources
-              .stream()
+          return resources.stream()
               .flatMap(r -> r.getClassDescriptors().stream())
               .collect(Collectors.toList());
         });
@@ -129,8 +156,7 @@ public class FilteredClassPathTest extends TestBase {
     testApplicationFiltered(
         Builder::addFilteredProgramArchives,
         app ->
-            app.getProgramResourceProviders()
-                .stream()
+            app.getProgramResourceProviders().stream()
                 .flatMap(FilteredClassPathTest::getClassProgramResources)
                 .flatMap(r -> r.getClassDescriptors().stream())
                 .collect(Collectors.toList()));

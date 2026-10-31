@@ -78,17 +78,30 @@ public class BackportedMethodMergeTest extends TestBase {
   public void testMergeOldPrefix() throws Exception {
     parameters.assumeDexRuntime();
 
-    byte[] transform = transformer($r8$java8methods$utility_MergeInputWithOldBackportedPrefix.class)
-        .addClassTransformer(new ClassTransformer() {
-          @Override
-          public void visit(int version, int access, String name, String signature,
-              String superName, String[] interfaces) {
-            ClassAccessFlags accessFlags = ClassAccessFlags.fromCfAccessFlags(access);
-            accessFlags.setSynthetic();
-            super.visit(version, accessFlags.getAsCfAccessFlags(),
-                name, signature, superName, interfaces);
-          }
-        }).transform();
+    byte[] transform =
+        transformer($r8$java8methods$utility_MergeInputWithOldBackportedPrefix.class)
+            .addClassTransformer(
+                new ClassTransformer() {
+                  @Override
+                  public void visit(
+                      int version,
+                      int access,
+                      String name,
+                      String signature,
+                      String superName,
+                      String[] interfaces) {
+                    ClassAccessFlags accessFlags = ClassAccessFlags.fromCfAccessFlags(access);
+                    accessFlags.setSynthetic();
+                    super.visit(
+                        version,
+                        accessFlags.getAsCfAccessFlags(),
+                        name,
+                        signature,
+                        superName,
+                        interfaces);
+                  }
+                })
+            .transform();
 
     Path zip1 = temp.newFile("first.zip").toPath();
     Path zip2 = temp.newFile("second.zip").toPath();
@@ -114,12 +127,10 @@ public class BackportedMethodMergeTest extends TestBase {
         .assertSuccessWithOutput(MERGE_RUN_WITH_OLD_BACKPORTED_PREFIX_EXPECTED_OUTPUT);
   }
 
-
   static class $r8$java8methods$utility_MergeInputWithOldBackportedPrefix {
     public void foo() {
       System.out.println("foobar");
     }
-
   }
 
   static class MergeRunWithOldBackportedPrefix {

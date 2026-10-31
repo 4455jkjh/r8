@@ -204,10 +204,10 @@ class C {
     return total;
   }
 
-  public void update(int years, int months, int days){
-    this.years  = years;
+  public void update(int years, int months, int days) {
+    this.years = years;
     this.months = months;
-    this.days   = days;
+    this.days = days;
   }
 }
 
@@ -328,7 +328,7 @@ public class B111250398 extends TestBase {
     check(inspector, 1, 1);
   }
 
-  private void checkMixed(AndroidApp app) throws Exception{
+  private void checkMixed(AndroidApp app) throws Exception {
     CodeInspector inspector = new CodeInspector(app);
     ClassSubject classC = inspector.clazz(C.class);
     assertThat(classC, isPresent());
@@ -345,8 +345,7 @@ public class B111250398 extends TestBase {
     FieldSubject days = classC.field("int", "days");
     assertThat(days, isPresent());
 
-
-    for (FieldSubject field : new FieldSubject[]{years, months, days}) {
+    for (FieldSubject field : new FieldSubject[] {years, months, days}) {
       assertEquals(
           1,
           countIget(totalDays.getMethod().getCode().asDexCode(), field.getField().getReference()));

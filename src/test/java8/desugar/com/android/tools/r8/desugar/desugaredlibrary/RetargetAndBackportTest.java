@@ -22,9 +22,9 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.PredicateUtils;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.PredicateUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,12 +56,15 @@ public class RetargetAndBackportTest extends DesugaredLibraryTestBase implements
 
   /**
    * Add this library desugaring configuration:
+   *
+   * <pre>
    * "library_flags": [
    *  {
    *    "rewrite_prefix":{"java.time.": "j$.time."},
    *    "backport": {"java.lang.DesugarMath": "java.lang.Math"},
    *  }
    * ],
+   * </pre>
    */
   private static void specifyDesugaredLibrary(InternalOptions options) {
     LegacyRewritingFlags rewritingFlags =

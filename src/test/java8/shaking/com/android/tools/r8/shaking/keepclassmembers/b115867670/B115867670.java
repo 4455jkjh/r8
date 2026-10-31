@@ -132,9 +132,7 @@ public class B115867670 extends ProguardCompatibilityTestBase {
 
   @Test
   public void testDependentWithKeepClass() throws Exception {
-    runTest(
-        "-keep @" + pkg + ".JsonClass class ** { <fields>; }",
-        this::checkKeepClassMembers);
+    runTest("-keep @" + pkg + ".JsonClass class ** { <fields>; }", this::checkKeepClassMembers);
   }
 
   @Test
@@ -176,9 +174,9 @@ public class B115867670 extends ProguardCompatibilityTestBase {
     runTest(
         // In full mode, keepclassmembers does not imply the class is instantiated.
         addFullModeKeepClassIfReferenced(
-        "-if @"
-            + pkg
-            + ".JsonClass class * -keepclassmembers,allowobfuscation class <1> { <fields>; }"),
+            "-if @"
+                + pkg
+                + ".JsonClass class * -keepclassmembers,allowobfuscation class <1> { <fields>; }"),
         this::checkKeepClassMembersRenamed);
   }
 
@@ -201,17 +199,16 @@ public class B115867670 extends ProguardCompatibilityTestBase {
   // In full mode we need to explicitly keep the class (mark instantiated) if it is referenced.
   String addFullModeKeepClassIfReferenced(String rules) {
     return shrinker.isFullModeR8()
-        ? addFullModeKeepAllAttributes(rules
-            + "\n-if @"
-            + JsonClass.class.getTypeName()
-            + " class * -keep,allowobfuscation class <1>")
+        ? addFullModeKeepAllAttributes(
+            rules
+                + "\n-if @"
+                + JsonClass.class.getTypeName()
+                + " class * -keep,allowobfuscation class <1>")
         : rules;
   }
 
   // TODO(b/132318609): Keep the attributes. Potentially remove this once resolved.
   String addFullModeKeepAllAttributes(String rules) {
-    return shrinker.isFullModeR8()
-        ? rules + "\n-keepattributes *"
-        : rules;
+    return shrinker.isFullModeR8() ? rules + "\n-keepattributes *" : rules;
   }
 }

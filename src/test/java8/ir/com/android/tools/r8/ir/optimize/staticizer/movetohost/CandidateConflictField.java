@@ -11,8 +11,7 @@ import com.android.tools.r8.NoHorizontalClassMerging;
 @NoHorizontalClassMerging
 public class CandidateConflictField {
 
-  @NeverPropagateValue
-  public static String field;
+  @NeverPropagateValue public static String field;
 
   @NeverInline
   public String foo() {

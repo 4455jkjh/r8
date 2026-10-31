@@ -143,66 +143,66 @@ public class FilesCreateTest extends DesugaredLibraryTestBase {
       Path root = null;
       try {
         root = Files.createTempDirectory("tmp_test");
-      Files.createDirectories(root.resolve("ind1s/dir"));
-      Files.createDirectories(root.resolve("ind2s/dir"), getFileAttribute());
-      try {
-        Files.createDirectory(root.resolve("ind3f/dir"));
-      } catch (Throwable t) {
-        printError(t, "ind3f");
-      }
-      try {
-        Files.createDirectory(root.resolve("ind4f/dir"), getFileAttribute());
-      } catch (Throwable t) {
-        printError(t, "ind4f");
-      }
-      Files.createDirectory(root.resolve("dir1s"));
-      Files.createDirectory(root.resolve("dir2s"), getFileAttribute());
-      try {
-        Files.createFile(root.resolve("ind5f/f.txt"));
-      } catch (Throwable t) {
-        printError(t, "ind5f");
-      }
-      try {
-        Files.createFile(root.resolve("ind6f/f.txt"), getFileAttribute());
-      } catch (Throwable t) {
-        printError(t, "ind6f");
-      }
-      Files.createFile(root.resolve("f1.txt"));
-      Files.createFile(root.resolve("f2.txt"), getFileAttribute());
+        Files.createDirectories(root.resolve("ind1s/dir"));
+        Files.createDirectories(root.resolve("ind2s/dir"), getFileAttribute());
+        try {
+          Files.createDirectory(root.resolve("ind3f/dir"));
+        } catch (Throwable t) {
+          printError(t, "ind3f");
+        }
+        try {
+          Files.createDirectory(root.resolve("ind4f/dir"), getFileAttribute());
+        } catch (Throwable t) {
+          printError(t, "ind4f");
+        }
+        Files.createDirectory(root.resolve("dir1s"));
+        Files.createDirectory(root.resolve("dir2s"), getFileAttribute());
+        try {
+          Files.createFile(root.resolve("ind5f/f.txt"));
+        } catch (Throwable t) {
+          printError(t, "ind5f");
+        }
+        try {
+          Files.createFile(root.resolve("ind6f/f.txt"), getFileAttribute());
+        } catch (Throwable t) {
+          printError(t, "ind6f");
+        }
+        Files.createFile(root.resolve("f1.txt"));
+        Files.createFile(root.resolve("f2.txt"), getFileAttribute());
 
-      System.out.println(Files.exists(root.resolve("f1.txt")));
-      System.out.println(Files.exists(root.resolve("f1.txt"), LinkOption.NOFOLLOW_LINKS));
+        System.out.println(Files.exists(root.resolve("f1.txt")));
+        System.out.println(Files.exists(root.resolve("f1.txt"), LinkOption.NOFOLLOW_LINKS));
 
-      Files.delete(root.resolve("f1.txt"));
-      try {
-        Files.delete(root.resolve("notExisting1.txt"));
-      } catch (Throwable t) {
-        printError(t, "notExisting1");
-      }
-      Files.deleteIfExists(root.resolve("f2.txt"));
-      Files.deleteIfExists(root.resolve("notExisting2.txt"));
+        Files.delete(root.resolve("f1.txt"));
+        try {
+          Files.delete(root.resolve("notExisting1.txt"));
+        } catch (Throwable t) {
+          printError(t, "notExisting1");
+        }
+        Files.deleteIfExists(root.resolve("f2.txt"));
+        Files.deleteIfExists(root.resolve("notExisting2.txt"));
 
-      System.out.println(Files.exists(root.resolve("f1.txt")));
-      System.out.println(Files.exists(root.resolve("f1.txt"), LinkOption.NOFOLLOW_LINKS));
-      try {
-        System.out.println(
-            Files.readAttributes(root.resolve("f1.txt"), BasicFileAttributes.class)
-                .lastAccessTime());
-      } catch (Throwable t) {
-        printError(t, "readAttributes");
-      }
-      try {
-        System.out.println(
-            Files.readAttributes(
-                    root.resolve("f1.txt"), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS)
-                .lastAccessTime());
-      } catch (Throwable t) {
-        printError(t, "readAttributes");
-      }
+        System.out.println(Files.exists(root.resolve("f1.txt")));
+        System.out.println(Files.exists(root.resolve("f1.txt"), LinkOption.NOFOLLOW_LINKS));
+        try {
+          System.out.println(
+              Files.readAttributes(root.resolve("f1.txt"), BasicFileAttributes.class)
+                  .lastAccessTime());
+        } catch (Throwable t) {
+          printError(t, "readAttributes");
+        }
+        try {
+          System.out.println(
+              Files.readAttributes(
+                      root.resolve("f1.txt"), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS)
+                  .lastAccessTime());
+        } catch (Throwable t) {
+          printError(t, "readAttributes");
+        }
 
-      // Recreate for the final print.
-      Files.createFile(root.resolve("f3.txt"));
-      Files.createFile(root.resolve("f4.txt"), getFileAttribute());
+        // Recreate for the final print.
+        Files.createFile(root.resolve("f3.txt"));
+        Files.createFile(root.resolve("f4.txt"), getFileAttribute());
 
         Path finalRoot = root;
         Files.walk(root)

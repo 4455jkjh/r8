@@ -34,10 +34,13 @@ public class B112654039 extends TestBase {
   @Test
   public void test() throws Exception {
     AndroidApp app = readClasses(TestClassForB112654039.class);
-    AndroidApp processedApp = ToolHelper.runD8(app, options -> {
-      // Pretend input .class does not have debugging info.
-      options.debug = false;
-    });
+    AndroidApp processedApp =
+        ToolHelper.runD8(
+            app,
+            options -> {
+              // Pretend input .class does not have debugging info.
+              options.debug = false;
+            });
     CodeInspector inspector = new CodeInspector(processedApp);
     ClassSubject clazz = inspector.clazz(TestClassForB112654039.class);
     assertThat(clazz, isPresent());

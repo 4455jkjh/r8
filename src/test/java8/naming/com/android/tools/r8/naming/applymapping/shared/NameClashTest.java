@@ -74,18 +74,17 @@ public class NameClashTest extends TestBase {
 
   private String mappingToAlreadyMappedName() {
     return StringUtils.lines(
-        LibraryClass.class.getTypeName()
-            + " -> " + AnotherLibraryClass.class.getTypeName() + ":",
+        LibraryClass.class.getTypeName() + " -> " + AnotherLibraryClass.class.getTypeName() + ":",
         AnotherLibraryClass.class.getTypeName()
-            + " -> " + AnotherLibraryClass.class.getTypeName() + ":"
-    );
+            + " -> "
+            + AnotherLibraryClass.class.getTypeName()
+            + ":");
   }
 
   private String mappingToTheSameClassName() {
     return StringUtils.lines(
         LibraryClass.class.getTypeName() + " -> Clash:",
-        AnotherLibraryClass.class.getTypeName() + " -> Clash:"
-    );
+        AnotherLibraryClass.class.getTypeName() + " -> Clash:");
   }
 
   private String mappingToExistingMethodName() {
@@ -94,8 +93,7 @@ public class NameClashTest extends TestBase {
         "  void foo() -> bar",
         AnotherLibraryClass.class.getTypeName() + " -> B:",
         ProgramClass.class.getTypeName() + " -> " + ProgramClass.class.getTypeName() + ":",
-        "  void bar() -> bar"
-    );
+        "  void bar() -> bar");
   }
 
   private String mappingToExistingClassName() {
@@ -112,8 +110,7 @@ public class NameClashTest extends TestBase {
         AnotherLibraryClass.class.getTypeName() + " -> B:",
         "  void foo() -> clash",
         ProgramClass.class.getTypeName() + " -> " + ProgramClass.class.getTypeName() + ":",
-        "  void bar() -> clash"
-    );
+        "  void bar() -> clash");
   }
 
   private void testR8_inputJar(Path mappingFile) throws Exception {

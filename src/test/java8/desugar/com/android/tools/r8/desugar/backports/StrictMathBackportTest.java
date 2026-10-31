@@ -20,7 +20,7 @@ public final class StrictMathBackportTest extends AbstractBackportTest {
   public StrictMathBackportTest(TestParameters parameters) {
     super(parameters, StrictMath.class, Main.class);
     registerTarget(AndroidApiLevel.N, 75);
-    ignoreInvokes("nextAfter");  // Available in API 9, used to test nextDown.
+    ignoreInvokes("nextAfter"); // Available in API 9, used to test nextDown.
   }
 
   static final class Main extends MiniAssert {
@@ -160,36 +160,52 @@ public final class StrictMathBackportTest extends AbstractBackportTest {
 
     private static void testNextDownDouble() {
       double[] interestingValues = {
-          Double.MIN_VALUE, Double.MAX_VALUE,
-          Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
-          Integer.MIN_VALUE, Integer.MAX_VALUE,
-          Long.MIN_VALUE, Long.MAX_VALUE,
-          Double.NaN,
-          0d,
-          -1d, 1d,
-          -0.5d, 0.5d,
-          -0.1d, 0.1d,
+        Double.MIN_VALUE,
+        Double.MAX_VALUE,
+        Double.NEGATIVE_INFINITY,
+        Double.POSITIVE_INFINITY,
+        Integer.MIN_VALUE,
+        Integer.MAX_VALUE,
+        Long.MIN_VALUE,
+        Long.MAX_VALUE,
+        Double.NaN,
+        0d,
+        -1d,
+        1d,
+        -0.5d,
+        0.5d,
+        -0.1d,
+        0.1d,
       };
       for (double interestingValue : interestingValues) {
-        assertEquals(StrictMath.nextAfter(interestingValue, Double.NEGATIVE_INFINITY),
+        assertEquals(
+            StrictMath.nextAfter(interestingValue, Double.NEGATIVE_INFINITY),
             StrictMath.nextDown(interestingValue));
       }
     }
 
     private static void testNextDownFloat() {
       float[] interestingValues = {
-          Float.MIN_VALUE, Float.MAX_VALUE,
-          Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY,
-          Integer.MIN_VALUE, Integer.MAX_VALUE,
-          Long.MIN_VALUE, Long.MAX_VALUE,
-          Float.NaN,
-          0f,
-          -1f, 1f,
-          -0.5f, 0.5f,
-          -0.1f, 0.1f,
+        Float.MIN_VALUE,
+        Float.MAX_VALUE,
+        Float.NEGATIVE_INFINITY,
+        Float.POSITIVE_INFINITY,
+        Integer.MIN_VALUE,
+        Integer.MAX_VALUE,
+        Long.MIN_VALUE,
+        Long.MAX_VALUE,
+        Float.NaN,
+        0f,
+        -1f,
+        1f,
+        -0.5f,
+        0.5f,
+        -0.1f,
+        0.1f,
       };
       for (float interestingValue : interestingValues) {
-        assertEquals(StrictMath.nextAfter(interestingValue, Float.NEGATIVE_INFINITY),
+        assertEquals(
+            StrictMath.nextAfter(interestingValue, Float.NEGATIVE_INFINITY),
             StrictMath.nextDown(interestingValue));
       }
     }

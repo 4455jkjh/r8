@@ -699,6 +699,7 @@ async function load(
   return {
     commits: parsed.commits,
     mainCommits: parsed.mainCommits,
+    mainHistory: historyInfo.main || [],
     tryCommits: parsed.tryCommits,
     releaseCuts: releaseCuts,
     releaseCut: parsed.releaseCut,

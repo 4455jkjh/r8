@@ -78,8 +78,7 @@ public class LibraryExtendsProgramRefinedReceiverIsLibraryClass extends TestBase
   }
 
   static class ProgramClass {
-    public void addTestSuite(Class<?> suite) {
-    }
+    public void addTestSuite(Class<?> suite) {}
   }
 
   static class LibraryClass extends ProgramClass {
@@ -106,7 +105,7 @@ public class LibraryExtendsProgramRefinedReceiverIsLibraryClass extends TestBase
   static class ProgramTestRunnerWithPhi {
     @NeverInline
     public static ProgramClass test(ProgramClass otherSuite) {
-      ProgramClass suite = System.currentTimeMillis() > 0 ? new LibraryClass(): otherSuite;
+      ProgramClass suite = System.currentTimeMillis() > 0 ? new LibraryClass() : otherSuite;
       suite.addTestSuite(ProgramTestRunnerWithPhi.class);
       return suite;
     }

@@ -42,7 +42,8 @@ public class MetadataRewriteInLibraryTypeTest extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer baseLibJarMap =
-      getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/libtype_lib_base", "base"));
+      getCompileMemoizer(
+          getKotlinSourceFileFromResources(PKG_PREFIX + "/libtype_lib_base", "base"));
   private static final KotlinCompileMemoizer extLibJarMap =
       getCompileMemoizer(getKotlinSourceFileFromResources(PKG_PREFIX + "/libtype_lib_ext", "ext"))
           .configure(
@@ -122,7 +123,8 @@ public class MetadataRewriteInLibraryTypeTest extends KotlinMetadataTestBase {
     // Type appearance of library type, Base, should be kept, even if it's not provided.
     // Note that the resulting ClassSubject for Base is an absent one as we don't provide it, and
     // thus we can't use `getReturnTypesInFunctions`, which filters out absent class subject.
-    assertTrue(kmPackage.getReturnTypeDescriptorsInFunctions().stream().anyMatch(
-        returnType -> returnType.contains("Base")));
+    assertTrue(
+        kmPackage.getReturnTypeDescriptorsInFunctions().stream()
+            .anyMatch(returnType -> returnType.contains("Base")));
   }
 }

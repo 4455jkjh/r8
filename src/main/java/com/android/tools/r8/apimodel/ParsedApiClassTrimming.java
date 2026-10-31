@@ -10,8 +10,9 @@ import com.android.tools.r8.apimodel.jar.ApiJarInfo;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.ResolvedAndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.SemiInfiniteRange;
-import com.android.tools.r8.utils.internal.structural.Ordered;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -83,46 +84,91 @@ public class ParsedApiClassTrimming {
     return trimmedClass;
   }
 
-  public static class RemovedTrimmer<T extends Ordered<T>>
-      implements Trimmer<SemiInfiniteRange<T>, RuntimeException> {
+  public static class RemovedTrimmer
+      implements Trimmer<SemiInfiniteRange<UncheckedApiLevel>, ApiDatabaseGeneratorException> {
+
+    private final boolean allowFutureVersions;
+
+    public RemovedTrimmer() {
+      this(false);
+    }
+
+    public RemovedTrimmer(boolean allowFutureVersions) {
+      this.allowFutureVersions = allowFutureVersions;
+    }
+
+    private SkipAnswer checkRange(SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      checkLevel(range.start);
+      if (range.hasEnd()) {
+        checkLevel(range.end);
+        return SkipAnswer.SKIP;
+      }
+      if (AndroidApiLevel.resolveAndroidApiLevel(range.start).isFuture()) {
+        return SkipAnswer.SKIP;
+      }
+      return SkipAnswer.KEEP;
+    }
+
+    private void checkLevel(UncheckedApiLevel level) throws ApiDatabaseGeneratorException {
+      ResolvedAndroidApiLevel resolved = AndroidApiLevel.resolveAndroidApiLevel(level);
+      if (resolved.isFuture()) {
+        if (!allowFutureVersions) {
+          throw new ApiDatabaseGeneratorException(
+              "Unsupported Android API level '"
+                  + level
+                  + "': versions above "
+                  + AndroidApiLevel.LATEST.getNumericString()
+                  + " are not supported");
+        }
+      } else if (resolved.isInvalid()) {
+        throw new ApiDatabaseGeneratorException("Invalid Android API level: " + level);
+      }
+    }
 
     @Override
-    public SkipAnswer skipClass(ClassReference clazz, SemiInfiniteRange<T> range) {
-      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+    public SkipAnswer skipClass(ClassReference clazz, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return checkRange(range);
     }
 
     @Override
     public SkipAnswer skipExtends(
-        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<T> range) {
-      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return checkRange(range);
     }
 
     @Override
     public SkipAnswer skipImplements(
-        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<T> range) {
-      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return checkRange(range);
     }
 
     @Override
     public SkipAnswer skipMethod(
-        ClassReference clazz, MethodReference method, SemiInfiniteRange<T> range) {
-      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+        ClassReference clazz, MethodReference method, SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return checkRange(range);
     }
 
     @Override
     public SkipAnswer skipField(
-        ClassReference clazz, FieldTypelessReference field, SemiInfiniteRange<T> range) {
-      return range.hasEnd() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
+        ClassReference clazz,
+        FieldTypelessReference field,
+        SemiInfiniteRange<UncheckedApiLevel> range)
+        throws ApiDatabaseGeneratorException {
+      return checkRange(range);
     }
 
     @Override
-    public void done() throws RuntimeException {
+    public void done() {
       // Do nothing.
     }
   }
 
-  public static class JarTrimmer
-      implements Trimmer<SemiInfiniteRange<AndroidApiLevel>, ApiDatabaseGeneratorException> {
+  public static class JarTrimmer<D> implements Trimmer<D, ApiDatabaseGeneratorException> {
     private final ApiJarInfo jarInfo;
 
     public JarTrimmer(ApiJarInfo jarInfo) {
@@ -134,13 +180,12 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipClass(ClassReference clazz, SemiInfiniteRange<AndroidApiLevel> range) {
+    public SkipAnswer skipClass(ClassReference clazz, D range) {
       return SkipAnswer.skipIf(!jarInfo.hasClass(clazz));
     }
 
     @Override
-    public SkipAnswer skipExtends(
-        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<AndroidApiLevel> range) {
+    public SkipAnswer skipExtends(ClassReference clazz, ClassReference supertype, D range) {
       ApiClassInfo info = jarInfo.getClassInfo(clazz);
       if (info == null) {
         return SkipAnswer.SKIP;
@@ -152,8 +197,7 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipImplements(
-        ClassReference clazz, ClassReference supertype, SemiInfiniteRange<AndroidApiLevel> range) {
+    public SkipAnswer skipImplements(ClassReference clazz, ClassReference supertype, D range) {
       ApiClassInfo info = jarInfo.getClassInfo(clazz);
       if (info == null) {
         return SkipAnswer.SKIP;
@@ -165,8 +209,7 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipMethod(
-        ClassReference clazz, MethodReference method, SemiInfiniteRange<AndroidApiLevel> range)
+    public SkipAnswer skipMethod(ClassReference clazz, MethodReference method, D range)
         throws ApiDatabaseGeneratorException {
       return SkipAnswer.skipIf(
           !jarInfo.hasMethod(
@@ -174,10 +217,7 @@ public class ParsedApiClassTrimming {
     }
 
     @Override
-    public SkipAnswer skipField(
-        ClassReference clazz,
-        FieldTypelessReference field,
-        SemiInfiniteRange<AndroidApiLevel> range)
+    public SkipAnswer skipField(ClassReference clazz, FieldTypelessReference field, D range)
         throws ApiDatabaseGeneratorException {
       return SkipAnswer.skipIf(!jarInfo.hasField(clazz.getBinaryName(), field.getFieldName()));
     }

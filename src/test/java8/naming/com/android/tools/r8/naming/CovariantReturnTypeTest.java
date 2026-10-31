@@ -44,7 +44,7 @@ public class CovariantReturnTypeTest extends TestBase {
   @Test
   public void test() throws Exception {
     String[] returnNullByteCode =
-        new String[] { ".limit stack 1", ".limit locals 1", "aconst_null", "areturn" };
+        new String[] {".limit stack 1", ".limit locals 1", "aconst_null", "areturn"};
 
     // This test class is generated using Jasmin to have uses of covariant return types which
     // are not just the javac generated bridges (javac would complain that the methods have the

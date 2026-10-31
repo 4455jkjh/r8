@@ -59,5 +59,4 @@ public class Regress142682636Runner extends TestBase {
         Arrays.stream(m.getMethod().getCode().asDexCode().instructions)
             .noneMatch(i -> i instanceof DexMoveWide));
   }
-
 }

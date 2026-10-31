@@ -143,8 +143,10 @@ public class OutlineMappingInformationTest extends TestBase {
 
     @NeverInline
     static void greet() {
-      // Keep on same line
+      // @formatter:off
+      // The test asserts that both invoke instructions share a single line number.
       Greeter.throwExceptionFirst(); Greeter.throwExceptionSecond();
+      // @formatter:on
     }
   }
 

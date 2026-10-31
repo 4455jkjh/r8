@@ -59,8 +59,7 @@ public class Regress131349148 extends TestBase {
     ClassSubject classSubject = result.inspector().clazz(TestClass.class);
     boolean mainHasReflectiveOperationException =
         Streams.stream(classSubject.mainMethod().iterateTryCatches())
-            .anyMatch(
-                tryCatch -> tryCatch.isCatching("java.lang.ReflectiveOperationException"));
+            .anyMatch(tryCatch -> tryCatch.isCatching("java.lang.ReflectiveOperationException"));
     int runtimeLevel = parameters.getApiLevel().getMajor();
     assertEquals(runtimeLevel >= AndroidApiLevel.K.getMajor(), mainHasReflectiveOperationException);
   }
@@ -164,8 +163,8 @@ public class Regress131349148 extends TestBase {
     }
   }
 
-  static class ExistingException extends NonExistingException { }
+  static class ExistingException extends NonExistingException {}
 
   // We will not pass this class to R8, so the exception does not exist in the program classes.
-  static class NonExistingException extends Exception { }
+  static class NonExistingException extends Exception {}
 }

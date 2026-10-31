@@ -156,7 +156,7 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
     List<ApiJarInfo> readJars = ListUtils.mapThrowing(jars, ApiJarReader::read);
     ApiJarInfo jarInfo = ApiJarMerging.mergeJarInfos(readJars);
     Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> trimmed =
-        ParsedApiClassTrimming.trim(apiClasses, new JarTrimmer(jarInfo));
+        ParsedApiClassTrimming.trim(apiClasses, new JarTrimmer<>(jarInfo));
 
     // Verify results.
     Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> trimmedMap =

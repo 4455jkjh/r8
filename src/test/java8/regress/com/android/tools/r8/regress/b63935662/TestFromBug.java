@@ -14,15 +14,17 @@ public class TestFromBug {
     }
   }
 
-  public interface ConcurrentMap<K, V> extends Map<K,V> {
+  public interface ConcurrentMap<K, V> extends Map<K, V> {
     @Override
     default void forEach(BiConsumer<? super K, ? super V> action) {
       System.out.println("ConcurrentMap.forEach");
     }
   }
 
-  public static abstract class AbstractMap<K,V> implements Map<K, V> {}
-  public static class ConcurrentHashMap<K,V> extends AbstractMap<K,V> implements ConcurrentMap<K,V> {}
+  public abstract static class AbstractMap<K, V> implements Map<K, V> {}
+
+  public static class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
+      implements ConcurrentMap<K, V> {}
 
   public static void main(String[] args) {
     new ConcurrentHashMap<String, String>().forEach(null);

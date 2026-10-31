@@ -3,7 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package memberrebinding4.subpackage;
 
-public interface PublicInterface extends PackagePrivateInterface {
-
-}
-
+public interface PublicInterface extends PackagePrivateInterface {}

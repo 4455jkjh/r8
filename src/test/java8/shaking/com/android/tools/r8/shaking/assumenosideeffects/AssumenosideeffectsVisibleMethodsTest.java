@@ -31,6 +31,7 @@ public class AssumenosideeffectsVisibleMethodsTest extends TestBase {
     RULE_THAT_REFERS_PRG_SUB,
     RULE_WITH_EXTENDS_LIB_BASE,
     RULE_WITH_EXTENDS_PRG_BASE;
+
     // The remaining case(s) are not tested since no items are matched.
     // RULE_WITH_EXTENDS_PRG_SUB;
 

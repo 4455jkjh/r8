@@ -99,6 +99,7 @@ public class KeepEdgeAstTest extends TestBase {
             "-keepclassmembers,allow" + allows + " class ** { *; }"),
         extract(edge));
   }
+
   @Test
   public void testKeepClass() {
     BindingsHelper helper = new BindingsHelper();

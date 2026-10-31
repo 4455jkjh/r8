@@ -20,9 +20,13 @@ public class TestDump implements Opcodes {
     MethodVisitor methodVisitor;
     AnnotationVisitor annotationVisitor0;
 
-    classWriter
-        .visit(V1_8, ACC_SUPER, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test",
-            null, "java/lang/Object", null);
+    classWriter.visit(
+        V1_8,
+        ACC_SUPER,
+        "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test",
+        null,
+        "java/lang/Object",
+        null);
 
     classWriter.visitSource("Test.java", null);
 
@@ -47,21 +51,21 @@ public class TestDump implements Opcodes {
       methodVisitor.visitLineNumber(4, label1);
       methodVisitor.visitVarInsn(ALOAD, 0);
       methodVisitor.visitIntInsn(BIPUSH, 33);
-      methodVisitor.visitFieldInsn(PUTFIELD,
-          "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
+      methodVisitor.visitFieldInsn(
+          PUTFIELD, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
       Label label2 = new Label();
       methodVisitor.visitLabel(label2);
       methodVisitor.visitLineNumber(5, label2);
       methodVisitor.visitVarInsn(ALOAD, 0);
       methodVisitor.visitIntInsn(BIPUSH, 42);
-      methodVisitor.visitFieldInsn(PUTFIELD,
-          "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "j", "I");
+      methodVisitor.visitFieldInsn(
+          PUTFIELD, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "j", "I");
       Label label3 = new Label();
       methodVisitor.visitLabel(label3);
       methodVisitor.visitLineNumber(8, label3);
       methodVisitor.visitVarInsn(ALOAD, 0);
-      methodVisitor
-          .visitMethodInsn(INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J", false);
+      methodVisitor.visitMethodInsn(
+          INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J", false);
       methodVisitor.visitLdcInsn(new Long(42L));
       methodVisitor.visitInsn(LCMP);
       Label label4 = new Label();
@@ -70,28 +74,35 @@ public class TestDump implements Opcodes {
       Label label5 = new Label();
       methodVisitor.visitJumpInsn(GOTO, label5);
       methodVisitor.visitLabel(label4);
-      methodVisitor.visitFrame(Opcodes.F_FULL, 1,
-          new Object[]{"com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test"}, 1,
-          new Object[]{"com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test"});
+      methodVisitor.visitFrame(
+          Opcodes.F_FULL,
+          1,
+          new Object[] {"com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test"},
+          1,
+          new Object[] {"com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test"});
       methodVisitor.visitIntInsn(BIPUSH, 1);
       methodVisitor.visitLabel(label5);
-      methodVisitor.visitFrame(Opcodes.F_FULL, 1,
-          new Object[]{"com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test"}, 2,
-          new Object[]{"com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test",
-              Opcodes.INTEGER});
-      methodVisitor.visitFieldInsn(PUTFIELD,
-          "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
+      methodVisitor.visitFrame(
+          Opcodes.F_FULL,
+          1,
+          new Object[] {"com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test"},
+          2,
+          new Object[] {
+            "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", Opcodes.INTEGER
+          });
+      methodVisitor.visitFieldInsn(
+          PUTFIELD, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
       Label label6 = new Label();
       methodVisitor.visitLabel(label6);
       methodVisitor.visitLineNumber(9, label6);
       methodVisitor.visitVarInsn(ALOAD, 0);
       methodVisitor.visitVarInsn(ALOAD, 0);
-      methodVisitor.visitFieldInsn(GETFIELD,
-          "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
+      methodVisitor.visitFieldInsn(
+          GETFIELD, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
       methodVisitor.visitInsn(ICONST_3);
       methodVisitor.visitInsn(IADD);
-      methodVisitor.visitFieldInsn(PUTFIELD,
-          "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "j", "I");
+      methodVisitor.visitFieldInsn(
+          PUTFIELD, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "j", "I");
       Label label7 = new Label();
       methodVisitor.visitLabel(label7);
       methodVisitor.visitLineNumber(10, label7);
@@ -106,8 +117,8 @@ public class TestDump implements Opcodes {
       methodVisitor.visitLabel(label0);
       methodVisitor.visitLineNumber(13, label0);
       methodVisitor.visitVarInsn(ALOAD, 0);
-      methodVisitor.visitFieldInsn(GETFIELD,
-          "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
+      methodVisitor.visitFieldInsn(
+          GETFIELD, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "i", "I");
       // Removed code to change:
       // if (i > 0) return true;
       // into
@@ -134,8 +145,8 @@ public class TestDump implements Opcodes {
       methodVisitor.visitLineNumber(17, label0);
       methodVisitor.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       methodVisitor.visitVarInsn(ALOAD, 0);
-      methodVisitor.visitFieldInsn(GETFIELD,
-          "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "j", "I");
+      methodVisitor.visitFieldInsn(
+          GETFIELD, "com/android/tools/r8/ir/optimize/inliner/Regress134304597/Test", "j", "I");
       methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(I)V", false);
       Label label1 = new Label();
       methodVisitor.visitLabel(label1);

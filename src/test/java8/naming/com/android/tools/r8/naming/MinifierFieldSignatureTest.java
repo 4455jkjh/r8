@@ -84,8 +84,13 @@ public class MinifierFieldSignatureTest extends TestBase {
     MethodVisitor mv;
     String signature;
 
-    cw.visit(V1_8, ACC_SUPER, "Fields", "<X:Ljava/lang/String;>Ljava/lang/Object;",
-        "java/lang/Object", null);
+    cw.visit(
+        V1_8,
+        ACC_SUPER,
+        "Fields",
+        "<X:Ljava/lang/String;>Ljava/lang/Object;",
+        "java/lang/Object",
+        null);
 
     cw.visitInnerClass("Fields$Inner", "Fields", "Inner", 0);
 
@@ -98,8 +103,7 @@ public class MinifierFieldSignatureTest extends TestBase {
     {
       signature = signatures.get("anArrayOfX");
       signature = signature == null ? anArrayOfXSignature : signature;
-      fv = cw.visitField(
-          ACC_PUBLIC, "anArrayOfX", "[Ljava/lang/String;", signature, null);
+      fv = cw.visitField(ACC_PUBLIC, "anArrayOfX", "[Ljava/lang/String;", signature, null);
       fv.visitEnd();
     }
     {
@@ -111,8 +115,7 @@ public class MinifierFieldSignatureTest extends TestBase {
     {
       signature = signatures.get("aFieldsOfXInner");
       signature = signature == null ? aFieldsOfXInnerSignature : signature;
-      fv = cw.visitField(
-          ACC_PUBLIC, "aFieldsOfXInner", "LFields$Inner;", signature, null);
+      fv = cw.visitField(ACC_PUBLIC, "aFieldsOfXInner", "LFields$Inner;", signature, null);
       fv.visitEnd();
     }
     {
@@ -213,8 +216,8 @@ public class MinifierFieldSignatureTest extends TestBase {
     assertThat(aFieldsOfX, isPresentAndRenamed());
     assertThat(aFieldsOfXInner, isPresentAndRenamed());
 
-    //System.out.println(generic.getFinalSignatureAttribute());
-    //System.out.println(generic.getOriginalSignatureAttribute());
+    // System.out.println(generic.getFinalSignatureAttribute());
+    // System.out.println(generic.getOriginalSignatureAttribute());
 
     // Test that methods have their original signature if the default was provided.
     if (!signatures.containsKey("anX")) {
@@ -224,12 +227,10 @@ public class MinifierFieldSignatureTest extends TestBase {
       assertEquals(anArrayOfXSignature, anArrayOfX.getOriginalSignatureAttribute());
     }
     if (!signatures.containsKey("aFieldsOfX")) {
-      assertEquals(
-          aFieldsOfXSignature, aFieldsOfX.getOriginalSignatureAttribute());
+      assertEquals(aFieldsOfXSignature, aFieldsOfX.getOriginalSignatureAttribute());
     }
     if (!signatures.containsKey("aFieldsOfXInner")) {
-      assertEquals(
-          aFieldsOfXInnerSignature, aFieldsOfXInner.getOriginalSignatureAttribute());
+      assertEquals(aFieldsOfXInnerSignature, aFieldsOfXInner.getOriginalSignatureAttribute());
     }
     inspect.accept(inspector);
 

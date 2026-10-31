@@ -35,8 +35,7 @@ class DataClass {
     private int f1;
     private String f2;
 
-    public Builder() {
-    }
+    public Builder() {}
 
     public Builder setF1(int f1) {
       this.f1 = f1;

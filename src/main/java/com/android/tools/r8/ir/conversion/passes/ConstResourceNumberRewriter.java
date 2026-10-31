@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.conversion.passes;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.IRCode;
@@ -29,8 +30,10 @@ public class ConstResourceNumberRewriter extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
+    DexEncodedMethod method = code.context().getDefinition();
     return appView.options().isOptimizedResourceShrinking()
-        && code.context().getDefinition().isClassInitializer()
+        && (method.isClassInitializer()
+            || DescriptorUtils.isRClassStaticInitOverflowMethodWithoutHolderCheck(method))
         && isRClass(code.context().getHolder());
   }
 

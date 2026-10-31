@@ -70,8 +70,7 @@ public class IdenticalAfterRegisterAllocationTest extends TestBase {
     }
 
     @Override
-    public void allocateRegisters() {
-    }
+    public void allocateRegisters() {}
 
     @Override
     public int registersUsed() {

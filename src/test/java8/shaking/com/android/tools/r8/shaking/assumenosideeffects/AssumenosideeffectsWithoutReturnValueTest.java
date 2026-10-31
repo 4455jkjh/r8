@@ -34,10 +34,7 @@ public class AssumenosideeffectsWithoutReturnValueTest extends TestBase {
       switch (this) {
         case RULE_WITH_RETURN_VALUE:
           return StringUtils.lines(
-              "-assumenosideeffects class ** {",
-              "  *** debug(...) return false;",
-              "}"
-          );
+              "-assumenosideeffects class ** {", "  *** debug(...) return false;", "}");
         case SEPARATE_RULES:
           return StringUtils.lines(
               "-assumenosideeffects class ** {",
@@ -45,8 +42,7 @@ public class AssumenosideeffectsWithoutReturnValueTest extends TestBase {
               "}",
               "-assumevalues class ** {",
               "  *** debug(...) return false;",
-              "}"
-          );
+              "}");
         default:
           throw new Unreachable();
       }

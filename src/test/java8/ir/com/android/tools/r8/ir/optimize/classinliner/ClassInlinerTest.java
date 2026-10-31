@@ -68,18 +68,18 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
   public void testTrivial() throws Exception {
     Class<?> main = TrivialTestClass.class;
     Class<?>[] classes = {
-        TrivialTestClass.class,
-        TrivialTestClass.Inner.class,
-        ReferencedFields.class,
-        EmptyClass.class,
-        EmptyClassWithInitializer.class,
-        Iface1.class,
-        Iface1Impl.class,
-        Iface2.class,
-        Iface2Impl.class,
-        CycleReferenceAB.class,
-        CycleReferenceBA.class,
-        ClassWithFinal.class
+      TrivialTestClass.class,
+      TrivialTestClass.Inner.class,
+      ReferencedFields.class,
+      EmptyClass.class,
+      EmptyClassWithInitializer.class,
+      Iface1.class,
+      Iface1Impl.class,
+      Iface2.class,
+      Iface2Impl.class,
+      CycleReferenceAB.class,
+      CycleReferenceBA.class,
+      ClassWithFinal.class
     };
     String javaOutput = runOnJava(main);
     TestRunResult<?> result =
@@ -199,12 +199,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
   @Test
   public void testCodeSample() throws Exception {
     Class<?> main = CodeTestClass.class;
-    Class<?>[] classes = {
-        C.class,
-        C.L.class,
-        C.F.class,
-        CodeTestClass.class
-    };
+    Class<?>[] classes = {C.class, C.L.class, C.F.class, CodeTestClass.class};
     String javaOutput = runOnJava(main);
     TestRunResult<?> result =
         testForR8(parameters)
@@ -238,11 +233,11 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
   public void testInvalidatedRoot() throws Exception {
     Class<?> main = InvalidRootsTestClass.class;
     Class<?>[] classes = {
-        InvalidRootsTestClass.class,
-        InvalidRootsTestClass.A.class,
-        InvalidRootsTestClass.B.class,
-        InvalidRootsTestClass.NeverReturnsNormally.class,
-        InvalidRootsTestClass.InitNeverReturnsNormally.class
+      InvalidRootsTestClass.class,
+      InvalidRootsTestClass.A.class,
+      InvalidRootsTestClass.B.class,
+      InvalidRootsTestClass.NeverReturnsNormally.class,
+      InvalidRootsTestClass.InitNeverReturnsNormally.class
     };
     String javaOutput = runOnJava(main);
     TestRunResult<?> result =
@@ -299,9 +294,7 @@ public class ClassInlinerTest extends ClassInlinerTestBase {
     Assume.assumeFalse("No desugaring with CF backend", parameters.isCfRuntime());
     Class<?> main = LambdasTestClass.class;
     Class<?>[] classes = {
-        LambdasTestClass.class,
-        LambdasTestClass.Iface.class,
-        LambdasTestClass.IfaceUtil.class
+      LambdasTestClass.class, LambdasTestClass.Iface.class, LambdasTestClass.IfaceUtil.class
     };
     String javaOutput = runOnJava(main);
     TestRunResult<?> result =

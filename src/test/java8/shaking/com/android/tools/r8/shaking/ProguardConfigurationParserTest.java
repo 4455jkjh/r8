@@ -77,8 +77,7 @@ import org.junit.runners.Parameterized;
 
 class EmptyMainClassForProguardTests {
 
-  public static void main(String[] args) {
-  }
+  public static void main(String[] args) {}
 }
 
 @RunWith(Parameterized.class)
@@ -102,26 +101,16 @@ public class ProguardConfigurationParserTest extends TestBase {
       VALID_PROGUARD_DIR + "adapt-kotlin-metadata.flags";
   private static final String KEEP_KOTLIN_METADATA =
       VALID_PROGUARD_DIR + "keep-kotlin-metadata.flags";
-  private static final String INCLUDING =
-      VALID_PROGUARD_DIR + "including.flags";
-  private static final String INVALID_INCLUDING_1 =
-      INVALID_PROGUARD_DIR + "including-1.flags";
-  private static final String INVALID_INCLUDING_2 =
-      INVALID_PROGUARD_DIR + "including-2.flags";
-  private static final String LIBRARY_JARS =
-      VALID_PROGUARD_DIR + "library-jars.flags";
-  private static final String LIBRARY_JARS_WIN =
-      VALID_PROGUARD_DIR + "library-jars-win.flags";
-  private static final String SEEDS =
-      VALID_PROGUARD_DIR + "seeds.flags";
-  private static final String SEEDS_2 =
-      VALID_PROGUARD_DIR + "seeds-2.flags";
-  private static final String VERBOSE =
-      VALID_PROGUARD_DIR + "verbose.flags";
-  private static final String KEEPDIRECTORIES =
-      VALID_PROGUARD_DIR + "keepdirectories.flags";
-  private static final String DONT_OBFUSCATE =
-      VALID_PROGUARD_DIR + "dontobfuscate.flags";
+  private static final String INCLUDING = VALID_PROGUARD_DIR + "including.flags";
+  private static final String INVALID_INCLUDING_1 = INVALID_PROGUARD_DIR + "including-1.flags";
+  private static final String INVALID_INCLUDING_2 = INVALID_PROGUARD_DIR + "including-2.flags";
+  private static final String LIBRARY_JARS = VALID_PROGUARD_DIR + "library-jars.flags";
+  private static final String LIBRARY_JARS_WIN = VALID_PROGUARD_DIR + "library-jars-win.flags";
+  private static final String SEEDS = VALID_PROGUARD_DIR + "seeds.flags";
+  private static final String SEEDS_2 = VALID_PROGUARD_DIR + "seeds-2.flags";
+  private static final String VERBOSE = VALID_PROGUARD_DIR + "verbose.flags";
+  private static final String KEEPDIRECTORIES = VALID_PROGUARD_DIR + "keepdirectories.flags";
+  private static final String DONT_OBFUSCATE = VALID_PROGUARD_DIR + "dontobfuscate.flags";
   private static final String PACKAGE_OBFUSCATION_1 =
       VALID_PROGUARD_DIR + "package-obfuscation-1.flags";
   private static final String PACKAGE_OBFUSCATION_2 =
@@ -134,12 +123,10 @@ public class ProguardConfigurationParserTest extends TestBase {
       VALID_PROGUARD_DIR + "package-obfuscation-5.flags";
   private static final String PACKAGE_OBFUSCATION_6 =
       VALID_PROGUARD_DIR + "package-obfuscation-6.flags";
-  private static final String APPLY_MAPPING =
-      VALID_PROGUARD_DIR + "applymapping.flags";
+  private static final String APPLY_MAPPING = VALID_PROGUARD_DIR + "applymapping.flags";
   private static final String APPLY_MAPPING_WITHOUT_FILE =
       INVALID_PROGUARD_DIR + "applymapping-without-file.flags";
-  private static final String DONT_SHRINK =
-      VALID_PROGUARD_DIR + "dontshrink.flags";
+  private static final String DONT_SHRINK = VALID_PROGUARD_DIR + "dontshrink.flags";
   private static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES =
       VALID_PROGUARD_DIR + "dontskipnonpubliclibraryclasses.flags";
   private static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS =
@@ -148,22 +135,17 @@ public class ProguardConfigurationParserTest extends TestBase {
       VALID_PROGUARD_DIR + "identifiernamestring.flags";
   private static final String OVERLOAD_AGGRESIVELY =
       VALID_PROGUARD_DIR + "overloadaggressively.flags";
-  private static final String DONT_OPTIMIZE =
-      VALID_PROGUARD_DIR + "dontoptimize.flags";
+  private static final String DONT_OPTIMIZE = VALID_PROGUARD_DIR + "dontoptimize.flags";
   private static final String DONT_OPTIMIZE_OVERRIDES_PASSES =
       VALID_PROGUARD_DIR + "dontoptimize-overrides-optimizationpasses.flags";
-  private static final String OPTIMIZATION_PASSES =
-      VALID_PROGUARD_DIR + "optimizationpasses.flags";
+  private static final String OPTIMIZATION_PASSES = VALID_PROGUARD_DIR + "optimizationpasses.flags";
   private static final String OPTIMIZATION_PASSES_WITHOUT_N =
       INVALID_PROGUARD_DIR + "optimizationpasses-without-n.flags";
   private static final String PARSE_AND_SKIP_SINGLE_ARGUMENT =
       VALID_PROGUARD_DIR + "parse-and-skip-single-argument.flags";
-  private static final String PRINT_USAGE =
-      VALID_PROGUARD_DIR + "printusage.flags";
-  private static final String PRINT_USAGE_TO_FILE =
-      VALID_PROGUARD_DIR + "printusage-to-file.flags";
-  private static final String TARGET =
-      VALID_PROGUARD_DIR + "target.flags";
+  private static final String PRINT_USAGE = VALID_PROGUARD_DIR + "printusage.flags";
+  private static final String PRINT_USAGE_TO_FILE = VALID_PROGUARD_DIR + "printusage-to-file.flags";
+  private static final String TARGET = VALID_PROGUARD_DIR + "target.flags";
 
   private Reporter reporter;
   private KeepingDiagnosticHandler handler;
@@ -245,11 +227,14 @@ public class ProguardConfigurationParserTest extends TestBase {
   @Test
   public void parseNonJavaIdentifiers() {
     String nonJavaIdentifiers =
-        String.join("\n", ImmutableList.of(
-            "-keep class -package-.-ClassNameWithDash-{",
-            "  -NameWithDash- -field-;",
-            "  p-.-OtherNameWithDash- -method-(-p.-WithDash-, -package-.-ClassNameWithDash-[]); ",
-            "}"));
+        String.join(
+            "\n",
+            ImmutableList.of(
+                "-keep class -package-.-ClassNameWithDash-{",
+                "  -NameWithDash- -field-;",
+                "  p-.-OtherNameWithDash- -method-(-p.-WithDash-, -package-.-ClassNameWithDash-[]);"
+                    + " ",
+                "}"));
     parser.parse(createConfigurationForTesting(nonJavaIdentifiers));
     verifyParserEndsCleanly();
     List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
@@ -272,9 +257,11 @@ public class ProguardConfigurationParserTest extends TestBase {
         assertEquals(ProguardMemberType.METHOD, memberRule.getRuleType());
         assertTrue(memberRule.getName().matches("-method-"));
         assertFalse(memberRule.getArguments().get(0).getSpecificType().isArrayType());
-        assertSame(dexItemFactory.createType("L-p/-WithDash-;"),
+        assertSame(
+            dexItemFactory.createType("L-p/-WithDash-;"),
             memberRule.getArguments().get(0).getSpecificType());
-        assertSame(dexItemFactory.createType("[L-package-/-ClassNameWithDash-;"),
+        assertSame(
+            dexItemFactory.createType("[L-package-/-ClassNameWithDash-;"),
             memberRule.getArguments().get(1).getSpecificType());
         matches |= 0x02;
       }
@@ -423,9 +410,13 @@ public class ProguardConfigurationParserTest extends TestBase {
     verifyParserEndsCleanly();
     List<ProguardConfigurationRule> assumeNoSideEffects = builder.buildForTesting().getRules();
     assertEquals(1, assumeNoSideEffects.size());
-    assumeNoSideEffects.get(0).getMemberRules().forEach(rule -> {
-      assertFalse(rule.hasReturnValue());
-    });
+    assumeNoSideEffects
+        .get(0)
+        .getMemberRules()
+        .forEach(
+            rule -> {
+              assertFalse(rule.hasReturnValue());
+            });
   }
 
   @Test
@@ -604,12 +595,9 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(adaptClassStrings));
     verifyParserEndsCleanly();
     ProguardConfiguration config = builder.buildForTesting();
-    assertFalse(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
-    assertTrue(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobar;")));
-    assertFalse(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoobar;")));
+    assertFalse(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
+    assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobar;")));
+    assertFalse(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoobar;")));
   }
 
   @Test
@@ -621,12 +609,9 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
       ProguardConfiguration config = builder.buildForTesting();
-      assertTrue(
-          config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoo/Bar;")));
-      assertTrue(
-          config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoo/bar7Bar;")));
-      assertTrue(
-          config.getAdaptClassStrings().matches(dexItemFactory.createType("Lbar/Foo;")));
+      assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoo/Bar;")));
+      assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoo/bar7Bar;")));
+      assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lbar/Foo;")));
     }
   }
 
@@ -636,12 +621,9 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(adaptAll));
     verifyParserEndsCleanly();
     ProguardConfiguration config = builder.buildForTesting();
-    assertTrue(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
-    assertTrue(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobar;")));
-    assertTrue(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoobar;")));
+    assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
+    assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobar;")));
+    assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoobar;")));
   }
 
   @Test
@@ -650,12 +632,9 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(adaptAll));
     verifyParserEndsCleanly();
     ProguardConfiguration config = builder.buildForTesting();
-    assertTrue(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
-    assertTrue(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobar;")));
-    assertTrue(
-        config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoobar;")));
+    assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
+    assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobar;")));
+    assertTrue(config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoobar;")));
   }
 
   @Test
@@ -669,30 +648,33 @@ public class ProguardConfigurationParserTest extends TestBase {
             + "  private static java.lang.reflect.Field field(java.lang.Class,java.lang.String);\n"
             + "}";
     String config3 =
-        "-identifiernamestring class * {\n"
-            + "  @my.annotations.IdentifierNameString *;\n"
-            + "}";
+        "-identifiernamestring class * {\n" + "  @my.annotations.IdentifierNameString *;\n" + "}";
     parser.parse(createConfigurationForTesting(StringUtils.lines(config1, config2, config3)));
     verifyParserEndsCleanly();
     ProguardConfiguration config = builder.buildForTesting();
     List<ProguardConfigurationRule> identifierNameStrings = config.getRules();
     assertEquals(3, identifierNameStrings.size());
     assertEquals(1, identifierNameStrings.get(0).getClassNames().size());
-    assertEquals(
-        "a.b.c.*GeneratedClass",
-        identifierNameStrings.get(0).getClassNames().toString());
-    identifierNameStrings.get(0).getMemberRules().forEach(memberRule -> {
-      assertTrue(memberRule.getRuleType().includesFields());
-      assertTrue(memberRule.getName().matches("CONTAINING_TYPE_ABC"));
-    });
+    assertEquals("a.b.c.*GeneratedClass", identifierNameStrings.get(0).getClassNames().toString());
+    identifierNameStrings
+        .get(0)
+        .getMemberRules()
+        .forEach(
+            memberRule -> {
+              assertTrue(memberRule.getRuleType().includesFields());
+              assertTrue(memberRule.getName().matches("CONTAINING_TYPE_ABC"));
+            });
     assertEquals(1, identifierNameStrings.get(1).getClassNames().size());
     assertEquals(
-        "x.y.z.ReflectionBasedFactory",
-        identifierNameStrings.get(1).getClassNames().toString());
-    identifierNameStrings.get(1).getMemberRules().forEach(memberRule -> {
-      assertTrue(memberRule.getRuleType().includesMethods());
-      assertTrue(memberRule.getName().matches("field"));
-    });
+        "x.y.z.ReflectionBasedFactory", identifierNameStrings.get(1).getClassNames().toString());
+    identifierNameStrings
+        .get(1)
+        .getMemberRules()
+        .forEach(
+            memberRule -> {
+              assertTrue(memberRule.getRuleType().includesMethods());
+              assertTrue(memberRule.getName().matches("field"));
+            });
     assertEquals(1, identifierNameStrings.get(2).getClassNames().size());
     assertEquals("*", identifierNameStrings.get(2).getClassNames().toString());
     identifierNameStrings
@@ -716,9 +698,7 @@ public class ProguardConfigurationParserTest extends TestBase {
         new ProguardConfigurationParser(
             dexItemFactory,
             reporter,
-            ProguardConfigurationParserOptions.builder()
-                .setEnableTestingOptions(false)
-                .build(),
+            ProguardConfigurationParserOptions.builder().setEnableTestingOptions(false).build(),
             null,
             builder);
     String rule = "-convertchecknotnull class C { ** m(**, ...); }";
@@ -735,9 +715,7 @@ public class ProguardConfigurationParserTest extends TestBase {
         new ProguardConfigurationParser(
             dexItemFactory,
             reporter,
-            ProguardConfigurationParserOptions.builder()
-                .setEnableTestingOptions(false)
-                .build(),
+            ProguardConfigurationParserOptions.builder().setEnableTestingOptions(false).build(),
             null,
             builder);
     String rule = "-convertchecknotnull class C { void m(**, ...); }";
@@ -800,8 +778,8 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void flattenPackageHierarchyCannotOverrideRepackageClasses() {
     Path path = Paths.get(PACKAGE_OBFUSCATION_5);
     parser.parse(path);
-    checkDiagnostics(handler.warnings, path, 6, 1,
-        "repackageclasses", "overrides", "flattenpackagehierarchy");
+    checkDiagnostics(
+        handler.warnings, path, 6, 1, "repackageclasses", "overrides", "flattenpackagehierarchy");
     ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.REPACKAGE, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
@@ -812,8 +790,8 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void repackageClassesOverridesFlattenPackageHierarchy() {
     Path path = Paths.get(PACKAGE_OBFUSCATION_6);
     parser.parse(path);
-    checkDiagnostics(handler.warnings, path, 6, 1,
-        "repackageclasses", "overrides", "flattenpackagehierarchy");
+    checkDiagnostics(
+        handler.warnings, path, 6, 1, "repackageclasses", "overrides", "flattenpackagehierarchy");
     ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.REPACKAGE, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
@@ -1163,11 +1141,11 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parse_optimizationpasses() throws Exception {
     for (String lineSeparator : lineSeparators) {
       reset();
-      Path proguardConfig = writeTextToTempFile(lineSeparator,
-          ImmutableList.of(
-              "-optimizations xxx",
-              "-optimizationpasses 5",
-              "-optimizations yyy"));
+      Path proguardConfig =
+          writeTextToTempFile(
+              lineSeparator,
+              ImmutableList.of(
+                  "-optimizations xxx", "-optimizationpasses 5", "-optimizations yyy"));
 
       parser.parse(proguardConfig);
       assertEquals(3, handler.infos.size());
@@ -1181,8 +1159,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       assertEquals(1, r1.getEnd().getLine());
       assertEquals(15, r1.getEnd().getColumn());
 
-      checkDiagnostics(
-          handler.infos, 1, proguardConfig, 2, 1, "Ignoring", "-optimizationpasses");
+      checkDiagnostics(handler.infos, 1, proguardConfig, 2, 1, "Ignoring", "-optimizationpasses");
       Position p2 = handler.infos.get(1).getPosition();
       assertTrue(p2 instanceof TextRange);
       TextRange r2 = (TextRange) p2;
@@ -1228,59 +1205,56 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parseInvalidKeepOption() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-keepx public class * {       ",
-        "  native <methods>;           ",
-        "}                             "
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-keepx public class * {       ",
+            "  native <methods>;           ",
+            "}                             ");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 1, 1,
-          "Unknown option", "-keepx");
+      checkDiagnostics(handler.errors, proguardConfig, 1, 1, "Unknown option", "-keepx");
     }
   }
 
   @Test
   public void parseKeepOptionEOF() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        System.lineSeparator(), ImmutableList.of("-keep"), false);
+    Path proguardConfig =
+        writeTextToTempFile(System.lineSeparator(), ImmutableList.of("-keep"), false);
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 1, 6,
-          "Expected [!]interface|@interface|class|enum");
+      checkDiagnostics(
+          handler.errors, proguardConfig, 1, 6, "Expected [!]interface|@interface|class|enum");
     }
   }
 
   @Test
   public void parseInvalidKeepClassOption() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-keepclassx public class * {  ",
-        "  native <methods>;           ",
-        "}                             "
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-keepclassx public class * {  ",
+            "  native <methods>;           ",
+            "}                             ");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 1, 1,
-          "Unknown option", "-keepclassx");
+      checkDiagnostics(handler.errors, proguardConfig, 1, 1, "Unknown option", "-keepclassx");
     }
   }
 
   @Test
   public void parseCustomFlags() throws Exception {
     // Custom Proguard flags -runtype and -laststageoutput are ignored.
-    Path proguardConfig = writeTextToTempFile(
-        "-runtype FINAL                    ",
-        "-laststageoutput /some/file/name  "
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-runtype FINAL                    ", "-laststageoutput /some/file/name  ");
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
   }
@@ -1306,10 +1280,10 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void testRenameSourceFileAttribute_empty() throws Exception {
     for (String lineSeparator : lineSeparators) {
       reset();
-      Path proguardConfig = writeTextToTempFile(lineSeparator,
-          ImmutableList.of(
-              "-renamesourcefileattribute",
-              "-keepattributes SourceFile"));
+      Path proguardConfig =
+          writeTextToTempFile(
+              lineSeparator,
+              ImmutableList.of("-renamesourcefileattribute", "-keepattributes SourceFile"));
 
       parser.parse(proguardConfig);
       verifyParserEndsCleanly();
@@ -1324,10 +1298,12 @@ public class ProguardConfigurationParserTest extends TestBase {
     for (String lineSeparator : lineSeparators) {
       for (Character quote : quotes) {
         reset();
-        Path proguardConfig = writeTextToTempFile(lineSeparator,
-            ImmutableList.of(
-                "-renamesourcefileattribute " + quote + "PG" + quote,
-                "-keepattributes SourceFile"));
+        Path proguardConfig =
+            writeTextToTempFile(
+                lineSeparator,
+                ImmutableList.of(
+                    "-renamesourcefileattribute " + quote + "PG" + quote,
+                    "-keepattributes SourceFile"));
 
         parser.parse(proguardConfig);
         verifyParserEndsCleanly();
@@ -1343,10 +1319,11 @@ public class ProguardConfigurationParserTest extends TestBase {
     for (String lineSeparator : lineSeparators) {
       for (Character quote : quotes) {
         reset();
-        Path proguardConfig = writeTextToTempFile(lineSeparator,
-            ImmutableList.of(
-                "-renamesourcefileattribute " + quote + quote,
-                "-keepattributes SourceFile"));
+        Path proguardConfig =
+            writeTextToTempFile(
+                lineSeparator,
+                ImmutableList.of(
+                    "-renamesourcefileattribute " + quote + quote, "-keepattributes SourceFile"));
 
         parser.parse(proguardConfig);
         verifyParserEndsCleanly();
@@ -1387,9 +1364,16 @@ public class ProguardConfigurationParserTest extends TestBase {
     String config =
         "-keepattributes Exceptions,InnerClasses,Signature,Deprecated,\n"
             + "          SourceFile,LineNumberTable,*Annotation*,EnclosingMethod\n";
-    List<String> expected = ImmutableList.of(
-        "Exceptions", "InnerClasses", "Signature", "Deprecated",
-        "SourceFile", "LineNumberTable", "*Annotation*", "EnclosingMethod");
+    List<String> expected =
+        ImmutableList.of(
+            "Exceptions",
+            "InnerClasses",
+            "Signature",
+            "Deprecated",
+            "SourceFile",
+            "LineNumberTable",
+            "*Annotation*",
+            "EnclosingMethod");
     testKeepattributes(expected, config);
     config =
         "-keepattributes \"Exceptions\",\"InnerClasses\",\"Signature\",\"Deprecated\",\n"
@@ -1416,14 +1400,11 @@ public class ProguardConfigurationParserTest extends TestBase {
     testKeeppackagenames("-keeppackagenames       xxx   ,   yyy     \n");
     testKeeppackagenames("-keeppackagenames \"xxx\",\"yyy\"");
 
-    testKeeppackagenames(
-        "-keeppackagenames com.**, org.*");
+    testKeeppackagenames("-keeppackagenames com.**, org.*");
 
-    testKeeppackagenames(
-        "-keeppackagenames c?m.**, ?r?.*");
+    testKeeppackagenames("-keeppackagenames c?m.**, ?r?.*");
 
-    testKeeppackagenames(
-        "-keeppackagenames !c?m.**, !?r?.*");
+    testKeeppackagenames("-keeppackagenames !c?m.**, !?r?.*");
   }
 
   @Test
@@ -1580,8 +1561,9 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_adaptresourcexxx_keepdirectories_leadingComma() {
-    List<String> options = ImmutableList.of(
-        "-adaptresourcefilenames", "-adaptresourcefilecontents", "-keepdirectories");
+    List<String> options =
+        ImmutableList.of(
+            "-adaptresourcefilenames", "-adaptresourcefilecontents", "-keepdirectories");
     for (String option : options) {
       try {
         reset();
@@ -1595,8 +1577,9 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_adaptresourcexxx_keepdirectories_emptyListElement() {
-    List<String> options = ImmutableList.of(
-        "-adaptresourcefilenames", "-adaptresourcefilecontents", "-keepdirectories");
+    List<String> options =
+        ImmutableList.of(
+            "-adaptresourcefilenames", "-adaptresourcefilecontents", "-keepdirectories");
     for (String option : options) {
       try {
         reset();
@@ -1610,8 +1593,9 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_adaptresourcexxx_keepdirectories_trailingComma() {
-    List<String> options = ImmutableList.of(
-        "-adaptresourcefilenames", "-adaptresourcefilecontents", "-keepdirectories");
+    List<String> options =
+        ImmutableList.of(
+            "-adaptresourcefilenames", "-adaptresourcefilecontents", "-keepdirectories");
     for (String option : options) {
       try {
         reset();
@@ -1641,15 +1625,15 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if   class **$$ModuleAdapter",
-        "-keep class A",
-        "-if   class **$$InjectAdapter",
-        "-keep class B",
-        "-if   class **$$StaticInjection",
-        "-keep class C",
-        "-keepnames class dagger.Lazy"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if   class **$$ModuleAdapter",
+            "-keep class A",
+            "-if   class **$$InjectAdapter",
+            "-keep class B",
+            "-if   class **$$StaticInjection",
+            "-keep class C",
+            "-keepnames class dagger.Lazy");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1675,10 +1659,10 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_nthWildcard() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **$D<2>"  // <2> corresponds to the 2nd ** in -if rule.
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **$R**", "-keep class **$D<2>" // <2> corresponds to the 2nd ** in -if rule.
+            );
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1703,12 +1687,8 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_fieldType() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.R*",
-        "-keep class **.D<2> {",
-        "  <1>.F<2> fld;",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile("-if class **.R*", "-keep class **.D<2> {", "  <1>.F<2> fld;", "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1725,12 +1705,9 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_fieldName() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.R*",
-        "-keep class **.D<2> {",
-        "  java.lang.String fld<2>;",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **.R*", "-keep class **.D<2> {", "  java.lang.String fld<2>;", "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1747,12 +1724,9 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_returnType() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.R*",
-        "-keep class **.D<2> {",
-        "  <1>.M<2> mtd(...);",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **.R*", "-keep class **.D<2> {", "  <1>.M<2> mtd(...);", "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1769,33 +1743,32 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_init() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.R* {",
-        "  void *(...);",
-        "}",
-        "-keep class **.D<2> {",
-        "  <3>(...);",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **.R* {",
+            "  void *(...);",
+            "}",
+            "-keep class **.D<2> {",
+            "  <3>(...);",
+            "}");
     try {
       parser.parse(proguardConfig);
       fail("Expect to fail due to unsupported constructor name pattern.");
     } catch (RuntimeException e) {
-      checkDiagnostics(
-          handler.errors, proguardConfig, 5, 3, "Unexpected character", "method name");
+      checkDiagnostics(handler.errors, proguardConfig, 5, 3, "Unexpected character", "method name");
     }
   }
 
   @Test
   public void parse_if_methodName_void() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.R* {",
-        "  void *(...);",
-        "}",
-        "-keep class **.D<2> {",
-        "  void <3>_delegate(...);",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **.R* {",
+            "  void *(...);",
+            "}",
+            "-keep class **.D<2> {",
+            "  void <3>_delegate(...);",
+            "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1812,14 +1785,14 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_methodName_class() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.R* {",
-        "  ** *(...);",
-        "}",
-        "-keep class **.D<2> {",
-        "  <3> <4>(...);",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **.R* {",
+            "  ** *(...);",
+            "}",
+            "-keep class **.D<2> {",
+            "  <3> <4>(...);",
+            "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1837,44 +1810,34 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_nthWildcard_notNumber_literalN() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **D<n>"
-    );
+    Path proguardConfig = writeTextToTempFile("-if class **$R**", "-keep class **D<n>");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 2, 13,
-          "Use of generics not allowed for java type");
+      checkDiagnostics(
+          handler.errors, proguardConfig, 2, 13, "Use of generics not allowed for java type");
     }
   }
 
   @Test
   public void parse_if_nthWildcard_notNumber_asterisk_inClassName() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **D<*>"
-    );
+    Path proguardConfig = writeTextToTempFile("-if class **$R**", "-keep class **D<*>");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 2, 13,
-          "Use of generics not allowed for java type");
+      checkDiagnostics(
+          handler.errors, proguardConfig, 2, 13, "Use of generics not allowed for java type");
     }
   }
 
   @Test
   public void parse_if_nthWildcard_notNumber_asterisk_inMemberName() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **D<2> {",
-        "  int id<*>;",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile("-if class **$R**", "-keep class **D<2> {", "  int id<*>;", "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1882,12 +1845,8 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_nestedAngularBrackets_inMemberName() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **D<2> {",
-        "  int id<<*>>;",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile("-if class **$R**", "-keep class **D<2> {", "  int id<<*>>;", "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -1904,44 +1863,42 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_nestedAngularBrackets_outOfRange() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **D<2> {",
-        "  int id<<4>>;",  // There are 3 previous referable wildcards in this rule.
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **$R**",
+            "-keep class **D<2> {",
+            "  int id<<4>>;", // There are 3 previous referable wildcards in this rule.
+            "}");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 4, 2,
-          "Wildcard", "<4>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 4, 2, "Wildcard", "<4>", "invalid");
     }
   }
 
   @Test
   public void parse_if_nthWildcard_outOfRange_tooSmall() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **D<0>"  // nth wildcard starts from 1, not 0.
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **$R**", "-keep class **D<0>" // nth wildcard starts from 1, not 0.
+            );
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 2, 13,
-          "Wildcard", "<0>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 2, 13, "Wildcard", "<0>", "invalid");
     }
   }
 
   @Test
   public void parse_if_nthWildcard_outOfRange_tooBig() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R**",
-        "-keep class **D<4>"  // There are 3 previous wildcards in this rule.
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **$R**", "-keep class **D<4>" // There are 3 previous wildcards in this rule.
+            );
     try {
       parser.parse(proguardConfig);
       fail();
@@ -1953,10 +1910,10 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_nthWildcard_outOfRange_inIf() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **$R<2>", // There is only one wildcard prior to <2>.
-        "-keep class **D<2>"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **$R<2>", // There is only one wildcard prior to <2>.
+            "-keep class **D<2>");
     try {
       parser.parse(proguardConfig);
       fail();
@@ -1968,32 +1925,31 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_nthWildcard_not_referable() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.R {",
-        "  int id?;",
-        "}",
-        "-keep class <1>.D<2> {",
-        "  int id<3>;",  // Only ** and ? are referable wildcards.
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **.R {",
+            "  int id?;",
+            "}",
+            "-keep class <1>.D<2> {",
+            "  int id<3>;", // Only ** and ? are referable wildcards.
+            "}");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 6, 2,
-          "Wildcard", "<3>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 6, 2, "Wildcard", "<3>", "invalid");
     }
   }
 
   @Test
   public void parse_if_nthWildcard_not_referable_after_backreference() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if class **.*User {",
-        "  @<1>.*<2> <methods>;", // As back reference starts, * in the middle is not referable.
-        "}",
-        "-keep @interface <1>.<3><2>"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-if class **.*User {",
+            "  @<1>.*<2> <methods>;", // As back reference starts, * in the middle is not referable.
+            "}",
+            "-keep @interface <1>.<3><2>");
     try {
       parser.parse(proguardConfig);
       fail();
@@ -2005,125 +1961,113 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_if_if() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if   class **$$ModuleAdapter",
-        "-if   class **$$InjectAdapter"
-    );
+    Path proguardConfig =
+        writeTextToTempFile("-if   class **$$ModuleAdapter", "-if   class **$$InjectAdapter");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 1, 1,
-          "Expecting", "'-keep'", "after", "'-if'");
+      checkDiagnostics(
+          handler.errors, proguardConfig, 1, 1, "Expecting", "'-keep'", "after", "'-if'");
     }
   }
 
   @Test
   public void parse_if_end() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-if   class **$$ModuleAdapter"
-    );
+    Path proguardConfig = writeTextToTempFile("-if   class **$$ModuleAdapter");
     try {
       parser.parse(proguardConfig);
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 1, 1,
-          "Expecting", "'-keep'", "after", "'-if'");
+      checkDiagnostics(
+          handler.errors, proguardConfig, 1, 1, "Expecting", "'-keep'", "after", "'-if'");
     }
   }
 
   @Test
   public void parse_assumenoexternalsideeffects() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-assumenoexternalsideeffects class java.lang.StringBuilder {",
-        "  public java.lang.StringBuilder();",
-        "  public java.lang.StringBuilder(int);",
-        "  public java.lang.StringBuilder(java.lang.String);",
-        "  public java.lang.StringBuilder append(java.lang.Object);",
-        "  public java.lang.StringBuilder append(java.lang.String);",
-        "  public java.lang.StringBuilder append(java.lang.StringBuffer);",
-        "  public java.lang.StringBuilder append(char[]);",
-        "  public java.lang.StringBuilder append(char[], int, int);",
-        "  public java.lang.StringBuilder append(boolean);",
-        "  public java.lang.StringBuilder append(char);",
-        "  public java.lang.StringBuilder append(int);",
-        "  public java.lang.StringBuilder append(long);",
-        "  public java.lang.StringBuilder append(float);",
-        "  public java.lang.StringBuilder append(double);",
-        "  public java.lang.String toString();",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-assumenoexternalsideeffects class java.lang.StringBuilder {",
+            "  public java.lang.StringBuilder();",
+            "  public java.lang.StringBuilder(int);",
+            "  public java.lang.StringBuilder(java.lang.String);",
+            "  public java.lang.StringBuilder append(java.lang.Object);",
+            "  public java.lang.StringBuilder append(java.lang.String);",
+            "  public java.lang.StringBuilder append(java.lang.StringBuffer);",
+            "  public java.lang.StringBuilder append(char[]);",
+            "  public java.lang.StringBuilder append(char[], int, int);",
+            "  public java.lang.StringBuilder append(boolean);",
+            "  public java.lang.StringBuilder append(char);",
+            "  public java.lang.StringBuilder append(int);",
+            "  public java.lang.StringBuilder append(long);",
+            "  public java.lang.StringBuilder append(float);",
+            "  public java.lang.StringBuilder append(double);",
+            "  public java.lang.String toString();",
+            "}");
 
     parser.parse(proguardConfig);
-    checkDiagnostics(handler.warnings, proguardConfig, 1, 1,
-        "Ignoring", "-assumenoexternalsideeffects");
+    checkDiagnostics(
+        handler.warnings, proguardConfig, 1, 1, "Ignoring", "-assumenoexternalsideeffects");
   }
 
   @Test
   public void parse_assumenoescapingparameters() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-assumenoescapingparameters class java.lang.System {",
-        "  public static void arraycopy(java.lang.Object, int, java.lang.Object, int, int);",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-assumenoescapingparameters class java.lang.System {",
+            "  public static void arraycopy(java.lang.Object, int, java.lang.Object, int, int);",
+            "}");
 
     parser.parse(proguardConfig);
-    checkDiagnostics(handler.warnings, proguardConfig, 1, 1,
-        "Ignoring", "-assumenoescapingparameters");
+    checkDiagnostics(
+        handler.warnings, proguardConfig, 1, 1, "Ignoring", "-assumenoescapingparameters");
   }
 
   @Test
   public void parse_assumenoexternalreturnvalues() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-assumenoexternalreturnvalues class java.lang.StringBuilder {",
-        "  public java.lang.StringBuilder append(java.lang.Object);",
-        "  public java.lang.StringBuilder append(java.lang.String);",
-        "  public java.lang.StringBuilder append(java.lang.StringBuffer);",
-        "  public java.lang.StringBuilder append(char[]);",
-        "  public java.lang.StringBuilder append(char[], int, int);",
-        "  public java.lang.StringBuilder append(boolean);",
-        "  public java.lang.StringBuilder append(char);",
-        "  public java.lang.StringBuilder append(int);",
-        "  public java.lang.StringBuilder append(long);",
-        "  public java.lang.StringBuilder append(float);",
-        "  public java.lang.StringBuilder append(double);",
-        "}"
-    );
+    Path proguardConfig =
+        writeTextToTempFile(
+            "-assumenoexternalreturnvalues class java.lang.StringBuilder {",
+            "  public java.lang.StringBuilder append(java.lang.Object);",
+            "  public java.lang.StringBuilder append(java.lang.String);",
+            "  public java.lang.StringBuilder append(java.lang.StringBuffer);",
+            "  public java.lang.StringBuilder append(char[]);",
+            "  public java.lang.StringBuilder append(char[], int, int);",
+            "  public java.lang.StringBuilder append(boolean);",
+            "  public java.lang.StringBuilder append(char);",
+            "  public java.lang.StringBuilder append(int);",
+            "  public java.lang.StringBuilder append(long);",
+            "  public java.lang.StringBuilder append(float);",
+            "  public java.lang.StringBuilder append(double);",
+            "}");
 
     parser.parse(proguardConfig);
-    checkDiagnostics(handler.warnings, proguardConfig, 1, 1,
-        "Ignoring", "-assumenoexternalreturnvalues");
+    checkDiagnostics(
+        handler.warnings, proguardConfig, 1, 1, "Ignoring", "-assumenoexternalreturnvalues");
   }
 
   @Test
   public void parse_dump_withoutFile() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-dump"
-    );
+    Path proguardConfig = writeTextToTempFile("-dump");
 
     parser.parse(proguardConfig);
-    checkDiagnostics(handler.warnings, proguardConfig, 1, 1,
-        "Ignoring", "-dump");
+    checkDiagnostics(handler.warnings, proguardConfig, 1, 1, "Ignoring", "-dump");
   }
 
   @Test
   public void parse_dump_withFile() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-dump class_files.txt"
-    );
+    Path proguardConfig = writeTextToTempFile("-dump class_files.txt");
 
     parser.parse(proguardConfig);
-    checkDiagnostics(handler.warnings, proguardConfig, 1, 1,
-        "Ignoring", "-dump");
+    checkDiagnostics(handler.warnings, proguardConfig, 1, 1, "Ignoring", "-dump");
   }
 
   @Test
   public void parse_android() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-android"
-    );
+    Path proguardConfig = writeTextToTempFile("-android");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -2131,9 +2075,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_mergeinterfaceaggressively() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-mergeinterfacesaggressively"
-    );
+    Path proguardConfig = writeTextToTempFile("-mergeinterfacesaggressively");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -2141,9 +2083,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_addconfigurationdebugging() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-addconfigurationdebugging"
-    );
+    Path proguardConfig = writeTextToTempFile("-addconfigurationdebugging");
 
     parser.parse(proguardConfig);
     assertEquals(0, handler.infos.size());
@@ -2153,11 +2093,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_regress74508478() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-keep class A {",
-        "  A <fields>;",
-        "}"
-    );
+    Path proguardConfig = writeTextToTempFile("-keep class A {", "  A <fields>;", "}");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -2165,9 +2101,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parse_regress79925760() throws Exception {
-    Path proguardConfig = writeTextToTempFile(
-        "-keep public @ interface test.MyAnnotation"
-    );
+    Path proguardConfig = writeTextToTempFile("-keep public @ interface test.MyAnnotation");
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -2263,13 +2197,9 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parseOptionalArgumentsFollowedByArobaseInclude() throws Exception {
-    Path includeFile = writeTextToTempFile(
-        "-renamesourcefileattribute SRC"
-    );
-    Path proguardConfig = writeTextToTempFile(
-        "-printconfiguration",
-        "@" + includeFile.toAbsolutePath()
-    );
+    Path includeFile = writeTextToTempFile("-renamesourcefileattribute SRC");
+    Path proguardConfig =
+        writeTextToTempFile("-printconfiguration", "@" + includeFile.toAbsolutePath());
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
@@ -2295,21 +2225,28 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parseSingleFileNameOptions() {
-    List<String> fileNames = ImmutableList.of(
-        "xxx",
-        "xxx" + File.pathSeparatorChar + "xxx");
-    testFlagWithFilenames("-printusage", fileNames,
-        ProguardConfiguration::getPrintUsageFile, Assert::assertEquals);
-    testFlagWithFilenames("-printconfiguration", fileNames,
-        ProguardConfiguration::getPrintConfigurationFile, Assert::assertEquals);
-    testFlagWithFilenames("-printmapping", fileNames,
-        ProguardConfiguration::getPrintMappingFile, Assert::assertEquals);
-    testFlagWithFilenames("-applymapping", fileNames,
-        ProguardConfiguration::getApplyMappingFile, Assert::assertEquals);
+    List<String> fileNames = ImmutableList.of("xxx", "xxx" + File.pathSeparatorChar + "xxx");
+    testFlagWithFilenames(
+        "-printusage", fileNames, ProguardConfiguration::getPrintUsageFile, Assert::assertEquals);
+    testFlagWithFilenames(
+        "-printconfiguration",
+        fileNames,
+        ProguardConfiguration::getPrintConfigurationFile,
+        Assert::assertEquals);
+    testFlagWithFilenames(
+        "-printmapping",
+        fileNames,
+        ProguardConfiguration::getPrintMappingFile,
+        Assert::assertEquals);
+    testFlagWithFilenames(
+        "-applymapping",
+        fileNames,
+        ProguardConfiguration::getApplyMappingFile,
+        Assert::assertEquals);
     // The parsed value of -basedirectory is not available in the configuration.
     testFlagWithFilenames("-basedirectory", fileNames, (x) -> Paths.get(""), (x, y) -> {});
-    testFlagWithFilenames("-printseeds", fileNames,
-        ProguardConfiguration::getSeedFile, Assert::assertEquals);
+    testFlagWithFilenames(
+        "-printseeds", fileNames, ProguardConfiguration::getSeedFile, Assert::assertEquals);
     // TODO(sgjesse): Add tests for -obfuscationdictionary, -classobfuscationdictionary,
     // -packageobfuscationdictionary and -include
   }
@@ -2337,18 +2274,30 @@ public class ProguardConfigurationParserTest extends TestBase {
       fileNames.add("\" xxx xxx \"");
       fileNames.add("' xxx xxx '");
     }
-    testFlagWithFilenames("-printusage", fileNames,
-        ProguardConfiguration::getPrintUsageFile, this::checkQuotedFileName);
-    testFlagWithFilenames("-printconfiguration", fileNames,
-        ProguardConfiguration::getPrintConfigurationFile, this::checkQuotedFileName);
-    testFlagWithFilenames("-printmapping", fileNames,
-        ProguardConfiguration::getPrintMappingFile, this::checkQuotedFileName);
-    testFlagWithFilenames("-applymapping", fileNames,
-        ProguardConfiguration::getApplyMappingFile, this::checkQuotedFileName);
+    testFlagWithFilenames(
+        "-printusage",
+        fileNames,
+        ProguardConfiguration::getPrintUsageFile,
+        this::checkQuotedFileName);
+    testFlagWithFilenames(
+        "-printconfiguration",
+        fileNames,
+        ProguardConfiguration::getPrintConfigurationFile,
+        this::checkQuotedFileName);
+    testFlagWithFilenames(
+        "-printmapping",
+        fileNames,
+        ProguardConfiguration::getPrintMappingFile,
+        this::checkQuotedFileName);
+    testFlagWithFilenames(
+        "-applymapping",
+        fileNames,
+        ProguardConfiguration::getApplyMappingFile,
+        this::checkQuotedFileName);
     // The parsed value of -basedirectory is not available in the configuration.
     testFlagWithFilenames("-basedirectory", fileNames, (x) -> Paths.get(""), (x, y) -> {});
-    testFlagWithFilenames("-printseeds", fileNames,
-        ProguardConfiguration::getSeedFile, this::checkQuotedFileName);
+    testFlagWithFilenames(
+        "-printseeds", fileNames, ProguardConfiguration::getSeedFile, this::checkQuotedFileName);
     // TODO(sgjesse): Add tests for -obfuscationdictionary, -classobfuscationdictionary,
     // -packageobfuscationdictionary and -include
   }
@@ -2383,8 +2332,8 @@ public class ProguardConfigurationParserTest extends TestBase {
       fileNames.add("xxx<java.home>");
       fileNames.add("xxx<user.home>");
     }
-    fileNames.add("<java.home>" +  File.separatorChar + "xxx");
-    fileNames.add("<user.home>" +  File.separatorChar + "xxx");
+    fileNames.add("<java.home>" + File.separatorChar + "xxx");
+    fileNames.add("<user.home>" + File.separatorChar + "xxx");
     if (!ToolHelper.isWindows()) {
       fileNames.add("xxx<java.home>/xxx");
       fileNames.add("xxx<user.home>/xxx");
@@ -2399,19 +2348,28 @@ public class ProguardConfigurationParserTest extends TestBase {
       fileNames.add("><");
       fileNames.add(">><<");
     }
-    testFlagWithFilenamesWithSystemProperty("-printusage", fileNames,
-        ProguardConfiguration::getPrintUsageFile, Assert::assertEquals);
-    testFlagWithFilenamesWithSystemProperty("-printconfiguration", fileNames,
-        ProguardConfiguration::getPrintConfigurationFile, Assert::assertEquals);
-    testFlagWithFilenamesWithSystemProperty("-printmapping", fileNames,
-        ProguardConfiguration::getPrintMappingFile, Assert::assertEquals);
-    testFlagWithFilenamesWithSystemProperty("-applymapping", fileNames,
-        ProguardConfiguration::getApplyMappingFile, Assert::assertEquals);
+    testFlagWithFilenamesWithSystemProperty(
+        "-printusage", fileNames, ProguardConfiguration::getPrintUsageFile, Assert::assertEquals);
+    testFlagWithFilenamesWithSystemProperty(
+        "-printconfiguration",
+        fileNames,
+        ProguardConfiguration::getPrintConfigurationFile,
+        Assert::assertEquals);
+    testFlagWithFilenamesWithSystemProperty(
+        "-printmapping",
+        fileNames,
+        ProguardConfiguration::getPrintMappingFile,
+        Assert::assertEquals);
+    testFlagWithFilenamesWithSystemProperty(
+        "-applymapping",
+        fileNames,
+        ProguardConfiguration::getApplyMappingFile,
+        Assert::assertEquals);
     // The parsed value of -basedirectory is not available in the configuration.
-    testFlagWithFilenamesWithSystemProperty("-basedirectory", fileNames,
-        (x) -> Paths.get(""), (x, y) -> {});
-    testFlagWithFilenamesWithSystemProperty("-printseeds", fileNames,
-        ProguardConfiguration::getSeedFile, Assert::assertEquals);
+    testFlagWithFilenamesWithSystemProperty(
+        "-basedirectory", fileNames, (x) -> Paths.get(""), (x, y) -> {});
+    testFlagWithFilenamesWithSystemProperty(
+        "-printseeds", fileNames, ProguardConfiguration::getSeedFile, Assert::assertEquals);
     // TODO(sgjesse): Add tests for -obfuscationdictionary, -classobfuscationdictionary,
     // -packageobfuscationdictionary and -include
   }
@@ -2454,8 +2412,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     checker.accept(config.getPackageObfuscationMode(), config.getPackagePrefix());
   }
 
-  private void testFlagWithQuotedValueFailure(
-      String flag, String value, Supplier<Void> checker) {
+  private void testFlagWithQuotedValueFailure(String flag, String value, Supplier<Void> checker) {
     try {
       reset();
       parser.parse(createConfigurationForTesting(flag + " " + value));
@@ -2468,58 +2425,94 @@ public class ProguardConfigurationParserTest extends TestBase {
 
   @Test
   public void parseRepackageclassesQuotes() {
-    testFlagWithQuotedValue("-repackageclasses", "'xxx'", (mode, prefix) -> {
-      assertEquals(PackageObfuscationMode.REPACKAGE, mode);
-      assertEquals("xxx", prefix);
-    });
-    testFlagWithQuotedValue("-repackageclasses", "\"xxx\"", (mode, prefix) -> {
-      assertEquals(PackageObfuscationMode.REPACKAGE, mode);
-      assertEquals("xxx", prefix);
-    });
-    testFlagWithQuotedValueFailure("-repackageclasses", "'xxx", () -> {
-      checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
-      return null;
-    });
-    testFlagWithQuotedValueFailure("-repackageclasses", "'xxx\"", () -> {
-      checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
-      return null;
-    });
-    testFlagWithQuotedValueFailure("-repackageclasses", "\"xxx", () -> {
-      checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
-      return null;
-    });
-    testFlagWithQuotedValueFailure("-repackageclasses", "\"xxx'", () -> {
-      checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
-      return null;
-    });
+    testFlagWithQuotedValue(
+        "-repackageclasses",
+        "'xxx'",
+        (mode, prefix) -> {
+          assertEquals(PackageObfuscationMode.REPACKAGE, mode);
+          assertEquals("xxx", prefix);
+        });
+    testFlagWithQuotedValue(
+        "-repackageclasses",
+        "\"xxx\"",
+        (mode, prefix) -> {
+          assertEquals(PackageObfuscationMode.REPACKAGE, mode);
+          assertEquals("xxx", prefix);
+        });
+    testFlagWithQuotedValueFailure(
+        "-repackageclasses",
+        "'xxx",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
+          return null;
+        });
+    testFlagWithQuotedValueFailure(
+        "-repackageclasses",
+        "'xxx\"",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
+          return null;
+        });
+    testFlagWithQuotedValueFailure(
+        "-repackageclasses",
+        "\"xxx",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
+          return null;
+        });
+    testFlagWithQuotedValueFailure(
+        "-repackageclasses",
+        "\"xxx'",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 23, "Missing closing quote");
+          return null;
+        });
   }
 
   @Test
   public void parseFlattenpackagehierarchyQuotes() {
-    testFlagWithQuotedValue("-flattenpackagehierarchy", "'xxx'", (mode, prefix) -> {
-      assertEquals(PackageObfuscationMode.FLATTEN, mode);
-      assertEquals("xxx", prefix);
-    });
-    testFlagWithQuotedValue("-flattenpackagehierarchy", "\"xxx\"", (mode, prefix) -> {
-      assertEquals(PackageObfuscationMode.FLATTEN, mode);
-      assertEquals("xxx", prefix);
-    });
-    testFlagWithQuotedValueFailure("-flattenpackagehierarchy", "'xxx", () -> {
-      checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
-      return null;
-    });
-    testFlagWithQuotedValueFailure("-flattenpackagehierarchy", "'xxx\"", () -> {
-      checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
-      return null;
-    });
-    testFlagWithQuotedValueFailure("-flattenpackagehierarchy", "\"xxx", () -> {
-      checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
-      return null;
-    });
-    testFlagWithQuotedValueFailure("-flattenpackagehierarchy", "\"xxx'", () -> {
-      checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
-      return null;
-    });
+    testFlagWithQuotedValue(
+        "-flattenpackagehierarchy",
+        "'xxx'",
+        (mode, prefix) -> {
+          assertEquals(PackageObfuscationMode.FLATTEN, mode);
+          assertEquals("xxx", prefix);
+        });
+    testFlagWithQuotedValue(
+        "-flattenpackagehierarchy",
+        "\"xxx\"",
+        (mode, prefix) -> {
+          assertEquals(PackageObfuscationMode.FLATTEN, mode);
+          assertEquals("xxx", prefix);
+        });
+    testFlagWithQuotedValueFailure(
+        "-flattenpackagehierarchy",
+        "'xxx",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
+          return null;
+        });
+    testFlagWithQuotedValueFailure(
+        "-flattenpackagehierarchy",
+        "'xxx\"",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
+          return null;
+        });
+    testFlagWithQuotedValueFailure(
+        "-flattenpackagehierarchy",
+        "\"xxx",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
+          return null;
+        });
+    testFlagWithQuotedValueFailure(
+        "-flattenpackagehierarchy",
+        "\"xxx'",
+        () -> {
+          checkDiagnostics(handler.errors, null, 1, 30, "Missing closing quote");
+          return null;
+        });
   }
 
   private ProguardConfiguration parseAndVerifyParserEndsCleanly(String config) {
@@ -2629,10 +2622,8 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseInits() throws Exception {
     for (String initName : InitMatchingTest.ALLOWED_INIT_NAMES) {
       reset();
-      Path initConfig = writeTextToTempFile(
-          "-keep class **.MyClass {",
-          "  " + initName + "(...);",
-          "}");
+      Path initConfig =
+          writeTextToTempFile("-keep class **.MyClass {", "  " + initName + "(...);", "}");
       parseAndVerifyParserEndsCleanly(initConfig);
     }
 
@@ -2642,17 +2633,17 @@ public class ProguardConfigurationParserTest extends TestBase {
         continue;
       }
       reset();
-      Path proguardConfig = writeTextToTempFile(
-          "-keep class **.MyClass {",
-          "  " + initName + "(...);",
-          "}");
+      Path proguardConfig =
+          writeTextToTempFile("-keep class **.MyClass {", "  " + initName + "(...);", "}");
       try {
         parser.parse(proguardConfig);
         fail("Expect to fail due to unsupported constructor name pattern.");
       } catch (RuntimeException e) {
         assertTrue(e.getCause() instanceof AbortException);
-        int column = initName.contains("void") ? initName.indexOf("void") + 8
-            : (initName.contains("XYZ") ? initName.indexOf(">") + 4 : 3);
+        int column =
+            initName.contains("void")
+                ? initName.indexOf("void") + 8
+                : (initName.contains("XYZ") ? initName.indexOf(">") + 4 : 3);
         if (initName.contains("XYZ")) {
           checkDiagnostics(
               handler.errors, proguardConfig, 2, column, "Expected [access-flag]* void ");
@@ -3135,7 +3126,7 @@ public class ProguardConfigurationParserTest extends TestBase {
         }) {
       for (String input : new String[] {"class * { <methods>; }", "@Foo class * { <methods>; }"}) {
         for (boolean testNamedAndroidLogLevels : BooleanUtils.values()) {
-            reset();
+          reset();
 
           String configuration =
               StringUtils.lines(

@@ -40,8 +40,7 @@ class AlwaysThrowNullTestClass {
     }
   }
 
-  static class Uninitialized extends Base {
-  }
+  static class Uninitialized extends Base {}
 
   @NeverPropagateValue
   @NeverInline
@@ -145,24 +144,20 @@ class AlwaysThrowNullTestClass {
 
 @RunWith(Parameterized.class)
 public class AlwaysThrowNullTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "Expected NPE",
-      "Expected NPE",
-      "Expected NPE",
-      "Expected NPE",
-      "Expected NPE",
-      "Expected NPE"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          "Expected NPE",
+          "Expected NPE",
+          "Expected NPE",
+          "Expected NPE",
+          "Expected NPE",
+          "Expected NPE");
   private static final Class<?> MAIN = AlwaysThrowNullTestClass.class;
-  private static final List<String> METHODS_WITH_NPE_GUARD = ImmutableList.of(
-      "uninstantiatedInstancePutWithNPEGuard",
-      "nullReferenceInvoke"
-  );
-  private static final List<String> METHODS_WITHOUT_GUARD = ImmutableList.of(
-      "uninstantiatedInstanceInvoke",
-      "uninstantiatedInstancePut",
-      "uninstantiatedInstanceGet"
-  );
+  private static final List<String> METHODS_WITH_NPE_GUARD =
+      ImmutableList.of("uninstantiatedInstancePutWithNPEGuard", "nullReferenceInvoke");
+  private static final List<String> METHODS_WITHOUT_GUARD =
+      ImmutableList.of(
+          "uninstantiatedInstanceInvoke", "uninstantiatedInstancePut", "uninstantiatedInstanceGet");
 
   @Parameterized.Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -194,10 +189,11 @@ public class AlwaysThrowNullTest extends TestBase {
       assertThat(withNPEGuard, isPresent());
       // catch handlers could be split, and thus not always 1, but some small positive numbers.
       assertTrue(
-        Streams.stream(
-            withNPEGuard.iterateTryCatches(
-                t -> t.isCatching(NullPointerException.class.getName()))
-        ).count() > 0);
+          Streams.stream(
+                      withNPEGuard.iterateTryCatches(
+                          t -> t.isCatching(NullPointerException.class.getName())))
+                  .count()
+              > 0);
       assertEquals(
           expectedThrow,
           Streams.stream(withNPEGuard.iterateInstructions(InstructionSubject::isThrow)).count());

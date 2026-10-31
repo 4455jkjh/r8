@@ -72,8 +72,7 @@ public class KeepClassesWithAnnotatedFieldsTest extends TestBase {
 
   static class DataClass {
 
-    @MyAnnotation
-    String field;
+    @MyAnnotation String field;
   }
 
   @Retention(RetentionPolicy.RUNTIME)

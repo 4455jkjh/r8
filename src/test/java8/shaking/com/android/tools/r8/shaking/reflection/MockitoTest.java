@@ -17,8 +17,8 @@ import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.ShouldNotBeMe
 import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyImpl1;
 import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyImpl2;
 import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyInterface;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -103,6 +103,7 @@ public class MockitoTest extends TestBase {
     public interface SpyInterface {
       void spiedMethod();
     }
+
     public static class SpyImpl1 implements SpyInterface {
       @Override
       public void spiedMethod() {

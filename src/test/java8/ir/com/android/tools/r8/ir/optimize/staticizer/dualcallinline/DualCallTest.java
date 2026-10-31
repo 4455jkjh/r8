@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.staticizer.dualcallinline;
 
-
 public class DualCallTest {
   private static Candidate INSTANCE = new Candidate();
 

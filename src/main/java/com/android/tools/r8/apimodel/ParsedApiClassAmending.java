@@ -10,7 +10,7 @@ import com.android.tools.r8.apimodel.ApiAmendments.FieldAmendment;
 import com.android.tools.r8.apimodel.ApiAmendments.MethodAmendment;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import java.util.Collection;
 import java.util.HashMap;
@@ -19,13 +19,13 @@ import java.util.Map;
 public class ParsedApiClassAmending {
 
   public static void amendApi(
-      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses,
+      Collection<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> apiClasses,
       ApiAmendments amendments,
       AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
-    Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap =
+    Map<ClassReference, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classMap =
         new HashMap<>();
-    for (ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass : apiClasses) {
+    for (ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass : apiClasses) {
       classMap.put(apiClass.getClassReference(), apiClass);
     }
 
@@ -42,11 +42,11 @@ public class ParsedApiClassAmending {
 
   private static void amendApiField(
       FieldAmendment fieldAmendment,
-      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap,
+      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classMap,
       AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
     FieldTypelessReference fieldRef = fieldAmendment.getFieldReference();
-    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> holder =
+    ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> holder =
         classMap.get(fieldRef.getHolderClass());
     if (holder == null) {
       throw new ApiDatabaseGeneratorException(
@@ -59,18 +59,19 @@ public class ParsedApiClassAmending {
     if (holder.hasField(fieldRef)) {
       listener.onAlreadyPresentApiField(fieldAmendment);
     } else {
-      holder.registerField(fieldRef, SemiInfiniteRange.startingAt(fieldAmendment.getApiLevel()));
+      holder.registerField(
+          fieldRef, SemiInfiniteRange.startingAt(fieldAmendment.getApiLevel().asUnchecked()));
       listener.onAmendApiField(fieldAmendment);
     }
   }
 
   private static void amendApiMethod(
       MethodAmendment methodAmendment,
-      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap,
+      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classMap,
       AmendmentListener listener)
       throws ApiDatabaseGeneratorException {
     MethodReference methodRef = methodAmendment.getMethodReference();
-    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> holder =
+    ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> holder =
         classMap.get(methodRef.getHolderClass());
     if (holder == null) {
       throw new ApiDatabaseGeneratorException(
@@ -83,23 +84,24 @@ public class ParsedApiClassAmending {
     if (holder.hasMethod(methodRef)) {
       listener.onAlreadyPresentApiMethod(methodAmendment);
     } else {
-      holder.registerMethod(methodRef, SemiInfiniteRange.startingAt(methodAmendment.getApiLevel()));
+      holder.registerMethod(
+          methodRef, SemiInfiniteRange.startingAt(methodAmendment.getApiLevel().asUnchecked()));
       listener.onAmendApiMethod(methodAmendment);
     }
   }
 
   private static void amendApiClass(
-      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiClasses,
+      Collection<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> apiClasses,
       ClassAmendment classAmendment,
-      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classMap,
+      Map<ClassReference, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classMap,
       AmendmentListener listener) {
     ClassReference classRef = classAmendment.getClassReference();
     if (classMap.containsKey(classRef)) {
       listener.onAlreadyPresentApiClass(classAmendment);
     } else {
-      ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> newClass =
+      ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> newClass =
           new ParsedApiClass<>(
-              classRef, SemiInfiniteRange.startingAt(classAmendment.getApiLevel()));
+              classRef, SemiInfiniteRange.startingAt(classAmendment.getApiLevel().asUnchecked()));
       apiClasses.add(newClass);
       classMap.put(classRef, newClass);
       listener.onAmendApiClass(classAmendment);

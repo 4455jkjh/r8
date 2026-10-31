@@ -7,8 +7,7 @@ package com.android.tools.r8.shaking.forceproguardcompatibility;
 public class TestMainArrayType {
 
   public static class MentionedClass {
-    public MentionedClass() {
-    }
+    public MentionedClass() {}
   }
 
   public static void main(String[] args) {

@@ -66,7 +66,8 @@ public class InterfaceConstructorRenamingTest extends TestBase {
 
   @Test
   public void test() throws Throwable {
-    compilation.apply(parameters.getBackend())
+    compilation
+        .apply(parameters.getBackend())
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED);
   }

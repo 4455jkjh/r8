@@ -21,8 +21,8 @@ public final class StringMethods {
     return builder.toString();
   }
 
-  public static String joinIterable(CharSequence delimiter,
-      Iterable<? extends CharSequence> elements) {
+  public static String joinIterable(
+      CharSequence delimiter, Iterable<? extends CharSequence> elements) {
     if (delimiter == null) throw new NullPointerException("delimiter");
     StringBuilder builder = new StringBuilder();
     Iterator<? extends CharSequence> iterator = elements.iterator();

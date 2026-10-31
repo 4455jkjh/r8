@@ -59,12 +59,9 @@ public class Regress68656641 extends SmaliTestBase {
 
   IRCode simpleCode() {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
-    MethodSignature signature = builder.addStaticMethod(
-        "void",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of(),
-        1,
-        "    return-void");
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "void", DEFAULT_METHOD_NAME, ImmutableList.of(), 1, "    return-void");
     AndroidApp application = buildApplication(builder);
     // Build the code, and split the code into three blocks.
     MethodSubject methodSubject = getMethodSubject(application, signature);

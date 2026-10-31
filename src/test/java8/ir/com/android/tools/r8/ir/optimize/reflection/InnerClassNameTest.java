@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.reflection;
+
 // NOTE: This file is just used to create the initial dump in InnerClassNameTestDump.
 class OuterClass {
   static class InnerClass {}

@@ -13,10 +13,10 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.DexEncodedMethod;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -30,8 +30,7 @@ public class NativeMethodTest extends TestBase {
   @Parameters(name = "{0}, compat:{1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimes().withAllApiLevels().build(),
-        BooleanUtils.values());
+        getTestParameters().withDexRuntimes().withAllApiLevels().build(), BooleanUtils.values());
   }
 
   private final TestParameters parameters;
@@ -58,8 +57,8 @@ public class NativeMethodTest extends TestBase {
       if (!innerFound) {
         continue;
       }
-      MethodSubject nativeFoo = clazz.method(
-          "void", "foo", ImmutableList.of(Handler.class.getCanonicalName()));
+      MethodSubject nativeFoo =
+          clazz.method("void", "foo", ImmutableList.of(Handler.class.getCanonicalName()));
       assertEquals(expectedFooPresence, nativeFoo.isPresent());
       if (expectedFooPresence) {
         assertThat(nativeFoo, isPresentAndNotRenamed());
@@ -74,38 +73,40 @@ public class NativeMethodTest extends TestBase {
 
   @Test
   public void test_keep_OnEvent() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keepclasseswithmembers,allowshrinking class * {",
-        "  native <methods>;",
-        "}",
-        "-keepclassmembers,includedescriptorclasses class * {",
-        "  native <methods>;",
-        "}",
-        "-keep class " + Outer.class.getCanonicalName() + " {",
-        "  onEvent(...);",
-        "}",
-        "-keepattributes InnerClasses,EnclosingMethod,Signature",
-        "-allowaccessmodification");
+    List<String> config =
+        ImmutableList.of(
+            "-keepclasseswithmembers,allowshrinking class * {",
+            "  native <methods>;",
+            "}",
+            "-keepclassmembers,includedescriptorclasses class * {",
+            "  native <methods>;",
+            "}",
+            "-keep class " + Outer.class.getCanonicalName() + " {",
+            "  onEvent(...);",
+            "}",
+            "-keepattributes InnerClasses,EnclosingMethod,Signature",
+            "-allowaccessmodification");
     test(config, compatMode);
   }
 
   @Test
   public void test_keep_annotation() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keepclasseswithmembers,allowshrinking class * {",
-        "  native <methods>;",
-        "}",
-        "-keepclassmembers,includedescriptorclasses class * {",
-        "  native <methods>;",
-        "}",
-        "-keep,allowobfuscation @interface **.Keep",
-        "-keep @**.Keep class *",
-        "-keepclassmembers class * {",
-        "  @**.Keep <fields>;",
-        "  @**.Keep <methods>;",
-        "}",
-        "-keepattributes InnerClasses,EnclosingMethod,Signature",
-        "-allowaccessmodification");
+    List<String> config =
+        ImmutableList.of(
+            "-keepclasseswithmembers,allowshrinking class * {",
+            "  native <methods>;",
+            "}",
+            "-keepclassmembers,includedescriptorclasses class * {",
+            "  native <methods>;",
+            "}",
+            "-keep,allowobfuscation @interface **.Keep",
+            "-keep @**.Keep class *",
+            "-keepclassmembers class * {",
+            "  @**.Keep <fields>;",
+            "  @**.Keep <methods>;",
+            "}",
+            "-keepattributes InnerClasses,EnclosingMethod,Signature",
+            "-allowaccessmodification");
     test(config, true);
   }
 }

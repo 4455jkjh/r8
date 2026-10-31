@@ -50,9 +50,7 @@ public final class CollectionsMethods {
   public static <K, V> Map<K, V> copyOfMap(Map<? extends K, ? extends V> other) {
     HashMap<K, V> map = new HashMap<>(other.size());
     for (Map.Entry<? extends K, ? extends V> entry : other.entrySet()) {
-      map.put(
-          Objects.requireNonNull(entry.getKey()),
-          Objects.requireNonNull(entry.getValue()));
+      map.put(Objects.requireNonNull(entry.getKey()), Objects.requireNonNull(entry.getValue()));
     }
     return Collections.unmodifiableMap(map);
   }

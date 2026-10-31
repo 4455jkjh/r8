@@ -8,6 +8,7 @@ public interface InterfaceWithDefaultMethods {
   default int method() {
     return 42;
   }
+
   default void method2(String x, int y) {
     System.out.println(y + x);
   }

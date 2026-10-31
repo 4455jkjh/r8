@@ -26,12 +26,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class StringIsEmptyTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "false",
-      "true",
-      "false",
-      "false"
-  );
+  private static final String JAVA_OUTPUT = StringUtils.lines("false", "true", "false", "false");
   private static final Class<?> MAIN = TestClass.class;
 
   @Parameters(name = "{0}")
@@ -123,5 +118,4 @@ public class StringIsEmptyTest extends TestBase {
       }
     }
   }
-
 }

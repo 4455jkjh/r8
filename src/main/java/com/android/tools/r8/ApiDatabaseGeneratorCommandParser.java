@@ -61,6 +61,11 @@ public class ApiDatabaseGeneratorCommandParser {
             "By default, the API database is amended with known missing information."
                 + " This option disables that and processes inputs directly as they are.",
             state -> state.builder.setAmend(false))
+        .option0(
+            "--allow-future-versions",
+            "Allow future Android API versions in the XML inputs. Note that this option allows"
+                + " them, but leaves them essentially ignored in the output.",
+            state -> state.builder.setAllowFutureVersions(true))
         .apply(
             CliParserUtils.addMapDiagnosticsOption(
                 state -> state.builder.getReporter(), state -> state.origin))

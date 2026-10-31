@@ -14,10 +14,10 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.shaking.forceproguardcompatibility.ProguardCompatibilityTestBase;
-import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.TriConsumer;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -26,13 +26,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-class SuperClass {
+class SuperClass {}
 
-}
-
-class SubClass extends SuperClass {
-
-}
+class SubClass extends SuperClass {}
 
 class MainInstantiationSubClass {
 
@@ -58,9 +54,10 @@ class MainCheckCastSubClass {
 
 class MainClassForNameSubClass {
 
-  public static void main(String[] args) throws Exception{
-    System.out.println(Class.forName(
-        "com.android.tools.r8.shaking.forceproguardcompatibility.defaultctor.SubClass"));
+  public static void main(String[] args) throws Exception {
+    System.out.println(
+        Class.forName(
+            "com.android.tools.r8.shaking.forceproguardcompatibility.defaultctor.SubClass"));
   }
 }
 
@@ -78,7 +75,8 @@ class MainGetStaticFieldNotInitialized {
 class StaticMethod {
   public static int method() {
     return 1;
-  };
+  }
+  ;
 }
 
 class MainCallStaticMethod {
@@ -164,8 +162,8 @@ public class ImplicitlyKeptDefaultConstructorTest extends ProguardCompatibilityT
         ImmutableList.of(mainClass, SuperClass.class, SubClass.class),
         // Prevent SuperClass from being merged into SubClass and keep both
         // SuperClass and SubClass after instantiation is inlined.
-        keepMainProguardConfiguration(mainClass, ImmutableList.of(
-            "-keep class **.SuperClass", "-keep class **.SubClass")),
+        keepMainProguardConfiguration(
+            mainClass, ImmutableList.of("-keep class **.SuperClass", "-keep class **.SubClass")),
         this::checkAllClassesPresentWithDefaultConstructor);
   }
 

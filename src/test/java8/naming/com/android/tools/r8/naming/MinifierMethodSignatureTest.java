@@ -243,8 +243,13 @@ public class MinifierMethodSignatureTest extends TestBase {
     MethodVisitor mv;
     String signature;
 
-    cw.visit(V1_8, ACC_SUPER, "Methods", "<X:Ljava/lang/Throwable;>Ljava/lang/Object;",
-        "java/lang/Object", null);
+    cw.visit(
+        V1_8,
+        ACC_SUPER,
+        "Methods",
+        "<X:Ljava/lang/Throwable;>Ljava/lang/Object;",
+        "java/lang/Object",
+        null);
 
     cw.visitInnerClass("Methods$Inner", "Methods", "Inner", 0);
 
@@ -260,9 +265,13 @@ public class MinifierMethodSignatureTest extends TestBase {
     {
       signature = signatures.get("generic");
       signature = signature == null ? genericSignature : signature;
-      mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "generic",
-          "(Ljava/lang/Throwable;LMethods$Inner;)Ljava/lang/Throwable;",
-          signature, null);
+      mv =
+          cw.visitMethod(
+              ACC_PUBLIC + ACC_STATIC,
+              "generic",
+              "(Ljava/lang/Throwable;LMethods$Inner;)Ljava/lang/Throwable;",
+              signature,
+              null);
       mv.visitCode();
       mv.visitInsn(ACONST_NULL);
       mv.visitInsn(ARETURN);
@@ -272,8 +281,7 @@ public class MinifierMethodSignatureTest extends TestBase {
     {
       signature = signatures.get("parameterizedReturn");
       signature = signature == null ? parameterizedReturnSignature : signature;
-      mv = cw.visitMethod(ACC_PUBLIC, "parameterizedReturn", "()LMethods$Inner;",
-          signature, null);
+      mv = cw.visitMethod(ACC_PUBLIC, "parameterizedReturn", "()LMethods$Inner;", signature, null);
       mv.visitCode();
       mv.visitInsn(ACONST_NULL);
       mv.visitInsn(ARETURN);
@@ -283,8 +291,13 @@ public class MinifierMethodSignatureTest extends TestBase {
     {
       signature = signatures.get("parameterizedArguments");
       signature = signature == null ? parameterizedArgumentsSignature : signature;
-      mv = cw.visitMethod(ACC_PUBLIC, "parameterizedArguments",
-          "(Ljava/lang/Throwable;LMethods$Inner;)V", signature, null);
+      mv =
+          cw.visitMethod(
+              ACC_PUBLIC,
+              "parameterizedArguments",
+              "(Ljava/lang/Throwable;LMethods$Inner;)V",
+              signature,
+              null);
       mv.visitCode();
       mv.visitInsn(RETURN);
       mv.visitMaxs(0, 3);
@@ -293,8 +306,13 @@ public class MinifierMethodSignatureTest extends TestBase {
     {
       signature = signatures.get("parametrizedThrows");
       signature = signature == null ? parametrizedThrowsSignature : signature;
-      mv = cw.visitMethod(ACC_PUBLIC, "parametrizedThrows", "()V", signature,
-          new String[] { "java/lang/Throwable" });
+      mv =
+          cw.visitMethod(
+              ACC_PUBLIC,
+              "parametrizedThrows",
+              "()V",
+              signature,
+              new String[] {"java/lang/Throwable"});
       mv.visitCode();
       mv.visitInsn(RETURN);
       mv.visitMaxs(0, 1);
@@ -344,8 +362,7 @@ public class MinifierMethodSignatureTest extends TestBase {
 
   private MethodSubject lookupParameterizedReturn(CodeInspector inspector) {
     ClassSubject clazz = inspector.clazz("Methods");
-    return clazz.method(
-        "Methods$Inner", "parameterizedReturn", ImmutableList.of());
+    return clazz.method("Methods$Inner", "parameterizedReturn", ImmutableList.of());
   }
 
   private MethodSubject lookupParameterizedArguments(CodeInspector inspector) {
@@ -353,5 +370,4 @@ public class MinifierMethodSignatureTest extends TestBase {
     return clazz.method(
         "void", "parameterizedArguments", ImmutableList.of("java.lang.Throwable", "Methods$Inner"));
   }
-
 }

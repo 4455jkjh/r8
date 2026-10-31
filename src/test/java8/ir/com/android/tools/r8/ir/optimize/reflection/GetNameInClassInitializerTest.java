@@ -16,6 +16,7 @@ import org.junit.Test;
 
 class GetNameClinitClass {
   static String name;
+
   static {
     name = GetNameClinitClass.class.getName();
   }
@@ -50,8 +51,7 @@ public class GetNameInClassInitializerTest extends GetNameTestBase {
   @Test
   public void testJVMOutput() throws Exception {
     assumeTrue(
-        "Only run JVM reference on CF runtimes",
-        parameters.isCfRuntime() && !enableMinification);
+        "Only run JVM reference on CF runtimes", parameters.isCfRuntime() && !enableMinification);
     testForJvm(parameters)
         .addTestClasspath()
         .run(parameters.getRuntime(), MAIN)

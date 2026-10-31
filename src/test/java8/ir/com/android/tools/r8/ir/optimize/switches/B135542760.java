@@ -58,10 +58,10 @@ public class B135542760 extends TestBase {
       System.out.println("]");
     }
 
-    // From https://android.googlesource.com/platform/libcore/+/765162affb50ad16a0bfe1f8afb8eb2874e62777/ojluni/src/main/java/sun/net/util/IPAddressUtil.java
+    // From
+    // https://android.googlesource.com/platform/libcore/+/765162affb50ad16a0bfe1f8afb8eb2874e62777/ojluni/src/main/java/sun/net/util/IPAddressUtil.java
     @NeverInline
-    public static byte[] textToNumericFormatV4(String src)
-    {
+    public static byte[] textToNumericFormatV4(String src) {
       byte[] res = new byte[4];
 
       long tmpValue = 0;
@@ -121,21 +121,21 @@ public class B135542760 extends TestBase {
       }
       switch (currByte) {
         // BEGIN Android-changed: Require all four parts to be given for an IPv4 address.
-            /*
-            case 0:
-                res[0] = (byte) ((tmpValue >> 24) & 0xff);
-            case 1:
-                res[1] = (byte) ((tmpValue >> 16) & 0xff);
-            case 2:
-                res[2] = (byte) ((tmpValue >>  8) & 0xff);
-            */
+        /*
+        case 0:
+            res[0] = (byte) ((tmpValue >> 24) & 0xff);
+        case 1:
+            res[1] = (byte) ((tmpValue >> 16) & 0xff);
+        case 2:
+            res[2] = (byte) ((tmpValue >>  8) & 0xff);
+        */
         case 0:
         case 1:
         case 2:
           return null;
         // END Android-changed: Require all four parts to be given for an IPv4 address.
         case 3:
-          res[3] = (byte) ((tmpValue >>  0) & 0xff);
+          res[3] = (byte) ((tmpValue >> 0) & 0xff);
       }
       return res;
     }

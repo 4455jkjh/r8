@@ -9,6 +9,7 @@ import com.android.tools.r8.naming.b123068484.data.PublicAbs;
 
 public class Runner {
   private static int counter = 0;
+
   static PublicAbs create(String x) {
     if (counter++ % 2 == 0) {
       return new Concrete1(x);

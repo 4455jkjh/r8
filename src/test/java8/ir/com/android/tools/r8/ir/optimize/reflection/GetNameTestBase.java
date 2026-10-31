@@ -7,9 +7,9 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.Streams;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -55,11 +55,14 @@ public abstract class GetNameTestBase extends TestBase {
   }
 
   protected static long countGetName(MethodSubject method) {
-    return Streams.stream(method.iterateInstructions(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return isNameReflection(instructionSubject.getMethod());
-      }
-      return false;
-    })).count();
+    return Streams.stream(
+            method.iterateInstructions(
+                instructionSubject -> {
+                  if (instructionSubject.isInvoke()) {
+                    return isNameReflection(instructionSubject.getMethod());
+                  }
+                  return false;
+                }))
+        .count();
   }
 }

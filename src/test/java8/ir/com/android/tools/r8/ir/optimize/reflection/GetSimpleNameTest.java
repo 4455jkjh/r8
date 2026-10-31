@@ -29,12 +29,10 @@ class ClassGetSimpleName {
   @NeverInline
   static void A01_t03() {
     class Local_t03 {
-      Local_t03() {
-      }
+      Local_t03() {}
 
       class InnerLocal {
-        InnerLocal() {
-        }
+        InnerLocal() {}
       }
     }
     // Local_t03
@@ -43,12 +41,10 @@ class ClassGetSimpleName {
     System.out.println(Local_t03.InnerLocal.class.getSimpleName());
 
     class $ {
-      $() {
-      }
+      $() {}
 
       class $$ {
-        $$() {
-        }
+        $$() {}
       }
     }
     // $
@@ -60,8 +56,7 @@ class ClassGetSimpleName {
   @NeverInline
   static void A03_t02() {
     class Local {
-      Local() {
-      }
+      Local() {}
     }
     // Local[][][]
     System.out.println(Local[][][].class.getSimpleName());
@@ -90,8 +85,7 @@ class ClassGetSimpleName {
 
 class Outer {
   static class Inner {
-    public Inner() {
-    }
+    public Inner() {}
   }
 
   static class TestHelper {
@@ -155,8 +149,7 @@ public class GetSimpleNameTest extends GetNameTestBase {
   @Test
   public void testJVMOutput() throws Exception {
     assumeTrue(
-        "Only run JVM reference on CF runtimes",
-        parameters.isCfRuntime() && !enableMinification);
+        "Only run JVM reference on CF runtimes", parameters.isCfRuntime() && !enableMinification);
     CodeInspector inspector = new CodeInspector(classPaths);
     testForJvm(parameters)
         .addTestClasspath()

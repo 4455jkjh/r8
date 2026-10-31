@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking.proxy.testclasses;
 
-
 public class SubClass extends TestClass {
   SubClass(String name) {
     super(name);

@@ -4,10 +4,9 @@
 
 package com.android.tools.r8.sample.split;
 
-import com.android.tools.r8.sample.split.R8Activity;
+import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multiset;
-import com.google.common.collect.ConcurrentHashMultiset;
 
 public class SplitClass {
   int initialValue;
@@ -27,11 +26,7 @@ public class SplitClass {
   public int guava(int iterations) {
     for (int i = 0; i < iterations; i++) {
       int result = 0;
-      ImmutableList<String> a = ImmutableList.of(
-          "foo",
-          "bar",
-          "foobar",
-          "last");
+      ImmutableList<String> a = ImmutableList.of("foo", "bar", "foobar", "last");
       if (a.contains("foobar")) {
         result++;
       }
@@ -41,14 +36,13 @@ public class SplitClass {
       result = a.size();
       Multiset<String> set = ConcurrentHashMultiset.create();
       for (int j = 0; j < 100; j++) {
-        set.add(a.get(j%4));
+        set.add(a.get(j % 4));
       }
       for (String s : a) {
         result += set.count(s);
       }
     }
     return 42;
-
   }
 
   public int largeMethod(int x, int y) {
@@ -141,7 +135,6 @@ public class SplitClass {
     return initialValue;
   }
 
-
   public int callBase() {
     BaseClass base = new BaseClass(initialValue);
     for (int i = 0; i < R8Activity.ITERATIONS / R8Activity.SPLITS; i++) {
@@ -159,5 +152,4 @@ public class SplitClass {
     }
     return initialValue;
   }
-
 }

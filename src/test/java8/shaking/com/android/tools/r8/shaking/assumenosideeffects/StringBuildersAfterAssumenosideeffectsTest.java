@@ -60,13 +60,17 @@ public class StringBuildersAfterAssumenosideeffectsTest extends TestBase {
     MethodSubject mainMethod = main.mainMethod();
     assertThat(mainMethod, isPresent());
     assertTrue(
-        mainMethod.streamInstructions().noneMatch(
-            i -> i.isInvoke() && i.getMethod().name.toString().equals("info")));
+        mainMethod
+            .streamInstructions()
+            .noneMatch(i -> i.isInvoke() && i.getMethod().name.toString().equals("info")));
 
     assertTrue(
-        mainMethod.streamInstructions().noneMatch(
-            i -> i.isInvoke()
-                && i.getMethod().holder.toDescriptorString().contains("StringBuilder")));
+        mainMethod
+            .streamInstructions()
+            .noneMatch(
+                i ->
+                    i.isInvoke()
+                        && i.getMethod().holder.toDescriptorString().contains("StringBuilder")));
   }
 
   interface TestLogger {

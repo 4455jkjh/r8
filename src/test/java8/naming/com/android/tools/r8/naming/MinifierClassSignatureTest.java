@@ -30,9 +30,9 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableMap;
 import java.util.function.Consumer;
 import org.junit.Test;
@@ -126,7 +126,6 @@ public class MinifierClassSignatureTest extends TestBase {
 
     return cw.toByteArray();
   }
-
 
   private byte[] dumpOuter(String classSignature) {
 
@@ -271,7 +270,12 @@ public class MinifierClassSignatureTest extends TestBase {
     MethodVisitor mv;
 
     String signature = classSignature != null ? classSignature : javacClassSignature;
-    cw.visit(V1_8, ACC_SUPER, "Outer$Inner$ExtendsInnerInner", signature, "Outer$Inner$InnerInner",
+    cw.visit(
+        V1_8,
+        ACC_SUPER,
+        "Outer$Inner$ExtendsInnerInner",
+        signature,
+        "Outer$Inner$InnerInner",
         null);
 
     cw.visitInnerClass("Outer$Inner", "Outer", "Inner", 0);
@@ -292,8 +296,8 @@ public class MinifierClassSignatureTest extends TestBase {
       mv.visitFieldInsn(PUTFIELD, "Outer$Inner$ExtendsInnerInner", "this$1", "LOuter$Inner;");
       mv.visitVarInsn(ALOAD, 0);
       mv.visitVarInsn(ALOAD, 1);
-      mv.visitMethodInsn(INVOKESPECIAL, "Outer$Inner$InnerInner", "<init>", "(LOuter$Inner;)V",
-          false);
+      mv.visitMethodInsn(
+          INVOKESPECIAL, "Outer$Inner$InnerInner", "<init>", "(LOuter$Inner;)V", false);
       mv.visitInsn(RETURN);
       mv.visitMaxs(2, 2);
       mv.visitEnd();
@@ -385,8 +389,7 @@ public class MinifierClassSignatureTest extends TestBase {
     runTest(signatures, diagnostics, inspector, noOuterFormals);
   }
 
-  private void noInspection(CodeInspector inspector) {
-  }
+  private void noInspection(CodeInspector inspector) {}
 
   private void noSignatureAttribute(ClassSubject clazz) {
     assertNull(clazz.getFinalSignatureAttribute());

@@ -10,24 +10,18 @@ import com.android.tools.r8.desugar.b72538146.Parent.Inner4;
 import java.util.function.Supplier;
 
 public class Child {
-  /**
-   * See what happens when app/runtime code both use and call a method reference.
-   */
+  /** See what happens when app/runtime code both use and call a method reference. */
   public void calling_duplicate_method_reference() {
     Supplier<Inner1> supplier = Inner1::new;
     supplier.get();
   }
 
-  /**
-   * See what happens when app/runtime code both use a method reference but neither calls it.
-   */
+  /** See what happens when app/runtime code both use a method reference but neither calls it. */
   public void using_duplicate_method_reference() {
     Supplier<Inner2> supplier = Inner2::new;
   }
 
-  /**
-   * See what happens when app code uses and calls a method reference to runtime code.
-   */
+  /** See what happens when app code uses and calls a method reference to runtime code. */
   public void calling_method_reference() {
     Supplier<Inner4> supplier = Inner4::new;
     supplier.get();

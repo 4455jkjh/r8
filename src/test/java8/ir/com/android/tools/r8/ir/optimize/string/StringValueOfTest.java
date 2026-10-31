@@ -29,18 +29,18 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class StringValueOfTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      Foo.class.getName(),
-      Foo.class.getName(),
-      Foo.class.getName(),
-      Foo.class.getName(),
-      "null",
-      "null",
-      "null",
-      "null",
-      "null",
-      "null"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          Foo.class.getName(),
+          Foo.class.getName(),
+          Foo.class.getName(),
+          Foo.class.getName(),
+          "null",
+          "null",
+          "null",
+          "null",
+          "null",
+          "null");
   private static final Class<?> MAIN = TestClass.class;
 
   @Parameterized.Parameters(name = "{0}")
@@ -72,8 +72,11 @@ public class StringValueOfTest extends TestBase {
   }
 
   private long countNullStringNumber(MethodSubject method) {
-    return method.streamInstructions().filter(instructionSubject ->
-        instructionSubject.isConstString("null", JumboStringMode.ALLOW)).count();
+    return method
+        .streamInstructions()
+        .filter(
+            instructionSubject -> instructionSubject.isConstString("null", JumboStringMode.ALLOW))
+        .count();
   }
 
   private void test(TestRunResult<?> result, boolean isR8, boolean isRelease) throws Exception {
@@ -129,6 +132,7 @@ public class StringValueOfTest extends TestBase {
 
     static class Notification {
       String id;
+
       Notification(String id) {
         this.id = id;
       }
@@ -142,8 +146,7 @@ public class StringValueOfTest extends TestBase {
       String getter();
     }
 
-    static class Uninitialized {
-    }
+    static class Uninitialized {}
 
     @NeverInline
     @NeverPropagateValue

@@ -205,5 +205,4 @@ public class KotlinTest extends KotlinDebugTestBase {
             }),
         run());
   }
-
 }

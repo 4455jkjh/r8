@@ -55,14 +55,10 @@ public class ApplyMappingAfterHorizontalMergingFieldTest extends TestBase {
   // Test runner code follows.
 
   private static final Class<?>[] LIBRARY_CLASSES = {
-      LibraryA.class,
-      LibraryB.class,
-      LibraryMain.class
+    LibraryA.class, LibraryB.class, LibraryMain.class
   };
 
-  private static final Class<?>[] PROGRAM_CLASSES = {
-      ProgramClass.class
-  };
+  private static final Class<?>[] PROGRAM_CLASSES = {ProgramClass.class};
 
   private TestParameters parameters;
 
@@ -99,8 +95,8 @@ public class ApplyMappingAfterHorizontalMergingFieldTest extends TestBase {
     CodeInspector inspector = libraryResult.inspector();
     assertThat(inspector.clazz(LibraryMain.class), isPresent());
     // Classes A and B have been merged, check only one remains.
-    assertTrue(inspector.clazz(LibraryA.class).isPresent()
-        != inspector.clazz(LibraryB.class).isPresent());
+    assertTrue(
+        inspector.clazz(LibraryA.class).isPresent() != inspector.clazz(LibraryB.class).isPresent());
 
     testForR8(parameters.getBackend())
         .addDontShrink()

@@ -28,45 +28,45 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class StringConcatenationTest extends TestBase {
   private static final Class<?> MAIN = StringConcatenationTestClass.class;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      // trivialSequence
-      "xyz",
-      // builderWithInitialValue
-      "Hello,R8",
-      // builderWithCapacity
-      "42",
-      // nonStringArgs
-      "42",
-      // typeConversion
-      "0.14 0 false null",
-      // typeConversion_withPhis
-      "3.14 3 0",
-      // nestedBuilders_appendBuilderItself
-      "Hello,R8",
-      // nestedBuilders_appendBuilderResult
-      "Hello,R8",
-      // nestedBuilders_conditional
-      "Hello,R8",
-      // concatenatedBuilders_init
-      "Hello,R8",
-      // concatenatedBuilders_append
-      "Hello,R8",
-      // concatenatedBuilders_conditional
-      "Hello,R8",
-      // simplePhi
-      "Hello,",
-      "Hello,D8",
-      // phiAtInit
-      "Hello,R8",
-      // phiWithDifferentInits
-      "Hello,R8",
-      // conditionalPhiWithoutAppend
-      "initial:suffix",
-      // loop
-      "na;na;na;na;na;na;na;na;Batman!",
-      // loopWithBuilder
-      "na;na;na;na;na;na;na;na;Batman!"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          // trivialSequence
+          "xyz",
+          // builderWithInitialValue
+          "Hello,R8",
+          // builderWithCapacity
+          "42",
+          // nonStringArgs
+          "42",
+          // typeConversion
+          "0.14 0 false null",
+          // typeConversion_withPhis
+          "3.14 3 0",
+          // nestedBuilders_appendBuilderItself
+          "Hello,R8",
+          // nestedBuilders_appendBuilderResult
+          "Hello,R8",
+          // nestedBuilders_conditional
+          "Hello,R8",
+          // concatenatedBuilders_init
+          "Hello,R8",
+          // concatenatedBuilders_append
+          "Hello,R8",
+          // concatenatedBuilders_conditional
+          "Hello,R8",
+          // simplePhi
+          "Hello,",
+          "Hello,D8",
+          // phiAtInit
+          "Hello,R8",
+          // phiWithDifferentInits
+          "Hello,R8",
+          // conditionalPhiWithoutAppend
+          "initial:suffix",
+          // loop
+          "na;na;na;na;na;na;na;na;Batman!",
+          // loopWithBuilder
+          "na;na;na;na;na;na;na;na;Batman!");
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {

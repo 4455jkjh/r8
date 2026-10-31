@@ -63,12 +63,14 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
     classBuilder.addStaticFinalField("SDK_INT", "I", Integer.toString(apiLevel.getMajor()));
 
     classBuilder = builder.addClass("android.os.Native");
-    classBuilder.addStaticMethod("method", ImmutableList.of(), "V",
+    classBuilder.addStaticMethod(
+        "method",
+        ImmutableList.of(),
+        "V",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
         "  ldc \" Native\"",
         "  invokevirtual java/io/PrintStream/print(Ljava.lang.String;)V",
-        "  return"
-    );
+        "  return");
 
     return writeToJar(builder);
   }
@@ -116,22 +118,21 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
 
     classBuilder = builder.addClass(mainClassName);
 
-    classBuilder.addStaticMethod("getSdkInt", ImmutableList.of(), "I",
+    classBuilder.addStaticMethod(
+        "getSdkInt",
+        ImmutableList.of(),
+        "I",
         ".limit stack 1",
         "getstatic android/os/Build$VERSION/SDK_INT I",
-        "ireturn"
-    );
+        "ireturn");
 
     classBuilder.addMainMethod(
         ".limit stack 2",
         ".limit locals 1",
-
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
         "invokestatic " + mainClassName + "/getSdkInt()I",
         "invokevirtual java/io/PrintStream/print(I)V",
-
         "invokestatic " + compatLibraryClassName + "/method()V",
-
         "return");
 
     return writeToJar(builder);
@@ -335,13 +336,14 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
   public void testExplicitAssumeValuesRulesWhichDoesNotMatch() throws Exception {
     assumeTrue(
         parameters.isCfRuntime() || parameters.getDexRuntimeVersion().isNewerThan(Version.V7_0_0));
-    String[] rules = new String[] {
-        "-assumevalues class * { !public int SDK_INT return 1..1000; }",
-        "-assumevalues class * { !static int SDK_INT return 1..1000; }",
-        "-assumevalues class * { !final int SDK_INT return 1..1000; }",
-        "-assumevalues class * { protected int SDK_INT return 1..1000; }",
-        "-assumevalues class * { private int SDK_INT return 1..1000; }"
-    };
+    String[] rules =
+        new String[] {
+          "-assumevalues class * { !public int SDK_INT return 1..1000; }",
+          "-assumevalues class * { !static int SDK_INT return 1..1000; }",
+          "-assumevalues class * { !final int SDK_INT return 1..1000; }",
+          "-assumevalues class * { protected int SDK_INT return 1..1000; }",
+          "-assumevalues class * { private int SDK_INT return 1..1000; }"
+        };
     for (String rule : rules) {
       runTest(
           AndroidApiLevel.O_MR1,

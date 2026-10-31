@@ -63,8 +63,10 @@ public class B341618078Test extends TestBase {
 
   private void assertLoopUnrolled(CodeInspector inspector) {
     // All control flow has been removed.
-    inspector.clazz(TestClass.class).forAllMethods(m ->
-        assertTrue(m.streamInstructions().noneMatch(i -> i.isGoto() || i.isIf())));
+    inspector
+        .clazz(TestClass.class)
+        .forAllMethods(
+            m -> assertTrue(m.streamInstructions().noneMatch(i -> i.isGoto() || i.isIf())));
   }
 
   static class TestClass {

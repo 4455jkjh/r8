@@ -58,8 +58,8 @@ public class B111080693 extends TestBase {
     builder.setMinApiLevel(parameters.asDexRuntime().getMinApiLevel().getMajor());
     String config = keepMainProguardConfiguration(TestMain.class);
     builder.addProguardConfiguration(
-        ImmutableList.of(config,
-            "-keepattributes Signature, InnerClasses, EnclosingMethod, *Annotation*"),
+        ImmutableList.of(
+            config, "-keepattributes Signature, InnerClasses, EnclosingMethod, *Annotation*"),
         Origin.unknown());
     AndroidApp app = ToolHelper.runR8(builder.build());
     ProcessResult result = runOnArtRaw(app, TestMain.class, parameters.getDexVm());

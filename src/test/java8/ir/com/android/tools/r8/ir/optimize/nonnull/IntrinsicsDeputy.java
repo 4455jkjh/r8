@@ -9,7 +9,7 @@ public class IntrinsicsDeputy {
 
   String name;
 
-  IntrinsicsDeputy(String name){
+  IntrinsicsDeputy(String name) {
     this.name = name;
   }
 
@@ -97,5 +97,4 @@ public class IntrinsicsDeputy {
     checkParameterIsNotNull(instance, "instance");
     checkParameterIsNotNullDifferently(instance, "instance");
   }
-
 }

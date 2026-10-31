@@ -25,9 +25,7 @@ public class InnerClassNameTestDump implements Opcodes {
 
   public static Collection<byte[]> dump(TestNamingConfig config, TestParameters parameters) {
     return ImmutableList.of(
-        dumpMainClass(config, parameters),
-        dumpOuterClass(config),
-        dumpInnerClass(config));
+        dumpMainClass(config, parameters), dumpOuterClass(config), dumpInnerClass(config));
   }
 
   public static byte[] dumpOuterClass(TestNamingConfig config) {

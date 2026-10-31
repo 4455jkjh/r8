@@ -49,13 +49,9 @@ public class ApplyMappingAfterVerticalMergingFieldTest extends TestBase {
 
   // Test runner code follows.
 
-  private static final Class<?>[] LIBRARY_CLASSES = {
-    LibraryBase.class, LibrarySubclass.class
-  };
+  private static final Class<?>[] LIBRARY_CLASSES = {LibraryBase.class, LibrarySubclass.class};
 
-  private static final Class<?>[] PROGRAM_CLASSES = {
-      ProgramClass.class
-  };
+  private static final Class<?>[] PROGRAM_CLASSES = {ProgramClass.class};
 
   @Parameter(0)
   public TestParameters parameters;

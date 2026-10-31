@@ -17,29 +17,25 @@ class PublicFieldInnerClassTestMain {
     public int value;
   }
 
-  private static class PrivateSubclass extends PrivateBase {
-  }
+  private static class PrivateSubclass extends PrivateBase {}
 
   static class PackageBase {
     public int value;
   }
 
-  private static class PackageSubclass extends PackageBase {
-  }
+  private static class PackageSubclass extends PackageBase {}
 
   protected static class ProtectedBase {
     public int value;
   }
 
-  private static class ProtectedSubclass extends ProtectedBase {
-  }
+  private static class ProtectedSubclass extends ProtectedBase {}
 
   public static class PublicBase {
     public int value;
   }
 
-  private static class PublicSubclass extends PublicBase {
-  }
+  private static class PublicSubclass extends PublicBase {}
 
   private static int getPrivate(PrivateSubclass instance) {
     return instance.value;

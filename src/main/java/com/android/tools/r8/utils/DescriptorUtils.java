@@ -10,6 +10,8 @@ import static com.android.tools.r8.utils.internal.FileUtils.MODULES_PREFIX;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InvalidDescriptorException;
+import com.android.tools.r8.graph.DexEncodedMethod;
+import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.naming.ClassNameMapper;
@@ -841,6 +843,8 @@ public class DescriptorUtils {
     return new ModuleAndDescriptor(module, 'L' + descriptor + ';');
   }
 
+  private static final String STATIC_INIT_PREFIX = "staticInit";
+
   public static boolean isRClassDescriptor(String descriptor) {
     String simpleClassName = DescriptorUtils.getSimpleClassNameFromDescriptor(descriptor);
     int innerClassSeparatorIndex = simpleClassName.lastIndexOf(INNER_CLASS_SEPARATOR);
@@ -857,6 +861,21 @@ public class DescriptorUtils {
     // - The name of the Class is R$type - we allow R to be an inner class.
     //   - The inner type should be with lower case
     return Character.isLowerCase(type.charAt(0)) && rClass.equals("R");
+  }
+
+  public static boolean isRClassStaticInitOverflowMethodWithoutHolderCheck(
+      DexEncodedMethod method) {
+    return method.isStatic()
+        && isRClassStaticInitOverflowMethodWithoutHolderCheck(method.getReference());
+  }
+
+  private static boolean isRClassStaticInitOverflowMethodWithoutHolderCheck(DexMethod method) {
+    if (method.getArity() != 0 || !method.getReturnType().isVoidType()) {
+      return false;
+    }
+    DexString name = method.getName();
+    return name.getNumberSuffixStartIndex() == STATIC_INIT_PREFIX.length()
+        && name.startsWith(STATIC_INIT_PREFIX);
   }
 
   public static String getPathFromDescriptor(String descriptor) {

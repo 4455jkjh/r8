@@ -71,5 +71,4 @@ public class B140588497 extends TestBase {
       invokeRangeTest();
     }
   }
-
 }

@@ -28,11 +28,12 @@ public class Regress120894450 extends TestBase {
 
   @Test
   public void test() throws Exception {
-    String testing = StringUtils.lines(
-        "com.google.android.foobar -> EQa:",
-        "    android.os.Handler com.google.android.bar.getRebindHandler() -> o",
-        "    1:2:android.os.Handler com.google.android.bar.getRebindHandler():292:293 -> p",
-        "    3:3:android.os.Handler com.google.android.bar.getRebindHandler():295:295 -> p");
+    String testing =
+        StringUtils.lines(
+            "com.google.android.foobar -> EQa:",
+            "    android.os.Handler com.google.android.bar.getRebindHandler() -> o",
+            "    1:2:android.os.Handler com.google.android.bar.getRebindHandler():292:293 -> p",
+            "    3:3:android.os.Handler com.google.android.bar.getRebindHandler():295:295 -> p");
     ClassNameMapper.mapperFromString(testing);
   }
 }

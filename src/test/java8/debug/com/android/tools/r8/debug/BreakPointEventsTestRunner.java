@@ -109,7 +109,7 @@ public class BreakPointEventsTestRunner extends DebugTestBase {
 
   @Test
   public void testSingleLineDeclarations() throws Throwable {
-    int bLine = 11;
+    int bLine = 15;
     Value bValueOne = Value.createInt(1);
     Value bValueTwo = Value.createInt(2);
     runDebugTest(
@@ -175,9 +175,9 @@ public class BreakPointEventsTestRunner extends DebugTestBase {
               frame.checkNoLocal("z");
             }),
         // Install additonal breakpoint on return to main so we identify program execution ended.
-        breakpoint(CLASS.getCanonicalName(), "main", 22),
+        breakpoint(CLASS.getCanonicalName(), "main", 26),
         run(),
-        checkLine(FILE, 22),
+        checkLine(FILE, 26),
         run());
   }
 }

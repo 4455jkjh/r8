@@ -17,6 +17,7 @@ import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingExceptio
 import com.android.tools.r8.apimodel.ParsedApiClassVerifier.SemiInfiniteRangeSetOperations;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.SemiInfiniteRange;
@@ -39,9 +40,9 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
     parameters.assertNoneRuntime();
   }
 
-  private static List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> apiVersionsXml = null;
+  private static List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> apiVersionsXml = null;
 
-  private static List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> getApiVersionsXml()
+  private static List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> getApiVersionsXml()
       throws ParsingException {
     if (apiVersionsXml == null) {
       apiVersionsXml =
@@ -55,7 +56,7 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
   public void testParsedApiVersionsXmlSize() throws Exception {
     // This tests makes a rudimentary check on the number of classes, fields and methods in
     // api-versions.xml to ensure that the runtime tests do not vacuously succeed.
-    List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> parsedClasses = getApiVersionsXml();
+    List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> parsedClasses = getApiVersionsXml();
     IntBox numberOfFields = new IntBox(0);
     IntBox numberOfMethods = new IntBox(0);
     parsedClasses.forEach(
@@ -120,22 +121,24 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
   public void testApiVersionsXmlVersion4() throws Exception {
     Path apiVersionsXml = temp.newFile("api-versions.xml").toPath();
     FileUtils.writeTextFile(apiVersionsXml, sampleVersion4ApiVersionsXml());
-    List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> parsedApiClasses =
+    List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> parsedApiClasses =
         AndroidApiVersionsXmlParser.parse(apiVersionsXml);
     assertEquals(4, parsedApiClasses.size());
-    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> sdkExtension = parsedApiClasses.get(0);
+    ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> sdkExtension = parsedApiClasses.get(0);
     assertEquals(
         sdkExtension.getClassReference(),
         Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"));
-    assertEquals(SemiInfiniteRange.startingAt(AndroidApiLevel.R), sdkExtension.getData());
+    assertEquals(
+        SemiInfiniteRange.startingAt(AndroidApiLevel.R.asUnchecked()), sdkExtension.getData());
     sdkExtension.forEachMethod(
         (method, apiRange) -> {
-          if (apiRange.equals(SemiInfiniteRange.startingAt(AndroidApiLevel.R))) {
+          if (apiRange.equals(SemiInfiniteRange.startingAt(AndroidApiLevel.R.asUnchecked()))) {
             assertEquals(
                 method,
                 Reference.methodFromDescriptor(
                     "Landroid/os/ext/SdkExtensions;", "getExtensionVersion", "(I)I"));
-          } else if (apiRange.equals(SemiInfiniteRange.startingAt(AndroidApiLevel.S))) {
+          } else if (apiRange.equals(
+              SemiInfiniteRange.startingAt(AndroidApiLevel.S.asUnchecked()))) {
             assertEquals(
                 method,
                 Reference.methodFromDescriptor(
@@ -148,7 +151,7 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
         });
     sdkExtension.forEachField(
         (field, apiRange) -> {
-          if (apiRange.equals(SemiInfiniteRange.startingAt(AndroidApiLevel.U))) {
+          if (apiRange.equals(SemiInfiniteRange.startingAt(AndroidApiLevel.U.asUnchecked()))) {
             assertEquals(
                 field,
                 new FieldTypelessReference(
@@ -158,16 +161,22 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
             fail();
           }
         });
-    checkMockClass(parsedApiClasses.get(1), "Landroid/os/FromBaklava;", AndroidApiLevel.BAKLAVA);
     checkMockClass(
-        parsedApiClasses.get(2), "Landroid/os/AlsoFromBaklava;", AndroidApiLevel.BAKLAVA);
-    checkMockClass(parsedApiClasses.get(3), "Landroid/os/FromBaklava1;", AndroidApiLevel.BAKLAVA_1);
+        parsedApiClasses.get(1), "Landroid/os/FromBaklava;", AndroidApiLevel.BAKLAVA.asUnchecked());
+    checkMockClass(
+        parsedApiClasses.get(2),
+        "Landroid/os/AlsoFromBaklava;",
+        AndroidApiLevel.BAKLAVA.asUnchecked());
+    checkMockClass(
+        parsedApiClasses.get(3),
+        "Landroid/os/FromBaklava1;",
+        AndroidApiLevel.BAKLAVA_1.asUnchecked());
   }
 
   private static void checkMockClass(
-      ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass,
+      ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass,
       String descriptor,
-      AndroidApiLevel apiLevel) {
+      UncheckedApiLevel apiLevel) {
     assertEquals(apiClass.getClassReference(), Reference.classFromDescriptor(descriptor));
     assertEquals(SemiInfiniteRange.startingAt(apiLevel), apiClass.getData());
     apiClass.forEachMethod(

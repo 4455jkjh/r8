@@ -224,7 +224,15 @@
           );
 
           const skipped = (ctx, value) =>
-            ctx.p0.skip || ctx.p1.skip ? value : undefined;
+            ctx.p0.skip ||
+            ctx.p1.skip ||
+            !state.hasSameDump(
+              selectedBenchmark,
+              filteredCommits[ctx.p0DataIndex],
+              filteredCommits[ctx.p1DataIndex],
+            )
+              ? value
+              : undefined;
           datasets.push(
             ...[
               {

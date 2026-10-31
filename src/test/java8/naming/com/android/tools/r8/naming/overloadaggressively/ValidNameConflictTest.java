@@ -55,29 +55,29 @@ public class ValidNameConflictTest extends JasminTestBase {
     return Iterables.concat(
         prologue,
         ImmutableList.of(
-        "  astore_0",  // Member[]
-        "  aload_0",
-        "  arraylength",
-        "  istore_1",  // Member[].length
-        "  iconst_0",
-        "  istore_2",  // counter
-        "loop:",
-        "  iload_2",
-        "  iload_1",
-        "  if_icmpge end",
-        "  aload_0",
-        "  iload_2",
-        "  aaload",  // Member[counter]
-        "  astore_3",
-        "  getstatic java/lang/System/out Ljava/io/PrintStream;",
-        "  aload_3"),
+            "  astore_0", // Member[]
+            "  aload_0",
+            "  arraylength",
+            "  istore_1", // Member[].length
+            "  iconst_0",
+            "  istore_2", // counter
+            "loop:",
+            "  iload_2",
+            "  iload_1",
+            "  if_icmpge end",
+            "  aload_0",
+            "  iload_2",
+            "  aaload", // Member[counter]
+            "  astore_3",
+            "  getstatic java/lang/System/out Ljava/io/PrintStream;",
+            "  aload_3"),
         argumentLoadingAndCall,
         ImmutableList.of(
-        "  invokevirtual java/io/PrintStream/println(Ljava/lang/Object;)V",
-        "  iinc 2 1",  // counter++
-        "  goto loop",
-        "end:",
-        "  return"));
+            "  invokevirtual java/io/PrintStream/println(Ljava/lang/Object;)V",
+            "  iinc 2 1", // counter++
+            "  goto loop",
+            "end:",
+            "  return"));
   }
 
   private List<byte[]> buildFieldNameConflictClassFile() throws Exception {

@@ -89,10 +89,11 @@ public class NonNullTrackerTest extends TestBase {
       curr = it.next();
       if (curr.isAssumeWithNonNullAssumption()) {
         // Make sure non-null is added to the right place.
-        assertTrue(prev == null
-            || prev.throwsOnNullInput()
-            || (prev.isIf() && prev.asIf().isZeroTest())
-            || !curr.getBlock().getPredecessors().contains(prev.getBlock()));
+        assertTrue(
+            prev == null
+                || prev.throwsOnNullInput()
+                || (prev.isIf() && prev.asIf().isZeroTest())
+                || !curr.getBlock().getPredecessors().contains(prev.getBlock()));
         // Make sure non-null is used or inserted for arguments.
         assertTrue(curr.outValue().numberOfAllUsers() > 0 || curr.asAssume().src().isArgument());
         count++;
@@ -124,8 +125,8 @@ public class NonNullTrackerTest extends TestBase {
       }
       metInvokeWithReceiver = true;
       if (isNotNull) {
-        assertTrue(invoke.getReceiver().isNeverNull()
-            || invoke.getReceiver().definition.isArgument());
+        assertTrue(
+            invoke.getReceiver().isNeverNull() || invoke.getReceiver().definition.isArgument());
       } else {
         assertFalse(invoke.getReceiver().isNeverNull());
       }
@@ -135,16 +136,14 @@ public class NonNullTrackerTest extends TestBase {
 
   @Test
   public void nonNullAfterSafeInvokes() throws Exception {
-    MethodSignature foo =
-        new MethodSignature("foo", "int", new String[]{"java.lang.String"});
+    MethodSignature foo = new MethodSignature("foo", "int", new String[] {"java.lang.String"});
     buildAndTest(
         ImmutableList.of(NonNullAfterInvoke.class),
         NonNullAfterInvoke.class,
         foo,
         1,
         this::checkInvokeGetsNonNullReceiver);
-    MethodSignature bar =
-        new MethodSignature("bar", "int", new String[]{"java.lang.String"});
+    MethodSignature bar = new MethodSignature("bar", "int", new String[] {"java.lang.String"});
     buildAndTest(
         ImmutableList.of(NonNullAfterInvoke.class),
         NonNullAfterInvoke.class,
@@ -155,8 +154,7 @@ public class NonNullTrackerTest extends TestBase {
 
   @Test
   public void nonNullAfterSafeArrayAccess() throws Exception {
-    MethodSignature foo =
-        new MethodSignature("foo", "int", new String[]{"java.lang.String[]"});
+    MethodSignature foo = new MethodSignature("foo", "int", new String[] {"java.lang.String[]"});
     buildAndTest(
         ImmutableList.of(NonNullAfterArrayAccess.class),
         NonNullAfterArrayAccess.class,
@@ -168,7 +166,7 @@ public class NonNullTrackerTest extends TestBase {
   @Test
   public void nonNullAfterSafeArrayLength() throws Exception {
     MethodSignature signature =
-        new MethodSignature("arrayLength", "int", new String[]{"java.lang.String[]"});
+        new MethodSignature("arrayLength", "int", new String[] {"java.lang.String[]"});
     buildAndTest(
         ImmutableList.of(NonNullAfterArrayAccess.class),
         NonNullAfterArrayAccess.class,
@@ -179,8 +177,8 @@ public class NonNullTrackerTest extends TestBase {
 
   @Test
   public void nonNullAfterSafeFieldAccess() throws Exception {
-    MethodSignature foo = new MethodSignature("foo", "int",
-        new String[]{FieldAccessTest.class.getCanonicalName()});
+    MethodSignature foo =
+        new MethodSignature("foo", "int", new String[] {FieldAccessTest.class.getCanonicalName()});
     buildAndTest(
         ImmutableList.of(FieldAccessTest.class, NonNullAfterFieldAccess.class),
         NonNullAfterFieldAccess.class,
@@ -191,8 +189,8 @@ public class NonNullTrackerTest extends TestBase {
 
   @Test
   public void avoidRedundantNonNull() throws Exception {
-    MethodSignature signature = new MethodSignature("foo2", "int",
-        new String[]{FieldAccessTest.class.getCanonicalName()});
+    MethodSignature signature =
+        new MethodSignature("foo2", "int", new String[] {FieldAccessTest.class.getCanonicalName()});
     buildAndTest(
         ImmutableList.of(FieldAccessTest.class, NonNullAfterFieldAccess.class),
         NonNullAfterFieldAccess.class,
@@ -225,24 +223,21 @@ public class NonNullTrackerTest extends TestBase {
 
   @Test
   public void nonNullAfterNullCheck() throws Exception {
-    MethodSignature foo =
-        new MethodSignature("foo", "int", new String[]{"java.lang.String"});
+    MethodSignature foo = new MethodSignature("foo", "int", new String[] {"java.lang.String"});
     buildAndTest(
         ImmutableList.of(NonNullAfterNullCheck.class),
         NonNullAfterNullCheck.class,
         foo,
         1,
         this::checkInvokeGetsNonNullReceiver);
-    MethodSignature bar =
-        new MethodSignature("bar", "int", new String[]{"java.lang.String"});
+    MethodSignature bar = new MethodSignature("bar", "int", new String[] {"java.lang.String"});
     buildAndTest(
         ImmutableList.of(NonNullAfterNullCheck.class),
         NonNullAfterNullCheck.class,
         bar,
         1,
         this::checkInvokeGetsNonNullReceiver);
-    MethodSignature baz =
-        new MethodSignature("baz", "int", new String[]{"java.lang.String"});
+    MethodSignature baz = new MethodSignature("baz", "int", new String[] {"java.lang.String"});
     buildAndTest(
         ImmutableList.of(NonNullAfterNullCheck.class),
         NonNullAfterNullCheck.class,

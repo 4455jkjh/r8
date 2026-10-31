@@ -23,6 +23,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.finalizer.IRToLirFinalizer;
+import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions;
@@ -122,6 +123,7 @@ public class HorizontalClassMerger {
     // Determine which classes need a class id field.
     List<ClassMerger.Builder> classMergerBuilders = createClassMergerBuilders(groups);
     initializeClassIdFields(classMergerBuilders, runtimeTypeCheckInfo);
+    unsetMayNotHaveSideEffectsOnClassIdInstanceInitializers(groups, immediateSubtypingInfo);
 
     // Ensure that all allocations of classes that end up needing a class id use a constructor on
     // the class itself.
@@ -468,6 +470,26 @@ public class HorizontalClassMerger {
       classMergerBuilder
           .initializeVirtualMethodMergers()
           .initializeClassIdField(runtimeTypeCheckInfo);
+    }
+  }
+
+  // The instance initializers of the classes that get a class id field, and of their subclasses,
+  // will assign the class id field after merging, and therefore have side effects.
+  private void unsetMayNotHaveSideEffectsOnClassIdInstanceInitializers(
+      Collection<HorizontalMergeGroup> groups,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo) {
+    Consumer<DexProgramClass> unsetMayNotHaveSideEffects =
+        clazz ->
+            clazz.forEachProgramInstanceInitializer(
+                OptimizationFeedbackSimple.getInstance()::unsetMayNotHaveSideEffects);
+    for (HorizontalMergeGroup group : groups) {
+      if (group.isClassGroup() && group.hasClassIdField()) {
+        for (DexProgramClass clazz : group) {
+          unsetMayNotHaveSideEffects.accept(clazz);
+          immediateSubtypingInfo.forEachTransitiveProgramSubclass(
+              clazz, unsetMayNotHaveSideEffects);
+        }
+      }
     }
   }
 

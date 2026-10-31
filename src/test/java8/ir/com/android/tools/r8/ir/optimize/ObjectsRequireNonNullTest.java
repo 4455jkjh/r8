@@ -32,13 +32,8 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class ObjectsRequireNonNullTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "Foo::toString",
-      "Foo::bar",
-      "Foo::bar",
-      "Expected NPE",
-      "Expected NPE"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines("Foo::toString", "Foo::bar", "Foo::bar", "Expected NPE", "Expected NPE");
   private static final Class<?> MAIN = ObjectsRequireNonNullTestMain.class;
 
   @Parameterized.Parameters(name = "{0}")
@@ -67,17 +62,21 @@ public class ObjectsRequireNonNullTest extends TestBase {
   }
 
   private static boolean isObjectsRequireNonNull(DexMethod method) {
-    return method.toSourceString().equals(
-        "java.lang.Object java.util.Objects.requireNonNull(java.lang.Object)");
+    return method
+        .toSourceString()
+        .equals("java.lang.Object java.util.Objects.requireNonNull(java.lang.Object)");
   }
 
   private long countObjectsRequireNonNull(MethodSubject method) {
-    return Streams.stream(method.iterateInstructions(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return isObjectsRequireNonNull(instructionSubject.getMethod());
-      }
-      return false;
-    })).count();
+    return Streams.stream(
+            method.iterateInstructions(
+                instructionSubject -> {
+                  if (instructionSubject.isInvoke()) {
+                    return isObjectsRequireNonNull(instructionSubject.getMethod());
+                  }
+                  return false;
+                }))
+        .count();
   }
 
   private void test(TestRunResult<?> result, int expectedCountInMain, int expectedCountInConsumer)

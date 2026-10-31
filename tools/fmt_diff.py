@@ -32,12 +32,15 @@ GOOGLE_KOTLIN_FORMAT_JAR = os.path.join(GOOGLE_KOTLIN_FORMAT_DIR,
 
 FULLY_FORMATTED_DIRECTORIES = (
     'src/test/bootstrap',
+    'src/test/examplesAndroidN',
     'src/test/examplesAndroidO',
     'src/test/examplesAndroidOLegacy',
     'src/test/examplesAndroidP',
     'src/test/java11',
     'src/test/java17',
+    'src/test/java8',
     'src/test/kotlinR8TestResources',
+    'src/test/sampleApks',
     'src/test/testbase',
 )
 

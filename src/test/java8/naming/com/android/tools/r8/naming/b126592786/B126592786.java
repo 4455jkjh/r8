@@ -11,9 +11,9 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -85,8 +85,7 @@ public class B126592786 extends TestBase {
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@interface Marker {
-}
+@interface Marker {}
 
 @Marker
 class A {
@@ -95,9 +94,7 @@ class A {
 }
 
 @Marker
-class GenericType {
-
-}
+class GenericType {}
 
 // GetClassUtil is used below to ensure that the types remain instantiated.
 class GetClassUtil {

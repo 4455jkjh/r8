@@ -23,11 +23,13 @@ class UnusedAnnotationDependent {
 class AnnotationUser {
   private int intField;
 
-  @UsedAnnotation void live() {
+  @UsedAnnotation
+  void live() {
     System.out.println("live(" + intField++ + ")");
   }
 
-  @UnusedAnnotation void dead() {
+  @UnusedAnnotation
+  void dead() {
     throw new AssertionError("Should be removed.");
   }
 }

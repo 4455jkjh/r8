@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.desugar;
 
-
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestParameters;
@@ -41,8 +40,8 @@ public class DefaultLambdaWithUnderscoreThisTestRunner extends DebugTestBase {
 
   final Class<?> CLASS = DefaultLambdaWithUnderscoreThisTest.class;
 
-  final String EXPECTED = StringUtils
-      .lines("stateful(My _this variable foo Another ___this variable)");
+  final String EXPECTED =
+      StringUtils.lines("stateful(My _this variable foo Another ___this variable)");
 
   private void runDebugger(DebugTestConfig config, boolean desugared) throws Throwable {
     MethodReference main = Reference.methodFromMethod(CLASS.getMethod("main", String[].class));

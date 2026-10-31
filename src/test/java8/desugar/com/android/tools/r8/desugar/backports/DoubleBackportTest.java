@@ -35,15 +35,22 @@ public final class DoubleBackportTest extends AbstractBackportTest {
 
   static final class Main extends MiniAssert {
     private static final double[] interestingValues = {
-        Double.MIN_VALUE, Double.MAX_VALUE,
-        Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
-        Integer.MIN_VALUE, Integer.MAX_VALUE,
-        Long.MIN_VALUE, Long.MAX_VALUE,
-        Double.NaN,
-        0d,
-        -1d, 1d,
-        -0.5d, 0.5d,
-        -0.1d, 0.1d,
+      Double.MIN_VALUE,
+      Double.MAX_VALUE,
+      Double.NEGATIVE_INFINITY,
+      Double.POSITIVE_INFINITY,
+      Integer.MIN_VALUE,
+      Integer.MAX_VALUE,
+      Long.MIN_VALUE,
+      Long.MAX_VALUE,
+      Double.NaN,
+      0d,
+      -1d,
+      1d,
+      -0.5d,
+      0.5d,
+      -0.1d,
+      0.1d,
     };
 
     public static void main(String[] args) {

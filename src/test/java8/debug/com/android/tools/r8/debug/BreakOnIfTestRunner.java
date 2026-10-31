@@ -24,7 +24,7 @@ public class BreakOnIfTestRunner extends DebugTestBase {
   @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
     DelayedDebugTestConfig cf =
-            temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
+        temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
     Function<DexRuntime, DelayedDebugTestConfig> d8 =
         dexRuntime -> temp -> new D8DebugTestConfig(dexRuntime).compileAndAddClasses(temp, CLASS);
     return buildCfAndD8Parameters(cf, d8);

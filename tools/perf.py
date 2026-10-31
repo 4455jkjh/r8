@@ -24,6 +24,9 @@ EXTERNAL_BENCHMARKS = {
     'ChromeApp': {
         'targets': ['r8-full']
     },
+    'ChromeAppD8Merge': {
+        'targets': ['d8']
+    },
     'ChromeAppPartial': {
         'targets': ['r8-full']
     },

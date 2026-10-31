@@ -4,6 +4,4 @@
 
 package com.android.tools.r8.shaking.includedescriptorclasses;
 
-public class NativeArgumentType {
-
-}
+public class NativeArgumentType {}

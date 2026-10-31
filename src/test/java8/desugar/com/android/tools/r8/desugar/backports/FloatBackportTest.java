@@ -36,15 +36,22 @@ public final class FloatBackportTest extends AbstractBackportTest {
 
   static final class Main extends MiniAssert {
     private static final float[] interestingValues = {
-        Float.MIN_VALUE, Float.MAX_VALUE,
-        Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY,
-        Integer.MIN_VALUE, Integer.MAX_VALUE,
-        Long.MIN_VALUE, Long.MAX_VALUE,
-        Float.NaN,
-        0f,
-        -1f, 1f,
-        -0.5f, 0.5f,
-        -0.1f, 0.1f,
+      Float.MIN_VALUE,
+      Float.MAX_VALUE,
+      Float.NEGATIVE_INFINITY,
+      Float.POSITIVE_INFINITY,
+      Integer.MIN_VALUE,
+      Integer.MAX_VALUE,
+      Long.MIN_VALUE,
+      Long.MAX_VALUE,
+      Float.NaN,
+      0f,
+      -1f,
+      1f,
+      -0.5f,
+      0.5f,
+      -0.1f,
+      0.1f,
     };
 
     public static void main(String[] args) {

@@ -23,8 +23,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 // Will be changed to different package.
-class PackagePrivateClass {
-}
+class PackagePrivateClass {}
 
 // Will be changed to use the above class in a different package.
 class FakePackagePrivateClassConsumer {
@@ -42,9 +41,7 @@ class FakePackagePrivateClassConsumer {
 @RunWith(Parameterized.class)
 public class IllegalAccessConstClassTest extends TestBase {
   private static final Class<?> MAIN = FakePackagePrivateClassConsumer.class;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "No need to load any classes"
-  );
+  private static final String JAVA_OUTPUT = StringUtils.lines("No need to load any classes");
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -105,7 +102,6 @@ public class IllegalAccessConstClassTest extends TestBase {
     assertThat(mainMethod, isPresent());
     // No canonicalization of const-class instructions.
     assertEquals(
-        2,
-        mainMethod.streamInstructions().filter(InstructionSubject::isConstClass).count());
+        2, mainMethod.streamInstructions().filter(InstructionSubject::isConstClass).count());
   }
 }

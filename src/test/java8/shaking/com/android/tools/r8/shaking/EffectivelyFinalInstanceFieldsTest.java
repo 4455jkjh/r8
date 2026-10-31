@@ -149,8 +149,7 @@ public class EffectivelyFinalInstanceFieldsTest extends TestBase {
   static class InstanceFieldWithoutInitialization_Z {
     boolean alwaysFalse;
 
-    InstanceFieldWithoutInitialization_Z() {
-    }
+    InstanceFieldWithoutInitialization_Z() {}
   }
 
   @NeverClassInline
@@ -158,6 +157,7 @@ public class EffectivelyFinalInstanceFieldsTest extends TestBase {
   @NoHorizontalClassMerging
   static class InstanceFieldWithInitialization_Z {
     boolean alwaysFalse;
+
     InstanceFieldWithInitialization_Z() {
       alwaysFalse = false;
     }
@@ -168,6 +168,7 @@ public class EffectivelyFinalInstanceFieldsTest extends TestBase {
   static class InstanceFieldWithNonTrivialInitialization_Z
       extends InstanceFieldWithInitialization_Z {
     boolean alwaysTrue;
+
     InstanceFieldWithNonTrivialInitialization_Z() {
       super();
       alwaysTrue = alwaysFalse;
@@ -179,14 +180,14 @@ public class EffectivelyFinalInstanceFieldsTest extends TestBase {
   static class InstanceFieldWithoutInitialization_I {
     int alwaysZero;
 
-    InstanceFieldWithoutInitialization_I() {
-    }
+    InstanceFieldWithoutInitialization_I() {}
   }
 
   @NeverClassInline
   @NoHorizontalClassMerging
   static class InstanceFieldWithInitialization_I {
     int alwaysZero;
+
     InstanceFieldWithInitialization_I() {
       alwaysZero = 0;
     }
@@ -196,8 +197,8 @@ public class EffectivelyFinalInstanceFieldsTest extends TestBase {
   @NoHorizontalClassMerging
   static class InstanceFieldWithRange_I {
     int alwaysLessThanEight;
-    InstanceFieldWithRange_I() {
-    }
+
+    InstanceFieldWithRange_I() {}
 
     @NeverInline
     void foo() {
@@ -214,14 +215,14 @@ public class EffectivelyFinalInstanceFieldsTest extends TestBase {
   static class InstanceFieldWithoutInitialization_L {
     Object alwaysNull;
 
-    InstanceFieldWithoutInitialization_L() {
-    }
+    InstanceFieldWithoutInitialization_L() {}
   }
 
   @NeverClassInline
   @NoHorizontalClassMerging
   static class InstanceFieldWithInitialization_L {
     Object alwaysNull;
+
     InstanceFieldWithInitialization_L() {
       alwaysNull = null;
     }

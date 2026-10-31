@@ -30,7 +30,7 @@ public class EmptyLineAfterJoinTestDump implements Opcodes {
       mv.visitCode();
       Label l0 = new Label();
       mv.visitLabel(l0);
-      mv.visitLineNumber(6, l0);
+      mv.visitLineNumber(10, l0);
       mv.visitVarInsn(ALOAD, 0);
       mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
       mv.visitInsn(RETURN);
@@ -50,26 +50,26 @@ public class EmptyLineAfterJoinTestDump implements Opcodes {
       mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Throwable");
       Label l3 = new Label();
       mv.visitLabel(l3);
-      mv.visitLineNumber(10, l3);
+      mv.visitLineNumber(14, l3);
       mv.visitIntInsn(BIPUSH, 42);
       mv.visitVarInsn(ISTORE, 1);
       mv.visitLabel(l0);
-      mv.visitLineNumber(12, l0);
+      mv.visitLineNumber(16, l0);
       mv.visitVarInsn(ALOAD, 0);
       mv.visitMethodInsn(
           INVOKESPECIAL, "com/android/tools/r8/debug/EmptyLineAfterJoinTest", "bar", "()V", false);
       Label l4 = new Label();
       mv.visitLabel(l4);
-      mv.visitLineNumber(13, l4);
+      mv.visitLineNumber(17, l4);
       mv.visitIntInsn(BIPUSH, 7);
       mv.visitVarInsn(ISTORE, 1);
       mv.visitLabel(l1);
-      mv.visitLineNumber(14, l1);
+      mv.visitLineNumber(18, l1);
       Label l5 = new Label();
       mv.visitJumpInsn(GOTO, l5);
-      // Force the line to be 16 prior to exiting the exception block.
+      // Force the line to be 20 prior to exiting the exception block.
       mv.visitLabel(l2);
-      mv.visitLineNumber(16, l2);
+      mv.visitLineNumber(20, l2);
       mv.visitFrame(
           Opcodes.F_FULL,
           2,
@@ -78,7 +78,7 @@ public class EmptyLineAfterJoinTestDump implements Opcodes {
           new Object[] {"java/lang/Throwable"});
       mv.visitVarInsn(ASTORE, 2);
       mv.visitLabel(l5);
-      mv.visitLineNumber(16, l5);
+      mv.visitLineNumber(20, l5);
       // Let the local persist such that slot 1 for x becomes y.
       mv.visitFrame(
           Opcodes.F_FULL,
@@ -92,13 +92,13 @@ public class EmptyLineAfterJoinTestDump implements Opcodes {
       mv.visitInsn(NOP);
       Label l6 = new Label();
       mv.visitLabel(l6);
-      mv.visitLineNumber(17, l6);
+      mv.visitLineNumber(21, l6);
       mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       mv.visitVarInsn(ILOAD, 1);
       mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(I)V", false);
       Label l7 = new Label();
       mv.visitLabel(l7);
-      mv.visitLineNumber(18, l7);
+      mv.visitLineNumber(22, l7);
       mv.visitInsn(RETURN);
       Label l8 = new Label();
       mv.visitLabel(l8);
@@ -114,7 +114,7 @@ public class EmptyLineAfterJoinTestDump implements Opcodes {
       mv.visitCode();
       Label l0 = new Label();
       mv.visitLabel(l0);
-      mv.visitLineNumber(22, l0);
+      mv.visitLineNumber(26, l0);
       mv.visitInsn(RETURN);
       Label l1 = new Label();
       mv.visitLabel(l1);
@@ -128,7 +128,7 @@ public class EmptyLineAfterJoinTestDump implements Opcodes {
       mv.visitCode();
       Label l0 = new Label();
       mv.visitLabel(l0);
-      mv.visitLineNumber(25, l0);
+      mv.visitLineNumber(29, l0);
       mv.visitTypeInsn(NEW, "com/android/tools/r8/debug/EmptyLineAfterJoinTest");
       mv.visitInsn(DUP);
       mv.visitMethodInsn(
@@ -141,7 +141,7 @@ public class EmptyLineAfterJoinTestDump implements Opcodes {
           INVOKEVIRTUAL, "com/android/tools/r8/debug/EmptyLineAfterJoinTest", "foo", "()V", false);
       Label l1 = new Label();
       mv.visitLabel(l1);
-      mv.visitLineNumber(26, l1);
+      mv.visitLineNumber(30, l1);
       mv.visitInsn(RETURN);
       Label l2 = new Label();
       mv.visitLabel(l2);

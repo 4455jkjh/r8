@@ -50,12 +50,13 @@ public final class ObjectsBackportTest extends AbstractBackportTest {
     }
 
     private static void testCompare() {
-      Comparator<String> stringsNullLast = (o1, o2) -> {
-        if (o1 == null) {
-          return o2 == null ? 0 : 1;
-        }
-        return o2 == null ? -1 : o1.compareTo(o2);
-      };
+      Comparator<String> stringsNullLast =
+          (o1, o2) -> {
+            if (o1 == null) {
+              return o2 == null ? 0 : 1;
+            }
+            return o2 == null ? -1 : o1.compareTo(o2);
+          };
 
       assertEquals(-1, Objects.compare("a", "b", stringsNullLast));
       assertEquals(0, Objects.compare("a", "a", stringsNullLast));
@@ -80,66 +81,74 @@ public final class ObjectsBackportTest extends AbstractBackportTest {
       assertTrue(Objects.deepEquals("abc", "abc"));
 
       // Test primitive arrays against another instance with the same contents.
-      assertTrue(Objects.deepEquals(new boolean[] { true, false, true },
-          new boolean[] { true, false, true }));
-      assertTrue(Objects.deepEquals(new byte[] { 4, 8, 15, 16, 23, 42 },
-          new byte[] { 4, 8, 15, 16, 23, 42 }));
-      assertTrue(Objects.deepEquals(new char[] { 4, 8, 15, 16, 23, 42 },
-          new char[] { 4, 8, 15, 16, 23, 42 }));
-      assertTrue(Objects.deepEquals(new double[] { 4, 8, 15, 16, 23, 42 },
-          new double[] { 4, 8, 15, 16, 23, 42 }));
-      assertTrue(Objects.deepEquals(new float[] { 4, 8, 15, 16, 23, 42 },
-          new float[] { 4, 8, 15, 16, 23, 42 }));
-      assertTrue(Objects.deepEquals(new int[] { 4, 8, 15, 16, 23, 42 },
-          new int[] { 4, 8, 15, 16, 23, 42 }));
-      assertTrue(Objects.deepEquals(new long[] { 4, 8, 15, 16, 23, 42 },
-          new long[] { 4, 8, 15, 16, 23, 42 }));
-      assertTrue(Objects.deepEquals(new short[] { 4, 8, 15, 16, 23, 42 },
-          new short[] { 4, 8, 15, 16, 23, 42 }));
+      assertTrue(
+          Objects.deepEquals(new boolean[] {true, false, true}, new boolean[] {true, false, true}));
+      assertTrue(
+          Objects.deepEquals(new byte[] {4, 8, 15, 16, 23, 42}, new byte[] {4, 8, 15, 16, 23, 42}));
+      assertTrue(
+          Objects.deepEquals(new char[] {4, 8, 15, 16, 23, 42}, new char[] {4, 8, 15, 16, 23, 42}));
+      assertTrue(
+          Objects.deepEquals(
+              new double[] {4, 8, 15, 16, 23, 42}, new double[] {4, 8, 15, 16, 23, 42}));
+      assertTrue(
+          Objects.deepEquals(
+              new float[] {4, 8, 15, 16, 23, 42}, new float[] {4, 8, 15, 16, 23, 42}));
+      assertTrue(
+          Objects.deepEquals(new int[] {4, 8, 15, 16, 23, 42}, new int[] {4, 8, 15, 16, 23, 42}));
+      assertTrue(
+          Objects.deepEquals(new long[] {4, 8, 15, 16, 23, 42}, new long[] {4, 8, 15, 16, 23, 42}));
+      assertTrue(
+          Objects.deepEquals(
+              new short[] {4, 8, 15, 16, 23, 42}, new short[] {4, 8, 15, 16, 23, 42}));
 
       // Test Object arrays against other arrays of the same contents, including nested arrays.
-      assertTrue(Objects.deepEquals(new Object[] { (byte) 4, (char) 8, 15d, 16f, 23, 42L },
-          new Object[] { (byte) 4, (char) 8, 15d, 16f, 23, 42L }));
-      assertTrue(Objects.deepEquals(new Object[] {
-          new boolean[] { true, false },
-          "hey",
-          new int[] { 4, 8, 15, 16, 23, 42 },
-          new Object[] {
-              new long[] { 1, 2, 4, 8, 16, 32 },
-              "hello",
-          },
-      }, new Object[] {
-          new boolean[] { true, false },
-          "hey",
-          new int[] { 4, 8, 15, 16, 23, 42 },
-          new Object[] {
-              new long[] { 1, 2, 4, 8, 16, 32 },
-              "hello",
-          },
-      }));
+      assertTrue(
+          Objects.deepEquals(
+              new Object[] {(byte) 4, (char) 8, 15d, 16f, 23, 42L},
+              new Object[] {(byte) 4, (char) 8, 15d, 16f, 23, 42L}));
+      assertTrue(
+          Objects.deepEquals(
+              new Object[] {
+                new boolean[] {true, false},
+                "hey",
+                new int[] {4, 8, 15, 16, 23, 42},
+                new Object[] {
+                  new long[] {1, 2, 4, 8, 16, 32}, "hello",
+                },
+              },
+              new Object[] {
+                new boolean[] {true, false},
+                "hey",
+                new int[] {4, 8, 15, 16, 23, 42},
+                new Object[] {
+                  new long[] {1, 2, 4, 8, 16, 32}, "hello",
+                },
+              }));
 
       // Test primitive arrays against incompatible types or the same type with different contents.
       Object[] testArrays = {
-          new boolean[] { false, true, false },
-          new byte[] { 1, 2, 4, 8, 16, 32 },
-          new char[] { 1, 2, 4, 8, 16, 32 },
-          new double[] { 1, 2, 4, 8, 16, 32 },
-          new float[] { 1, 2, 4, 8, 16, 32 },
-          new int[] { 1, 2, 4, 8, 16, 32 },
-          new long[] { 1, 2, 4, 8, 16, 32 },
-          new short[] { 1, 2, 4, 8, 16, 32 },
+        new boolean[] {false, true, false},
+        new byte[] {1, 2, 4, 8, 16, 32},
+        new char[] {1, 2, 4, 8, 16, 32},
+        new double[] {1, 2, 4, 8, 16, 32},
+        new float[] {1, 2, 4, 8, 16, 32},
+        new int[] {1, 2, 4, 8, 16, 32},
+        new long[] {1, 2, 4, 8, 16, 32},
+        new short[] {1, 2, 4, 8, 16, 32},
       };
       for (Object testArray : testArrays) {
-        assertFalse(Objects.deepEquals(testArray, new boolean[] { true, false, true }));
-        assertFalse(Objects.deepEquals(testArray, new byte[] { 4, 8, 15, 16, 23, 42 }));
-        assertFalse(Objects.deepEquals(testArray, new char[] { 4, 8, 15, 16, 23, 42 }));
-        assertFalse(Objects.deepEquals(testArray, new double[] { 4, 8, 15, 16, 23, 42 }));
-        assertFalse(Objects.deepEquals(testArray, new float[] { 4, 8, 15, 16, 23, 42 }));
-        assertFalse(Objects.deepEquals(testArray, new int[] { 4, 8, 15, 16, 23, 42 }));
-        assertFalse(Objects.deepEquals(testArray, new long[] { 4, 8, 15, 16, 23, 42 }));
-        assertFalse(Objects.deepEquals(testArray, new short[] { 4, 8, 15, 16, 23, 42 }));
-        assertFalse(Objects.deepEquals(testArray,
-            new Object[] { false, (byte) 4, (char) 8, 15d, 16f, 23, 42L, (short) 108 }));
+        assertFalse(Objects.deepEquals(testArray, new boolean[] {true, false, true}));
+        assertFalse(Objects.deepEquals(testArray, new byte[] {4, 8, 15, 16, 23, 42}));
+        assertFalse(Objects.deepEquals(testArray, new char[] {4, 8, 15, 16, 23, 42}));
+        assertFalse(Objects.deepEquals(testArray, new double[] {4, 8, 15, 16, 23, 42}));
+        assertFalse(Objects.deepEquals(testArray, new float[] {4, 8, 15, 16, 23, 42}));
+        assertFalse(Objects.deepEquals(testArray, new int[] {4, 8, 15, 16, 23, 42}));
+        assertFalse(Objects.deepEquals(testArray, new long[] {4, 8, 15, 16, 23, 42}));
+        assertFalse(Objects.deepEquals(testArray, new short[] {4, 8, 15, 16, 23, 42}));
+        assertFalse(
+            Objects.deepEquals(
+                testArray,
+                new Object[] {false, (byte) 4, (char) 8, 15d, 16f, 23, 42L, (short) 108}));
       }
     }
 
@@ -147,20 +156,24 @@ public final class ObjectsBackportTest extends AbstractBackportTest {
       assertEquals(0, Objects.hash((Object[]) null));
       assertEquals(1, Objects.hash());
 
-      assertEquals(Arrays.hashCode(new Object[] { "a" }), Objects.hash("a"));
-      assertEquals(Arrays.hashCode(new Object[] { 1, "2", 3d, 4f, 5L }),
-          Objects.hash(1, "2", 3d, 4f, 5L));
+      assertEquals(Arrays.hashCode(new Object[] {"a"}), Objects.hash("a"));
+      assertEquals(
+          Arrays.hashCode(new Object[] {1, "2", 3d, 4f, 5L}), Objects.hash(1, "2", 3d, 4f, 5L));
     }
 
     private static void testHashCode() {
       assertEquals(0, Objects.hashCode(null));
 
       // Ensure we invoke hashCode() and propagate its result.
-      assertEquals(5, Objects.hashCode(new Object() {
-        @Override public int hashCode() {
-          return 5;
-        }
-      }));
+      assertEquals(
+          5,
+          Objects.hashCode(
+              new Object() {
+                @Override
+                public int hashCode() {
+                  return 5;
+                }
+              }));
     }
 
     private static void testEquals() {
@@ -171,18 +184,26 @@ public final class ObjectsBackportTest extends AbstractBackportTest {
 
       // Ensure we invoke equals() and propagate its result.
       Object second = new Object();
-      assertTrue(Objects.equals(new Object() {
-        @Override public boolean equals(Object obj) {
-          assertSame(obj, second);
-          return true;
-        }
-      }, second));
-      assertFalse(Objects.equals(new Object() {
-        @Override public boolean equals(Object obj) {
-          assertSame(obj, second);
-          return false;
-        }
-      }, second));
+      assertTrue(
+          Objects.equals(
+              new Object() {
+                @Override
+                public boolean equals(Object obj) {
+                  assertSame(obj, second);
+                  return true;
+                }
+              },
+              second));
+      assertFalse(
+          Objects.equals(
+              new Object() {
+                @Override
+                public boolean equals(Object obj) {
+                  assertSame(obj, second);
+                  return false;
+                }
+              },
+              second));
     }
 
     private static void testIsNull() {
@@ -199,11 +220,15 @@ public final class ObjectsBackportTest extends AbstractBackportTest {
       assertEquals("null", Objects.toString(null));
 
       // Ensure we invoke toString() and propagate its result.
-      assertEquals("non-null", Objects.toString(new Object() {
-        @Override public String toString() {
-          return "non-null";
-        }
-      }));
+      assertEquals(
+          "non-null",
+          Objects.toString(
+              new Object() {
+                @Override
+                public String toString() {
+                  return "non-null";
+                }
+              }));
     }
 
     private static void testToStringOrDefault() {
@@ -211,11 +236,16 @@ public final class ObjectsBackportTest extends AbstractBackportTest {
       assertEquals("null default", Objects.toString(null, "null default"));
 
       // Ensure we invoke toString() and propagate its result.
-      assertEquals("non-null", Objects.toString(new Object() {
-        @Override public String toString() {
-          return "non-null";
-        }
-      }, "null default"));
+      assertEquals(
+          "non-null",
+          Objects.toString(
+              new Object() {
+                @Override
+                public String toString() {
+                  return "non-null";
+                }
+              },
+              "null default"));
     }
 
     private static void testRequireNonNull() {

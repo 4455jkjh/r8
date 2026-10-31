@@ -17,12 +17,16 @@ abstract class ReflectionOptimizerTestBase extends TestBase {
   }
 
   long countGetClass(MethodSubject method) {
-    return method.streamInstructions().filter(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return isGetClass(instructionSubject.getMethod());
-      }
-      return false;
-    }).count();
+    return method
+        .streamInstructions()
+        .filter(
+            instructionSubject -> {
+              if (instructionSubject.isInvoke()) {
+                return isGetClass(instructionSubject.getMethod());
+              }
+              return false;
+            })
+        .count();
   }
 
   private static boolean isForName(DexMethod method) {
@@ -33,12 +37,16 @@ abstract class ReflectionOptimizerTestBase extends TestBase {
   }
 
   long countForName(MethodSubject method) {
-    return method.streamInstructions().filter(instructionSubject -> {
-      if (instructionSubject.isInvoke()) {
-        return isForName(instructionSubject.getMethod());
-      }
-      return false;
-    }).count();
+    return method
+        .streamInstructions()
+        .filter(
+            instructionSubject -> {
+              if (instructionSubject.isInvoke()) {
+                return isForName(instructionSubject.getMethod());
+              }
+              return false;
+            })
+        .count();
   }
 
   long countConstClass(MethodSubject method) {

@@ -8,7 +8,7 @@ import com.android.tools.r8.naming.b72391662.Interface;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-public class OtherPackageTestClass extends OtherPackageSuper implements Interface{
+public class OtherPackageTestClass extends OtherPackageSuper implements Interface {
   public final int value;
 
   public OtherPackageTestClass() {

@@ -6,7 +6,7 @@ package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.apimodel.jar.ApiJarInfo;
-import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import com.android.tools.r8.utils.internal.ThrowingFunction;
 import java.io.IOException;
@@ -16,7 +16,7 @@ import java.util.Collection;
 public class AmendApiFromResources {
 
   public static void applyAmendments(
-      Collection<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> classes,
+      Collection<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> classes,
       ApiJarInfo jarInfo,
       AmendmentListener listener)
       throws ApiDatabaseGeneratorException, IOException {

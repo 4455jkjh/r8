@@ -68,13 +68,14 @@ public class MinifierTest extends NamingTestBase {
     // class naming001.A should be kept, according to the keep rule.
     assertEquals("Lnaming001/A;", naming.lookupDescriptor(a).toSourceString());
 
-    DexMethod m = dexItemFactory.createMethod(
-        a, dexItemFactory.createProto(dexItemFactory.voidType), "m");
+    DexMethod m =
+        dexItemFactory.createMethod(a, dexItemFactory.createProto(dexItemFactory.voidType), "m");
     // method naming001.A.m would be renamed.
     assertNotEquals("m", naming.lookupName(m).toSourceString());
 
-    DexMethod p = dexItemFactory.createMethod(
-        a, dexItemFactory.createProto(dexItemFactory.voidType), "privateFunc");
+    DexMethod p =
+        dexItemFactory.createMethod(
+            a, dexItemFactory.createProto(dexItemFactory.voidType), "privateFunc");
     // method naming001.A.privateFunc would be renamed.
     assertNotEquals("privateFunc", naming.lookupName(p).toSourceString());
   }
@@ -84,13 +85,14 @@ public class MinifierTest extends NamingTestBase {
     // class naming001.A should be kept, according to the keep rule.
     assertEquals("Lnaming001/A;", naming.lookupDescriptor(a).toSourceString());
 
-    DexMethod m = dexItemFactory.createMethod(
-        a, dexItemFactory.createProto(dexItemFactory.voidType), "m");
+    DexMethod m =
+        dexItemFactory.createMethod(a, dexItemFactory.createProto(dexItemFactory.voidType), "m");
     // method naming001.A.m would be renamed.
     assertNotEquals("m", naming.lookupName(m).toSourceString());
 
-    DexMethod p = dexItemFactory.createMethod(
-        a, dexItemFactory.createProto(dexItemFactory.voidType), "privateFunc");
+    DexMethod p =
+        dexItemFactory.createMethod(
+            a, dexItemFactory.createProto(dexItemFactory.voidType), "privateFunc");
     // method naming001.A.privateFunc should be kept, according to the keep rule.
     assertEquals("privateFunc", naming.lookupName(p).toSourceString());
   }
@@ -100,8 +102,8 @@ public class MinifierTest extends NamingTestBase {
     // class naming001.A should be kept, according to the keep rule.
     assertEquals("Lnaming001/A;", naming.lookupDescriptor(a).toSourceString());
 
-    DexMethod m = dexItemFactory.createMethod(
-        a, dexItemFactory.createProto(dexItemFactory.voidType), "m");
+    DexMethod m =
+        dexItemFactory.createMethod(a, dexItemFactory.createProto(dexItemFactory.voidType), "m");
     // method naming001.A.m should be kept, according to the keep rule.
     assertEquals("m", naming.lookupName(m).toSourceString());
 
@@ -117,22 +119,23 @@ public class MinifierTest extends NamingTestBase {
     // class naming001.D should be kept, according to the keep rule.
     assertEquals("Lnaming001/D;", naming.lookupDescriptor(d).toSourceString());
 
-    DexMethod main = dexItemFactory.createMethod(
-        d,
-        dexItemFactory.createProto(dexItemFactory.voidType, dexItemFactory.stringArrayType),
-        "main");
+    DexMethod main =
+        dexItemFactory.createMethod(
+            d,
+            dexItemFactory.createProto(dexItemFactory.voidType, dexItemFactory.stringArrayType),
+            "main");
     // method naming001.D.main should be kept, according to the keep rule.
     assertEquals("main", naming.lookupName(main).toSourceString());
 
-    DexMethod k = dexItemFactory.createMethod(
-        d, dexItemFactory.createProto(dexItemFactory.voidType), "keep");
+    DexMethod k =
+        dexItemFactory.createMethod(d, dexItemFactory.createProto(dexItemFactory.voidType), "keep");
     // method naming001.D.keep would be renamed.
     assertNotEquals("keep", naming.lookupName(k).toSourceString());
 
     // Note that naming001.E extends naming001.D.
     DexType e = dexItemFactory.createType("Lnaming001/E;");
-    DexMethod inherited_k = dexItemFactory.createMethod(
-        e, dexItemFactory.createProto(dexItemFactory.voidType), "keep");
+    DexMethod inherited_k =
+        dexItemFactory.createMethod(e, dexItemFactory.createProto(dexItemFactory.voidType), "keep");
     // method naming001.E.keep should be renamed to the same name as naming001.D.keep.
     assertEquals(
         naming.lookupName(inherited_k).toSourceString(), naming.lookupName(k).toSourceString());
@@ -143,22 +146,23 @@ public class MinifierTest extends NamingTestBase {
     // class naming001.G should be kept, according to the keep rule.
     assertEquals("Lnaming001/G;", naming.lookupDescriptor(g).toSourceString());
 
-    DexMethod main = dexItemFactory.createMethod(
-        g,
-        dexItemFactory.createProto(dexItemFactory.voidType, dexItemFactory.stringArrayType),
-        "main");
+    DexMethod main =
+        dexItemFactory.createMethod(
+            g,
+            dexItemFactory.createProto(dexItemFactory.voidType, dexItemFactory.stringArrayType),
+            "main");
     // method naming001.G.main should be kept, according to the keep rule.
     assertEquals("main", naming.lookupName(main).toSourceString());
 
-    DexMethod impl_m = dexItemFactory.createMethod(
-        g, dexItemFactory.createProto(dexItemFactory.voidType), "m");
+    DexMethod impl_m =
+        dexItemFactory.createMethod(g, dexItemFactory.createProto(dexItemFactory.voidType), "m");
     // method naming001.G.m would be renamed.
     assertNotEquals("m", naming.lookupName(impl_m).toSourceString());
 
     // Note that naming001.G implements H that extends I, where method m is declared.
     DexType i = dexItemFactory.createType("Lnaming001/I;");
-    DexMethod def_m = dexItemFactory.createMethod(
-        i, dexItemFactory.createProto(dexItemFactory.voidType), "m");
+    DexMethod def_m =
+        dexItemFactory.createMethod(i, dexItemFactory.createProto(dexItemFactory.voidType), "m");
     // method naming001.I.m should be renamed to the same name as naming001.G.m.
     assertEquals(
         naming.lookupName(impl_m).toSourceString(), naming.lookupName(def_m).toSourceString());
@@ -169,8 +173,9 @@ public class MinifierTest extends NamingTestBase {
     // class naming001.Reflect should be kept, according to the keep rule.
     assertEquals("Lnaming001/Reflect;", naming.lookupDescriptor(reflect).toSourceString());
 
-    DexMethod keep6 = dexItemFactory.createMethod(
-        reflect, dexItemFactory.createProto(dexItemFactory.voidType), "keep6");
+    DexMethod keep6 =
+        dexItemFactory.createMethod(
+            reflect, dexItemFactory.createProto(dexItemFactory.voidType), "keep6");
     // method naming001.Reflect.keep6 should be kept, according to the keep rule.
     assertEquals("keep6", naming.lookupName(keep6).toSourceString());
   }
@@ -180,8 +185,8 @@ public class MinifierTest extends NamingTestBase {
     // class naming001.K should be kept, according to the keep rule.
     assertEquals("Lnaming001/K;", naming.lookupDescriptor(k).toSourceString());
 
-    DexMethod keep = dexItemFactory.createMethod(
-        k, dexItemFactory.createProto(dexItemFactory.voidType), "keep");
+    DexMethod keep =
+        dexItemFactory.createMethod(k, dexItemFactory.createProto(dexItemFactory.voidType), "keep");
     // method naming001.K.keep should be kept, according to the keep rule.
     assertEquals("keep", naming.lookupName(keep).toSourceString());
 
@@ -193,5 +198,4 @@ public class MinifierTest extends NamingTestBase {
     // field naming001.K.j would be renamed
     assertNotEquals("j", naming.lookupName(j).toSourceString());
   }
-
 }

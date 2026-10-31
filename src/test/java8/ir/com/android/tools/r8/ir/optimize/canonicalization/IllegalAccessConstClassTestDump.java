@@ -102,8 +102,13 @@ class IllegalAccessConstClassTestDump {
         methodVisitor.visitEnd();
       }
       {
-        methodVisitor = classWriter.visitMethod(
-            ACC_PUBLIC | ACC_STATIC | ACC_VARARGS, "main", "([Ljava/lang/String;)V", null, null);
+        methodVisitor =
+            classWriter.visitMethod(
+                ACC_PUBLIC | ACC_STATIC | ACC_VARARGS,
+                "main",
+                "([Ljava/lang/String;)V",
+                null,
+                null);
         methodVisitor.visitCode();
         Label label0 = new Label();
         methodVisitor.visitLabel(label0);

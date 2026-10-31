@@ -3,17 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.analysis.type;
 
-interface I0 {
-}
+interface I0 {}
 
-interface I1 extends I0 {
-}
+interface I1 extends I0 {}
 
-interface I2 {
-}
+interface I2 {}
 
-interface I3 extends I0, I1, I2 {
-}
+interface I3 extends I0, I1, I2 {}
 
-interface I4 extends I1, I2 {
-}
+interface I4 extends I1, I2 {}

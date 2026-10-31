@@ -17,11 +17,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-class B112517039ReturnType extends Exception {
-}
+class B112517039ReturnType extends Exception {}
 
 interface B112517039I {
   B112517039ReturnType m();
+
   void flaf(Exception e);
 }
 
@@ -46,10 +46,7 @@ class B112517039Main {
 
 @RunWith(Parameterized.class)
 public class ReturnTypeTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "Ewwo!",
-      "NullPointerException"
-  );
+  private static final String JAVA_OUTPUT = StringUtils.lines("Ewwo!", "NullPointerException");
   private static final Class<?> MAIN = B112517039Main.class;
 
   @Parameterized.Parameters(name = "{0}")

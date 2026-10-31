@@ -37,7 +37,7 @@ public class ProguardNameMatchingTest extends TestBase {
   }
 
   private static final String[] BASIC_TYPES = {
-      "char", "byte", "short", "int", "long", "float", "double", "boolean"
+    "char", "byte", "short", "int", "long", "float", "double", "boolean"
   };
 
   private static final DexItemFactory dexItemFactory = new DexItemFactory();
@@ -70,7 +70,8 @@ public class ProguardNameMatchingTest extends TestBase {
       }
       builder.addPattern(listBuilder.build());
     }
-    return builder.build()
+    return builder
+        .build()
         .matches(dexItemFactory.createType(DescriptorUtils.javaTypeToDescriptor(className)));
   }
 
@@ -123,12 +124,14 @@ public class ProguardNameMatchingTest extends TestBase {
     assertFalse(matchClassName("boo", "!b*<1>", "**"));
     assertFalse(matchClassName("boo", "!b?<1>", "**"));
     assertTrue(matchClassName("boo", "**", "!boo"));
-    assertTrue(matchClassName("boo",
-        ImmutableList.of(ImmutableList.of("!boo"), ImmutableList.of("**"))));
+    assertTrue(
+        matchClassName("boo", ImmutableList.of(ImmutableList.of("!boo"), ImmutableList.of("**"))));
 
     assertFalse(matchClassName("boofoo", "!boo*", "*foo", "boofoo"));
-    assertTrue(matchClassName("boofoo",
-        ImmutableList.of(ImmutableList.of("!boo*,*foo"), ImmutableList.of("boofoo"))));
+    assertTrue(
+        matchClassName(
+            "boofoo",
+            ImmutableList.of(ImmutableList.of("!boo*,*foo"), ImmutableList.of("boofoo"))));
   }
 
   private void assertMatchesBasicTypes(String pattern) {
@@ -148,22 +151,15 @@ public class ProguardNameMatchingTest extends TestBase {
     assertTrue(matchTypeName("java.lang.Object", "**"));
     assertDoesNotMatchBasicTypes("**");
     assertDoesNotMatchBasicTypes("*");
-    assertFalse(
-        matchTypeName("java.lang.Object[]", "**"));
-    assertFalse(
-        matchTypeName("java.lang.Object", "**z"));
-    assertFalse(matchTypeName("java.lang.Object[]", "java.**"
-    ));
-    assertTrue(
-        matchTypeName("java.lang.Object[]", "***"));
-    assertTrue(matchTypeName("java.lang.Object[][]", "***"
-    ));
+    assertFalse(matchTypeName("java.lang.Object[]", "**"));
+    assertFalse(matchTypeName("java.lang.Object", "**z"));
+    assertFalse(matchTypeName("java.lang.Object[]", "java.**"));
+    assertTrue(matchTypeName("java.lang.Object[]", "***"));
+    assertTrue(matchTypeName("java.lang.Object[][]", "***"));
     assertFalse(matchTypeName("java.lang.Object", "%"));
     assertTrue(matchTypeName("a", "**"));
-    assertTrue(matchTypeName("java.lang.Object[]", "**[]"
-    ));
-    assertFalse(matchTypeName("java.lang.Object[][]", "**[]"
-    ));
+    assertTrue(matchTypeName("java.lang.Object[]", "**[]"));
+    assertFalse(matchTypeName("java.lang.Object[][]", "**[]"));
     assertTrue(matchTypeName("abc", "*"));
     assertMatchesBasicTypes("***");
     assertMatchesBasicTypes("%");
@@ -209,8 +205,9 @@ public class ProguardNameMatchingTest extends TestBase {
       if (backReference.length() > 0) {
         if (patternChar == '>') {
           backReference += patternChar;
-          builder.add(new BackReference(
-              Integer.parseInt(backReference.substring(1, backReference.length() - 1))));
+          builder.add(
+              new BackReference(
+                  Integer.parseInt(backReference.substring(1, backReference.length() - 1))));
           backReference = "";
         } else {
           backReference += patternChar;

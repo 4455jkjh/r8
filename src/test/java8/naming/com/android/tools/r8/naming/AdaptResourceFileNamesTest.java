@@ -342,10 +342,8 @@ public class AdaptResourceFileNamesTest extends ProguardCompatibilityTestBase {
             // Filename that does not match a type, but where the directory should be renamed.
             "adaptresourcefilenames/pkg/innerpkg/file.txt",
             // Filename that does not match a type, but where a directory-prefix should be renamed.
-            "adaptresourcefilenames/pkg/innerpkg/directory/file.txt"
-            );
-    return filenames
-        .stream()
+            "adaptresourcefilenames/pkg/innerpkg/directory/file.txt");
+    return filenames.stream()
         .map(filename -> DataEntryResource.fromBytes(new byte[0], filename, Origin.unknown()))
         .collect(Collectors.toList());
   }
@@ -354,54 +352,54 @@ public class AdaptResourceFileNamesTest extends ProguardCompatibilityTestBase {
     String typeName = null;
     String suffix = null;
     switch (filename) {
-        // Filename with dot only.
+      // Filename with dot only.
       case "adaptresourcefilenames/B.":
         typeName = "adaptresourcefilenames.B";
         suffix = ".";
         break;
-        // Filename with extension.
+      // Filename with extension.
       case "adaptresourcefilenames/B.txt":
         typeName = "adaptresourcefilenames.B";
         suffix = ".txt";
         break;
-        // Filename with other extension (used to test filtering).
+      // Filename with other extension (used to test filtering).
       case "adaptresourcefilenames/B.md":
         typeName = "adaptresourcefilenames.B";
         suffix = ".md";
         break;
-        // Filename with dot suffix and extension.
+      // Filename with dot suffix and extension.
       case "adaptresourcefilenames/B.suffix.txt":
         typeName = "adaptresourcefilenames.B";
         suffix = ".suffix.txt";
         break;
-        // Filename with dash suffix and extension.
+      // Filename with dash suffix and extension.
       case "adaptresourcefilenames/B-suffix.txt":
         typeName = "adaptresourcefilenames.B";
         suffix = "-suffix.txt";
         break;
-        // Filename with dollar suffix and extension.
+      // Filename with dollar suffix and extension.
       case "adaptresourcefilenames/B$suffix.txt":
         typeName = "adaptresourcefilenames.B";
         suffix = "$suffix.txt";
         break;
-        // Filename with dollar suffix matching inner class and extension.
+      // Filename with dollar suffix matching inner class and extension.
       case "adaptresourcefilenames/B$Inner.txt":
         typeName = "adaptresourcefilenames.B$Inner";
         suffix = ".txt";
         break;
-        // Filename with underscore suffix and extension.
+      // Filename with underscore suffix and extension.
       case "adaptresourcefilenames/B_suffix.txt":
         typeName = "adaptresourcefilenames.B";
         suffix = "_suffix.txt";
         break;
-        // Filename with whitespace suffix and extension.
+      // Filename with whitespace suffix and extension.
       case "adaptresourcefilenames/B suffix.txt":
         typeName = "adaptresourcefilenames.B";
         suffix = " suffix.txt";
         break;
-        //
-        // PACKAGE RENAMING TESTS
-        //
+      //
+      // PACKAGE RENAMING TESTS
+      //
       case "adaptresourcefilenames/pkg/C.txt":
         typeName = "adaptresourcefilenames.pkg.C";
         suffix = ".txt";

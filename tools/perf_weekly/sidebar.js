@@ -245,29 +245,39 @@ function computeReleaseCutSummary(cut, cutCommits, recentCommits, metric) {
     if (cutRuns.length === 0 || recentRuns.length === 0) {
       continue;
     }
-    const { anchor, slice: startSlice } = pickBaselineSlice(
+    const latestRun = recentRuns[recentRuns.length - 1];
+    const sameDumpRecentRuns = recentRuns.filter((r) =>
+      state.hasSameDump(benchmark, r.commit, latestRun.commit),
+    );
+    const { anchor, slice: rawStartSlice } = pickBaselineSlice(
       cutRuns,
       cut,
       metric,
+    );
+    if (!state.hasSameDump(benchmark, anchor.commit, latestRun.commit)) {
+      continue;
+    }
+    const startSlice = rawStartSlice.filter((r) =>
+      state.hasSameDump(benchmark, r.commit, anchor.commit),
     );
     const start = median(startSlice.map((r) => r.value));
     let end;
     let endCommit;
     if (metric.kind === "seconds") {
       const baselineEnd = startSlice[startSlice.length - 1];
-      const baselineEndIdx = recentRuns.findIndex(
+      const baselineEndIdx = sameDumpRecentRuns.findIndex(
         (r) => r.commit.hash === baselineEnd.commit.hash,
       );
       const afterAnchor =
         baselineEndIdx !== -1
-          ? recentRuns.slice(baselineEndIdx + 1)
-          : recentRuns.filter(
+          ? sameDumpRecentRuns.slice(baselineEndIdx + 1)
+          : sameDumpRecentRuns.filter(
               (r) => r.commit.submitted > baselineEnd.commit.submitted,
             );
       const endSlice =
         afterAnchor.length > 0
           ? afterAnchor.slice(-3)
-          : recentRuns[recentRuns.length - 1].commit.hash ===
+          : sameDumpRecentRuns[sameDumpRecentRuns.length - 1].commit.hash ===
               baselineEnd.commit.hash
             ? startSlice
             : [];
@@ -277,7 +287,6 @@ function computeReleaseCutSummary(cut, cutCommits, recentCommits, metric) {
       end = median(endSlice.map((r) => r.value));
       endCommit = endSlice[endSlice.length - 1].commit;
     } else {
-      const latestRun = recentRuns[recentRuns.length - 1];
       if (
         latestRun.commit.submitted < anchor.commit.submitted &&
         latestRun.commit.hash !== anchor.commit.hash
@@ -307,7 +316,14 @@ function computeReleaseCutSummary(cut, cutCommits, recentCommits, metric) {
 function computeTrendSummary(commits, metric) {
   const entries = [];
   for (const benchmark of state.benchmarks.values()) {
-    const runs = collectRuns(benchmark, commits, metric);
+    const allRuns = collectRuns(benchmark, commits, metric);
+    if (allRuns.length < 2) {
+      continue;
+    }
+    const latestCommit = allRuns[allRuns.length - 1].commit;
+    const runs = allRuns.filter((r) =>
+      state.hasSameDump(benchmark, r.commit, latestCommit),
+    );
     if (runs.length < 2) {
       continue;
     }

@@ -72,7 +72,10 @@ public class JasminDebugTest extends DebugTestBase {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass(testClassName);
 
-    clazz.addStaticMethod(testMethodName, ImmutableList.of("Ljava/lang/Object;"), "V",
+    clazz.addStaticMethod(
+        testMethodName,
+        ImmutableList.of("Ljava/lang/Object;"),
+        "V",
         ".limit stack 2",
         ".limit locals 3",
         ".var 1 is local Ljava/lang/Object; from Label1 to Label2",

@@ -38,14 +38,13 @@ public class AssumenosideeffectsPropagationTest extends TestBase {
               "-assumenosideeffects class **.*Sub* {",
               "  void debug(...);",
               "  void verbose(...);",
-              "}"
-          );
+              "}");
         case NON_SPECIFIC_RULES_PARTIAL:
           return StringUtils.lines(
               // Intentionally miss sub types of Base2 for debug().
               "-assumenosideeffects class **.*$Sub* {",
-              "  void debug(...);"
-              ,"}",
+              "  void debug(...);",
+              "}",
               // Targeting info() and verbose() in Base1, without wildcards.
               "-assumenosideeffects class * extends " + Base1.class.getTypeName() + " {",
               "  void info(...);",
@@ -54,14 +53,10 @@ public class AssumenosideeffectsPropagationTest extends TestBase {
               // Targeting info() and verbose() in Base2, with wildcards.
               "-assumenosideeffects class * extends " + Base2.class.getTypeName() + " {",
               "  void *o*(java.lang.String);",
-              "}"
-          );
+              "}");
         case NON_SPECIFIC_RULES_ALL:
           return StringUtils.lines(
-              "-assumenosideeffects class **.*Sub* {",
-              "  void *(java.lang.String);",
-              "}"
-          );
+              "-assumenosideeffects class **.*Sub* {", "  void *(java.lang.String);", "}");
         default:
           throw new Unreachable();
       }
@@ -166,13 +161,17 @@ public class AssumenosideeffectsPropagationTest extends TestBase {
 
   interface Itf {
     void info(String message);
+
     void debug(String message);
+
     void verbose(String message);
   }
 
-  static abstract class Base1 implements Itf {
+  abstract static class Base1 implements Itf {
     public abstract void info(String message);
+
     public abstract void debug(String message);
+
     public abstract void verbose(String message);
   }
 
@@ -210,9 +209,11 @@ public class AssumenosideeffectsPropagationTest extends TestBase {
     }
   }
 
-  static abstract class Base2 implements Itf {
+  abstract static class Base2 implements Itf {
     public abstract void info(String message);
+
     public abstract void debug(String message);
+
     public abstract void verbose(String message);
   }
 

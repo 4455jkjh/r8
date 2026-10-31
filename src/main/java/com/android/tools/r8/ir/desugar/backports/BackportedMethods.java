@@ -8199,7 +8199,6 @@ public final class BackportedMethods {
     CfLabel label1 = new CfLabel();
     CfLabel label2 = new CfLabel();
     CfLabel label3 = new CfLabel();
-    CfLabel label4 = new CfLabel();
     return new CfCode(
         method.holder,
         4,
@@ -8218,7 +8217,6 @@ public final class BackportedMethods {
                     factory.createString("requireNonNull")),
                 false),
             new CfLoad(ValueType.OBJECT, 1),
-            label2,
             new CfInvoke(
                 184,
                 factory.createMethod(
@@ -8233,9 +8231,9 @@ public final class BackportedMethods {
                     factory.createProto(factory.voidType, factory.objectType, factory.objectType),
                     factory.createString("<init>")),
                 false),
-            label3,
+            label2,
             new CfReturn(ValueType.OBJECT),
-            label4),
+            label3),
         ImmutableList.of(),
         ImmutableList.of());
   }
@@ -8714,9 +8712,6 @@ public final class BackportedMethods {
     CfLabel label4 = new CfLabel();
     CfLabel label5 = new CfLabel();
     CfLabel label6 = new CfLabel();
-    CfLabel label7 = new CfLabel();
-    CfLabel label8 = new CfLabel();
-    CfLabel label9 = new CfLabel();
     return new CfCode(
         method.holder,
         3,
@@ -8777,7 +8772,7 @@ public final class BackportedMethods {
                     factory.createProto(factory.booleanType),
                     factory.createString("hasNext")),
                 true),
-            new CfIf(IfType.EQ, ValueType.INT, label8),
+            new CfIf(IfType.EQ, ValueType.INT, label5),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
                 185,
@@ -8791,7 +8786,6 @@ public final class BackportedMethods {
             label3,
             new CfLoad(ValueType.OBJECT, 1),
             new CfLoad(ValueType.OBJECT, 3),
-            label4,
             new CfInvoke(
                 185,
                 factory.createMethod(
@@ -8807,7 +8801,6 @@ public final class BackportedMethods {
                     factory.createString("requireNonNull")),
                 false),
             new CfLoad(ValueType.OBJECT, 3),
-            label5,
             new CfInvoke(
                 185,
                 factory.createMethod(
@@ -8822,7 +8815,6 @@ public final class BackportedMethods {
                     factory.createProto(factory.objectType, factory.objectType),
                     factory.createString("requireNonNull")),
                 false),
-            label6,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -8831,9 +8823,9 @@ public final class BackportedMethods {
                     factory.createString("put")),
                 false),
             new CfStackInstruction(CfStackInstruction.Opcode.Pop),
-            label7,
+            label4,
             new CfGoto(label2),
-            label8,
+            label5,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1},
@@ -8853,7 +8845,7 @@ public final class BackportedMethods {
                     factory.createString("unmodifiableMap")),
                 false),
             new CfReturn(ValueType.OBJECT),
-            label9),
+            label6),
         ImmutableList.of(),
         ImmutableList.of());
   }

@@ -68,8 +68,11 @@ public class DesugarStaticInterfaceMethodsRetraceTest extends RetraceTestBase {
         // For the desugaring to companion classes the retrace stacktrace is still the same
         // as the mapping file has a fully qualified class name in the method mapping, e.g.:
         //
-        //   com.android.tools.r8.naming.retrace.InterfaceWithDefaultMethod1$-CC -> com.android.tools.r8.naming.retrace.a:
-        //       1:1:void com.android.tools.r8.naming.retrace.InterfaceWithDefaultMethod1.defaultMethod1():80:80 -> a
+        //   com.android.tools.r8.naming.retrace.InterfaceWithDefaultMethod1$-CC ->
+        // com.android.tools.r8.naming.retrace.a:
+        //       1:1:void
+        // com.android.tools.r8.naming.retrace.InterfaceWithDefaultMethod1.defaultMethod1():80:80 ->
+        // a
         (StackTrace actualStackTrace, StackTrace retracedStackTrace) ->
             assertThat(retracedStackTrace, isSameExceptForFileName(expectedStackTrace)));
   }

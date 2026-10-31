@@ -37,16 +37,16 @@ public class B80083341 extends TestBase {
   @Test
   public void test() throws Exception {
     Class mainClass = TestMain.class;
-    List<String> config = ImmutableList.of(
-        "-printmapping",
-        "-keepattributes EnclosingMethod,InnerClasses,Signature",
-        "-repackageclasses",
-        "-keepclassmembers class " + mainClass.getCanonicalName() + " {",
-        "  public void main(...);",
-        "}",
-        "-keep,allowobfuscation class " + mainClass.getCanonicalName() + " {",
-        "}"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-printmapping",
+            "-keepattributes EnclosingMethod,InnerClasses,Signature",
+            "-repackageclasses",
+            "-keepclassmembers class " + mainClass.getCanonicalName() + " {",
+            "  public void main(...);",
+            "}",
+            "-keep,allowobfuscation class " + mainClass.getCanonicalName() + " {",
+            "}");
     AndroidApp app =
         readClassesAndRuntimeJar(
             ImmutableList.of(

@@ -97,7 +97,6 @@ public class AllTimeConversionTest extends DesugaredLibraryTestBase {
     assertEquals(0, trackedCallbackAPI);
   }
 
-
   static class Executor {
 
     private static final String ZONE_ID = "GMT";

@@ -191,10 +191,10 @@ public class InvokeVirtualWithRefinedReceiverTest extends TestBase {
   static class Main {
     public static void main(String... args) {
       A a = System.currentTimeMillis() > 0 ? new B() : new BSub();
-      a.m(null);  // No single target, but should be able to filter out C(Sub)#m
+      a.m(null); // No single target, but should be able to filter out C(Sub)#m
 
-      A c = new C();  // with the exact type:
-      c.m(c);         // calls C.m() with non-null instance.
+      A c = new C(); // with the exact type:
+      c.m(c); // calls C.m() with non-null instance.
     }
   }
 }

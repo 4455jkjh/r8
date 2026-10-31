@@ -72,11 +72,9 @@ public class AsterisksTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void doubleAsterisksInField() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **." + B111974287.class.getSimpleName() + "{",
-        "  ** **;",
-        "}"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **." + B111974287.class.getSimpleName() + "{", "  ** **;", "}");
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     ClassSubject classSubject = codeInspector.clazz(B111974287.class);
     assertThat(classSubject, isPresentAndNotRenamed());
@@ -88,11 +86,9 @@ public class AsterisksTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void doubleAsterisksInMethod() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **." + B111974287.class.getSimpleName() + "{",
-        "  ** foo**(...);",
-        "}"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **." + B111974287.class.getSimpleName() + "{", "  ** foo**(...);", "}");
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     ClassSubject classSubject = codeInspector.clazz(B111974287.class);
     assertThat(classSubject, isPresentAndNotRenamed());
@@ -108,11 +104,9 @@ public class AsterisksTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void tripleAsterisksInField() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **." + B111974287.class.getSimpleName() + "{",
-        "  *** ***;",
-        "}"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **." + B111974287.class.getSimpleName() + "{", "  *** ***;", "}");
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     ClassSubject classSubject = codeInspector.clazz(B111974287.class);
     assertThat(classSubject, isPresentAndNotRenamed());
@@ -124,11 +118,9 @@ public class AsterisksTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void tripleAsterisksInMethod() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **." + B111974287.class.getSimpleName() + "{",
-        "  *** foo***(...);",
-        "}"
-    );
+    List<String> config =
+        ImmutableList.of(
+            "-keep class **." + B111974287.class.getSimpleName() + "{", "  *** foo***(...);", "}");
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     ClassSubject classSubject = codeInspector.clazz(B111974287.class);
     assertThat(classSubject, isPresentAndNotRenamed());
@@ -144,11 +136,7 @@ public class AsterisksTest extends ProguardCompatibilityTestBase {
 
   @Test
   public void quadrupleAsterisksInType() throws Exception {
-    List<String> config = ImmutableList.of(
-        "-keep class **** {",
-        "  **** foo***(...);",
-        "}"
-    );
+    List<String> config = ImmutableList.of("-keep class **** {", "  **** foo***(...);", "}");
     CodeInspector codeInspector = inspectAfterShrinking(shrinker, CLASSES, config);
     ClassSubject classSubject = codeInspector.clazz(B111974287.class);
     assertThat(classSubject, isPresentAndNotRenamed());
@@ -161,5 +149,4 @@ public class AsterisksTest extends ProguardCompatibilityTestBase {
       assertThat(methodSubject, isPresentAndNotRenamed());
     }
   }
-
 }

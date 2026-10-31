@@ -11,4 +11,3 @@ public class CodeTestClass {
     System.out.println(C.method3());
   }
 }
-

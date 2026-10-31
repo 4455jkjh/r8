@@ -56,11 +56,11 @@ public class BridgeInliningTest extends TestBase {
     assertThat(m, isPresent());
     assertTrue(m.getMethod().hasCode());
     // TODO(b/124017330): Verify that I$-CC.m() has been inlined into C.m().
-    //assertTrue(
+    // assertTrue(
     //    m.iterateInstructions(i -> i.isConstString("I::m", JumboStringMode.ALLOW)).hasNext());
-    //codeInspector.forAllClasses(classSubject -> {
+    // codeInspector.forAllClasses(classSubject -> {
     //  assertFalse(classSubject.getOriginalDescriptor().contains("$-CC"));
-    //});
+    // });
   }
 
   static class Main {

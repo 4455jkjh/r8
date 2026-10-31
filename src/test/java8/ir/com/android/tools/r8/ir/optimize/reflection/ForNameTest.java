@@ -68,14 +68,8 @@ class ForNameTestMain {
 
 @RunWith(Parameterized.class)
 public class ForNameTest extends ReflectionOptimizerTestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "Unknown",
-      "A#<clinit>",
-      "A",
-      "B#<clinit>",
-      "B",
-      "ArrayBase[]"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines("Unknown", "A#<clinit>", "A", "B#<clinit>", "B", "ArrayBase[]");
   private static final Class<?> MAIN = ForNameTestMain.class;
 
   @Parameterized.Parameters(name = "{0}")

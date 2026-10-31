@@ -27,8 +27,7 @@ interface I {
   }
 }
 
-class C implements I {
-}
+class C implements I {}
 
 class KeepRuleWarningTestRunner {
   public static void main(String[] args) {

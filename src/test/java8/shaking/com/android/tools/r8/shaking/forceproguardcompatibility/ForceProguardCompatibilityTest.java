@@ -91,7 +91,7 @@ public class ForceProguardCompatibilityTest extends TestBase {
     assertThat(inspector.clazz(mainClass), isPresent());
     ClassSubject clazz = inspector.clazz(mentionedClass);
     assertThat(clazz, isPresent());
-    MethodSubject defaultInitializer = clazz.method(MethodSignature.initializer(new String[]{}));
+    MethodSubject defaultInitializer = clazz.method(MethodSignature.initializer(new String[] {}));
     assertEquals(forceProguardCompatibility, defaultInitializer.isPresent());
   }
 
@@ -153,10 +153,9 @@ public class ForceProguardCompatibilityTest extends TestBase {
   private void runDefaultConstructorTest(Class<?> testClass, boolean hasDefaultConstructor)
       throws Exception {
 
-    List<String> proguardConfig = ImmutableList.of(
-        "-keep class " + testClass.getCanonicalName() + " {",
-        "  public void method();",
-        "}");
+    List<String> proguardConfig =
+        ImmutableList.of(
+            "-keep class " + testClass.getCanonicalName() + " {", "  public void method();", "}");
 
     GraphInspector inspector =
         testForR8Compat(parameters.getBackend(), forceProguardCompatibility)
@@ -226,7 +225,7 @@ public class ForceProguardCompatibilityTest extends TestBase {
     ImmutableList.Builder<String> proguardConfigurationBuilder = ImmutableList.builder();
     proguardConfigurationBuilder.add(
         "-keep class " + mainClass.getCanonicalName() + " {",
-        "  <init>();",  // Add <init>() so it does not become a compatibility rule below.
+        "  <init>();", // Add <init>() so it does not become a compatibility rule below.
         "  public static void main(java.lang.String[]);",
         "}");
     if (!allowObfuscation) {
@@ -264,7 +263,7 @@ public class ForceProguardCompatibilityTest extends TestBase {
     ImmutableList.Builder<String> proguardConfigurationBuilder = ImmutableList.builder();
     proguardConfigurationBuilder.add(
         "-keep class " + mainClass.getCanonicalName() + " {",
-        "  <init>();",  // Add <init>() so it does not become a compatibility rule below.
+        "  <init>();", // Add <init>() so it does not become a compatibility rule below.
         "  public static void main(java.lang.String[]);",
         "}");
     if (!allowObfuscation) {
@@ -307,7 +306,7 @@ public class ForceProguardCompatibilityTest extends TestBase {
     ImmutableList.Builder<String> proguardConfigurationBuilder = ImmutableList.builder();
     proguardConfigurationBuilder.add(
         "-keep class " + mainClass.getCanonicalName() + " {",
-        "  <init>();",  // Add <init>() so it does not become a compatibility rule below.
+        "  <init>();", // Add <init>() so it does not become a compatibility rule below.
         "  public static void main(java.lang.String[]);",
         "}");
     if (!allowObfuscation) {
@@ -480,26 +479,32 @@ public class ForceProguardCompatibilityTest extends TestBase {
   @Test
   public void keepDefaultMethodsTest() throws Exception {
     assumeTrue(forceProguardCompatibility);
-    runKeepDefaultMethodsTest(ImmutableList.of(
-        "-keep interface " + InterfaceWithDefaultMethods.class.getCanonicalName() + "{",
-        "  public int method();",
-        "}"
-    ), this::defaultMethodKept, this::noCompatibilityRules);
-    runKeepDefaultMethodsTest(ImmutableList.of(
-        "-keep class " + ClassImplementingInterface.class.getCanonicalName() + "{",
-        "  <methods>;",
-        "}",
-        "-keep class " + TestClass.class.getCanonicalName() + "{",
-        "  public void useInterfaceMethod();",
-        "}"
-    ), this::defaultMethodKept, this::defaultMethodCompatibilityRules);
-    runKeepDefaultMethodsTest(ImmutableList.of(
-        "-keep class " + ClassImplementingInterface.class.getCanonicalName() + "{",
-        "  <methods>;",
-        "}",
-        "-keep class " + TestClass.class.getCanonicalName() + "{",
-        "  public void useInterfaceMethod2();",
-        "}"
-    ), this::defaultMethod2Kept, this::defaultMethod2CompatibilityRules);
+    runKeepDefaultMethodsTest(
+        ImmutableList.of(
+            "-keep interface " + InterfaceWithDefaultMethods.class.getCanonicalName() + "{",
+            "  public int method();",
+            "}"),
+        this::defaultMethodKept,
+        this::noCompatibilityRules);
+    runKeepDefaultMethodsTest(
+        ImmutableList.of(
+            "-keep class " + ClassImplementingInterface.class.getCanonicalName() + "{",
+            "  <methods>;",
+            "}",
+            "-keep class " + TestClass.class.getCanonicalName() + "{",
+            "  public void useInterfaceMethod();",
+            "}"),
+        this::defaultMethodKept,
+        this::defaultMethodCompatibilityRules);
+    runKeepDefaultMethodsTest(
+        ImmutableList.of(
+            "-keep class " + ClassImplementingInterface.class.getCanonicalName() + "{",
+            "  <methods>;",
+            "}",
+            "-keep class " + TestClass.class.getCanonicalName() + "{",
+            "  public void useInterfaceMethod2();",
+            "}"),
+        this::defaultMethod2Kept,
+        this::defaultMethod2CompatibilityRules);
   }
 }

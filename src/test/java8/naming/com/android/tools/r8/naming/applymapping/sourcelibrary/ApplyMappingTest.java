@@ -169,6 +169,6 @@ public class ApplyMappingTest extends TestBase {
       }
     }
     assertNotNull(newInstance);
-    assertEquals( "La/a;", newInstance.getType().toSmaliString());
+    assertEquals("La/a;", newInstance.getType().toSmaliString());
   }
 }

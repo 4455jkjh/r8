@@ -8,19 +8,21 @@ import org.objectweb.asm.Opcodes;
 
 class DataClassDumps implements Opcodes {
 
-  public static byte[] dump18 () {
+  public static byte[] dump18() {
 
     ClassWriter classWriter = new ClassWriter(0);
 
     classWriter.visit(
         V1_8,
         ACC_SUPER | ACC_SYNTHETIC,
-        "com/android/tools/r8/shaking/attributes/DataClass$1", null, "java/lang/Object", null);
+        "com/android/tools/r8/shaking/attributes/DataClass$1",
+        null,
+        "java/lang/Object",
+        null);
 
     classWriter.visitSource("MissingEnclosingMethodTest.java", null);
 
-    classWriter.visitOuterClass(
-        "com/android/tools/r8/shaking/attributes/DataClass", null, null);
+    classWriter.visitOuterClass("com/android/tools/r8/shaking/attributes/DataClass", null, null);
 
     classWriter.visitInnerClass(
         // Inner
@@ -36,14 +38,17 @@ class DataClassDumps implements Opcodes {
     return classWriter.toByteArray();
   }
 
-  public static byte[] dump16 () {
+  public static byte[] dump16() {
 
     ClassWriter classWriter = new ClassWriter(0);
 
     classWriter.visit(
         V1_6,
         ACC_SUPER | ACC_SYNTHETIC,
-        "com/android/tools/r8/shaking/attributes/DataClass$1", null, "java/lang/Object", null);
+        "com/android/tools/r8/shaking/attributes/DataClass$1",
+        null,
+        "java/lang/Object",
+        null);
 
     classWriter.visitSource("MissingEnclosingMethodTest.java", null);
 

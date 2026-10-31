@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.analysis.EnqueuerAnalysisCollection;
 import com.android.tools.r8.graph.analysis.FixpointEnqueuerAnalysis;
 import com.android.tools.r8.graph.analysis.NewlyLiveMethodEnqueuerAnalysis;
+import com.android.tools.r8.graph.analysis.NewlyTargetedMethodEnqueuerAnalysis;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.EnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerWorklist;
@@ -24,21 +25,22 @@ import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
-import java.util.ArrayList;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 public class CovariantReturnTypeEnqueuerExtension
-    implements NewlyLiveMethodEnqueuerAnalysis, FixpointEnqueuerAnalysis {
+    implements NewlyLiveMethodEnqueuerAnalysis,
+        NewlyTargetedMethodEnqueuerAnalysis,
+        FixpointEnqueuerAnalysis {
 
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
   private final CovariantReturnTypeAnnotationTransformer transformer;
 
-  private final Map<DexProgramClass, List<ProgramMethod>> pendingCovariantReturnTypeDesugaring =
+  private final Map<DexProgramClass, ProgramMethodSet> pendingCovariantReturnTypeDesugaring =
       new IdentityHashMap<>();
 
   public CovariantReturnTypeEnqueuerExtension(
@@ -55,7 +57,10 @@ public class CovariantReturnTypeEnqueuerExtension
         && CovariantReturnTypeAnnotationTransformer.shouldRun(appView)) {
       CovariantReturnTypeEnqueuerExtension analysis =
           new CovariantReturnTypeEnqueuerExtension(appView);
-      builder.addNewlyLiveMethodAnalysis(analysis).addFixpointAnalysis(analysis);
+      builder
+          .addNewlyLiveMethodAnalysis(analysis)
+          .addNewlyTargetedMethodAnalysis(analysis)
+          .addFixpointAnalysis(analysis);
     }
   }
 
@@ -65,9 +70,18 @@ public class CovariantReturnTypeEnqueuerExtension
       ProgramDefinition context,
       Enqueuer enqueuer,
       EnqueuerWorklist worklist) {
+    enqueueIfCovariantReturnTypeAnnotation(method);
+  }
+
+  @Override
+  public void processNewlyTargetedMethod(ProgramMethod method, EnqueuerWorklist worklist) {
+    enqueueIfCovariantReturnTypeAnnotation(method);
+  }
+
+  private void enqueueIfCovariantReturnTypeAnnotation(ProgramMethod method) {
     if (hasCovariantReturnTypeAnnotation(method)) {
       pendingCovariantReturnTypeDesugaring
-          .computeIfAbsent(method.getHolder(), ignoreKey(ArrayList::new))
+          .computeIfAbsent(method.getHolder(), ignoreKey(ProgramMethodSet::create))
           .add(method);
     }
   }
@@ -93,8 +107,14 @@ public class CovariantReturnTypeEnqueuerExtension
         (bridge, target) -> {
           KeepMethodInfo.Joiner bridgeKeepInfo =
               getKeepInfoForCovariantReturnTypeBridge(target, errors);
-          enqueuer.getKeepInfo().registerCompilerSynthesizedMethod(bridge);
-          enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(bridge, bridgeKeepInfo);
+          if (!bridgeKeepInfo.isBottom()) {
+            appView
+                .rootSet()
+                .getDependentMinimumKeepInfo()
+                .getOrCreateUnconditionalMinimumKeepInfo()
+                .mergeMinimumKeepInfoFor(bridge.getReference(), bridgeKeepInfo);
+            enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(bridge, bridgeKeepInfo);
+          }
           enqueuer.getProfileCollectionAdditions().addMethodIfContextIsInProfile(bridge, target);
 
           // When shrinking is disabled we need to explicitly trace the code.

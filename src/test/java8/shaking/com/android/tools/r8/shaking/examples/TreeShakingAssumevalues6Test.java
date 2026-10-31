@@ -53,18 +53,22 @@ public class TreeShakingAssumevalues6Test extends TreeShakingTest {
   }
 
   private static void assumevalues6CheckCode(CodeInspector inspector) {
-    inspector.forAllClasses(c -> {
-      c.forAllMethods(m -> {
-        if (m.getFinalName().equals("main")) {
-          m.iterateInstructions().forEachRemaining(i -> {
-            if (i.isConstString(JumboStringMode.ALLOW)) {
-              ConstStringInstructionSubject str = (ConstStringInstructionSubject) i;
-              assert !str.getString().toASCIIString().contains("NOPE");
-            }
-          });
-        }
-      });
-    });
+    inspector.forAllClasses(
+        c -> {
+          c.forAllMethods(
+              m -> {
+                if (m.getFinalName().equals("main")) {
+                  m.iterateInstructions()
+                      .forEachRemaining(
+                          i -> {
+                            if (i.isConstString(JumboStringMode.ALLOW)) {
+                              ConstStringInstructionSubject str = (ConstStringInstructionSubject) i;
+                              assert !str.getString().toASCIIString().contains("NOPE");
+                            }
+                          });
+                }
+              });
+        });
   }
 
   private static void assumevalues6CheckOutput(String output1, String output2) {

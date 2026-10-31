@@ -76,9 +76,9 @@ public class OverloadAggressivelyTest extends TestBase {
 
   private void fieldUpdater(boolean overloadaggressively) throws Exception {
     byte[][] classes = {
-        ToolHelper.getClassAsBytes(FieldUpdater.class),
-        ToolHelper.getClassAsBytes(A.class),
-        ToolHelper.getClassAsBytes(B.class)
+      ToolHelper.getClassAsBytes(FieldUpdater.class),
+      ToolHelper.getClassAsBytes(A.class),
+      ToolHelper.getClassAsBytes(B.class)
     };
     AndroidApp originalApp = buildAndroidApp(classes);
     Path out = temp.getRoot().toPath();
@@ -123,9 +123,9 @@ public class OverloadAggressivelyTest extends TestBase {
 
   private void fieldResolution(boolean overloadaggressively) throws Exception {
     byte[][] classes = {
-        ToolHelper.getClassAsBytes(FieldResolution.class),
-        ToolHelper.getClassAsBytes(A.class),
-        ToolHelper.getClassAsBytes(B.class)
+      ToolHelper.getClassAsBytes(FieldResolution.class),
+      ToolHelper.getClassAsBytes(A.class),
+      ToolHelper.getClassAsBytes(B.class)
     };
     AndroidApp originalApp = buildAndroidApp(classes);
     Path out = temp.getRoot().toPath();
@@ -164,16 +164,13 @@ public class OverloadAggressivelyTest extends TestBase {
 
   private void inspect(CodeInspector codeInspector, boolean overloadaggressively) {
     ClassSubject b = codeInspector.clazz(B.class.getCanonicalName());
-    DexEncodedMethod m1 =
-        b.method("int", "getF1", ImmutableList.of()).getMethod();
+    DexEncodedMethod m1 = b.method("int", "getF1", ImmutableList.of()).getMethod();
     assertNotNull(m1);
-    DexEncodedMethod m2 =
-        b.method("java.lang.Object", "getF2", ImmutableList.of()).getMethod();
+    DexEncodedMethod m2 = b.method("java.lang.Object", "getF2", ImmutableList.of()).getMethod();
     assertNotNull(m2);
     // TODO(b/72858955): due to the potential reflective access, they should have different names.
     assertEquals(overloadaggressively, m1.getReference().name == m2.getReference().name);
-    DexEncodedMethod m3 =
-        b.method("java.lang.String", "getF3", ImmutableList.of()).getMethod();
+    DexEncodedMethod m3 = b.method("java.lang.String", "getF3", ImmutableList.of()).getMethod();
     assertNotNull(m3);
     // TODO(b/72858955): ditto
     assertEquals(overloadaggressively, m1.getReference().name == m3.getReference().name);

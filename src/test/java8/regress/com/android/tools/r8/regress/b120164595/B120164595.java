@@ -26,9 +26,9 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Regression test for art issue with multi catch-handlers.
- * The problem is that if d8/r8 creates the same target address for two different exceptions,
- * art will use that address to check if it was already handled.
+ * Regression test for art issue with multi catch-handlers. The problem is that if d8/r8 creates the
+ * same target address for two different exceptions, art will use that address to check if it was
+ * already handled.
  */
 class TestClass {
   public static void main(String[] args) {

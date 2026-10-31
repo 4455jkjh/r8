@@ -7,9 +7,7 @@ package com.android.tools.r8.shaking;
 public class InstantiatedLambdasTest {
 
   public static final Class[] CLASSES = {
-    InstantiatedLambdasTest.class,
-    Interface.class,
-    ClassImplementation.class,
+    InstantiatedLambdasTest.class, Interface.class, ClassImplementation.class,
   };
 
   interface Interface {

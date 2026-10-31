@@ -9,11 +9,15 @@ import com.android.tools.r8.NoHorizontalClassMerging;
 public class TestClass {
 
   interface Top {
-    default String name() { return "unnamed"; }
+    default String name() {
+      return "unnamed";
+    }
   }
 
   interface Left extends Top {
-    default String name() { return getClass().getName(); }
+    default String name() {
+      return getClass().getName();
+    }
   }
 
   interface Right extends Top {

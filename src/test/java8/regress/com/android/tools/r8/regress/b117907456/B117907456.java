@@ -74,11 +74,8 @@ public class B117907456 extends TestBase {
 
   private MethodSubject getMethodSubject(AndroidApiLevel level)
       throws CompilationFailedException, IOException {
-    CodeInspector inspector = testForD8()
-        .addProgramClasses(TestClass.class)
-        .setMinApi(level)
-        .compile()
-        .inspector();
+    CodeInspector inspector =
+        testForD8().addProgramClasses(TestClass.class).setMinApi(level).compile().inspector();
     ClassSubject clazz = inspector.clazz(TestClass.class);
     assertThat(clazz, isPresent());
     MethodSubject method = clazz.method("void", "f", ImmutableList.of("boolean"));

@@ -24,12 +24,7 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class OutlinesWithNonNullTest extends TestBase {
-  private static final String JVM_OUTPUT = StringUtils.lines(
-      "42",
-      "arg",
-      "42",
-      "arg"
-  );
+  private static final String JVM_OUTPUT = StringUtils.lines("42", "arg", "42", "arg");
 
   private final TestParameters parameters;
 

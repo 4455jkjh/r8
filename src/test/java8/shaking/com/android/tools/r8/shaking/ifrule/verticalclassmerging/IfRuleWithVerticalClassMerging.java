@@ -28,6 +28,7 @@ import org.junit.runners.Parameterized.Parameters;
 @NeverClassInline
 class A {
   int x = 1;
+
   int a() throws ClassNotFoundException {
     // Class D is expected to be kept - vertical class merging or not. The -if rule say that if
     // the method A.a is in the output, then class D is needed.
@@ -40,6 +41,7 @@ class A {
 @NeverClassInline
 class B extends A {
   int y = 2;
+
   int b() {
     return 5;
   }
@@ -48,6 +50,7 @@ class B extends A {
 @NeverClassInline
 class C extends B {
   int z = 3;
+
   int c() {
     return 6;
   }

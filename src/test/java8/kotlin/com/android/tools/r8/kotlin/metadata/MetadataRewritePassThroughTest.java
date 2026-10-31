@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.kotlin.metadata;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;

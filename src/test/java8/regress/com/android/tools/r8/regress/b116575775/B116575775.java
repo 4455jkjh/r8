@@ -37,10 +37,7 @@ public class B116575775 extends TestBase {
 
   public void runTest(Class<?> clazz) throws Exception {
     CodeInspector inspector =
-        new CodeInspector(
-            compileWithR8(
-                readClasses(clazz),
-                keepMainProguardConfiguration(clazz)));
+        new CodeInspector(compileWithR8(readClasses(clazz), keepMainProguardConfiguration(clazz)));
     // Ensure toBeInlined is inlined, and only main remains.
     inspector.clazz(clazz).forAllMethods(m -> assertEquals(m.getOriginalMethodName(), "main"));
   }
@@ -64,7 +61,6 @@ public class B116575775 extends TestBase {
   public void testDuplicateGuards3() throws Exception {
     runTest(B116575775Test3.class);
   }
-
 
   @Test
   public void byteCodeInputWithDuplicateGuards() throws Exception {
@@ -122,8 +118,7 @@ public class B116575775 extends TestBase {
     CodeInspector inspector =
         new CodeInspector(
             compileWithR8(
-                buildAndroidApp(builder.buildClasses()),
-                keepMainProguardConfiguration("Test")));
+                buildAndroidApp(builder.buildClasses()), keepMainProguardConfiguration("Test")));
     // Ensure toBeInlined is inlined, and only main remains.
     inspector.clazz("Test").forAllMethods(m -> assertEquals(m.getOriginalMethodName(), "main"));
   }
@@ -185,7 +180,6 @@ class B116575775Test2 {
     }
   }
 }
-
 
 class B116575775Test3 {
 

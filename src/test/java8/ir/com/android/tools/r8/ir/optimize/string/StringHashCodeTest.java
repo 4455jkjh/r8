@@ -27,14 +27,14 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class StringHashCodeTest extends TestBase {
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      String.valueOf("GONE".hashCode()),
-      String.valueOf("Shared".hashCode()),
-      String.valueOf("Shared".hashCode()),
-      String.valueOf("Another_shared".hashCode()),
-      "Another_shared",
-      String.valueOf("ABC".hashCode())
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          String.valueOf("GONE".hashCode()),
+          String.valueOf("Shared".hashCode()),
+          String.valueOf("Shared".hashCode()),
+          String.valueOf("Another_shared".hashCode()),
+          "Another_shared",
+          String.valueOf("ABC".hashCode()));
   private static final Class<?> MAIN = TestClass.class;
 
   @Parameters(name = "{0}")

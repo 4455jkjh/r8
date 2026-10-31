@@ -27,7 +27,7 @@ public class LocalChangeOnSameLineTestRunner extends DebugTestBase {
   @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
     DelayedDebugTestConfig cf =
-            temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
+        temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
     Function<DexRuntime, DelayedDebugTestConfig> d8 =
         dexRuntime -> temp -> new D8DebugTestConfig(dexRuntime).compileAndAddClasses(temp, CLASS);
     return buildCfAndD8Parameters(cf, d8);
@@ -48,12 +48,12 @@ public class LocalChangeOnSameLineTestRunner extends DebugTestBase {
     runDebugTest(
         config,
         NAME,
-        breakpoint(NAME, "foo", 15),
+        breakpoint(NAME, "foo", 19),
         run(),
-        checkLine(FILE, 15),
-        breakpoint(NAME, "main", 21),
+        checkLine(FILE, 19),
+        breakpoint(NAME, "main", 25),
         run(),
-        checkLine(FILE, 21),
+        checkLine(FILE, 25),
         run());
   }
 
@@ -65,16 +65,16 @@ public class LocalChangeOnSameLineTestRunner extends DebugTestBase {
         NAME,
         breakpoint(NAME, "bar"),
         run(),
-        checkLine(FILE, 10),
+        checkLine(FILE, 14),
         inspect(t -> t.getFrame(1).checkNoLocal("x")),
         run(),
-        checkLine(FILE, 10),
+        checkLine(FILE, 14),
         inspect(t -> t.getFrame(1).checkLocal("x")),
         run(),
-        checkLine(FILE, 10),
+        checkLine(FILE, 14),
         inspect(t -> t.getFrame(1).checkNoLocal("x")),
         run(),
-        checkLine(FILE, 10),
+        checkLine(FILE, 14),
         inspect(t -> t.getFrame(1).checkLocal("x")),
         run());
   }

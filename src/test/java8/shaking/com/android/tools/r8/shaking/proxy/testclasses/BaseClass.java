@@ -4,5 +4,4 @@
 
 package com.android.tools.r8.shaking.proxy.testclasses;
 
-public abstract class BaseClass implements SubInterface {
-}
+public abstract class BaseClass implements SubInterface {}

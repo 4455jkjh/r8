@@ -49,4 +49,3 @@ public class MoveToHostTestClass {
     System.out.println(HostConflictField.INSTANCE.bar(next()));
   }
 }
-

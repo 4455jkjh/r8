@@ -4,5 +4,5 @@
 package com.android.tools.r8.shaking.classkinds;
 
 public enum Enum {
-  // Intentionally left empty.
+// Intentionally left empty.
 }

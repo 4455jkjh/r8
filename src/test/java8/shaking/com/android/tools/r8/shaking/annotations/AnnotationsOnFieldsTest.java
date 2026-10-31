@@ -80,7 +80,6 @@ public class AnnotationsOnFieldsTest extends TestBase {
         .run(parameters.getRuntime(), MainClass.class)
         .assertSuccess();
   }
-
 }
 
 @Target(FIELD)

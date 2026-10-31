@@ -30,10 +30,9 @@ public class KotlinDuplicateAnnotationTest extends AbstractR8KotlinTestBase {
 
   private static final String FOLDER = "duplicate_annotation";
   private static final String MAIN = FOLDER + ".MainKt";
-  private static final String KEEP_RULES = StringUtils.lines(
-      "-keep,allowobfuscation @interface **.TestAnnotation",
-      "-keepattributes *Annotations*"
-  );
+  private static final String KEEP_RULES =
+      StringUtils.lines(
+          "-keep,allowobfuscation @interface **.TestAnnotation", "-keepattributes *Annotations*");
 
   private Consumer<InternalOptions> optionsModifier =
       o -> {
@@ -103,5 +102,4 @@ public class KotlinDuplicateAnnotationTest extends AbstractR8KotlinTestBase {
         .compile()
         .assertNoMessages();
   }
-
 }

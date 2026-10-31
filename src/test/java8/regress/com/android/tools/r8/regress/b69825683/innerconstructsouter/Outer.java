@@ -8,8 +8,7 @@ import com.android.tools.r8.NeverInline;
 
 public class Outer {
 
-  private Outer() {
-  }
+  private Outer() {}
 
   public static class Inner {
 

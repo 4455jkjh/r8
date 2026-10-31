@@ -112,37 +112,37 @@ public class InlineTest extends IrInjectionTestBase {
   private TestApplication codeForMethodReplaceTest(int a, int b) throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int", "int"),
-        0,
-        "    invoke-static       { p0, p1 }, LTest;->a(II)I",
-        "    move-result         p0",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int", "int"),
+            0,
+            "    invoke-static       { p0, p1 }, LTest;->a(II)I",
+            "    move-result         p0",
+            "    return              p0");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of("int", "int"),
-        1,
-        "    add-int             p0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of("int", "int"),
+            1,
+            "    add-int             p0, p0, p1",
+            "    return              p0");
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of("int", "int"),
-        1,
-        "    if-eq               p0, p1, :eq",
-        "    const/4             v0, 1",
-        "    return              v0",
-        "    :eq",
-        "    const/4             v0, 0",
-        "    return              v0"
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of("int", "int"),
+            1,
+            "    if-eq               p0, p1, :eq",
+            "    const/4             v0, 1",
+            "    return              v0",
+            "    :eq",
+            "    const/4             v0, 0",
+            "    return              v0");
 
     builder.addMainMethod(
         2,
@@ -152,8 +152,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -208,23 +207,23 @@ public class InlineTest extends IrInjectionTestBase {
       throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int", "int"),
-        0,
-        "    invoke-static       { p0, p1 }, LTest;->a(II)V",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int", "int"),
+            0,
+            "    invoke-static       { p0, p1 }, LTest;->a(II)V",
+            "    return              p0");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "void",
-        "a",
-        ImmutableList.of("int", "int"),
-        1,
-        "    add-int             p0, p0, p1",
-        "    return-void         "
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "void",
+            "a",
+            ImmutableList.of("int", "int"),
+            1,
+            "    add-int             p0, p0, p1",
+            "    return-void         ");
 
     builder.addMainMethod(
         2,
@@ -234,8 +233,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -271,37 +269,37 @@ public class InlineTest extends IrInjectionTestBase {
   private TestApplication codeForMultipleMethodReplaceTest(int a, int b) throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int", "int"),
-        0,
-        "    invoke-static       { p0, p1 }, LTest;->a(II)I",
-        "    move-result         p0",
-        "    invoke-static       { p0, p1 }, LTest;->a(II)I",
-        "    move-result         p0",
-        "    invoke-static       { p0, p1 }, LTest;->a(II)I",
-        "    move-result         p0",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int", "int"),
+            0,
+            "    invoke-static       { p0, p1 }, LTest;->a(II)I",
+            "    move-result         p0",
+            "    invoke-static       { p0, p1 }, LTest;->a(II)I",
+            "    move-result         p0",
+            "    invoke-static       { p0, p1 }, LTest;->a(II)I",
+            "    move-result         p0",
+            "    return              p0");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of("int", "int"),
-        1,
-        "    add-int             p0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of("int", "int"),
+            1,
+            "    add-int             p0, p0, p1",
+            "    return              p0");
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of("int", "int"),
-        1,
-        "    mul-int             p0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of("int", "int"),
+            1,
+            "    mul-int             p0, p0, p1",
+            "    return              p0");
 
     builder.addMainMethod(
         2,
@@ -311,8 +309,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -348,7 +345,7 @@ public class InlineTest extends IrInjectionTestBase {
     // Run code inlining all invokes with a.
     test = codeForMultipleMethodReplaceTest(a, b);
     ListIterator<BasicBlock> blocksIterator = test.code.listIterator();
-    Iterator<IRCode> inlinee = test.additionalCode.listIterator();  // IR code for a's
+    Iterator<IRCode> inlinee = test.additionalCode.listIterator(); // IR code for a's
     Set<BasicBlock> blocksToRemove = Sets.newIdentityHashSet();
     while (blocksIterator.hasNext()) {
       BasicBlock block = blocksIterator.next();
@@ -367,7 +364,7 @@ public class InlineTest extends IrInjectionTestBase {
     // Run code inlining all invokes with b.
     test = codeForMultipleMethodReplaceTest(a, b);
     blocksIterator = test.code.listIterator();
-    inlinee = test.additionalCode.listIterator(3);  // IR code for b's
+    inlinee = test.additionalCode.listIterator(3); // IR code for b's
     while (blocksIterator.hasNext()) {
       BasicBlock block = blocksIterator.next();
       iterator = block.listIterator();
@@ -393,48 +390,48 @@ public class InlineTest extends IrInjectionTestBase {
       throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    String secondGuard = twoGuards ?
-        "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
+    String secondGuard =
+        twoGuards ? "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int", "int"),
-        0,
-        "    :try_start",
-        "    invoke-static       { p0, p1 }, LTest;->a(II)I",
-        "    :try_end",
-        "    move-result         p0",
-        "    :return",
-        "    return              p0",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        secondGuard,
-        "    :catch",
-        "    const/4             p0, -1",
-        "    goto :return"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int", "int"),
+            0,
+            "    :try_start",
+            "    invoke-static       { p0, p1 }, LTest;->a(II)I",
+            "    :try_end",
+            "    move-result         p0",
+            "    :return",
+            "    return              p0",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            secondGuard,
+            "    :catch",
+            "    const/4             p0, -1",
+            "    goto :return");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of("int", "int"),
-        1,
-        "    add-int             p0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of("int", "int"),
+            1,
+            "    add-int             p0, p0, p1",
+            "    return              p0");
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of("int", "int"),
-        1,
-        "    if-eq               p0, p1, :eq",
-        "    const/4             v0, 1",
-        "    return              v0",
-        "    :eq",
-        "    const/4             v0, 0",
-        "    return              v0"
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of("int", "int"),
+            1,
+            "    if-eq               p0, p1, :eq",
+            "    const/4             v0, 1",
+            "    return              v0",
+            "    :eq",
+            "    const/4             v0, 0",
+            "    return              v0");
 
     builder.addMainMethod(
         2,
@@ -444,8 +441,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -517,44 +513,44 @@ public class InlineTest extends IrInjectionTestBase {
       throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    String secondGuard = twoGuards ?
-        "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
+    String secondGuard =
+        twoGuards ? "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int", "int"),
-        0,
-        "    invoke-static       { p0, p1 }, LTest;->a(II)I",
-        "    move-result         p0",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int", "int"),
+            0,
+            "    invoke-static       { p0, p1 }, LTest;->a(II)I",
+            "    move-result         p0",
+            "    return              p0");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of("int", "int"),
-        0,
-        "    div-int             p0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of("int", "int"),
+            0,
+            "    div-int             p0, p0, p1",
+            "    return              p0");
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of("int", "int"),
-        0,
-        "    :try_start",
-        "    div-int             p0, p0, p1",
-        "    :try_end",
-        "    :return",
-        "    return              p0",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        secondGuard,
-        "    :catch",
-        "    const/4             p0, -1",
-        "    goto :return"
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of("int", "int"),
+            0,
+            "    :try_start",
+            "    div-int             p0, p0, p1",
+            "    :try_end",
+            "    :return",
+            "    return              p0",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            secondGuard,
+            "    :catch",
+            "    const/4             p0, -1",
+            "    goto :return");
 
     builder.addMainMethod(
         2,
@@ -571,8 +567,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
         "    :catch",
         "    const/4             v1, -2",
-        "    goto :print_result"
-    );
+        "    goto :print_result");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -629,45 +624,45 @@ public class InlineTest extends IrInjectionTestBase {
   private TestApplication codeForInlineAlwaysThrows(boolean twoGuards) throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    String secondGuard = twoGuards ?
-        "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
+    String secondGuard =
+        twoGuards ? "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of(),
-        1,
-        "    invoke-static       { }, LTest;->a()I",
-        "    move-result         v0",
-        "    return              v0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of(),
+            1,
+            "    invoke-static       { }, LTest;->a()I",
+            "    move-result         v0",
+            "    return              v0");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of(),
-        1,
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of(),
+            1,
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0");
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of(),
-        1,
-        "    :try_start",
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0",
-        "    :try_end",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        secondGuard,
-        "    :catch",
-        "    const/4             v0, -1",
-        "    return              v0"
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of(),
+            1,
+            "    :try_start",
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0",
+            "    :try_end",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            secondGuard,
+            "    :catch",
+            "    const/4             v0, -1",
+            "    return              v0");
 
     builder.addMainMethod(
         2,
@@ -682,8 +677,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch",
         "    :catch",
         "    const/4             v1, -2",
-        "    goto :print_result"
-    );
+        "    goto :print_result");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -740,47 +734,47 @@ public class InlineTest extends IrInjectionTestBase {
       throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    String secondGuard = twoGuards ?
-        "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
+    String secondGuard =
+        twoGuards ? "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of(),
-        1,
-        "    invoke-static       { }, LTest;->a()I",
-        "    invoke-static       { }, LTest;->a()I",
-        "    invoke-static       { }, LTest;->a()I",
-        "    move-result         v0",
-        "    return              v0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of(),
+            1,
+            "    invoke-static       { }, LTest;->a()I",
+            "    invoke-static       { }, LTest;->a()I",
+            "    invoke-static       { }, LTest;->a()I",
+            "    move-result         v0",
+            "    return              v0");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of(),
-        1,
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of(),
+            1,
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0");
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of(),
-        1,
-        "    :try_start",
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0",
-        "    :try_end",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        secondGuard,
-        "    :catch",
-        "    const/4             v0, -1",
-        "    return              v0"
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of(),
+            1,
+            "    :try_start",
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0",
+            "    :try_end",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            secondGuard,
+            "    :catch",
+            "    const/4             v0, -1",
+            "    return              v0");
 
     builder.addMainMethod(
         2,
@@ -795,8 +789,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch",
         "    :catch",
         "    const/4             v1, -2",
-        "    goto :print_result"
-    );
+        "    goto :print_result");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -889,53 +882,53 @@ public class InlineTest extends IrInjectionTestBase {
       throws ExecutionException {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    String secondGuard = twoGuards ?
-        "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
+    String secondGuard =
+        twoGuards ? "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch" : "    ";
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int"),
-        1,
-        "    const/4             v0, 0",
-        "    if-ne               v0, p0, :not_zero",
-        "    invoke-static       { }, LTest;->a()I",
-        "    :not_zero",
-        "    const/4             v0, 1",
-        "    if-ne               v0, p0, :not_one",
-        "    invoke-static       { }, LTest;->a()I",
-        "    :not_one",
-        "    invoke-static       { }, LTest;->a()I",
-        "    move-result         v0",
-        "    return              v0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int"),
+            1,
+            "    const/4             v0, 0",
+            "    if-ne               v0, p0, :not_zero",
+            "    invoke-static       { }, LTest;->a()I",
+            "    :not_zero",
+            "    const/4             v0, 1",
+            "    if-ne               v0, p0, :not_one",
+            "    invoke-static       { }, LTest;->a()I",
+            "    :not_one",
+            "    invoke-static       { }, LTest;->a()I",
+            "    move-result         v0",
+            "    return              v0");
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of(),
-        1,
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of(),
+            1,
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0");
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of(),
-        1,
-        "    :try_start",
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0",
-        "    :try_end",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        secondGuard,
-        "    :catch",
-        "    const/4             v0, -1",
-        "    return              v0"
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of(),
+            1,
+            "    :try_start",
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0",
+            "    :try_end",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            secondGuard,
+            "    :catch",
+            "    const/4             v0, -1",
+            "    return              v0");
 
     builder.addMainMethod(
         2,
@@ -951,8 +944,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :catch",
         "    :catch",
         "    const/4             v1, -2",
-        "    goto :print_result"
-    );
+        "    goto :print_result");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -1060,62 +1052,62 @@ public class InlineTest extends IrInjectionTestBase {
       secondGuard =
           "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :" + secondGuardLabel;
       secondGuardCode =
-          "    :" + secondGuardLabel + "\n" +
-          "    const               p0, -12\n" +
-          "    goto :return";
+          "    :"
+              + secondGuardLabel
+              + "\n"
+              + "    const               p0, -12\n"
+              + "    goto :return";
     }
 
     if (callerHasCatchAll) {
       String catchAllLabel = "catch_all";
       callerCatchAllGuard = "    .catchall {:try_start .. :try_end} :" + catchAllLabel;
       callerCatchAllCode =
-          "    :" + catchAllLabel + "\n" +
-          "    const               p0, -13\n" +
-          "    goto :return";
+          "    :" + catchAllLabel + "\n" + "    const               p0, -13\n" + "    goto :return";
     }
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int", "int", "int"),
-        0,
-        "    :try_start",
-        "    invoke-static       { p0, p1, p2 }, LTest;->a(III)I",
-        "    :try_end",
-        "    move-result         p0",
-        "    :return",
-        "    return              p0",
-        "    .catch Ljava/lang/NullPointerException; {:try_start .. :try_end} :catch",
-        secondGuard,
-        callerCatchAllGuard,
-        "    :catch",
-        "    const               p0, -11",
-        "    goto :return",
-        secondGuardCode,
-        callerCatchAllCode
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int", "int", "int"),
+            0,
+            "    :try_start",
+            "    invoke-static       { p0, p1, p2 }, LTest;->a(III)I",
+            "    :try_end",
+            "    move-result         p0",
+            "    :return",
+            "    return              p0",
+            "    .catch Ljava/lang/NullPointerException; {:try_start .. :try_end} :catch",
+            secondGuard,
+            callerCatchAllGuard,
+            "    :catch",
+            "    const               p0, -11",
+            "    goto :return",
+            secondGuardCode,
+            callerCatchAllCode);
 
-    MethodSignature signatureA = builder.addStaticMethod(
-        "int",
-        "a",
-        ImmutableList.of("int", "int", "int"),
-        1,
-        "    const               v0, 4",
-        "    div-int             p0, v0, p0",
-        "    const               v0, 8",
-        "    div-int             p1, v0, p1",
-        "    add-int             p0, p0, p1",
-        "    const               v0, 16",
-        "    div-int             p2, v0, p2",
-        "    add-int             p0, p0, p2",
-        "    const               v0, 3",
-        "    if-ne               v0, p0, :not_three",
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0",
-        "    :not_three",
-        "    return              p0"
-    );
+    MethodSignature signatureA =
+        builder.addStaticMethod(
+            "int",
+            "a",
+            ImmutableList.of("int", "int", "int"),
+            1,
+            "    const               v0, 4",
+            "    div-int             p0, v0, p0",
+            "    const               v0, 8",
+            "    div-int             p1, v0, p1",
+            "    add-int             p0, p0, p1",
+            "    const               v0, 16",
+            "    div-int             p2, v0, p2",
+            "    add-int             p0, p0, p2",
+            "    const               v0, 3",
+            "    if-ne               v0, p0, :not_three",
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0",
+            "    :not_three",
+            "    return              p0");
 
     String inlineeSecondGuard = "";
     String inlineeSecondGuardCode = "";
@@ -1124,9 +1116,11 @@ public class InlineTest extends IrInjectionTestBase {
       inlineeSecondGuard =
           "    .catch Ljava/lang/Exception; {:try_start .. :try_end} :" + secondGuardLabel;
       inlineeSecondGuardCode =
-          "    :" + secondGuardLabel + "\n" +
-          "    const               p0, -2\n" +
-          "    goto :return";
+          "    :"
+              + secondGuardLabel
+              + "\n"
+              + "    const               p0, -2\n"
+              + "    goto :return";
     }
 
     String inlineeCatchAllGuard = "";
@@ -1135,43 +1129,41 @@ public class InlineTest extends IrInjectionTestBase {
       String catchAllLabel = "catch_all";
       inlineeCatchAllGuard = "    .catchall {:try_start .. :try_end} :" + catchAllLabel;
       inlineeCatchAllCode =
-          "    :" + catchAllLabel + "\n" +
-          "    const               p0, -3\n" +
-          "    goto :return";
+          "    :" + catchAllLabel + "\n" + "    const               p0, -3\n" + "    goto :return";
     }
 
-    MethodSignature signatureB = builder.addStaticMethod(
-        "int",
-        "b",
-        ImmutableList.of("int", "int", "int"),
-        1,
-        "    :try_start",
-        "    const               v0, 4",
-        "    div-int             p0, v0, p0",
-        "    const               v0, 8",
-        "    div-int             p1, v0, p1",
-        "    add-int             p0, p0, p1",
-        "    const               v0, 16",
-        "    div-int             p2, v0, p2",
-        "    add-int             p0, p0, p2",
-        "    const               v0, 3",
-        "    if-ne               v0, p0, :not_three",
-        "    new-instance v0, Ljava/lang/Exception;",
-        "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
-        "    throw v0",
-        "    :not_three",
-        "    :try_end",
-        "    :return",
-        "    return              p0",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        inlineeSecondGuard,
-        inlineeCatchAllGuard,
-        "    :catch",
-        "    const/4             p0, -1",
-        "    goto :return",
-        inlineeSecondGuardCode,
-        inlineeCatchAllCode
-    );
+    MethodSignature signatureB =
+        builder.addStaticMethod(
+            "int",
+            "b",
+            ImmutableList.of("int", "int", "int"),
+            1,
+            "    :try_start",
+            "    const               v0, 4",
+            "    div-int             p0, v0, p0",
+            "    const               v0, 8",
+            "    div-int             p1, v0, p1",
+            "    add-int             p0, p0, p1",
+            "    const               v0, 16",
+            "    div-int             p2, v0, p2",
+            "    add-int             p0, p0, p2",
+            "    const               v0, 3",
+            "    if-ne               v0, p0, :not_three",
+            "    new-instance v0, Ljava/lang/Exception;",
+            "    invoke-direct { v0 }, Ljava/lang/Exception;-><init>()V",
+            "    throw v0",
+            "    :not_three",
+            "    :try_end",
+            "    :return",
+            "    return              p0",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            inlineeSecondGuard,
+            inlineeCatchAllGuard,
+            "    :catch",
+            "    const/4             p0, -1",
+            "    goto :return",
+            inlineeSecondGuardCode,
+            inlineeCatchAllCode);
 
     builder.addMainMethod(
         3,
@@ -1197,8 +1189,7 @@ public class InlineTest extends IrInjectionTestBase {
         "    goto :print_result",
         "    :catch_all",
         "    const               v1, -23",
-        "    goto :print_result"
-    );
+        "    goto :print_result");
 
     InternalOptions options = createOptions();
     DexApplication application = buildApplication(builder, options);
@@ -1216,20 +1207,29 @@ public class InlineTest extends IrInjectionTestBase {
         application, options, methodSubject, ImmutableList.of(codeA, codeB));
   }
 
-  private void runInlineWithHandlersCanThrow(int a, int b, int c,
-      boolean twoGuards, boolean callerHasCatchAll, boolean inlineeHasCatchAll,
-      int expectedA, int expectedB) throws Exception {
+  private void runInlineWithHandlersCanThrow(
+      int a,
+      int b,
+      int c,
+      boolean twoGuards,
+      boolean callerHasCatchAll,
+      boolean inlineeHasCatchAll,
+      int expectedA,
+      int expectedB)
+      throws Exception {
     // Run code without inlining.
-    TestApplication test = codeForInlineWithHandlersCanThrow(
-        a, b, c, twoGuards, callerHasCatchAll, inlineeHasCatchAll);
+    TestApplication test =
+        codeForInlineWithHandlersCanThrow(
+            a, b, c, twoGuards, callerHasCatchAll, inlineeHasCatchAll);
     String result = test.run(parameters.getDexVm());
     assertEquals(Integer.toString(expectedA), result);
 
     InstructionListIterator iterator;
 
     // Run code inlining a.
-    test = codeForInlineWithHandlersCanThrow(
-        a, b, c, twoGuards, callerHasCatchAll, inlineeHasCatchAll);
+    test =
+        codeForInlineWithHandlersCanThrow(
+            a, b, c, twoGuards, callerHasCatchAll, inlineeHasCatchAll);
     iterator = test.code.blocks.get(1).listIterator();
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
@@ -1238,8 +1238,9 @@ public class InlineTest extends IrInjectionTestBase {
     assertEquals(Integer.toString(expectedA), result);
 
     // Run code inlining b (where a is actually called).
-    test = codeForInlineWithHandlersCanThrow(
-        a, b, c, twoGuards, callerHasCatchAll, inlineeHasCatchAll);
+    test =
+        codeForInlineWithHandlersCanThrow(
+            a, b, c, twoGuards, callerHasCatchAll, inlineeHasCatchAll);
     iterator = test.code.blocks.get(1).listIterator();
     iterator.nextUntil(Instruction::isInvoke);
     iterator.previous();
@@ -1300,11 +1301,9 @@ public class InlineTest extends IrInjectionTestBase {
               2, 4, 8, secondGuard, callerHasCatchAll, inlineeHasCatchAll, 6, 6);
 
           // This is result for calling a.
-          int resulta =
-              secondGuard ? -12
-                  : (callerHasCatchAll ? -13 : -21);
+          int resulta = secondGuard ? -12 : (callerHasCatchAll ? -13 : -21);
           // This is result for calling b.
-          int resultb = - 1;
+          int resultb = -1;
           // This group all throw ArithmeticException.
           runInlineWithHandlersCanThrow(
               0, 4, 8, secondGuard, callerHasCatchAll, inlineeHasCatchAll, resulta, resultb);

@@ -40,8 +40,7 @@ public class SimplifyIfNotNullTest extends TestBase {
   private void verifyAbsenceOfIf(
       CodeInspector codeInspector, Class<?> testClass, List<MethodSignature> signatures) {
     for (MethodSignature signature : signatures) {
-      MethodSubject method =
-          codeInspector.clazz(testClass).method(signature);
+      MethodSubject method = codeInspector.clazz(testClass).method(signature);
       long count = Streams.stream(method.iterateInstructions(InstructionSubject::isIf)).count();
       assertEquals(0, count);
     }
@@ -71,30 +70,26 @@ public class SimplifyIfNotNullTest extends TestBase {
 
   @Test
   public void nonNullAfterSafeInvokes() throws Exception {
-    MethodSignature foo =
-        new MethodSignature("foo", "int", new String[]{"java.lang.String"});
-    MethodSignature bar =
-        new MethodSignature("bar", "int", new String[]{"java.lang.String"});
+    MethodSignature foo = new MethodSignature("foo", "int", new String[] {"java.lang.String"});
+    MethodSignature bar = new MethodSignature("bar", "int", new String[] {"java.lang.String"});
     testR8(NonNullAfterInvoke.class, ImmutableList.of(foo, bar));
   }
 
   @Test
   public void nonNullAfterSafeArrayAccess() throws Exception {
-    MethodSignature foo =
-        new MethodSignature("foo", "int", new String[]{"java.lang.String[]"});
-    MethodSignature bar =
-        new MethodSignature("bar", "int", new String[]{"java.lang.String[]"});
+    MethodSignature foo = new MethodSignature("foo", "int", new String[] {"java.lang.String[]"});
+    MethodSignature bar = new MethodSignature("bar", "int", new String[] {"java.lang.String[]"});
     testR8(NonNullAfterArrayAccess.class, ImmutableList.of(foo, bar));
   }
 
   @Test
   public void nonNullAfterSafeFieldAccess() throws Exception {
-    MethodSignature foo = new MethodSignature("foo", "int",
-        new String[]{FieldAccessTest.class.getCanonicalName()});
-    MethodSignature bar = new MethodSignature("bar", "int",
-        new String[]{FieldAccessTest.class.getCanonicalName()});
-    MethodSignature foo2 = new MethodSignature("foo2", "int",
-        new String[]{FieldAccessTest.class.getCanonicalName()});
+    MethodSignature foo =
+        new MethodSignature("foo", "int", new String[] {FieldAccessTest.class.getCanonicalName()});
+    MethodSignature bar =
+        new MethodSignature("bar", "int", new String[] {FieldAccessTest.class.getCanonicalName()});
+    MethodSignature foo2 =
+        new MethodSignature("foo2", "int", new String[] {FieldAccessTest.class.getCanonicalName()});
     testR8(
         NonNullAfterFieldAccess.class,
         ImmutableList.of(foo, bar, foo2),

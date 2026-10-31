@@ -9,6 +9,8 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.ResolvedAndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.SemiInfiniteRange;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -30,15 +32,15 @@ public class AndroidApiVersionsXmlParser {
    *
    * @param xmlPath the XML file to parse.
    */
-  public static List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> parse(Path xmlPath)
+  public static List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> parse(Path xmlPath)
       throws ParsingException {
     return new AndroidApiVersionsXmlParser(xmlPath).parse();
   }
 
-  private static final AndroidApiLevel FIRST_API_LEVEL = AndroidApiLevel.B;
+  private static final UncheckedApiLevel FIRST_API_LEVEL = AndroidApiLevel.B.asUnchecked();
 
   private final Path xmlPath;
-  private final Map<ClassReference, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>>
+  private final Map<ClassReference, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>>
       parsedClasses = new LinkedHashMap<>();
 
   private AndroidApiVersionsXmlParser(Path xmlPath) {
@@ -46,7 +48,8 @@ public class AndroidApiVersionsXmlParser {
     this.xmlPath = xmlPath;
   }
 
-  private List<ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>>> parse() throws ParsingException {
+  private List<ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>>> parse()
+      throws ParsingException {
     Document xml = readXml();
     int versionsVersion = parseVersion(xml);
     var classes = xml.getElementsByTagName("class");
@@ -70,7 +73,7 @@ public class AndroidApiVersionsXmlParser {
   }
 
   private void parseClassEntry(
-      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass)
+      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass)
       throws ParsingException {
     switch (node.getNodeName()) {
       case "extends":
@@ -95,7 +98,7 @@ public class AndroidApiVersionsXmlParser {
   }
 
   private void parseExtendsEntry(
-      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass)
+      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass)
       throws ParsingException {
     ClassReference classReference = Reference.classFromBinaryName(parseNameAttribute(node));
     if (apiClass.hasSupertype(classReference)) {
@@ -105,13 +108,13 @@ public class AndroidApiVersionsXmlParser {
               + " in "
               + apiClass.getClassReference());
     }
-    SemiInfiniteRange<AndroidApiLevel> apiRange =
+    SemiInfiniteRange<UncheckedApiLevel> apiRange =
         parseApiRange(node, versionsVersion, apiClass.getData().start, apiClass.getData().end);
     apiClass.registerSupertype(classReference, apiRange);
   }
 
   private void parseImplementsEntry(
-      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass)
+      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass)
       throws ParsingException {
     ClassReference interfaceReference = Reference.classFromBinaryName(parseNameAttribute(node));
     if (apiClass.hasInterface(interfaceReference)) {
@@ -121,17 +124,17 @@ public class AndroidApiVersionsXmlParser {
               + " in "
               + apiClass.getClassReference());
     }
-    SemiInfiniteRange<AndroidApiLevel> apiRange =
+    SemiInfiniteRange<UncheckedApiLevel> apiRange =
         parseApiRange(node, versionsVersion, apiClass.getData().start, apiClass.getData().end);
     apiClass.registerInterface(interfaceReference, apiRange);
   }
 
   private void parseMethodEntry(
-      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass)
+      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass)
       throws ParsingException {
     MethodReference methodReference =
         parseMethodReference(apiClass.getClassReference(), parseNameAttribute(node));
-    SemiInfiniteRange<AndroidApiLevel> apiRange =
+    SemiInfiniteRange<UncheckedApiLevel> apiRange =
         parseApiRange(node, versionsVersion, apiClass.getData().start, apiClass.getData().end);
     if (apiClass.hasMethod(methodReference)) {
       throw new ParsingException("Duplicate entries for " + methodReference);
@@ -140,11 +143,11 @@ public class AndroidApiVersionsXmlParser {
   }
 
   private void parseFieldEntry(
-      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass)
+      Node node, int versionsVersion, ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass)
       throws ParsingException {
     FieldTypelessReference fieldReference =
         parseFieldReference(apiClass.getClassReference(), parseNameAttribute(node));
-    SemiInfiniteRange<AndroidApiLevel> apiRange =
+    SemiInfiniteRange<UncheckedApiLevel> apiRange =
         parseApiRange(node, versionsVersion, apiClass.getData().start, apiClass.getData().end);
     if (apiClass.hasField(fieldReference)) {
       throw new ParsingException("Duplicate entries for " + fieldReference);
@@ -173,13 +176,13 @@ public class AndroidApiVersionsXmlParser {
     return new FieldTypelessReference(holder, fieldReference);
   }
 
-  private ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> register(
-      ClassReference classReference, SemiInfiniteRange<AndroidApiLevel> apiRange)
+  private ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> register(
+      ClassReference classReference, SemiInfiniteRange<UncheckedApiLevel> apiRange)
       throws ParsingException {
     if (parsedClasses.containsKey(classReference)) {
       throw new ParsingException("Duplicate class entry found for " + classReference);
     }
-    ParsedApiClass<SemiInfiniteRange<AndroidApiLevel>> apiClass =
+    ParsedApiClass<SemiInfiniteRange<UncheckedApiLevel>> apiClass =
         new ParsedApiClass<>(classReference, apiRange);
     parsedClasses.put(classReference, apiClass);
     return apiClass;
@@ -232,9 +235,9 @@ public class AndroidApiVersionsXmlParser {
     return versionsVersion;
   }
 
-  private AndroidApiLevel parseSinceAttributeWithDefault(
-      Node node, int versionsVersion, AndroidApiLevel defaultValue) throws ParsingException {
-    AndroidApiLevel since = parseSinceAttribute(node, versionsVersion);
+  private UncheckedApiLevel parseSinceAttributeWithDefault(
+      Node node, int versionsVersion, UncheckedApiLevel defaultValue) throws ParsingException {
+    UncheckedApiLevel since = parseSinceAttribute(node, versionsVersion);
     if (since == null) {
       return defaultValue;
     } else {
@@ -242,7 +245,7 @@ public class AndroidApiVersionsXmlParser {
     }
   }
 
-  private AndroidApiLevel parseSinceAttribute(Node node, int versionsVersion)
+  private UncheckedApiLevel parseSinceAttribute(Node node, int versionsVersion)
       throws ParsingException {
     Node since = node.getAttributes().getNamedItem("since");
     if (since == null) {
@@ -252,9 +255,9 @@ public class AndroidApiVersionsXmlParser {
     return parseAndroidApiLevel(versionsVersion, sinceVersionString);
   }
 
-  private AndroidApiLevel parseRemovedAttributeWithDefault(
-      Node node, int versionsVersion, AndroidApiLevel defaultValue) throws ParsingException {
-    AndroidApiLevel since = parseRemovedAttribute(node, versionsVersion);
+  private UncheckedApiLevel parseRemovedAttributeWithDefault(
+      Node node, int versionsVersion, UncheckedApiLevel defaultValue) throws ParsingException {
+    UncheckedApiLevel since = parseRemovedAttribute(node, versionsVersion);
     if (since == null) {
       return defaultValue;
     } else {
@@ -262,7 +265,7 @@ public class AndroidApiVersionsXmlParser {
     }
   }
 
-  private AndroidApiLevel parseRemovedAttribute(Node node, int versionsVersion)
+  private UncheckedApiLevel parseRemovedAttribute(Node node, int versionsVersion)
       throws ParsingException {
     Node removed = node.getAttributes().getNamedItem("removed");
     if (removed == null) {
@@ -272,25 +275,34 @@ public class AndroidApiVersionsXmlParser {
     return parseAndroidApiLevel(versionsVersion, removedVersionString);
   }
 
-  private static AndroidApiLevel parseAndroidApiLevel(int versionsVersion, String versionString)
+  private static UncheckedApiLevel parseAndroidApiLevel(int versionsVersion, String versionString)
       throws ParsingException {
     assert versionsVersion == 3 || versionsVersion == 4;
     if (versionsVersion == 3 && versionString.contains(".")) {
       throw new ParsingException(
           "Version '" + versionString + "' is not supported for api version " + versionsVersion);
     }
-    return ApiLevelParser.parse(
-        versionString,
-        message -> {
-          throw new ParsingException(message);
-        });
+    UncheckedApiLevel unchecked =
+        UncheckedApiLevel.parse(
+            versionString,
+            message -> {
+              throw new ParsingException(message);
+            });
+    ResolvedAndroidApiLevel resolved = AndroidApiLevel.resolveAndroidApiLevel(unchecked);
+    if (resolved.isInvalid()) {
+      throw new ParsingException("Invalid Android API level: " + versionString);
+    }
+    return unchecked;
   }
 
-  private SemiInfiniteRange<AndroidApiLevel> parseApiRange(
-      Node node, int versionsVersion, AndroidApiLevel defaultIntro, AndroidApiLevel defaultRemoved)
+  private SemiInfiniteRange<UncheckedApiLevel> parseApiRange(
+      Node node,
+      int versionsVersion,
+      UncheckedApiLevel defaultIntro,
+      UncheckedApiLevel defaultRemoved)
       throws ParsingException {
-    AndroidApiLevel since = parseSinceAttributeWithDefault(node, versionsVersion, defaultIntro);
-    AndroidApiLevel removed =
+    UncheckedApiLevel since = parseSinceAttributeWithDefault(node, versionsVersion, defaultIntro);
+    UncheckedApiLevel removed =
         parseRemovedAttributeWithDefault(node, versionsVersion, defaultRemoved);
     if (removed != null && since.isGreaterThanOrEqualTo(removed)) {
       throw new ParsingException("Invalid API range. since: " + since + ". removed: " + removed);

@@ -9,4 +9,3 @@ interface PackagePrivateInterface {
     System.out.println("I3");
   }
 }
-

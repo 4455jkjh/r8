@@ -80,10 +80,10 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
             "    0:5:void HorizontalClassMergingStackSampleRetraceTest$A.<init>(byte):0:0 ->"
                 + " <init>",
             "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
-            "    5:12:void"
+            "    6:11:void"
                 + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.baz():51:51"
                 + " -> a",
-            "    13:21:void baz():51:51 -> a",
+            "    12:17:void baz():51:51 -> a",
             "    0:7:void"
                 + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.bar():46:46"
                 + " -> b",

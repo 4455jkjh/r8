@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks.appdumps;
 
+import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
 import com.android.tools.r8.R8PartialTestCompileResult;
@@ -28,7 +29,10 @@ public abstract class ChromeBenchmarks extends BenchmarkBase {
 
   public static List<BenchmarkConfig> configs() {
     return ImmutableList.of(
-        ChromeApp.config(), ChromeAppPartial.config(), ChromeAppTreeShaking.config());
+        ChromeApp.config(),
+        ChromeAppD8Merge.config(),
+        ChromeAppPartial.config(),
+        ChromeAppTreeShaking.config());
   }
 
   private static void configure(R8FullTestBuilder testBuilder) {
@@ -100,6 +104,25 @@ public abstract class ChromeBenchmarks extends BenchmarkBase {
     }
 
     public ChromeApp(BenchmarkConfig config, TestParameters parameters) {
+      super(config, parameters);
+    }
+  }
+
+  public static class ChromeAppD8Merge extends ChromeBenchmarks {
+
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+      return parametersFromConfig(config());
+    }
+
+    public static BenchmarkConfig config() {
+      return builder("ChromeAppD8Merge")
+          .setCompilationMode(CompilationMode.DEBUG)
+          .setDumpName("dump_app_d8_merge.zip")
+          .buildBatchD8();
+    }
+
+    public ChromeAppD8Merge(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
     }
   }

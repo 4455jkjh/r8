@@ -40,22 +40,22 @@ public class LocalEndTestDump implements Opcodes {
       mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Throwable");
       Label l3 = new Label();
       mv.visitLabel(l3);
-      mv.visitLineNumber(10, l3);
+      mv.visitLineNumber(14, l3);
       mv.visitIntInsn(BIPUSH, 42);
       mv.visitVarInsn(ISTORE, 1);
       mv.visitLabel(l0);
-      mv.visitLineNumber(12, l0);
+      mv.visitLineNumber(16, l0);
       mv.visitVarInsn(ILOAD, 1); // push x on the stack for later use in the join block.
       mv.visitVarInsn(ALOAD, 0);
       mv.visitMethodInsn(
           INVOKEVIRTUAL, "com/android/tools/r8/debug/LocalEndTest", "bar", "()V", false);
       Label l4 = new Label();
       mv.visitLabel(l4);
-      mv.visitLineNumber(13, l4);
+      mv.visitLineNumber(17, l4);
       mv.visitIntInsn(BIPUSH, 7);
       mv.visitVarInsn(ISTORE, 1);
       mv.visitLabel(l1);
-      mv.visitLineNumber(14, l1);
+      mv.visitLineNumber(18, l1);
       Label l5 = new Label();
       mv.visitJumpInsn(GOTO, l5);
       mv.visitLabel(l2);
@@ -68,7 +68,7 @@ public class LocalEndTestDump implements Opcodes {
       mv.visitVarInsn(ASTORE, 2);
       mv.visitVarInsn(ILOAD, 1); // push x on the stack again (should be same as above).
       mv.visitLabel(l5);
-      mv.visitLineNumber(16, l5);
+      mv.visitLineNumber(20, l5);
       mv.visitFrame(
           Opcodes.F_FULL,
           1,
@@ -79,13 +79,13 @@ public class LocalEndTestDump implements Opcodes {
       mv.visitVarInsn(ISTORE, 1);
       Label l6 = new Label();
       mv.visitLabel(l6);
-      mv.visitLineNumber(17, l6);
+      mv.visitLineNumber(21, l6);
       mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       mv.visitVarInsn(ILOAD, 1);
       mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(I)V", false);
       Label l7 = new Label();
       mv.visitLabel(l7);
-      mv.visitLineNumber(18, l7);
+      mv.visitLineNumber(22, l7);
       mv.visitInsn(RETURN);
       Label l8 = new Label();
       mv.visitLabel(l8);

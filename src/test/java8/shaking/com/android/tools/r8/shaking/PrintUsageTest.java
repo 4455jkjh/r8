@@ -89,8 +89,8 @@ public class PrintUsageTest extends TestBase {
 
   @Parameters(name = "{0}, test: {1} keep: {2}")
   public static Collection<Object[]> data() {
-    List<String> tests = Arrays.asList(
-        "shaking1", "shaking2", "shaking4", "shaking8", "shaking9", "shaking12");
+    List<String> tests =
+        Arrays.asList("shaking1", "shaking2", "shaking4", "shaking8", "shaking9", "shaking12");
 
     Map<String, Consumer<PrintUsageInspector>> inspections = new HashMap<>();
     inspections.put("shaking1:keep-rules-printusage.txt", PrintUsageTest::inspectShaking1);
@@ -104,8 +104,9 @@ public class PrintUsageTest extends TestBase {
     for (TestParameters parameters : getTestParameters().withAllRuntimesAndApiLevels().build()) {
       Set<String> usedInspections = new HashSet<>();
       for (String test : tests) {
-        File[] keepFiles = new File(ToolHelper.EXAMPLES_DIR + test)
-            .listFiles(file -> file.isFile() && file.getName().endsWith(".txt"));
+        File[] keepFiles =
+            new File(ToolHelper.EXAMPLES_DIR + test)
+                .listFiles(file -> file.isFile() && file.getName().endsWith(".txt"));
         for (File keepFile : keepFiles) {
           String keepName = keepFile.getName();
           Consumer<PrintUsageInspector> inspection =
@@ -194,17 +195,18 @@ public class PrintUsageTest extends TestBase {
     PrintUsageInspector(Path printUsageFile) throws IOException {
       printedUsage = new HashMap<>();
       try (Stream<String> lines = Files.lines(printUsageFile)) {
-        lines.forEach(line -> {
-          if (line.startsWith("    ")) {
-            if (line.contains("(") && line.contains(")")) {
-              readMethod(line);
-            } else {
-              readField(line);
-            }
-          } else {
-            readClazz(line);
-          }
-        });
+        lines.forEach(
+            line -> {
+              if (line.startsWith("    ")) {
+                if (line.contains("(") && line.contains(")")) {
+                  readMethod(line);
+                } else {
+                  readField(line);
+                }
+              } else {
+                readClazz(line);
+              }
+            });
       }
     }
 

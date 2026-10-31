@@ -66,13 +66,14 @@ public abstract class NamingTestBase extends TestBase {
     List<Object[]> testCases = new ArrayList<>();
     Set<String> usedInspections = new HashSet<>();
     for (String test : tests) {
-      File[] keepFiles = new File(ToolHelper.EXAMPLES_DIR + test)
-          .listFiles(file -> file.isFile() && file.getName().endsWith(".txt"));
+      File[] keepFiles =
+          new File(ToolHelper.EXAMPLES_DIR + test)
+              .listFiles(file -> file.isFile() && file.getName().endsWith(".txt"));
       for (File keepFile : keepFiles) {
         String keepName = keepFile.getName();
         T inspection = getTestOptionalParameter(inspections, usedInspections, test, keepName);
         if (inspection != null) {
-          testCases.add(new Object[]{test, ImmutableList.of(keepFile.getPath()), inspection});
+          testCases.add(new Object[] {test, ImmutableList.of(keepFile.getPath()), inspection});
         }
       }
     }
@@ -81,10 +82,7 @@ public abstract class NamingTestBase extends TestBase {
   }
 
   private static <T> T getTestOptionalParameter(
-      Map<String, T> specifications,
-      Set<String> usedSpecifications,
-      String test,
-      String keepName) {
+      Map<String, T> specifications, Set<String> usedSpecifications, String test, String keepName) {
     T parameter = specifications.get(test);
     if (parameter == null) {
       parameter = specifications.get(test + ":" + keepName);

@@ -8,8 +8,8 @@ import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.util.Collection;
@@ -42,9 +42,13 @@ public class R8KotlinIntrinsicsTest extends AbstractR8KotlinTestBase {
 
   @Test
   public void testParameterNullCheckIsInlined() throws Exception {
-    final String extraRules = keepClassMethod("intrinsics.IntrinsicsKt",
-        new MethodSignature("expectsNonNullParameters",
-            "java.lang.String", Lists.newArrayList("java.lang.String", "java.lang.String")));
+    final String extraRules =
+        keepClassMethod(
+            "intrinsics.IntrinsicsKt",
+            new MethodSignature(
+                "expectsNonNullParameters",
+                "java.lang.String",
+                Lists.newArrayList("java.lang.String", "java.lang.String")));
     runTest(
             "intrinsics",
             "intrinsics.IntrinsicsKt",

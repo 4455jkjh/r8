@@ -5,6 +5,8 @@ package com.android.tools.r8.ir.desugar.annotations;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static com.android.tools.r8.ir.desugar.annotations.CovariantReturnTypeAnnotationTransformerTest.checkPresenceOfCovariantAnnotations;
+import static com.android.tools.r8.ir.desugar.annotations.CovariantReturnTypeAnnotationTransformerTest.checkPresenceOfSyntheticMethods;
 import static com.android.tools.r8.utils.codeinspector.AssertUtils.assertFailsCompilation;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -27,6 +29,7 @@ import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.hamcrest.Matcher;
@@ -45,19 +48,34 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
       "Ldalvik/annotation/codegen/CovariantReturnType$CovariantReturnTypes;";
 
   private static final Map<String, String> descriptorTransformation =
-      ImmutableMap.of(
-          descriptor(com.android.tools.r8.ir.desugar.annotations.version2.B.class),
-          descriptor(B.class),
-          descriptor(com.android.tools.r8.ir.desugar.annotations.version2.C.class),
-          descriptor(C.class),
-          descriptor(com.android.tools.r8.ir.desugar.annotations.version2.E.class),
-          descriptor(E.class),
-          descriptor(com.android.tools.r8.ir.desugar.annotations.version2.F.class),
-          descriptor(F.class),
-          descriptor(CovariantReturnType.class),
-          covariantReturnTypeDescriptor,
-          descriptor(CovariantReturnTypes.class),
-          covariantReturnTypesDescriptor);
+      ImmutableMap.<String, String>builder()
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version2.B.class),
+              descriptor(B.class))
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version2.C.class),
+              descriptor(C.class))
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version2.E.class),
+              descriptor(E.class))
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version2.F.class),
+              descriptor(F.class))
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version3.B.class),
+              descriptor(B.class))
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version3.C.class),
+              descriptor(C.class))
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version3.E.class),
+              descriptor(E.class))
+          .put(
+              descriptor(com.android.tools.r8.ir.desugar.annotations.version3.F.class),
+              descriptor(F.class))
+          .put(descriptor(CovariantReturnType.class), covariantReturnTypeDescriptor)
+          .put(descriptor(CovariantReturnTypes.class), covariantReturnTypesDescriptor)
+          .build();
 
   @Parameter(0)
   public TestParameters parameters;
@@ -171,6 +189,7 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
         ImmutableList.of(
             Reference.methodFromMethod(B.class.getDeclaredMethod("method")),
             Reference.methodFromMethod(C.class.getDeclaredMethod("method")),
+            Reference.methodFromMethod(E.class.getDeclaredMethod("method")),
             Reference.methodFromMethod(F.class.getDeclaredMethod("method")));
     List<String> messages =
         ListUtils.map(
@@ -189,12 +208,30 @@ public class CovariantReturnTypeAnnotationTransformerR8Test extends TestBase {
   }
 
   private void testOnRuntime(R8TestCompileResult r8CompileResult) throws Exception {
+    r8CompileResult.inspect(
+        inspector -> {
+          checkPresenceOfCovariantAnnotations(inspector, false);
+          checkPresenceOfSyntheticMethods(inspector);
+        });
+    Path r8CompileResultZip = r8CompileResult.writeToZip();
     testForD8()
         .addProgramClasses(Client.class)
         .addClasspathClasses(A.class, B.class, C.class, D.class, E.class, F.class)
         .setMinApi(parameters)
         .compile()
-        .addRunClasspathFiles(r8CompileResult.writeToZip())
+        .addRunClasspathFiles(r8CompileResultZip)
+        .run(parameters.getRuntime(), Client.class)
+        .assertSuccessWithOutputLines("a=A", "b=B", "c=C", "d=F", "e=F", "f=F");
+    testForD8()
+        .addProgramClassFileData(
+            transformer(com.android.tools.r8.ir.desugar.annotations.version3.Client.class)
+                .replaceClassDescriptorInMethodInstructions(descriptorTransformation)
+                .setClassDescriptor(descriptor(Client.class))
+                .transform())
+        .addClasspathClasses(A.class, B.class, C.class, D.class, E.class, F.class)
+        .setMinApi(parameters)
+        .compile()
+        .addRunClasspathFiles(r8CompileResultZip)
         .run(parameters.getRuntime(), Client.class)
         .assertSuccessWithOutputLines("a=A", "b=B", "c=C", "d=F", "e=F", "f=F");
   }

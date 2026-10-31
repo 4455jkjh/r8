@@ -39,6 +39,7 @@ class TestClassDoOptimize {
   private static boolean b = false;
   private static int i = 3;
   private static Class clazz;
+
   static {
     clazz = TestClassDoOptimize.class;
     b = true;
@@ -65,6 +66,7 @@ class TestClassDoNotOptimize {
 
 class TestClassDoNotOptimize2 {
   static boolean b = false;
+
   static {
     boolean forcingOtherClassInit = TestClassDoNotOptimize3.b;
     b = true;
@@ -77,6 +79,7 @@ class TestClassDoNotOptimize2 {
 
 class TestClassDoNotOptimize3 {
   static boolean b = false;
+
   static {
     TestClassDoNotOptimize2.m();
   }
@@ -85,6 +88,7 @@ class TestClassDoNotOptimize3 {
 class TestDoWhileLoop {
   static int i = 0;
   static int j = 0;
+
   static {
     do {
       i = 42;
@@ -140,8 +144,7 @@ public class B113326860 extends TestBase {
   @Test
   public void nonOptimizedClassInitializer()
       throws ExecutionException, CompilationFailedException, IOException {
-    CodeInspector inspector =
-        compileTestClasses(ImmutableList.of(TestClassDoNotOptimize.class));
+    CodeInspector inspector = compileTestClasses(ImmutableList.of(TestClassDoNotOptimize.class));
     ClassSubject clazz = inspector.clazz(TestClassDoNotOptimize.class);
     assertThat(clazz, isPresent());
     MethodSubject method = clazz.method("void", "<clinit>", ImmutableList.of());
@@ -154,8 +157,9 @@ public class B113326860 extends TestBase {
   @Test
   public void nonOptimizedClassInitializer2()
       throws ExecutionException, CompilationFailedException, IOException {
-    CodeInspector inspector = compileTestClasses(
-        ImmutableList.of(TestClassDoNotOptimize2.class, TestClassDoNotOptimize3.class));
+    CodeInspector inspector =
+        compileTestClasses(
+            ImmutableList.of(TestClassDoNotOptimize2.class, TestClassDoNotOptimize3.class));
     ClassSubject clazz = inspector.clazz(TestClassDoNotOptimize2.class);
     assertThat(clazz, isPresent());
     MethodSubject method = clazz.method("void", "<clinit>", ImmutableList.of());
@@ -173,7 +177,9 @@ public class B113326860 extends TestBase {
     MethodSubject method = clazz.method("void", "<clinit>", ImmutableList.of());
     assertThat(method, isPresent());
     // Leave the const 42 and the assignment in there!
-    assertTrue(Arrays.stream(method.getMethod().getCode().asDexCode().instructions)
-        .anyMatch(i -> i instanceof SingleConstant && (((SingleConstant) i).decodedValue() == 42)));
+    assertTrue(
+        Arrays.stream(method.getMethod().getCode().asDexCode().instructions)
+            .anyMatch(
+                i -> i instanceof SingleConstant && (((SingleConstant) i).decodedValue() == 42)));
   }
 }

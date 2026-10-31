@@ -62,9 +62,7 @@ public class KeepClassMethodsAllowShrinkingCompatibilityTest extends TestBase {
   @Test
   public void test() throws Exception {
     if (shrinker.isR8()) {
-      run(
-          testForR8(parameters.getBackend())
-              .enableNoHorizontalClassMergingAnnotations());
+      run(testForR8(parameters.getBackend()).enableNoHorizontalClassMergingAnnotations());
     } else {
       run(
           testForProguard(shrinker.getProguardVersion())

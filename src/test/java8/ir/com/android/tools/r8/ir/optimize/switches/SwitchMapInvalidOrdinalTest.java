@@ -83,14 +83,14 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
       // and not getField since A is minified.
       Constructor<MyEnum> constructor =
           (Constructor<MyEnum>) MyEnum.class.getDeclaredConstructors()[0];
-        constructor.setAccessible(true);
-        MyEnum x = constructor.newInstance("X", 3);
-        Field f = MyEnum.class.getFields()[0];
+      constructor.setAccessible(true);
+      MyEnum x = constructor.newInstance("X", 3);
+      Field f = MyEnum.class.getFields()[0];
 
-        // On Android, setAccessible allows to set a final field.
-        f.setAccessible(true);
+      // On Android, setAccessible allows to set a final field.
+      f.setAccessible(true);
 
-        f.set(null, x);
+      f.set(null, x);
       // } catch (Exception e) {
       //  System.out.println("Unexpected: " + e);
       // }

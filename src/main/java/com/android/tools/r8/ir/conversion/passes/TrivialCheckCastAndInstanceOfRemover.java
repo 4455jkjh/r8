@@ -420,7 +420,7 @@ public class TrivialCheckCastAndInstanceOfRemover extends CodeRewriterPass<AppIn
       Value inValue) {
     if (options.canUseJavaUtilObjectsNonNull()) {
       return replaceInstanceOfByNonNull(it, instanceOf);
-    } else if (options.isGeneratingDex()) {
+    } else if (options.isGeneratingDex() && !appView.getSyntheticItems().isFinalized()) {
       // We don't have Objects.nonNull - but this replacement is required to not trip up the
       // art verifier - see b/401137827.
       UtilityMethodForCodeOptimizations nonNullMethod =

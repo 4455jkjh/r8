@@ -74,7 +74,8 @@ public class DesugarMissingTypeStaticInvokeTest extends TestBase {
         Diagnostic diagnostic = messages.getWarnings().get(0);
         assertTrue(diagnostic instanceof DesugarDiagnostic);
         assertTrue(diagnostic instanceof InterfaceDesugarMissingTypeDiagnostic);
-        InterfaceDesugarMissingTypeDiagnostic desugarWarning = (InterfaceDesugarMissingTypeDiagnostic) diagnostic;
+        InterfaceDesugarMissingTypeDiagnostic desugarWarning =
+            (InterfaceDesugarMissingTypeDiagnostic) diagnostic;
         assertEquals(
             Reference.classFromClass(MissingInterface.class), desugarWarning.getMissingType());
         assertEquals(Reference.classFromClass(TestClass.class), desugarWarning.getContextType());

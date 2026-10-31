@@ -24,14 +24,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-class LibraryClass {
-}
+class LibraryClass {}
 
 @NoVerticalClassMerging
 class ProgramClass1 extends LibraryClass {}
 
-class ProgramSubClass extends ProgramClass1 {
-}
+class ProgramSubClass extends ProgramClass1 {}
 
 interface LibraryInterface {
   void foo();
@@ -67,9 +65,7 @@ class TestMain {
 @RunWith(Parameterized.class)
 public class UnresolvableLibraryConstClassTest extends TestBase {
   private static final Class<?> MAIN = TestMain.class;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "No need to load any classes"
-  );
+  private static final String JAVA_OUTPUT = StringUtils.lines("No need to load any classes");
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -133,7 +129,6 @@ public class UnresolvableLibraryConstClassTest extends TestBase {
     assertThat(mainMethod, isPresent());
     // No canonicalization of const-class instructions.
     assertEquals(
-        6,
-        mainMethod.streamInstructions().filter(InstructionSubject::isConstClass).count());
+        6, mainMethod.streamInstructions().filter(InstructionSubject::isConstClass).count());
   }
 }

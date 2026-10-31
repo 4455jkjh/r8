@@ -136,7 +136,7 @@ public class NullabilityTest extends TestBase {
   @Test
   public void nonNullAfterSafeInvokes() throws Exception {
     MethodSignature signature =
-        new MethodSignature("foo", "int", new String[]{"java.lang.String"});
+        new MethodSignature("foo", "int", new String[] {"java.lang.String"});
     buildAndTest(
         ImmutableList.of(NonNullAfterInvoke.class),
         NonNullAfterInvoke.class,
@@ -164,7 +164,7 @@ public class NullabilityTest extends TestBase {
   @Test
   public void stillNullAfterExceptionCatch_invoke() throws Exception {
     MethodSignature signature =
-        new MethodSignature("bar", "int", new String[]{"java.lang.String"});
+        new MethodSignature("bar", "int", new String[] {"java.lang.String"});
     buildAndTest(
         ImmutableList.of(NonNullAfterInvoke.class),
         NonNullAfterInvoke.class,
@@ -192,7 +192,7 @@ public class NullabilityTest extends TestBase {
   @Test
   public void nonNullAfterSafeArrayAccess() throws Exception {
     MethodSignature signature =
-        new MethodSignature("foo", "int", new String[]{"java.lang.String[]"});
+        new MethodSignature("foo", "int", new String[] {"java.lang.String[]"});
     buildAndTest(
         ImmutableList.of(NonNullAfterArrayAccess.class),
         NonNullAfterArrayAccess.class,
@@ -235,7 +235,7 @@ public class NullabilityTest extends TestBase {
   @Test
   public void stillNullAfterExceptionCatch_aget() throws Exception {
     MethodSignature signature =
-        new MethodSignature("bar", "int", new String[]{"java.lang.String[]"});
+        new MethodSignature("bar", "int", new String[] {"java.lang.String[]"});
     buildAndTest(
         ImmutableList.of(NonNullAfterArrayAccess.class),
         NonNullAfterArrayAccess.class,
@@ -277,8 +277,8 @@ public class NullabilityTest extends TestBase {
 
   @Test
   public void nonNullAfterSafeFieldAccess() throws Exception {
-    MethodSignature signature = new MethodSignature("foo", "int",
-        new String[]{FieldAccessTest.class.getCanonicalName()});
+    MethodSignature signature =
+        new MethodSignature("foo", "int", new String[] {FieldAccessTest.class.getCanonicalName()});
     buildAndTest(
         ImmutableList.of(FieldAccessTest.class, NonNullAfterFieldAccess.class),
         NonNullAfterFieldAccess.class,
@@ -314,8 +314,8 @@ public class NullabilityTest extends TestBase {
 
   @Test
   public void stillNullAfterExceptionCatch_iget() throws Exception {
-    MethodSignature signature = new MethodSignature("bar", "int",
-        new String[]{FieldAccessTest.class.getCanonicalName()});
+    MethodSignature signature =
+        new MethodSignature("bar", "int", new String[] {FieldAccessTest.class.getCanonicalName()});
     buildAndTest(
         ImmutableList.of(FieldAccessTest.class, NonNullAfterFieldAccess.class),
         NonNullAfterFieldAccess.class,

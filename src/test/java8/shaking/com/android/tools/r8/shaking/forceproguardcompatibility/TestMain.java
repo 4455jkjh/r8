@@ -7,14 +7,12 @@ package com.android.tools.r8.shaking.forceproguardcompatibility;
 public class TestMain {
 
   public static class MentionedClass {
-    public MentionedClass() {
-    }
+    public MentionedClass() {}
   }
 
   @TestAnnotation(0)
   public static class MentionedClassWithAnnotation {
-    public MentionedClassWithAnnotation() {
-    }
+    public MentionedClassWithAnnotation() {}
   }
 
   public static void main(String[] args) {

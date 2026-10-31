@@ -80,10 +80,12 @@ public final class BooleanBackportTest extends AbstractBackportTest {
     }
 
     private static int sideEffectCount;
+
     private static boolean sideEffectTrue() {
       sideEffectCount++;
       return true;
     }
+
     private static boolean sideEffectFalse() {
       sideEffectCount++;
       return false;

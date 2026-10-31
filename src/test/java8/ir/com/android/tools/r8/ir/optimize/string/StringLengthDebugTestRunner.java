@@ -36,7 +36,9 @@ public class StringLengthDebugTestRunner extends DebugTestBase {
     DebugTestConfig config =
         new D8DebugTestConfig(parameters.asDexRuntime())
             .compileAndAdd(temp, ToolHelper.getClassFileForTestClass(main));
-    runDebugTest(config, main.getCanonicalName(),
+    runDebugTest(
+        config,
+        main.getCanonicalName(),
         breakpoint(main.getCanonicalName(), "main"),
         run(),
         stepOver(),
@@ -47,8 +49,7 @@ public class StringLengthDebugTestRunner extends DebugTestBase {
               frame.checkLocal("x");
               frame.checkNoLocal("l1");
               frame.checkNoLocal("l2");
-            }
-        ),
+            }),
         // int l1 = x.length();
         stepInto(),
         inspect(
@@ -56,8 +57,7 @@ public class StringLengthDebugTestRunner extends DebugTestBase {
               FrameInspector frame = i.getFrame(0);
               assertEquals(String.class.getCanonicalName(), frame.getClassName());
               assertEquals("length", frame.getMethodName());
-            }
-        ),
+            }),
         stepOut(),
         stepOver(),
         inspect(
@@ -66,8 +66,7 @@ public class StringLengthDebugTestRunner extends DebugTestBase {
               frame.checkLocal("x");
               frame.checkLocal("l1");
               frame.checkNoLocal("l2");
-            }
-        ),
+            }),
         // System.out.println(l1);
         stepOver(),
         // int l2 = "XYZ".length();
@@ -77,8 +76,7 @@ public class StringLengthDebugTestRunner extends DebugTestBase {
               FrameInspector frame = i.getFrame(0);
               assertEquals(String.class.getCanonicalName(), frame.getClassName());
               assertEquals("length", frame.getMethodName());
-            }
-        ),
+            }),
         stepOut(),
         stepOver(),
         inspect(
@@ -87,10 +85,7 @@ public class StringLengthDebugTestRunner extends DebugTestBase {
               frame.checkLocal("x");
               frame.checkLocal("l1");
               frame.checkLocal("l2");
-            }
-        ),
-        run()
-    );
+            }),
+        run());
   }
-
 }

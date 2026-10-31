@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.classmerging.horizontal.interfaces;
 
-
 import com.android.tools.r8.NoUnusedInterfaceRemoval;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;

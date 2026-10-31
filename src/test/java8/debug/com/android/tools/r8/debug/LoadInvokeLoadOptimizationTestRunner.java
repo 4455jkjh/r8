@@ -80,17 +80,17 @@ public class LoadInvokeLoadOptimizationTestRunner extends DebugTestBase {
         NAME,
         breakpoint(NAME, "bar"),
         run(),
-        checkLine(FILE, 10),
+        checkLine(FILE, 14),
         checkLocal("x", int42),
         inspect(
             t -> {
               FrameInspector frame = t.getFrame(1);
-              frame.checkLine(FILE, 13);
+              frame.checkLine(FILE, 17);
               frame.checkLocal("x", int42);
               frame.setLocal("x", int7);
             }),
         run(),
-        checkLine(FILE, 10),
+        checkLine(FILE, 14),
         checkLocal("x", int7),
         run());
   }

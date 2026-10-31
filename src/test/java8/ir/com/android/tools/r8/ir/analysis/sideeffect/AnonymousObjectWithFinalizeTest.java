@@ -18,12 +18,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class AnonymousObjectWithFinalizeTest extends TestBase {
 
-  final static String EXPECTED = StringUtils.lines(
-      "set up fence",
-      "run gc",
-      "count down fence",
-      "passed fence"
-  );
+  static final String EXPECTED =
+      StringUtils.lines("set up fence", "run gc", "count down fence", "passed fence");
 
   public static class TestClass {
 

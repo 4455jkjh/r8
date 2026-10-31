@@ -196,10 +196,10 @@ public class InvokeInterfaceWithRefinedReceiverTest extends TestBase {
   static class Main {
     public static void main(String... args) {
       I i = System.currentTimeMillis() > 0 ? new B() : new BSub();
-      i.m(null);  // No single target, but should be able to filter out C(Sub)#m
+      i.m(null); // No single target, but should be able to filter out C(Sub)#m
 
-      I c = new C();  // with the exact type:
-      c.m(c);         // calls C.m() with non-null instance.
+      I c = new C(); // with the exact type:
+      c.m(c); // calls C.m() with non-null instance.
     }
   }
 }

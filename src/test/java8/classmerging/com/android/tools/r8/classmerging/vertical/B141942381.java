@@ -94,7 +94,7 @@ public class B141942381 extends TestBase {
     }
   }
 
-  static abstract class Box<T extends BoxValue> {
+  abstract static class Box<T extends BoxValue> {
     @NoAccessModification
     @SuppressWarnings("unchecked")
     private T[] _storage = (T[]) (new BoxValue[1]);

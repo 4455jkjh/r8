@@ -81,12 +81,13 @@ public class IdentifierMinifierTest extends TestBase {
 
   @Parameters(name = "{0} test: {1} keep: {2}")
   public static Collection<Object[]> data() {
-    List<String> tests = Arrays.asList(
-        "adaptclassstrings",
-        "atomicfieldupdater",
-        "forname",
-        "getmembers",
-        "identifiernamestring");
+    List<String> tests =
+        Arrays.asList(
+            "adaptclassstrings",
+            "atomicfieldupdater",
+            "forname",
+            "getmembers",
+            "identifiernamestring");
 
     Map<String, BiConsumer<TestParameters, CodeInspector>> inspections = new HashMap<>();
     inspections.put("adaptclassstrings:keep-rules-1.txt", IdentifierMinifierTest::test1_rule1);
@@ -249,12 +250,10 @@ public class IdentifierMinifierTest extends TestBase {
   }
 
   private static Stream<InstructionSubject> getConstStringInstructions(MethodSubject method) {
-    return method.streamInstructions()
-        .filter(instr -> instr.isConstString(JumboStringMode.ALLOW));
+    return method.streamInstructions().filter(instr -> instr.isConstString(JumboStringMode.ALLOW));
   }
 
-  private static int countRenamedClassIdentifier(
-      CodeInspector inspector, MethodSubject method) {
+  private static int countRenamedClassIdentifier(CodeInspector inspector, MethodSubject method) {
     return getConstStringInstructions(method)
         .reduce(
             0,

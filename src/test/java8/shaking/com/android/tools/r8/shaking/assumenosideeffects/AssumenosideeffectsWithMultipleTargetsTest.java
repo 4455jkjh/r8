@@ -56,9 +56,7 @@ public class AssumenosideeffectsWithMultipleTargetsTest extends TestBase {
       throw new Unreachable();
     }
 
-    static final String OUTPUT_WITHOUT_INFO = StringUtils.lines(
-        "The end"
-    );
+    static final String OUTPUT_WITHOUT_INFO = StringUtils.lines("The end");
 
     public void inspect(CodeInspector inspector) {
       ClassSubject main = inspector.clazz(MAIN);
@@ -67,8 +65,9 @@ public class AssumenosideeffectsWithMultipleTargetsTest extends TestBase {
       MethodSubject mainMethod = main.mainMethod();
       assertThat(mainMethod, isPresent());
       assertTrue(
-          mainMethod.streamInstructions().noneMatch(
-              i -> i.isInvoke() && i.getMethod().name.toString().equals("info")));
+          mainMethod
+              .streamInstructions()
+              .noneMatch(i -> i.isInvoke() && i.getMethod().name.toString().equals("info")));
 
       MethodSubject testInvokeInterface = main.uniqueMethodWithOriginalName("testInvokeInterface");
       assertThat(testInvokeInterface, not(isPresent()));
@@ -134,7 +133,7 @@ public class AssumenosideeffectsWithMultipleTargetsTest extends TestBase {
   }
 
   static class TestClass {
-    final static String TAG = TestClass.class.getSimpleName();
+    static final String TAG = TestClass.class.getSimpleName();
 
     @NeverInline
     private static void testInvokeInterface(TestLogger logger, String message) {

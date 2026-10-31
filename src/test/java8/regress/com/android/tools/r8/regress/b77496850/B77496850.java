@@ -44,23 +44,22 @@ public class B77496850 extends TestBase {
 
   // Mock class for the code in PathParser below.
   public static class Path {
-    void rLineTo(int x, int y) {
-    }
-    void cubicTo(float a, float b, float c, float d, float e, float f) {
-    }
+    void rLineTo(int x, int y) {}
+
+    void cubicTo(float a, float b, float c, float d, float e, float f) {}
   }
 
   // Mock class for the code in PathParser below.
   public static class Log {
-    static void w(String x, String y) {
-    }
+    static void w(String x, String y) {}
   }
 
   // Code copied from Android support library:
   // https://android.googlesource.com/platform/frameworks/support/+/9791ac540f94c318f6602123d7000bfc55909b81/compat/src/main/java/android/support/v4/graphics/PathParser.java
   public static class PathParser {
 
-    private static void drawArc(Path p,
+    private static void drawArc(
+        Path p,
         float x0,
         float y0,
         float x1,
@@ -96,8 +95,7 @@ public class B77496850 extends TestBase {
       if (disc < 0.0) {
         Log.w(LOGTAG, "Points are too far apart " + dsq);
         float adjust = (float) (Math.sqrt(dsq) / 1.99999);
-        drawArc(p, x0, y0, x1, y1, a * adjust,
-            b * adjust, theta, isMoreThanHalf, isPositiveArc);
+        drawArc(p, x0, y0, x1, y1, a * adjust, b * adjust, theta, isMoreThanHalf, isPositiveArc);
         return; /* Points are too far apart */
       }
       double s = Math.sqrt(disc);
@@ -133,18 +131,19 @@ public class B77496850 extends TestBase {
     /**
      * Converts an arc to cubic Bezier segments and records them in p.
      *
-     * @param p     The target for the cubic Bezier segments
-     * @param cx    The x coordinate center of the ellipse
-     * @param cy    The y coordinate center of the ellipse
-     * @param a     The radius of the ellipse in the horizontal direction
-     * @param b     The radius of the ellipse in the vertical direction
-     * @param e1x   E(eta1) x coordinate of the starting point of the arc
-     * @param e1y   E(eta2) y coordinate of the starting point of the arc
+     * @param p The target for the cubic Bezier segments
+     * @param cx The x coordinate center of the ellipse
+     * @param cy The y coordinate center of the ellipse
+     * @param a The radius of the ellipse in the horizontal direction
+     * @param b The radius of the ellipse in the vertical direction
+     * @param e1x E(eta1) x coordinate of the starting point of the arc
+     * @param e1y E(eta2) y coordinate of the starting point of the arc
      * @param theta The angle that the ellipse bounding rectangle makes with horizontal plane
      * @param start The start angle of the arc on the ellipse
      * @param sweep The angle (positive or negative) of the sweep of the arc on the ellipse
      */
-    private static void arcToBezier(Path p,
+    private static void arcToBezier(
+        Path p,
         double cx,
         double cy,
         double a,
@@ -175,20 +174,14 @@ public class B77496850 extends TestBase {
         double ep2x = -a * cosTheta * sinEta2 - b * sinTheta * cosEta2;
         double ep2y = -a * sinTheta * sinEta2 + b * cosTheta * cosEta2;
         double tanDiff2 = Math.tan((eta2 - eta1) / 2);
-        double alpha =
-            Math.sin(eta2 - eta1) * (Math.sqrt(4 + (3 * tanDiff2 * tanDiff2)) - 1) / 3;
+        double alpha = Math.sin(eta2 - eta1) * (Math.sqrt(4 + (3 * tanDiff2 * tanDiff2)) - 1) / 3;
         double q1x = e1x + alpha * ep1x;
         double q1y = e1y + alpha * ep1y;
         double q2x = e2x - alpha * ep2x;
         double q2y = e2y - alpha * ep2y;
         // Adding this no-op call to workaround a proguard related issue.
         p.rLineTo(0, 0);
-        p.cubicTo((float) q1x,
-            (float) q1y,
-            (float) q2x,
-            (float) q2y,
-            (float) e2x,
-            (float) e2y);
+        p.cubicTo((float) q1x, (float) q1y, (float) q2x, (float) q2y, (float) e2x, (float) e2y);
         eta1 = eta2;
         e1x = e2x;
         e1y = e2y;
@@ -201,7 +194,8 @@ public class B77496850 extends TestBase {
   // Same code as PathParser above, but with exception handlers in the two methods.
   public static class PathParserWithExceptionHandler {
 
-    private static void drawArc(Path p,
+    private static void drawArc(
+        Path p,
         float x0,
         float y0,
         float x1,
@@ -238,8 +232,7 @@ public class B77496850 extends TestBase {
         if (disc < 0.0) {
           Log.w(LOGTAG, "Points are too far apart " + dsq);
           float adjust = (float) (Math.sqrt(dsq) / 1.99999);
-          drawArc(p, x0, y0, x1, y1, a * adjust,
-              b * adjust, theta, isMoreThanHalf, isPositiveArc);
+          drawArc(p, x0, y0, x1, y1, a * adjust, b * adjust, theta, isMoreThanHalf, isPositiveArc);
           return; /* Points are too far apart */
         }
         double s = Math.sqrt(disc);
@@ -278,18 +271,19 @@ public class B77496850 extends TestBase {
     /**
      * Converts an arc to cubic Bezier segments and records them in p.
      *
-     * @param p     The target for the cubic Bezier segments
-     * @param cx    The x coordinate center of the ellipse
-     * @param cy    The y coordinate center of the ellipse
-     * @param a     The radius of the ellipse in the horizontal direction
-     * @param b     The radius of the ellipse in the vertical direction
-     * @param e1x   E(eta1) x coordinate of the starting point of the arc
-     * @param e1y   E(eta2) y coordinate of the starting point of the arc
+     * @param p The target for the cubic Bezier segments
+     * @param cx The x coordinate center of the ellipse
+     * @param cy The y coordinate center of the ellipse
+     * @param a The radius of the ellipse in the horizontal direction
+     * @param b The radius of the ellipse in the vertical direction
+     * @param e1x E(eta1) x coordinate of the starting point of the arc
+     * @param e1y E(eta2) y coordinate of the starting point of the arc
      * @param theta The angle that the ellipse bounding rectangle makes with horizontal plane
      * @param start The start angle of the arc on the ellipse
      * @param sweep The angle (positive or negative) of the sweep of the arc on the ellipse
      */
-    private static void arcToBezier(Path p,
+    private static void arcToBezier(
+        Path p,
         double cx,
         double cy,
         double a,
@@ -321,20 +315,14 @@ public class B77496850 extends TestBase {
           double ep2x = -a * cosTheta * sinEta2 - b * sinTheta * cosEta2;
           double ep2y = -a * sinTheta * sinEta2 + b * cosTheta * cosEta2;
           double tanDiff2 = Math.tan((eta2 - eta1) / 2);
-          double alpha =
-              Math.sin(eta2 - eta1) * (Math.sqrt(4 + (3 * tanDiff2 * tanDiff2)) - 1) / 3;
+          double alpha = Math.sin(eta2 - eta1) * (Math.sqrt(4 + (3 * tanDiff2 * tanDiff2)) - 1) / 3;
           double q1x = e1x + alpha * ep1x;
           double q1y = e1y + alpha * ep1y;
           double q2x = e2x - alpha * ep2x;
           double q2y = e2y - alpha * ep2y;
           // Adding this no-op call to workaround a proguard related issue.
           p.rLineTo(0, 0);
-          p.cubicTo((float) q1x,
-              (float) q1y,
-              (float) q2x,
-              (float) q2y,
-              (float) e2x,
-              (float) e2y);
+          p.cubicTo((float) q1x, (float) q1y, (float) q2x, (float) q2y, (float) e2x, (float) e2y);
           eta1 = eta2;
           e1x = e2x;
           e1y = e2y;
@@ -345,14 +333,13 @@ public class B77496850 extends TestBase {
         // Ignore.
       }
     }
-
   }
 
   // Reproduction from b/77496850.
   public static class Reproduction {
     public int test() {
       int count = 0;
-      for (int i = 0; i < 1000; i++){
+      for (int i = 0; i < 1000; i++) {
         count += arcToBezier(1.0, 1.0, 2.0);
       }
       return count;
@@ -390,7 +377,7 @@ public class B77496850 extends TestBase {
   public static class ReproductionWithExceptionHandler {
     public int test() {
       int count = 0;
-      for (int i = 0; i < 1000; i++){
+      for (int i = 0; i < 1000; i++) {
         count += arcToBezier(1.0, 1.0, 2.0);
       }
       return count;
@@ -430,11 +417,12 @@ public class B77496850 extends TestBase {
 
   private int countInvokeDoubleIsNan(DexItemFactory factory, DexCode code) {
     int count = 0;
-    DexMethod doubleIsNaN = factory.createMethod(
-        factory.createString("Ljava/lang/Double;"),
-        factory.createString("isNaN"),
-        factory.booleanDescriptor,
-        new DexString[]{factory.doubleDescriptor});
+    DexMethod doubleIsNaN =
+        factory.createMethod(
+            factory.createString("Ljava/lang/Double;"),
+            factory.createString("isNaN"),
+            factory.booleanDescriptor,
+            new DexString[] {factory.doubleDescriptor});
     for (DexInstruction instruction : code.instructions) {
       if (instruction instanceof DexInvokeStatic || instruction instanceof DexInvokeStaticRange) {
         if (instruction.getMethod() == doubleIsNaN) {
@@ -450,26 +438,42 @@ public class B77496850 extends TestBase {
     CodeInspector inspector = new CodeInspector(app);
     DexItemFactory factory = inspector.getFactory();
     ClassSubject clazz = inspector.clazz(testClass);
-    MethodSubject drawArc = clazz.method(
-        "void",
-        "drawArc",
-        ImmutableList.of(
-            getClass().getCanonicalName() + "$Path",
-            "float", "float", "float", "float", "float", "float", "float", "boolean", "boolean"));
-    MethodSubject arcToBezier = clazz.method(
-        "void",
-        "arcToBezier",
-        ImmutableList.of(
-            getClass().getCanonicalName() + "$Path",
-            "double", "double", "double", "double", "double", "double",
-            "double", "double", "double"));
+    MethodSubject drawArc =
+        clazz.method(
+            "void",
+            "drawArc",
+            ImmutableList.of(
+                getClass().getCanonicalName() + "$Path",
+                "float",
+                "float",
+                "float",
+                "float",
+                "float",
+                "float",
+                "float",
+                "boolean",
+                "boolean"));
+    MethodSubject arcToBezier =
+        clazz.method(
+            "void",
+            "arcToBezier",
+            ImmutableList.of(
+                getClass().getCanonicalName() + "$Path",
+                "double",
+                "double",
+                "double",
+                "double",
+                "double",
+                "double",
+                "double",
+                "double",
+                "double"));
     assertEquals(a, countInvokeDoubleIsNan(factory, drawArc.getMethod().getCode().asDexCode()));
     assertEquals(b, countInvokeDoubleIsNan(factory, arcToBezier.getMethod().getCode().asDexCode()));
   }
 
   private void runTestPathParser(
-      Tool compiler, Class testClass, AndroidApiLevel apiLevel, int a, int b)
-      throws Exception {
+      Tool compiler, Class testClass, AndroidApiLevel apiLevel, int a, int b) throws Exception {
     AndroidApp app = readClasses(Path.class, Log.class, testClass);
     if (compiler == Tool.D8) {
       app = compileWithD8(app, o -> o.setMinApiLevel(apiLevel));
@@ -481,7 +485,7 @@ public class B77496850 extends TestBase {
   }
 
   @Test
-  public void testSupportLibraryPathParser() throws Exception{
+  public void testSupportLibraryPathParser() throws Exception {
     for (Tool tool : Tool.valuesR8andD8()) {
       runTestPathParser(tool, PathParser.class, AndroidApiLevel.K, 14, 1);
       runTestPathParser(tool, PathParser.class, AndroidApiLevel.L, 0, 0);
@@ -503,15 +507,15 @@ public class B77496850 extends TestBase {
     CodeInspector inspector = new CodeInspector(app);
     DexItemFactory factory = inspector.getFactory();
     ClassSubject clazz = inspector.clazz(testClass);
-    MethodSubject arcToBezier = clazz.method(
-        "int", "arcToBezier", ImmutableList.of("double", "double", "double"));
+    MethodSubject arcToBezier =
+        clazz.method("int", "arcToBezier", ImmutableList.of("double", "double", "double"));
     assertEquals(
-      expectedInvokeDoubleIsNanCount,
-      countInvokeDoubleIsNan(factory, arcToBezier.getMethod().getCode().asDexCode()));
+        expectedInvokeDoubleIsNanCount,
+        countInvokeDoubleIsNan(factory, arcToBezier.getMethod().getCode().asDexCode()));
   }
 
   @Test
-  public void testReproduction() throws Exception{
+  public void testReproduction() throws Exception {
     for (Tool tool : Tool.valuesR8andD8()) {
       runTestReproduction(tool, Reproduction.class, AndroidApiLevel.K, tool == Tool.D8 ? 1 : 0);
       runTestReproduction(tool, Reproduction.class, AndroidApiLevel.L, 0);

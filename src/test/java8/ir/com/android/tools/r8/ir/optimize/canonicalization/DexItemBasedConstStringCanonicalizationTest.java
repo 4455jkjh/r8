@@ -42,16 +42,10 @@ class CanonicalizationTestMain {
 @RunWith(Parameterized.class)
 public class DexItemBasedConstStringCanonicalizationTest extends GetNameTestBase {
   private static final Class<?> MAIN = CanonicalizationTestMain.class;
-  private static final String JAVA_OUTPUT = StringUtils.lines(
-      "CanonicalizationTestClass",
-      "CanonicalizationTestClass",
-      "CanonicalizationTestClass"
-  );
-  private static final String RENAMED_OUTPUT = StringUtils.lines(
-      "a",
-      "a",
-      "a"
-  );
+  private static final String JAVA_OUTPUT =
+      StringUtils.lines(
+          "CanonicalizationTestClass", "CanonicalizationTestClass", "CanonicalizationTestClass");
+  private static final String RENAMED_OUTPUT = StringUtils.lines("a", "a", "a");
 
   public DexItemBasedConstStringCanonicalizationTest(
       TestParameters parameters, boolean enableMinification) {
@@ -61,8 +55,7 @@ public class DexItemBasedConstStringCanonicalizationTest extends GetNameTestBase
   @Test
   public void testJVMOutput() throws Exception {
     assumeTrue(
-        "Only run JVM reference on CF runtimes",
-        parameters.isCfRuntime() && !enableMinification);
+        "Only run JVM reference on CF runtimes", parameters.isCfRuntime() && !enableMinification);
     testForJvm(parameters)
         .addTestClasspath()
         .run(parameters.getRuntime(), MAIN)
@@ -78,8 +71,8 @@ public class DexItemBasedConstStringCanonicalizationTest extends GetNameTestBase
     assertEquals(expectedGetNameCount, countGetName(mainMethod));
     assertEquals(
         expectedConstString,
-        Streams.stream(mainMethod.iterateInstructions(
-            i -> i.isConstString(JumboStringMode.ALLOW))).count());
+        Streams.stream(mainMethod.iterateInstructions(i -> i.isConstString(JumboStringMode.ALLOW)))
+            .count());
   }
 
   @Test

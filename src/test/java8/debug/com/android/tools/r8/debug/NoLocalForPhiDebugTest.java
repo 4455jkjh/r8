@@ -129,7 +129,10 @@ public class NoLocalForPhiDebugTest extends DebugTestBase {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass(testClassName);
 
-    clazz.addStaticMethod(testMethodName, ImmutableList.of("Ljava/lang/Object;"), "V",
+    clazz.addStaticMethod(
+        testMethodName,
+        ImmutableList.of("Ljava/lang/Object;"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         ".var 0 is arg Ljava/lang/Object; from L_init to L_end",
@@ -138,13 +141,11 @@ public class NoLocalForPhiDebugTest extends DebugTestBase {
         ".line 1",
         "  ldc 0",
         "  istore 1",
-
         "L_join:", // A phi flowing to 'local' starts here.
         ".line 2",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
         ".line 3", // An intermediate instruction to ensure the phi did not start the local.
         "  nop",
-
         "L_local_start:", // Delayed start of local.
         ".line 4",
         "  iload 1",
@@ -152,23 +153,19 @@ public class NoLocalForPhiDebugTest extends DebugTestBase {
         "  iload 1",
         "  ifne L_b2",
         "L_local_end:", // End of local (could also just end at exit).
-
         "L_b1:",
         ".line 5",
         "  ldc -1",
         "  istore 1",
         "  goto L_join", // Back branch to ensure an incomplete phi is created in L_join.
-
         "L_b2:",
         ".line 6",
         "  iload 1",
         "  ifgt L_b3",
-
         ".line 7",
         "  ldc 1",
         "  istore 1",
         "  goto L_join", // Back branch to ensure an incomplete phi is created in L_join.
-
         "L_b3:",
         ".line 8",
         "return",

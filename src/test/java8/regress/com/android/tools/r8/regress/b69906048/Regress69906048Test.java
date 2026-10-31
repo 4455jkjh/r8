@@ -43,5 +43,4 @@ public class Regress69906048Test extends TestBase {
     String result = runOnArt(androidApp, ClassWithAnnotations.class, parameters.getDexVm());
     Assert.assertEquals("@" + AnAnnotation.class.getCanonicalName() + "()", result);
   }
-
 }

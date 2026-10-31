@@ -67,8 +67,7 @@ public class LocalClassRenamingTest extends TestBase {
   @Parameterized.Parameters(name = "{0} minification: {1}")
   public static Collection<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimes().withAllApiLevels().build(),
-        BooleanUtils.values());
+        getTestParameters().withAllRuntimes().withAllApiLevels().build(), BooleanUtils.values());
   }
 
   public LocalClassRenamingTest(TestParameters parameters, boolean enableMinification) {

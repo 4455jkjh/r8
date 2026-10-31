@@ -26,7 +26,7 @@ public class BreakInTwoLinesFinallyTestRunner extends DebugTestBase {
   @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> setup() {
     DelayedDebugTestConfig cf =
-            temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
+        temp -> new CfDebugTestConfig().addPaths(ToolHelper.getClassPathForTests());
     Function<DexRuntime, DelayedDebugTestConfig> d8 =
         dexRuntime -> temp -> new D8DebugTestConfig(dexRuntime).compileAndAddClasses(temp, CLASS);
     return buildCfAndD8Parameters(cf, d8);
@@ -45,14 +45,14 @@ public class BreakInTwoLinesFinallyTestRunner extends DebugTestBase {
     runDebugTest(
         config,
         NAME,
-        breakpoint(NAME, "foo", 12),
+        breakpoint(NAME, "foo", 16),
         run(),
-        checkLine(FILE, 12), // hit finally on normal flow
+        checkLine(FILE, 16), // hit finally on normal flow
         run(),
-        checkLine(FILE, 12), // hit finally on exceptional flow
-        breakpoint(NAME, "main", 36),
+        checkLine(FILE, 16), // hit finally on exceptional flow
+        breakpoint(NAME, "main", 40),
         run(),
-        checkLine(FILE, 36),
+        checkLine(FILE, 40),
         run());
   }
 }

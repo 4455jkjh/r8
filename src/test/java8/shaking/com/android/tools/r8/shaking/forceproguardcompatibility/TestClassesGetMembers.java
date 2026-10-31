@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 class TestClassWithMembers {
   int unused;
   static String foo = "foo";
+
   String bar(String s) {
     return foo + s;
   }
@@ -20,8 +21,7 @@ class TestMainWithGetMembers {
     System.out.println(foo.get(null));
 
     TestClassWithMembers instance = new TestClassWithMembers();
-    Method bar =
-        TestClassWithMembers.class.getDeclaredMethod("bar", new Class[] { String.class });
+    Method bar = TestClassWithMembers.class.getDeclaredMethod("bar", new Class[] {String.class});
     String barResult = (String) bar.invoke(instance, "bar");
     assert barResult.startsWith("foo");
     assert barResult.endsWith("bar");

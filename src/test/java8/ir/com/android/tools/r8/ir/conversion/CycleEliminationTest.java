@@ -145,24 +145,20 @@ public class CycleEliminationTest extends CallGraphTestBase {
 
     List<Configuration> configurations = new ArrayList<>();
     // All orderings, where no methods are marked as force inline.
-    orderings
-        .stream()
+    orderings.stream()
         .map(ordering -> new Configuration(ordering, ImmutableSet.of(), null))
         .forEach(configurations::add);
     // All orderings, where n1 is marked as force inline
     // (the configuration where n2 is marked as force inline is symmetric).
-    orderings
-        .stream()
+    orderings.stream()
         .map(ordering -> new Configuration(ordering, ImmutableSet.of(n1), canInlineN1))
         .forEach(configurations::add);
     // All orderings, where n3 is marked as force inline.
-    orderings
-        .stream()
+    orderings.stream()
         .map(ordering -> new Configuration(ordering, ImmutableSet.of(n3), canInlineN3))
         .forEach(configurations::add);
     // All orderings, where n1 and n3 are marked as force inline.
-    orderings
-        .stream()
+    orderings.stream()
         .map(ordering -> new Configuration(ordering, ImmutableSet.of(n1, n3), canInlineN1N3))
         .forEach(configurations::add);
 

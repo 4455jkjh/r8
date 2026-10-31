@@ -12,7 +12,6 @@ public class DefaultMethods {
     default int getValue() {
       return 1;
     }
-
   }
 
   static class C3 {
@@ -21,11 +20,9 @@ public class DefaultMethods {
     }
   }
 
-  static class C4 extends C3 implements I3 {
-  }
+  static class C4 extends C3 implements I3 {}
 
-  static class C5 implements I4 {
-  }
+  static class C5 implements I4 {}
 
   public static void main(String[] args) {
     new C2().d1();

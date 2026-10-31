@@ -24,9 +24,9 @@ import org.objectweb.asm.Opcodes;
 */
 class IllegalAccessErrorTestDump implements Opcodes {
 
-  final static String MESSAGE = "Expect to catch IAE during check-cast of null";
+  static final String MESSAGE = "Expect to catch IAE during check-cast of null";
 
-  public static byte[] dump () {
+  public static byte[] dump() {
 
     ClassWriter classWriter = new ClassWriter(0);
     MethodVisitor methodVisitor;
@@ -48,8 +48,9 @@ class IllegalAccessErrorTestDump implements Opcodes {
       methodVisitor.visitEnd();
     }
     {
-      methodVisitor = classWriter.visitMethod(
-          ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
+      methodVisitor =
+          classWriter.visitMethod(
+              ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
       methodVisitor.visitCode();
       Label label0 = new Label();
       Label label1 = new Label();
@@ -76,8 +77,7 @@ class IllegalAccessErrorTestDump implements Opcodes {
       Label label4 = new Label();
       methodVisitor.visitLabel(label4);
       methodVisitor.visitLineNumber(6, label4);
-      methodVisitor.visitFieldInsn(
-          GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+      methodVisitor.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
       methodVisitor.visitLdcInsn(MESSAGE);
       methodVisitor.visitMethodInsn(
           INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);

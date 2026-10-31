@@ -65,7 +65,7 @@ public class InvokeStaticNegativeTest extends TestBase {
 
   static class Main {
     public static void main(String... args) {
-      test(null);         // calls test with null.
+      test(null); // calls test with null.
       test(new Object()); // calls test with non-null instance.
     }
 

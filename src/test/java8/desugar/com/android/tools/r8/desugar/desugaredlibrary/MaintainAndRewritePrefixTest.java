@@ -45,12 +45,15 @@ public class MaintainAndRewritePrefixTest extends DesugaredLibraryTestBase imple
 
   /**
    * Add this library desugaring configuration:
+   *
+   * <pre>
    * "library_flags": [
    *  {
    *   "rewrite_prefix": {"java.time.": "j$.time."},
    *   "maintain_prefix": ["java.time."],
    *  }
    * ],
+   * </pre>
    */
   private static void specifyDesugaredLibrary(InternalOptions options) {
     HumanRewritingFlags rewritingFlags =

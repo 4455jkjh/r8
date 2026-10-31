@@ -26,8 +26,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class InstructionIteratorTest extends SmaliTestBase {
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -49,14 +48,14 @@ public class InstructionIteratorTest extends SmaliTestBase {
 
     String returnType = "int";
     List<String> parameters = ImmutableList.of("int", "int");
-    MethodSignature signature = builder.addStaticMethod(
-        returnType,
-        DEFAULT_METHOD_NAME,
-        parameters,
-        1,
-        "    add-int             v0, p0, p1",
-        "    return              p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            returnType,
+            DEFAULT_METHOD_NAME,
+            parameters,
+            1,
+            "    add-int             v0, p0, p1",
+            "    return              p0");
 
     AndroidApp application = buildApplication(builder);
 

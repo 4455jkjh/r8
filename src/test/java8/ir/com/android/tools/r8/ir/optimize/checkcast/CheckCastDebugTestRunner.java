@@ -150,5 +150,4 @@ public class CheckCastDebugTestRunner extends DebugTestBase {
         Streams.stream(method.iterateInstructions(InstructionSubject::isCheckCast)).count();
     assertEquals(0, count);
   }
-
 }

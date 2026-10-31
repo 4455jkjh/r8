@@ -20,18 +20,21 @@ import org.junit.Test;
 @NoVerticalClassMerging
 class Super {
   public void m1() {}
+
   private void m2() {}
 }
 
 @NoVerticalClassMerging
 class Sub extends Super {
   public void m1() {}
+
   private void m2() {}
 }
 
 @NoVerticalClassMerging
 class SubSub extends Sub {
   public void m1() {}
+
   public void m2() {}
 }
 

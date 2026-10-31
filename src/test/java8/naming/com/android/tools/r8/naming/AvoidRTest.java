@@ -151,5 +151,4 @@ public class AvoidRTest extends JasminTestBase {
     // Repackage every package to the top-level.
     test_withPackageHierarchy("-flattenpackagehierarchy");
   }
-
 }

@@ -40,9 +40,8 @@ public class SingleTargetExecutionTest extends AsmTestBase {
           SubSubClassThree.class,
           Main.class);
 
-  public static List<byte[]> ASM_CLASSES = ImmutableList.of(
-      getBytesFromAsmClass(IrrelevantInterfaceWithDefaultDump::dump)
-  );
+  public static List<byte[]> ASM_CLASSES =
+      ImmutableList.of(getBytesFromAsmClass(IrrelevantInterfaceWithDefaultDump::dump));
 
   @Parameter(0)
   public boolean enableInliningAnnotations;

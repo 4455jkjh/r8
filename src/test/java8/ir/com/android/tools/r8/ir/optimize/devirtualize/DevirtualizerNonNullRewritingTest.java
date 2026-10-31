@@ -37,9 +37,7 @@ public class DevirtualizerNonNullRewritingTest extends TestBase {
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
-  /**
-   * Regression test for b/119168882.
-   */
+  /** Regression test for b/119168882. */
   @Test
   public void test() throws Exception {
     testForR8(parameters.getBackend())
