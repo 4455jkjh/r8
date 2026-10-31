@@ -250,16 +250,16 @@ public class ProguardMemberRuleValue {
 
   @SuppressWarnings("ReferenceEquality")
   public boolean test(AppView<?> appView, Value value) {
+    Value root = value.getAliasedValue();
     switch (type) {
       case BOOLEAN:
-        return value.isConstNumber(booleanValue ? 1 : 0);
+        return root.isConstNumber(booleanValue ? 1 : 0);
       case FIELD:
         {
-          Value root = value.getAliasedValue();
           // If the value is defined by a field-get instruction, then check if the field instruction
           // matches the field in the condition.
           if (root.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
-            FieldGet fieldGet = value.getDefinition().asFieldGet();
+            FieldGet fieldGet = root.getDefinition().asFieldGet();
             DexField field = fieldGet.getField();
             if (field.getName().isIdenticalTo(getFieldName())) {
               if (field.getHolderType().isIdenticalTo(getFieldHolder())) {
@@ -289,14 +289,14 @@ public class ProguardMemberRuleValue {
                 AbstractValue fieldValue = field.getOptimizationInfo().getAbstractValue();
                 if (fieldValue.isSingleValue()) {
                   if (fieldValue.isNull()) {
-                    return value.getType().isReferenceType()
-                        && value.getType().nullability().isDefinitelyNull();
+                    return root.getType().isReferenceType()
+                        && root.getType().nullability().isDefinitelyNull();
                   } else if (fieldValue.isSingleConstClassValue()) {
-                    return value.isConstClass(fieldValue.asSingleConstClassValue().getType());
+                    return root.isConstClass(fieldValue.asSingleConstClassValue().getType());
                   } else if (fieldValue.isSingleNumberValue()) {
-                    return value.isConstNumber(fieldValue.asSingleNumberValue().getValue());
+                    return root.isConstNumber(fieldValue.asSingleNumberValue().getValue());
                   } else if (fieldValue.isSingleStringValue()) {
-                    return value.isConstString(fieldValue.asSingleStringValue().getDexString());
+                    return root.isConstString(fieldValue.asSingleStringValue().getDexString());
                   }
                 }
               }
@@ -311,11 +311,11 @@ public class ProguardMemberRuleValue {
           return type.isReferenceType() && type.nullability() == getNullability();
         }
       case STRING:
-        return value.isConstString(stringValue);
+        return root.isConstString(stringValue);
       case VALUE_RANGE:
         {
-          if (value.isConstNumber()) {
-            long rawValue = value.getConstInstruction().asConstNumber().getRawValue();
+          if (root.isConstNumber()) {
+            long rawValue = root.getConstInstruction().asConstNumber().getRawValue();
             return longInterval.containsValue(rawValue);
           }
           return false;

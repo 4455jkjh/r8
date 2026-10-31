@@ -3,10 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.assumevalues;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
-import static org.junit.Assert.assertThrows;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.TestBase;
@@ -32,32 +28,28 @@ public class AssumeValuesAliasedFieldArgumentTest extends TestBase {
   @Test
   public void test() throws Exception {
     String featuresTypeName = Features.class.getTypeName();
-    assertThrows(
-        CompilationFailedException.class,
-        () ->
-            testForR8(parameters)
-                .addInnerClasses(getClass())
-                .addKeepMainRule(Main.class)
-                .addKeepRules(
-                    "-assumevalues class " + Main.class.getTypeName() + " {",
-                    "  static java.lang.String getFeature(* = \"b\") return \"b\";",
-                    "  static java.lang.String getFeature(* = \"c\") return \"c\";",
-                    "  static java.lang.String hasFeature(* = "
-                        + featuresTypeName
-                        + ".FEATURE_A) return \"a\";",
-                    "  static java.lang.String hasFeature(* = "
-                        + featuresTypeName
-                        + ".FEATURE_B) return \"b\";",
-                    "  static java.lang.String hasFeature(* = "
-                        + featuresTypeName
-                        + ".FEATURE_C) return \"c\";",
-                    "}")
-                .enableInliningAnnotations()
-                .enableMemberValuePropagationAnnotations()
-                .compileWithExpectedDiagnostics(
-                    diagnostics ->
-                        diagnostics.assertErrorsMatch(
-                            diagnosticException(NullPointerException.class))));
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Main.class)
+        .addKeepRules(
+            "-assumevalues class " + Main.class.getTypeName() + " {",
+            "  static java.lang.String getFeature(* = \"b\") return \"b\";",
+            "  static java.lang.String getFeature(* = \"c\") return \"c\";",
+            "  static java.lang.String hasFeature(* = "
+                + featuresTypeName
+                + ".FEATURE_A) return \"a\";",
+            "  static java.lang.String hasFeature(* = "
+                + featuresTypeName
+                + ".FEATURE_B) return \"b\";",
+            "  static java.lang.String hasFeature(* = "
+                + featuresTypeName
+                + ".FEATURE_C) return \"c\";",
+            "}")
+        .enableInliningAnnotations()
+        .enableMemberValuePropagationAnnotations()
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("a", "b", "c", "unmatched");
   }
 
   static class Features {
