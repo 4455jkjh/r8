@@ -489,12 +489,20 @@
       entry.builderUrl || miloBuilderUrl(project, bucket, builderName);
 
     const startedBuilds = builds.filter((b) => b.status === "STARTED");
-    const completed = builds.filter(
-      (b) =>
-        b.status !== "STARTED" &&
-        b.status !== "SCHEDULED" &&
-        b.status !== "CANCELED",
-    );
+    const buildCommitIdx = (b) => {
+      const sha =
+        b && b.input && b.input.gitilesCommit && b.input.gitilesCommit.id;
+      const idx = sha ? commitIdxMap.get(sha) : undefined;
+      return idx !== undefined ? idx : Number.MAX_SAFE_INTEGER;
+    };
+    const completed = builds
+      .filter(
+        (b) =>
+          b.status !== "STARTED" &&
+          b.status !== "SCHEDULED" &&
+          b.status !== "CANCELED",
+      )
+      .sort((a, b) => buildCommitIdx(a) - buildCommitIdx(b));
 
     const slots = computeConsoleSlots(
       builds,
