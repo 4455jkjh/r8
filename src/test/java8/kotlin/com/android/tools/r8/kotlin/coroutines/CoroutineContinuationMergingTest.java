@@ -37,10 +37,18 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
   // ContinuationImpl for a top-level suspend function (no final `this$0` receiver field).
   private static final ClassReference TOP_LEVEL_CONTINUATION =
       Reference.classFromTypeName(PKG + ".MainKt$topLevelSuspend$1");
-  // ContinuationImpls for member suspend functions on Worker (both have `final Worker this$0`,
-  // with different non-final spill fields).
+  // ContinuationImpls for member suspend functions on Worker (all have `final Worker this$0`,
+  // with different non-final spill field counts and reference types).
   private static final ClassReference ONE_SUSPEND_CONTINUATION =
       Reference.classFromTypeName(PKG + ".Worker$oneSuspend$1");
+  private static final ClassReference PAYLOAD_FIRST_A_CONTINUATION =
+      Reference.classFromTypeName(PKG + ".Worker$payloadFirstA$1");
+  private static final ClassReference PAYLOAD_FIRST_B_CONTINUATION =
+      Reference.classFromTypeName(PKG + ".Worker$payloadFirstB$1");
+  private static final ClassReference PAYLOAD_SECOND_A_CONTINUATION =
+      Reference.classFromTypeName(PKG + ".Worker$payloadSecondA$1");
+  private static final ClassReference PAYLOAD_SECOND_B_CONTINUATION =
+      Reference.classFromTypeName(PKG + ".Worker$payloadSecondB$1");
   private static final ClassReference TWO_SUSPENDS_CONTINUATION =
       Reference.classFromTypeName(PKG + ".Worker$twoSuspends$1");
 
@@ -52,13 +60,30 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
       Reference.classFromTypeName(PKG + ".MainKt$main$oneSuspendLambda$1");
   private static final ClassReference TWO_SUSPENDS_LAMBDA =
       Reference.classFromTypeName(PKG + ".MainKt$main$twoSuspendsLambda$1");
+  // SuspendLambdas each capturing one final field of type FirstPayload or SecondPayload.
+  private static final ClassReference FIRST_PAYLOAD_LAMBDA_A =
+      Reference.classFromTypeName(PKG + ".MainKt$main$firstPayloadLambdaA$1");
+  private static final ClassReference FIRST_PAYLOAD_LAMBDA_B =
+      Reference.classFromTypeName(PKG + ".MainKt$main$firstPayloadLambdaB$1");
+  private static final ClassReference SECOND_PAYLOAD_LAMBDA_A =
+      Reference.classFromTypeName(PKG + ".MainKt$main$secondPayloadLambdaA$1");
+  private static final ClassReference SECOND_PAYLOAD_LAMBDA_B =
+      Reference.classFromTypeName(PKG + ".MainKt$main$secondPayloadLambdaB$1");
 
   private static final String[] EXPECTED_OUTPUT = {
     "twoSuspends: worker, 6, v1, v2",
     "oneSuspend: worker",
-    "topLevel: tag, v3",
-    "oneSuspendLambda: tag, v4",
-    "twoSuspendsLambda: tag, 2, v5, v6"
+    "payloadFirstA: worker, first:tag-a, v3",
+    "payloadFirstB: worker, first:tag-b, v4",
+    "payloadSecondA: worker, second:3, v5",
+    "payloadSecondB: worker, second:4, v6",
+    "topLevel: tag, v7",
+    "oneSuspendLambda: tag, v8",
+    "twoSuspendsLambda: tag, 2, v9, v10",
+    "firstPayloadLambdaA: first:tag, v11",
+    "firstPayloadLambdaB: first:tag, v12",
+    "secondPayloadLambdaA: second:3, v13",
+    "secondPayloadLambdaB: second:3, v14"
   };
 
   private static KotlinCompileMemoizer compiledJars;
@@ -95,12 +120,22 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
             inspector ->
                 inspector
                     .assertIsCompleteMergeGroup(ONE_SUSPEND_CONTINUATION, TWO_SUSPENDS_CONTINUATION)
+                    .assertIsCompleteMergeGroup(
+                        PAYLOAD_FIRST_A_CONTINUATION, PAYLOAD_FIRST_B_CONTINUATION)
+                    .assertIsCompleteMergeGroup(
+                        PAYLOAD_SECOND_A_CONTINUATION, PAYLOAD_SECOND_B_CONTINUATION)
                     .assertIsCompleteMergeGroup(ONE_SUSPEND_LAMBDA, TWO_SUSPENDS_LAMBDA)
+                    .assertIsCompleteMergeGroup(FIRST_PAYLOAD_LAMBDA_A, FIRST_PAYLOAD_LAMBDA_B)
+                    .assertIsCompleteMergeGroup(SECOND_PAYLOAD_LAMBDA_A, SECOND_PAYLOAD_LAMBDA_B)
                     .assertClassReferencesNotMerged(TOP_LEVEL_CONTINUATION, TWO_CAPTURES_LAMBDA))
         .compile()
         .inspect(
             inspector -> {
               assertThat(inspector.clazz(ONE_SUSPEND_CONTINUATION), isPresent());
+              assertThat(inspector.clazz(PAYLOAD_FIRST_A_CONTINUATION), isPresent());
+              assertThat(inspector.clazz(PAYLOAD_FIRST_B_CONTINUATION), isAbsent());
+              assertThat(inspector.clazz(PAYLOAD_SECOND_A_CONTINUATION), isPresent());
+              assertThat(inspector.clazz(PAYLOAD_SECOND_B_CONTINUATION), isAbsent());
               assertThat(inspector.clazz(TWO_SUSPENDS_CONTINUATION), isAbsent());
               assertThat(inspector.clazz(TOP_LEVEL_CONTINUATION), isPresent());
               assertTrue(
@@ -136,10 +171,18 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
                 inspector.assertClassReferencesNotMerged(
                     TOP_LEVEL_CONTINUATION,
                     ONE_SUSPEND_CONTINUATION,
+                    PAYLOAD_FIRST_A_CONTINUATION,
+                    PAYLOAD_FIRST_B_CONTINUATION,
+                    PAYLOAD_SECOND_A_CONTINUATION,
+                    PAYLOAD_SECOND_B_CONTINUATION,
                     TWO_SUSPENDS_CONTINUATION,
                     TWO_CAPTURES_LAMBDA,
                     ONE_SUSPEND_LAMBDA,
-                    TWO_SUSPENDS_LAMBDA))
+                    TWO_SUSPENDS_LAMBDA,
+                    FIRST_PAYLOAD_LAMBDA_A,
+                    FIRST_PAYLOAD_LAMBDA_B,
+                    SECOND_PAYLOAD_LAMBDA_A,
+                    SECOND_PAYLOAD_LAMBDA_B))
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
   }
