@@ -5,31 +5,34 @@
 package com.android.tools.r8.ir.analysis.proto.schema;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 
-public class ProtoConstIntObject extends ProtoObject {
+public class ProtoConstNumberObject extends ProtoObject {
 
-  private final int value;
+  private final long value;
+  private final PrimitiveTypeElement type;
 
-  public ProtoConstIntObject(int value) {
+  public ProtoConstNumberObject(long value, PrimitiveTypeElement type) {
     this.value = value;
+    this.type = type;
   }
 
   @Override
   public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
-    return ImmutableList.of(code.createIntConstant(value));
+    return ImmutableList.of(code.createNumberConstant(value, type));
   }
 
   @Override
-  public boolean isProtoConstIntObject() {
+  public boolean isProtoConstNumberObject() {
     return true;
   }
 
   @Override
-  public ProtoConstIntObject asProtoConstIntObject() {
+  public ProtoConstNumberObject asProtoConstNumberObject() {
     return this;
   }
 }

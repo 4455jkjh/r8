@@ -15,17 +15,18 @@ import com.android.tools.r8.ir.code.Value;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 
-public class ProtoBoxedIntObject extends ProtoObject {
+public class ProtoBoxedPrimitiveObject extends ProtoObject {
 
+  private final DexMethod valueOfMethod;
   private final ProtoObject object;
 
-  public ProtoBoxedIntObject(ProtoObject object) {
+  public ProtoBoxedPrimitiveObject(DexMethod valueOfMethod, ProtoObject object) {
+    this.valueOfMethod = valueOfMethod;
     this.object = object;
   }
 
   @Override
   public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
-    DexMethod valueOfMethod = appView.dexItemFactory().integerMembers.valueOf;
     Value outValue =
         code.createValue(
             TypeElement.fromDexType(
@@ -33,18 +34,18 @@ public class ProtoBoxedIntObject extends ProtoObject {
     List<Instruction> instructions = object.buildIR(appView, code);
     ImmutableList.Builder<Instruction> builder = ImmutableList.builder();
     builder.addAll(instructions);
-    Value integerValue = instructions.get(instructions.size() - 1).outValue();
-    builder.add(new InvokeStatic(valueOfMethod, outValue, ImmutableList.of(integerValue)));
+    Value primitiveValue = instructions.get(instructions.size() - 1).outValue();
+    builder.add(new InvokeStatic(valueOfMethod, outValue, ImmutableList.of(primitiveValue)));
     return builder.build();
   }
 
   @Override
-  public boolean isProtoBoxedIntObject() {
+  public boolean isProtoBoxedPrimitiveObject() {
     return true;
   }
 
   @Override
-  public ProtoBoxedIntObject asProtoBoxedIntObject() {
+  public ProtoBoxedPrimitiveObject asProtoBoxedPrimitiveObject() {
     return this;
   }
 }

@@ -73,19 +73,19 @@ public abstract class ProtoObject {
     return null;
   }
 
-  public boolean isProtoConstIntObject() {
+  public boolean isProtoConstNumberObject() {
     return false;
   }
 
-  public ProtoConstIntObject asProtoConstIntObject() {
+  public ProtoConstNumberObject asProtoConstNumberObject() {
     return null;
   }
 
-  public boolean isProtoBoxedIntObject() {
+  public boolean isProtoBoxedPrimitiveObject() {
     return false;
   }
 
-  public ProtoBoxedIntObject asProtoBoxedIntObject() {
+  public ProtoBoxedPrimitiveObject asProtoBoxedPrimitiveObject() {
     return null;
   }
 

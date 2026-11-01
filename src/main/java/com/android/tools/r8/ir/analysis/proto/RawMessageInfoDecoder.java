@@ -10,14 +10,16 @@ import static com.android.tools.r8.ir.analysis.proto.ProtoUtils.getObjectsArrayV
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.proto.schema.DeadProtoFieldObject;
 import com.android.tools.r8.ir.analysis.proto.schema.LiveProtoFieldObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedBooleanObject;
-import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedIntObject;
-import com.android.tools.r8.ir.analysis.proto.schema.ProtoConstIntObject;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedPrimitiveObject;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoConstNumberObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldInfo;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldType;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldTypeFactory;
@@ -30,6 +32,7 @@ import com.android.tools.r8.ir.analysis.proto.schema.ProtoObjectFromInvokeVirtua
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoObjectFromStaticGet;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoStringObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoTypeObject;
+import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.code.ConstClass;
 import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.DexItemBasedConstString;
@@ -293,16 +296,12 @@ public class RawMessageInfoDecoder {
       return false;
     }
     Instruction instruction = value.getDefinition();
-    if (instruction.isConstString()) {
+    if (instruction.isConstString() || instruction.isStaticGet()) {
+      // Allow static gets, such as Boolean.FALSE when a boxed boolean has been rewritten.
       return true;
     }
     if (instruction.isInvokeStatic()) {
-      InvokeStatic invoke = instruction.asInvokeStatic();
-      return invoke
-              .getInvokedMethod()
-              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
-          && !invoke.arguments().isEmpty()
-          && invoke.getFirstArgument().isConstNumber();
+      return isBoxedConstant(instruction.asInvokeStatic());
     }
     return false;
   }
@@ -325,13 +324,13 @@ public class RawMessageInfoDecoder {
       if (invoke.getFirstArgument().isPhi()) {
         return false;
       }
+      if (isBoxedConstant(invoke)) {
+        // Allow boxed primitives from const.
+        return true;
+      }
       if (invoke
           .getInvokedMethod()
           .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)) {
-        // Allow boxed integer from const
-        if (invoke.getFirstArgument().getDefinition().isConstNumber()) {
-          return true;
-        }
         // Allow any single argument invoke virtual on any object returned by a static get.
         Instruction definition = invoke.getFirstArgument().getAliasedValue().getDefinition();
         return definition.isInvokeVirtual()
@@ -344,14 +343,32 @@ public class RawMessageInfoDecoder {
                 .getDefinition()
                 .isStaticGet();
       }
-      if (invoke
-          .getInvokedMethod()
-          .isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf)) {
-        // Allow boxed integer from const.
-        return invoke.getFirstArgument().getDefinition().isConstNumber();
-      }
     }
     return false;
+  }
+
+  private boolean isBoxedConstant(InvokeStatic invoke) {
+    DexItemFactory dexItemFactory = references.dexItemFactory();
+    DexMethod invokedMethod = invoke.getInvokedMethod();
+    return (invokedMethod.isIdenticalTo(dexItemFactory.booleanMembers.valueOf)
+            || invokedMethod.isIdenticalTo(dexItemFactory.integerMembers.valueOf)
+            || invokedMethod.isIdenticalTo(dexItemFactory.longMembers.valueOf)
+            || invokedMethod.isIdenticalTo(dexItemFactory.floatMembers.valueOf)
+            || invokedMethod.isIdenticalTo(dexItemFactory.doubleMembers.valueOf))
+        && invoke.getFirstArgument().isConstNumber();
+  }
+
+  private ProtoObject decodeBoxedConstant(InvokeStatic invoke) {
+    assert isBoxedConstant(invoke);
+    DexMethod invokedMethod = invoke.getInvokedMethod();
+    if (invokedMethod.isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf)) {
+      return new ProtoBoxedBooleanObject(
+          invoke.getFirstArgument().getConstBoolean(), references.dexItemFactory());
+    }
+    long value = invoke.getFirstArgument().getDefinition().asConstNumber().getRawValue();
+    PrimitiveTypeElement type =
+        PrimitiveTypeElement.fromDexType(invokedMethod.getParameter(0), false);
+    return new ProtoBoxedPrimitiveObject(invokedMethod, new ProtoConstNumberObject(value, type));
   }
 
   private ProtoObject decodeMapEntryKeyOrValueType(Instruction instruction)
@@ -366,16 +383,10 @@ public class RawMessageInfoDecoder {
       throws InvalidRawMessageInfoException {
     if (instruction.isConstString()) {
       return new ProtoStringObject(instruction.asConstString().getValue());
-    } else if (instruction.isInvokeStatic()) {
-      InvokeStatic invoke = instruction.asInvokeStatic();
-      if (invoke
-              .getInvokedMethod()
-              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
-          && !invoke.arguments().isEmpty()
-          && invoke.getFirstArgument().getDefinition().isConstNumber()) {
-        return new ProtoBoxedIntObject(
-            new ProtoConstIntObject(invoke.getFirstArgument().getConstInt()));
-      }
+    } else if (instruction.isStaticGet()) {
+      return new ProtoObjectFromStaticGet(instruction.asStaticGet().getField());
+    } else if (instruction.isInvokeStatic() && isBoxedConstant(instruction.asInvokeStatic())) {
+      return decodeBoxedConstant(instruction.asInvokeStatic());
     }
     throw new InvalidRawMessageInfoException();
   }
@@ -390,29 +401,21 @@ public class RawMessageInfoDecoder {
       InvokeStatic invoke = instruction.asInvokeStatic();
       if (invoke.arguments().isEmpty()) {
         return new ProtoObjectFromInvokeStatic(invoke.getInvokedMethod());
+      } else if (isBoxedConstant(invoke)) {
+        return decodeBoxedConstant(invoke);
       } else if (invoke
           .getInvokedMethod()
           .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)) {
-        if (invoke.getFirstArgument().getDefinition().isConstNumber()) {
-          return new ProtoBoxedIntObject(
-              new ProtoConstIntObject(invoke.getFirstArgument().getConstInt()));
-        } else {
-          InvokeVirtual invokeVirtual =
-              invoke.getFirstArgument().getAliasedValue().getDefinition().asInvokeVirtual();
-          StaticGet staticGet =
-              invokeVirtual.getFirstArgument().getAliasedValue().getDefinition().asStaticGet();
-          ProtoObject protoObjectFromStaticGet = new ProtoObjectFromStaticGet(staticGet.getField());
-          ProtoObject protoObjectFromInvokeVirtual =
-              new ProtoObjectFromInvokeVirtual(
-                  protoObjectFromStaticGet, invokeVirtual.getInvokedMethod());
-          return new ProtoBoxedIntObject(protoObjectFromInvokeVirtual);
-        }
-      } else if (invoke
-              .getInvokedMethod()
-              .isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf)
-          && invoke.getFirstArgument().getDefinition().isConstNumber()) {
-        return new ProtoBoxedBooleanObject(
-            invoke.getFirstArgument().getConstBoolean(), references.dexItemFactory());
+        InvokeVirtual invokeVirtual =
+            invoke.getFirstArgument().getAliasedValue().getDefinition().asInvokeVirtual();
+        StaticGet staticGet =
+            invokeVirtual.getFirstArgument().getAliasedValue().getDefinition().asStaticGet();
+        ProtoObject protoObjectFromStaticGet = new ProtoObjectFromStaticGet(staticGet.getField());
+        ProtoObject protoObjectFromInvokeVirtual =
+            new ProtoObjectFromInvokeVirtual(
+                protoObjectFromStaticGet, invokeVirtual.getInvokedMethod());
+        return new ProtoBoxedPrimitiveObject(
+            invoke.getInvokedMethod(), protoObjectFromInvokeVirtual);
       }
     }
     throw new InvalidRawMessageInfoException();
