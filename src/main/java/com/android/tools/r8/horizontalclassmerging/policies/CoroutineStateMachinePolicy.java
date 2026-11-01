@@ -22,8 +22,8 @@ import java.util.concurrent.ExecutorService;
  * Separates Kotlin coroutine state machine merge candidates from all other classes, and groups the
  * candidates by their final fields.
  *
- * <p>Candidates are exempt from {@link SameInstanceFields} (see {@link
- * CoroutineStateMachineMergeCandidates}).
+ * <p>Candidates are exempt from {@link SameInstanceFields} and {@link MinimizeInstanceFieldCasts}
+ * (see {@link CoroutineStateMachineMergeCandidates}).
  */
 public class CoroutineStateMachinePolicy extends MultiClassPolicyWithPreprocessing<Void> {
 

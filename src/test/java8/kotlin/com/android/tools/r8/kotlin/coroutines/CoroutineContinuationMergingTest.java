@@ -119,22 +119,28 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
         .addHorizontallyMergedClassesInspector(
             inspector ->
                 inspector
-                    .assertIsCompleteMergeGroup(ONE_SUSPEND_CONTINUATION, TWO_SUSPENDS_CONTINUATION)
                     .assertIsCompleteMergeGroup(
-                        PAYLOAD_FIRST_A_CONTINUATION, PAYLOAD_FIRST_B_CONTINUATION)
+                        ONE_SUSPEND_CONTINUATION,
+                        PAYLOAD_FIRST_A_CONTINUATION,
+                        PAYLOAD_FIRST_B_CONTINUATION,
+                        PAYLOAD_SECOND_A_CONTINUATION,
+                        PAYLOAD_SECOND_B_CONTINUATION,
+                        TWO_SUSPENDS_CONTINUATION)
                     .assertIsCompleteMergeGroup(
-                        PAYLOAD_SECOND_A_CONTINUATION, PAYLOAD_SECOND_B_CONTINUATION)
-                    .assertIsCompleteMergeGroup(ONE_SUSPEND_LAMBDA, TWO_SUSPENDS_LAMBDA)
-                    .assertIsCompleteMergeGroup(FIRST_PAYLOAD_LAMBDA_A, FIRST_PAYLOAD_LAMBDA_B)
-                    .assertIsCompleteMergeGroup(SECOND_PAYLOAD_LAMBDA_A, SECOND_PAYLOAD_LAMBDA_B)
+                        ONE_SUSPEND_LAMBDA,
+                        TWO_SUSPENDS_LAMBDA,
+                        FIRST_PAYLOAD_LAMBDA_A,
+                        FIRST_PAYLOAD_LAMBDA_B,
+                        SECOND_PAYLOAD_LAMBDA_A,
+                        SECOND_PAYLOAD_LAMBDA_B)
                     .assertClassReferencesNotMerged(TOP_LEVEL_CONTINUATION, TWO_CAPTURES_LAMBDA))
         .compile()
         .inspect(
             inspector -> {
               assertThat(inspector.clazz(ONE_SUSPEND_CONTINUATION), isPresent());
-              assertThat(inspector.clazz(PAYLOAD_FIRST_A_CONTINUATION), isPresent());
+              assertThat(inspector.clazz(PAYLOAD_FIRST_A_CONTINUATION), isAbsent());
               assertThat(inspector.clazz(PAYLOAD_FIRST_B_CONTINUATION), isAbsent());
-              assertThat(inspector.clazz(PAYLOAD_SECOND_A_CONTINUATION), isPresent());
+              assertThat(inspector.clazz(PAYLOAD_SECOND_A_CONTINUATION), isAbsent());
               assertThat(inspector.clazz(PAYLOAD_SECOND_B_CONTINUATION), isAbsent());
               assertThat(inspector.clazz(TWO_SUSPENDS_CONTINUATION), isAbsent());
               assertThat(inspector.clazz(TOP_LEVEL_CONTINUATION), isPresent());
@@ -143,13 +149,13 @@ public class CoroutineContinuationMergingTest extends KotlinTestBase {
                       .clazz(ONE_SUSPEND_CONTINUATION)
                       .uniqueFieldWithOriginalName("this$0")
                       .isFinal());
-              assertThat(inspector.clazz(ONE_SUSPEND_LAMBDA), isPresent());
+              assertThat(inspector.clazz(ONE_SUSPEND_LAMBDA), isAbsent());
               assertThat(inspector.clazz(TWO_SUSPENDS_LAMBDA), isAbsent());
               assertThat(inspector.clazz(TWO_CAPTURES_LAMBDA), isPresent());
               assertTrue(
                   inspector
-                      .clazz(ONE_SUSPEND_LAMBDA)
-                      .uniqueFieldWithOriginalName("$tag")
+                      .clazz(FIRST_PAYLOAD_LAMBDA_A)
+                      .uniqueFieldWithOriginalName("$firstPayload")
                       .isFinal());
             })
         .run(parameters.getRuntime(), MAIN_CLASS)

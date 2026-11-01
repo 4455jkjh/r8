@@ -219,7 +219,14 @@ public class PolicyScheduler {
       ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     ImmutableList.Builder<Policy> builder = ImmutableList.builder();
-    addRequiredMultiClassPolicies(appView, immediateSubtypingInfo, runtimeTypeCheckInfo, builder);
+    CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates =
+        new CoroutineStateMachineMergeCandidates(appView, immediateSubtypingInfo);
+    addRequiredMultiClassPolicies(
+        appView,
+        immediateSubtypingInfo,
+        runtimeTypeCheckInfo,
+        coroutineStateMachineMergeCandidates,
+        builder);
     if (!appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView)) {
       AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
       addMultiClassPoliciesForMergingNonSyntheticClasses(appViewWithLiveness, builder);
@@ -227,7 +234,7 @@ public class PolicyScheduler {
     if (appView.hasLiveness()) {
       builder.add(new PreserveMethodCharacteristics(appView.withLiveness()));
     }
-    builder.add(new MinimizeInstanceFieldCasts());
+    builder.add(new MinimizeInstanceFieldCasts(coroutineStateMachineMergeCandidates));
     addMultiClassPoliciesForInterfaceMerging(appView, immediateSubtypingInfo, builder);
     return builder.add(new LimitClassGroups(appView), new FinalizeMergeGroup(appView)).build();
   }
@@ -257,9 +264,8 @@ public class PolicyScheduler {
       AppView<? extends AppInfoWithClassHierarchy> appView,
       ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       RuntimeTypeCheckInfo runtimeTypeCheckInfo,
+      CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates,
       ImmutableList.Builder<Policy> builder) {
-    CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates =
-        new CoroutineStateMachineMergeCandidates(appView, immediateSubtypingInfo);
     builder.add(
         new SameFilePolicy(appView),
         new CheckAbstractClasses(appView),
