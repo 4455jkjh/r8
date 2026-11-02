@@ -38,7 +38,10 @@ public class InvokeSpecialTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addPrivateVirtualMethod("foo", ImmutableList.of(), "I",
+    clazz.addPrivateVirtualMethod(
+        "foo",
+        ImmutableList.of(),
+        "I",
         ".limit stack 1",
         ".limit locals 1",
         "  ldc 42",
@@ -62,15 +65,17 @@ public class InvokeSpecialTests extends JasminTestBase {
     assertEquals(expected, artResult);
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void testPublicInvokeSpecial() throws Exception {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addVirtualMethod("foo", ImmutableList.of(), "I",
+    clazz.addVirtualMethod(
+        "foo",
+        ImmutableList.of(),
+        "I",
         ".limit stack 1",
         ".limit locals 1",
         "  ldc 42",

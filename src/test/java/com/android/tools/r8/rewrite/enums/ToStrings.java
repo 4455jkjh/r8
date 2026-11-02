@@ -13,9 +13,11 @@ import java.util.concurrent.TimeUnit;
 
 class ToStrings {
   enum TypeToString {
-    ONE, TWO;
+    ONE,
+    TWO;
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return name().toLowerCase(Locale.US);
     }
   }
@@ -32,14 +34,16 @@ class ToStrings {
   }
 
   enum NoToString {
-    ONE, TWO;
+    ONE,
+    TWO;
 
     public static final NoToString DEFAULT = TWO;
     public static final Direction DOWN = Direction.DOWN;
   }
 
   enum Direction {
-    UP, DOWN
+    UP,
+    DOWN
   }
 
   @NeverInline

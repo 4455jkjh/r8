@@ -8,8 +8,7 @@ import com.android.tools.r8.bridgeremoval.bridgestokeep.ObservableList.Observer;
 
 public interface ObservableList<O extends Observer> {
 
-  interface Observer {
-  }
+  interface Observer {}
 
   void registerObserver(O observer);
 }

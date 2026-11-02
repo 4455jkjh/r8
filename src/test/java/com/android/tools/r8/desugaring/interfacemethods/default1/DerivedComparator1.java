@@ -10,11 +10,14 @@ public interface DerivedComparator1<T> extends Comparator<T> {
   @Override
   default Comparator<T> reversed() {
     return TestMainDefault1.shouldCallStaticOnInterface
-        ? Comparator.super.reversed().reversed() : this;
+        ? Comparator.super.reversed().reversed()
+        : this;
   }
 
   default Comparator<T> doubleReversed() {
     return (TestMainDefault1.shouldCallStaticOnInterface
-        ? Comparator.super.reversed().reversed() : this).reversed();
+            ? Comparator.super.reversed().reversed()
+            : this)
+        .reversed();
   }
 }

@@ -70,7 +70,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
         test("testDefaultInInterfaceWithoutDesugaring", "desugaringwithmissingclasslib1", "N/A")
             .withInterfaceMethodDesugaring(OffOrAuto.Off)
             .withMinApiLevel(AndroidApiLevel.K);
-    try  {
+    try {
       lib1.build();
 
       // compilation should have failed on CompilationError since A is declaring a default method.
@@ -162,11 +162,8 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     execute(
         "testMissingInterfaceDesugared2AndroidK",
         "desugaringwithmissingclasstest2.Main",
-        new Path[] {
-            lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()
-        },
+        new Path[] {lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()},
         new Path[] {lib1Dex, lib2Dex, lib3Dex, testDex});
-
   }
 
   @Test
@@ -210,9 +207,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     execute(
         "testMissingInterfaceDesugared2AndroidO",
         "desugaringwithmissingclasstest2.Main",
-        new Path[] {
-          lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()
-        },
+        new Path[] {lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()},
         new Path[] {lib1Dex, lib2Dex, lib3Dex, testDex});
   }
 
@@ -264,11 +259,8 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     execute(
         "testCallToMissingSuperInterfaceDesugaredAndroidK",
         "desugaringwithmissingclasstest3.Main",
-        new Path[] {
-            lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()
-        },
+        new Path[] {lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()},
         new Path[] {lib1Dex, lib2Dex, lib3Dex, testDex});
-
   }
 
   @Test
@@ -312,9 +304,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     execute(
         "testCallToMissingSuperInterfaceDesugaredAndroidO",
         "desugaringwithmissingclasstest3.Main",
-        new Path[] {
-          lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()
-        },
+        new Path[] {lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()},
         new Path[] {lib1Dex, lib2Dex, lib3Dex, testDex});
   }
 
@@ -414,9 +404,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     execute(
         "testMissingSuperDesugaredAndroidO",
         "desugaringwithmissingclasstest2.Main",
-        new Path[] {
-          lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()
-        },
+        new Path[] {lib1.getInputJar(), lib2.getInputJar(), lib3.getInputJar(), test.getInputJar()},
         new Path[] {lib1Dex, lib2Dex, lib3Dex, testDex});
   }
 
@@ -486,11 +474,8 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     execute(
         "testMissingSuperDesugaredAndroidKWithCrossImplementation",
         "desugaringwithmissingclasstest4.Main",
-        new Path[] {
-          lib1.getInputJar(), lib3.getInputJar(), test.getInputJar()
-        },
+        new Path[] {lib1.getInputJar(), lib3.getInputJar(), test.getInputJar()},
         new Path[] {lib1Dex, lib3Dex, testDex});
-
   }
 
   @Test
@@ -539,11 +524,8 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
     execute(
         "testMissingSuperDesugaredAndroidKWithCrossImplementation",
         "desugaringwithmissingclasstest4.Main",
-        new Path[] {
-          lib1.getInputJar(), lib3.getInputJar(), lib4.getInputJar(), test.getInputJar()
-        },
+        new Path[] {lib1.getInputJar(), lib3.getInputJar(), lib4.getInputJar(), test.getInputJar()},
         new Path[] {lib1Dex, lib3Dex, lib4Dex, testDex});
-
   }
 
   @Override

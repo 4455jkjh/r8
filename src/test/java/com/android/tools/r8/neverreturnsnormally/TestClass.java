@@ -19,8 +19,7 @@ public class TestClass {
   public static boolean throwOrLoop(boolean b) {
     System.out.println("Inside TestClass::throwOrLoop");
     if (b) {
-      while (true) {
-      }
+      while (true) {}
     } else {
       throwNpe("");
       return false; // Effectively unreachable

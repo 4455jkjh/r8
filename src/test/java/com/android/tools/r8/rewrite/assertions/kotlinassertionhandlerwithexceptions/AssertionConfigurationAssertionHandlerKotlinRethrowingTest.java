@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.rewrite.assertions.kotlinassertionhandlerwithexceptions;
 
-
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestParameters;

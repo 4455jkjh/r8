@@ -4,5 +4,4 @@
 
 package com.android.tools.r8.desugaring.interfacemethods.test2;
 
-public interface LeftTest extends Test {
-}
+public interface LeftTest extends Test {}

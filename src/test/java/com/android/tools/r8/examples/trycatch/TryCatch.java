@@ -79,8 +79,7 @@ class TryCatch {
     return "three";
   }
 
-  private static void emptyMethod(int x) {
-  }
+  private static void emptyMethod(int x) {}
 
   private static int regressRemoveCatchHandlers(int a, int b) {
     try {
@@ -122,7 +121,7 @@ class TryCatch {
     // This bridge method will be generated.
     // public Object x() {
     //   return result of call "String x()"
-    //}
+    // }
 
     public String x() {
       return null;

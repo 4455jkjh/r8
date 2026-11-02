@@ -188,7 +188,6 @@ public class JumpSubroutineTests extends JasminTestBase {
         ".catch all from TryStartInner to TryEndInner using CatchInner",
         ".catch all from TryStart to TryEnd using Catch");
 
-
     runTest(builder, clazz.name, "0123");
   }
 
@@ -197,7 +196,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "I",
         ".limit stack 3",
         ".limit locals 3",
         "  ldc 0",
@@ -229,7 +231,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "I",
         ".limit stack 3",
         ".limit locals 3",
         "  ldc 0",
@@ -269,7 +274,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "I",
         ".limit stack 4",
         ".limit locals 3",
         "  ldc 0",
@@ -315,7 +323,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         "  ldc 0",
@@ -338,13 +349,12 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ret 1");
 
     clazz.addMainMethod(
-        ".limit stack 0",
-        ".limit locals 1",
-        "  invokestatic Test/foo()V",
-        "  return");
+        ".limit stack 0", ".limit locals 1", "  invokestatic Test/foo()V", "  return");
 
-    runTest(builder, clazz.name, "Got zero" + ToolHelper.LINE_SEPARATOR + "Got non-zero"
-            + ToolHelper.LINE_SEPARATOR);
+    runTest(
+        builder,
+        clazz.name,
+        "Got zero" + ToolHelper.LINE_SEPARATOR + "Got non-zero" + ToolHelper.LINE_SEPARATOR);
   }
 
   @Test
@@ -352,13 +362,16 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 2",
         ".limit locals 3",
         "  ldc 0",
-        "  jsr LabelSub",  // index 1.
+        "  jsr LabelSub", // index 1.
         "  ldc 1",
-        "  jsr LabelSub",  // index 3.
+        "  jsr LabelSub", // index 3.
         "  return",
         "LabelSub:",
         "  astore 1",
@@ -366,7 +379,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
         "  ldc \"Got non-zero, calling nested\"",
         "  invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V",
-        "  jsr LabelSub2",  // index 11.
+        "  jsr LabelSub2", // index 11.
         "  goto LabelRet",
         "LabelZero:",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -382,13 +395,16 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ret 2");
 
     clazz.addMainMethod(
-        ".limit stack 0",
-        ".limit locals 1",
-        "  invokestatic Test/foo()V",
-        "  return");
+        ".limit stack 0", ".limit locals 1", "  invokestatic Test/foo()V", "  return");
 
-    runTest(builder, clazz.name, "Got zero" + ToolHelper.LINE_SEPARATOR
-            + "Got non-zero, calling nested" + ToolHelper.LINE_SEPARATOR + "In nested subroutine"
+    runTest(
+        builder,
+        clazz.name,
+        "Got zero"
+            + ToolHelper.LINE_SEPARATOR
+            + "Got non-zero, calling nested"
+            + ToolHelper.LINE_SEPARATOR
+            + "In nested subroutine"
             + ToolHelper.LINE_SEPARATOR);
   }
 
@@ -397,7 +413,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 1",
         ".limit locals 1",
         "  jsr LabelSub1",
@@ -410,10 +429,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ret 0");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  invokestatic Test/foo()V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  invokestatic Test/foo()V", "  return");
 
     String expected = "";
     String javaResult = runOnJava(builder, clazz.name);
@@ -429,7 +445,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 1",
         ".limit locals 1",
         "  jsr LabelSub1",
@@ -442,10 +461,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ret 0");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  invokestatic Test/foo()V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  invokestatic Test/foo()V", "  return");
 
     runTest(builder, clazz.name, "");
   }
@@ -455,13 +471,16 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  jsr Jsr",
         // The return target is the same as the jsr target.
         "Jsr:",
-        "  pop",  // Return address is not used.
+        "  pop", // Return address is not used.
         "  new java/lang/Exception",
         "  dup",
         "  invokenonvirtual java/lang/Exception.<init>()V",
@@ -487,7 +506,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  jsr Jsr",
@@ -500,7 +522,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  pop",
         "  return",
         "Jsr:",
-        "  pop",  // Return address is not used.
+        "  pop", // Return address is not used.
         "  new java/lang/Exception",
         "  dup",
         "  invokenonvirtual java/lang/Exception.<init>()V",
@@ -526,7 +548,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 3",
         ".limit locals 2",
         "  ldc 0",
@@ -560,13 +585,15 @@ public class JumpSubroutineTests extends JasminTestBase {
         ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch");
 
     clazz.addMainMethod(
-        ".limit stack 0",
-        ".limit locals 1",
-        "  invokestatic Test/foo()V",
-        "  return");
+        ".limit stack 0", ".limit locals 1", "  invokestatic Test/foo()V", "  return");
 
-    runTest(builder, clazz.name, "Divided by zero" + ToolHelper.LINE_SEPARATOR
-            + "Divided by non-zero" + ToolHelper.LINE_SEPARATOR);
+    runTest(
+        builder,
+        clazz.name,
+        "Divided by zero"
+            + ToolHelper.LINE_SEPARATOR
+            + "Divided by non-zero"
+            + ToolHelper.LINE_SEPARATOR);
   }
 
   @Test
@@ -574,7 +601,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 4",
         ".limit locals 4",
         "  ldc 0",
@@ -596,10 +626,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ret 2");
 
     clazz.addMainMethod(
-        ".limit stack 0",
-        ".limit locals 1",
-        "  invokestatic Test/foo()V",
-        "  return");
+        ".limit stack 0", ".limit locals 1", "  invokestatic Test/foo()V", "  return");
 
     runTest(builder, clazz.name, "01");
   }
@@ -610,7 +637,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("I"), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("I"),
+        "V",
         ".limit stack 4",
         ".limit locals 2",
         "LabelTryStart:",
@@ -638,11 +668,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         ".catch java/lang/Exception from LabelTryStart to LabelTryEnd2 using LabelCatch2");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  ldc 2",
-        "  invokestatic Test/foo(I)V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  ldc 2", "  invokestatic Test/foo(I)V", "  return");
 
     runTest(builder, clazz.name, "42");
   }
@@ -652,7 +678,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("test", ImmutableList.of(), "I",
+    clazz.addStaticMethod(
+        "test",
+        ImmutableList.of(),
+        "I",
         ".limit stack 2",
         ".limit locals 2",
         "  ldc 10",
@@ -677,8 +706,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  pop",
         "  goto TryStart",
         "TryEnd:",
-        ".catch java/lang/Exception from TryStart to TryEnd using Catch"
-    );
+        ".catch java/lang/Exception from TryStart to TryEnd using Catch");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -695,7 +723,10 @@ public class JumpSubroutineTests extends JasminTestBase {
       JasminBuilder.ClassBuilder clazz, String name, String exception, boolean decrementInOuter) {
     String outer = decrementInOuter ? "  iinc 0 -1" : "";
     String inner = decrementInOuter ? "" : "  iinc 0 -1";
-    clazz.addStaticMethod(name, ImmutableList.of(), "I",
+    clazz.addStaticMethod(
+        name,
+        ImmutableList.of(),
+        "I",
         ".limit stack 3",
         ".limit locals 1",
         "  ldc 10",
@@ -706,7 +737,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ifeq LabelReturn1",
         "  jsr Jsr1",
         "Jsr1:",
-        "  pop",  // Return value is not used.
+        "  pop", // Return value is not used.
         "Jsr1Retry:",
         inner,
         "  iload 0",
@@ -715,7 +746,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ldc 2",
         "  ireturn",
         "Jsr2:",
-        "  pop",  // Return value is not used.
+        "  pop", // Return value is not used.
         "  new " + exception,
         "  dup",
         "  invokenonvirtual " + exception + ".<init>()V",
@@ -735,8 +766,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  goto TryStart",
         "TryEnd:",
         ".catch java/lang/Exception from Jsr2 to Jsr2End using Jsr2Catch",
-        ".catch java/lang/Throwable from TryStart to TryEnd using Catch"
-    );
+        ".catch java/lang/Throwable from TryStart to TryEnd using Catch");
   }
 
   @Test
@@ -771,7 +801,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("Z"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("Z"),
+        "I",
         ".limit stack 2",
         ".limit locals 3",
         "  ldc 10",
@@ -798,9 +831,9 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  astore 1",
         "  iload 0",
         "  ifeq LabelZero",
-        "  goto LabelLoopStart",  // Jump to loop start without invoking ret.
+        "  goto LabelLoopStart", // Jump to loop start without invoking ret.
         "LabelZero:",
-        "  ret 1",  // Invoke ret, which will also continue at the loop start.
+        "  ret 1", // Invoke ret, which will also continue at the loop start.
         ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch");
 
     clazz.addMainMethod(
@@ -1011,11 +1044,14 @@ public class JumpSubroutineTests extends JasminTestBase {
 
     // This is the code for the method
     //
-    // void org.eclipse.jdt.internal.core.JavaModelOperation.run(org.eclipse.core.runtime.IProgressMonitor)
+    // void
+    // org.eclipse.jdt.internal.core.JavaModelOperation.run(org.eclipse.core.runtime.IProgressMonitor)
     //
     // from struts2/lib/core-3.1.1.jar
     //
-    clazz.addVirtualMethod("run", ImmutableList.of("Lorg/eclipse/core/runtime/IProgressMonitor;"),
+    clazz.addVirtualMethod(
+        "run",
+        ImmutableList.of("Lorg/eclipse/core/runtime/IProgressMonitor;"),
         "V",
         ".limit stack 3",
         ".limit locals 15",
@@ -1025,20 +1061,20 @@ public class JumpSubroutineTests extends JasminTestBase {
         "TryEnd2:",
         "Catch2:",
         "  astore 6",
-        "  jsr Finally2Code",  // 6
+        "  jsr Finally2Code", // 6
         "  aload 6",
         "  athrow",
-        "Finally2Code:",  // 9
+        "Finally2Code:", // 9
         "  astore 5",
         "  ret 5",
         "Finally2Start:",
-        "  jsr Finally2Code",  // 13
+        "  jsr Finally2Code", // 13
         "Finally2End:",
         "  goto Finally1Start",
         "TryEnd1:",
         "Catch1:",
         "  astore 8",
-        "  jsr Finally1Code",  // 19
+        "  jsr Finally1Code", // 19
         "L19:",
         "  aload 8",
         "  athrow",
@@ -1048,28 +1084,28 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  goto Finally3Start",
         "Try3End:",
         "Catch3:",
-        "  astore 14",  // Catch
-        "  jsr Finally3Code",  // 30
+        "  astore 14", // Catch
+        "  jsr Finally3Code", // 30
         "  aload 14",
         "  athrow",
-        "Finally3Code:",  // Finally
+        "Finally3Code:", // Finally
         "  astore 13",
         "  ret 13",
         "Finally3Start:",
-        "  jsr Finally3Code",  // 37
+        "  jsr Finally3Code", // 37
         "Finally3End:",
         "  ret 7",
         "Finally1Start:",
-        "  jsr Finally1Code",  // 41
+        "  jsr Finally1Code", // 41
         "Finally1End:",
         "  return",
-        ".catch all from TryStart2 to TryEnd2 using Catch2",  // Block
-        ".catch all from Finally2Start to Finally2End using Catch2",  // Finally
-        ".catch all from TryStart1 to TryEnd1 using Catch1",  // Block
-        ".catch all from Finally1Start to Finally1End using Catch1",  // Finally
-        ".catch all from Try3Start to Try3End using Catch3",  // Block
-        ".catch all from Finally3Start to Finally3End using Catch3"  // Finally
-    );
+        ".catch all from TryStart2 to TryEnd2 using Catch2", // Block
+        ".catch all from Finally2Start to Finally2End using Catch2", // Finally
+        ".catch all from TryStart1 to TryEnd1 using Catch1", // Block
+        ".catch all from Finally1Start to Finally1End using Catch1", // Finally
+        ".catch all from Try3Start to Try3End using Catch3", // Block
+        ".catch all from Finally3Start to Finally3End using Catch3" // Finally
+        );
 
     // Check that the code compiles without an infinite loop. It cannot run by itself.
     AndroidApp app = compileWithD8(builder);
@@ -1374,7 +1410,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_3);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("Z"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("Z"),
+        "I",
         ".limit stack 2",
         ".limit locals 3",
         "  jsr LabelSub1",
@@ -1422,7 +1461,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("Z"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("Z"),
+        "I",
         ".limit stack 2",
         ".limit locals 3",
         "  jsr LabelSub1",
@@ -1470,7 +1512,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("Z"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("Z"),
+        "I",
         ".limit stack 2",
         ".limit locals 3",
         "  jsr LabelSub1",
@@ -1567,7 +1612,10 @@ public class JumpSubroutineTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("Z"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("Z"),
+        "I",
         ".limit stack 2",
         ".limit locals 2",
         "  jsr LabelSub1",
@@ -1586,7 +1634,7 @@ public class JumpSubroutineTests extends JasminTestBase {
         "  ireturn",
         "LabelSub2:",
         "  iload 0",
-        "  ifeq DontStoreInSecond",  // Same as StoreInFirst
+        "  ifeq DontStoreInSecond", // Same as StoreInFirst
         "  astore 1",
         "  goto Ret",
         "DontStoreInSecond:",

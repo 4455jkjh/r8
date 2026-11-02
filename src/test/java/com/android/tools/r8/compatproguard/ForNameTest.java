@@ -36,7 +36,7 @@ public class ForNameTest extends CompatProguardSmaliTestBase {
   }
 
   private final String CLASS_NAME = "Example";
-  private final static String BOO = "Boo";
+  private static final String BOO = "Boo";
 
   @Test
   public void forName_renamed() throws Exception {
@@ -109,5 +109,4 @@ public class ForNameTest extends CompatProguardSmaliTestBase {
     assertTrue(code.instructions[1] instanceof DexInvokeStatic);
     assertTrue(code.instructions[2] instanceof DexReturnVoid);
   }
-
 }

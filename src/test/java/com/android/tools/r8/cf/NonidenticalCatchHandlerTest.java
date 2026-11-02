@@ -48,7 +48,7 @@ public class NonidenticalCatchHandlerTest extends TestBase {
     public void foo(Object a) {
       int x = 0;
       try {
-        x = ((String)a).length();
+        x = ((String) a).length();
       } catch (ClassCastException e) {
         x = -1;
       } catch (NullPointerException e) {

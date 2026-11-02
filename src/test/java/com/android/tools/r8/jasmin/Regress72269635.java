@@ -31,7 +31,10 @@ public class Regress72269635 extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("test", ImmutableList.of("IIII"), "J",
+    clazz.addStaticMethod(
+        "test",
+        ImmutableList.of("IIII"),
+        "J",
         ".limit stack 3",
         ".limit locals 5",
         "L0:",
@@ -66,8 +69,7 @@ public class Regress72269635 extends JasminTestBase {
         "  iinc 0 1",
         "L415:",
         "  iinc 0 1",
-        "  goto L415"
-    );
+        "  goto L415");
 
     // Just compiling this code used to throw exceptions because not all dead blocks
     // were removed.

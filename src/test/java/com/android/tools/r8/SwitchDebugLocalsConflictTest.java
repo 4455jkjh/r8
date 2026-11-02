@@ -191,12 +191,7 @@ public class SwitchDebugLocalsConflictTest extends TestBase {
         Label label31 = new Label();
         mv.visitJumpInsn(IFNE, label31);
         mv.visitVarInsn(ALOAD, 14);
-        mv.visitMethodInsn(
-            INVOKESTATIC,
-            "NumberUtil",
-            "hasDigit",
-            "(Ljava/lang/String;)Z",
-            false);
+        mv.visitMethodInsn(INVOKESTATIC, "NumberUtil", "hasDigit", "(Ljava/lang/String;)Z", false);
         Label label32 = new Label();
         mv.visitJumpInsn(IFEQ, label32);
         mv.visitLabel(label31);
@@ -221,11 +216,7 @@ public class SwitchDebugLocalsConflictTest extends TestBase {
             new Object[] {});
         mv.visitVarInsn(ALOAD, 14);
         mv.visitMethodInsn(
-            INVOKESTATIC,
-            "NumberUtil",
-            "parseDouble",
-            "(Ljava/lang/String;)D",
-            false);
+            INVOKESTATIC, "NumberUtil", "parseDouble", "(Ljava/lang/String;)D", false);
         mv.visitVarInsn(DSTORE, 10);
         Label label33 = new Label();
         mv.visitLabel(label33);
@@ -238,12 +229,7 @@ public class SwitchDebugLocalsConflictTest extends TestBase {
         mv.visitLineNumber(42, label32);
         mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
         mv.visitVarInsn(ALOAD, 14);
-        mv.visitMethodInsn(
-            INVOKESTATIC,
-            "NumberUtil",
-            "parseLong",
-            "(Ljava/lang/String;)J",
-            false);
+        mv.visitMethodInsn(INVOKESTATIC, "NumberUtil", "parseLong", "(Ljava/lang/String;)J", false);
         mv.visitVarInsn(LSTORE, 12);
         mv.visitLabel(label34);
         mv.visitLineNumber(44, label34);
@@ -257,11 +243,7 @@ public class SwitchDebugLocalsConflictTest extends TestBase {
         mv.visitJumpInsn(IFNE, label36);
         mv.visitVarInsn(ALOAD, 9);
         mv.visitMethodInsn(
-            INVOKESTATIC,
-            "NumberUtil",
-            "isFloatPointNum",
-            "(Ljava/lang/Object;)Z",
-            false);
+            INVOKESTATIC, "NumberUtil", "isFloatPointNum", "(Ljava/lang/Object;)Z", false);
         Label label37 = new Label();
         mv.visitJumpInsn(IFEQ, label37);
         mv.visitLabel(label36);

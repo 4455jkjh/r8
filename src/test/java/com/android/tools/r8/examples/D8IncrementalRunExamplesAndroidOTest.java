@@ -139,8 +139,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
     }
 
     private Path makeRelative(Path testJarFile, Path classFile) {
-      Path regularParent =
-          testJarFile.getParent().resolve(Paths.get("classes"));
+      Path regularParent = testJarFile.getParent().resolve(Paths.get("classes"));
       Path legacyParent = TestDeps.getExamplesAndroidOLegacyDir();
 
       if (classFile.startsWith(regularParent)) {
@@ -374,12 +373,12 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
     Arrays.sort(dexFiles);
 
     String[] expectedFileNames = {
-        "IncrementallyCompiled$A$AB.dex",
-        "IncrementallyCompiled$A.dex",
-        "IncrementallyCompiled$B$BA.dex",
-        "IncrementallyCompiled$B.dex",
-        "IncrementallyCompiled$C.dex",
-        "IncrementallyCompiled.dex"
+      "IncrementallyCompiled$A$AB.dex",
+      "IncrementallyCompiled$A.dex",
+      "IncrementallyCompiled$B$BA.dex",
+      "IncrementallyCompiled$B.dex",
+      "IncrementallyCompiled$C.dex",
+      "IncrementallyCompiled.dex"
     };
     Arrays.sort(expectedFileNames);
 

@@ -96,12 +96,14 @@ public class Sync {
     Future[] results = new Future[ITERATIONS];
     for (int i = 0; i < ITERATIONS; ++i) {
       final int index = i;
-      results[i] = service.submit(new Runnable() {
-        @Override
-        public void run() {
-          fn.accept(index);
-        }
-      });
+      results[i] =
+          service.submit(
+              new Runnable() {
+                @Override
+                public void run() {
+                  fn.accept(index);
+                }
+              });
     }
     for (Future result : results) {
       result.get();
@@ -114,31 +116,39 @@ public class Sync {
   public static void main(String[] args) throws ExecutionException, InterruptedException {
     shouldThrow = args.length > 100;
     ExecutorService service = Executors.newFixedThreadPool(THREADS);
-    run(service, new Consumer<Integer>() {
-      @Override
-      public void accept(Integer index) {
-         Sync.staticSynchronized(index);
-      }
-    });
+    run(
+        service,
+        new Consumer<Integer>() {
+          @Override
+          public void accept(Integer index) {
+            Sync.staticSynchronized(index);
+          }
+        });
     final Sync sync = new Sync();
-    run(service, new Consumer<Integer>() {
-      @Override
-      public void accept(Integer index) {
-        sync.instanceSynchronized(index);
-      }
-    });
-    run(service, new Consumer<Integer>() {
-      @Override
-      public void accept(Integer index) {
-        sync.manualSynchronized(index);
-      }
-    });
-    run(service, new Consumer<Integer>() {
-      @Override
-      public void accept(Integer index) {
-        sync.tryCatchSynchronized(index);
-      }
-    });
+    run(
+        service,
+        new Consumer<Integer>() {
+          @Override
+          public void accept(Integer index) {
+            sync.instanceSynchronized(index);
+          }
+        });
+    run(
+        service,
+        new Consumer<Integer>() {
+          @Override
+          public void accept(Integer index) {
+            sync.manualSynchronized(index);
+          }
+        });
+    run(
+        service,
+        new Consumer<Integer>() {
+          @Override
+          public void accept(Integer index) {
+            sync.tryCatchSynchronized(index);
+          }
+        });
     service.shutdown();
     service.awaitTermination(5, TimeUnit.SECONDS);
     try {

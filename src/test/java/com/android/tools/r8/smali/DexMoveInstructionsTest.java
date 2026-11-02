@@ -37,41 +37,44 @@ public class DexMoveInstructionsTest extends SmaliTestBase {
 
   @Test
   public void testValidObjectMoves() throws Throwable {
-    ProcessResult result = testMoves("ExpectedToPass", "Ljava/lang/String;", Arrays.asList(
-        "move-object",
-        "move-object/from16",
-        "move-object/16"));
+    ProcessResult result =
+        testMoves(
+            "ExpectedToPass",
+            "Ljava/lang/String;",
+            Arrays.asList("move-object", "move-object/from16", "move-object/16"));
     assertEquals(result.toString(), 0, result.exitCode);
   }
 
   @Test
   public void testInvalidObjectMoves() throws Throwable {
-    ProcessResult result = testMoves("ExpectedToFail", "Ljava/lang/String;", Arrays.asList(
-        "move",
-        "move/from16",
-        "move/16"));
+    ProcessResult result =
+        testMoves(
+            "ExpectedToFail",
+            "Ljava/lang/String;",
+            Arrays.asList("move", "move/from16", "move/16"));
     assertEquals(result.toString(), 1, result.exitCode);
-    assertTrue("Did not find 'Verification error' in " + result.stderr,
+    assertTrue(
+        "Did not find 'Verification error' in " + result.stderr,
         result.stderr.contains("Verification error") || result.stderr.contains("VerifyError"));
   }
 
   @Test
   public void testValidSingleMoves() throws Throwable {
-    ProcessResult result = testMoves("ExpectedToPass", "I", Arrays.asList(
-        "move",
-        "move/from16",
-        "move/16"));
+    ProcessResult result =
+        testMoves("ExpectedToPass", "I", Arrays.asList("move", "move/from16", "move/16"));
     assertEquals(result.toString(), 0, result.exitCode);
   }
 
   @Test
   public void testInvalidSingleMoves() throws Throwable {
-    ProcessResult result = testMoves("ExpectedToFail", "I", Arrays.asList(
-        "move-object",
-        "move-object/from16",
-        "move-object/16"));
+    ProcessResult result =
+        testMoves(
+            "ExpectedToFail",
+            "I",
+            Arrays.asList("move-object", "move-object/from16", "move-object/16"));
     assertEquals(result.toString(), 1, result.exitCode);
-    assertTrue("Did not find 'Verification error' in " + result.stderr,
+    assertTrue(
+        "Did not find 'Verification error' in " + result.stderr,
         result.stderr.contains("Verification error") || result.stderr.contains("VerifyError"));
   }
 
@@ -82,11 +85,13 @@ public class DexMoveInstructionsTest extends SmaliTestBase {
     SmaliBuilder builder = new SmaliBuilder(clazz);
     int i = 0;
     for (String moveOp : moveOps) {
-      builder.addStaticMethod(typeName, "test" + i++, Collections.singletonList(typeName),
+      builder.addStaticMethod(
+          typeName,
+          "test" + i++,
+          Collections.singletonList(typeName),
           1,
           "    " + moveOp + " v0, p0",
-          typeDesc.startsWith("L") ? "return-object v0" : "    return v0"
-      );
+          typeDesc.startsWith("L") ? "return-object v0" : "    return v0");
     }
 
     List<String> main = new ArrayList<>();
@@ -94,8 +99,8 @@ public class DexMoveInstructionsTest extends SmaliTestBase {
     main.add("  const v2, 0");
     i = 0;
     for (String moveOp : moveOps) {
-      main.add("  invoke-static { v2 }, L" + clazz + ";->test" + i++
-          + "(" + typeDesc + ")" + typeDesc);
+      main.add(
+          "  invoke-static { v2 }, L" + clazz + ";->test" + i++ + "(" + typeDesc + ")" + typeDesc);
       if (typeDesc.startsWith("L")) {
         main.add("  move-result-object v1");
       } else {

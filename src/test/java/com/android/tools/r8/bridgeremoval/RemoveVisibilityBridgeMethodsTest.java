@@ -12,8 +12,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
@@ -66,14 +66,20 @@ public class RemoveVisibilityBridgeMethodsTest extends TestBase {
 
     ClassBuilder superClass = jasminBuilder.addClass("SuperClass");
     superClass.addDefaultConstructor();
-    superClass.addVirtualMethod("method", Collections.emptyList(), "Ljava/lang/String;",
+    superClass.addVirtualMethod(
+        "method",
+        Collections.emptyList(),
+        "Ljava/lang/String;",
         ".limit stack 1",
         "ldc \"Hello World\"",
         "areturn");
 
     // Generate a subclass with a bridge method targeting SuperClass.method().
     ClassBuilder subclass = jasminBuilder.addClass("SubClass", superClass.name);
-    subclass.addBridgeMethod("getMethod", Collections.emptyList(), "Ljava/lang/String;",
+    subclass.addBridgeMethod(
+        "getMethod",
+        Collections.emptyList(),
+        "Ljava/lang/String;",
         ".limit stack 1",
         "aload_0",
         "invokespecial " + superClass.name + "/method()Ljava/lang/String;",

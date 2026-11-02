@@ -9,5 +9,6 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FloatingPointValuedAnnotation {
   double doubleValue() default 42.42;
+
   float floatValue() default 42.42f;
 }

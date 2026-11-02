@@ -139,7 +139,7 @@ public class CrossPackageInvokeSuperToPackagePrivateMethodTest extends TestBase 
     @NeverInline
     void packagePrivate() {
       System.out.println("D");
-      /*super.*/packagePrivate();
+      /*super.*/ packagePrivate();
     }
   }
 }

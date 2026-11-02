@@ -51,7 +51,10 @@ public class B67468748 extends JasminTestBase {
     JasminBuilder.ClassBuilder clazz = builder.addClass(CLASS_NAME, SUPER_NAME);
 
     // The static field Test/intField is actually defined on the super class.
-    clazz.addStaticMethod("<clinit>", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "<clinit>",
+        ImmutableList.of(),
+        "V",
         ".limit stack 1",
         ".limit locals 1",
         "iconst_1",
@@ -82,7 +85,10 @@ public class B67468748 extends JasminTestBase {
     // The static field Test/intField is not defined even though it is written in the
     // <clinit> code. This class cannot load, but we can still process it to dex, where Art also
     // cannot load the class.
-    clazz.addStaticMethod("<clinit>", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "<clinit>",
+        ImmutableList.of(),
+        "V",
         ".limit stack 1",
         ".limit locals 1",
         "iconst_1",

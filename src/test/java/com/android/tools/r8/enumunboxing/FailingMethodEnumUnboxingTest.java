@@ -168,6 +168,7 @@ public class FailingMethodEnumUnboxingTest extends EnumUnboxingTestBase {
       System.out.println(switchOn(2));
       System.out.println("class java.lang.Object");
     }
+
     // Avoid removing the switch entirely.
     @NeverInline
     static Object switchOn(int i) {

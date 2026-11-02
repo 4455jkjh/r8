@@ -28,8 +28,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class R8RunSmaliTestsTest extends TestBase {
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Parameters(name = "{0}: {1}")
   public static Collection<Object[]> data() {
@@ -184,10 +183,10 @@ public class R8RunSmaliTestsTest extends TestBase {
                   // of throwing an IncompatibleClassChange exception. Dalvik fails to verify.
                   "illegal-invokes"));
 
-  private Set<String> failingOnX8 = ImmutableSet.of(
-      // Contains use of register as both an int and a float.
-      "regression/33336471"
-  );
+  private Set<String> failingOnX8 =
+      ImmutableSet.of(
+          // Contains use of register as both an int and a float.
+          "regression/33336471");
 
   private final TestParameters parameters;
   private final String directoryName;

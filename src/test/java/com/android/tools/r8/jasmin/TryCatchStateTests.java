@@ -38,7 +38,10 @@ public class TryCatchStateTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("I"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("I"),
+        "I",
         ".limit stack 5",
         ".limit locals 1",
         "  ldc 42",
@@ -56,8 +59,7 @@ public class TryCatchStateTests extends JasminTestBase {
         "  goto LabelRet",
         "LabelRet:",
         "  ireturn",
-        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch"
-    );
+        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -84,7 +86,10 @@ public class TryCatchStateTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("I"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("I"),
+        "I",
         ".limit stack 5",
         ".limit locals 2",
         "  ldc 42",
@@ -104,8 +109,7 @@ public class TryCatchStateTests extends JasminTestBase {
         "  goto LabelRet",
         "LabelRet:",
         "  ireturn",
-        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch"
-    );
+        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -132,7 +136,10 @@ public class TryCatchStateTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("I"), "I",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("I"),
+        "I",
         ".limit stack 5",
         ".limit locals 2",
         "  ldc 42",
@@ -155,8 +162,7 @@ public class TryCatchStateTests extends JasminTestBase {
         "  goto LabelRet",
         "LabelRet:",
         "  ireturn",
-        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch"
-    );
+        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatch");
 
     clazz.addMainMethod(
         ".limit stack 2",

@@ -4,5 +4,4 @@
 
 package com.android.tools.r8.graph.invokesuper2;
 
-public interface I3 extends I1 {
-}
+public interface I3 extends I1 {}

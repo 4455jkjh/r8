@@ -27,11 +27,13 @@ public class R8RunExamplesAndroidNTest extends RunExamplesAndroidNTest<R8Command
 
     @Override
     TestRunner withKeepAll() {
-      return withBuilderTransformation(builder ->
-          builder
-              .setDisableTreeShaking(true)
-              .setDisableMinification(true)
-              .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown()));
+      return withBuilderTransformation(
+          builder ->
+              builder
+                  .setDisableTreeShaking(true)
+                  .setDisableMinification(true)
+                  .addProguardConfiguration(
+                      ImmutableList.of("-keepattributes *"), Origin.unknown()));
     }
 
     @Override

@@ -91,15 +91,16 @@ public abstract class RunExamplesAndroidPTest<
 
     <T extends InstructionSubject> C withInstructionCheck(
         Predicate<InstructionSubject> filter, Consumer<T> check) {
-      return withMethodCheck(method -> {
-        if (method.isAbstract()) {
-          return;
-        }
-        Iterator<T> iterator = method.iterateInstructions(filter);
-        while (iterator.hasNext()) {
-          check.accept(iterator.next());
-        }
-      });
+      return withMethodCheck(
+          method -> {
+            if (method.isAbstract()) {
+              return;
+            }
+            Iterator<T> iterator = method.iterateInstructions(filter);
+            while (iterator.hasNext()) {
+              check.accept(iterator.next());
+            }
+          });
     }
 
     C withOptionConsumer(Consumer<InternalOptions> consumer) {
@@ -164,7 +165,7 @@ public abstract class RunExamplesAndroidPTest<
         }
       }
 
-      execute(testName, qualifiedMainClass, new Path[]{inputFile}, new Path[]{out});
+      execute(testName, qualifiedMainClass, new Path[] {inputFile}, new Path[] {out});
     }
 
     abstract C withMinApiLevel(int minApiLevel);
@@ -211,13 +212,11 @@ public abstract class RunExamplesAndroidPTest<
     return getTestParameters().withDexRuntimes().build();
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   boolean failsOn(Map<DexVm.Version, List<String>> failsOn, String name) {
     DexVm.Version vmVersion = parameters.getDexRuntimeVersion();
-    return failsOn.containsKey(vmVersion)
-        && failsOn.get(vmVersion).contains(name);
+    return failsOn.containsKey(vmVersion) && failsOn.get(vmVersion).contains(name);
   }
 
   boolean expectedToFail(String name) {
@@ -236,12 +235,10 @@ public abstract class RunExamplesAndroidPTest<
         .run();
   }
 
-  abstract RunExamplesAndroidPTest<B>.TestRunner<?> test(String testName, String packageName,
-      String mainClass);
+  abstract RunExamplesAndroidPTest<B>.TestRunner<?> test(
+      String testName, String packageName, String mainClass);
 
-  void execute(
-      String testName,
-      String qualifiedMainClass, Path[] jars, Path[] dexes)
+  void execute(String testName, String qualifiedMainClass, Path[] jars, Path[] dexes)
       throws IOException {
 
     boolean expectedToFail = expectedToFail(testName);
@@ -278,5 +275,4 @@ public abstract class RunExamplesAndroidPTest<
       }
     }
   }
-
 }

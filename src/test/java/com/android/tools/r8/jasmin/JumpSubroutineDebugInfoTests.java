@@ -40,30 +40,35 @@ public class JumpSubroutineDebugInfoTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    MethodSignature foo = clazz.addStaticMethod("foo", ImmutableList.of("I"), "I",
-        ".limit stack 3",
-        ".limit locals 3",
-        ".var 0 is x I from LabelInit to LabelExit",
-        "LabelInit:",
-        ".line 1",
-        "  ldc 0",
-        "  ldc 1",
-        "  jsr LabelSub",
-        "  ldc 2",
-        "  jsr LabelSub",
-        "  ldc 3",
-        "  jsr LabelSub",
-        ".line 2",
-        "  ireturn",
-        "LabelSub:",
-        ".line 3",
-        "  astore 1",
-        "  iadd",
-        "  istore 0", // store and load in local 'x' to ensure we don't optimize out the subroutine.
-        ".line 4",
-        "  iload 0",
-        "  ret 1",
-        "LabelExit:");
+    MethodSignature foo =
+        clazz.addStaticMethod(
+            "foo",
+            ImmutableList.of("I"),
+            "I",
+            ".limit stack 3",
+            ".limit locals 3",
+            ".var 0 is x I from LabelInit to LabelExit",
+            "LabelInit:",
+            ".line 1",
+            "  ldc 0",
+            "  ldc 1",
+            "  jsr LabelSub",
+            "  ldc 2",
+            "  jsr LabelSub",
+            "  ldc 3",
+            "  jsr LabelSub",
+            ".line 2",
+            "  ireturn",
+            "LabelSub:",
+            ".line 3",
+            "  astore 1",
+            "  iadd",
+            "  istore 0", // store and load in local 'x' to ensure we don't optimize out the
+            // subroutine.
+            ".line 4",
+            "  iload 0",
+            "  ret 1",
+            "LabelExit:");
 
     clazz.addMainMethod(
         ".limit stack 3",

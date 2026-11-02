@@ -49,8 +49,7 @@ public class GenerateMainDexListCommandTest extends TestBase {
     parameters.assertNoneRuntime();
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   private Path getOutputPath(GenerateMainDexListCommand command) {
     StringConsumer consumer = command.getMainDexListConsumer();
@@ -95,8 +94,10 @@ public class GenerateMainDexListCommandTest extends TestBase {
   // Add main-dex rules used in the com.android.tools.r8.maindexlist.MainDexTracingTest test.
   private void addMainDexRuleToCommandLine(List<String> args) {
     args.add("--main-dex-rules");
-    args.add(Paths.get(ToolHelper.EXAMPLES_DIR, "multidex", "main-dex-rules.txt")
-        .toAbsolutePath().toString());
+    args.add(
+        Paths.get(ToolHelper.EXAMPLES_DIR, "multidex", "main-dex-rules.txt")
+            .toAbsolutePath()
+            .toString());
   }
 
   @Test
@@ -120,8 +121,9 @@ public class GenerateMainDexListCommandTest extends TestBase {
   @Test
   public void validOutputPath() throws Throwable {
     Path existingFile = temp.getRoot().toPath().resolve("existing_output");
-    try (OutputStream existingFileOut = Files.newOutputStream(existingFile,
-        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+    try (OutputStream existingFileOut =
+        Files.newOutputStream(
+            existingFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       PrintWriter writer = new PrintWriter(existingFileOut);
       writer.println("Hello, world!");
       writer.flush();
@@ -135,10 +137,10 @@ public class GenerateMainDexListCommandTest extends TestBase {
         nonExistingFile,
         getOutputPath(
             GenerateMainDexListCommand.builder()
-                .setMainDexListOutputPath(nonExistingFile).build()));
+                .setMainDexListOutputPath(nonExistingFile)
+                .build()));
     assertEquals(
-        existingFile,
-        getOutputPath(parse("--main-dex-list-output", existingFile.toString())));
+        existingFile, getOutputPath(parse("--main-dex-list-output", existingFile.toString())));
     assertEquals(
         nonExistingFile,
         getOutputPath(parse("--main-dex-list-output", nonExistingFile.toString())));
@@ -152,11 +154,11 @@ public class GenerateMainDexListCommandTest extends TestBase {
         nonExistingFileInNonExistingDir,
         getOutputPath(
             GenerateMainDexListCommand.builder()
-                .setMainDexListOutputPath(nonExistingFileInNonExistingDir).build()));
+                .setMainDexListOutputPath(nonExistingFileInNonExistingDir)
+                .build()));
     assertEquals(
         nonExistingFileInNonExistingDir,
-        getOutputPath(
-            parse("--main-dex-list-output", nonExistingFileInNonExistingDir.toString())));
+        getOutputPath(parse("--main-dex-list-output", nonExistingFileInNonExistingDir.toString())));
   }
 
   @Test
@@ -180,9 +182,7 @@ public class GenerateMainDexListCommandTest extends TestBase {
   public void missingAndroidJar() throws Throwable {
     DiagnosticsChecker.checkErrorsContains(
         "Tracing for legacy multi dex is not possible without all classpath libraries",
-        handler ->
-            GenerateMainDexList.run(
-                GenerateMainDexListCommand.builder(handler).build()));
+        handler -> GenerateMainDexList.run(GenerateMainDexListCommand.builder(handler).build()));
   }
 
   @Test(expected = CompilationFailedException.class)
@@ -202,24 +202,26 @@ public class GenerateMainDexListCommandTest extends TestBase {
   @Test
   public void emptyMainDex() throws Throwable {
     Path input = TestDeps.getExamplesPath("arithmetic.jar");
-    List<String> result = GenerateMainDexList.run(
-        GenerateMainDexListCommand.builder()
-            .addLibraryFiles(ToolHelper.getDefaultAndroidJar())
-            .addProgramFiles(input)
-            .build());
+    List<String> result =
+        GenerateMainDexList.run(
+            GenerateMainDexListCommand.builder()
+                .addLibraryFiles(ToolHelper.getDefaultAndroidJar())
+                .addProgramFiles(input)
+                .build());
     assertEquals(0, result.size());
   }
 
   @Test
   public void nonEmptyMainDex() throws Throwable {
     Path input = TestDeps.getExamplesPath("arithmetic.jar");
-    List<String> result = GenerateMainDexList.run(
-        GenerateMainDexListCommand.builder()
-            .addLibraryFiles(ToolHelper.getDefaultAndroidJar())
-            .addProgramFiles(input)
-            .addMainDexRules(
-                ImmutableList.of("-keep class arithmetic.Arithmetic"), Origin.unknown())
-            .build());
+    List<String> result =
+        GenerateMainDexList.run(
+            GenerateMainDexListCommand.builder()
+                .addLibraryFiles(ToolHelper.getDefaultAndroidJar())
+                .addProgramFiles(input)
+                .addMainDexRules(
+                    ImmutableList.of("-keep class arithmetic.Arithmetic"), Origin.unknown())
+                .build());
     assertEquals(1, result.size());
   }
 

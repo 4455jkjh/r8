@@ -76,13 +76,13 @@ public class KeepRuleConnectivesTestRunner extends TestBase {
   }
 
   private <
-      C extends BaseCompilerCommand,
-      B extends BaseCompilerCommand.Builder<C, B>,
-      CR extends TestCompileResult<CR, RR>,
-      RR extends TestRunResult<RR>,
-      T extends TestShrinkerBuilder<C, B, CR, RR, T>>
-  void testKeepClassesWithMembersIsConjunction(TestShrinkerBuilder<C, B, CR, RR, T> builder)
-      throws Exception {
+          C extends BaseCompilerCommand,
+          B extends BaseCompilerCommand.Builder<C, B>,
+          CR extends TestCompileResult<CR, RR>,
+          RR extends TestRunResult<RR>,
+          T extends TestShrinkerBuilder<C, B, CR, RR, T>>
+      void testKeepClassesWithMembersIsConjunction(TestShrinkerBuilder<C, B, CR, RR, T> builder)
+          throws Exception {
     builder
         .addProgramClassesAndInnerClasses(KeepRuleConnectivesTest.class)
         .addKeepRules("-keepclasseswithmembers class * { public long foo(); public long bar(); }")

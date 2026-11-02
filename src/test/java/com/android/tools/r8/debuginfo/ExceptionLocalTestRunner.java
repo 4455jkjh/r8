@@ -49,11 +49,31 @@ public class ExceptionLocalTestRunner extends DebugInfoTestBase {
     info.checkLineHasExactLocals(13, "this", self, "x", "int", "obj", Integer, "l", "long");
     info.checkLineHasExactLocals(14, "this", self, "x", "int", "obj", Integer, "l", "long");
     info.checkLineHasExactLocals(15, "this", self, "x", "int", "obj", Integer, "l", "long");
-    info.checkLineHasExactLocals(18, "this", self, "x", "int", "obj", Integer, "l", "long",
-        "e", "java.lang.ArithmeticException");
-    info.checkLineHasExactLocals(20, "this", self, "x", "int", "obj", Integer, "l", "long",
-        "e", "java.lang.RuntimeException");
-    info.checkLineHasExactLocals(22, "this", self, "x", "int", "obj", Integer, "l", "long",
-        "e", "java.lang.Throwable");
+    info.checkLineHasExactLocals(
+        18,
+        "this",
+        self,
+        "x",
+        "int",
+        "obj",
+        Integer,
+        "l",
+        "long",
+        "e",
+        "java.lang.ArithmeticException");
+    info.checkLineHasExactLocals(
+        20,
+        "this",
+        self,
+        "x",
+        "int",
+        "obj",
+        Integer,
+        "l",
+        "long",
+        "e",
+        "java.lang.RuntimeException");
+    info.checkLineHasExactLocals(
+        22, "this", self, "x", "int", "obj", Integer, "l", "long", "e", "java.lang.Throwable");
   }
 }

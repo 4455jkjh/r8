@@ -5,9 +5,7 @@ package com.android.tools.r8.examples.enclosingmethod;
 
 public class OuterClass {
   // Named member class.
-  public class AClass {
-
-  }
+  public class AClass {}
 
   static {
     // Named local class. Will have an enclosing-method annotation with a zero method by being
@@ -21,12 +19,13 @@ public class OuterClass {
     }
 
     // Anonymous inner class. Will have the same zero-method enclosing-method annotation.
-    print(new AbstractClass() {
-      @Override
-      public int anInt() {
-        return 42;
-      }
-    });
+    print(
+        new AbstractClass() {
+          @Override
+          public int anInt() {
+            return 42;
+          }
+        });
     print(new LocalClass());
   }
 
@@ -41,12 +40,13 @@ public class OuterClass {
     }
 
     // Anonymous inner class with a non-zero-method enclosing-method annotation.
-    print(new AbstractClass() {
-      @Override
-      public int anInt() {
-        return 42;
-      }
-    });
+    print(
+        new AbstractClass() {
+          @Override
+          public int anInt() {
+            return 42;
+          }
+        });
     print(new AnotherClass());
   }
 

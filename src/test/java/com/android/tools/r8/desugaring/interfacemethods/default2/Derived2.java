@@ -15,6 +15,7 @@ public class Derived2 implements DerivedComparator2<String> {
   @Override
   public Comparator<String> reversed() {
     return TestMainDefault2.shouldCallStaticOnInterface
-        ? DerivedComparator2.super.reversed().reversed() : this;
+        ? DerivedComparator2.super.reversed().reversed()
+        : this;
   }
 }

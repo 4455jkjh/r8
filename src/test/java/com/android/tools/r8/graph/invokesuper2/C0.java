@@ -4,5 +4,4 @@
 
 package com.android.tools.r8.graph.invokesuper2;
 
-public class C0  implements I0 {
-}
+public class C0 implements I0 {}

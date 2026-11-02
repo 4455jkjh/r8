@@ -7,11 +7,9 @@ package com.android.tools.r8.bridgeremoval.bridgestokeep;
 // Reduced test case from code where removal of bridge methods caused failure.
 public class Main {
 
-  private static class DataAdapterObserver implements DataAdapter.Observer {
-  }
+  private static class DataAdapterObserver implements DataAdapter.Observer {}
 
-  private static class ObservableListObserver implements ObservableList.Observer {
-  }
+  private static class ObservableListObserver implements ObservableList.Observer {}
 
   static void registerObserver(DataAdapter dataAdapter) {
     dataAdapter.registerObserver(new DataAdapterObserver());

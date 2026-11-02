@@ -32,8 +32,13 @@ public class LocalsInSwitchTestRunner extends DebugInfoTestBase {
 
     AndroidApp d8App = compileWithD8(clazz);
 
-    String expected = "55" + ToolHelper.LINE_SEPARATOR + "1862" + ToolHelper.LINE_SEPARATOR
-            + "15130" + ToolHelper.LINE_SEPARATOR;
+    String expected =
+        "55"
+            + ToolHelper.LINE_SEPARATOR
+            + "1862"
+            + ToolHelper.LINE_SEPARATOR
+            + "15130"
+            + ToolHelper.LINE_SEPARATOR;
     assertEquals(expected, runOnJava(clazz));
     assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName(), parameters.getDexVm()));
 
@@ -72,11 +77,11 @@ public class LocalsInSwitchTestRunner extends DebugInfoTestBase {
     //     int tmp =
     tempInCase.checkLineHasExactLocals(27, "x", "int", "res", "int", "i", "int", "rem", "int");
     //     res += tmp
-    tempInCase.checkLineHasExactLocals(28,
-        "x", "int", "res", "int", "i", "int", "rem", "int", "tmp", "int");
+    tempInCase.checkLineHasExactLocals(
+        28, "x", "int", "res", "int", "i", "int", "rem", "int", "tmp", "int");
     //     break;
-    tempInCase.checkLineHasExactLocals(29,
-        "x", "int", "res", "int", "i", "int", "rem", "int", "tmp", "int");
+    tempInCase.checkLineHasExactLocals(
+        29, "x", "int", "res", "int", "i", "int", "rem", "int", "tmp", "int");
     //   case 10:
     tempInCase.checkNoLine(30);
     //     i++

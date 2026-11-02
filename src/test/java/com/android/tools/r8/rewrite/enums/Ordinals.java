@@ -12,14 +12,16 @@ import java.util.concurrent.TimeUnit;
 
 class Ordinals {
   enum Number {
-    ONE, TWO;
+    ONE,
+    TWO;
 
     public static final Direction DOWN = Direction.DOWN;
     public static final Number DEFAULT = TWO;
   }
 
   enum Direction {
-    UP, DOWN
+    UP,
+    DOWN
   }
 
   @NeverInline
@@ -63,9 +65,12 @@ class Ordinals {
     // completely disappears. We synthesize a corresponding constant value in a return for
     // testing that the ordinal() call was correctly replaced and the switch was removed.
     switch (Number.TWO) {
-      case ONE: return 10;
-      case TWO: return 11;
-      default: throw new AssertionError();
+      case ONE:
+        return 10;
+      case TWO:
+        return 11;
+      default:
+        throw new AssertionError();
     }
   }
 
@@ -102,6 +107,7 @@ class Ordinals {
   private static long nonStaticGet() {
     return new Ordinals().two.ordinal();
   }
+
   private final Number two = Number.TWO;
 
   public static void main(String[] args) {

@@ -8,11 +8,10 @@ public class Regress2 {
 
   static class X {
 
-    void add() {
-    }
+    void add() {}
   }
 
-  static private boolean test() {
+  private static boolean test() {
     X x = null;
     X y = null;
 

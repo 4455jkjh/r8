@@ -85,10 +85,12 @@ public class ClassFilteringTest extends TestBase {
   public void testDexMergingWithChecksum() throws Exception {
     // Step #1: Build the dex file seperately as an incremental build tools usually do.
     Set<Long> keepCrcs = Sets.newHashSet();
-    Path[] dexInput = new Path[] {
-        buildDex(TestClass.class,true, keepCrcs),
-        buildDex(TestClass.Keep.class,true, keepCrcs),
-        buildDex(TestClass.Remove.class, true, null)};
+    Path[] dexInput =
+        new Path[] {
+          buildDex(TestClass.class, true, keepCrcs),
+          buildDex(TestClass.Keep.class, true, keepCrcs),
+          buildDex(TestClass.Remove.class, true, null)
+        };
 
     // Step #2: Now use D8 as a merging tool.
     final Path merged =
@@ -147,8 +149,12 @@ public class ClassFilteringTest extends TestBase {
           .writeToZip();
       Assert.fail("Compilation should fail.");
     } catch (CompilationFailedException failure) {
-      Assert.assertTrue(failure.getCause().getMessage(), failure.getCause().getMessage().contains(
-          "has no checksum information while checksum encoding is requested"));
+      Assert.assertTrue(
+          failure.getCause().getMessage(),
+          failure
+              .getCause()
+              .getMessage()
+              .contains("has no checksum information while checksum encoding is requested"));
     }
   }
 
@@ -213,7 +219,7 @@ public class ClassFilteringTest extends TestBase {
    *
    * @param checksum If true, the dex file will be encoded with checkout information.
    * @param crcCollection If not null, add the CRC of the .class file to a collection after
-   * compilation.
+   *     compilation.
    * @return The CRC of the .class class file after compilation.
    */
   private Path buildDex(Class c, boolean checksum, Collection<Long> crcCollection)

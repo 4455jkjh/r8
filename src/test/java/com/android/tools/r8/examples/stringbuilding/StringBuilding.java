@@ -46,8 +46,8 @@ class StringBuilding {
     builder
         .append(true)
         .append('A')
-        .append(new char[]{'B', 'C'})
-        .append(new char[]{'C', 'D', 'E', 'F'}, 1, 2)
+        .append(new char[] {'B', 'C'})
+        .append(new char[] {'C', 'D', 'E', 'F'}, 1, 2)
         .append(seq)
         .append(seq, 1, 3)
         .append(2.2)

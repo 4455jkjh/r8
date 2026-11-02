@@ -31,8 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.Test;
 
-public class D8LazyRunExamplesAndroidOTest
-    extends D8IncrementalRunExamplesAndroidOTest {
+public class D8LazyRunExamplesAndroidOTest extends D8IncrementalRunExamplesAndroidOTest {
 
   // Please note that all tool specific markers have been eliminated in the resulting
   // dex applications. This allows for byte-wise comparison of the results.
@@ -95,11 +94,13 @@ public class D8LazyRunExamplesAndroidOTest
               .addLibraryFiles(androidJar)
               .addProgramFiles(inputFile);
 
-      fullBuildResult = ToolHelper.runD8(
-          command, options -> {
-            options.interfaceMethodDesugaring = OffOrAuto.Auto;
-            options.setMarker(null);
-          });
+      fullBuildResult =
+          ToolHelper.runD8(
+              command,
+              options -> {
+                options.interfaceMethodDesugaring = OffOrAuto.Auto;
+                options.setMarker(null);
+              });
     }
 
     // Build each class individually using tmpClassesDir as classpath for desugaring.
@@ -124,15 +125,15 @@ public class D8LazyRunExamplesAndroidOTest
     }
     AndroidApp mergedResult = mergeDexResources(minAPILevel.getMajor(), individalDexes);
 
-    assertTrue(Arrays.equals(
-        readResource(fullBuildResult.getDexProgramResourcesForTesting().get(0)),
-        readResource(mergedResult.getDexProgramResourcesForTesting().get(0))));
+    assertTrue(
+        Arrays.equals(
+            readResource(fullBuildResult.getDexProgramResourcesForTesting().get(0)),
+            readResource(mergedResult.getDexProgramResourcesForTesting().get(0))));
   }
 
   private AndroidApp mergeDexResources(int minAPILevel, List<ProgramResource> individalDexes)
       throws IOException, CompilationFailedException, ResourceException {
-    D8Command.Builder builder = D8Command.builder()
-        .setMinApiLevel(minAPILevel);
+    D8Command.Builder builder = D8Command.builder().setMinApiLevel(minAPILevel);
     for (ProgramResource resource : individalDexes) {
       builder.addDexProgramData(readResource(resource), resource.getOrigin());
     }

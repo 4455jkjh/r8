@@ -59,23 +59,23 @@ class NoRelaxationForSerializableTestRunner {
   public static void main(String[] args) {
     MySerializable instance = new MySerializable(8);
     byte[] bytes = {};
-    try(ByteArrayOutputStream bas = new ByteArrayOutputStream();
+    try (ByteArrayOutputStream bas = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bas)) {
       oos.writeObject(instance);
       oos.flush();
       bytes = bas.toByteArray();
-    } catch(IOException e) {
+    } catch (IOException e) {
       e.printStackTrace(System.err);
       exit(1);
     }
-    try(ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+    try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = new ObjectInputStream(bis)) {
       MySerializable obj = (MySerializable) ois.readObject();
       if (obj.value != 8) {
         throw new AssertionError("Could not deserialize");
       }
       System.out.println(obj.value);
-    } catch(IOException | ClassNotFoundException e) {
+    } catch (IOException | ClassNotFoundException e) {
       e.printStackTrace(System.err);
       exit(1);
     }
@@ -86,17 +86,14 @@ class NoRelaxationForSerializableTestRunner {
 public class NoRelaxationForSerializableTest extends AccessRelaxationTestBase {
   private static final Class<?> MAIN = NoRelaxationForSerializableTestRunner.class;
   private static final List<Class<?>> CLASSES = ImmutableList.of(MySerializable.class, MAIN);
-  private static final String KEEPMEMBER_RULES = StringUtils.lines(
-      "-keepclassmembers class * implements java.io.Serializable {",
-      "  private void writeObject(java.io.ObjectOutputStream);",
-      "  private void readObject(java.io.ObjectInputStream);",
-      "}"
-  );
-  private static final String EXPECTED_OUTPUT = StringUtils.lines(
-      "Serializable::write",
-      "Serializable::read",
-      "8"
-  );
+  private static final String KEEPMEMBER_RULES =
+      StringUtils.lines(
+          "-keepclassmembers class * implements java.io.Serializable {",
+          "  private void writeObject(java.io.ObjectOutputStream);",
+          "  private void readObject(java.io.ObjectInputStream);",
+          "}");
+  private static final String EXPECTED_OUTPUT =
+      StringUtils.lines("Serializable::write", "Serializable::read", "8");
 
   private final boolean accessModification;
 
@@ -204,9 +201,13 @@ public class NoRelaxationForSerializableTest extends AccessRelaxationTestBase {
   }
 
   private void inspect(CodeInspector inspector) {
-    assertNotPublic(inspector, MySerializable.class,
+    assertNotPublic(
+        inspector,
+        MySerializable.class,
         new MethodSignature("writeObject", "void", ImmutableList.of("java.io.ObjectOutputStream")));
-    assertNotPublic(inspector, MySerializable.class,
+    assertNotPublic(
+        inspector,
+        MySerializable.class,
         new MethodSignature("readObject", "void", ImmutableList.of("java.io.ObjectInputStream")));
   }
 }

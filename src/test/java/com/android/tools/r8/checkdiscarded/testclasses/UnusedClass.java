@@ -4,6 +4,4 @@
 package com.android.tools.r8.checkdiscarded.testclasses;
 
 @WillBeGone
-public class UnusedClass {
-
-}
+public class UnusedClass {}

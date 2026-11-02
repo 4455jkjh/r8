@@ -319,7 +319,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
     assertEquals(Tool.R8, marker.getTool());
   }
 
-  @Test(expected=CompilationFailedException.class)
+  @Test(expected = CompilationFailedException.class)
   public void nonExistingFlagsFile() throws Throwable {
     Path working = temp.getRoot().toPath();
     Path flags = working.resolve("flags.txt").toAbsolutePath();
@@ -585,10 +585,16 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
     Path mainDexRules = temp.newFile("main-dex.rules").toPath();
     Path mainDexList = temp.newFile("main-dex-list.txt").toPath();
     Path mainDexListOutput = temp.newFile("main-dex-out.txt").toPath();
-    parse("--main-dex-rules", mainDexRules.toString(),
-        "--main-dex-list-output", mainDexListOutput.toString());
-    parse("--main-dex-list", mainDexList.toString(),
-        "--main-dex-list-output", mainDexListOutput.toString());
+    parse(
+        "--main-dex-rules",
+        mainDexRules.toString(),
+        "--main-dex-list-output",
+        mainDexListOutput.toString());
+    parse(
+        "--main-dex-list",
+        mainDexList.toString(),
+        "--main-dex-list-output",
+        mainDexListOutput.toString());
   }
 
   @Test(expected = CompilationFailedException.class)
@@ -626,18 +632,20 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
   @Test
   public void existingOutputDirWithDexFiles() throws Throwable {
     Path existingDir = temp.newFolder().toPath();
-    List<Path> classesFiles = ImmutableList.of(
-        existingDir.resolve("classes.dex"),
-        existingDir.resolve("classes2.dex"),
-        existingDir.resolve("Classes3.dex"), // ignore case.
-        existingDir.resolve("classes10.dex"),
-        existingDir.resolve("classes999.dex"));
-    List<Path> otherFiles = ImmutableList.of(
-        existingDir.resolve("classes0.dex"),
-        existingDir.resolve("classes1.dex"),
-        existingDir.resolve("classes010.dex"),
-        existingDir.resolve("classesN.dex"),
-        existingDir.resolve("other.dex"));
+    List<Path> classesFiles =
+        ImmutableList.of(
+            existingDir.resolve("classes.dex"),
+            existingDir.resolve("classes2.dex"),
+            existingDir.resolve("Classes3.dex"), // ignore case.
+            existingDir.resolve("classes10.dex"),
+            existingDir.resolve("classes999.dex"));
+    List<Path> otherFiles =
+        ImmutableList.of(
+            existingDir.resolve("classes0.dex"),
+            existingDir.resolve("classes1.dex"),
+            existingDir.resolve("classes010.dex"),
+            existingDir.resolve("classesN.dex"),
+            existingDir.resolve("other.dex"));
     for (Path file : classesFiles) {
       Files.createFile(file);
       assertTrue(Files.exists(file));
@@ -713,12 +721,13 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
   @Test(expected = CompilationFailedException.class)
   public void dexFileUnsupported() throws Throwable {
     Path dexFile = temp.newFile("test.dex").toPath();
-    DiagnosticsChecker.checkErrorsContains("DEX input", handler ->
-        R8Command
-            .builder(handler)
-            .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-            .addProgramFiles(dexFile)
-            .build());
+    DiagnosticsChecker.checkErrorsContains(
+        "DEX input",
+        handler ->
+            R8Command.builder(handler)
+                .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+                .addProgramFiles(dexFile)
+                .build());
   }
 
   @Test(expected = CompilationFailedException.class)
@@ -788,20 +797,25 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
 
   @Test
   public void disableDesugaringApi() throws CompilationFailedException {
-    BaseCompilerCommandTest.assertDesugaringDisabled(R8Command.builder()
-        .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-        .setDisableDesugaring(true)
-        .build());
+    BaseCompilerCommandTest.assertDesugaringDisabled(
+        R8Command.builder()
+            .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+            .setDisableDesugaring(true)
+            .build());
   }
 
   private ProcessResult runR8OnShaking1(Path additionalProguardConfiguration) throws Throwable {
     Path input = TestDeps.getExamplesPath("shaking1.jar");
     Path proguardConfiguration =
         Paths.get(ToolHelper.EXAMPLES_DIR, "shaking1", "keep-rules.txt").toAbsolutePath();
-    return ToolHelper.forkR8(temp.getRoot().toPath(),
-        "--pg-conf", proguardConfiguration.toString(),
-        "--pg-conf", additionalProguardConfiguration.toString(),
-        "--lib", ToolHelper.getDefaultAndroidJar().toAbsolutePath().toString(),
+    return ToolHelper.forkR8(
+        temp.getRoot().toPath(),
+        "--pg-conf",
+        proguardConfiguration.toString(),
+        "--pg-conf",
+        additionalProguardConfiguration.toString(),
+        "--lib",
+        ToolHelper.getDefaultAndroidJar().toAbsolutePath().toString(),
         input.toString());
   }
 
@@ -850,7 +864,8 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
   public void printsPrintSeedsAndPrintUsageAndPrintConfigurationOnStdout() throws Throwable {
     Path proguardPrintSeedsConfiguration =
         temp.newFile("printseedsandprintusageandprintconfiguration.txt").toPath().toAbsolutePath();
-    FileUtils.writeTextFile(proguardPrintSeedsConfiguration,
+    FileUtils.writeTextFile(
+        proguardPrintSeedsConfiguration,
         ImmutableList.of("-printseeds", "-printusage", "-printconfiguration"));
     ProcessResult result = runR8OnShaking1(proguardPrintSeedsConfiguration);
     assertEquals("R8 run failed: " + result.stderr, 0, result.exitCode);
@@ -864,10 +879,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
   @Test
   public void noInputOutputsEmptyZip() throws CompilationFailedException, IOException {
     Path emptyZip = temp.getRoot().toPath().resolve("empty.zip");
-    R8.run(
-        R8Command.builder()
-            .setOutput(emptyZip, OutputMode.DexIndexed)
-            .build());
+    R8.run(R8Command.builder().setOutput(emptyZip, OutputMode.DexIndexed).build());
     assertTrue(Files.exists(emptyZip));
     assertEquals(0, new ZipFile(emptyZip.toFile(), StandardCharsets.UTF_8).size());
   }

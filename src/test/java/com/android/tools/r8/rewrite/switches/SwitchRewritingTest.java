@@ -55,34 +55,37 @@ public class SwitchRewritingTest extends SmaliTestBase {
     String switchData;
     if (packed) {
       switchInstruction = "packed-switch";
-      switchData = StringUtils.join(
-          "\n",
-          "  :switch_data",
-          "  .packed-switch " + key,
-          "    :case_0",
-          "  .end packed-switch");
+      switchData =
+          StringUtils.join(
+              "\n",
+              "  :switch_data",
+              "  .packed-switch " + key,
+              "    :case_0",
+              "  .end packed-switch");
     } else {
       switchInstruction = "sparse-switch";
-      switchData = StringUtils.join(
-          "\n",
-          "  :switch_data",
-          "  .sparse-switch",
-          "    " + key + " -> :case_0",
-          "  .end sparse-switch");
+      switchData =
+          StringUtils.join(
+              "\n",
+              "  :switch_data",
+              "  .sparse-switch",
+              "    " + key + " -> :case_0",
+              "  .end sparse-switch");
     }
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int"),
-        0,
-        "    " + switchInstruction + " p0, :switch_data",
-        "    const/4 p0, 0x5",
-        "    goto :return",
-        "  :case_0",
-        "    const/4 p0, 0x3",
-        "  :return",
-        "    return p0",
-        switchData);
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int"),
+            0,
+            "    " + switchInstruction + " p0, :switch_data",
+            "    const/4 p0, 0x5",
+            "    goto :return",
+            "  :case_0",
+            "    const/4 p0, 0x3",
+            "  :return",
+            "    return p0",
+            switchData);
 
     builder.addMainMethod(
         2,
@@ -91,8 +94,7 @@ public class SwitchRewritingTest extends SmaliTestBase {
         "    invoke-static       { v1 }, LTest;->method(I)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -111,7 +113,7 @@ public class SwitchRewritingTest extends SmaliTestBase {
 
   @Test
   public void singleCaseDex() throws CompilationFailedException {
-    for (boolean packed : new boolean[]{true, false}) {
+    for (boolean packed : new boolean[] {true, false}) {
       runSingleCaseDexTest(packed, Integer.MIN_VALUE);
       runSingleCaseDexTest(packed, -1);
       runSingleCaseDexTest(packed, 0);
@@ -120,8 +122,8 @@ public class SwitchRewritingTest extends SmaliTestBase {
     }
   }
 
-  private void runLargerSwitchDexTest(int firstKey, int keyStep, int totalKeys,
-      Integer additionalLastKey) throws Exception {
+  private void runLargerSwitchDexTest(
+      int firstKey, int keyStep, int totalKeys, Integer additionalLastKey) throws Exception {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
     StringBuilder switchSource = new StringBuilder();
@@ -192,7 +194,7 @@ public class SwitchRewritingTest extends SmaliTestBase {
     runLargerSwitchDexTest(-10000, 100, 100, null);
     runLargerSwitchDexTest(-10000, 200, 100, 10000);
     runLargerSwitchDexTest(
-        Integer.MIN_VALUE, (int) ((-(long)Integer.MIN_VALUE) / 16), 32, Integer.MAX_VALUE);
+        Integer.MIN_VALUE, (int) ((-(long) Integer.MIN_VALUE) / 16), 32, Integer.MAX_VALUE);
 
     // TODO(63090177): Currently this is commented out as R8 gets really slow for large switches.
     // runLargerSwitchDexTest(0, 1, Constants.U16BIT_MAX, null);

@@ -38,7 +38,8 @@ public class DexBuilderBackwardGotoMinus128Test extends TestBase {
         .inspect(
             inspector -> {
               // Loop header `if-lez` (2 units) + 63 `add-int/lit16` (63 * 2 = 126 units) = 128
-              // code units before the backward Goto, giving relativeOffset == -128 (Byte.MIN_VALUE).
+              // code units before the backward Goto, giving relativeOffset == -128
+              // (Byte.MIN_VALUE).
               assertTrue(
                   inspector
                       .clazz(TestClass.class)
@@ -54,8 +55,7 @@ public class DexBuilderBackwardGotoMinus128Test extends TestBase {
                       .clazz(TestClass.class)
                       .uniqueMethodWithOriginalName("loop128")
                       .streamInstructions()
-                      .noneMatch(
-                          i -> i.asDexInstruction().getInstruction() instanceof DexGoto16));
+                      .noneMatch(i -> i.asDexInstruction().getInstruction() instanceof DexGoto16));
             })
         .run(parameters.getRuntime(), TestClass.class, "1")
         .assertSuccessWithOutputLines("62000");

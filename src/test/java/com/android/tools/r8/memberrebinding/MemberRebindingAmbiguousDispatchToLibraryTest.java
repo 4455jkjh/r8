@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.memberrebinding;
 
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;

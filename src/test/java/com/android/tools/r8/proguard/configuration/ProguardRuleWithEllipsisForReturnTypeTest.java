@@ -25,7 +25,7 @@ public class ProguardRuleWithEllipsisForReturnTypeTest extends TestBase {
 
   private static final Class<?> clazz = ProguardRuleWithEllipsisForReturnTypeTestClass.class;
   private static final String expectedOutput = StringUtils.lines("Hello world!");
-  
+
   @Parameter public TestParameters parameters;
 
   @Parameters(name = "{0}")

@@ -24,7 +24,10 @@ public class Regress80124071 extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addPrivateVirtualMethod("privateMethod", ImmutableList.of(), "V",
+    clazz.addPrivateVirtualMethod(
+        "privateMethod",
+        ImmutableList.of(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -56,7 +59,10 @@ public class Regress80124071 extends JasminTestBase {
 
     JasminBuilder.ClassBuilder subclazz = builder.addClass("TestSub", "Test");
 
-    subclazz.addVirtualMethod("privateMethod", ImmutableList.of(), "V",
+    subclazz.addVirtualMethod(
+        "privateMethod",
+        ImmutableList.of(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",

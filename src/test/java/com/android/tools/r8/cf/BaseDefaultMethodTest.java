@@ -7,10 +7,7 @@ package com.android.tools.r8.cf;
 public class BaseDefaultMethodTest {
 
   public static final Class[] CLASSES = {
-      BaseDefaultMethodTest.class,
-      Base.class,
-      Derived.class,
-      Impl.class,
+    BaseDefaultMethodTest.class, Base.class, Derived.class, Impl.class,
   };
 
   interface Base {

@@ -60,8 +60,7 @@ public class TargetLookupTest extends SmaliTestBase {
         "    .locals 1",
         "    const v0, 0",
         "    return v0",
-        "  .end method"
-    );
+        "  .end method");
 
     // Instance method invoking static method using invoke-direct. This does not run on Art, but
     // results in an IncompatibleClassChangeError.
@@ -71,8 +70,7 @@ public class TargetLookupTest extends SmaliTestBase {
         "    invoke-direct       {p0}, " + builder.getCurrentClassDescriptor() + "->x()I",
         "    move-result         v0",
         "    return              v0",
-        "  .end method"
-    );
+        "  .end method");
 
     builder.addMainMethod(
         2,
@@ -90,8 +88,7 @@ public class TargetLookupTest extends SmaliTestBase {
         "    :catch",
         "    const-string        v1, \"OK\"",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(Ljava/lang/String;)V",
-        "    goto :return"
-    );
+        "    goto :return");
 
     AndroidApp application = buildApplication(builder);
     AppView<AppInfoWithClassHierarchy> appView =
@@ -131,8 +128,7 @@ public class TargetLookupTest extends SmaliTestBase {
         "    .locals 1",
         "    const               v0, 0",
         "    return              v0",
-        "  .end method"
-    );
+        "  .end method");
 
     builder.addClass("Test", "TestSuper");
 
@@ -146,8 +142,7 @@ public class TargetLookupTest extends SmaliTestBase {
         "    invoke-direct       {p0}, " + builder.getCurrentClassDescriptor() + "->x()I",
         "    move-result         v0",
         "    return              v0",
-        "  .end method"
-    );
+        "  .end method");
 
     builder.addMainMethod(
         2,
@@ -165,8 +160,7 @@ public class TargetLookupTest extends SmaliTestBase {
         "    :catch",
         "    const-string        v1, \"OK\"",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(Ljava/lang/String;)V",
-        "    goto :return"
-    );
+        "    goto :return");
 
     AndroidApp application = buildApplication(builder);
     AppView<AppInfoWithClassHierarchy> appView =
@@ -222,21 +216,21 @@ public class TargetLookupTest extends SmaliTestBase {
     builder.addClass("SubClass", "SuperClass", Collections.singletonList("Interface"));
 
     builder.addClass(DEFAULT_CLASS_NAME);
-    builder.addMainMethod(2,
+    builder.addMainMethod(
+        2,
         "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "    sget                v1, LSubClass;->aField:I",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     AndroidApp application = buildApplication(builder);
     AppInfoWithClassHierarchy appInfo = computeAppInfoWithClassHierarchy(application);
     DexItemFactory factory = appInfo.dexItemFactory();
 
-    DexField aFieldOnSubClass = factory
-        .createField(factory.createType("LSubClass;"), factory.intType, "aField");
-    DexField aFieldOnInterface = factory
-        .createField(factory.createType("LInterface;"), factory.intType, "aField");
+    DexField aFieldOnSubClass =
+        factory.createField(factory.createType("LSubClass;"), factory.intType, "aField");
+    DexField aFieldOnInterface =
+        factory.createField(factory.createType("LInterface;"), factory.intType, "aField");
 
     assertEquals(aFieldOnInterface, appInfo.lookupStaticTarget(aFieldOnSubClass).getReference());
 
@@ -251,10 +245,10 @@ public class TargetLookupTest extends SmaliTestBase {
     String pkg = Main.class.getPackage().getName().replace('.', '/');
 
     AndroidApp.Builder builder = AndroidApp.builder();
-    for (Class clazz : new Class[]{
-        I0.class, I1.class, I2.class, I3.class, I4.class,
-        C0.class, C1.class, C2.class,
-        Main.class}) {
+    for (Class clazz :
+        new Class[] {
+          I0.class, I1.class, I2.class, I3.class, I4.class, C0.class, C1.class, C2.class, Main.class
+        }) {
       builder.addProgramFiles(ToolHelper.getClassFileForTestClass(clazz));
       // At least java.lang.Object is needed as interface method lookup have special handling
       // of methods on java.lang.Object.
@@ -306,6 +300,3 @@ public class TargetLookupTest extends SmaliTestBase {
         result.stdout, runArt(processedApp, Main.class.getCanonicalName(), parameters.getDexVm()));
   }
 }
-
-
-

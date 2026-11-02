@@ -53,8 +53,9 @@ public class MemberRebindingTest extends TestBase {
   }
 
   private static boolean coolInvokes(InstructionSubject instruction) {
-    if (!instruction.isInvokeVirtual() && !instruction.isInvokeInterface() &&
-        !instruction.isInvokeStatic()) {
+    if (!instruction.isInvokeVirtual()
+        && !instruction.isInvokeInterface()
+        && !instruction.isInvokeStatic()) {
       return false;
     }
     InvokeInstructionSubject invoke = (InvokeInstructionSubject) instruction;
@@ -62,8 +63,8 @@ public class MemberRebindingTest extends TestBase {
   }
 
   private static void inspectMain(CodeInspector inspector) {
-    MethodSubject main = inspector.clazz("memberrebinding.Memberrebinding")
-        .method(CodeInspector.MAIN);
+    MethodSubject main =
+        inspector.clazz("memberrebinding.Memberrebinding").method(CodeInspector.MAIN);
     Iterator<InvokeInstructionSubject> iterator =
         main.iterateInstructions(MemberRebindingTest::coolInvokes);
     assertTrue(iterator.next().holder().is("memberrebinding.ClassAtBottomOfChain"));
@@ -96,8 +97,8 @@ public class MemberRebindingTest extends TestBase {
   }
 
   private static void inspectMain2(CodeInspector inspector) {
-    MethodSubject main = inspector.clazz("memberrebinding2.Memberrebinding")
-        .method(CodeInspector.MAIN);
+    MethodSubject main =
+        inspector.clazz("memberrebinding2.Memberrebinding").method(CodeInspector.MAIN);
     Iterator<FieldAccessInstructionSubject> iterator =
         main.iterateInstructions(InstructionSubject::isFieldAccess);
     // Run through instance put, static put, instance get and instance get.
@@ -111,9 +112,7 @@ public class MemberRebindingTest extends TestBase {
     assertFalse(iterator.hasNext());
   }
 
-  public static MethodSignature TEST =
-      new MethodSignature("test", "void", new String[]{});
-
+  public static MethodSignature TEST = new MethodSignature("test", "void", new String[] {});
 
   private static void inspect3(CodeInspector inspector) {
     MethodSubject main = inspector.clazz("memberrebinding3.Memberrebinding").method(TEST);

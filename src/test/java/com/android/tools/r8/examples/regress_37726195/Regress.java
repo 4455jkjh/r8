@@ -30,8 +30,8 @@ public class Regress {
   }
 
   public static void main(String[] args) {
-    int[] ints = { 0 };
-    float[] floats = { 0.0f };
+    int[] ints = {0};
+    float[] floats = {0.0f};
     set(ints, 0, (byte) 4);
     System.out.println(ints[0]);
     set(floats, 0, (byte) 4);

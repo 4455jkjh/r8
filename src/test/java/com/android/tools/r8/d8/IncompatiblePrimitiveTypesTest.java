@@ -26,8 +26,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class IncompatiblePrimitiveTypesTest extends TestBase {
 
-  @ClassRule
-  public static TemporaryFolder tempFolder = ToolHelper.getTemporaryFolderForTest();
+  @ClassRule public static TemporaryFolder tempFolder = ToolHelper.getTemporaryFolderForTest();
 
   private static Path inputJar;
   private static String expectedOutput = "true";

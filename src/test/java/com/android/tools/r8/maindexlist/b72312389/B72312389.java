@@ -63,9 +63,8 @@ public class B72312389 extends TestBase {
     TestDiagnosticMessagesImpl diagnostics = new TestDiagnosticMessagesImpl();
     GenerateMainDexListCommand.Builder builder = GenerateMainDexListCommand.builder(diagnostics);
     buildInstrumentationTestCaseApplication(builder);
-    GenerateMainDexListCommand command = builder
-        .addMainDexRules(keepInstrumentationTestCaseRules, Origin.unknown())
-        .build();
+    GenerateMainDexListCommand command =
+        builder.addMainDexRules(keepInstrumentationTestCaseRules, Origin.unknown()).build();
     List<String> mainDexList = GenerateMainDexList.run(command);
     assertTrue(mainDexList.contains("junit/framework/TestCase.class"));
     diagnostics.assertNoMessages();

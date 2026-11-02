@@ -13,12 +13,12 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import java.util.Objects;
 import org.junit.Test;
@@ -211,10 +211,12 @@ public class EnumOptimizationTest extends TestBase {
     assertThat(method, isPresent());
     assertEquals(emptyList(), enumInvokes(method, "ordinal"));
 
-    long[] actualConst = method.streamInstructions()
-        .filter(InstructionSubject::isConstNumber)
-        .mapToLong(InstructionSubject::getConstNumber)
-        .toArray();
+    long[] actualConst =
+        method
+            .streamInstructions()
+            .filter(InstructionSubject::isConstNumber)
+            .mapToLong(InstructionSubject::getConstNumber)
+            .toArray();
     assertEquals(expectedConst, actualConst[0]);
   }
 
@@ -231,9 +233,12 @@ public class EnumOptimizationTest extends TestBase {
   }
 
   private static List<InstructionSubject> enumInvokes(MethodSubject method, String methodName) {
-    return method.streamInstructions()
-        .filter(instruction -> instruction.isInvoke()
-            && instruction.getMethod().name.toString().equals(methodName))
+    return method
+        .streamInstructions()
+        .filter(
+            instruction ->
+                instruction.isInvoke()
+                    && instruction.getMethod().name.toString().equals(methodName))
         .collect(toList());
   }
 
@@ -241,10 +246,12 @@ public class EnumOptimizationTest extends TestBase {
     assertThat(method, isPresent());
     assertEquals(emptyList(), enumInvokes(method, "name"));
 
-    List<String> actualConst = method.streamInstructions()
-        .map(InstructionSubject::getConstString)
-        .filter(Objects::nonNull)
-        .collect(toList());
+    List<String> actualConst =
+        method
+            .streamInstructions()
+            .map(InstructionSubject::getConstString)
+            .filter(Objects::nonNull)
+            .collect(toList());
     assertEquals(expectedConst, actualConst.get(0));
   }
 
@@ -258,10 +265,12 @@ public class EnumOptimizationTest extends TestBase {
     assertThat(method, isPresent());
     assertEquals(emptyList(), enumInvokes(method, "toString"));
 
-    List<String> actualConst = method.streamInstructions()
-        .map(InstructionSubject::getConstString)
-        .filter(Objects::nonNull)
-        .collect(toList());
+    List<String> actualConst =
+        method
+            .streamInstructions()
+            .map(InstructionSubject::getConstString)
+            .filter(Objects::nonNull)
+            .collect(toList());
     assertEquals(expectedConst, actualConst.get(0));
   }
 

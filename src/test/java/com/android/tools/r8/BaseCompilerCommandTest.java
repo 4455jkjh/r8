@@ -14,5 +14,4 @@ public class BaseCompilerCommandTest {
     assertEquals(DesugarState.OFF, command.getDesugarState());
     assertEquals(DesugarState.OFF, command.getInternalOptions().desugarState);
   }
-
 }

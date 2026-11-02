@@ -6,26 +6,26 @@ package com.android.tools.r8.examples.floating_point_annotations;
 public class FloatingPointValuedAnnotationTest {
 
   @FloatingPointValuedAnnotation(doubleValue = -0d)
-  class A {
-  }
+  class A {}
 
   @FloatingPointValuedAnnotation(doubleValue = 0d)
-  class B {
-  }
+  class B {}
 
   @FloatingPointValuedAnnotation(floatValue = -0f)
-  class C {
-  }
+  class C {}
 
   @FloatingPointValuedAnnotation(floatValue = 0f)
-  class D {
-  }
+  class D {}
 
   public static void main(String[] args) {
-    System.out.println(A.class.getAnnotation(FloatingPointValuedAnnotation.class)
-        .equals(B.class.getAnnotation(FloatingPointValuedAnnotation.class)));
+    System.out.println(
+        A.class
+            .getAnnotation(FloatingPointValuedAnnotation.class)
+            .equals(B.class.getAnnotation(FloatingPointValuedAnnotation.class)));
 
-    System.out.println(C.class.getAnnotation(FloatingPointValuedAnnotation.class)
-        .equals(D.class.getAnnotation(FloatingPointValuedAnnotation.class)));
+    System.out.println(
+        C.class
+            .getAnnotation(FloatingPointValuedAnnotation.class)
+            .equals(D.class.getAnnotation(FloatingPointValuedAnnotation.class)));
   }
 }

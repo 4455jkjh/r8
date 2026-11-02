@@ -34,8 +34,7 @@ public abstract class RepackageTestBase extends TestBase {
   }
 
   public RepackageTestBase(
-      String flattenPackageHierarchyOrRepackageClasses,
-      TestParameters parameters) {
+      String flattenPackageHierarchyOrRepackageClasses, TestParameters parameters) {
     this.flattenPackageHierarchyOrRepackageClasses = flattenPackageHierarchyOrRepackageClasses;
     this.parameters = parameters;
   }

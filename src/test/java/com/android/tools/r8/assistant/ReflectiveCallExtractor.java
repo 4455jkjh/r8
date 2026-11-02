@@ -70,6 +70,7 @@ public class ReflectiveCallExtractor {
     }
     return methods;
   }
+
   private static boolean isReflective(DexMethod method, DexItemFactory factory) {
     if (factory.isAtomicFieldUpdaterConstructor(method)) {
       return true;

@@ -16,4 +16,3 @@ public class TestMain implements Test2 {
     return "TestMain::fooDelegate(" + Test2.super.foo(a) + ")";
   }
 }
-

@@ -92,7 +92,6 @@ public class Leb128Test extends TestBase {
     Assert.assertEquals(value, LebUtils.parseSleb128(reader));
   }
 
-
   @Test
   public void encodeDecodeSLeb128Test() {
     byte[] encoded = LebUtils.encodeSleb128(value);

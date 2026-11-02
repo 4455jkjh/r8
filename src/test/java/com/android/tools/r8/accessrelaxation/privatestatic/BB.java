@@ -29,4 +29,3 @@ public class BB extends A {
     System.out.println(this.foo());
   }
 }
-

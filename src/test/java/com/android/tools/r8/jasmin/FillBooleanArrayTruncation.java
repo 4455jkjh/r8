@@ -69,7 +69,10 @@ public class FillBooleanArrayTruncation extends JasminTestBase {
     //     System.out.println(bytes[i]);
     //   }
     // }
-    clazz.addStaticMethod("foo", ImmutableList.of(), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of(),
+        "V",
         ".limit stack 10",
         ".limit locals 10",
         "  iconst_5",
@@ -116,10 +119,7 @@ public class FillBooleanArrayTruncation extends JasminTestBase {
     //   foo();
     // }
     clazz.addMainMethod(
-        ".limit stack 2",
-        ".limit locals 10",
-        "  invokestatic Test/foo()V",
-        "  return");
+        ".limit stack 2", ".limit locals 10", "  invokestatic Test/foo()V", "  return");
 
     runTest(builder, clazz.name);
   }

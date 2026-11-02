@@ -10,11 +10,11 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -37,28 +37,29 @@ public class ArrayLengthRewriteTest extends TestBase {
   }
 
   private static final String[] expectedOutput = {
-      "boolean 1",
-      "byte 2",
-      "char 3",
-      "double 4",
-      "float 5",
-      "int 6",
-      "long 7",
-      "short 8",
-      "class java.lang.String 1",
-      "class java.lang.Object 2",
-      "class java.lang.String 3",
-      "NPE",
-      "class java.lang.Object 2",
-      "boolean 1",
-      "class java.lang.String 0",
-      "class java.lang.String 1",
-      "class java.lang.String 2",
-      "class java.lang.String 1",
-      "class java.lang.String 1",
+    "boolean 1",
+    "byte 2",
+    "char 3",
+    "double 4",
+    "float 5",
+    "int 6",
+    "long 7",
+    "short 8",
+    "class java.lang.String 1",
+    "class java.lang.Object 2",
+    "class java.lang.String 3",
+    "NPE",
+    "class java.lang.Object 2",
+    "boolean 1",
+    "class java.lang.String 0",
+    "class java.lang.String 1",
+    "class java.lang.String 2",
+    "class java.lang.String 1",
+    "class java.lang.String 1",
   };
 
-  @Test public void d8() throws Exception {
+  @Test
+  public void d8() throws Exception {
     parameters.assumeDexRuntime();
 
     testForD8()
@@ -70,7 +71,8 @@ public class ArrayLengthRewriteTest extends TestBase {
         .inspect(i -> inspect(i, true));
   }
 
-  @Test public void r8() throws Exception {
+  @Test
+  public void r8() throws Exception {
     testForR8(parameters.getBackend())
         .setMinApi(parameters)
         .setMode(debugMode ? CompilationMode.DEBUG : CompilationMode.RELEASE)
@@ -111,9 +113,7 @@ public class ArrayLengthRewriteTest extends TestBase {
 
   private static void assertArrayLengthCallCount(MethodSubject subject, int expected) {
     assertTrue(subject.isPresent());
-    long actual = subject.streamInstructions()
-        .filter(InstructionSubject::isArrayLength)
-        .count();
+    long actual = subject.streamInstructions().filter(InstructionSubject::isArrayLength).count();
     assertEquals(expected, actual);
   }
 
@@ -188,8 +188,8 @@ public class ArrayLengthRewriteTest extends TestBase {
     }
 
     private static final String[] zero = {};
-    private static final String[] one = { "one" };
-    private static final String[] two = { "one", "two" };
+    private static final String[] one = {"one"};
+    private static final String[] two = {"one", "two"};
 
     @NeverInline
     private static void staticConstants() {
@@ -198,7 +198,7 @@ public class ArrayLengthRewriteTest extends TestBase {
       System.out.println(two.getClass().getComponentType() + " " + two.length);
     }
 
-    private static String[] mutable = { "one" };
+    private static String[] mutable = {"one"};
     private static final String[] runtimeInit = {"two"};
 
     @NeverInline

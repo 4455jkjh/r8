@@ -18,7 +18,7 @@ public class TestClass {
     }
   }
 
-  public static class Keep { }
+  public static class Keep {}
 
-  public static class Remove { }
+  public static class Remove {}
 }

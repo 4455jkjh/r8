@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.examples.sync;
 
-
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.examples.ExamplesTestBase;
 import com.android.tools.r8.utils.internal.StringUtils;

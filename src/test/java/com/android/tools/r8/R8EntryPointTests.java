@@ -29,7 +29,7 @@ public class R8EntryPointTests extends TestBase {
   private static final String MAPPING = "mapping.txt";
   private static final String SEEDS = "seeds.txt";
   private static final Path PROGUARD_FLAGS =
-      Paths.get(ToolHelper.EXAMPLES_DIR, "minification",  "keep-rules.txt");
+      Paths.get(ToolHelper.EXAMPLES_DIR, "minification", "keep-rules.txt");
 
   private static Path getInputJar() {
     return TestDeps.getExamplesPath("minification" + FileUtils.JAR_EXTENSION);
@@ -49,9 +49,8 @@ public class R8EntryPointTests extends TestBase {
   @Before
   public void setup() throws IOException {
     testFlags = temp.newFile("local.flags").toPath();
-    FileUtils.writeTextFile(testFlags, ImmutableList.of(
-        "-printseeds " + SEEDS,
-        "-printmapping " + MAPPING));
+    FileUtils.writeTextFile(
+        testFlags, ImmutableList.of("-printseeds " + SEEDS, "-printmapping " + MAPPING));
   }
 
   @Test
@@ -144,7 +143,6 @@ public class R8EntryPointTests extends TestBase {
     Assert.assertTrue(Files.isRegularFile(testFlags.getParent().resolve(MAPPING)));
     Assert.assertTrue(Files.isRegularFile(testFlags.getParent().resolve(SEEDS)));
   }
-
 
   @Test
   public void testMainZip() throws IOException, InterruptedException {

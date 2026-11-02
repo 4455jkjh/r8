@@ -38,30 +38,32 @@ public class BinopLiteralTest extends SmaliTestBase {
     parameters.assertNoneRuntime();
   }
 
-  int[] lit8Values = new int[]{
-      Constants.S8BIT_MIN,
-      Constants.S8BIT_MIN + 1,
-      Constants.S4BIT_MIN - 1,
-      Constants.S4BIT_MIN,
-      Constants.S4BIT_MIN + 1,
-      1,
-      0,
-      1,
-      Constants.S4BIT_MAX - 1,
-      Constants.S4BIT_MAX,
-      Constants.S4BIT_MAX + 1,
-      Constants.S8BIT_MAX - 1,
-      Constants.S8BIT_MAX,
-  };
+  int[] lit8Values =
+      new int[] {
+        Constants.S8BIT_MIN,
+        Constants.S8BIT_MIN + 1,
+        Constants.S4BIT_MIN - 1,
+        Constants.S4BIT_MIN,
+        Constants.S4BIT_MIN + 1,
+        1,
+        0,
+        1,
+        Constants.S4BIT_MAX - 1,
+        Constants.S4BIT_MAX,
+        Constants.S4BIT_MAX + 1,
+        Constants.S8BIT_MAX - 1,
+        Constants.S8BIT_MAX,
+      };
 
-  int[] lit16Values = new int[]{
-      Short.MIN_VALUE,
-      Short.MIN_VALUE + 1,
-      Constants.S8BIT_MIN - 1,
-      Constants.S8BIT_MAX + 1,
-      Short.MAX_VALUE - 1,
-      Short.MAX_VALUE,
-  };
+  int[] lit16Values =
+      new int[] {
+        Short.MIN_VALUE,
+        Short.MIN_VALUE + 1,
+        Constants.S8BIT_MIN - 1,
+        Constants.S8BIT_MAX + 1,
+        Short.MAX_VALUE - 1,
+        Short.MAX_VALUE,
+      };
 
   protected AndroidApp processApplication(AndroidApp application)
       throws CompilationFailedException {
@@ -71,19 +73,19 @@ public class BinopLiteralTest extends SmaliTestBase {
 
   @Test
   public void lit8PassthroughTest() {
-    List<String> lit8Binops = Arrays.asList(
-        "add", "rsub", "mul", "div", "rem", "and", "or", "xor", "shl", "shr", "ushr"
-    );
+    List<String> lit8Binops =
+        Arrays.asList("add", "rsub", "mul", "div", "rem", "and", "or", "xor", "shl", "shr", "ushr");
 
     for (String binop : lit8Binops) {
       for (int lit8Value : lit8Values) {
-        DexEncodedMethod method = oneMethodApplication(
-            "int", Collections.singletonList("int"),
-            0,
-            // E.g. add-int/lit8 p0, p0, -128
-            "    " + binop + "-int/lit8 p0, p0, " + lit8Value,
-            "    return p0"
-        );
+        DexEncodedMethod method =
+            oneMethodApplication(
+                "int",
+                Collections.singletonList("int"),
+                0,
+                // E.g. add-int/lit8 p0, p0, -128
+                "    " + binop + "-int/lit8 p0, p0, " + lit8Value,
+                "    return p0");
         DexCode code = method.getCode().asDexCode();
         assertEquals(2, code.instructions.length);
         if (binop.equals("and") && lit8Value == 0) {
@@ -100,20 +102,20 @@ public class BinopLiteralTest extends SmaliTestBase {
 
   @Test
   public void lit16PassthroughTest() {
-    List<String> lit16Binops = Arrays.asList(
-        "add", "rsub", "mul", "div", "rem", "and", "or", "xor"
-    );
+    List<String> lit16Binops =
+        Arrays.asList("add", "rsub", "mul", "div", "rem", "and", "or", "xor");
 
     for (String binop : lit16Binops) {
       for (int lit16Value : lit16Values) {
         String lit16Postfix = !binop.equals("rsub") ? "/lit16" : "";
-        DexEncodedMethod method = oneMethodApplication(
-            "int", Collections.singletonList("int"),
-            0,
-            // E.g. add-int/lit16 p0, p0, -32768
-            "    " + binop + "-int" + lit16Postfix + " p0, p0, " + lit16Value,
-            "    return p0"
-        );
+        DexEncodedMethod method =
+            oneMethodApplication(
+                "int",
+                Collections.singletonList("int"),
+                0,
+                // E.g. add-int/lit16 p0, p0, -32768
+                "    " + binop + "-int" + lit16Postfix + " p0, p0, " + lit16Value,
+                "    return p0");
         DexCode code = method.getCode().asDexCode();
         assertEquals(2, code.instructions.length);
         assertTrue(code.instructions[0] instanceof DexFormat22s);
@@ -125,18 +127,20 @@ public class BinopLiteralTest extends SmaliTestBase {
 
   @Test
   public void lit16NotSupported() {
-    String[] lit8OnlyBinops = new String[]{
-        "shl", "shr", "ushr",
-    };
+    String[] lit8OnlyBinops =
+        new String[] {
+          "shl", "shr", "ushr",
+        };
     for (String binop : lit8OnlyBinops) {
       for (int lit16Value : lit16Values) {
-        DexEncodedMethod method = oneMethodApplication(
-            "int", Collections.singletonList("int"),
-            1,
-            "    const/16 v0, " + lit16Value,
-            "    " + binop + "-int/2addr p0, v0    ",
-            "    return p0"
-        );
+        DexEncodedMethod method =
+            oneMethodApplication(
+                "int",
+                Collections.singletonList("int"),
+                1,
+                "    const/16 v0, " + lit16Value,
+                "    " + binop + "-int/2addr p0, v0    ",
+                "    return p0");
         DexCode code = method.getCode().asDexCode();
         assertEquals(3, code.instructions.length);
         assertTrue(code.instructions[0] instanceof DexConst16);

@@ -37,4 +37,3 @@ public class B extends A implements I {
     System.out.println(blah(0));
   }
 }
-

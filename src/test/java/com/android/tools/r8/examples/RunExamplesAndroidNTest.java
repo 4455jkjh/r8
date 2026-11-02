@@ -148,8 +148,10 @@ public abstract class RunExamplesAndroidNTest<B> extends TestBase {
 
   @Test(expected = CompilationFailedException.class)
   public void staticInterfaceMethodsErrorDueToMinSdk() throws Throwable {
-    test("staticinterfacemethods-error-due-to-min-sdk", "interfacemethods",
-        "StaticInterfaceMethods")
+    test(
+            "staticinterfacemethods-error-due-to-min-sdk",
+            "interfacemethods",
+            "StaticInterfaceMethods")
         .withInterfaceMethodDesugaring(OffOrAuto.Off)
         .withKeepAll()
         .run();
@@ -166,8 +168,7 @@ public abstract class RunExamplesAndroidNTest<B> extends TestBase {
 
   @Test(expected = CompilationFailedException.class)
   public void defaultMethodsErrorDueToMinSdk() throws Throwable {
-    test("defaultmethods-error-due-to-min-sdk", "interfacemethods",
-        "DefaultMethods")
+    test("defaultmethods-error-due-to-min-sdk", "interfacemethods", "DefaultMethods")
         .withInterfaceMethodDesugaring(OffOrAuto.Off)
         .withKeepAll()
         .run();

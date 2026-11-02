@@ -141,7 +141,6 @@ public class ResourceShrinkingWithSeveralFeaturesTest extends TestBase {
         .assertSuccess();
   }
 
-
   public static class Base {
 
     public static void main(String[] args) {

@@ -113,10 +113,7 @@ public class TraceReferencesMissingReferencesInDexTest extends TestBase {
   @Test
   public void missingClassReferencedInDexArchive() throws Throwable {
     missingClassReferenced(
-        testForD8(Backend.DEX)
-            .addProgramClasses(Source.class)
-            .compile()
-            .writeToZip());
+        testForD8(Backend.DEX).addProgramClasses(Source.class).compile().writeToZip());
   }
 
   @Test

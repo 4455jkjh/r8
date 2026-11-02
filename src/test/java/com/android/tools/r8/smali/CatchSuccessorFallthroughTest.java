@@ -53,7 +53,11 @@ public class CatchSuccessorFallthroughTest extends SmaliTestBase {
 
     SmaliBuilder builder = new SmaliBuilder("Test");
 
-    builder.addStaticMethod("int", "maybeThrow", Arrays.asList("int"), 0,
+    builder.addStaticMethod(
+        "int",
+        "maybeThrow",
+        Arrays.asList("int"),
+        0,
         "  if-eqz v0, :throw",
         "  const v0, 42",
         "  return v0",
@@ -61,19 +65,25 @@ public class CatchSuccessorFallthroughTest extends SmaliTestBase {
         "  div-int/2addr v0, v0",
         "  return v0");
 
-    MethodSignature methodSig = builder.addStaticMethod(
-        "int", "method", Collections.singletonList("int"), 0,
-        ":try_start",
-        "  invoke-static {v0}, LTest;->maybeThrow(I)I",
-        "  move-result v0",
-        ":try_end",
-        "  .catch Ljava/lang/Throwable; {:try_start .. :try_end} :return",
-        ":return",
-        "  return v0"
-    );
+    MethodSignature methodSig =
+        builder.addStaticMethod(
+            "int",
+            "method",
+            Collections.singletonList("int"),
+            0,
+            ":try_start",
+            "  invoke-static {v0}, LTest;->maybeThrow(I)I",
+            "  move-result v0",
+            ":try_end",
+            "  .catch Ljava/lang/Throwable; {:try_start .. :try_end} :return",
+            ":return",
+            "  return v0");
 
     builder.addStaticMethod(
-        "void", "main", Arrays.asList("java.lang.String[]"), 2,
+        "void",
+        "main",
+        Arrays.asList("java.lang.String[]"),
+        2,
         "  sget-object v1, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "  const v0, 1",
         "  invoke-static {v0}, LTest;->method(I)I",

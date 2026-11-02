@@ -60,9 +60,7 @@ public class D8FrameworkDexPassthroughMarkerTest extends TestBase {
             .resolve("framework.jar");
     D8Command.Builder command = D8Command.builder().addProgramFiles(frameworkJar);
     BaseCompilerCommandUtils.setMinApiLevel(command, minApi.asUnchecked());
-    Marker marker = new Marker(Tool.D8)
-        .setVersion("1.0.0")
-        .setMinApi(minApi);
+    Marker marker = new Marker(Tool.D8).setVersion("1.0.0").setMinApi(minApi);
     AndroidApp app = ToolHelper.runD8(command, opts -> opts.setMarker(marker));
     DexApplication dexApp =
         new ApplicationReader(app, new InternalOptions(), Timing.empty()).read();

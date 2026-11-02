@@ -39,10 +39,7 @@ public class AnnotationCompanionClassTest extends JasminTestBase {
     clazz.setAccess("public interface abstract annotation");
 
     clazz.addStaticMethod(
-        "staticMethod", ImmutableList.of(), "V",
-        ".limit stack 0",
-        ".limit locals 0",
-        "  return");
+        "staticMethod", ImmutableList.of(), "V", ".limit stack 0", ".limit locals 0", "  return");
     return builder;
   }
 

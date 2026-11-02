@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.graph.invokevirtual;
 
-
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;

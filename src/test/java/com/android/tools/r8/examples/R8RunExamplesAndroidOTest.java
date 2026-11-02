@@ -42,13 +42,13 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command.Builder> {
 
-  private static final ArrayList<String> PROGUARD_OPTIONS = Lists.newArrayList(
-      "-keepclasseswithmembers public class * {",
-      "    public static void main(java.lang.String[]);",
-      "}",
-      "-dontobfuscate",
-      "-allowaccessmodification"
-  );
+  private static final ArrayList<String> PROGUARD_OPTIONS =
+      Lists.newArrayList(
+          "-keepclasseswithmembers public class * {",
+          "    public static void main(java.lang.String[]);",
+          "}",
+          "-dontobfuscate",
+          "-allowaccessmodification");
 
   private static ArrayList<String> getProguardOptionsNPlus(
       boolean enableProguardCompatibilityMode) {
@@ -420,7 +420,8 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
       return withBuilder(builder -> builder.setMinApi(minApiLevel));
     }
 
-    @Override R8TestRunner withKeepAll() {
+    @Override
+    R8TestRunner withKeepAll() {
       return withBuilder(
           builder -> builder.addDontObfuscate().addDontShrink().addKeepAllAttributes());
     }

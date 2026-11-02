@@ -55,7 +55,10 @@ public class BooleanByteConfusion extends JasminTestBase {
     //     System.out.println("null array");
     //   }
     // }
-    clazz.addStaticMethod("foo", ImmutableList.of("Z"), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("Z"),
+        "V",
         ".limit stack 10",
         ".limit locals 10",
         "  aconst_null",

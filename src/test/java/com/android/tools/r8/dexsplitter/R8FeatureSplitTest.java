@@ -267,7 +267,6 @@ public class R8FeatureSplitTest extends SplitterTestBase {
       return feature2Path;
     }
 
-
     public CompiledWithFeature invoke() throws IOException, CompilationFailedException {
       R8TestCompileResult compileResult =
           testForR8(parameters.getBackend())

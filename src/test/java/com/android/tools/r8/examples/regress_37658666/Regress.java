@@ -5,10 +5,8 @@ package com.android.tools.r8.examples.regress_37658666;
 
 class Float {
   int cmp(float a, float b) {
-    if (a > b)
-      return 1;
-    if (a == b)
-      return 0;
+    if (a > b) return 1;
+    if (a == b) return 0;
     return -1;
   }
 }

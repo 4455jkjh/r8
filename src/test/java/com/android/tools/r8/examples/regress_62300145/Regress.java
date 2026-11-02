@@ -14,21 +14,20 @@ import java.lang.reflect.Constructor;
 
 public class Regress {
   @Retention(RetentionPolicy.RUNTIME)
-  public @interface A {
-  }
+  public @interface A {}
 
   @Retention(CLASS)
   @Target({ElementType.PARAMETER})
-  public @interface B {
-  }
+  public @interface B {}
 
   public class InnerClass {
-    public InnerClass(@A @B String p1, @A String p2, @B String p3) { }
+    public InnerClass(@A @B String p1, @A String p2, @B String p3) {}
   }
 
   public static void main(String[] args) throws NoSuchMethodException {
-    Constructor<InnerClass> constructor = InnerClass.class.getDeclaredConstructor(
-        Regress.class, String.class, String.class, String.class);
+    Constructor<InnerClass> constructor =
+        InnerClass.class.getDeclaredConstructor(
+            Regress.class, String.class, String.class, String.class);
     Annotation[][] annotations = constructor.getParameterAnnotations();
     int index = 0;
     for (int i = 0; i < annotations.length; i++) {

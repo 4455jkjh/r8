@@ -72,21 +72,30 @@ public class Regress72413928 extends JasminTestBase {
         throw new Unreachable();
     }
 
-    clazz.addStaticMethod("returnsConstantFalse", ImmutableList.of(), "Z",
+    clazz.addStaticMethod(
+        "returnsConstantFalse",
+        ImmutableList.of(),
+        "Z",
         ".limit stack 10",
         ".limit locals 10",
         "  iconst_0",
         conversion,
         "  ireturn");
 
-    clazz.addStaticMethod("returnsConstantTrue", ImmutableList.of(), "Z",
+    clazz.addStaticMethod(
+        "returnsConstantTrue",
+        ImmutableList.of(),
+        "Z",
         ".limit stack 10",
         ".limit locals 10",
         "  iconst_1",
         conversion,
         "  ireturn");
 
-    clazz.addStaticMethod("returnsArgument", ImmutableList.of(type.getDescriptor()), "Z",
+    clazz.addStaticMethod(
+        "returnsArgument",
+        ImmutableList.of(type.getDescriptor()),
+        "Z",
         ".limit stack 10",
         ".limit locals 10",
         "  iload_0",

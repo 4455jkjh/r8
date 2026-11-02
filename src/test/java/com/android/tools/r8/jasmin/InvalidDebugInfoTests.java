@@ -76,7 +76,10 @@ public class InvalidDebugInfoTests extends TestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("I"), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("I"),
+        "V",
         ".limit stack 3",
         ".limit locals 4",
         ".var 0 is x I from LabelInit to LabelExit",
@@ -108,8 +111,7 @@ public class InvalidDebugInfoTests extends TestBase {
         "  ret 3",
         "LabelExit:",
         "  return",
-        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatchStart"
-    );
+        ".catch java/lang/Exception from LabelTryStart to LabelTryEnd using LabelCatchStart");
 
     clazz.addMainMethod(
         ".limit stack 1",
@@ -151,7 +153,10 @@ public class InvalidDebugInfoTests extends TestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("I", "I"), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("I", "I"),
+        "V",
         ".limit stack 2",
         ".limit locals 3",
         ".var 0 is x I from LabelInit to LabelExit",
@@ -171,8 +176,7 @@ public class InvalidDebugInfoTests extends TestBase {
         "LabelCatch:", // Catch target appears to include 'y' but actually does not.
         "  pop",
         "  return",
-        "LabelExit:"
-    );
+        "LabelExit:");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -212,35 +216,36 @@ public class InvalidDebugInfoTests extends TestBase {
   public void invalidInfoBug63412730_onWrite() throws Throwable {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
-    MethodSignature method = clazz.addStaticMethod("bar", ImmutableList.of(), "V",
-        ".limit stack 3",
-        ".limit locals 2",
-        ".var 1 is i I from LI to End",
-        ".var 0 is f F from LF to End",
-        "Init:",
-        "  ldc 42",
-        "  istore 0",
-        ".line 1",
-        "LI:",
-        "  ldc 7.5",
-        "  fstore 1",
-        ".line 2",
-        "LF:",
-        "  getstatic java/lang/System/out Ljava/io/PrintStream;",
-        "  dup",
-        "  iload 0",
-        "  invokevirtual java/io/PrintStream/println(I)V",
-        "  fload 1",
-        "  invokevirtual java/io/PrintStream/println(F)V",
-        ".line 3",
-        "  return",
-        "End:");
+    MethodSignature method =
+        clazz.addStaticMethod(
+            "bar",
+            ImmutableList.of(),
+            "V",
+            ".limit stack 3",
+            ".limit locals 2",
+            ".var 1 is i I from LI to End",
+            ".var 0 is f F from LF to End",
+            "Init:",
+            "  ldc 42",
+            "  istore 0",
+            ".line 1",
+            "LI:",
+            "  ldc 7.5",
+            "  fstore 1",
+            ".line 2",
+            "LF:",
+            "  getstatic java/lang/System/out Ljava/io/PrintStream;",
+            "  dup",
+            "  iload 0",
+            "  invokevirtual java/io/PrintStream/println(I)V",
+            "  fload 1",
+            "  invokevirtual java/io/PrintStream/println(F)V",
+            ".line 3",
+            "  return",
+            "End:");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  invokestatic Test/bar()V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  invokestatic Test/bar()V", "  return");
 
     String expected = StringUtils.lines("42", "7.5");
     if (parameters.isJvmTestParameters()) {
@@ -272,34 +277,35 @@ public class InvalidDebugInfoTests extends TestBase {
   public void invalidInfoBug63412730_onRead() throws Throwable {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
-    MethodSignature method = clazz.addStaticMethod("bar", ImmutableList.of(), "V",
-        ".limit stack 3",
-        ".limit locals 2",
-        ".var 1 is i I from Locals to End",
-        ".var 0 is f F from Locals to End",
-        "Init:",
-        "  ldc 42",
-        "  istore 0",
-        ".line 1",
-        "  ldc 7.5",
-        "  fstore 1",
-        ".line 2",
-        "Locals:",
-        "  getstatic java/lang/System/out Ljava/io/PrintStream;",
-        "  dup",
-        "  iload 0",
-        "  invokevirtual java/io/PrintStream/println(I)V",
-        "  fload 1",
-        "  invokevirtual java/io/PrintStream/println(F)V",
-        ".line 3",
-        "  return",
-        "End:");
+    MethodSignature method =
+        clazz.addStaticMethod(
+            "bar",
+            ImmutableList.of(),
+            "V",
+            ".limit stack 3",
+            ".limit locals 2",
+            ".var 1 is i I from Locals to End",
+            ".var 0 is f F from Locals to End",
+            "Init:",
+            "  ldc 42",
+            "  istore 0",
+            ".line 1",
+            "  ldc 7.5",
+            "  fstore 1",
+            ".line 2",
+            "Locals:",
+            "  getstatic java/lang/System/out Ljava/io/PrintStream;",
+            "  dup",
+            "  iload 0",
+            "  invokevirtual java/io/PrintStream/println(I)V",
+            "  fload 1",
+            "  invokevirtual java/io/PrintStream/println(F)V",
+            ".line 3",
+            "  return",
+            "End:");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  invokestatic Test/bar()V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  invokestatic Test/bar()V", "  return");
 
     String expected = StringUtils.lines("42", "7.5");
     if (parameters.isJvmTestParameters()) {
@@ -324,41 +330,42 @@ public class InvalidDebugInfoTests extends TestBase {
   public void invalidInfoBug63412730_onMove() throws Throwable {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
-    MethodSignature method = clazz.addStaticMethod("bar", ImmutableList.of(), "V",
-        ".limit stack 3",
-        ".limit locals 2",
-        ".var 1 is i I from LI to End",
-        ".var 0 is j F from LJ to End",
-        "Init:",
-        "  ldc 42",
-        "  istore 0",
-        ".line 1",
-        "LI:",
-        "  ldc 0",
-        "  ldc 0",
-        "  ifeq LZ",
-        "  ldc 75",
-        "  istore 1",
-        ".line 2",
-        "LJ:",
-        "  getstatic java/lang/System/out Ljava/io/PrintStream;",
-        "  iload 1",
-        "  invokevirtual java/io/PrintStream/println(I)V",
-        ".line 3",
-        "  return",
-        "LZ:",
-        "  getstatic java/lang/System/out Ljava/io/PrintStream;",
-        "  iload 0",
-        "  invokevirtual java/io/PrintStream/println(I)V",
-        ".line 4",
-        "  return",
-        "End:");
+    MethodSignature method =
+        clazz.addStaticMethod(
+            "bar",
+            ImmutableList.of(),
+            "V",
+            ".limit stack 3",
+            ".limit locals 2",
+            ".var 1 is i I from LI to End",
+            ".var 0 is j F from LJ to End",
+            "Init:",
+            "  ldc 42",
+            "  istore 0",
+            ".line 1",
+            "LI:",
+            "  ldc 0",
+            "  ldc 0",
+            "  ifeq LZ",
+            "  ldc 75",
+            "  istore 1",
+            ".line 2",
+            "LJ:",
+            "  getstatic java/lang/System/out Ljava/io/PrintStream;",
+            "  iload 1",
+            "  invokevirtual java/io/PrintStream/println(I)V",
+            ".line 3",
+            "  return",
+            "LZ:",
+            "  getstatic java/lang/System/out Ljava/io/PrintStream;",
+            "  iload 0",
+            "  invokevirtual java/io/PrintStream/println(I)V",
+            ".line 4",
+            "  return",
+            "End:");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  invokestatic Test/bar()V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  invokestatic Test/bar()V", "  return");
 
     String expected = StringUtils.lines("42");
     if (parameters.isJvmTestParameters()) {
@@ -390,42 +397,43 @@ public class InvalidDebugInfoTests extends TestBase {
   public void invalidInfoBug63412730_onPop() throws Throwable {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
-    MethodSignature method = clazz.addStaticMethod("bar", ImmutableList.of(), "V",
-        ".limit stack 3",
-        ".limit locals 2",
-        ".var 1 is a [Ljava/lang/Object; from Locals to End",
-        ".var 0 is o LObject; from Locals to End",
-        "Init:",
-        "  ldc 1",
-        "  anewarray java/lang/Object",
-        "  astore 0",
-        ".line 1",
-        "  new java/lang/Integer",
-        "  dup",
-        "  ldc 42",
-        "  invokespecial java/lang/Integer/<init>(I)V",
-        "  astore 1",
-        ".line 2",
-        "Locals:",
-        "  aload 0",
-        "  ldc 0",
-        "  aload 1",
-        "  aastore",
-        ".line 3",
-        "  getstatic java/lang/System/out Ljava/io/PrintStream;",
-        "  aload 0",
-        "  ldc 0",
-        "  aaload",
-        "  invokevirtual java/io/PrintStream/println(Ljava/lang/Object;)V",
-        ".line 4",
-        "  return",
-        "End:");
+    MethodSignature method =
+        clazz.addStaticMethod(
+            "bar",
+            ImmutableList.of(),
+            "V",
+            ".limit stack 3",
+            ".limit locals 2",
+            ".var 1 is a [Ljava/lang/Object; from Locals to End",
+            ".var 0 is o LObject; from Locals to End",
+            "Init:",
+            "  ldc 1",
+            "  anewarray java/lang/Object",
+            "  astore 0",
+            ".line 1",
+            "  new java/lang/Integer",
+            "  dup",
+            "  ldc 42",
+            "  invokespecial java/lang/Integer/<init>(I)V",
+            "  astore 1",
+            ".line 2",
+            "Locals:",
+            "  aload 0",
+            "  ldc 0",
+            "  aload 1",
+            "  aastore",
+            ".line 3",
+            "  getstatic java/lang/System/out Ljava/io/PrintStream;",
+            "  aload 0",
+            "  ldc 0",
+            "  aaload",
+            "  invokevirtual java/io/PrintStream/println(Ljava/lang/Object;)V",
+            ".line 4",
+            "  return",
+            "End:");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  invokestatic Test/bar()V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  invokestatic Test/bar()V", "  return");
 
     String expected = StringUtils.lines("42");
     if (parameters.isJvmTestParameters()) {

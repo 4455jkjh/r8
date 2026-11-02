@@ -37,7 +37,10 @@ public class Regress64658224 extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("foo", ImmutableList.of("I"), "V",
+    clazz.addStaticMethod(
+        "foo",
+        ImmutableList.of("I"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         ".var 1 is x Ljava/lang/Object; from L1 to L2",
@@ -57,11 +60,7 @@ public class Regress64658224 extends JasminTestBase {
         "  return");
 
     clazz.addMainMethod(
-        ".limit stack 1",
-        ".limit locals 1",
-        "  ldc 2",
-        "  invokestatic Test/foo(I)V",
-        "  return");
+        ".limit stack 1", ".limit locals 1", "  ldc 2", "  invokestatic Test/foo(I)V", "  return");
 
     String expected = "";
     String javaResult = runOnJava(builder, clazz.name);

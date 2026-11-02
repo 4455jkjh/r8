@@ -40,13 +40,14 @@ public class RunArtSmokeTest extends SmaliTestBase {
   public void test() throws Exception {
     // Build simple "Hello, world!" application.
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
-    MethodSignature mainSignature = builder.addMainMethod(
-        2,
-        "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
-        "    const-string        v1, \"Hello, world!\"",
-        "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "    return-void"
-    );
+    MethodSignature mainSignature =
+        builder.addMainMethod(
+            2,
+            "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
+            "    const-string        v1, \"Hello, world!\"",
+            "    invoke-virtual      { v0, v1 },"
+                + " Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
+            "    return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);

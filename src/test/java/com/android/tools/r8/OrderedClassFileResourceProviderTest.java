@@ -107,26 +107,25 @@ public class OrderedClassFileResourceProviderTest extends TestBase {
   @Test
   public void test() {
     OrderedClassFileResourceProvider.Builder builder = OrderedClassFileResourceProvider.builder();
-    builder.addClassFileResourceProvider(new SimpleClassFileResourceProvider(1, ImmutableSet.of(
-        "L/a/a/a", "L/a/a/b", "L/a/a/c"
-    )));
-    builder.addClassFileResourceProvider(new SimpleClassFileResourceProvider(2, ImmutableSet.of(
-        "L/a/a/b", "L/a/a/c", "L/a/a/d"
-        )));
+    builder.addClassFileResourceProvider(
+        new SimpleClassFileResourceProvider(1, ImmutableSet.of("L/a/a/a", "L/a/a/b", "L/a/a/c")));
+    builder.addClassFileResourceProvider(
+        new SimpleClassFileResourceProvider(2, ImmutableSet.of("L/a/a/b", "L/a/a/c", "L/a/a/d")));
     ClassFileResourceProvider provider = builder.build();
     assertEquals(
         ImmutableSet.of("L/a/a/a", "L/a/a/b", "L/a/a/c", "L/a/a/d"),
         provider.getClassDescriptors());
 
-    Map<String, Integer> expectations = ImmutableMap.of(
-        "L/a/a/a", 1,
-        "L/a/a/b", 1,
-        "L/a/a/c", 1,
-        "L/a/a/d", 2
-    );
-    expectations.forEach((descriptor, id) ->
-        assertEquals(
-            (int) id,
-            ((SimpleOrigin) provider.getProgramResource(descriptor).getOrigin()).getId()));
+    Map<String, Integer> expectations =
+        ImmutableMap.of(
+            "L/a/a/a", 1,
+            "L/a/a/b", 1,
+            "L/a/a/c", 1,
+            "L/a/a/d", 2);
+    expectations.forEach(
+        (descriptor, id) ->
+            assertEquals(
+                (int) id,
+                ((SimpleOrigin) provider.getProgramResource(descriptor).getOrigin()).getId()));
   }
 }

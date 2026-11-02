@@ -245,7 +245,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder superClass = builder.addClass("SuperClass");
     superClass.addDefaultConstructor();
-    superClass.addVirtualMethod("aMethod", emptyList(), "V",
+    superClass.addVirtualMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -255,7 +258,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder subClass = builder.addClass("SubClass", "SuperClass");
     subClass.addDefaultConstructor();
-    subClass.addPrivateVirtualMethod("aMethod", emptyList(), "V",
+    subClass.addPrivateVirtualMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -283,7 +289,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder superClass = builder.addClass("SuperClass");
     superClass.addDefaultConstructor();
-    superClass.addVirtualMethod("aMethod", emptyList(), "V",
+    superClass.addVirtualMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -293,7 +302,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder subClass = builder.addClass("SubClass", "SuperClass");
     subClass.addDefaultConstructor();
-    subClass.addPrivateVirtualMethod("aMethod", emptyList(), "V",
+    subClass.addPrivateVirtualMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -319,7 +331,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder superClass = builder.addClass("SuperClass");
     superClass.addDefaultConstructor();
-    superClass.addPrivateVirtualMethod("aMethod", emptyList(), "V",
+    superClass.addPrivateVirtualMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -329,7 +344,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder subClass = builder.addClass("SubClass", "SuperClass");
     subClass.addDefaultConstructor();
-    subClass.addVirtualMethod("callAMethod", emptyList(), "V",
+    subClass.addVirtualMethod(
+        "callAMethod",
+        emptyList(),
+        "V",
         ".limit stack 1",
         ".limit locals 1",
         "  aload 0",
@@ -357,7 +375,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder superClass = builder.addClass("SuperClass");
     superClass.addDefaultConstructor();
-    superClass.addStaticMethod("aMethod", emptyList(), "V",
+    superClass.addStaticMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -367,7 +388,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder subClass = builder.addClass("SubClass", "SuperClass");
     subClass.addDefaultConstructor();
-    subClass.addVirtualMethod("aMethod", emptyList(), "V",
+    subClass.addVirtualMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -395,7 +419,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder superClass = builder.addClass("SuperClass");
     superClass.addDefaultConstructor();
-    superClass.addVirtualMethod("aMethod", emptyList(), "V",
+    superClass.addVirtualMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -405,7 +432,10 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder subClass = builder.addClass("SubClass", "SuperClass");
     subClass.addDefaultConstructor();
-    subClass.addStaticMethod("aMethod", emptyList(), "V",
+    subClass.addStaticMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -432,7 +462,10 @@ public class MemberResolutionTest extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder();
 
     ClassBuilder superInterface = builder.addClass("SuperInterface");
-    superInterface.addStaticMethod("aMethod", emptyList(), "V",
+    superInterface.addStaticMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -447,10 +480,7 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder mainClass = builder.addClass(MAIN_CLASS);
     mainClass.addMainMethod(
-        ".limit stack 2",
-        ".limit locals 1",
-        "  invokestatic SubInterface/aMethod()V",
-        "  return");
+        ".limit stack 2", ".limit locals 1", "  invokestatic SubInterface/aMethod()V", "  return");
 
     ensureAllFail(builder);
   }
@@ -463,10 +493,7 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder main = builder.addClass("Main");
     main.addMainMethod(
-        ".limit stack 2",
-        ".limit locals 1",
-        "  invokestatic Empty/aMethod()V",
-        "  return");
+        ".limit stack 2", ".limit locals 1", "  invokestatic Empty/aMethod()V", "  return");
 
     ensureRuntimeException(builder, NoSuchMethodError.class);
   }
@@ -479,10 +506,7 @@ public class MemberResolutionTest extends JasminTestBase {
 
     ClassBuilder main = builder.addClass("Main");
     main.addMainMethod(
-        ".limit stack 2",
-        ".limit locals 1",
-        "  getstatic Empty/aField I",
-        "  return");
+        ".limit stack 2", ".limit locals 1", "  getstatic Empty/aField I", "  return");
 
     ensureRuntimeException(builder, NoSuchFieldError.class);
   }
@@ -495,7 +519,10 @@ public class MemberResolutionTest extends JasminTestBase {
     JasminBuilder libraryBuilder = new JasminBuilder();
     ClassBuilder classWithStatic = libraryBuilder.addClass("ClassWithStatic");
     classWithStatic.addDefaultConstructor();
-    classWithStatic.addStaticMethod("aMethod", emptyList(), "V",
+    classWithStatic.addStaticMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -505,10 +532,8 @@ public class MemberResolutionTest extends JasminTestBase {
 
     // Program classes.
     JasminBuilder programBuilder = new JasminBuilder();
-    programBuilder.addClass("SubClass", "ClassWithStatic")
-        .addDefaultConstructor();
-    programBuilder.addClass("SubSubClass", "SubClass")
-        .addDefaultConstructor();
+    programBuilder.addClass("SubClass", "ClassWithStatic").addDefaultConstructor();
+    programBuilder.addClass("SubSubClass", "SubClass").addDefaultConstructor();
     ClassBuilder mainClass = programBuilder.addClass("Main");
     mainClass.addMainMethod(
         ".limit stack 2",
@@ -530,22 +555,22 @@ public class MemberResolutionTest extends JasminTestBase {
     JasminBuilder libraryBuilder = new JasminBuilder();
     ClassBuilder classWithStatic = libraryBuilder.addClass("ClassWithStatic");
     classWithStatic.addDefaultConstructor();
-    classWithStatic.addPackagePrivateStaticMethod("aMethod", emptyList(), "V",
+    classWithStatic.addPackagePrivateStaticMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
         "  bipush 42",
         "  invokevirtual java/io/PrintStream/println(I)V",
         "  return");
-    libraryBuilder.addClass("p/LibSub", "ClassWithStatic")
-        .addDefaultConstructor();
+    libraryBuilder.addClass("p/LibSub", "ClassWithStatic").addDefaultConstructor();
 
     // Program classes.
     JasminBuilder programBuilder = new JasminBuilder();
-    programBuilder.addClass("p/SubClass", "p/LibSub")
-        .addDefaultConstructor();
-    programBuilder.addClass("SubSubClass", "p/SubClass")
-        .addDefaultConstructor();
+    programBuilder.addClass("p/SubClass", "p/LibSub").addDefaultConstructor();
+    programBuilder.addClass("SubSubClass", "p/SubClass").addDefaultConstructor();
     ClassBuilder mainClass = programBuilder.addClass("Main");
     mainClass.addMainMethod(
         ".limit stack 2",
@@ -568,24 +593,23 @@ public class MemberResolutionTest extends JasminTestBase {
     ClassBuilder classWithStatic = libraryBuilder.addClass("ClassWithStatic");
     classWithStatic.setAccess("");
     classWithStatic.addDefaultConstructor();
-    classWithStatic.addStaticMethod("aMethod", emptyList(), "V",
+    classWithStatic.addStaticMethod(
+        "aMethod",
+        emptyList(),
+        "V",
         ".limit stack 2",
         ".limit locals 1",
         "  getstatic java/lang/System/out Ljava/io/PrintStream;",
         "  bipush 42",
         "  invokevirtual java/io/PrintStream/println(I)V",
         "  return");
-    libraryBuilder.addClass("LibSub", "ClassWithStatic")
-        .addDefaultConstructor();
-    libraryBuilder.addClass("p/LibSubSub", "LibSub")
-        .addDefaultConstructor();
+    libraryBuilder.addClass("LibSub", "ClassWithStatic").addDefaultConstructor();
+    libraryBuilder.addClass("p/LibSubSub", "LibSub").addDefaultConstructor();
 
     // Program classes.
     JasminBuilder programBuilder = new JasminBuilder();
-    programBuilder.addClass("p/SubClass", "p/LibSubSub")
-        .addDefaultConstructor();
-    programBuilder.addClass("SubSubClass", "p/SubClass")
-        .addDefaultConstructor();
+    programBuilder.addClass("p/SubClass", "p/LibSubSub").addDefaultConstructor();
+    programBuilder.addClass("SubSubClass", "p/SubClass").addDefaultConstructor();
     ClassBuilder mainClass = programBuilder.addClass("Main");
     mainClass.addMainMethod(
         ".limit stack 2",
@@ -603,8 +627,8 @@ public class MemberResolutionTest extends JasminTestBase {
     String javaOutput = runOnJava(app, MAIN_CLASS);
     String d8Output = runOnArtD8(app, MAIN_CLASS);
     String r8Output = runOnArtR8(app, MAIN_CLASS);
-    String r8ShakenOutput = runOnArtR8(app, MAIN_CLASS, keepMainProguardConfiguration(MAIN_CLASS),
-        null);
+    String r8ShakenOutput =
+        runOnArtR8(app, MAIN_CLASS, keepMainProguardConfiguration(MAIN_CLASS), null);
     Assert.assertEquals(javaOutput, d8Output);
     Assert.assertEquals(javaOutput, r8Output);
     Assert.assertEquals(javaOutput, r8ShakenOutput);
@@ -627,7 +651,9 @@ public class MemberResolutionTest extends JasminTestBase {
     ensureFails(app, MAIN_CLASS, this::runOnJavaRaw);
     ensureFails(app, MAIN_CLASS, this::runOnArtD8Raw);
     ensureFails(app, MAIN_CLASS, (a, m) -> runOnArtR8Raw(a, m, null));
-    ensureFails(app, MAIN_CLASS,
+    ensureFails(
+        app,
+        MAIN_CLASS,
         (a, m) -> runOnArtR8Raw(a, m, keepMainProguardConfiguration(MAIN_CLASS), null));
   }
 
@@ -645,8 +671,9 @@ public class MemberResolutionTest extends JasminTestBase {
     runtest.accept(() -> runOnJavaNoVerifyRaw(app, MAIN_CLASS), null);
     runtest.accept(() -> runOnArtD8Raw(app, MAIN_CLASS), CompilerUnderTest.D8);
     runtest.accept(() -> runOnArtR8Raw(app, MAIN_CLASS, null), CompilerUnderTest.R8);
-    runtest.accept(() -> runOnArtR8Raw(app, MAIN_CLASS, keepMainProguardConfiguration(MAIN_CLASS),
-        null), CompilerUnderTest.R8);
+    runtest.accept(
+        () -> runOnArtR8Raw(app, MAIN_CLASS, keepMainProguardConfiguration(MAIN_CLASS), null),
+        CompilerUnderTest.R8);
   }
 
   private void ensureICCE(JasminBuilder app) throws Exception {
@@ -667,8 +694,8 @@ public class MemberResolutionTest extends JasminTestBase {
     Assert.assertTrue(d8Output.stderr.contains(name));
     ProcessResult r8Output = runOnArtR8Raw(app, MAIN_CLASS, null);
     Assert.assertTrue(r8Output.stderr.contains(name));
-    ProcessResult r8ShakenOutput = runOnArtR8Raw(app, MAIN_CLASS,
-        keepMainProguardConfiguration(MAIN_CLASS), null);
+    ProcessResult r8ShakenOutput =
+        runOnArtR8Raw(app, MAIN_CLASS, keepMainProguardConfiguration(MAIN_CLASS), null);
     Assert.assertTrue(r8ShakenOutput.stderr.contains(name));
     ProcessResult javaOutput = runOnJavaNoVerifyRaw(app, MAIN_CLASS);
     Assert.assertTrue(javaOutput.stderr.contains(name));
@@ -679,11 +706,12 @@ public class MemberResolutionTest extends JasminTestBase {
     String name = exception.getSimpleName();
     ProcessResult d8Output = runOnArtD8Raw(app, library, MAIN_CLASS);
     Assert.assertTrue(d8Output.toString(), d8Output.stderr.contains(name));
-    ProcessResult r8Output = runOnArtR8Raw(app, library, MAIN_CLASS,
-        noShrinkingNoMinificationProguardConfiguration(), null);
+    ProcessResult r8Output =
+        runOnArtR8Raw(
+            app, library, MAIN_CLASS, noShrinkingNoMinificationProguardConfiguration(), null);
     Assert.assertTrue(r8Output.toString(), r8Output.stderr.contains(name));
-    ProcessResult r8ShakenOutput = runOnArtR8Raw(app, library, MAIN_CLASS,
-        keepMainProguardConfiguration(MAIN_CLASS), null);
+    ProcessResult r8ShakenOutput =
+        runOnArtR8Raw(app, library, MAIN_CLASS, keepMainProguardConfiguration(MAIN_CLASS), null);
     Assert.assertTrue(r8ShakenOutput.toString(), r8ShakenOutput.stderr.contains(name));
     ProcessResult javaOutput = runOnJavaNoVerifyRaw(app, library, MAIN_CLASS);
     Assert.assertTrue(javaOutput.stderr.contains(name));

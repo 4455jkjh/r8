@@ -1226,7 +1226,6 @@ public class Regress {
     return i199;
   }
 
-
   public static void main(String[] args) {
     Regress instance = new Regress();
     instance.test();
