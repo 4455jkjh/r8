@@ -244,7 +244,7 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
     return !isApplicableToClasspathClasses() && !isApplicableToLibraryClasses();
   }
 
-  protected boolean hasBackReferences() {
+  public boolean hasBackReferences() {
     return !Iterables.isEmpty(getBackReferences());
   }
 
