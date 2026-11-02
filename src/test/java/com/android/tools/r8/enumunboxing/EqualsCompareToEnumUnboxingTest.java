@@ -4,9 +4,6 @@
 
 package com.android.tools.r8.enumunboxing;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
@@ -36,8 +33,9 @@ public class EqualsCompareToEnumUnboxingTest extends EnumUnboxingTestBase {
     this.enumKeepRules = enumKeepRules;
   }
 
-  @Test(expected = CompilationFailedException.class)
+  @Test
   public void testEnumUnboxing() throws Exception {
+    Class<?> success = EnumEqualscompareTo.class;
     testForR8(parameters)
         .addInnerClasses(EqualsCompareToEnumUnboxingTest.class)
         .addKeepMainRule(EnumEqualscompareTo.class)
@@ -51,9 +49,10 @@ public class EqualsCompareToEnumUnboxingTest extends EnumUnboxingTestBase {
         .enableInliningAnnotations()
         .addKeepRules(enumKeepRules.getKeepRules())
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
-        .compileWithExpectedDiagnostics(
-            diagnostics ->
-                diagnostics.assertErrorsMatch(diagnosticException(AssertionError.class)));
+        .compile()
+        .run(parameters.getRuntime(), success)
+        .assertSuccess()
+        .inspectStdOut(this::assertLines2By2Correct);
   }
 
   static class EnumEqualscompareTo {
