@@ -30,27 +30,6 @@ GOOGLE_KOTLIN_FORMAT_DIR = os.path.join(defines.THIRD_PARTY, 'google',
 GOOGLE_KOTLIN_FORMAT_JAR = os.path.join(GOOGLE_KOTLIN_FORMAT_DIR,
                                         'ktfmt-0.54-jar-with-dependencies.jar')
 
-FULLY_FORMATTED_DIRECTORIES = (
-    'src/test/bootstrap',
-    'src/test/examplesAndroidN',
-    'src/test/examplesAndroidO',
-    'src/test/examplesAndroidOLegacy',
-    'src/test/examplesAndroidP',
-    'src/test/java11',
-    'src/test/java17',
-    'src/test/java8',
-    'src/test/kotlinR8TestResources',
-    'src/test/sampleApks',
-    'src/test/testbase',
-)
-
-
-def requires_full_formatting(file_path):
-    norm = file_path.replace('\\', '/')
-    return any(norm == d or norm.startswith(d + '/')
-               for d in FULLY_FORMATTED_DIRECTORIES)
-
-
 GOOGLE_YAPF_DIR = os.path.join(defines.THIRD_PARTY, 'google', 'yapf',
                                '20231013')
 GOOGLE_YAPF = os.path.join(GOOGLE_YAPF_DIR, 'yapf')
@@ -270,40 +249,11 @@ def get_enabled_ranges(filename):
     return enabled_ranges
 
 
-def intersect_ranges(ranges_a, ranges_b):
-    intersection = []
-    for a_start, a_end in ranges_a:
-        for b_start, b_end in ranges_b:
-            start = max(a_start, b_start)
-            end = min(a_end, b_end)
-            if start <= end:
-                intersection.append((start, end))
-    return intersection
-
-
-# Filters `diff_ranges` (a list of 1-based inclusive (start_line, end_line) tuples)
-# against the enabled regions of `filename`, excluding any lines inside
-# `@formatter:off` ... `@formatter:on` blocks.
-def filter_diff_ranges(filename, diff_ranges):
-    enabled_ranges = get_enabled_ranges(filename)
-    if enabled_ranges is None:
-        return diff_ranges
-    return intersect_ranges(diff_ranges, enabled_ranges)
-
-
 def ranges_to_cli_args(line_ranges):
     args = []
     for start, end in line_ranges:
         args.extend(['-lines', f'{start}:{end}'])
     return args
-
-
-def cli_args_to_ranges(lines_args):
-    ranges = []
-    for i in range(1, len(lines_args), 2):
-        start_str, end_str = lines_args[i].split(':')
-        ranges.append((int(start_str), int(end_str)))
-    return ranges
 
 
 def run_command(command):
@@ -331,18 +281,6 @@ def format_java_file(filename, base_command, line_ranges, fix_formatting):
         if diff_string:
             return [diff_string]
     return []
-
-
-def segment_java_diff(diff_text, prefix_strip):
-    lines_by_file = google_java_format_diff.parse_diff(diff_text.splitlines(),
-                                                       p=prefix_strip)
-    partial_files = []
-    for filename, lines_args in lines_by_file.items():
-        diff_ranges = cli_args_to_ranges(lines_args)
-        filtered_ranges = filter_diff_ranges(filename, diff_ranges)
-        if filtered_ranges:
-            partial_files.append((filename, filtered_ranges))
-    return partial_files
 
 
 def segment_java_files(files):
@@ -419,59 +357,11 @@ def prepare_check_java_files():
 
 # This function must be threadsafe.
 # prepare_check_java_files() must be called first.
-# upstream_for_diff_formatting: If set, only changed lines are checked/formatted (best effort).
-def check_java_files_precise_diff(files, upstream, fix_formatting=False):
-    if not upstream:
-        return [
-            "Error: Upstream branch/commit must be specified for per-line Java formatting."
-        ]
-    try:
-        git_diff_cmd = ['git', 'diff', '-U0', '--no-color', upstream, '--'
-                       ] + files
-        diff_text = check_output(git_diff_cmd).decode('utf-8')
-    except CalledProcessError as e:
-        return [
-            f"Git diff error:\n{e.output.decode('utf-8') if e.output else str(e)}"
-        ]
-
-    if not diff_text.strip():
-        return []
-
-    partial_files = segment_java_diff(diff_text, prefix_strip=1)
-    return run_java_formatting([], partial_files, fix_formatting)
-
-
-# This function must be threadsafe.
-# prepare_check_java_files() must be called first.
-def check_java_files_full(files, fix_formatting=False):
-    full_files, partial_files = segment_java_files(files)
-    return run_java_formatting(full_files, partial_files, fix_formatting)
-
-
-# This function must be threadsafe.
-# prepare_check_java_files() must be called first.
-# upstream_for_diff_formatting: If set, only changed lines are checked/formatted (best effort).
-def check_java_files(files,
-                     fix_formatting=False,
-                     upstream_for_diff_formatting=None):
+def check_java_files(files, fix_formatting=False):
     if not files:
         return []
-    if upstream_for_diff_formatting is not None:
-        full_files = [f for f in files if requires_full_formatting(f)]
-        diff_files = [f for f in files if not requires_full_formatting(f)]
-        errors = []
-        if full_files:
-            errors.extend(
-                check_java_files_full(full_files,
-                                      fix_formatting=fix_formatting))
-        if diff_files:
-            errors.extend(
-                check_java_files_precise_diff(diff_files,
-                                              upstream_for_diff_formatting,
-                                              fix_formatting=fix_formatting))
-        return errors
-    else:
-        return check_java_files_full(files, fix_formatting=fix_formatting)
+    full_files, partial_files = segment_java_files(files)
+    return run_java_formatting(full_files, partial_files, fix_formatting)
 
 
 def prepare_check_kotlin_files():
@@ -551,12 +441,7 @@ def check_web_files(files, fix_formatting=False):
             return [f"Web formatting error:\n{output_str}"]
 
 
-# upstream_for_diff_formatting: If set, only changed lines are checked/formatted (best effort).
-# Diff formatting is very slow (~1 second per file), so keep batch size small.
-def check(files,
-          fix_formatting=False,
-          batch_size=5,
-          upstream_for_diff_formatting=None):
+def check(files, fix_formatting=False, batch_size=50):
     java_files = []
     kotlin_files = []
     python_files = []
@@ -601,13 +486,10 @@ def check(files,
     futures = []
     with ThreadPoolExecutor() as executor:
         for batch in chunk_list(java_files, batch_size):
-            futures.append((
-                'Java',
-                executor.submit(
-                    check_java_files,
-                    batch,
-                    fix_formatting=fix_formatting,
-                    upstream_for_diff_formatting=upstream_for_diff_formatting)))
+            futures.append(('Java',
+                            executor.submit(check_java_files,
+                                            batch,
+                                            fix_formatting=fix_formatting)))
 
         for format_style, style_paths in partition_kotlin_files(
                 kotlin_files).items():
@@ -645,15 +527,9 @@ def parse_options():
                         help='Format all files in the given directory.',
                         default=None)
     result.add_argument(
-        '--format-precise-diff',
-        help=
-        'Only format changed lines (Java only, other formats are still formatted per file).',
-        action='store_true',
-        default=False)
-    result.add_argument(
         '--upstream',
         help=
-        'Upstream branch/commit to diff against for --format-precise-diff (default: git cl upstream).',
+        'Upstream branch/commit to find changed files against (default: git cl upstream).',
         default=None)
     result.add_argument('--only-java',
                         help='Only run google-java-format.',
@@ -674,10 +550,8 @@ def parse_options():
     return result.parse_known_args()
 
 
-def format_files(files, upstream_for_diff_formatting=None):
-    results = check(files,
-                    fix_formatting=True,
-                    upstream_for_diff_formatting=upstream_for_diff_formatting)
+def format_files(files):
+    results = check(files, fix_formatting=True)
     for errors in results.values():
         for err in errors:
             print(err, file=sys.stderr)
@@ -697,16 +571,12 @@ def get_predicate(options):
 
 def format_all_changed_files(upstream, options):
     predicate = get_predicate(options)
-    upstream_for_diff_formatting = upstream if options.format_precise_diff else None
-    format_files(get_changed_files(upstream, predicate),
-                 upstream_for_diff_formatting=upstream_for_diff_formatting)
+    format_files(get_changed_files(upstream, predicate))
 
 
 def format_dir(directory, options):
     predicate = get_predicate(options)
-    upstream_for_diff_formatting = options.upstream if options.format_precise_diff else None
-    format_files(get_dir_files(directory, predicate),
-                 upstream_for_diff_formatting=upstream_for_diff_formatting)
+    format_files(get_dir_files(directory, predicate))
 
 
 def main():
@@ -718,8 +588,8 @@ def main():
     if only_options_count > 1:
         print("Error: Cannot specify multiple --only options.", file=sys.stderr)
         return 1
-    if options.format_dir and options.format_precise_diff:
-        print("Error: Cannot both --format-dir and --format-precise-diff",
+    if options.format_dir and options.upstream:
+        print("Error: Cannot specify both --format-dir and --upstream.",
               file=sys.stderr)
         return 1
     if options.format_dir:
