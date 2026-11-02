@@ -3,15 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.mappingcompose;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
+import static com.android.tools.r8.mappingcompose.ComposeTestHelpers.doubleToSingleQuote;
+import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.naming.MappingComposeException;
 import com.android.tools.r8.naming.MappingComposer;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
@@ -60,25 +58,28 @@ public class ComposeOutlineMultipleStepsTest extends TestBase {
           "    6:7:int m():4:5 -> n",
           "y -> z:",
           "    10:10:int o(int):42:42 -> p");
+  private static final String mappingResult =
+      StringUtils.unixLines(
+          "# {'id':'com.android.tools.r8.mapping','version':'2.2'}",
+          "outline.Callsite -> z:",
+          "    10:10:int outlineCaller(int):0:0 -> p",
+          "    # {'id':'com.android.tools.r8.outlineCallsite',"
+              + "'positions':{'4':11,'5':12},"
+              + "'outline':'Lc;m()I'}",
+          "    11:11:int outlineCaller(int):23:23 -> p",
+          "    12:12:int foo.bar.baz.outlineCaller(int):98:98 -> p",
+          "    12:12:int outlineCaller(int):24 -> p",
+          "outline.Class -> c:",
+          "    6:7:int some.inlinee():75:76 -> n",
+          "    6:7:int outline():0 -> n",
+          "    # {'id':'com.android.tools.r8.outline'}");
 
   @Test
   public void testCompose() throws Exception {
     ClassNameMapper mappingForFoo = ClassNameMapper.mapperFromStringWithPreamble(mappingFoo);
     ClassNameMapper mappingForBar = ClassNameMapper.mapperFromStringWithPreamble(mappingBar);
     ClassNameMapper mappingForBaz = ClassNameMapper.mapperFromStringWithPreamble(mappingBaz);
-    // TODO(b/579315508): ComposingBuilder#fixupOutlineCallsiteInformation does not add the newly
-    //  allocated outline callsite placeholder ranges (43 and 44 after composing mappingBar) to the
-    //  method's RangeBuilder (minified), so the SegmentTree entry for 'int o(int)' only covers
-    //  [42, 42]. Composing a third mapping (mappingBaz) that remaps 'int o(int)' therefore fails
-    //  to find the outline callsite placeholder positions 43 and 44.
-    MappingComposeException exception =
-        assertThrows(
-            MappingComposeException.class,
-            () -> MappingComposer.compose(mappingForFoo, mappingForBar, mappingForBaz));
-    assertThat(
-        exception.getMessage(),
-        containsString(
-            "Could not find ranges for outline position '4' with original signature 'int"
-                + " o(int)'."));
+    String composed = MappingComposer.compose(mappingForFoo, mappingForBar, mappingForBaz);
+    assertEquals(mappingResult, doubleToSingleQuote(composed));
   }
 }

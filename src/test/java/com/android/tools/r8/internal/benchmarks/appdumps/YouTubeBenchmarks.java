@@ -14,8 +14,6 @@ import com.android.tools.r8.benchmarks.appdumps.AppDumpBenchmarkBuilder;
 import com.android.tools.r8.errors.CheckEnumUnboxedDiagnostic;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -88,13 +86,6 @@ public abstract class YouTubeBenchmarks extends BenchmarkBase {
 
     public YouTubeAppD8MergeWithMapOutput(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
-    }
-
-    @Ignore("b/579315508")
-    @Override
-    @Test
-    public void testBenchmarks() throws Exception {
-      super.testBenchmarks();
     }
   }
 

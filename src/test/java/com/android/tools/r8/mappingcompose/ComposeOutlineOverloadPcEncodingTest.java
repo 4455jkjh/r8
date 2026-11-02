@@ -59,13 +59,6 @@ public class ComposeOutlineOverloadPcEncodingTest extends TestBase {
         .assertFailureWithErrorThatThrows(RuntimeException.class)
         .inspectStackTrace(
             stackTrace -> {
-              // TODO(b/579315508): Because LineNumberOptimizer does not advance positionRemapper
-              //  past the outline callee placeholder positions of the first overload
-              //  (Main.caller(int)) when PC encoding is used, the second overload
-              //  (Main.caller(Object)) is assigned an obfuscated line number that overlaps with the
-              //  first outline callee placeholder position of Main.caller(int). Retracing an
-              //  exception thrown from Main.caller(Object) therefore ambiguously includes
-              //  Main.caller(int).
               assertThat(
                   stackTrace,
                   StackTrace.isSame(
@@ -75,21 +68,14 @@ public class ComposeOutlineOverloadPcEncodingTest extends TestBase {
                                   .setClassName(Main.class.getTypeName())
                                   .setMethodName("caller")
                                   .setFileName("ComposeOutlineOverloadPcEncodingTest.java")
-                                  .setLineNumber(111)
-                                  .build())
-                          .add(
-                              StackTraceLine.builder()
-                                  .setClassName("<OR> at " + Main.class.getTypeName())
-                                  .setMethodName("caller")
-                                  .setFileName("ComposeOutlineOverloadPcEncodingTest.java")
-                                  .setLineNumber(118)
+                                  .setLineNumber(104)
                                   .build())
                           .add(
                               StackTraceLine.builder()
                                   .setClassName(Main.class.getTypeName())
                                   .setMethodName("main")
                                   .setFileName("ComposeOutlineOverloadPcEncodingTest.java")
-                                  .setLineNumber(103)
+                                  .setLineNumber(89)
                                   .build())
                           .build()));
             });

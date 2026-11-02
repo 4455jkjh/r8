@@ -4,12 +4,8 @@
 package com.android.tools.r8.mappingcompose;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
 
-import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
@@ -88,48 +84,33 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
     Path r8OutputMap =
         FileUtils.writeTextFile(
             temp.newFolder().toPath().resolve("map.txt"), r8CompileResult.getProguardMap());
-
-    D8TestBuilder d8TestBuilder =
-        testForD8(parameters.getBackend())
-            .addProgramFiles(r8CompileResult.writeToZip())
-            .setMinApi(parameters)
-            .release()
-            .internalEnableMappingOutput()
-            .apply(b -> b.getBuilder().setProguardMapInputFile(r8OutputMap))
-            .addOptionsModification(o -> o.testing.forceJumboStringProcessing = true);
-    if (enableHorizontalClassMerging) {
-      // TODO(b/579315508): Running D8 with --pg-map and --pg-map-output on R8 output should
-      //  succeed.
-      CompilationFailedException exception =
-          assertThrows(CompilationFailedException.class, d8TestBuilder::compile);
-      assertThat(
-          exception.getCause().getMessage(),
-          containsString(
-              "Could not find ranges for outline position '1' with original signature 'void"
-                  + " <init>(int,byte)'."));
-    } else {
-      d8TestBuilder
-          .compile()
-          .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutputLines(
-              "step1",
-              "step2",
-              "init1:1",
-              "step1",
-              "step2",
-              "init1:str:0",
-              "step1",
-              "step2",
-              "init2:1",
-              "step1",
-              "step2",
-              "0a",
-              "step1",
-              "step2",
-              "0b",
-              "step1",
-              "step2");
-    }
+    testForD8(parameters.getBackend())
+        .addProgramFiles(r8CompileResult.writeToZip())
+        .setMinApi(parameters)
+        .release()
+        .internalEnableMappingOutput()
+        .apply(b -> b.getBuilder().setProguardMapInputFile(r8OutputMap))
+        .addOptionsModification(o -> o.testing.forceJumboStringProcessing = true)
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines(
+            "step1",
+            "step2",
+            "init1:1",
+            "step1",
+            "step2",
+            "init1:str:0",
+            "step1",
+            "step2",
+            "init2:1",
+            "step1",
+            "step2",
+            "0a",
+            "step1",
+            "step2",
+            "0b",
+            "step1",
+            "step2");
   }
 
   static class Main {
