@@ -62,11 +62,14 @@ final class KeepRequirements {
       ImmutableSet.of("ANONYMOUS_CLASS", "LOCAL_CLASS", "MEMBER_CLASS");
 
   private final Map<String, KeepRequirement> requirements = new HashMap<>();
+  private final Map<String, List<KeepRequirement>> requirementsByClass = new HashMap<>();
   private final List<ReflectiveEvent> probes = new ArrayList<>();
   private final List<ReflectiveEvent> nestingAttributeEvents = new ArrayList<>();
   private final List<ReflectiveEvent> signatureAttributeEvents = new ArrayList<>();
   private final Map<String, Map<String, Boolean>> classFlags = new HashMap<>();
   private final Map<String, Set<String>> supertypes = new HashMap<>();
+  private final Map<String, Set<String>> knownSupertypes = new HashMap<>();
+  private final Map<String, List<KnownMember>> knownMembers = new HashMap<>();
   private final Set<String> observedClasses = new TreeSet<>();
 
   private KeepRequirements() {}
@@ -112,9 +115,9 @@ final class KeepRequirements {
     if (!member.getType().equals(MemberSignature.UNKNOWN_TYPE)) {
       return false;
     }
-    for (KeepRequirement other : requirements.values()) {
+    for (KeepRequirement other :
+        requirementsByClass.getOrDefault(requirement.getClassName(), Collections.emptyList())) {
       if (other.getKind() == requirement.getKind()
-          && other.getClassName().equals(requirement.getClassName())
           && other.getMember().getName().equals(member.getName())
           && Objects.equals(other.getMember().getParameters(), member.getParameters())) {
         return true;
@@ -127,6 +130,10 @@ final class KeepRequirements {
     KeepRequirement existing = requirements.putIfAbsent(requirement.getKey(), requirement);
     if (existing != null) {
       existing.merge(requirement);
+    } else {
+      requirementsByClass
+          .computeIfAbsent(requirement.getClassName(), k -> new ArrayList<>())
+          .add(requirement);
     }
   }
 
@@ -409,6 +416,10 @@ final class KeepRequirements {
    * getGenericInterfaces(), and their supertypes in turn.
    */
   Set<String> getKnownSupertypes(String className) {
+    return knownSupertypes.computeIfAbsent(className, this::computeKnownSupertypes);
+  }
+
+  private Set<String> computeKnownSupertypes(String className) {
     Set<String> result = new TreeSet<>();
     Deque<String> worklist = new ArrayDeque<>();
     worklist.add(className);
@@ -419,7 +430,7 @@ final class KeepRequirements {
         }
       }
     }
-    return result;
+    return Collections.unmodifiableSet(result);
   }
 
   /** The value of a {@code Class.isXxx()} flag if the log shows it, or null. */
@@ -429,15 +440,14 @@ final class KeepRequirements {
     if (value != null || !flag.equals("INTERFACE")) {
       return value;
     }
-    for (KeepRequirement requirement : requirements.values()) {
-      if (requirement.getClassName().equals(className)) {
-        if (requirement.isInterface()) {
-          return true;
-        }
-        if (requirement.getKind() == Kind.CONSTRUCTOR) {
-          // Interfaces have no constructors.
-          return false;
-        }
+    for (KeepRequirement requirement :
+        requirementsByClass.getOrDefault(className, Collections.emptyList())) {
+      if (requirement.isInterface()) {
+        return true;
+      }
+      if (requirement.getKind() == Kind.CONSTRUCTOR) {
+        // Interfaces have no constructors.
+        return false;
       }
     }
     return null;
@@ -445,11 +455,16 @@ final class KeepRequirements {
 
   /** The members of a class that the log shows to exist. */
   List<KnownMember> getKnownMembers(String className) {
+    return knownMembers.computeIfAbsent(className, this::computeKnownMembers);
+  }
+
+  private List<KnownMember> computeKnownMembers(String className) {
+    // TODO(b/579246687): Consider integrating with R8's configuration analysis proto
+    // (KeepRadiusContainer in keepradius.proto) from an R8 run to get exact rule-to-item keep info
+    // instead of approximating known members from the reflection log.
     List<KnownMember> result = new ArrayList<>();
-    for (KeepRequirement requirement : requirements.values()) {
-      if (!requirement.getClassName().equals(className)) {
-        continue;
-      }
+    for (KeepRequirement requirement :
+        requirementsByClass.getOrDefault(className, Collections.emptyList())) {
       if (requirement.isMember()) {
         result.add(
             new KnownMember(
@@ -460,6 +475,6 @@ final class KeepRequirements {
         }
       }
     }
-    return result;
+    return Collections.unmodifiableList(result);
   }
 }
