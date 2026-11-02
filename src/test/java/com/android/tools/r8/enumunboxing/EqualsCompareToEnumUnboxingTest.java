@@ -4,6 +4,9 @@
 
 package com.android.tools.r8.enumunboxing;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
+
+import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
@@ -33,26 +36,33 @@ public class EqualsCompareToEnumUnboxingTest extends EnumUnboxingTestBase {
     this.enumKeepRules = enumKeepRules;
   }
 
-  @Test
+  @Test(expected = CompilationFailedException.class)
   public void testEnumUnboxing() throws Exception {
-    Class<?> success = EnumEqualscompareTo.class;
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addInnerClasses(EqualsCompareToEnumUnboxingTest.class)
         .addKeepMainRule(EnumEqualscompareTo.class)
         .addEnumUnboxingInspector(
-            inspector -> inspector.assertUnboxed(EnumEqualscompareTo.MyEnum.class))
+            inspector ->
+                inspector.assertUnboxed(
+                    EnumEqualscompareTo.MyEnum.class,
+                    EnumEqualscompareTo.MyNamedEnum.class,
+                    EnumEqualscompareTo.OtherNamedEnum.class))
         .enableNeverClassInliningAnnotations()
         .enableInliningAnnotations()
         .addKeepRules(enumKeepRules.getKeepRules())
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
-        .setMinApi(parameters)
-        .compile()
-        .run(parameters.getRuntime(), success)
-        .assertSuccess()
-        .inspectStdOut(this::assertLines2By2Correct);
+        .compileWithExpectedDiagnostics(
+            diagnostics ->
+                diagnostics.assertErrorsMatch(diagnosticException(AssertionError.class)));
   }
 
   static class EnumEqualscompareTo {
+
+    interface NamedEnum {
+      int ordinal();
+
+      String name();
+    }
 
     @NeverClassInline
     enum MyEnum {
@@ -60,10 +70,22 @@ public class EqualsCompareToEnumUnboxingTest extends EnumUnboxingTestBase {
       B
     }
 
+    @NeverClassInline
+    enum MyNamedEnum implements NamedEnum {
+      X,
+      Y
+    }
+
+    @NeverClassInline
+    enum OtherNamedEnum implements NamedEnum {
+      Z
+    }
+
     public static void main(String[] args) {
       equalsTest();
       objectsEqualsTest();
       compareToTest();
+      ordinalAndNameInterfaceTest();
     }
 
     @NeverInline
@@ -112,6 +134,12 @@ public class EqualsCompareToEnumUnboxingTest extends EnumUnboxingTestBase {
       System.out.println(true);
       System.out.println(MyEnum.A.compareTo(MyEnum.A) == 0);
       System.out.println(true);
+      System.out.println(new ComparableBox<>(MyEnum.B).compareTo(MyEnum.A) > 0);
+      System.out.println(true);
+      System.out.println(new ComparableBox<>(MyEnum.A).compareTo(MyEnum.B) < 0);
+      System.out.println(true);
+      System.out.println(new ComparableBox<>(MyEnum.A).compareTo(MyEnum.A) == 0);
+      System.out.println(true);
       try {
         ((MyEnum) null).equals(null);
       } catch (NullPointerException npe) {
@@ -123,6 +151,65 @@ public class EqualsCompareToEnumUnboxingTest extends EnumUnboxingTestBase {
       } catch (NullPointerException npe) {
         System.out.println("npe " + npe.getMessage());
         System.out.println("npe " + npe.getMessage());
+      }
+      try {
+        new ComparableBox<>(MyEnum.A).compareTo(null);
+        System.out.println(false);
+      } catch (NullPointerException npe) {
+        System.out.println("npe " + npe.getMessage());
+        System.out.println("npe " + npe.getMessage());
+      }
+    }
+
+    @NeverInline
+    private static void ordinalAndNameInterfaceTest() {
+      System.out.println(new NamedEnumBox(MyNamedEnum.X).ordinal());
+      System.out.println(0);
+      System.out.println(new NamedEnumBox(MyNamedEnum.Y).ordinal());
+      System.out.println(1);
+      System.out.println(new NamedEnumBox(OtherNamedEnum.Z).ordinal());
+      System.out.println(0);
+      System.out.println(new NamedEnumBox(MyNamedEnum.X).name());
+      System.out.println("X");
+      System.out.println(new NamedEnumBox(MyNamedEnum.Y).name());
+      System.out.println("Y");
+      System.out.println(new NamedEnumBox(OtherNamedEnum.Z).name());
+      System.out.println("Z");
+    }
+
+    // Exceeds the simple-inlining limit with multiple callers so ClassInliner inlines after
+    // Devirtualizer, leaving invoke-interface on the unboxed enum receiver.
+    static class ComparableBox<T extends Comparable<? super T>> {
+      final T value;
+
+      ComparableBox(T value) {
+        this.value = value;
+      }
+
+      int compareTo(T other) {
+        int first = value.compareTo(other);
+        int second = value.compareTo(other);
+        return first == second ? first : 0;
+      }
+    }
+
+    static class NamedEnumBox {
+      final NamedEnum value;
+
+      NamedEnumBox(NamedEnum value) {
+        this.value = value;
+      }
+
+      int ordinal() {
+        int first = value.ordinal();
+        int second = value.ordinal();
+        return first == second ? first : -1;
+      }
+
+      String name() {
+        String first = value.name();
+        String second = value.name();
+        return first.equals(second) ? first : "";
       }
     }
   }
