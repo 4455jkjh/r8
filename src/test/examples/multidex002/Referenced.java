@@ -6,8 +6,7 @@ package multidex002;
 
 public class Referenced {
 
-    public static int get(int i) {
-        return i * 3;
-    }
-
+  public static int get(int i) {
+    return i * 3;
+  }
 }

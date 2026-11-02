@@ -5,7 +5,5 @@ package memberrebinding3;
 
 public class ClassAtBottomOfChain extends EssentiallyEmptyClass {
 
-  void bottomMethod() {
-
-  }
+  void bottomMethod() {}
 }

@@ -7,6 +7,5 @@ package multidex002;
 public class AnnotatedDirectMethod {
 
   @AnnotationWithEnum3(AnnotationWithEnum3.Value3.VAL3_2)
-  private void foo() {
-  }
+  private void foo() {}
 }

@@ -13,11 +13,13 @@ public class UseStdLib {
   public static void main(String[] args) {
     List<String> myStrings = new ArrayList<>();
     Collections.addAll(myStrings, args);
-    myStrings.stream().forEach(new Consumer<String>() {
-      @Override
-      public void accept(String s) {
-        System.out.println(s);
-      }
-    });
+    myStrings.stream()
+        .forEach(
+            new Consumer<String>() {
+              @Override
+              public void accept(String s) {
+                System.out.println(s);
+              }
+            });
   }
 }

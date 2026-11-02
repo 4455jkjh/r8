@@ -78,8 +78,23 @@ public class SubClass1 extends SuperClass {
   @Override
   public void accessFields() {
     super.accessFields();
-    System.out.println("SubClass1::fields: " + used + " " + alsoUsed + " " + usedBoolean +
-        " " + usedByte + " " + usedChar + " " + usedObject + " " + usedShort + " " + usedDouble);
+    System.out.println(
+        "SubClass1::fields: "
+            + used
+            + " "
+            + alsoUsed
+            + " "
+            + usedBoolean
+            + " "
+            + usedByte
+            + " "
+            + usedChar
+            + " "
+            + usedObject
+            + " "
+            + usedShort
+            + " "
+            + usedDouble);
     used = 1;
     alsoUsed = 2;
     usedBoolean = true;

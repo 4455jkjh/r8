@@ -4,16 +4,14 @@
 
 package multidex003;
 
-
 public class TestAnnotationResolution {
 
-    public void testAnnotation() throws Exception {
-        Class<?> clazz = Class.forName("com.google.annotationresolution.test." + "Annotated");
-        clazz.getAnnotations();
-        clazz = Class.forName("com.google.annotationresolution.test." + "Annotated2");
-        clazz.getAnnotations();
-        clazz = Class.forName("com.google.annotationresolution.test." + "Annotated3");
-        clazz.getAnnotations();
-   }
-
+  public void testAnnotation() throws Exception {
+    Class<?> clazz = Class.forName("com.google.annotationresolution.test." + "Annotated");
+    clazz.getAnnotations();
+    clazz = Class.forName("com.google.annotationresolution.test." + "Annotated2");
+    clazz.getAnnotations();
+    clazz = Class.forName("com.google.annotationresolution.test." + "Annotated3");
+    clazz.getAnnotations();
+  }
 }

@@ -9,7 +9,5 @@ package memberrebinding3;
 
 public class SuperClassOfAll {
 
-  void topMethod() {
-
-  }
+  void topMethod() {}
 }

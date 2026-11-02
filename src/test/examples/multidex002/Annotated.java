@@ -5,6 +5,4 @@
 package multidex002;
 
 @AnnotationWithEnum2(ReferencedByAnnotationWithOtherReferences.A)
-public class Annotated {
-
-}
+public class Annotated {}

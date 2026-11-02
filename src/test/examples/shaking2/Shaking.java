@@ -21,15 +21,24 @@ public class Shaking {
 
   public static void accessStaticFields() {
     System.out.println("StaticFields::used: " + StaticFields.used);
-    System.out.println("StaitcFields::read" +
-        " " + StaticFields.readInt +
-        " " + StaticFields.readBoolean+
-        " " + StaticFields.readByte +
-        " " + StaticFields.readChar +
-        " " + StaticFields.readFloat +
-        " " + StaticFields.readObject +
-        " " + StaticFields.readShort +
-        " " + StaticFields.readDouble);
+    System.out.println(
+        "StaitcFields::read"
+            + " "
+            + StaticFields.readInt
+            + " "
+            + StaticFields.readBoolean
+            + " "
+            + StaticFields.readByte
+            + " "
+            + StaticFields.readChar
+            + " "
+            + StaticFields.readFloat
+            + " "
+            + StaticFields.readObject
+            + " "
+            + StaticFields.readShort
+            + " "
+            + StaticFields.readDouble);
     StaticFields.writeInt = 1;
     StaticFields.writeBoolean = true;
     StaticFields.writeByte = 2;

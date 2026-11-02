@@ -17,7 +17,7 @@ public class PinnedArrayParameterTypesTest {
         // -keepparameternames is used.
         System.out.println(parameterType.getName());
 
-        method.invoke(null, new Object[]{ new InterfaceImpl[]{ new InterfaceImpl() } });
+        method.invoke(null, new Object[] {new InterfaceImpl[] {new InterfaceImpl()}});
         break;
       }
     }

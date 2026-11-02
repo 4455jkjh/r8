@@ -6,8 +6,8 @@ package memberrebinding;
 import memberrebindinglib.ImplementedInProgramClass;
 import memberrebindinglib.SubClass;
 
-public abstract class SuperClassOfClassExtendsOtherLibraryClass extends SubClass implements
-    ImplementedInProgramClass {
+public abstract class SuperClassOfClassExtendsOtherLibraryClass extends SubClass
+    implements ImplementedInProgramClass {
   public int aMethodThatReturnsFour() {
     return 4;
   }

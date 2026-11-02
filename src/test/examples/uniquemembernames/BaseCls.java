@@ -17,5 +17,4 @@ public abstract class BaseCls {
   protected double bar() {
     return c * f2;
   }
-
 }

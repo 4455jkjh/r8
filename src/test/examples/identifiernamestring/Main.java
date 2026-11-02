@@ -29,7 +29,7 @@ public class Main {
 
     Field foo = R.findField(B.class, "foo");
     System.out.println(foo.getName());
-    Method boo = R.findMethod(B.class, "boo", new Class[] { A.class });
+    Method boo = R.findMethod(B.class, "boo", new Class[] {A.class});
     System.out.println(boo.getName());
   }
 }

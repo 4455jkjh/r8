@@ -4,5 +4,4 @@
 
 package multidex005;
 
-public class SuperSuperClass implements Interface3 {
-}
+public class SuperSuperClass implements Interface3 {}

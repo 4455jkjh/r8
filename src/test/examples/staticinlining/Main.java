@@ -13,14 +13,13 @@ public class Main {
 
   public static void test() {
     tag = "Sub1";
-    Sub1.inlineMe();  // triggers class init of Sub1 (and its hierarchy)
+    Sub1.inlineMe(); // triggers class init of Sub1 (and its hierarchy)
     tag = "Sub2";
-    Sub2.doNotInlineMe();  // triggers class init of Sub2 (and its hierarchy)
+    Sub2.doNotInlineMe(); // triggers class init of Sub2 (and its hierarchy)
     printMessage("SuperClass.INIT_TAG=" + SuperClass.INIT_TAG);
   }
 
   public static void main(String[] args) {
     test();
   }
-
 }

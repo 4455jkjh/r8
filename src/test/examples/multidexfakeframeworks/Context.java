@@ -4,6 +4,4 @@
 
 package multidexfakeframeworks;
 
-public class Context {
-
-}
+public class Context {}

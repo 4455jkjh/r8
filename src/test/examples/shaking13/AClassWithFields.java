@@ -6,5 +6,4 @@ package shaking13;
 public class AClassWithFields {
   public static int staticIntField;
   public int intField;
-
 }

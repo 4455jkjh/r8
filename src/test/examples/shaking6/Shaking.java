@@ -5,6 +5,5 @@ package shaking6;
 
 public class Shaking {
 
-  public static void main(String[] args) {
-  }
+  public static void main(String[] args) {}
 }

@@ -20,5 +20,4 @@ public class InterfaceUser {
     InterfaceUser user = new InterfaceUser(impl);
     user.consume();
   }
-
 }

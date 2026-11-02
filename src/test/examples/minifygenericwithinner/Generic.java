@@ -8,19 +8,19 @@ import java.util.Map;
 
 public class Generic<T extends AA> {
 
-  public <U extends List> T m (Object o, T[] t, Map<T,U> m) {
+  public <U extends List> T m(Object o, T[] t, Map<T, U> m) {
     return null;
   }
 
-  public <U extends Map> T m2 (Object o, T[] t, Map<T,U> m) {
+  public <U extends Map> T m2(Object o, T[] t, Map<T, U> m) {
     return null;
   }
 
-  public <U extends List> T m3 (Object o, T t, Map<T,U> m) {
+  public <U extends List> T m3(Object o, T t, Map<T, U> m) {
     return null;
   }
 
-  public <U extends List> T m4 (Object o, T[] t, List<U> m) {
+  public <U extends List> T m4(Object o, T[] t, List<U> m) {
     return null;
   }
 
@@ -31,11 +31,12 @@ public class Generic<T extends AA> {
   public class Inner<V extends BB> {
 
     public Generic<T>.Inner<V> f;
-    public <U extends List> T m5 (V o, T[] t, Map<T,U> m) {
+
+    public <U extends List> T m5(V o, T[] t, Map<T, U> m) {
       return m(o, t, m);
     }
 
-   public Generic<T>.Inner<V> get() {
+    public Generic<T>.Inner<V> get() {
       return this;
     }
   }

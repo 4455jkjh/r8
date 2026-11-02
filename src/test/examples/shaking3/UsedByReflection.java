@@ -3,4 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package shaking3;
 
-@interface UsedByReflection { }
+@interface UsedByReflection {}

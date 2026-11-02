@@ -5,7 +5,5 @@ package memberrebinding3;
 
 public class ClassInMiddleOfChain extends SuperClassOfAll {
 
-  void middleMethod() {
-
-  }
+  void middleMethod() {}
 }

@@ -3,6 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package naming001;
 
-public interface H extends I {
-}
-
+public interface H extends I {}

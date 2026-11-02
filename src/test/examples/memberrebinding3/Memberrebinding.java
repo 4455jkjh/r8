@@ -6,19 +6,13 @@ package memberrebinding3;
 public class Memberrebinding extends ClassAtBottomOfChain {
 
   @Override
-  void bottomMethod() {
-
-  }
+  void bottomMethod() {}
 
   @Override
-  void middleMethod() {
-
-  }
+  void middleMethod() {}
 
   @Override
-  void topMethod() {
-
-  }
+  void topMethod() {}
 
   private void test() {
     super.bottomMethod();

@@ -11,8 +11,7 @@ import org.mockito.MockitoAnnotations;
 
 public class InterfaceTest {
 
-  @Mock
-  private Interface fld;
+  @Mock private Interface fld;
 
   private InterfaceUser user;
 

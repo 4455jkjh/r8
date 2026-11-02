@@ -7,6 +7,7 @@ public class WriteOnlyCls {
 
   static class DataObj {
     final int f1;
+
     DataObj(int f1) {
       this.f1 = f1;
     }
@@ -23,5 +24,4 @@ public class WriteOnlyCls {
   public static void main(String[] args) {
     WriteOnlyCls instance = new WriteOnlyCls(2);
   }
-
 }

@@ -17,7 +17,5 @@ public class ClassAtBottomOfChain extends EssentiallyEmptyClass {
   }
 
   // Method with same name but different signature to test lookup.
-  public void methodThatShadowsPrivate(int ignore) {
-
-  }
+  public void methodThatShadowsPrivate(int ignore) {}
 }

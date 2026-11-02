@@ -9,11 +9,10 @@ import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TestAnnotation3 {
-    public enum Value {
-        V1,
-        V2;
-
-      }
+  public enum Value {
+    V1,
+    V2;
+  }
 
   Value value();
 }

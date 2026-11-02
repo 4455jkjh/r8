@@ -5,8 +5,6 @@
 package multidex002;
 
 public enum ReferencedByInterface {
-
-    A,
-    B;
-
+  A,
+  B;
 }

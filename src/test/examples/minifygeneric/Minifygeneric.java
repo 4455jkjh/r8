@@ -10,7 +10,8 @@ import java.lang.reflect.TypeVariable;
 
 public class Minifygeneric {
 
-  public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException {
+  public static void main(String[] args)
+      throws NoSuchMethodException, SecurityException, NoSuchFieldException {
     for (TypeVariable<Class<Generic>> var : Generic.class.getTypeParameters()) {
       System.out.println(var.getName());
       Type bound = var.getBounds()[0];
@@ -18,7 +19,7 @@ public class Minifygeneric {
     }
 
     Field f = Generic.class.getField("f");
-    ParameterizedType fieldType = (java.lang.reflect.ParameterizedType)f.getGenericType();
+    ParameterizedType fieldType = (java.lang.reflect.ParameterizedType) f.getGenericType();
     checkOneParameterType(fieldType, Generic.class, AA.class);
 
     ParameterizedType methodReturnType =
@@ -26,10 +27,9 @@ public class Minifygeneric {
     checkOneParameterType(methodReturnType, Generic.class, AA.class);
   }
 
-  private static void checkOneParameterType(ParameterizedType toCheck, Class<?> rawType,
-      Class<?>... bounds) {
-    System.out.println(((Class<?>) toCheck.getRawType()).getName()
-        .equals(rawType.getName()));
+  private static void checkOneParameterType(
+      ParameterizedType toCheck, Class<?> rawType, Class<?>... bounds) {
+    System.out.println(((Class<?>) toCheck.getRawType()).getName().equals(rawType.getName()));
     Type[] parameters = toCheck.getActualTypeArguments();
     System.out.println(parameters.length);
     TypeVariable<?> parameter = (TypeVariable<?>) parameters[0];

@@ -16,5 +16,4 @@ public class OtherPublicClass {
   public static int callsMethodThatReadsFieldInPackagePrivateClass() {
     return PublicClass.readsPackagePrivateField();
   }
-
 }

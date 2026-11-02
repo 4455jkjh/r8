@@ -6,6 +6,5 @@ package multidex002;
 
 public interface InterfaceWithEnum {
 
-    ReferencedByInterface getEnum();
-
+  ReferencedByInterface getEnum();
 }

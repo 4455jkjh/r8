@@ -12,10 +12,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Properties;
-import java.util.Random;
 
 public class LibClass {
   static final String name;
+
   static {
     name = "dataresource.lib.LibClass";
   }
@@ -42,8 +42,8 @@ public class LibClass {
 
   public static String getLibClassProperty() throws IOException {
     Properties properties = new Properties();
-    properties.load(LibClass.class.getResourceAsStream(
-        LibClass.class.getSimpleName() + ".properties"));
+    properties.load(
+        LibClass.class.getResourceAsStream(LibClass.class.getSimpleName() + ".properties"));
     return "" + properties.get(LibClass.class.getName());
   }
 

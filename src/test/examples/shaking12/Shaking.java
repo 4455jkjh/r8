@@ -9,7 +9,7 @@ import java.util.List;
 
 public class Shaking {
 
-  static private Named createInstance(Class<? extends Named> aClass) {
+  private static Named createInstance(Class<? extends Named> aClass) {
     try {
       return aClass.newInstance();
     } catch (InstantiationException | IllegalAccessException e) {

@@ -4,11 +4,9 @@
 package identifiernamestring;
 
 public class A {
-  @IdentifierNameString
-  static String foo = "identifiernamestring.B"; // should be renamed
+  @IdentifierNameString static String foo = "identifiernamestring.B"; // should be renamed
 
-  @IdentifierNameString
-  String boo;
+  @IdentifierNameString String boo;
 
   A() {
     boo = "identifiernamestring.B"; // should be renamed

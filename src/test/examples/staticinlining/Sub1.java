@@ -10,5 +10,4 @@ public class Sub1 extends SuperClass {
   public static void inlineMe() {
     Main.printMessage("Sub1");
   }
-
 }

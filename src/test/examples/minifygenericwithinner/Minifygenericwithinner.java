@@ -24,7 +24,7 @@ public class Minifygenericwithinner {
     }
 
     Field f = Generic.Inner.class.getField("f");
-    ParameterizedType fieldType = (java.lang.reflect.ParameterizedType)f.getGenericType();
+    ParameterizedType fieldType = (java.lang.reflect.ParameterizedType) f.getGenericType();
     checkOneParameterType(fieldType, Generic.Inner.class, BB.class);
     ParameterizedType ownerType = (ParameterizedType) fieldType.getOwnerType();
     checkOneParameterType(ownerType, Generic.class, AA.class);
@@ -36,10 +36,9 @@ public class Minifygenericwithinner {
     checkOneParameterType(ownerType, Generic.class, AA.class);
   }
 
-  private static void checkOneParameterType(ParameterizedType toCheck, Class<?> rawType,
-      Class<?>... bounds) {
-    System.out.println(((Class<?>) toCheck.getRawType()).getName()
-        .equals(rawType.getName()));
+  private static void checkOneParameterType(
+      ParameterizedType toCheck, Class<?> rawType, Class<?>... bounds) {
+    System.out.println(((Class<?>) toCheck.getRawType()).getName().equals(rawType.getName()));
     Type[] parameters = toCheck.getActualTypeArguments();
     System.out.println(parameters.length);
     TypeVariable<?> parameter = (TypeVariable<?>) parameters[0];

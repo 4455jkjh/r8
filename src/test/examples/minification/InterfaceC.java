@@ -5,8 +5,6 @@ package minification;
 
 public interface InterfaceC extends InterfaceB {
 
-  /**
-   * This signature is only defined here.
-   */
+  /** This signature is only defined here. */
   int uniqueLittleMethodInC();
 }

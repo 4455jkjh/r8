@@ -4,6 +4,4 @@
 
 package multidexfakeframeworks;
 
-public class BroadcastReceiver {
-
-}
+public class BroadcastReceiver {}

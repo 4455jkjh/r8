@@ -5,13 +5,9 @@ package minification;
 
 public interface InterfaceA {
 
-  /**
-   * This method is also defined in {@link InterfaceB} and {@link InterfaceD}.
-   */
+  /** This method is also defined in {@link InterfaceB} and {@link InterfaceD}. */
   int functionFromIntToInt(int arg);
 
-  /**
-   * This signature is only defined here.
-   */
+  /** This signature is only defined here. */
   int uniqueLittleMethodInA();
 }

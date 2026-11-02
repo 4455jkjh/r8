@@ -5,8 +5,8 @@ package memberrebinding;
 
 import memberrebindinglib.AnIndependentInterface;
 
-public class ClassExtendsOtherLibraryClass extends
-    SuperClassOfClassExtendsOtherLibraryClass implements AnIndependentInterface {
+public class ClassExtendsOtherLibraryClass extends SuperClassOfClassExtendsOtherLibraryClass
+    implements AnIndependentInterface {
 
   @Override
   public boolean aMethodThatReturnsTrue() {

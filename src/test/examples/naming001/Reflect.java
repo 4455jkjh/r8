@@ -26,8 +26,7 @@ public class Reflect {
   void keep4() throws SecurityException, NoSuchMethodException {
     Reflect2.class.getMethod("m", new Class[] {naming001.Reflect2.A.class});
     Reflect2.class.getMethod("m", new Class[] {naming001.Reflect2.B.class});
-    Reflect2.class.getMethod("methodThatDoesNotExist",
-        new Class[] {naming001.Reflect2.A.class});
+    Reflect2.class.getMethod("methodThatDoesNotExist", new Class[] {naming001.Reflect2.A.class});
   }
 
   void keep5() throws SecurityException, NoSuchMethodException {
@@ -50,4 +49,3 @@ public class Reflect {
     AtomicReferenceFieldUpdater.newUpdater(Reflect2.class, Object.class, "c");
   }
 }
-

@@ -21,8 +21,7 @@ public class ClassExtendsLibraryClass extends ArrayList<String> {
 
   public void methodThatAddsHelloWorldUsingAddAll() {
     // call this only on this type, so that it cannot be rebound to the interface.
-    String[] words = new String[]{"hello", "world"};
+    String[] words = new String[] {"hello", "world"};
     addAll(Arrays.asList(words));
   }
-
 }

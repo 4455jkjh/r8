@@ -13,16 +13,14 @@ public class Main {
 
     a.bar();
 
-    Object a_foo =
-        Class.forName("adaptclassstrings.A").getMethod("foo").invoke(a);
-    Object aa_foo =
-        Class.forName("adaptclassstrings.AA").getMethod("foo").invoke(aa);
+    Object a_foo = Class.forName("adaptclassstrings.A").getMethod("foo").invoke(a);
+    Object aa_foo = Class.forName("adaptclassstrings.AA").getMethod("foo").invoke(aa);
     assert !a_foo.equals(aa_foo);
 
     Object c_to_a_foo =
-        Class.forName((String)
-            Class.forName("adaptclassstrings.C").getField("OTHER").get(null))
-            .getMethod("foo").invoke(a);
+        Class.forName((String) Class.forName("adaptclassstrings.C").getField("OTHER").get(null))
+            .getMethod("foo")
+            .invoke(a);
     assert a_foo.equals(c_to_a_foo);
 
     String cName = (String) Class.forName(C.ITSELF).getField("ITSELF").get(null);

@@ -9,5 +9,4 @@ public class B {
   public AnAbstractClass notVeryInteresting() {
     return null;
   }
-
 }

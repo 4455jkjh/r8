@@ -5,8 +5,6 @@
 package multidex002;
 
 public enum ReferencedByAnnotation {
-
-    A,
-    B;
-
+  A,
+  B;
 }

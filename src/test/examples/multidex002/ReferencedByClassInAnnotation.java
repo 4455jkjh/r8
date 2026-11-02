@@ -5,22 +5,22 @@
 package multidex002;
 
 public enum ReferencedByClassInAnnotation {
+  A {
+    private ReferencedByEnum a = new ReferencedByEnum();
 
-    A {
-        private ReferencedByEnum a = new ReferencedByEnum();
-        @Override
-        public int get() {
-            return a.hashCode();
-        }
-    },
-    B {
-        private ReferencedByEnum b = new ReferencedByEnum();
-        @Override
-        public int get() {
-            return b.hashCode();
-        }
-    };
+    @Override
+    public int get() {
+      return a.hashCode();
+    }
+  },
+  B {
+    private ReferencedByEnum b = new ReferencedByEnum();
 
+    @Override
+    public int get() {
+      return b.hashCode();
+    }
+  };
 
-    public abstract int get();
+  public abstract int get();
 }

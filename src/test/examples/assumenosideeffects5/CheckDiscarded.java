@@ -3,6 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package assumenosideeffects5;
 
-public @interface CheckDiscarded {
-
-}
+public @interface CheckDiscarded {}

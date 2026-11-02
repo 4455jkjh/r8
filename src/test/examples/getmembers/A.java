@@ -5,9 +5,11 @@ package getmembers;
 
 public class A {
   static String foo = "foo";
+
   String bar(String s) {
     return foo + s;
   }
+
   public static String baz() {
     return foo;
   }

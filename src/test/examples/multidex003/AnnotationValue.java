@@ -7,5 +7,4 @@ package multidex003;
 public enum AnnotationValue {
   V1,
   V2;
-
 }

@@ -6,6 +6,5 @@ package multidex002;
 
 public class AnnotatedMethodParameter {
 
-  public void foo(@AnnotationWithEnum3(AnnotationWithEnum3.Value3.VAL3_2) String val) {
-  }
+  public void foo(@AnnotationWithEnum3(AnnotationWithEnum3.Value3.VAL3_2) String val) {}
 }

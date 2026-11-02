@@ -4,10 +4,10 @@
 package shaking16;
 
 public class b {
-  
+
   public int a;
   public int b;
-  
+
   public b(int a, int b) {
     this.a = a;
     this.b = b;

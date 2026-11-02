@@ -3,9 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package shaking3;
 
-abstract public class AnAbstractClass {
+public abstract class AnAbstractClass {
 
-  public void withAMethod() {
-
-  }
+  public void withAMethod() {}
 }

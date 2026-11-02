@@ -6,8 +6,8 @@ package classmerging;
 class Outer {
 
   /**
-   * This class is package private to trigger the generation of bridge methods
-   * for the visibility change of methods from public subtypes.
+   * This class is package private to trigger the generation of bridge methods for the visibility
+   * change of methods from public subtypes.
    */
   class SuperClass {
 

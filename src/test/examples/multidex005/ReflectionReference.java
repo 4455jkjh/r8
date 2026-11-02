@@ -14,5 +14,4 @@ public class ReflectionReference {
   public Object noReference() throws ClassNotFoundException {
     return Class.forName("multidex005.IndirectlyReferenced");
   }
-
 }

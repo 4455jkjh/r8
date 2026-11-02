@@ -4,6 +4,4 @@
 
 package multidexfakeframeworks;
 
-public class Instrumentation {
-
-}
+public class Instrumentation {}

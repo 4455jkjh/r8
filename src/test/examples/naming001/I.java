@@ -6,4 +6,3 @@ package naming001;
 public interface I {
   void m();
 }
-

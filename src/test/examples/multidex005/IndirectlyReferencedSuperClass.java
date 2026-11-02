@@ -4,6 +4,4 @@
 
 package multidex005;
 
-public class IndirectlyReferencedSuperClass implements IndirectlyReferencedInterface {
-
-}
+public class IndirectlyReferencedSuperClass implements IndirectlyReferencedInterface {}

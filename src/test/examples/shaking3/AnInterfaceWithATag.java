@@ -4,6 +4,4 @@
 package shaking3;
 
 @SubtypeUsedByReflection
-public interface AnInterfaceWithATag {
-
-}
+public interface AnInterfaceWithATag {}

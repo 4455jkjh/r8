@@ -4,6 +4,4 @@
 
 package multidexfakeframeworks;
 
-public class Service {
-
-}
+public class Service {}

@@ -4,7 +4,7 @@
 package shaking15;
 
 public class Subclass extends Superclass {
-  public int a,b,c;
+  public int a, b, c;
 
   @Override
   public void aMethod() {

@@ -3,6 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package memberrebinding;
 
-public class EssentiallyEmptyClass extends ClassInMiddleOfChain {
-
-}
+public class EssentiallyEmptyClass extends ClassInMiddleOfChain {}
