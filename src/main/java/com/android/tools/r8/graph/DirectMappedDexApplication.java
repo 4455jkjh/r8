@@ -37,19 +37,19 @@ public class DirectMappedDexApplication extends DexApplication {
   private List<KeepDeclaration> keepDeclarations;
 
   // Unmodifiable mapping of all types to their definitions.
-  private final ImmutableMap<DexType, ProgramOrClasspathClass> programOrClasspathClasses;
+  private final IdentityHashMap<DexType, ProgramOrClasspathClass> programOrClasspathClasses;
   private final ImmutableMap<DexType, DexLibraryClass> libraryClasses;
 
   // Collections of different types for iteration.
-  private final ImmutableCollection<DexProgramClass> programClasses;
+  private final ImmutableList<DexProgramClass> programClasses;
   private final ImmutableCollection<DexClasspathClass> classpathClasses;
 
   private DirectMappedDexApplication(
       ClassNameMapper proguardMap,
       DexApplicationReadFlags flags,
-      ImmutableMap<DexType, ProgramOrClasspathClass> programOrClasspathClasses,
+      IdentityHashMap<DexType, ProgramOrClasspathClass> programOrClasspathClasses,
       ImmutableMap<DexType, DexLibraryClass> libraryClasses,
-      ImmutableCollection<DexProgramClass> programClasses,
+      ImmutableList<DexProgramClass> programClasses,
       ImmutableCollection<DexClasspathClass> classpathClasses,
       ImmutableList<DataResourceProvider> dataResourceProviders,
       List<KeepDeclaration> keepDeclarations,
@@ -224,22 +224,26 @@ public class DirectMappedDexApplication extends DexApplication {
 
   public static class Builder extends DexApplication.Builder<DirectMappedDexApplication, Builder> {
 
+    private final DirectMappedDexApplication previousApplication;
     private ImmutableCollection<DexClasspathClass> classpathClasses;
     private Map<DexType, DexLibraryClass> libraryClasses;
     private List<KeepDeclaration> keepDeclarations = Collections.emptyList();
 
-    private final List<DexClasspathClass> pendingClasspathClasses = new ArrayList<>();
+    private List<DexClasspathClass> pendingClasspathClasses = new ArrayList<>();
     private final Set<DexType> pendingClasspathRemovalIfPresent = Sets.newIdentityHashSet();
+    private boolean hasReplacedOrRemovedClasspathClasses = false;
 
     Builder(LazyLoadedDexApplication application, AllClasses allClasses) {
-      super(application);
+      super(application, ImmutableList.of());
+      previousApplication = null;
       classpathClasses = ImmutableList.copyOf(allClasses.getClasspathClasses());
       libraryClasses = allClasses.getLibraryClasses();
       replaceProgramClasses(allClasses.getProgramClasses());
     }
 
     private Builder(DirectMappedDexApplication application) {
-      super(application);
+      super(application, application.programClasses);
+      previousApplication = application;
       classpathClasses = application.classpathClasses;
       libraryClasses = application.libraryClasses;
       keepDeclarations = application.keepDeclarations;
@@ -247,6 +251,7 @@ public class DirectMappedDexApplication extends DexApplication {
 
     private Builder(InternalOptions options) {
       super(options);
+      previousApplication = null;
     }
 
     @Override
@@ -262,7 +267,9 @@ public class DirectMappedDexApplication extends DexApplication {
     @Override
     public void addProgramClassPotentiallyOverridingNonProgramClass(DexProgramClass clazz) {
       addProgramClass(clazz);
-      pendingClasspathRemovalIfPresent.add(clazz.type);
+      if (mayHaveClasspathClass(clazz.type)) {
+        pendingClasspathRemovalIfPresent.add(clazz.type);
+      }
       // When java.lang.Record is added remove the library class, as this program class will
       // eventually be renamed to com.android.tools.r8.RecordTag so there should not be a
       // multi-resolution result when looking up java.lang.Record.
@@ -271,6 +278,16 @@ public class DirectMappedDexApplication extends DexApplication {
         ensureMutableLibraryClassesMap();
         libraryClasses.remove(clazz.type);
       }
+    }
+
+    private boolean mayHaveClasspathClass(DexType type) {
+      if (previousApplication != null
+          && !hasReplacedOrRemovedClasspathClasses
+          && pendingClasspathClasses.isEmpty()) {
+        ProgramOrClasspathClass clazz = previousApplication.programOrClasspathClasses.get(type);
+        return clazz != null && clazz.isClasspathClass();
+      }
+      return true;
     }
 
     private void ensureMutableLibraryClassesMap() {
@@ -295,15 +312,19 @@ public class DirectMappedDexApplication extends DexApplication {
       return self();
     }
 
-    private void commitPendingClasspathClasses() {
-      if (!pendingClasspathClasses.isEmpty()) {
-        classpathClasses =
-            ImmutableList.<DexClasspathClass>builder()
-                .addAll(classpathClasses)
-                .addAll(pendingClasspathClasses)
-                .build();
-        pendingClasspathClasses.clear();
+    private List<DexClasspathClass> commitPendingClasspathClasses() {
+      if (pendingClasspathClasses.isEmpty()) {
+        return Collections.emptyList();
       }
+      classpathClasses =
+          ImmutableList.<DexClasspathClass>builderWithExpectedSize(
+                  classpathClasses.size() + pendingClasspathClasses.size())
+              .addAll(classpathClasses)
+              .addAll(pendingClasspathClasses)
+              .build();
+      List<DexClasspathClass> committedClasspathClasses = pendingClasspathClasses;
+      pendingClasspathClasses = new ArrayList<>();
+      return committedClasspathClasses;
     }
 
     public Builder replaceClasspathClasses(Collection<DexClasspathClass> newClasspathClasses) {
@@ -314,6 +335,7 @@ public class DirectMappedDexApplication extends DexApplication {
       assert newClasspathClasses != null;
       classpathClasses = newClasspathClasses;
       pendingClasspathClasses.clear();
+      hasReplacedOrRemovedClasspathClasses = true;
       return self();
     }
 
@@ -352,36 +374,58 @@ public class DirectMappedDexApplication extends DexApplication {
     public DirectMappedDexApplication build(Timing timing) {
       try (Timing t0 = timing.begin("Build")) {
         // Rebuild the map. This will fail if keys are not unique.
-        // TODO(zerny): Consider not rebuilding the map if no program classes are added.
-        commitPendingClasspathClasses();
-        Map<DexType, ProgramOrClasspathClass> programAndClasspathClasses =
-            new IdentityHashMap<>(getProgramClasses().size() + classpathClasses.size());
-        // Note: writing classes in reverse priority order, so a duplicate will be correctly
-        // ordered.
-        // There should not be duplicates between program and classpath and that is asserted in the
-        // addAll subroutine.
-        ImmutableCollection<DexClasspathClass> newClasspathClasses = classpathClasses;
-        if (addAll(programAndClasspathClasses, classpathClasses)) {
-          ImmutableList.Builder<DexClasspathClass> builder = ImmutableList.builder();
-          for (DexClasspathClass classpathClass : classpathClasses) {
-            if (!pendingClasspathRemovalIfPresent.contains(classpathClass.getType())) {
-              builder.add(classpathClass);
-            }
-          }
-          newClasspathClasses = builder.build();
-        }
-        addAll(programAndClasspathClasses, getProgramClasses());
         return new DirectMappedDexApplication(
             proguardMap,
             flags,
-            ImmutableMap.copyOf(programAndClasspathClasses),
+            buildProgramAndClasspathClasses(),
             getLibraryClassesAsImmutableMap(),
-            ImmutableList.copyOf(getProgramClasses()),
-            newClasspathClasses,
+            programClasses,
+            classpathClasses,
             ImmutableList.copyOf(dataResourceProviders),
             keepDeclarations,
             options);
       }
+    }
+
+    /**
+     * Builds the mapping from {@link DexType} to {@link ProgramOrClasspathClass}, committing any
+     * pending program and classpath additions or removals.
+     *
+     * <p>If this builder was created from an existing {@link DirectMappedDexApplication} and no
+     * existing program or classpath classes have been replaced or removed, reuses the previous
+     * application's map and inserts only the newly added classes. Otherwise, rebuilds the map from
+     * scratch.
+     */
+    private IdentityHashMap<DexType, ProgramOrClasspathClass> buildProgramAndClasspathClasses() {
+      List<DexProgramClass> committedProgramClasses = commitPendingProgramClasses();
+      List<DexClasspathClass> committedClasspathClasses = commitPendingClasspathClasses();
+      if (previousApplication != null
+          && !hasReplacedOrRemovedProgramClasses
+          && !hasReplacedOrRemovedClasspathClasses
+          && pendingClasspathRemovalIfPresent.isEmpty()) {
+        IdentityHashMap<DexType, ProgramOrClasspathClass> programAndClasspathClasses =
+            previousApplication.programOrClasspathClasses;
+        addAll(programAndClasspathClasses, committedClasspathClasses);
+        addAll(programAndClasspathClasses, committedProgramClasses);
+        return programAndClasspathClasses;
+      }
+      IdentityHashMap<DexType, ProgramOrClasspathClass> programAndClasspathClasses =
+          new IdentityHashMap<>(programClasses.size() + classpathClasses.size());
+      // Note: writing classes in reverse priority order, so a duplicate will be correctly
+      // ordered.
+      // There should not be duplicates between program and classpath and that is asserted in
+      // the addAll subroutine.
+      if (addAll(programAndClasspathClasses, classpathClasses)) {
+        ImmutableList.Builder<DexClasspathClass> builder = ImmutableList.builder();
+        for (DexClasspathClass classpathClass : classpathClasses) {
+          if (!pendingClasspathRemovalIfPresent.contains(classpathClass.getType())) {
+            builder.add(classpathClass);
+          }
+        }
+        classpathClasses = builder.build();
+      }
+      addAll(programAndClasspathClasses, programClasses);
+      return programAndClasspathClasses;
     }
 
     private <T extends ProgramOrClasspathClass> boolean addAll(
