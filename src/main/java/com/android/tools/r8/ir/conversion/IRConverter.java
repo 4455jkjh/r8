@@ -947,7 +947,7 @@ public class IRConverter {
       if (method.getDefinition().isClassInitializer()) {
         staticFieldValues =
             StaticFieldValueAnalysis.run(
-                appView, code, classInitializerDefaultsResult, feedback, timing);
+                appView, code, classInitializerDefaultsResult, feedback, methodProcessor, timing);
         reprocessingOptimizationCollection.classInitializerAnalysis(method, staticFieldValues);
       } else {
         instanceFieldInitializationInfos =

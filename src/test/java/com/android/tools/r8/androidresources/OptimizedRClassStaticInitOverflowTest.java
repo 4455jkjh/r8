@@ -148,15 +148,11 @@ public class OptimizedRClassStaticInitOverflowTest extends TestBase {
         .inspectShrunkenResources(this::assertShrunkenResources)
         .inspect(
             inspector -> {
-              // The staticInit<N>() methods are not inlined into <clinit>(), so the fields they
-              // initialize are not analyzed and the reads of these fields are not removed.
-              ClassSubject rString = inspector.clazz(R.string.class);
-              assertThat(rString, isPresent());
-              assertThat(rString.uniqueMethodWithOriginalName("staticInit0"), isPresent());
-              assertThat(rString.uniqueMethodWithOriginalName("staticInit1"), isPresent());
-              assertThat(rString.uniqueFieldWithOriginalName("used_clinit"), isAbsent());
-              assertThat(rString.uniqueFieldWithOriginalName("used_0"), isPresent());
-              assertThat(rString.uniqueFieldWithOriginalName("used_1"), isPresent());
+              // The staticInit<N>() methods are not inlined into <clinit>(), but the static field
+              // value analysis of <clinit>() still analyzes the fields they initialize, so all
+              // reads are folded into constants and the classes are removed.
+              assertThat(inspector.clazz(R.string.class), isAbsent());
+              assertThat(inspector.clazz(R.drawable.class), isAbsent());
             })
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(expectedOutput(splitResources));

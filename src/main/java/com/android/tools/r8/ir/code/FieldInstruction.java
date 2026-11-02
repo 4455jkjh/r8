@@ -195,7 +195,9 @@ public abstract class FieldInstruction extends Instruction {
       }
       if (abstractValue.isSingleFieldValue()) {
         SingleFieldValue singleFieldValue = abstractValue.asSingleFieldValue();
-        return singleFieldValue.mayHaveFinalizeMethodDirectlyOrIndirectly(appView);
+        if (singleFieldValue.getField().isNotIdenticalTo(field.getReference())) {
+          return singleFieldValue.mayHaveFinalizeMethodDirectlyOrIndirectly(appView);
+        }
       }
     }
 

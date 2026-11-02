@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.ProgramField;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.StaticFieldValues.EmptyStaticValues;
 import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
 import com.android.tools.r8.ir.analysis.type.Nullability;
@@ -31,10 +32,13 @@ import com.android.tools.r8.ir.code.FieldInstruction;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeDirect;
+import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.optimize.ClassInitializerDefaultsOptimization.ClassInitializerDefaultsResult;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -46,12 +50,17 @@ import java.util.Map;
 
 public class StaticFieldValueAnalysis extends FieldValueAnalysis {
 
+  private final MethodProcessor methodProcessor;
   private final StaticFieldValues.Builder builder;
   private final Map<Value, AbstractValue> computedValues = new IdentityHashMap<>();
 
   private StaticFieldValueAnalysis(
-      AppView<AppInfoWithLiveness> appView, IRCode code, OptimizationFeedback feedback) {
+      AppView<AppInfoWithLiveness> appView,
+      IRCode code,
+      OptimizationFeedback feedback,
+      MethodProcessor methodProcessor) {
     super(appView, code, feedback);
+    this.methodProcessor = methodProcessor;
     builder = StaticFieldValues.builder(code.context().getHolder());
   }
 
@@ -60,6 +69,7 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
       IRCode code,
       ClassInitializerDefaultsResult classInitializerDefaultsResult,
       OptimizationFeedback feedback,
+      MethodProcessor methodProcessor,
       Timing timing) {
     assert appView.appInfo().hasLiveness();
     assert appView.enableWholeProgramOptimizations();
@@ -69,7 +79,7 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
     }
     timing.begin("Analyze class initializer");
     StaticFieldValues result =
-        new StaticFieldValueAnalysis(appView.withLiveness(), code, feedback)
+        new StaticFieldValueAnalysis(appView.withLiveness(), code, feedback, methodProcessor)
             .analyze(classInitializerDefaultsResult);
     timing.end();
     return result;
@@ -115,11 +125,45 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
   }
 
   @Override
-  @SuppressWarnings("ReferenceEquality")
-  boolean isSubjectToOptimization(DexClassAndField field) {
+  boolean isSubjectToOptimization(DexClassAndField field, ProgramMethod context) {
     return field.getAccessFlags().isStatic()
-        && field.getHolderType() == context.getHolderType()
+        && field.getHolderType().isIdenticalTo(context.getHolderType())
         && appView.appInfo().isFieldOnlyWrittenInMethod(field, context);
+  }
+
+  /**
+   * Static methods on the enclosing class that are only called from the class initializer (directly
+   * or through other such methods) are analyzed as if they were inlined. This for example handles R
+   * classes where the class initializer exceeds the method size limit and is split into a chain of
+   * staticInit0(), staticInit1(), ... methods.
+   */
+  @Override
+  IRCode getEffectivelyClinitOutline(InvokeMethod invoke, ProgramMethod caller) {
+    // Only analyze helpers in the primary pass, where unique write contexts are available and
+    // non-converting IR building does not require post-pass code lens rewritings.
+    // If the call is covered by a catch handler, the helper may throw before its field puts and
+    // the caller may still exit normally.
+    if (!methodProcessor.isPrimaryMethodProcessor()
+        || !invoke.isInvokeStatic()
+        || invoke.getBlock().hasCatchHandlers()) {
+      return null;
+    }
+    ProgramMethod target = invoke.lookupSingleProgramTarget(appView, caller);
+    if (target == null
+        || target.getHolderType().isNotIdenticalTo(context.getHolderType())
+        || !target.getDefinition().hasCode()
+        || methodProcessor.isProcessedConcurrently(target)
+        || appView.isCfByteCodePassThrough(target)
+        || !methodProcessor.getCallSiteInformation().hasSingleCallSite(target, caller)) {
+      return null;
+    }
+    // When the callee is not processed, it may require lens code rewriting.
+    if (!target.getDefinition().isProcessed()) {
+      return null;
+    }
+    // A method reached from the class initializer that also calls itself has multiple call sites.
+    assert !target.isStructurallyEqualTo(caller);
+    return target.buildIR(appView, MethodConversionOptions.nonConverting());
   }
 
   @Override
