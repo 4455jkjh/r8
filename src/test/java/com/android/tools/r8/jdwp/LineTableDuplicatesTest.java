@@ -36,13 +36,13 @@ public class LineTableDuplicatesTest extends JDWPMethodTestCase {
       long end = reply.getNextValueAsLong();
       logWriter.println("end = " + end);
       int lines = reply.getNextValueAsInt();
-      logWriter.println("lines = "+lines);
+      logWriter.println("lines = " + lines);
       Map<Integer, Integer> lineCounts = new HashMap<>();
       for (int j = 0; j < lines; j++) {
         long lineCodeIndex = reply.getNextValueAsLong();
-        logWriter.println("lineCodeIndex = "+lineCodeIndex);
+        logWriter.println("lineCodeIndex = " + lineCodeIndex);
         int lineNumber = reply.getNextValueAsInt();
-        logWriter.println("lineNumber = "+lineNumber);
+        logWriter.println("lineNumber = " + lineNumber);
         lineCounts.put(lineNumber, 1 + lineCounts.getOrDefault(lineNumber, 0));
       }
       methodLines.put(name, lineCounts);
@@ -51,12 +51,12 @@ public class LineTableDuplicatesTest extends JDWPMethodTestCase {
     assertEquals(
         "methodWithSingleLineMultipleLocals",
         1,
-        methodLines.get("methodWithSingleLineMultipleLocals").getOrDefault(13, -1).intValue());
+        methodLines.get("methodWithSingleLineMultipleLocals").getOrDefault(16, -1).intValue());
 
     assertEquals(
         "methodWithSingleLineMultipleDuplicates",
         2,
-        methodLines.get("methodWithSingleLineMultipleDuplicates").getOrDefault(22, -1).intValue());
+        methodLines.get("methodWithSingleLineMultipleDuplicates").getOrDefault(25, -1).intValue());
 
     synchronizer.sendMessage(JPDADebuggeeSynchronizer.SGNL_CONTINUE);
   }

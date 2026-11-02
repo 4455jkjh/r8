@@ -2,6 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// Absolute line numbers and single-line layout are used in LineTableDuplicatesTest.java.
+// @formatter:off
+
 package com.android.tools.r8.jdwp;
 
 import org.apache.harmony.jpda.tests.share.JPDADebuggeeSynchronizer;

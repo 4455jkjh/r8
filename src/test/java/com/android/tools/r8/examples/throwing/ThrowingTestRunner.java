@@ -35,17 +35,17 @@ public class ThrowingTestRunner extends ExamplesTestBase {
   @Override
   public String getExpected() {
     return StringUtils.lines(
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.throwAtFistLine(Throwing.java:115)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:19)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.throwInMiddle(Throwing.java:123)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:24)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.throwAtFistLine(Throwing.java:118)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:22)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.throwInMiddle(Throwing.java:126)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:27)",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.throwAfterMultiInline(Throwing.java:135)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:29)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:41)",
+            + " com.android.tools.r8.examples.throwing.Throwing.throwAfterMultiInline(Throwing.java:138)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:32)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:44)",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing$Nested.justThrow(Throwing.java:207)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:49)",
+            + " com.android.tools.r8.examples.throwing.Throwing$Nested.justThrow(Throwing.java:210)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:52)",
         "20Increment by one!",
         "Increment by one!",
         "Increment by one!",
@@ -58,8 +58,8 @@ public class ThrowingTestRunner extends ExamplesTestBase {
         "Increment by one!",
         "Incremented by 10.",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.throwInAFunctionThatIsNotInlinedAndCalledTwice(Throwing.java:145)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:65)",
+            + " com.android.tools.r8.examples.throwing.Throwing.throwInAFunctionThatIsNotInlinedAndCalledTwice(Throwing.java:148)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:68)",
         "Increment by one!",
         "Increment by one!",
         "Increment by one!",
@@ -72,8 +72,8 @@ public class ThrowingTestRunner extends ExamplesTestBase {
         "Increment by one!",
         "Incremented by 10.",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.throwInAFunctionThatIsNotInlinedAndCalledTwice(Throwing.java:145)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:71)",
+            + " com.android.tools.r8.examples.throwing.Throwing.throwInAFunctionThatIsNotInlinedAndCalledTwice(Throwing.java:148)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:74)",
         "Increment by one!",
         "Increment by one!",
         "Increment by one!",
@@ -86,10 +86,10 @@ public class ThrowingTestRunner extends ExamplesTestBase {
         "Increment by one!",
         "Incremented by 10.",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.anotherThrowingMethodToInline(Throwing.java:151)",
+            + " com.android.tools.r8.examples.throwing.Throwing.anotherThrowingMethodToInline(Throwing.java:154)",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.aFunctionThatCallsAnInlinedMethodThatThrows(Throwing.java:164)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:77)",
+            + " com.android.tools.r8.examples.throwing.Throwing.aFunctionThatCallsAnInlinedMethodThatThrows(Throwing.java:167)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:80)",
         "Increment by one!",
         "Increment by one!",
         "Increment by one!",
@@ -102,13 +102,13 @@ public class ThrowingTestRunner extends ExamplesTestBase {
         "Increment by one!",
         "Incremented by 10.",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.yetAnotherThrowingMethodToInline(Throwing.java:170)",
+            + " com.android.tools.r8.examples.throwing.Throwing.yetAnotherThrowingMethodToInline(Throwing.java:173)",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.anotherFunctionThatCallsAnInlinedMethodThatThrows(Throwing.java:183)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:83)",
+            + " com.android.tools.r8.examples.throwing.Throwing.anotherFunctionThatCallsAnInlinedMethodThatThrows(Throwing.java:186)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:86)",
         "FRAME:"
-            + " com.android.tools.r8.examples.throwing.Throwing.aFunctionsThatThrowsBeforeAnInlinedMethod(Throwing.java:188)",
-        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:89)");
+            + " com.android.tools.r8.examples.throwing.Throwing.aFunctionsThatThrowsBeforeAnInlinedMethod(Throwing.java:191)",
+        "FRAME: com.android.tools.r8.examples.throwing.Throwing.main(Throwing.java:92)");
   }
 
   @Test
