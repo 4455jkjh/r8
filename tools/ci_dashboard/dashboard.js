@@ -12,12 +12,14 @@
   const GERRIT_CL_BASE = "https://r8-review.googlesource.com/c/r8/+/";
   const KOKORO_BUCKET = "r8-test-results";
   const KOKORO_PREFIX = "ci-dashboard/kokoro/";
+  const COMMITS_CACHE_STORAGE_KEY = "r8_ci_dashboard_commits_cache_v1";
+  const KOKORO_CACHE_STORAGE_KEY = "r8_ci_dashboard_kokoro_cache_v1";
+  const BB_CACHE_STORAGE_KEY = "r8_ci_dashboard_bb_cache_v1";
   const FUSION2_KOKORO_JOB_BASE = "https://fusion2.corp.google.com/ci/kokoro/";
   const FUSION2_INVOCATION_BASE =
     "https://fusion2.corp.google.com/invocations/";
 
   const POLL_INTERVAL_MS = 60 * 1000;
-  const VERSION_CHECK_MS = 60 * 1000;
   const SAFETY_RELOAD_MS = 6 * 60 * 60 * 1000;
   const STALE_THRESHOLD_SECS = 24 * 3600;
   const RELEASE_ACTIVE_DAYS = 30;
@@ -25,6 +27,9 @@
   const ERROR_BANNER_THRESHOLD_MS = 3 * 60 * 1000;
   const MAIN_CONSOLE_ROWS = 36;
   const BRANCH_MODAL_ROWS = 22;
+  const BB_BATCH_CHUNK_SIZE = 13;
+  const BB_INITIAL_PAGE_SIZE = 60;
+  const BB_INCREMENTAL_PAGE_SIZE = 8;
 
   const state = {
     hidePassingBuilders: false,
@@ -185,11 +190,50 @@
       .replace(/"/g, "&quot;");
   }
 
-  async function loadCommitsAndVersion() {
+  function loadCommitsCache() {
     try {
-      const resp = await fetch("commits.json", { cache: "no-store" });
-      if (resp.ok) {
-        const data = await resp.json();
+      const raw = window.localStorage.getItem(COMMITS_CACHE_STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data && data.luci_config) {
+        state.luciConfig = data.luci_config;
+      }
+      if (data && data.branches) {
+        state.commitsByBranch = data.branches;
+      }
+      if (data && data.release_cuts) {
+        state.releaseCuts = data.release_cuts;
+      }
+    } catch (_) {
+      // Ignore storage errors.
+    }
+  }
+
+  function saveCommitsCache(data) {
+    if (!data || !data.luci_config) return;
+    try {
+      window.localStorage.setItem(
+        COMMITS_CACHE_STORAGE_KEY,
+        JSON.stringify({
+          luci_config: data.luci_config,
+          branches: data.branches || {},
+          release_cuts: data.release_cuts || {},
+        }),
+      );
+    } catch (_) {
+      // Ignore quota or storage errors.
+    }
+  }
+
+  async function loadCommitsAndVersion() {
+    const [commitsRes, versionRes] = await Promise.allSettled([
+      fetch("commits.json", { cache: "no-store" }),
+      fetch("version.json", { cache: "no-store" }),
+    ]);
+
+    if (commitsRes.status === "fulfilled" && commitsRes.value.ok) {
+      try {
+        const data = await commitsRes.value.json();
         if (data && data.luci_config) {
           state.luciConfig = data.luci_config;
         }
@@ -199,15 +243,15 @@
         if (data && data.release_cuts) {
           state.releaseCuts = data.release_cuts;
         }
+        saveCommitsCache(data);
+      } catch (_) {
+        // Keep the last loaded config and commits.
       }
-    } catch (_) {
-      // Keep the last loaded config and commits.
     }
 
-    try {
-      const vResp = await fetch("version.json", { cache: "no-store" });
-      if (vResp.ok) {
-        const vData = await vResp.json();
+    if (versionRes.status === "fulfilled" && versionRes.value.ok) {
+      try {
+        const vData = await versionRes.value.json();
         if (vData && vData.assets_hash) {
           if (
             state.deployedVersion &&
@@ -218,9 +262,9 @@
           }
           state.deployedVersion = vData.assets_hash;
         }
+      } catch (_) {
+        // Retry on the next poll.
       }
-    } catch (_) {
-      // Retry on the next poll.
     }
   }
 
@@ -739,6 +783,34 @@
     };
   }
 
+  function loadKokoroCache() {
+    try {
+      const raw = window.localStorage.getItem(KOKORO_CACHE_STORAGE_KEY);
+      if (!raw) return;
+      const entries = JSON.parse(raw);
+      if (!Array.isArray(entries)) return;
+      for (const [key, rec] of entries) {
+        if (key && rec && rec.job && rec.build_number !== undefined) {
+          state.kokoroObjectCache.set(key, rec);
+        }
+      }
+      state.lastKokoroRecords = [...state.kokoroObjectCache.values()];
+    } catch (_) {
+      // Ignore storage errors.
+    }
+  }
+
+  function saveKokoroCache() {
+    try {
+      window.localStorage.setItem(
+        KOKORO_CACHE_STORAGE_KEY,
+        JSON.stringify([...state.kokoroObjectCache.entries()]),
+      );
+    } catch (_) {
+      // Ignore quota or storage errors.
+    }
+  }
+
   async function fetchKokoroStatus() {
     const items = [];
     let pageToken = "";
@@ -760,12 +832,14 @@
       pageToken = data.nextPageToken || "";
     } while (pageToken);
 
+    let cacheChanged = false;
     const activeKeys = new Set(
       items.map((it) => `${it.name}@${it.generation}`),
     );
     for (const cachedKey of state.kokoroObjectCache.keys()) {
       if (!activeKeys.has(cachedKey)) {
         state.kokoroObjectCache.delete(cachedKey);
+        cacheChanged = true;
       }
     }
 
@@ -788,9 +862,14 @@
           }
           if (rec && rec.job && rec.build_number !== undefined) {
             state.kokoroObjectCache.set(`${it.name}@${it.generation}`, rec);
+            cacheChanged = true;
           }
         }),
       );
+    }
+
+    if (cacheChanged) {
+      saveKokoroCache();
     }
 
     const records = [];
@@ -1135,27 +1214,143 @@
     };
   }
 
-  async function fetchBuildbucketPayload() {
+  function loadBuildbucketCache() {
+    try {
+      const raw = window.localStorage.getItem(BB_CACHE_STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (
+        data &&
+        data.buildsByBuilder &&
+        typeof data.buildsByBuilder === "object"
+      ) {
+        state.lastBbPayload = {
+          luciCfg: state.luciConfig,
+          buildsByBuilder: data.buildsByBuilder,
+          presubmitQueues: Array.isArray(data.presubmitQueues)
+            ? data.presubmitQueues
+            : [],
+        };
+      }
+    } catch (_) {
+      // Ignore storage errors.
+    }
+  }
+
+  function saveBuildbucketCache(bbPayload) {
+    if (!bbPayload || !bbPayload.buildsByBuilder) return;
+    try {
+      window.localStorage.setItem(
+        BB_CACHE_STORAGE_KEY,
+        JSON.stringify({
+          buildsByBuilder: bbPayload.buildsByBuilder,
+          presubmitQueues: bbPayload.presubmitQueues || [],
+        }),
+      );
+    } catch (_) {
+      // Ignore quota or storage errors.
+    }
+  }
+
+  async function prpcBatchSearchBuilds(requests) {
+    if (requests.length === 0) return [];
+    const numChunks = Math.ceil(requests.length / BB_BATCH_CHUNK_SIZE);
+    const chunkSize = Math.ceil(requests.length / numChunks);
+    const chunks = [];
+    for (let i = 0; i < requests.length; i += chunkSize) {
+      chunks.push(requests.slice(i, i + chunkSize));
+    }
+    const chunkResponses = await Promise.all(
+      chunks.map((chunk) =>
+        prpcCall("buildbucket.v2.Builds", "Batch", { requests: chunk }),
+      ),
+    );
+    return chunkResponses.flatMap((resp) => (resp && resp.responses) || []);
+  }
+
+  function computeBuilderPageSize(prevBuilds) {
+    if (!Array.isArray(prevBuilds) || prevBuilds.length === 0) {
+      return BB_INITIAL_PAGE_SIZE;
+    }
+    let lastActiveIdx = -1;
+    for (let i = 0; i < prevBuilds.length; i++) {
+      const st = prevBuilds[i] && prevBuilds[i].status;
+      if (st === "STARTED" || st === "SCHEDULED") {
+        lastActiveIdx = i;
+      }
+    }
+    return Math.min(
+      BB_INITIAL_PAGE_SIZE,
+      Math.max(BB_INCREMENTAL_PAGE_SIZE, lastActiveIdx + 6),
+    );
+  }
+
+  function hasCleanOverlap(freshBuilds, prevBuilds, requestedPageSize) {
+    if (!Array.isArray(prevBuilds) || prevBuilds.length === 0) {
+      return true;
+    }
+    if (freshBuilds.length < requestedPageSize) {
+      return true;
+    }
+    const freshIds = new Set(freshBuilds.map((b) => b && b.id));
+    if (!prevBuilds[0] || !freshIds.has(prevBuilds[0].id)) {
+      return false;
+    }
+    for (const b of prevBuilds) {
+      if (
+        b &&
+        (b.status === "STARTED" || b.status === "SCHEDULED") &&
+        !freshIds.has(b.id)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function mergeBuilderBuilds(freshBuilds, prevBuilds) {
+    if (!Array.isArray(prevBuilds) || prevBuilds.length === 0) {
+      return freshBuilds;
+    }
+    const freshIds = new Set(freshBuilds.map((b) => b && b.id));
+    const merged = [...freshBuilds];
+    for (const b of prevBuilds) {
+      if (b && b.id && !freshIds.has(b.id)) {
+        merged.push(b);
+      }
+    }
+    const maxKeep = Math.max(BB_INITIAL_PAGE_SIZE, prevBuilds.length);
+    return merged.slice(0, maxKeep);
+  }
+
+  async function fetchBuildbucketPayload(onMainReady) {
     if (!state.luciConfig) {
       throw new Error("commits.json (LUCI console config) not loaded");
     }
     const luciCfg = state.luciConfig;
+    const prevBuildsByBuilder =
+      (state.lastBbPayload && state.lastBbPayload.buildsByBuilder) || {};
 
-    const ciTargets = [];
+    const mainCiTargets = [];
+    const releaseCiTargets = [];
     const seenCi = new Set();
-    for (const entry of [
-      ...(luciCfg.main_console || []),
-      ...(luciCfg.release_console || []),
-    ]) {
+    for (const entry of luciCfg.main_console || []) {
       const key = `${entry.project || "r8"}/${entry.bucket || "ci"}/${entry.builder}`;
       if (seenCi.has(key)) continue;
       seenCi.add(key);
-      ciTargets.push(entry);
+      mainCiTargets.push(entry);
     }
+    for (const entry of luciCfg.release_console || []) {
+      const key = `${entry.project || "r8"}/${entry.bucket || "ci"}/${entry.builder}`;
+      if (seenCi.has(key)) continue;
+      seenCi.add(key);
+      releaseCiTargets.push(entry);
+    }
+    const ciTargets = [...mainCiTargets, ...releaseCiTargets];
 
     const ciFields =
       "builds.*.id,builds.*.number,builds.*.status,builds.*.createTime,builds.*.startTime,builds.*.endTime,builds.*.input.gitilesCommit";
-    const ciRequests = ciTargets.map((entry) => ({
+    const makeCiRequest = (entry, pageSize) => ({
       searchBuilds: {
         predicate: {
           builder: {
@@ -1165,10 +1360,20 @@
           },
           includeExperimental: false,
         },
-        pageSize: 60,
+        pageSize,
         fields: ciFields,
       },
-    }));
+    });
+
+    const requestedPageSizes = ciTargets.map((entry) =>
+      computeBuilderPageSize(prevBuildsByBuilder[entry.builder]),
+    );
+    const mainCiRequests = mainCiTargets.map((entry, idx) =>
+      makeCiRequest(entry, requestedPageSizes[idx]),
+    );
+    const releaseCiRequests = releaseCiTargets.map((entry, idx) =>
+      makeCiRequest(entry, requestedPageSizes[mainCiTargets.length + idx]),
+    );
 
     const cqTargets = luciCfg.cq_builders || [];
     const tryFields =
@@ -1194,41 +1399,125 @@
       },
     }));
 
-    const batchResp = await prpcCall("buildbucket.v2.Builds", "Batch", {
-      requests: [...ciRequests, ...tryRequests],
-    });
-    const responses = batchResp.responses || [];
+    const parsePresubmitQueues = (tryResponses) =>
+      cqTargets.map((cqEntry, idx) => {
+        const rRun = tryResponses[idx * 2] || {};
+        const rSched = tryResponses[idx * 2 + 1] || {};
+        return {
+          ...cqEntry,
+          runningBuilds: (rRun.searchBuilds && rRun.searchBuilds.builds) || [],
+          scheduledBuilds:
+            (rSched.searchBuilds && rSched.searchBuilds.builds) || [],
+        };
+      });
+
+    let releaseDone = false;
+    const releasePromise = prpcBatchSearchBuilds(releaseCiRequests).then(
+      (res) => {
+        releaseDone = true;
+        return res;
+      },
+    );
+    const mainAndTryPromise = prpcBatchSearchBuilds([
+      ...mainCiRequests,
+      ...tryRequests,
+    ]);
+
+    if (typeof onMainReady === "function") {
+      mainAndTryPromise.then(
+        (mainAndTryResponses) => {
+          if (releaseDone) return;
+          const partialBuildsByBuilder = { ...prevBuildsByBuilder };
+          for (let i = 0; i < mainCiTargets.length; i++) {
+            const entry = mainCiTargets[i];
+            const r = mainAndTryResponses[i] || {};
+            const fresh = (r.searchBuilds && r.searchBuilds.builds) || [];
+            partialBuildsByBuilder[entry.builder] = mergeBuilderBuilds(
+              fresh,
+              prevBuildsByBuilder[entry.builder],
+            );
+          }
+          const tryResponses = mainAndTryResponses.slice(mainCiTargets.length);
+          onMainReady({
+            luciCfg,
+            buildsByBuilder: partialBuildsByBuilder,
+            presubmitQueues: parsePresubmitQueues(tryResponses),
+          });
+        },
+        () => {},
+      );
+    }
+
+    const [mainAndTryResponses, releaseResponses] = await Promise.all([
+      mainAndTryPromise,
+      releasePromise,
+    ]);
+    const ciResponses = [
+      ...mainAndTryResponses.slice(0, mainCiTargets.length),
+      ...releaseResponses,
+    ];
+    const tryResponses = mainAndTryResponses.slice(mainCiTargets.length);
+
     const buildsByBuilder = {};
+    const fallbackEntries = [];
+    const fullFetchedBuilders = new Set();
 
     for (let i = 0; i < ciTargets.length; i++) {
-      const r = responses[i] || {};
-      buildsByBuilder[ciTargets[i].builder] =
-        (r.searchBuilds && r.searchBuilds.builds) || [];
+      const entry = ciTargets[i];
+      const prevBuilds = prevBuildsByBuilder[entry.builder];
+      const r = ciResponses[i] || {};
+      const freshBuilds = (r.searchBuilds && r.searchBuilds.builds) || [];
+      const pageSize = requestedPageSizes[i];
+      if (
+        pageSize < BB_INITIAL_PAGE_SIZE &&
+        !hasCleanOverlap(freshBuilds, prevBuilds, pageSize)
+      ) {
+        fallbackEntries.push(entry);
+      } else {
+        if (pageSize >= BB_INITIAL_PAGE_SIZE) {
+          fullFetchedBuilders.add(entry.builder);
+        }
+        buildsByBuilder[entry.builder] = mergeBuilderBuilds(
+          freshBuilds,
+          prevBuilds,
+        );
+      }
+    }
+
+    if (fallbackEntries.length > 0) {
+      const fallbackResponses = await prpcBatchSearchBuilds(
+        fallbackEntries.map((entry) =>
+          makeCiRequest(entry, BB_INITIAL_PAGE_SIZE),
+        ),
+      );
+      fallbackEntries.forEach((entry, idx) => {
+        const r = fallbackResponses[idx] || {};
+        buildsByBuilder[entry.builder] =
+          (r.searchBuilds && r.searchBuilds.builds) || [];
+        fullFetchedBuilders.add(entry.builder);
+      });
     }
 
     // Deep streak lookup if any main builder has 60+ builds with zero SUCCESS in its initial page.
     const deepEntries = (luciCfg.main_console || []).filter((entry) => {
       const list = buildsByBuilder[entry.builder] || [];
-      return list.length >= 60 && !list.some((b) => b.status === "SUCCESS");
+      if (
+        list.length < BB_INITIAL_PAGE_SIZE ||
+        list.some((b) => b.status === "SUCCESS")
+      ) {
+        return false;
+      }
+      const prevList = prevBuildsByBuilder[entry.builder];
+      const prevAlsoAllFailed =
+        Array.isArray(prevList) &&
+        prevList.length >= BB_INITIAL_PAGE_SIZE &&
+        !prevList.some((b) => b.status === "SUCCESS");
+      return fullFetchedBuilders.has(entry.builder) || !prevAlsoAllFailed;
     });
     if (deepEntries.length > 0) {
-      const deepResp = await prpcCall("buildbucket.v2.Builds", "Batch", {
-        requests: deepEntries.map((entry) => ({
-          searchBuilds: {
-            predicate: {
-              builder: {
-                project: entry.project || "r8",
-                bucket: entry.bucket || "ci",
-                builder: entry.builder,
-              },
-              includeExperimental: false,
-            },
-            pageSize: 200,
-            fields: ciFields,
-          },
-        })),
-      });
-      const deepList = deepResp.responses || [];
+      const deepList = await prpcBatchSearchBuilds(
+        deepEntries.map((entry) => makeCiRequest(entry, 200)),
+      );
       deepEntries.forEach((entry, idx) => {
         const r = deepList[idx] || {};
         if (r.searchBuilds && r.searchBuilds.builds) {
@@ -1237,30 +1526,36 @@
       });
     }
 
-    const presubmitQueues = cqTargets.map((cqEntry, idx) => {
-      const rRun = responses[ciTargets.length + idx * 2] || {};
-      const rSched = responses[ciTargets.length + idx * 2 + 1] || {};
-      return {
-        ...cqEntry,
-        runningBuilds: (rRun.searchBuilds && rRun.searchBuilds.builds) || [],
-        scheduledBuilds:
-          (rSched.searchBuilds && rSched.searchBuilds.builds) || [],
-      };
-    });
+    const presubmitQueues = parsePresubmitQueues(tryResponses);
 
     return { luciCfg, buildsByBuilder, presubmitQueues };
   }
 
-  async function fetchLiveBuildbucketModel() {
+  async function fetchLiveBuildbucketModel(kokoroPromise, onPartialBb) {
     const t0 = performance.now();
+    const onMainReady = (partialBb) => {
+      if (typeof onPartialBb === "function") {
+        onPartialBb(partialBb);
+      }
+      renderDashboard(
+        buildModelFromBuildbucket(
+          partialBb.luciCfg,
+          partialBb.buildsByBuilder,
+          Date.now() / 1000,
+          partialBb.presubmitQueues,
+          state.lastKokoroRecords,
+        ),
+      );
+    };
     const [bbRes, kokoroRes] = await Promise.allSettled([
-      fetchBuildbucketPayload(),
-      fetchKokoroStatus(),
+      fetchBuildbucketPayload(onMainReady),
+      kokoroPromise || fetchKokoroStatus(),
     ]);
 
     const errors = [];
     if (bbRes.status === "fulfilled") {
       state.lastBbPayload = bbRes.value;
+      saveBuildbucketCache(state.lastBbPayload);
     } else {
       errors.push(
         bbRes.reason && bbRes.reason.message
@@ -1780,8 +2075,47 @@
     updateFreshnessUi();
 
     try {
+      let partialBb = null;
+      const kokoroPromise = fetchKokoroStatus();
+      kokoroPromise.then(
+        (records) => {
+          state.lastKokoroRecords = records;
+          if (state.isFetching && state.luciConfig) {
+            const bb = partialBb || state.lastBbPayload || {};
+            renderDashboard(
+              buildModelFromBuildbucket(
+                state.luciConfig,
+                bb.buildsByBuilder || {},
+                Date.now() / 1000,
+                bb.presubmitQueues || [],
+                records,
+              ),
+            );
+          }
+        },
+        () => {},
+      );
       await loadCommitsAndVersion();
-      const { model, partialError } = await fetchLiveBuildbucketModel();
+      if (state.lastBbPayload && state.luciConfig) {
+        state.lastBbPayload.luciCfg = state.luciConfig;
+      }
+      if (state.luciConfig) {
+        renderDashboard(
+          buildModelFromBuildbucket(
+            state.luciConfig,
+            (state.lastBbPayload && state.lastBbPayload.buildsByBuilder) || {},
+            Date.now() / 1000,
+            (state.lastBbPayload && state.lastBbPayload.presubmitQueues) || [],
+            state.lastKokoroRecords,
+          ),
+        );
+      }
+      const { model, partialError } = await fetchLiveBuildbucketModel(
+        kokoroPromise,
+        (p) => {
+          partialBb = p;
+        },
+      );
       if (!partialError) {
         state.lastSuccessPollMs = Date.now();
         state.lastErrorMsg = null;
@@ -1866,11 +2200,23 @@
 
   async function init() {
     bindEvents();
-    await loadCommitsAndVersion();
+    loadCommitsCache();
+    loadKokoroCache();
+    loadBuildbucketCache();
+    if (state.luciConfig) {
+      renderDashboard(
+        buildModelFromBuildbucket(
+          state.luciConfig,
+          (state.lastBbPayload && state.lastBbPayload.buildsByBuilder) || {},
+          Date.now() / 1000,
+          (state.lastBbPayload && state.lastBbPayload.presubmitQueues) || [],
+          state.lastKokoroRecords,
+        ),
+      );
+    }
     await refreshData();
 
     setInterval(refreshData, POLL_INTERVAL_MS);
-    setInterval(loadCommitsAndVersion, VERSION_CHECK_MS);
     setInterval(updateFreshnessUi, 1000);
     setTimeout(() => window.location.reload(), SAFETY_RELOAD_MS);
   }
