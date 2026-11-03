@@ -323,4 +323,30 @@ public class KotlinSourceDebugExtensionParserTest extends TestBase {
     assertEquals(12, value.getRange().from);
     assertEquals(13, value.getRange().to);
   }
+
+  @Test
+  public void testZeroRepeatCount() {
+    // Emitted by the Koin compiler plugin for generated module classes.
+    String annotationData =
+        StringUtils.join(
+            "\n",
+            "SMAP",
+            "netNewpipeAppDiSettingsSettingsModuleModule.kt",
+            "Kotlin",
+            "*S Kotlin",
+            "*F",
+            "+ 1 netNewpipeAppDiSettingsSettingsModuleModule.kt",
+            "net/newpipe/app/di/settings/NetNewpipeAppDiSettingsSettingsModuleModuleKt",
+            "*L",
+            "1#1,0:1",
+            "1#1:1",
+            "*E");
+    KotlinSourceDebugExtensionParserResult result =
+        KotlinSourceDebugExtensionParser.parse(annotationData);
+    assertNotNull(result);
+    assertEquals(1, result.inlinePositionsCount());
+    Position position = result.lookupInlinedPosition(1);
+    assertEquals(1, position.getRange().from);
+    assertEquals(1, position.getRange().to);
+  }
 }
