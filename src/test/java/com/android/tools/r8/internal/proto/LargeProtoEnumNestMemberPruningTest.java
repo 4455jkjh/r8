@@ -3,13 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.internal.proto;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -37,19 +34,16 @@ public class LargeProtoEnumNestMemberPruningTest extends LargeProtoEnumTestBase 
 
   @Test
   public void test() throws Exception {
-    assertThrows(
-        CompilationFailedException.class,
-        () ->
-            testForR8(parameters)
-                .addProgramClassFileData(getProgramClassFileData())
-                .addKeepMainRule(Main.class)
-                .addKeepClassAndMembersRules(MyEnum.class)
-                .addKeepRules("-keep class com.google.protobuf.** { *; }")
-                .enableProtoShrinking()
-                .allowDiagnosticWarningMessages()
-                .compileWithExpectedDiagnostics(
-                    diagnostics ->
-                        diagnostics.assertErrorsMatch(diagnosticException(AssertionError.class))));
+    testForR8(parameters)
+        .addProgramClassFileData(getProgramClassFileData())
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(MyEnum.class)
+        .addKeepRules("-keep class com.google.protobuf.** { *; }")
+        .enableProtoShrinking()
+        .allowDiagnosticWarningMessages()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("FOO", "3")
+        .inspect(this::inspect);
   }
 
   void inspect(CodeInspector inspector) {
@@ -214,7 +208,15 @@ public class LargeProtoEnumNestMemberPruningTest extends LargeProtoEnumTestBase 
       return index;
     }
 
+    public int value() {
+      return value;
+    }
+
     public String name() {
+      return name;
+    }
+
+    public String getName() {
       return name;
     }
 
@@ -226,8 +228,8 @@ public class LargeProtoEnumNestMemberPruningTest extends LargeProtoEnumTestBase 
 
   public static class Main {
     public static void main(String[] args) {
-      System.out.println(MyEnum.forNumber(1));
-      System.out.println(MyEnum.valueOf("BAZ").getNumber());
+      System.out.println(MyEnum.forNumber(1).name());
+      System.out.println(MyEnum.BAZ_VALUE);
     }
   }
 }

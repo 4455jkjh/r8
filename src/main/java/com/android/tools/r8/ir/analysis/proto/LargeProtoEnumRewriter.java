@@ -188,6 +188,10 @@ public class LargeProtoEnumRewriter {
         clazz -> {
           rewriteProgramClassInstructions(clazz, fieldMapping, methodMapping);
           updateInnerClassAttributes(clazz, largeEnums, helperInterfacesToRemove);
+          // Helper interfaces may be nest members of an enclosing outer proto class rather than
+          // the enum class itself.
+          clazz.removeNestMemberAttributes(
+              member -> helperInterfacesToRemove.contains(member.getNestMember()));
         },
         appView.options().getThreadingModule(),
         executorService);
@@ -311,9 +315,6 @@ public class LargeProtoEnumRewriter {
     for (DexProgramClass iface : helperInterfaces) {
       helperInterfacesToRemove.add(iface.getType());
     }
-    List<DexType> helperInterfaceTypes = ListUtils.map(helperInterfaces, DexClass::getType);
-    clazz.removeNestMemberAttributes(
-        member -> helperInterfaceTypes.contains(member.getNestMember()));
 
     Map<DexString, Integer> wireValueMap = new LinkedHashMap<>();
     List<WireValueInfo> wireValues = new ArrayList<>();
