@@ -52,9 +52,6 @@ public abstract class TreePruner {
 
   protected final AppView<AppInfoWithLiveness> appView;
   private final UnusedItemsPrinter unusedItemsPrinter;
-  private final Set<DexField> prunedFields = Sets.newIdentityHashSet();
-  private final Set<DexMethod> prunedMethods = Sets.newIdentityHashSet();
-  private final Set<DexType> prunedTypes = Sets.newIdentityHashSet();
 
   protected TreePruner(
       AppView<AppInfoWithLiveness> appView, UnusedItemsPrinter unusedItemsPrinter) {
@@ -83,29 +80,28 @@ public abstract class TreePruner {
       throws ExecutionException {
     timing.begin("Pruning application");
     DirectMappedDexApplication application = appView.appInfo().app().asDirect();
-    DirectMappedDexApplication.Builder builder = removeUnused(application);
     DirectMappedDexApplication newApplication =
-        prunedTypes.isEmpty() ? application : builder.build(timing);
-    fixupOptimizationInfo(newApplication, executorService);
-    PrunedItems prunedItems =
-        prunedItemsBuilder
-            .setPrunedApp(newApplication)
-            .addRemovedClasses(prunedTypes)
-            .addRemovedFields(prunedFields)
-            .addRemovedMethods(prunedMethods)
-            .build();
+        removeUnused(application, prunedItemsBuilder, timing);
+    PrunedItems prunedItems = prunedItemsBuilder.setPrunedApp(newApplication).build();
+    fixupOptimizationInfo(newApplication, executorService, prunedItems.getRemovedClasses());
     appView.pruneItems(prunedItems, executorService, timing);
     appView.notifyOptimizationFinished();
     timing.end();
   }
 
-  private DirectMappedDexApplication.Builder removeUnused(DirectMappedDexApplication application) {
-    return application
-        .builder()
-        .replaceProgramClasses(getNewProgramClasses(application.classesWithDeterministicOrder()));
+  private DirectMappedDexApplication removeUnused(
+      DirectMappedDexApplication application,
+      PrunedItems.Builder prunedItemsBuilder,
+      Timing timing) {
+    Collection<DexProgramClass> classes = application.classesWithDeterministicOrder();
+    List<DexProgramClass> newClasses = getNewProgramClasses(classes, prunedItemsBuilder);
+    return newClasses.size() < classes.size()
+        ? application.builder().replaceProgramClasses(newClasses).build(timing)
+        : application;
   }
 
-  private List<DexProgramClass> getNewProgramClasses(Collection<DexProgramClass> classes) {
+  private List<DexProgramClass> getNewProgramClasses(
+      Collection<DexProgramClass> classes, PrunedItems.Builder prunedItemsBuilder) {
     InternalOptions options = appView.options();
     List<DexProgramClass> newClasses = new ArrayList<>();
     for (DexProgramClass clazz : classes) {
@@ -115,18 +111,18 @@ public abstract class TreePruner {
         unusedItemsPrinter.visiting(clazz);
         if (options.isShrinking()) {
           fixupAccessFlags(clazz);
-          pruneFields(clazz);
-          pruneMethods(clazz);
+          pruneFields(clazz, prunedItemsBuilder);
+          pruneMethods(clazz, prunedItemsBuilder);
           pruneAttributes(clazz);
           pruneUnusedInterfaces(clazz);
         } else {
           // Only attempt to remove synthetic methods inserted by desugaring.
-          pruneMethods(clazz);
+          pruneMethods(clazz, prunedItemsBuilder);
         }
         unusedItemsPrinter.visited();
       } else {
         // The class is completely unused and we can remove it.
-        prunedTypes.add(clazz.type);
+        prunedItemsBuilder.addRemovedClass(clazz.type);
         if (clazz.hasSourceFile()) {
           appView.addPrunedClassSourceFile(clazz.type, clazz.getSourceFile().toString());
         }
@@ -227,12 +223,14 @@ public abstract class TreePruner {
     clazz.removePermittedSubclassAttribute(this::isAttributeReferencingPrunedType);
   }
 
-  private void pruneFields(DexProgramClass clazz) {
-    DexEncodedField[] reachableInstanceFields = reachableFields(clazz.instanceFields());
+  private void pruneFields(DexProgramClass clazz, PrunedItems.Builder prunedItemsBuilder) {
+    DexEncodedField[] reachableInstanceFields =
+        reachableFields(clazz.instanceFields(), prunedItemsBuilder);
     if (reachableInstanceFields != null) {
       clazz.setInstanceFields(reachableInstanceFields);
     }
-    DexEncodedField[] reachableStaticFields = reachableFields(clazz.staticFields());
+    DexEncodedField[] reachableStaticFields =
+        reachableFields(clazz.staticFields(), prunedItemsBuilder);
     if (reachableStaticFields != null) {
       clazz.setStaticFields(reachableStaticFields);
     }
@@ -246,12 +244,14 @@ public abstract class TreePruner {
     assert verifyNoDeadFields(clazz);
   }
 
-  private void pruneMethods(DexProgramClass clazz) {
-    DexEncodedMethod[] reachableDirectMethods = reachableMethods(clazz.directMethods(), clazz);
+  private void pruneMethods(DexProgramClass clazz, PrunedItems.Builder prunedItemsBuilder) {
+    DexEncodedMethod[] reachableDirectMethods =
+        reachableMethods(clazz.directMethods(), clazz, prunedItemsBuilder);
     if (reachableDirectMethods != null) {
       clazz.setDirectMethods(reachableDirectMethods);
     }
-    DexEncodedMethod[] reachableVirtualMethods = reachableMethods(clazz.virtualMethods(), clazz);
+    DexEncodedMethod[] reachableVirtualMethods =
+        reachableMethods(clazz.virtualMethods(), clazz, prunedItemsBuilder);
     if (reachableVirtualMethods != null) {
       clazz.setVirtualMethods(reachableVirtualMethods);
     }
@@ -359,12 +359,17 @@ public abstract class TreePruner {
   }
 
   private DexEncodedMethod[] reachableMethods(
-      Iterable<DexEncodedMethod> methods, DexProgramClass clazz) {
-    return reachableMethods(IterableUtils.ensureUnmodifiableList(methods), clazz);
+      Iterable<DexEncodedMethod> methods,
+      DexProgramClass clazz,
+      PrunedItems.Builder prunedItemsBuilder) {
+    return reachableMethods(
+        IterableUtils.ensureUnmodifiableList(methods), clazz, prunedItemsBuilder);
   }
 
   private DexEncodedMethod[] reachableMethods(
-      List<DexEncodedMethod> methods, DexProgramClass clazz) {
+      List<DexEncodedMethod> methods,
+      DexProgramClass clazz,
+      PrunedItems.Builder prunedItemsBuilder) {
     int firstUnreachable =
         firstUnreachableIndex(methods, method -> isLiveMethod(method.getReference()));
     // Return the original array if all methods are used.
@@ -394,7 +399,7 @@ public abstract class TreePruner {
         reachableMethods.add(method);
       } else {
         unusedItemsPrinter.registerUnusedMethod(method);
-        prunedMethods.add(method.getReference());
+        prunedItemsBuilder.addRemovedMethod(method.getReference());
       }
     }
     return reachableMethods.isEmpty()
@@ -408,7 +413,8 @@ public abstract class TreePruner {
     }
   }
 
-  private DexEncodedField[] reachableFields(List<DexEncodedField> fields) {
+  private DexEncodedField[] reachableFields(
+      List<DexEncodedField> fields, PrunedItems.Builder prunedItemsBuilder) {
     int firstUnreachable = firstUnreachableIndex(fields, this::isReachableOrReferencedField);
     // Return the original array if all fields are used.
     if (firstUnreachable == -1) {
@@ -416,7 +422,7 @@ public abstract class TreePruner {
     }
     DexEncodedField firstUnreachableField = fields.get(firstUnreachable);
     unusedItemsPrinter.registerUnusedField(firstUnreachableField);
-    prunedFields.add(firstUnreachableField.getReference());
+    prunedItemsBuilder.addRemovedField(firstUnreachableField.getReference());
     ArrayList<DexEncodedField> reachableOrReferencedFields = new ArrayList<>(fields.size());
     for (int i = 0; i < firstUnreachable; i++) {
       reachableOrReferencedFields.add(fields.get(i));
@@ -427,7 +433,7 @@ public abstract class TreePruner {
         reachableOrReferencedFields.add(field);
       } else {
         unusedItemsPrinter.registerUnusedField(field);
-        prunedFields.add(field.getReference());
+        prunedItemsBuilder.addRemovedField(field.getReference());
       }
     }
     return reachableOrReferencedFields.isEmpty()
@@ -436,7 +442,9 @@ public abstract class TreePruner {
   }
 
   private void fixupOptimizationInfo(
-      DirectMappedDexApplication application, ExecutorService executorService)
+      DirectMappedDexApplication application,
+      ExecutorService executorService,
+      Set<DexType> prunedTypes)
       throws ExecutionException {
     // Clear the type elements cache due to redundant interface removal.
     appView.getTypeElementFactory().clearTypeElementsCache();

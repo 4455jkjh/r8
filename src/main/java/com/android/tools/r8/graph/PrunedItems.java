@@ -104,7 +104,7 @@ public class PrunedItems {
 
     private Map<DexMethod, ProgramMethod> fullyInlinedMethods;
     private Set<DexType> removedClasses;
-    private final Set<DexField> removedFields;
+    private Set<DexField> removedFields;
     private Set<DexMethod> removedMethods;
 
     Builder() {
@@ -117,13 +117,17 @@ public class PrunedItems {
     Builder(PrunedItems prunedItems) {
       this();
       prunedApp = prunedItems.getPrunedApp();
-      removedClasses.addAll(prunedItems.getRemovedClasses());
-      removedFields.addAll(prunedItems.getRemovedFields());
-      removedMethods.addAll(prunedItems.getRemovedMethods());
+      addRemovedClasses(prunedItems.getRemovedClasses());
+      addRemovedFields(prunedItems.getRemovedFields());
+      addRemovedMethods(prunedItems.getRemovedMethods());
     }
 
     <T> Set<T> newEmptySet() {
       return Sets.newIdentityHashSet();
+    }
+
+    <T> Set<T> newEmptySet(int capacity) {
+      return SetUtils.newIdentityHashSet(capacity);
     }
 
     <S, T> Map<S, T> newEmptyMap() {
@@ -156,6 +160,9 @@ public class PrunedItems {
     }
 
     public Builder addRemovedClasses(Set<DexType> removedClasses) {
+      if (this.removedClasses.isEmpty() && !removedClasses.isEmpty()) {
+        this.removedClasses = newEmptySet(removedClasses.size());
+      }
       this.removedClasses.addAll(removedClasses);
       return this;
     }
@@ -166,6 +173,9 @@ public class PrunedItems {
     }
 
     public Builder addRemovedFields(Collection<DexField> removedFields) {
+      if (this.removedFields.isEmpty() && !removedFields.isEmpty()) {
+        this.removedFields = newEmptySet(removedFields.size());
+      }
       this.removedFields.addAll(removedFields);
       return this;
     }
@@ -180,6 +190,9 @@ public class PrunedItems {
     }
 
     public Builder addRemovedMethods(Collection<DexMethod> removedMethods) {
+      if (this.removedMethods.isEmpty() && !removedMethods.isEmpty()) {
+        this.removedMethods = newEmptySet(removedMethods.size());
+      }
       this.removedMethods.addAll(removedMethods);
       return this;
     }
@@ -208,6 +221,11 @@ public class PrunedItems {
     @Override
     <T> Set<T> newEmptySet() {
       return SetUtils.newConcurrentHashSet();
+    }
+
+    @Override
+    <T> Set<T> newEmptySet(int capacity) {
+      return SetUtils.newConcurrentHashSet(capacity);
     }
 
     @Override
