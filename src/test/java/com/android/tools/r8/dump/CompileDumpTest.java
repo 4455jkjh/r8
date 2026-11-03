@@ -13,6 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -126,8 +127,7 @@ public class CompileDumpTest extends TestBase {
     verifyCrossVersionCompileDump(
         dumpFile, tool, System.getProperty("java.class.path"), true, apiLevel);
 
-    Path r8JarWithoutMinorSupport =
-        Paths.get(ToolHelper.THIRD_PARTY_DIR, "r8", "r8lib_8.2.20-dev.jar").toAbsolutePath();
+    Path r8JarWithoutMinorSupport = TestDeps.getR8Path("r8lib_8.2.20-dev.jar").toAbsolutePath();
     // R8 8.2.20-dev predates minor API levels and clamps API levels > 34 to AndroidApiLevel.U (34).
     verifyCrossVersionCompileDump(
         dumpFile, tool, r8JarWithoutMinorSupport.toString(), false, AndroidApiLevel.U);

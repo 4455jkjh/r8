@@ -10,9 +10,9 @@ import static org.junit.Assert.fail;
 
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingException;
 import com.android.tools.r8.apimodel.ParsedApiClassVerifier.SemiInfiniteRangeSetOperations;
 import com.android.tools.r8.references.Reference;
@@ -47,7 +47,7 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
     if (apiVersionsXml == null) {
       apiVersionsXml =
           AndroidApiVersionsXmlParser.parse(
-              ToolHelper.getApiVersionsXmlFile(AndroidApiLevel.API_DATABASE_LEVEL));
+              TestDeps.getApiVersionsXmlPath(AndroidApiLevel.API_DATABASE_LEVEL));
     }
     return apiVersionsXml;
   }

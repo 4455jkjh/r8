@@ -281,6 +281,7 @@ def run(options, r8jar, testjars):
         # Remember to update ensure_internal_dependencies() above when adding
         # or updating internal benchmark dependencies below.
         f'-DTEST_DEP_AGSA={utils.THIRD_PARTY}/closedsource-apps/agsa/20250412-v16.14.47',
+        f'-DTEST_DEP_ANDROID_JAR_30={utils.THIRD_PARTY}/android_jar/lib-v30',
         f'-DTEST_DEP_BOOKSTORY={utils.OPENSOURCE_DUMPS_DIR}/android/bookstory',
         f'-DTEST_DEP_CHROME_BENCHMARK={utils.OPENSOURCE_DUMPS_DIR}/chrome',
         f'-DTEST_DEP_COMPOSE_SAMPLES_CRANE={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/crane',

@@ -8,7 +8,6 @@ import static com.android.tools.r8.TestBase.descriptor;
 import static com.android.tools.r8.TestBase.transformer;
 
 import com.android.tools.r8.TestDeps;
-import com.android.tools.r8.ToolHelper;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -21,11 +20,6 @@ import java.util.Arrays;
 
 public class Jdk11SupportFiles {
 
-  // TODO(b/289346278): See if we can remove the xxx subfolder.
-  private static final Path ANDROID_PATHS_FILES_DIR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR + "android_jar/lib-v26/xxx/");
-  private static final Path ANDROID_SAFE_VAR_ARGS_LOCATION =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR + "android_jar/lib-v26/java/lang/SafeVarargs.class");
   private static final Path[] ANDROID_PATHS_FILES =
       new Path[] {
         Paths.get("java/nio/file/Files.class"),
@@ -36,13 +30,13 @@ public class Jdk11SupportFiles {
       };
 
   public static Path[] getPathsFiles() {
-    return Arrays.stream(ANDROID_PATHS_FILES)
-        .map(ANDROID_PATHS_FILES_DIR::resolve)
-        .toArray(Path[]::new);
+    // TODO(b/289346278): See if we can remove the xxx subfolder.
+    Path dir = TestDeps.getAndroidJar26Dir().resolve("xxx");
+    return Arrays.stream(ANDROID_PATHS_FILES).map(dir::resolve).toArray(Path[]::new);
   }
 
   public static Path getSafeVarArgsFile() {
-    return ANDROID_SAFE_VAR_ARGS_LOCATION;
+    return TestDeps.getAndroidJar26Dir().resolve("java/lang/SafeVarargs.class");
   }
 
   public static Path[] testNGSupportProgramFiles() {

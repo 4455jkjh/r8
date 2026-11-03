@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -73,8 +74,10 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
       "dalvik.annotation.codegen.CovariantReturnType$CovariantReturnTypes";
 
   // When updating to support a new api level build libcore in aosp and update the cloud dependency.
-  private static final Path PATH_TO_CORE_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "android_jar", "libcore_latest", "core-oj.jar");
+  private static Path getPathToCoreJar() {
+    return TestDeps.getAndroidJarLibcoreLatestPath("core-oj.jar");
+  }
+
   private static final Path DESTINATION_FILE =
       Paths.get(ToolHelper.MAIN_SOURCE_DIR)
           .resolve(PACKAGE_NAME.replace('.', '/'))
@@ -207,7 +210,7 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
     public static CovariantMethodsInJarResult create() throws IOException {
       Map<ClassReference, Map<MethodReference, Pair<AndroidApiLevel, Boolean>>> methodReferenceMap =
           new HashMap<>();
-      CodeInspector inspector = new CodeInspector(PATH_TO_CORE_JAR);
+      CodeInspector inspector = new CodeInspector(getPathToCoreJar());
       // Some covariant-annotated methods have generated bridge methods which share the annotation.
       // This causes duplicate methods once the covariant signature has been added.
       for (FoundClassSubject clazz : inspector.allClasses()) {

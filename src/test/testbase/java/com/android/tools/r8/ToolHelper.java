@@ -211,10 +211,6 @@ public class ToolHelper {
   public static final String DEFAULT_PROGUARD_MAP_FILE = "proguard.map";
 
   public static final String K2JVMCompiler = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler";
-  private static final String ANDROID_JAR_PATTERN =
-      THIRD_PARTY_DIR + "android_jar/lib-v%s/android.jar";
-  private static final String ANDROID_API_VERSIONS_XML_PATTERN =
-      THIRD_PARTY_DIR + "android_jar/lib-v%s/api-versions.xml";
   private static final AndroidApiLevel DEFAULT_MIN_SDK = AndroidApiLevel.I;
 
   // TODO(b/270105162): These should be removed when finished transitioning.
@@ -1227,55 +1223,21 @@ public class ToolHelper {
     return getAndroidJar(AndroidApiLevel.getAndroidApiLevel(apiLevel));
   }
 
-  private static String formatApiLevel(AndroidApiLevel apiLevel) {
-    return apiLevel.getNumericString();
-  }
-
-  public static Path getApiVersionsXmlFile(AndroidApiLevel apiLevel) {
-    // We only store api-versions.xml from S and up.
-    assert apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.S);
-    return Paths.get(String.format(ANDROID_API_VERSIONS_XML_PATTERN, formatApiLevel(apiLevel)));
-  }
-
   private static Path getAndroidJarPath(AndroidApiLevel apiLevel) {
-    if (apiLevel == AndroidApiLevel.MAIN) {
-      return Paths.get(THIRD_PARTY_DIR + "android_jar/lib-main/android.jar");
-    }
-    String jar =
-        String.format(
-            ANDROID_JAR_PATTERN,
-            formatApiLevel(apiLevel == AndroidApiLevel.getDefault() ? DEFAULT_MIN_SDK : apiLevel));
-    return Paths.get(jar);
+    AndroidApiLevel effectiveApiLevel =
+        apiLevel == AndroidApiLevel.getDefault() ? DEFAULT_MIN_SDK : apiLevel;
+    return TestDeps.getAndroidJarPath(effectiveApiLevel);
   }
 
+  /**
+   * Returns {@code true} if this API level is known to have an {@code android.jar}. Note that
+   * returning {@code false} is certain, while returning {@code true} means that its presence is
+   * dependent on the build configuration.
+   */
   public static boolean hasAndroidJar(AndroidApiLevel apiLevel) {
-    Path path = getAndroidJarPath(apiLevel);
-    return Files.exists(path);
-  }
-
-  static final Set<AndroidApiLevel> apiLevelWithoutAndroidJar =
-      ImmutableSet.<AndroidApiLevel>builder()
-          .add(AndroidApiLevel.B_1_1)
-          .add(AndroidApiLevel.C)
-          .add(AndroidApiLevel.D)
-          .add(AndroidApiLevel.E)
-          .add(AndroidApiLevel.E_0_1)
-          .add(AndroidApiLevel.E_MR1)
-          .add(AndroidApiLevel.F)
-          .add(AndroidApiLevel.G)
-          .add(AndroidApiLevel.G_MR1)
-          .add(AndroidApiLevel.H)
-          .add(AndroidApiLevel.H_MR1)
-          .add(AndroidApiLevel.H_MR2)
-          .add(AndroidApiLevel.J)
-          .add(AndroidApiLevel.J_MR1)
-          .add(AndroidApiLevel.J_MR2)
-          .add(AndroidApiLevel.K_WATCH)
-          .add(AndroidApiLevel.EXTENSION)
-          .build();
-
-  public static boolean shouldHaveAndroidJar(AndroidApiLevel apiLevel) {
-    return !apiLevelWithoutAndroidJar.contains(apiLevel);
+    AndroidApiLevel effectiveApiLevel =
+        apiLevel == AndroidApiLevel.getDefault() ? DEFAULT_MIN_SDK : apiLevel;
+    return TestDeps.canHaveAndroidJar(effectiveApiLevel);
   }
 
   public static Path getAndroidJar(AndroidApiLevel apiLevel) {
