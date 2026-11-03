@@ -3,10 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.assumevalues;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
-import static org.junit.Assert.assertThrows;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
@@ -32,24 +28,20 @@ public class AssumeValuesReturnNonNullWithSubtypingTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    assertThrows(
-        CompilationFailedException.class,
-        () ->
-            testForR8(parameters)
-                .addInnerClasses(getClass())
-                .addKeepMainRule(Main.class)
-                .addKeepRules(
-                    "-assumevalues class " + Main.class.getTypeName() + " {",
-                    "  " + A.class.getTypeName() + " field return _NONNULL_;",
-                    "  " + A.class.getTypeName() + " get() return _NONNULL_;",
-                    "  java.lang.Object getObject() return _NONNULL_;",
-                    "}")
-                .enableInliningAnnotations()
-                .enableNeverClassInliningAnnotations()
-                .enableNoVerticalClassMergingAnnotations()
-                .compileWithExpectedDiagnostics(
-                    diagnostics ->
-                        diagnostics.assertErrorsMatch(diagnosticException(AssertionError.class))));
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Main.class)
+        .addKeepRules(
+            "-assumevalues class " + Main.class.getTypeName() + " {",
+            "  " + A.class.getTypeName() + " field return _NONNULL_;",
+            "  " + A.class.getTypeName() + " get() return _NONNULL_;",
+            "  java.lang.Object getObject() return _NONNULL_;",
+            "}")
+        .enableInliningAnnotations()
+        .enableNeverClassInliningAnnotations()
+        .enableNoVerticalClassMergingAnnotations()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("B", "B", "C");
   }
 
   @NoVerticalClassMerging
