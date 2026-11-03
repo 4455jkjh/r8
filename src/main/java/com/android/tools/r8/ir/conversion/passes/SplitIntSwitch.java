@@ -43,17 +43,21 @@ public class SplitIntSwitch extends CodeRewriterPass<AppInfo> {
    */
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code) {
+    AffectedValues affectedValues = new AffectedValues();
     boolean changed = false;
     boolean lastChanged = true;
     while (lastChanged) {
       lastChanged = rewriteFirstIntSwitch(code);
       if (lastChanged) {
-        AffectedValues values = code.removeUnreachableBlocks();
-        assert values.isEmpty();
+        // Removing unreachable switch arms can leave dead/trivial phis in reachable blocks and
+        // narrow phi types in downstream merge blocks.
+        code.removeUnreachableBlocks(affectedValues);
+        code.removeAllDeadAndTrivialPhis(affectedValues);
       }
       changed |= lastChanged;
     }
     if (changed) {
+      affectedValues.narrowingWithAssumeRemoval(appView, code);
       code.removeRedundantBlocks();
     }
     return CodeRewriterResult.hasChanged(changed);
