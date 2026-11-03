@@ -51,6 +51,10 @@ public class LongLivedProgramMethodMapBuilder<V>
     return backing.isEmpty();
   }
 
+  public void remove(DexMethod method) {
+    backing.remove(method);
+  }
+
   public void put(ProgramMethod key, V value, GraphLens currentGraphLens) {
     // All methods in a long lived program method set should be rewritten up until the same graph
     // lens.

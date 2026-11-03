@@ -1829,5 +1829,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
   @Override
   public void onMethodCodePruned(ProgramMethod method) {
     enumUnboxingCandidatesInfo.addPrunedMethod(method);
+    // Pruned methods no longer exist, so build() would fail to look up their definitions.
+    checkNotNullMethodsBuilder.remove(method.getReference());
   }
 }
