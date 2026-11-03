@@ -3,18 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.jdk17.records;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
-import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -47,26 +43,15 @@ public class RecordComponentRepackagingSignatureTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    R8TestBuilder<?, ?, ?> testBuilder =
-        testForR8(parameters)
-            .addInnerClassesAndStrippedOuter(getClass())
-            .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
-            .addKeepMainRule(Main.class)
-            .addKeepClassAndMembersRules(Person.class)
-            .addKeepAttributeSignature()
-            .enableInliningAnnotations()
-            .enableNeverClassInliningAnnotations()
-            .enableNoHorizontalClassMergingAnnotations();
-    if (parameters.isDexRuntime()) {
-      assertThrows(
-          CompilationFailedException.class,
-          () ->
-              testBuilder.compileWithExpectedDiagnostics(
-                  diagnostics ->
-                      diagnostics.assertErrorsMatch(diagnosticException(AssertionError.class))));
-      return;
-    }
-    testBuilder
+    testForR8(parameters)
+        .addInnerClassesAndStrippedOuter(getClass())
+        .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(Person.class)
+        .addKeepAttributeSignature()
+        .enableInliningAnnotations()
+        .enableNeverClassInliningAnnotations()
+        .enableNoHorizontalClassMergingAnnotations()
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Jane Doe", "Inner")
         .inspect(this::inspect);
@@ -83,10 +68,14 @@ public class RecordComponentRepackagingSignatureTest extends TestBase {
       List<RecordComponentInfo> recordComponents =
           personClass.getDexProgramClass().getRecordComponents();
       assertEquals(2, recordComponents.size());
+      // Box is not kept, so its type parameters are removed and the type arguments must be too.
       assertEquals(
-          "L" + boxClass.getFinalBinaryName() + "<Ljava/lang/String;>;",
+          "L" + boxClass.getFinalBinaryName() + ";",
           recordComponents.get(0).getSignature().toString());
-      assertTrue(recordComponents.get(1).getSignature().hasNoSignature());
+      // The InnerClasses attribute is not kept, so the enclosing Outer<String> must be removed.
+      assertEquals(
+          "L" + innerClass.getFinalBinaryName() + ";",
+          recordComponents.get(1).getSignature().toString());
     } else {
       assertTrue(personClass.getDexProgramClass().getRecordComponents().isEmpty());
     }
