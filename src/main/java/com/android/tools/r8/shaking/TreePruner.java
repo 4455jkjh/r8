@@ -55,7 +55,6 @@ public abstract class TreePruner {
   private final Set<DexField> prunedFields = Sets.newIdentityHashSet();
   private final Set<DexMethod> prunedMethods = Sets.newIdentityHashSet();
   private final Set<DexType> prunedTypes = Sets.newIdentityHashSet();
-  private final Set<DexMethod> methodsToKeepForConfigurationDebugging = Sets.newIdentityHashSet();
 
   protected TreePruner(
       AppView<AppInfoWithLiveness> appView, UnusedItemsPrinter unusedItemsPrinter) {
@@ -94,7 +93,6 @@ public abstract class TreePruner {
             .addRemovedClasses(prunedTypes)
             .addRemovedFields(prunedFields)
             .addRemovedMethods(prunedMethods)
-            .addAdditionalPinnedItems(methodsToKeepForConfigurationDebugging)
             .build();
     appView.pruneItems(prunedItems, executorService, timing);
     appView.notifyOptimizationFinished();
