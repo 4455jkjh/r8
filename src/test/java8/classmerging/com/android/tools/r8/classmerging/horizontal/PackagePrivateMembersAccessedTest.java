@@ -41,7 +41,9 @@ public class PackagePrivateMembersAccessedTest extends HorizontalClassMergingTes
               assertThat(
                   codeInspector.clazz(C.class),
                   isAbsentIf(parameters.canInitNewInstanceUsingSuperclassConstructor()));
-              assertThat(codeInspector.clazz(D.class), isPresent());
+              assertThat(
+                  codeInspector.clazz(D.class),
+                  isAbsentIf(parameters.canInitNewInstanceUsingSuperclassConstructor()));
               assertThat(codeInspector.clazz(E.class), isPresent());
             });
   }

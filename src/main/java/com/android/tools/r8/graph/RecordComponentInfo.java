@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.graph;
 
+import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.graph.GenericSignature.FieldTypeSignature;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.utils.structural.StructuralItem;
@@ -59,6 +60,13 @@ public class RecordComponentInfo implements StructuralItem<RecordComponentInfo> 
 
   public List<DexAnnotation> getAnnotations() {
     return annotations;
+  }
+
+  public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+    field.collectIndexedItems(appView, indexedItems);
+    for (DexAnnotation annotation : annotations) {
+      annotation.collectIndexedItems(appView, indexedItems);
+    }
   }
 
   public void write(

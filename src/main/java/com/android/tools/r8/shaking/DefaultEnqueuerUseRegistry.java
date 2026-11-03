@@ -237,7 +237,11 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
           appView.definitionFor(syntheticUnsafeClass.getUnsafeClass()).asProgramClass();
       registerInvokeStatic(syntheticUnsafeClass.getStoreStoreFenceMethod());
       enqueuer.applyMinimumKeepInfoWhenLive(
-          clazz, KeepClassInfo.newEmptyJoiner().disallowOptimization());
+          clazz,
+          KeepClassInfo.newEmptyJoiner()
+              .disallowOptimization()
+              .disallowShrinking()
+              .addReason(KeepReason.invokedFrom(getContext())));
       enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
           clazz.lookupProgramMethod(syntheticUnsafeClass.getClassInitializer()),
           KeepMethodInfo.newEmptyJoiner().disallowOptimization());

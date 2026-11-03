@@ -22,6 +22,7 @@ public class InterfacesVisibilityTestClasses {
   @NoVerticalClassMerging
   @NeverClassInline
   public static class ImplementingPackagePrivateInterface implements PackagePrivateInterface {
+    @NeverInline
     @Override
     public void foo() {
       System.out.println("foo");

@@ -10,6 +10,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.objectweb.asm.ClassWriter;
 
 /** Representation of an entry in the Java InnerClasses attribute table. */
@@ -98,16 +99,21 @@ public class InnerClassAttribute {
   }
 
   public DexType getLiveContext(AppView<? extends AppInfoWithLiveness> appView) {
+    return getLiveContext(appView, appView.appInfo()::isLiveMethod);
+  }
+
+  public DexType getLiveContext(
+      AppView<? extends AppInfoWithLiveness> appView, Predicate<DexMethod> isLiveMethod) {
     DexType context = getOuter();
     if (context == null) {
-      DexClass inner = appView.definitionFor(getInner());
+      DexClass inner = appView.appInfo().definitionForWithoutExistenceAssert(getInner());
       if (inner != null && inner.getEnclosingMethodAttribute() != null) {
         EnclosingMethodAttribute enclosingMethodAttribute = inner.getEnclosingMethodAttribute();
         if (enclosingMethodAttribute.getEnclosingClass() != null) {
           context = enclosingMethodAttribute.getEnclosingClass();
         } else {
           DexMethod enclosingMethod = enclosingMethodAttribute.getEnclosingMethod();
-          if (!appView.appInfo().isLiveMethod(enclosingMethod)) {
+          if (!isLiveMethod.test(enclosingMethod)) {
             // EnclosingMethodAttribute will be pruned as it references the pruned method.
             // Hence, the current InnerClassAttribute will be removed too. No live context.
             return null;

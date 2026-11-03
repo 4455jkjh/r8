@@ -32,7 +32,6 @@ import com.android.tools.r8.ir.optimize.info.MutableMethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback.OptimizationInfoFixer;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
-import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.IterableUtils;
@@ -49,31 +48,35 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class TreePruner {
+public abstract class TreePruner {
 
-  private final AppView<AppInfoWithLiveness> appView;
-  private final TreePrunerConfiguration configuration;
+  protected final AppView<AppInfoWithLiveness> appView;
   private final UnusedItemsPrinter unusedItemsPrinter;
   private final Set<DexField> prunedFields = Sets.newIdentityHashSet();
   private final Set<DexMethod> prunedMethods = Sets.newIdentityHashSet();
   private final Set<DexType> prunedTypes = Sets.newIdentityHashSet();
   private final Set<DexMethod> methodsToKeepForConfigurationDebugging = Sets.newIdentityHashSet();
 
-  public TreePruner(AppView<AppInfoWithLiveness> appView) {
-    this(appView, DefaultTreePrunerConfiguration.getInstance());
+  protected TreePruner(
+      AppView<AppInfoWithLiveness> appView, UnusedItemsPrinter unusedItemsPrinter) {
+    this.appView = appView;
+    this.unusedItemsPrinter = unusedItemsPrinter;
   }
 
-  public TreePruner(AppView<AppInfoWithLiveness> appView, TreePrunerConfiguration configuration) {
-    InternalOptions options = appView.options();
-    this.appView = appView;
-    this.configuration = configuration;
-    this.unusedItemsPrinter =
-        options.hasUsageInformationConsumer()
-            ? new UnusedItemsPrinter(
-                s ->
-                    ExceptionUtils.withConsumeResourceHandler(
-                        options.reporter, options.usageInformationConsumer, s))
-            : UnusedItemsPrinter.DONT_PRINT;
+  public abstract boolean isInstantiatedDirectly(DexProgramClass clazz);
+
+  public abstract boolean isLiveMethod(DexMethod method);
+
+  public abstract boolean isLiveProgramClass(DexProgramClass clazz);
+
+  public abstract boolean isReachableOrReferencedField(DexEncodedField field);
+
+  public abstract boolean isTargetedMethod(DexMethod method);
+
+  public abstract boolean isTypeLive(DexType type);
+
+  public void run(ExecutorService executorService, Timing timing) throws ExecutionException {
+    run(executorService, timing, PrunedItems.builder());
   }
 
   public void run(
@@ -105,12 +108,10 @@ public class TreePruner {
   }
 
   private List<DexProgramClass> getNewProgramClasses(Collection<DexProgramClass> classes) {
-    AppInfoWithLiveness appInfo = appView.appInfo();
     InternalOptions options = appView.options();
     List<DexProgramClass> newClasses = new ArrayList<>();
     for (DexProgramClass clazz : classes) {
-      boolean isLiveClass = appInfo.isLiveProgramClass(clazz);
-      if (isLiveClass) {
+      if (isLiveProgramClass(clazz)) {
         newClasses.add(clazz);
         // The class is used and must be kept. Remove the unused fields and methods from the class.
         unusedItemsPrinter.visiting(clazz);
@@ -128,7 +129,7 @@ public class TreePruner {
       } else {
         // The class is completely unused and we can remove it.
         prunedTypes.add(clazz.type);
-        if (clazz.getSourceFile() != null) {
+        if (clazz.hasSourceFile()) {
           appView.addPrunedClassSourceFile(clazz.type, clazz.getSourceFile().toString());
         }
         if (!appView.getSyntheticItems().isSynthetic(clazz)) {
@@ -141,10 +142,8 @@ public class TreePruner {
   }
 
   private void fixupAccessFlags(DexProgramClass clazz) {
-    AppInfoWithLiveness appInfo = appView.appInfo();
     InternalOptions options = appView.options();
-    if (!appInfo.getObjectAllocationInfoCollection().isInstantiatedDirectly(clazz)
-        && !options.forceProguardCompatibility) {
+    if (!isInstantiatedDirectly(clazz) && !options.forceProguardCompatibility) {
       // The class is only needed as a type but never instantiated. Make it abstract to reflect
       // this.
       if (clazz.isFinal()) {
@@ -225,7 +224,8 @@ public class TreePruner {
     clazz.forEachMember(m -> m.removeAllAnnotations(this::isAnnotationReferencingPrunedType));
     clazz.removeInnerClasses(this::isAttributeReferencingMissingOrPrunedType);
     clazz.removeEnclosingMethodAttribute(this::isAttributeReferencingPrunedItem);
-    rewriteNestAttributes(clazz, this::isTypeLive, appView::definitionFor);
+    rewriteNestAttributes(
+        clazz, this::isTypeLive, appView.appInfo()::definitionForWithoutExistenceAssert);
     clazz.removePermittedSubclassAttribute(this::isAttributeReferencingPrunedType);
   }
 
@@ -296,10 +296,6 @@ public class TreePruner {
     return appView.appInfo().getMissingClasses().contains(type);
   }
 
-  private boolean isTypeLive(DexType type) {
-    return appView.appInfo().isNonProgramTypeOrLiveProgramType(type);
-  }
-
   private static void clearDeadNestMembers(
       DexClass nestHost, Predicate<DexType> isLive, Function<DexType, DexClass> definition) {
     // null definition should raise a warning which is raised later on in Nest specific passes.
@@ -338,16 +334,15 @@ public class TreePruner {
   }
 
   private boolean isAttributeReferencingPrunedItem(EnclosingMethodAttribute attr) {
-    AppInfoWithLiveness appInfo = appView.appInfo();
     return (attr.getEnclosingClass() != null && !isTypeLive(attr.getEnclosingClass()))
-        || (attr.getEnclosingMethod() != null && !appInfo.isLiveMethod(attr.getEnclosingMethod()));
+        || (attr.getEnclosingMethod() != null && !isLiveMethod(attr.getEnclosingMethod()));
   }
 
   private boolean isAttributeReferencingMissingOrPrunedType(InnerClassAttribute attr) {
     if (isTypeMissing(attr.getInner()) || !isTypeLive(attr.getInner())) {
       return true;
     }
-    DexType context = attr.getLiveContext(appView);
+    DexType context = attr.getLiveContext(appView, this::isLiveMethod);
     return context == null || isTypeMissing(context) || !isTypeLive(context);
   }
 
@@ -372,9 +367,8 @@ public class TreePruner {
 
   private DexEncodedMethod[] reachableMethods(
       List<DexEncodedMethod> methods, DexProgramClass clazz) {
-    AppInfoWithLiveness appInfo = appView.appInfo();
     int firstUnreachable =
-        firstUnreachableIndex(methods, method -> appInfo.isLiveMethod(method.getReference()));
+        firstUnreachableIndex(methods, method -> isLiveMethod(method.getReference()));
     // Return the original array if all methods are used.
     if (firstUnreachable == -1) {
       for (DexEncodedMethod method : methods) {
@@ -385,10 +379,10 @@ public class TreePruner {
     ArrayList<DexEncodedMethod> reachableMethods = new ArrayList<>(methods.size());
     for (int i = 0; i < methods.size(); i++) {
       DexEncodedMethod method = methods.get(i);
-      if (appInfo.isLiveMethod(method.getReference())) {
+      if (isLiveMethod(method.getReference())) {
         canonicalizeCode(method.asProgramMethod(clazz));
         reachableMethods.add(method);
-      } else if (appInfo.isTargetedMethod(method.getReference())) {
+      } else if (isTargetedMethod(method.getReference())) {
         // If the method is already abstract, and doesn't have code, let it be.
         if (method.shouldNotHaveCode() && !method.hasCode()) {
           reachableMethods.add(method);
@@ -417,10 +411,7 @@ public class TreePruner {
   }
 
   private DexEncodedField[] reachableFields(List<DexEncodedField> fields) {
-    AppInfoWithLiveness appInfo = appView.appInfo();
-    Predicate<DexEncodedField> isReachableOrReferencedField =
-        field -> configuration.isReachableOrReferencedField(appInfo, field);
-    int firstUnreachable = firstUnreachableIndex(fields, isReachableOrReferencedField);
+    int firstUnreachable = firstUnreachableIndex(fields, this::isReachableOrReferencedField);
     // Return the original array if all fields are used.
     if (firstUnreachable == -1) {
       return null;
@@ -434,7 +425,7 @@ public class TreePruner {
     }
     for (int i = firstUnreachable + 1; i < fields.size(); i++) {
       DexEncodedField field = fields.get(i);
-      if (isReachableOrReferencedField.test(field)) {
+      if (isReachableOrReferencedField(field)) {
         reachableOrReferencedFields.add(field);
       } else {
         unusedItemsPrinter.registerUnusedField(field);

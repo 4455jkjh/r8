@@ -210,7 +210,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                     .setMinApi(getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel.K)))
         .withDexCheck(
             (inspector, syntheticItems) ->
-                checkLambdaCount(inspector, syntheticItems, 3, "lambdadesugaring"))
+                checkLambdaCount(inspector, syntheticItems, 2, "lambdadesugaring"))
         .run(TestDeps.getExamplesAndroidOLegacyDir());
 
     test("lambdadesugaring", "lambdadesugaring", "LambdaDesugaring")
@@ -255,7 +255,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                     .setMinApi(AndroidApiLevel.N))
         .withDexCheck(
             (inspector, syntheticItems) ->
-                checkLambdaCount(inspector, syntheticItems, 3, "lambdadesugaring"))
+                checkLambdaCount(inspector, syntheticItems, 2, "lambdadesugaring"))
         .run(TestDeps.getExamplesAndroidOLegacyDir());
 
     test("lambdadesugaring", "lambdadesugaring", "LambdaDesugaring")

@@ -15,6 +15,7 @@ import com.android.tools.r8.shaking.GraphReporter;
 import com.android.tools.r8.shaking.InstantiationReason;
 import com.android.tools.r8.shaking.KeepReason;
 import com.android.tools.r8.shaking.MissingClasses;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.LensUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.collections.WorkList;
@@ -280,7 +281,7 @@ public abstract class ObjectAllocationInfoCollectionImpl implements ObjectAlloca
     getInstantiatedLambdaInterfaces().forEach(consumer);
   }
 
-  public void removeAllocationsForPrunedItems(PrunedItems prunedItems) {
+  public void removeAllocationsForPrunedItems(PrunedItems prunedItems, InternalOptions options) {
     Set<DexType> removedClasses = prunedItems.getRemovedClasses();
     if (removedClasses.isEmpty()) {
       return;
@@ -292,10 +293,15 @@ public abstract class ObjectAllocationInfoCollectionImpl implements ObjectAlloca
         clazz -> removedClasses.contains(clazz.getType()));
     annotationsWithUnknownSubtypeHierarchy.removeIf(
         annotation -> removedClasses.contains(annotation.getType()));
+    // In R8 compat mode, interfaces referenced from check-cast, const-class, or instance-of
+    // instructions are added to interfacesWithUnknownSubtypeHierarchy without disallowing
+    // shrinking. Such interfaces may become unreachable after single-caller inlining and be
+    // removed by TurboEnqueuer.
     boolean removed =
         interfacesWithUnknownSubtypeHierarchy.removeIf(
             iface -> removedClasses.contains(iface.getType()));
-    assert !removed : "Unexpected removal of an interface marking an unknown hierarchy.";
+    assert !removed || options.isForceProguardCompatibilityEnabled()
+        : "Unexpected removal of an interface marking an unknown hierarchy.";
     removedClasses.forEach(instantiatedLambdas::remove);
   }
 

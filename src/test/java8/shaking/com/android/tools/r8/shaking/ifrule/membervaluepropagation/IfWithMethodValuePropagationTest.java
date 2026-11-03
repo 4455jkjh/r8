@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.shaking.ifrule.membervaluepropagation;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -54,8 +55,8 @@ public class IfWithMethodValuePropagationTest extends TestBase {
   }
 
   private void verifyOutput(CodeInspector inspector) {
-    // R.ID is kept since we disallow value propagation of if-rule precondition matches:
-    assertThat(inspector.clazz(R.class), isPresent());
+    // R.id() is single-caller inlined after final tree shaking and R is pruned.
+    assertThat(inspector.clazz(R.class), isAbsent());
 
     // Layout is kept by the conditional rule.
     assertThat(inspector.clazz(Layout.class), isPresent());

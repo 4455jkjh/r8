@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.enumunboxing;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
@@ -76,14 +76,14 @@ public class DoubleProcessingEnumUnboxingTest extends EnumUnboxingTestBase {
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
         .setMinApi(parameters)
         .compile()
-        .inspect(this::assertSharedUtilityClassPresent)
+        .inspect(this::assertSharedUtilityClassAbsent)
         .run(parameters.getRuntime(), App.class)
         .assertSuccess()
         .inspectStdOut(this::assertLines2By2Correct);
   }
 
-  private void assertSharedUtilityClassPresent(CodeInspector codeInspector) {
-    assertTrue(
+  private void assertSharedUtilityClassAbsent(CodeInspector codeInspector) {
+    assertFalse(
         codeInspector.allClasses().stream()
             .anyMatch(
                 clazz ->

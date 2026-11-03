@@ -171,6 +171,7 @@ public final class DexCallSite extends IndexedDexItem
     return builder.toString();
   }
 
+  @Override
   public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
     if (indexedItems.addCallSite(this)) {
       methodName.collectIndexedItems(indexedItems);

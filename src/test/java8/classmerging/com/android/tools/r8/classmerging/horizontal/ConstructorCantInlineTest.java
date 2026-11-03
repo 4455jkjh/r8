@@ -40,7 +40,7 @@ public class ConstructorCantInlineTest extends HorizontalClassMergingTestBase {
         .inspect(
             codeInspector -> {
               assertThat(codeInspector.clazz(A.class), isAbsent());
-              assertThat(codeInspector.clazz(B.class), isPresent());
+              assertThat(codeInspector.clazz(B.class), isAbsent());
               assertThat(codeInspector.clazz(C.class), isPresent());
               assertThat(codeInspector.clazz(D.class), isAbsent());
             });

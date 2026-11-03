@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.graph;
 
+import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.lightir.LirConstant;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.structural.Equatable;
@@ -83,5 +84,10 @@ public class OriginalFieldWitness implements LirConstant, StructuralItem<Origina
   @Override
   public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
     visitor.visit(this, OriginalFieldWitness::specify);
+  }
+
+  @Override
+  public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+    // Intentionally empty.
   }
 }

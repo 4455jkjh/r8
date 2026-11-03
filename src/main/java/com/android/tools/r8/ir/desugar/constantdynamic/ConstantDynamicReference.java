@@ -3,11 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.desugar.constantdynamic;
 
+import com.android.tools.r8.dex.IndexedItemCollection;
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.JarApplicationReader;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.structural.Equatable;
 import com.android.tools.r8.utils.structural.StructuralItem;
@@ -108,6 +111,26 @@ public class ConstantDynamicReference implements StructuralItem<ConstantDynamicR
 
   public List<DexValue> getBootstrapMethodArguments() {
     return bootstrapMethodArguments;
+  }
+
+  public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+    name.collectIndexedItems(appView, indexedItems);
+    type.collectIndexedItems(appView, indexedItems);
+    bootstrapMethod.collectIndexedItems(appView, indexedItems);
+    for (DexValue arg : bootstrapMethodArguments) {
+      arg.collectIndexedItems(appView, indexedItems);
+    }
+    if (LibraryConstantDynamic.isClassDescConstantDynamic(this, appView.dexItemFactory())) {
+      DexValue dexValueClassName = bootstrapMethodArguments.get(1);
+      if (dexValueClassName.isDexValueString()) {
+        DexString className = dexValueClassName.asDexValueString().getValue();
+        DexType classType =
+            appView
+                .dexItemFactory()
+                .createType(DescriptorUtils.javaTypeToDescriptor(className.toString()));
+        classType.collectIndexedItems(appView, indexedItems);
+      }
+    }
   }
 
   @Override

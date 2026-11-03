@@ -47,6 +47,11 @@ public class TreeFixerCollisionTest extends HorizontalClassMergingTestBase {
   @NeverClassInline
   public static class A {
     @NeverInline
+    public A() {
+      System.out.print("");
+    }
+
+    @NeverInline
     public String foo() {
       return "foo a";
     }
@@ -54,6 +59,10 @@ public class TreeFixerCollisionTest extends HorizontalClassMergingTestBase {
 
   @NeverClassInline
   public static class B {
+    @NeverInline
+    public B() {
+      System.out.print("");
+    }
 
     @NeverInline
     public String foo() {

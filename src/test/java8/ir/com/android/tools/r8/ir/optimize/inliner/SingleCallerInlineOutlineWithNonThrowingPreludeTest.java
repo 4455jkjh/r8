@@ -5,6 +5,7 @@ package com.android.tools.r8.ir.optimize.inliner;
 
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethod;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentIf;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -72,10 +73,7 @@ public class SingleCallerInlineOutlineWithNonThrowingPreludeTest extends TestBas
 
               ClassSubject outlineClassSubject =
                   inspector.clazz(syntheticItems.syntheticOutlineClass(Main.class, 0));
-              // Note that the outline class is present even when `allowInliningOfOutlines`
-              // is true, since we do not run another round of tree shaking after the single
-              // caller inliner pass.
-              assertThat(outlineClassSubject, isPresent());
+              assertThat(outlineClassSubject, isPresentIf(!allowInliningOfOutlines));
 
               if (allowInliningOfOutlines) {
                 assertThat(

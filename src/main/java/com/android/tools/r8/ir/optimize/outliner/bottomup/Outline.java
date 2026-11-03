@@ -7,6 +7,7 @@ import static com.android.tools.r8.graph.DexAnnotation.VISIBILITY_BUILD;
 import static com.android.tools.r8.graph.DexClassAndMethod.asProgramMethodOrNull;
 
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
+import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationElement;
@@ -144,6 +145,11 @@ public class Outline implements LirConstant {
   @Override
   public LirConstantOrder getLirConstantOrder() {
     return LirConstantOrder.OUTLINE;
+  }
+
+  @Override
+  public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+    throw new Unreachable();
   }
 
   public ProgramMethod getMaterializedOutlineMethod() {

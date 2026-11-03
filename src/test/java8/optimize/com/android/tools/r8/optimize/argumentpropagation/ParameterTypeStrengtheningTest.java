@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.optimize.argumentpropagation;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -49,7 +50,7 @@ public class ParameterTypeStrengtheningTest extends TestBase {
               assertThat(mainClassSubject, isPresent());
 
               ClassSubject aClassSubject = inspector.clazz(A.class);
-              assertThat(aClassSubject, isPresent());
+              assertThat(aClassSubject, isAbsent());
 
               ClassSubject bClassSubject = inspector.clazz(B.class);
               assertThat(bClassSubject, isPresent());

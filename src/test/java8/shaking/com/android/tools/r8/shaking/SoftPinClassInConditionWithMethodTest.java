@@ -4,10 +4,9 @@
 
 package com.android.tools.r8.shaking;
 
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -57,10 +56,7 @@ public class SoftPinClassInConditionWithMethodTest extends TestBase {
         .run(parameters.getRuntime(), TestClass.class)
         .inspect(
             inspector -> {
-              // Class A is still present with no members and no reference to it at all. It could
-              // have been removed.
-              assertThat(inspector.clazz(A.class), isPresent());
-              assertTrue(inspector.clazz(A.class).allMethods().isEmpty());
+              assertThat(inspector.clazz(A.class), isAbsent());
               assertEquals(
                   0,
                   inspector

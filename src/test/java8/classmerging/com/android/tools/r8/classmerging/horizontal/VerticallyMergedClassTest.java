@@ -47,6 +47,7 @@ public class VerticallyMergedClassTest extends HorizontalClassMergingTestBase {
   @NoHorizontalClassMerging
   @NeverClassInline
   public static class B extends A {
+    @NeverInline
     public B() {
       System.out.println("b");
     }

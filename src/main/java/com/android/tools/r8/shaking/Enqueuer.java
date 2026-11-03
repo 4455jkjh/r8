@@ -760,13 +760,16 @@ public class Enqueuer {
 
   private void ensureClassKeptForResourceLookup(
       DexProgramClass clazz, ReflectiveUseFromXml reason, boolean markAsLive) {
-    applyMinimumKeepInfoWhenLive(
-        clazz,
+    KeepClassInfo.Joiner minimumKeepInfo =
         KeepClassInfo.newEmptyJoiner()
             .disallowMinification()
             .disallowRepackaging()
             .disallowOptimization()
-            .addReason(reason));
+            .addReason(reason);
+    if (markAsLive) {
+      minimumKeepInfo.disallowShrinking();
+    }
+    applyMinimumKeepInfoWhenLive(clazz, minimumKeepInfo);
     if (!markAsLive) {
       return;
     }

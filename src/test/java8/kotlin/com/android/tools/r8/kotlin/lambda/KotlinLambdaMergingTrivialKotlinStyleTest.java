@@ -141,7 +141,10 @@ public class KotlinLambdaMergingTrivialKotlinStyleTest extends KotlinTestBase {
       }
     }
     assertEquals(
-        kotlinParameters.getLambdaGeneration().isInvokeDynamic() ? 0 : 1, lambdasInOutput.size());
+        kotlinParameters.getLambdaGeneration().isInvokeDynamic() || parameters.isCfRuntime()
+            ? 0
+            : 1,
+        lambdasInOutput.size());
   }
 
   private String getExpectedOutput() {

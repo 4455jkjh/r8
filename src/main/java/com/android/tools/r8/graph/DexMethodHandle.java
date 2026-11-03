@@ -271,6 +271,7 @@ public class DexMethodHandle extends IndexedDexItem
     return "MethodHandle: {" + type + ", " + member.toSourceString() + "}";
   }
 
+  @Override
   public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
     if (indexedItems.addMethodHandle(this)) {
       if (member.isDexField()) {

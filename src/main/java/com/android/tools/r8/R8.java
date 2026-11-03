@@ -101,6 +101,7 @@ import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.shaking.EnqueuerFactory;
 import com.android.tools.r8.shaking.EnqueuerResult;
+import com.android.tools.r8.shaking.EnqueuerTreePruner;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.KotlinMetadataDiscardedChecker;
 import com.android.tools.r8.shaking.MainDexInfo;
@@ -110,6 +111,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationUtils;
 import com.android.tools.r8.shaking.RuntimeTypeCheckInfo;
 import com.android.tools.r8.shaking.TreePruner;
 import com.android.tools.r8.shaking.TreePrunerConfiguration;
+import com.android.tools.r8.shaking.TypeReferenceEnqueuer;
 import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
 import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
 import com.android.tools.r8.shaking.rootset.MainDexRootSet;
@@ -454,7 +456,7 @@ public class R8 {
           appView.protoShrinker().enumLiteProtoShrinker.clearDeadEnumLiteMaps(prunedItemsBuilder);
         }
 
-        TreePruner pruner = new TreePruner(appViewWithLiveness);
+        TreePruner pruner = new EnqueuerTreePruner(appViewWithLiveness);
         pruner.run(executorService, timing, prunedItemsBuilder);
         appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
 
@@ -470,7 +472,7 @@ public class R8 {
       } else {
         // Also run tree pruner with -dontshrink to eliminate synthetic classes/fields/methods that
         // become unreachable as a result of branch pruning that happen prior to tracing.
-        TreePruner pruner = new TreePruner(appViewWithLiveness);
+        TreePruner pruner = new EnqueuerTreePruner(appViewWithLiveness);
         pruner.run(executorService, timing, PrunedItems.builder());
         appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
 
@@ -640,7 +642,8 @@ public class R8 {
             GenericSignatureContextBuilder genericSignatureContextBuilder =
                 GenericSignatureContextBuilder.create(appView);
 
-            TreePruner pruner = new TreePruner(appViewWithLiveness, treePrunerConfiguration);
+            TreePruner pruner =
+                new EnqueuerTreePruner(appViewWithLiveness, treePrunerConfiguration);
             pruner.run(
                 executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
 
@@ -869,6 +872,7 @@ public class R8 {
 
             new VirtualMethodHoister(appView.withLiveness()).run(executorService, timing);
             new SingleCallerInliner(appViewWithLiveness).runIfNecessary(executorService, timing);
+            new TypeReferenceEnqueuer(appViewWithLiveness).runIfNecessary(executorService, timing);
             new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
           }
         }

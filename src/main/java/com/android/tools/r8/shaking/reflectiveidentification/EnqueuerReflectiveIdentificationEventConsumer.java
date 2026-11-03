@@ -223,6 +223,11 @@ public class EnqueuerReflectiveIdentificationEventConsumer
     KeepReason reason = KeepReason.reflectiveUseIn(context);
     for (DexProgramClass implementationClass : implementationClasses) {
       enqueuer.markClassAsInstantiatedWithReason(implementationClass, reason);
+      if (enqueuer.getMode().isFinalTreeShaking()) {
+        enqueuer.applyMinimumKeepInfoWhenLive(
+            implementationClass,
+            KeepClassInfo.newEmptyJoiner().disallowShrinking().addReason(reason));
+      }
       ProgramMethod defaultInitializer = implementationClass.getProgramDefaultInitializer();
       if (defaultInitializer != null) {
         enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
