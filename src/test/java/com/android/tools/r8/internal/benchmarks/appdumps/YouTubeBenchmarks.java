@@ -3,14 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.internal.benchmarks.appdumps;
 
-import static org.junit.Assume.assumeTrue;
-
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.benchmarks.appdumps.AppDumpBenchmarkBuilder;
@@ -108,13 +105,6 @@ public abstract class YouTubeBenchmarks extends BenchmarkBase {
 
     public YouTubeAppR8(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
-    }
-
-    @Test
-    @Override
-    public void testBenchmarks() throws Exception {
-      assumeTrue(ToolHelper.isLocalDevelopment());
-      super.testBenchmarks();
     }
   }
 }
