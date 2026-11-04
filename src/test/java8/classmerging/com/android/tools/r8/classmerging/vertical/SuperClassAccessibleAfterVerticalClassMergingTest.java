@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.classmerging.vertical;
 
-import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -45,15 +44,11 @@ public class SuperClassAccessibleAfterVerticalClassMergingTest extends TestBase 
         .inspect(
             inspector -> {
               assertThat(inspector.clazz(A.class), isPresent());
-              assertThat(inspector.clazz(B.class), isAbsent());
+              assertThat(inspector.clazz(B.class), isPresent());
               assertThat(inspector.clazz(C.class), isPresent());
             })
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/580760674): Should succeed with "C.m()".
-        .assertFailureWithErrorThatThrows(
-            parameters.isDexRuntime() && parameters.getDexRuntimeVersion().isDalvik()
-                ? NoClassDefFoundError.class
-                : IllegalAccessError.class);
+        .assertSuccessWithOutputLines("C.m()");
   }
 
   static class Main {
