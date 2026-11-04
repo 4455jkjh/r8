@@ -7,14 +7,27 @@ package com.android.tools.r8.ir.analysis.proto;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
+import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.MutableFieldAccessInfo;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
+import com.android.tools.r8.ir.code.ConstString;
+import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.shaking.KeepInfoCollection;
+import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.Sets;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,6 +53,7 @@ public class EnumLiteProtoShrinker {
   private AppView<AppInfoWithLiveness> appView;
   private ProtoReferences references;
   private Set<DexType> deadEnumLiteMaps = Sets.newIdentityHashSet();
+  private final Map<DexType, DexField> protoEnumLiteValueFields = new IdentityHashMap<>();
 
   public EnumLiteProtoShrinker(AppView<AppInfoWithLiveness> appView, ProtoReferences references) {
     this.appView = appView;
@@ -48,6 +62,14 @@ public class EnumLiteProtoShrinker {
 
   public Set<DexType> getDeadEnumLiteMaps() {
     return deadEnumLiteMaps;
+  }
+
+  public DexField getProtoEnumLiteValueField(DexType enumType) {
+    return protoEnumLiteValueFields.get(enumType);
+  }
+
+  public boolean hasProtoEnumLiteValueField(DexType enumType) {
+    return protoEnumLiteValueFields.containsKey(enumType);
   }
 
   private DexField createInternalValueMapField(DexType holder) {
@@ -72,6 +94,8 @@ public class EnumLiteProtoShrinker {
   }
 
   private void internalClearDeadEnumLiteMaps(PrunedItems.Builder prunedItemsBuilder) {
+    boolean enableProtoEnumOptimization =
+        appView.options().protoShrinking().isProtoEnumOptimizationEnabled();
     for (DexProgramClass clazz : appView.appInfo().classes()) {
       if (isDeadEnumLiteMap(clazz)) {
         deadEnumLiteMaps.add(clazz.getType());
@@ -80,8 +104,69 @@ public class EnumLiteProtoShrinker {
             .virtualMethods()
             .forEach(method -> prunedItemsBuilder.addRemovedMethod(method.getReference()));
         clazz.setVirtualMethods(DexEncodedMethod.EMPTY_ARRAY);
+      } else if (enableProtoEnumOptimization) {
+        recordProtoEnumLiteCandidate(clazz, prunedItemsBuilder);
       }
     }
+  }
+
+  private void recordProtoEnumLiteCandidate(
+      DexProgramClass clazz, PrunedItems.Builder prunedItemsBuilder) {
+    AppInfoWithLiveness appInfo = appView.appInfo();
+    if (!clazz.isEnum()
+        || !clazz.isFinal()
+        || !clazz.getInterfaces().contains(references.enumLiteType)
+        || !appInfo.isLiveProgramClass(clazz)) {
+      return;
+    }
+    DexItemFactory factory = appView.dexItemFactory();
+    InternalOptions options = appView.options();
+    KeepInfoCollection keepInfo = appInfo.getKeepInfo();
+    if (keepInfo.getClassInfo(clazz).isPinned(options)) {
+      return;
+    }
+    DexField valueFieldRef =
+        factory.createField(clazz.getType(), factory.intType, factory.valueString);
+    DexEncodedField valueField = clazz.lookupInstanceField(valueFieldRef);
+    if (valueField == null || keepInfo.getFieldInfo(valueField, clazz).isPinned(options)) {
+      return;
+    }
+    ProgramMethod toStringMethod = clazz.lookupProgramMethod(factory.objectMembers.toString);
+    if (toStringMethod != null) {
+      if (keepInfo.getMethodInfo(toStringMethod).isPinned(options)
+          || !isProtocGeneratedToString(toStringMethod)) {
+        return;
+      }
+      prunedItemsBuilder.addRemovedMethod(toStringMethod.getReference());
+      clazz.removeMethod(toStringMethod.getReference());
+    }
+    // The enum unboxer implements toString() on these enums by reading the value field. If nothing
+    // else reads the field (e.g., getNumber() is unused), record a read so that the writes in
+    // <init> are not removed as writes to an unread field before the unboxer needs the values.
+    MutableFieldAccessInfo fieldAccessInfo =
+        appInfo.getMutableFieldAccessInfoCollection().get(valueField.getReference());
+    if (fieldAccessInfo != null && !fieldAccessInfo.isRead() && clazz.hasClassInitializer()) {
+      fieldAccessInfo.recordRead(valueField.getReference(), clazz.getProgramClassInitializer());
+    }
+    protoEnumLiteValueFields.put(clazz.getType(), valueField.getReference());
+  }
+
+  private boolean isProtocGeneratedToString(ProgramMethod toStringMethod) {
+    if (!toStringMethod.getDefinition().hasCode()) {
+      return false;
+    }
+    boolean seenNumberPrefix = false;
+    boolean seenNamePrefix = false;
+    IRCode code = toStringMethod.buildIR(appView, MethodConversionOptions.nonConverting());
+    for (ConstString constString : code.<ConstString>instructions(Instruction::isConstString)) {
+      DexString value = constString.getValue();
+      if (value.isIdenticalTo(references.enumLiteToStringNumberPrefix)) {
+        seenNumberPrefix = true;
+      } else if (value.isIdenticalTo(references.enumLiteToStringNamePrefix)) {
+        seenNamePrefix = true;
+      }
+    }
+    return seenNumberPrefix && seenNamePrefix;
   }
 
   public boolean isDeadEnumLiteMap(DexProgramClass clazz) {

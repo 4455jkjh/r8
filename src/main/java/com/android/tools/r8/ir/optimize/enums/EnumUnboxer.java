@@ -613,6 +613,29 @@ public class EnumUnboxer implements ReprocessingOptimization {
         enumClass, factory.enumMembers.nameField);
   }
 
+  private void addRequiredToStringData(DexProgramClass enumClass) {
+    DexField protoValueField = getProtoEnumLiteValueField(enumClass);
+    if (protoValueField != null) {
+      enumUnboxingCandidatesInfo.addRequiredEnumInstanceFieldData(enumClass, protoValueField);
+    } else {
+      addRequiredNameData(enumClass);
+    }
+  }
+
+  private DexField getProtoEnumLiteValueField(DexProgramClass enumClass) {
+    if (!appView.options().protoShrinking().isProtoEnumOptimizationEnabled()) {
+      return null;
+    }
+    DexField protoValueField =
+        appView
+            .protoShrinker()
+            .enumLiteProtoShrinker
+            .getProtoEnumLiteValueField(enumClass.getType());
+    return protoValueField != null
+        ? appView.graphLens().getRenamedFieldSignature(protoValueField)
+        : null;
+  }
+
   private boolean isUnboxableNameMethod(DexMethod method) {
     ClassMethods classMethods = factory.classMethods;
     return method.isIdenticalTo(classMethods.getName)
@@ -942,7 +965,8 @@ public class EnumUnboxer implements ReprocessingOptimization {
   private EnumData buildData(DexProgramClass enumClass, Set<DexField> instanceFields) {
     if (!enumClass.hasStaticFields()) {
       if (instanceFields.isEmpty()) {
-        return new EnumData(ImmutableMap.of(), null, ImmutableMap.of(), ImmutableSet.of(), -1);
+        return new EnumData(
+            ImmutableMap.of(), null, ImmutableMap.of(), ImmutableSet.of(), -1, null);
       }
       return null;
     }
@@ -1094,12 +1118,16 @@ public class EnumUnboxer implements ReprocessingOptimization {
       return null;
     }
 
+    DexField protoValueField = getProtoEnumLiteValueField(enumClass);
     return new EnumData(
         instanceFieldsData,
         isEnumWithSubtypes ? valueTypes : Int2ReferenceMaps.emptyMap(),
         unboxedValues.build(),
         valuesField.build(),
-        valuesContents == null ? EnumData.INVALID_VALUES_SIZE : valuesContents.getEnumValuesSize());
+        valuesContents == null ? EnumData.INVALID_VALUES_SIZE : valuesContents.getEnumValuesSize(),
+        protoValueField != null && instanceFieldsData.containsKey(protoValueField)
+            ? protoValueField
+            : null);
   }
 
   private ImmutableMap<DexField, EnumInstanceFieldKnownData> computeRequiredEnumInstanceFieldsData(
@@ -1582,10 +1610,13 @@ public class EnumUnboxer implements ReprocessingOptimization {
         return comparableAsUnboxedValues(invoke);
       } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.equals)) {
         return comparableAsUnboxedValues(invoke);
-      } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.nameMethod)
-          || singleTargetReference.isIdenticalTo(factory.enumMembers.toString)) {
+      } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.nameMethod)) {
         assert invoke.asInvokeMethodWithReceiver().getReceiver() == enumValue;
         addRequiredNameData(enumClass);
+        return Reason.ELIGIBLE;
+      } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.toString)) {
+        assert invoke.asInvokeMethodWithReceiver().getReceiver() == enumValue;
+        addRequiredToStringData(enumClass);
         return Reason.ELIGIBLE;
       } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.ordinalMethod)) {
         return Reason.ELIGIBLE;
@@ -1629,7 +1660,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
       }
       if (singleTargetReference.isIdenticalTo(factory.objectMembers.toString)) {
         assert invoke.asInvokeMethodWithReceiver().getReceiver() == enumValue;
-        addRequiredNameData(enumClass);
+        addRequiredToStringData(enumClass);
         return Reason.ELIGIBLE;
       }
       if (singleTargetReference.isIdenticalTo(factory.objectMembers.hashCode)) {
@@ -1718,7 +1749,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
             info.getSubclasses(),
             subclass -> subclass.lookupVirtualMethod(factory.objectMembers.toString) == null);
     if (hasDefaultToString && subEnumsHaveDefaultToString) {
-      addRequiredNameData(enumClass);
+      addRequiredToStringData(enumClass);
       return Reason.ELIGIBLE;
     }
     if (enumValue.isMaybeNull()) {

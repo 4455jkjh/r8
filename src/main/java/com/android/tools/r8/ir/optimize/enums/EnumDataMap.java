@@ -173,18 +173,30 @@ public class EnumDataMap {
     final ImmutableSet<DexField> valuesFields;
     // Size of the $VALUES field, if the valuesFields set is empty, set to INVALID_VALUES_SIZE.
     final int valuesSize;
+    // The int value field of a protoc EnumLite enum when proto enum optimization is enabled.
+    final DexField protoValueField;
 
     public EnumData(
         ImmutableMap<DexField, EnumInstanceFieldKnownData> instanceFieldMap,
         Int2ReferenceMap<DexType> valuesTypes,
         ImmutableMap<DexField, Integer> unboxedValues,
         ImmutableSet<DexField> valuesFields,
-        int valuesSize) {
+        int valuesSize,
+        DexField protoValueField) {
       this.instanceFieldMap = instanceFieldMap;
       this.valuesTypes = valuesTypes;
       this.unboxedValues = unboxedValues;
       this.valuesFields = valuesFields;
       this.valuesSize = valuesSize;
+      this.protoValueField = protoValueField;
+    }
+
+    public boolean hasProtoValueField() {
+      return protoValueField != null;
+    }
+
+    public DexField getProtoValueField() {
+      return protoValueField;
     }
 
     public EnumInstanceFieldKnownData getInstanceFieldData(DexField enumInstanceField) {

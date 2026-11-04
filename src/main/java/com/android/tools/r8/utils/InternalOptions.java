@@ -2307,6 +2307,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // See b/174530756 for more details.
     public boolean enableProtoEnumSwitchMapShrinking = true;
     public boolean enableLargeProtoEnumRewriting = false;
+    // Removes the protoc generated debug toString() from EnumLite enums and makes the enum unboxer
+    // implement toString() on these enums using the int value field instead of the constant name.
+    public boolean enableProtoEnumOptimization =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableProtoEnumOptimization", false);
 
     public void disable() {
       enableGeneratedExtensionRegistryShrinking = false;
@@ -2314,6 +2319,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       enableGeneratedMessageLiteBuilderShrinking = false;
       traverseOneOfAndRepeatedProtoFields = false;
       enableEnumLiteProtoShrinking = false;
+      enableProtoEnumOptimization = false;
     }
 
     public boolean enableRemoveProtoEnumSwitchMap() {
@@ -2330,6 +2336,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     @SuppressWarnings("ReferenceEquality")
     public boolean isEnumLiteProtoShrinkingEnabled() {
       return enableEnumLiteProtoShrinking;
+    }
+
+    public boolean isProtoEnumOptimizationEnabled() {
+      return isEnumLiteProtoShrinkingEnabled() && enableProtoEnumOptimization;
     }
 
     public boolean isLargeProtoEnumRewritingEnabled() {

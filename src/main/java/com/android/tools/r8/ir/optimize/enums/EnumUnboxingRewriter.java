@@ -497,7 +497,20 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         ProgramMethod toStringMethod =
             lookupCustomToStringMethod(enumType, invoke.getType(), context, enumUnboxingLens);
         if (toStringMethod == null) {
-          rewriteNameMethod(iterator, invoke, enumType, context, eventConsumer);
+          if (unboxedEnumsData.get(enumType).hasProtoValueField()) {
+            rewriteProtoToStringMethod(
+                code,
+                blocks,
+                block,
+                iterator,
+                invoke,
+                enumType,
+                context,
+                affectedValues,
+                eventConsumer);
+          } else {
+            rewriteNameMethod(iterator, invoke, enumType, context, eventConsumer);
+          }
         } else {
           replaceEnumInvoke(code, iterator, affectedValues, invoke, toStringMethod);
         }
@@ -903,6 +916,49 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
                 appView, factory.enumMembers.nameField, context, eventConsumer);
     iterator.replaceCurrentInstruction(
         new InvokeStatic(toStringMethod.getReference(), invoke.outValue(), invoke.arguments()));
+  }
+
+  private void rewriteProtoToStringMethod(
+      IRCode code,
+      BasicBlockIterator blocks,
+      BasicBlock block,
+      InstructionListIterator iterator,
+      InvokeMethodWithReceiver invoke,
+      DexType enumType,
+      ProgramMethod context,
+      AffectedValues affectedValues,
+      EnumUnboxerMethodProcessorEventConsumer eventConsumer) {
+    DexField protoValueField = unboxedEnumsData.get(enumType).getProtoValueField();
+    ProgramMethod getValueMethod =
+        ensureInstanceFieldMethod(protoValueField, context, eventConsumer);
+    if (invoke.hasUnusedOutValue()) {
+      replaceEnumInvoke(code, iterator, affectedValues, invoke, getValueMethod);
+      return;
+    }
+    Value outValue = invoke.clearOutValue();
+    InvokeStatic getValueInvoke =
+        InvokeStatic.builder()
+            .setMethod(getValueMethod)
+            .setSingleArgument(invoke.getReceiver())
+            .setFreshOutValue(code, TypeElement.getInt())
+            .setPosition(invoke)
+            .build();
+    InvokeStatic toStringInvoke =
+        InvokeStatic.builder()
+            .setMethod(factory.integerMembers.staticToString)
+            .setSingleArgument(getValueInvoke.outValue())
+            .setOutValue(outValue)
+            .setPosition(invoke)
+            .build();
+    iterator.replaceCurrentInstruction(getValueInvoke);
+    if (block.hasCatchHandlers()) {
+      iterator
+          .splitCopyCatchHandlers(code, blocks, appView.options())
+          .listIterator()
+          .add(toStringInvoke);
+    } else {
+      iterator.add(toStringInvoke);
+    }
   }
 
   private Value fixNullsInBlockPhis(IRCode code, BasicBlock block, Value zeroConstValue) {

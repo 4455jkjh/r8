@@ -52,8 +52,11 @@ public class LocalEnumUnboxingUtilityClass extends EnumUnboxingUtilityClass {
             ensureGetInstanceFieldMethod(appView, field);
           }
         });
-    if (data.instanceFieldMap.containsKey(appView.dexItemFactory().enumMembers.nameField)) {
+    if (data.hasProtoValueField()
+        || data.instanceFieldMap.containsKey(appView.dexItemFactory().enumMembers.nameField)) {
       ensureStringValueOfMethod(appView);
+    }
+    if (data.instanceFieldMap.containsKey(appView.dexItemFactory().enumMembers.nameField)) {
       ensureValueOfMethod(appView);
     }
   }
@@ -114,13 +117,17 @@ public class LocalEnumUnboxingUtilityClass extends EnumUnboxingUtilityClass {
     DexItemFactory dexItemFactory = appView.dexItemFactory();
     AbstractValue defaultValue =
         appView.abstractValueFactory().createSingleStringValue(dexItemFactory.createString("null"));
+    DexField field =
+        data.hasProtoValueField()
+            ? data.getProtoValueField()
+            : dexItemFactory.enumMembers.nameField;
     return internalEnsureMethod(
         appView,
         dexItemFactory.createString("stringValueOf"),
         dexItemFactory.createProto(dexItemFactory.stringType, dexItemFactory.intType),
         method ->
             new EnumUnboxingCfCodeProvider.EnumUnboxingInstanceFieldCfCodeProvider(
-                    appView, getType(), data, dexItemFactory.enumMembers.nameField, defaultValue)
+                    appView, getType(), data, field, dexItemFactory.stringType, defaultValue)
                 .generateCfCode());
   }
 
