@@ -52,14 +52,13 @@ def VersionCommitMessage(version, description=None, bugs=None):
     if description:
         lines.append('')
         lines.append(description)
-    lines.append('')
     if bugs:
+        lines.append('')
         for bug in sorted(bugs):
             bug_str = str(bug).strip()
             if not bug_str.startswith('b/'):
                 bug_str = 'b/%s' % bug_str
             lines.append('Bug: %s' % bug_str)
-    lines.append('Cq-Exclude-Trybots: luci.r8.try:presubmit')
     return '\n'.join(lines)
 
 

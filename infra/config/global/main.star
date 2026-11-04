@@ -200,6 +200,7 @@ luci.cq_group(
         repo = "https://r8.googlesource.com/r8",
         refs = ["refs/heads/.+"],
     ),
+    allow_submit_with_open_deps = True,
     retry_config = cq.RETRY_TRANSIENT_FAILURES,
     acls = [
         acl.entry(acl.CQ_COMMITTER, groups = ["project-r8-committers"]),
