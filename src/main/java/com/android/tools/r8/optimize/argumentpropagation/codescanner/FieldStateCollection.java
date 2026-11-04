@@ -66,6 +66,10 @@ public class FieldStateCollection {
       Timing timing,
       BiFunction<ConcreteValueState, ConcreteValueState, NonEmptyValueState> joiner,
       Action unknownTransitionHandler) {
+    NonEmptyValueState existing = fieldStates.get(field);
+    if (existing != null && existing.isUnknown()) {
+      return existing;
+    }
     ValueState joinState =
         fieldStates.compute(
             field,
