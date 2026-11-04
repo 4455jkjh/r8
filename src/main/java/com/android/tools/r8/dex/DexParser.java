@@ -104,6 +104,7 @@ public class DexParser<T extends DexClass> {
   private final List<DexSection> dexSections;
   private final int offset;
   private int[] stringIDs;
+  private DexParser<T> parserWithStringIDs;
   private final ClassKind<T> classKind;
   private final InternalOptions options;
   private Object2LongMap<String> checksums;
@@ -210,6 +211,7 @@ public class DexParser<T extends DexClass> {
     offsetMap = null;
     dexReader = null;
     stringIDs = null;
+    parserWithStringIDs = null;
   }
 
   // Mapping from indexes to indexable dex items.
@@ -249,6 +251,7 @@ public class DexParser<T extends DexClass> {
       parseStringIDs();
     } else {
       stringIDs = parserWithStringIDs.stringIDs;
+      this.parserWithStringIDs = parserWithStringIDs;
     }
     this.classKind = classKind;
     this.options = options;
@@ -1138,6 +1141,12 @@ public class DexParser<T extends DexClass> {
   }
 
   public void populateStrings() {
+    if (parserWithStringIDs != null) {
+      // Container sections share the strings of the section owning the string data, which must be
+      // populated first.
+      indexedItems.shareStringsFrom(parserWithStringIDs.indexedItems);
+      return;
+    }
     indexedItems.initializeStrings(stringIDs.length);
     for (int i = 0; i < stringIDs.length; i++) {
       indexedItems.setString(i, stringAt(i));
@@ -1173,6 +1182,11 @@ public class DexParser<T extends DexClass> {
   }
 
   private void populateChecksums() {
+    if (parserWithStringIDs != null) {
+      assert parserWithStringIDs.checksums != null;
+      this.checksums = parserWithStringIDs.checksums;
+      return;
+    }
     ClassesChecksum parsedChecksums = new ClassesChecksum();
     for (int i = stringIDs.length - 1; i >= 0; i--) {
       DexString value = indexedItems.getString(i);

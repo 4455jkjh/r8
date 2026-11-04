@@ -44,6 +44,12 @@ public class OffsetToObjectMapping {
     strings = new DexString[length];
   }
 
+  public void shareStringsFrom(OffsetToObjectMapping other) {
+    assert strings == null;
+    assert other.strings != null;
+    strings = other.strings;
+  }
+
   public void initializeCallSites(int length) {
     assert callSites == null;
     callSites = new DexCallSite[length];

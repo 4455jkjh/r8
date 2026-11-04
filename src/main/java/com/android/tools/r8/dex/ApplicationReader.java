@@ -456,8 +456,10 @@ public class ApplicationReader {
         List<DexParser<DexProgramClass>> parsers = parsedInput.parsers;
         tasks.submit(
             () -> {
-              for (DexParser<DexProgramClass> dexParser : parsers) {
-                dexParser.populateIndexTables();
+              // The last container section owns the string table shared by the other sections,
+              // so populate it first.
+              for (int i = parsers.size() - 1; i >= 0; i--) {
+                parsers.get(i).populateIndexTables();
               }
               if (applicationReaderMap != null) {
                 for (DexParser<DexProgramClass> dexParser : parsers) {
