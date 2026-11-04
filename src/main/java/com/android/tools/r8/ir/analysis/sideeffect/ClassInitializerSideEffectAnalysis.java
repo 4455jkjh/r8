@@ -14,6 +14,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Instruction.SideEffectAssumption;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.google.common.collect.Sets;
 import java.util.Set;
@@ -40,7 +41,7 @@ public class ClassInitializerSideEffectAnalysis {
    */
   @SuppressWarnings("ReferenceEquality")
   public static ClassInitializerSideEffect classInitializerCanBePostponed(
-      AppView<AppInfoWithLiveness> appView, IRCode code) {
+      AppView<AppInfoWithLiveness> appView, IRCode code, MethodProcessor methodProcessor) {
     ProgramMethod context = code.context();
     // Will be set to true if the control flow must be independent of the environment in order for
     // this class initializer to be postponeable.
@@ -112,7 +113,7 @@ public class ClassInitializerSideEffectAnalysis {
 
     if (!valuesRequiredToBeIndependentOfEnvironment.isEmpty()) {
       ValueMayDependOnEnvironmentAnalysis environmentAnalysis =
-          new ValueMayDependOnEnvironmentAnalysis(appView, code);
+          new ValueMayDependOnEnvironmentAnalysis(appView, code, methodProcessor);
       if (environmentAnalysis.anyValueMayDependOnEnvironment(
           valuesRequiredToBeIndependentOfEnvironment)) {
         return ClassInitializerSideEffect.SIDE_EFFECTS_THAT_CANNOT_BE_POSTPONED;

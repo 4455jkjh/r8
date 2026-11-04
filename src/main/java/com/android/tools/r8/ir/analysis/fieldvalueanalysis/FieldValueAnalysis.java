@@ -42,7 +42,7 @@ public abstract class FieldValueAnalysis {
   static class FieldInitializationInfo {
 
     private final AnalyzedCode analyzedCode;
-    private final Instruction instruction;
+    final Instruction instruction;
     private final InstanceFieldInitializationInfo instanceFieldInitializationInfo;
 
     FieldInitializationInfo(
@@ -56,6 +56,10 @@ public abstract class FieldValueAnalysis {
 
     boolean dominatesNormalExits() {
       return analyzedCode.dominatesNormalExits(instruction);
+    }
+
+    boolean isInInitializer() {
+      return analyzedCode.isInitializer();
     }
   }
 
@@ -443,6 +447,18 @@ public abstract class FieldValueAnalysis {
       }
     }
     return true;
+  }
+
+  /**
+   * Returns the code of the helper called directly from the initializer by the given invoke, if it
+   * has been analyzed.
+   */
+  IRCode getAnalyzedHelperCode(InvokeMethod invoke) {
+    AnalyzedCode helper = helpers.get(invoke);
+    if (helper == null || !helper.parent.isInitializer()) {
+      return null;
+    }
+    return helper.code;
   }
 
   /**

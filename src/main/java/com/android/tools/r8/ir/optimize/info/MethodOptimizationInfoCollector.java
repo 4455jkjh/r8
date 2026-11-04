@@ -169,7 +169,8 @@ public class MethodOptimizationInfoCollector {
     }
     computeInstanceInitializerInfo(
         definition, code, feedback, instanceFieldInitializationInfos, timing);
-    computeMayHaveSideEffects(feedback, definition, code, nopInliningConstraint, timing);
+    computeMayHaveSideEffects(
+        feedback, definition, code, nopInliningConstraint, methodProcessor, timing);
     computeReturnValueOnlyDependsOnArguments(feedback, definition, code, timing);
     BitSet nonNullParamOrThrow = computeNonNullParamOrThrow(feedback, definition, code, timing);
     computeNonNullParamOnNormalExits(feedback, code, nonNullParamOrThrow, timing);
@@ -1002,9 +1003,10 @@ public class MethodOptimizationInfoCollector {
       DexEncodedMethod method,
       IRCode code,
       SimpleInliningConstraint nopInliningConstraint,
+      MethodProcessor methodProcessor,
       Timing timing) {
     timing.begin("Compute may have side effects");
-    computeMayHaveSideEffects(feedback, method, code, nopInliningConstraint);
+    computeMayHaveSideEffects(feedback, method, code, nopInliningConstraint, methodProcessor);
     timing.end();
   }
 
@@ -1012,7 +1014,8 @@ public class MethodOptimizationInfoCollector {
       OptimizationFeedback feedback,
       DexEncodedMethod method,
       IRCode code,
-      SimpleInliningConstraint nopInliningConstraint) {
+      SimpleInliningConstraint nopInliningConstraint,
+      MethodProcessor methodProcessor) {
     // If the method is native, we don't know what could happen.
     assert !method.accessFlags.isNative();
     if (!options.enableSideEffectAnalysis) {
@@ -1026,7 +1029,8 @@ public class MethodOptimizationInfoCollector {
       // For class initializers, we also wish to compute if the class initializer has observable
       // side effects.
       ClassInitializerSideEffect classInitializerSideEffect =
-          ClassInitializerSideEffectAnalysis.classInitializerCanBePostponed(appView, code);
+          ClassInitializerSideEffectAnalysis.classInitializerCanBePostponed(
+              appView, code, methodProcessor);
       if (classInitializerSideEffect.isNone()) {
         feedback.methodMayNotHaveSideEffects(method);
         feedback.classInitializerMayBePostponed(method);
@@ -1071,6 +1075,18 @@ public class MethodOptimizationInfoCollector {
                 .object()
                 .getAliasedValue()
                 .isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
+          if (instruction.instructionInstanceCanThrow(appView, context)) {
+            noSideEffectsConstraint = NeverSimpleInliningConstraint.getInstance();
+            break;
+          }
+        } else if (instruction.isArrayPut()
+            && instruction
+                .asArrayPut()
+                .array()
+                .getAliasedValue()
+                .isDefinedByInstructionSatisfying(Instruction::isCreatingArray)) {
+          // Storing into an array created in this method is not observable outside this method,
+          // since the array can only escape by instructions that are themselves side effects.
           if (instruction.instructionInstanceCanThrow(appView, context)) {
             noSideEffectsConstraint = NeverSimpleInliningConstraint.getInstance();
             break;
