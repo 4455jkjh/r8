@@ -228,6 +228,11 @@ public abstract class ExceptionUtils {
   }
 
   public static RuntimeException unwrapExecutionException(ExecutionException executionException) {
+    Throwable cause = executionException.getCause();
+    if (cause instanceof Error) {
+      cause.addSuppressed(executionException);
+      throw (Error) cause;
+    }
     return new RuntimeException(executionException);
   }
 

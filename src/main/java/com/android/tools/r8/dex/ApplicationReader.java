@@ -52,10 +52,10 @@ import com.android.tools.r8.utils.ProgramClassCollection;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
-import com.google.common.collect.Iterables;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -133,7 +133,7 @@ public class ApplicationReader {
       //     about class descriptor.
       // TODO: try and preload less classes.
       readProguardMap(proguardMap, builder, tasks);
-      ClassReader classReader = new ClassReader(tasks);
+      ClassReader classReader = new ClassReader(tasks, executorService);
       classReader.initializeLazyClassCollection(builder);
       classReader.readSources();
       awaitReaderTaskCollection(tasks);
@@ -176,7 +176,7 @@ public class ApplicationReader {
     TaskCollection<?> tasks = createReaderTaskCollection(executorService);
     try {
       readProguardMap(inputApp.getProguardMapInputData(), builder, tasks);
-      ClassReader classReader = new ClassReader(tasks);
+      ClassReader classReader = new ClassReader(tasks, executorService);
       AllClasses.Builder allClassesBuilder = AllClasses.builder();
       classReader.acceptClasspathAndLibraryClassCollections(
           allClassesBuilder::setClasspathClasses, allClassesBuilder::setLibraryClasses);
@@ -351,8 +351,20 @@ public class ApplicationReader {
         });
   }
 
+  private static final class ParsedDexInput {
+    final DexReader dexReader;
+    // A single parser, or one parser per section of a V41 container DEX.
+    final List<DexParser<DexProgramClass>> parsers;
+
+    ParsedDexInput(DexReader dexReader, List<DexParser<DexProgramClass>> parsers) {
+      this.dexReader = dexReader;
+      this.parsers = parsers;
+    }
+  }
+
   private final class ClassReader {
     private final TaskCollection<?> tasks;
+    private final ExecutorService executorService;
 
     // We use concurrent queues to collect classes since the classes can be collected concurrently.
     private final Queue<DexProgramClass> programClasses = new ConcurrentLinkedQueue<>();
@@ -369,8 +381,9 @@ public class ApplicationReader {
     private boolean hasReadProgramResourceFromCf = false;
     private boolean hasReadProgramResourceFromDex = false;
 
-    ClassReader(TaskCollection<?> tasks) {
+    ClassReader(TaskCollection<?> tasks, ExecutorService executorService) {
       this.tasks = tasks;
+      this.executorService = executorService;
     }
 
     DexApplicationReadFlags getDexApplicationReadFlags() {
@@ -387,17 +400,45 @@ public class ApplicationReader {
       return application.getKeepDeclarations();
     }
 
+    private ParsedDexInput parseDexInputHeader(ProgramResource input)
+        throws IOException, ResourceException {
+      DexReader dexReader = new DexReader(input);
+      return new ParsedDexInput(
+          dexReader,
+          dexReader.getDexVersion().isContainerDex()
+              ? DexParser.getDexParsersForContainerFormat(dexReader, options)
+              : Collections.singletonList(new DexParser<>(dexReader, PROGRAM, options)));
+    }
+
     private void readDexSources(List<ProgramResource> dexSources)
         throws IOException, ResourceException, ExecutionException {
       if (dexSources.isEmpty()) {
         return;
       }
-      List<DexParser<DexProgramClass>> dexParsers = new ArrayList<>(dexSources.size());
-      List<DexParser<DexProgramClass>> dexContainerParsers = new ArrayList<>(4);
+      // Read and parse DEX headers in parallel.
+      TaskCollection<ParsedDexInput> headerTasks =
+          new TaskCollection<>(options, executorService, dexSources.size());
+      List<ParsedDexInput> parsedInputs;
+      try {
+        for (ProgramResource input : dexSources) {
+          headerTasks.submit(() -> parseDexInputHeader(input));
+        }
+        parsedInputs = headerTasks.awaitWithResults();
+      } catch (ExecutionException e) {
+        // Preserve the checked exceptions thrown when reading inputs sequentially.
+        if (e.getCause() instanceof IOException) {
+          throw (IOException) e.getCause();
+        }
+        if (e.getCause() instanceof ResourceException) {
+          throw (ResourceException) e.getCause();
+        }
+        throw e;
+      }
+
       AndroidApiLevel computedMinApiLevel = options.getMinApiLevel();
-      for (ProgramResource input : dexSources) {
-        DexReader dexReader = new DexReader(input);
-        if (options.passthroughDexCode) {
+      if (options.passthroughDexCode) {
+        for (ParsedDexInput parsedInput : parsedInputs) {
+          DexReader dexReader = parsedInput.dexReader;
           if (!options.getTestingOptions().forceDexContainerFormat) {
             computedMinApiLevel = validateOrComputeMinApiLevel(computedMinApiLevel, dexReader);
           } else {
@@ -405,37 +446,26 @@ public class ApplicationReader {
             assert dexReader.getDexVersion().isGreaterThanOrEqualTo(DexVersion.V41);
           }
         }
-        if (!dexReader.getDexVersion().isContainerDex()) {
-          dexParsers.add(new DexParser<>(dexReader, PROGRAM, options));
-        } else {
-          addDexParsersForContainer(dexContainerParsers, dexReader);
-        }
       }
 
       options.setMinApiLevel(computedMinApiLevel);
-      for (DexParser<DexProgramClass> dexParser :
-          Iterables.concat(dexParsers, dexContainerParsers)) {
-        dexParser.populateIndexTables();
+      ApplicationReaderMap applicationReaderMap =
+          options.skipReadingDexCode ? null : ApplicationReaderMap.getInstance(options);
+      for (ParsedDexInput parsedInput : parsedInputs) {
+        // Sections of a V41 container share one DexReader, so process them in a single task.
+        List<DexParser<DexProgramClass>> parsers = parsedInput.parsers;
+        tasks.submit(
+            () -> {
+              for (DexParser<DexProgramClass> dexParser : parsers) {
+                dexParser.populateIndexTables();
+              }
+              if (applicationReaderMap != null) {
+                for (DexParser<DexProgramClass> dexParser : parsers) {
+                  dexParser.addClassDefsTo(programClasses, applicationReaderMap);
+                }
+              }
+            });
       }
-      if (!options.skipReadingDexCode) {
-        ApplicationReaderMap applicationReaderMap = ApplicationReaderMap.getInstance(options);
-        // Read the DexCode items and DexProgramClass items in parallel.
-        for (DexParser<DexProgramClass> dexParser : dexParsers) {
-          // Depends on Methods, Code items etc.
-          tasks.submit(() -> dexParser.addClassDefsTo(programClasses, applicationReaderMap));
-        }
-        // All DEX parsers for container sections use the same DEX reader,
-        // so don't process in parallel.
-        for (DexParser<DexProgramClass> dexParser : dexContainerParsers) {
-          dexParser.addClassDefsTo(programClasses, applicationReaderMap);
-        }
-      }
-    }
-
-    private void addDexParsersForContainer(
-        List<DexParser<DexProgramClass>> dexParsers, DexReader dexReader) {
-      // Find the start offsets of each dex section.
-      dexParsers.addAll(DexParser.getDexParsersForContainerFormat(dexReader, options));
     }
 
     private boolean includeAnnotationClass(DexProgramClass clazz) {
