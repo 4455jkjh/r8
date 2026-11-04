@@ -11,7 +11,6 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.conversion.callgraph.CallGraph;
 import com.android.tools.r8.ir.conversion.callgraph.CallSiteInformation;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.utils.timing.TimingMerger;
@@ -133,8 +132,7 @@ public class PrimaryMethodProcessor extends MethodProcessorWithWave {
         processorContext = appView.createProcessorContext();
         waveStartAction.notifyWaveStart(wave, ++waveIndex);
         Collection<Timing> timings =
-            ThreadUtils.processItemsWithResults(
-                wave,
+            processWave(
                 method -> {
                   Timing time =
                       consumer.apply(
