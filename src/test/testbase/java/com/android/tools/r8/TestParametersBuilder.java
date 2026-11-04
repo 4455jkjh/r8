@@ -245,6 +245,14 @@ public class TestParametersBuilder {
     return withApiLevelsStartingAtIncluding(TestBase.apiLevelWithDefaultInterfaceMethodsSupport());
   }
 
+  public TestParametersBuilder withCollapsedDexRuntimes(boolean allowCollapsedDexRuntimes) {
+    return this;
+  }
+
+  public TestParametersBuilder withoutCollapsedDexRuntimes() {
+    return withCollapsedDexRuntimes(false);
+  }
+
   public TestParametersCollection build() {
     assert !enableApiLevels || enableApiLevelsForCf || hasDexRuntimeFilter;
     List<TestParameters> availableParameters =
