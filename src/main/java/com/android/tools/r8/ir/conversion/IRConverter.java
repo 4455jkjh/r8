@@ -106,7 +106,6 @@ import com.android.tools.r8.lightir.LirStrategy.ExternalPhisStrategy;
 import com.android.tools.r8.lightir.PhiInInstructionsStrategy;
 import com.android.tools.r8.naming.IdentifierNameStringMarker;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorIROptimizer;
-import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryMethodOverrideAnalysis;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -539,8 +538,7 @@ public class IRConverter {
       MutableMethodConversionOptions conversionOptions,
       Timing timing) {
     return ExceptionUtils.withOriginAndPositionAttachmentHandler(
-        method.getOrigin(),
-        new MethodPosition(method.getReference().asMethodReference()),
+        method,
         () ->
             rewriteDesugaredCodeInternal(
                 method,
