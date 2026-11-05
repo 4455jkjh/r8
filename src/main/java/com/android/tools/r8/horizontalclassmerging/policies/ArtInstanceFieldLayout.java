@@ -10,7 +10,9 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.horizontalclassmerging.policies.CompatibleInstanceFields.InstanceFieldInfo;
 import com.google.common.collect.Iterables;
+import java.util.Collection;
 
 /**
  * Estimates the size of instances in ART, following the instance field layout of ART's
@@ -60,6 +62,11 @@ class ArtInstanceFieldLayout {
     return getInstanceFieldsEndOffset(
         superFieldsEndOffset,
         Iterables.transform(clazz.instanceFields(), DexEncodedField::getType));
+  }
+
+  static int getInstanceFieldsEndOffset(int startOffset, Collection<InstanceFieldInfo> fields) {
+    return getInstanceFieldsEndOffset(
+        startOffset, Iterables.transform(fields, InstanceFieldInfo::getType));
   }
 
   /**

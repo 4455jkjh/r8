@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.horizontalclassmerging.policies.CheckAbstractClasses;
 import com.android.tools.r8.horizontalclassmerging.policies.CheckSyntheticClasses;
+import com.android.tools.r8.horizontalclassmerging.policies.CompatibleInstanceFields;
 import com.android.tools.r8.horizontalclassmerging.policies.CoroutineStateMachinePolicy;
 import com.android.tools.r8.horizontalclassmerging.policies.FinalizeMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.policies.LimitClassGroups;
@@ -54,7 +55,6 @@ import com.android.tools.r8.horizontalclassmerging.policies.ProtectApiSurface;
 import com.android.tools.r8.horizontalclassmerging.policies.RespectPackageBoundaries;
 import com.android.tools.r8.horizontalclassmerging.policies.SameFeatureSplit;
 import com.android.tools.r8.horizontalclassmerging.policies.SameFilePolicy;
-import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields;
 import com.android.tools.r8.horizontalclassmerging.policies.SameMainDexGroup;
 import com.android.tools.r8.horizontalclassmerging.policies.SameNestHost;
 import com.android.tools.r8.horizontalclassmerging.policies.SamePackageForNonGlobalMergeSynthetic;
@@ -234,7 +234,9 @@ public class PolicyScheduler {
     if (appView.hasLiveness()) {
       builder.add(new PreserveMethodCharacteristics(appView.withLiveness()));
     }
-    builder.add(new MinimizeInstanceFieldCasts(coroutineStateMachineMergeCandidates));
+    builder.add(
+        new MinimizeInstanceFieldCasts(
+            appView, coroutineStateMachineMergeCandidates, immediateSubtypingInfo));
     addMultiClassPoliciesForInterfaceMerging(appView, immediateSubtypingInfo, builder);
     return builder.add(new LimitClassGroups(appView), new FinalizeMergeGroup(appView)).build();
   }
@@ -272,7 +274,6 @@ public class PolicyScheduler {
         new SameFeatureSplit(appView),
         new SameStartupPartition(appView),
         new CoroutineStateMachinePolicy(appView, coroutineStateMachineMergeCandidates),
-        new SameInstanceFields(appView, coroutineStateMachineMergeCandidates),
         new SameMainDexGroup(appView),
         new SameNestHost(appView),
         new SameParentClass(),
@@ -280,6 +281,8 @@ public class PolicyScheduler {
         new SyntheticItemsPolicy(appView),
         new RespectPackageBoundaries(appView),
         new NoDifferentApiReferenceLevel(appView),
+        new CompatibleInstanceFields(
+            appView, coroutineStateMachineMergeCandidates, immediateSubtypingInfo),
         // Run after the policies that group classes by a merge key, since this policy distributes
         // the non-annotated classes across the groups of the annotated classes.
         new NoClassAnnotationCollisions(),
