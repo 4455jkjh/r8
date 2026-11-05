@@ -101,7 +101,6 @@ class SpillMoveSet {
   public void addPhiMove(int i, LiveIntervals to, LiveIntervals from) {
     assert i % 2 == 1;
     SpillMove move = new SpillMove(moveTypeForIntervals(to, from), to, from);
-    move.updateMaxNonSpilled(allocator);
     instructionToPhiMoves.computeIfAbsent(i, (k) -> new LinkedHashSet<>()).add(move);
   }
 
