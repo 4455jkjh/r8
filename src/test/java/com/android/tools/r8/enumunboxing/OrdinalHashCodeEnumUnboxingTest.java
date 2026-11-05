@@ -4,6 +4,10 @@
 
 package com.android.tools.r8.enumunboxing;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
+import static org.junit.Assert.assertThrows;
+
+import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
@@ -46,10 +50,16 @@ public class OrdinalHashCodeEnumUnboxingTest extends EnumUnboxingTestBase {
         .enableInliningAnnotations()
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
         .setMinApi(parameters)
-        .compile()
-        .run(parameters.getRuntime(), classToTest)
-        .assertSuccess()
-        .inspectStdOut(this::assertLines2By2Correct);
+        // Should compile and succeed.
+        .apply(
+            b ->
+                assertThrows(
+                    CompilationFailedException.class,
+                    () ->
+                        b.compileWithExpectedDiagnostics(
+                            diagnostics ->
+                                diagnostics.assertErrorsMatch(
+                                    diagnosticException(NullPointerException.class)))));
   }
 
   @NeverClassInline
@@ -77,11 +87,28 @@ public class OrdinalHashCodeEnumUnboxingTest extends EnumUnboxingTestBase {
       Object o = new Object();
       System.out.println(System.identityHashCode(o));
       System.out.println(o.hashCode());
+      System.identityHashCode(args.length == 0 ? MyEnum.A : MyEnum.C);
+      unusedHash(MyEnum.A);
+      unusedHash(null);
+      deadStringBuilderWithHash(MyEnum.B);
+      deadStringBuilderWithHash(null);
     }
 
     @NeverInline
     private static int hash(MyEnum e) {
       return System.identityHashCode(e);
+    }
+
+    @NeverInline
+    private static void unusedHash(MyEnum e) {
+      System.identityHashCode(e);
+    }
+
+    @NeverInline
+    private static void deadStringBuilderWithHash(MyEnum e) {
+      if (new StringBuilder().append(System.identityHashCode(e)).toString() == null) {
+        throw new AssertionError();
+      }
     }
 
     @NeverInline
