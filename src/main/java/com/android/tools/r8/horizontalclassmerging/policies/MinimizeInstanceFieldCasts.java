@@ -15,6 +15,7 @@ import com.android.tools.r8.horizontalclassmerging.CoroutineStateMachineMergeCan
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
 import com.android.tools.r8.horizontalclassmerging.policies.CompatibleInstanceFields.InstanceFieldInfo;
+import com.android.tools.r8.shaking.RuntimeTypeCheckInfo;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultiset;
@@ -36,14 +37,17 @@ public class MinimizeInstanceFieldCasts extends MultiClassPolicy {
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
   private final CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates;
   private final ImmediateProgramSubtypingInfo immediateSubtypingInfo;
+  private final RuntimeTypeCheckInfo runtimeTypeCheckInfo;
 
   public MinimizeInstanceFieldCasts(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates,
-      ImmediateProgramSubtypingInfo immediateSubtypingInfo) {
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo,
+      RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     this.appView = appView;
     this.coroutineStateMachineMergeCandidates = coroutineStateMachineMergeCandidates;
     this.immediateSubtypingInfo = immediateSubtypingInfo;
+    this.runtimeTypeCheckInfo = runtimeTypeCheckInfo;
   }
 
   @Override
@@ -142,10 +146,27 @@ public class MinimizeInstanceFieldCasts extends MultiClassPolicy {
         }
         Multiset<InstanceFieldInfo> mergedFields =
             ImmutableMultiset.copyOf(Multisets.union(packedGroup.fields, candidate.fields));
-        DexType classIdType =
-            ClassMerger.classIdType(packedGroup.group.size() + candidate.group.size(), appView);
+        // LimitClassGroups runs after this policy and bounds the size of the merged groups.
+        int mergedGroupSize =
+            Math.min(
+                packedGroup.group.size() + candidate.group.size(),
+                appView.options().horizontalClassMergerOptions().getMaxClassGroupSizeInR8());
+        DexType classIdType = ClassMerger.classIdType(mergedGroupSize, appView);
         int mergedFieldsEndOffset =
             getMergedFieldsEndOffset(superFieldsEndOffset, mergedFields, classIdType);
+        if (ArtInstanceFieldLayout.getInstanceSize(mergedFieldsEndOffset) > instanceSize
+            && ArtInstanceFieldLayout.getInstanceSize(mergedFieldsEndOffset) <= instanceSize + 8) {
+          // Only check if the merged class needs a $r8$classId field when this decides whether
+          // the merged fields fit, since this check is expensive.
+          int mergedFieldsEndOffsetWithoutClassId =
+              getFieldsEndOffset(superFieldsEndOffset, mergedFields);
+          if (ArtInstanceFieldLayout.getInstanceSize(mergedFieldsEndOffsetWithoutClassId)
+                  <= instanceSize
+              && mergedFieldsEndOffsetWithoutClassId > bestMergedFieldsEndOffset
+              && !requiresClassIdField(packedGroup.group, candidate.group)) {
+            mergedFieldsEndOffset = mergedFieldsEndOffsetWithoutClassId;
+          }
+        }
         if (ArtInstanceFieldLayout.getInstanceSize(mergedFieldsEndOffset) <= instanceSize
             && mergedFieldsEndOffset > bestMergedFieldsEndOffset) {
           bestPackedGroup = packedGroup;
@@ -175,6 +196,13 @@ public class MinimizeInstanceFieldCasts extends MultiClassPolicy {
         Iterables.concat(
             Iterables.transform(fields, InstanceFieldInfo::getType),
             Collections.singletonList(classIdType)));
+  }
+
+  private boolean requiresClassIdField(HorizontalMergeGroup group1, HorizontalMergeGroup group2) {
+    HorizontalMergeGroup mergedGroup = new HorizontalMergeGroup(Iterables.concat(group1, group2));
+    return new ClassMerger.Builder(appView, mergedGroup)
+        .initializeVirtualMethodMergers()
+        .requiresClassIdField(runtimeTypeCheckInfo);
   }
 
   @SuppressWarnings("MixedMutabilityReturnType")

@@ -236,7 +236,10 @@ public class PolicyScheduler {
     }
     builder.add(
         new MinimizeInstanceFieldCasts(
-            appView, coroutineStateMachineMergeCandidates, immediateSubtypingInfo));
+            appView,
+            coroutineStateMachineMergeCandidates,
+            immediateSubtypingInfo,
+            runtimeTypeCheckInfo));
     addMultiClassPoliciesForInterfaceMerging(appView, immediateSubtypingInfo, builder);
     return builder.add(new LimitClassGroups(appView), new FinalizeMergeGroup(appView)).build();
   }

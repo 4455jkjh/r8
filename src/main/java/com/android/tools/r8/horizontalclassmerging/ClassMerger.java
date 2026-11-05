@@ -453,7 +453,7 @@ public class ClassMerger {
       }
     }
 
-    private boolean requiresClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
+    public boolean requiresClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
       if (runtimeTypeCheckInfo != null
           && Iterables.any(
               group,

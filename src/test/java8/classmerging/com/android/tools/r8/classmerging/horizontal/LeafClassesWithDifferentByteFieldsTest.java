@@ -50,13 +50,13 @@ public class LeafClassesWithDifferentByteFieldsTest extends HorizontalClassMergi
   @Test
   public void testR8WithoutClassId() throws Exception {
     // The print() methods are renamed apart, so the merged class does not need a $r8$classId field.
-    // IntAnd4Bytes is still not merged with IntAnd2Bytes and IntAnd3Bytes, since packing
-    // conservatively assumes that the merged class needs a $r8$classId field.
+    // Merging IntAnd2Bytes, IntAnd3Bytes and IntAnd4Bytes gives 4 + 4 = 8 bytes of fields.
     test(
         false,
         inspector ->
             inspector
-                .assertIsCompleteMergeGroup(IntAnd2Bytes.class, IntAnd3Bytes.class)
+                .assertIsCompleteMergeGroup(
+                    IntAnd2Bytes.class, IntAnd3Bytes.class, IntAnd4Bytes.class)
                 .assertIsCompleteMergeGroup(IntAnd5Bytes.class, IntAnd6Bytes.class)
                 .assertNoOtherClassesMerged());
   }
