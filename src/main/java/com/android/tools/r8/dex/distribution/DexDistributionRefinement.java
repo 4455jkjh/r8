@@ -21,6 +21,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.ThreadUtils.WorkLoad;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
@@ -49,6 +50,7 @@ public class DexDistributionRefinement {
 
   // Must be concurrent since we collect concurrently.
   private final Map<String, DexString> shortyCache = new ConcurrentHashMap<>();
+  private final Map<DexProgramClass, Set<DexItem>> classToItems = new ConcurrentHashMap<>();
 
   // Mapping from each virtual file to the classes inside the virtual file that are candidates for
   // moving to other virtual files. A LinkedHashSet is used instead of a List to support efficient
@@ -57,13 +59,18 @@ public class DexDistributionRefinement {
       fileToClassesWithDeterministicOrder = new IdentityHashMap<>();
 
   private DexDistributionRefinement(
-      AppView<?> appView, VirtualFileCycler cycler, List<VirtualFile> filesSubjectToRefinement) {
+      AppView<?> appView,
+      VirtualFileCycler cycler,
+      List<VirtualFile> filesSubjectToRefinement,
+      ExecutorService executorService,
+      Timing timing)
+      throws ExecutionException {
     this.appView = appView;
     this.cycler = cycler;
     this.enableContainerDex = appView.options().enableContainerDex();
     this.files = new LinkedHashSet<>(filesSubjectToRefinement);
     this.rewriter = new LensCodeRewriterUtils(appView, true);
-    initialize();
+    initialize(executorService, timing);
   }
 
   public static void run(
@@ -91,19 +98,47 @@ public class DexDistributionRefinement {
                     && (appView.options().canUseMultidex() || f.getId() != 0));
     if (filesSubjectToRefinement.size() > 1) {
       timing.begin("Dex distribution refinement");
-      new DexDistributionRefinement(appView, cycler, filesSubjectToRefinement)
+      new DexDistributionRefinement(
+              appView, cycler, filesSubjectToRefinement, executorService, timing)
           .internalRun(executorService, timing);
       timing.end();
     }
   }
 
-  private void initialize() {
+  private void initialize(ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    timing.begin("Initialize");
+    // Sort classes in each virtual file for deterministic refinement.
     for (VirtualFile file : files) {
       fileToClassesWithDeterministicOrder.put(
           file,
           new LinkedHashSet<>(
               ListUtils.sort(file.classes(), Comparator.comparing(DexClass::getType))));
     }
+    // Collect items referenced from each class.
+    ThreadUtils.processItems(
+        consumer -> {
+          for (VirtualFile file : files) {
+            file.classes().forEach(consumer);
+          }
+        },
+        (DexProgramClass clazz) -> classToItems.put(clazz, collectItems(clazz)),
+        appView.options().getThreadingModule(),
+        executorService);
+    // Compute the reference count of each item.
+    ThreadUtils.processItems(
+        files,
+        (file, index) -> {
+          for (DexProgramClass clazz : file.classes()) {
+            for (DexItem item : classToItems.get(clazz)) {
+              adjustReferenceCount(file, item, 1);
+            }
+          }
+        },
+        appView.options().getThreadingModule(),
+        executorService,
+        WorkLoad.HEAVY);
+    timing.end();
   }
 
   private void internalRun(ExecutorService executorService, Timing timing)
@@ -151,7 +186,7 @@ public class DexDistributionRefinement {
         classesWithDeterministicOrder,
         alwaysTrue(),
         (clazz, threadTiming) -> {
-          Set<DexItem> items = collectItems(clazz);
+          Set<DexItem> items = classToItems.get(clazz);
           PriorityQueue<Pair<VirtualFile, Integer>> targetFiles = findTargetFiles(file, items);
           if (!targetFiles.isEmpty()) {
             pendingMoveTasks.put(clazz, c -> moveClass(c, file, targetFiles, items));
@@ -183,6 +218,7 @@ public class DexDistributionRefinement {
         // Let's not consider moving class C from Y to another DEX file in the future, which is
         // achieved by not adding the class to the target's set of classes.
         iterator.remove();
+        classToItems.remove(clazz);
       }
     }
     timing.end(); // Move classes to target files
@@ -319,10 +355,6 @@ public class DexDistributionRefinement {
 
   private <T> void adjustReferenceCount(Reference2IntMap<T> items, T item, int change) {
     int count = items.containsKey(item) ? items.getInt(item) : 0;
-    if (count == IndexedItemTransaction.NO_REF_COUNT) {
-      // Checksum or marker.
-      return;
-    }
     int newCount = count + change;
     assert newCount >= 0;
     if (newCount == 0) {

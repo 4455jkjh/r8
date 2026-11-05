@@ -19,39 +19,22 @@ import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.synthesis.SyntheticNaming;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
-import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.Set;
 
 public class IndexedItemTransaction implements IndexedItemCollection {
-
-  static final int NO_REF_COUNT = -1;
 
   private final AppView<?> appView;
   private final VirtualFile.VirtualFileIndexedItemCollection base;
   private final LensCodeRewriterUtils rewriter;
 
   private final Set<DexProgramClass> classes = Sets.newIdentityHashSet();
-
-  // Sets with reference counting.
-  final Reference2IntMap<DexCallSite> callSites = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexField> fields = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexField> fieldsAlreadyInBase = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexMethod> methods = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexMethod> methodsAlreadyInBase = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexMethodHandle> methodHandles = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexProto> protos = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexString> strings = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexType> types = new Reference2IntOpenHashMap<>();
-  final Reference2IntMap<DexType> typesAlreadyInBase = new Reference2IntOpenHashMap<>();
-
-  // For reference counting.
-  Set<DexCallSite> callSitesInCurrentClass;
-  Set<DexField> fieldsInCurrentClass;
-  Set<DexMethod> methodsInCurrentClass;
-  Set<DexMethodHandle> methodHandlesInCurrentClass;
-  Set<DexProto> protosInCurrentClass;
-  Set<DexString> stringsInCurrentClass;
-  Set<DexType> typesInCurrentClass;
+  private final Set<DexCallSite> callSites = Sets.newIdentityHashSet();
+  private final Set<DexField> fields = Sets.newIdentityHashSet();
+  private final Set<DexMethod> methods = Sets.newIdentityHashSet();
+  private final Set<DexMethodHandle> methodHandles = Sets.newIdentityHashSet();
+  private final Set<DexProto> protos = Sets.newIdentityHashSet();
+  private final Set<DexString> strings = Sets.newIdentityHashSet();
+  private final Set<DexType> types = Sets.newIdentityHashSet();
 
   public IndexedItemTransaction(
       VirtualFile.VirtualFileIndexedItemCollection base, AppView<?> appView) {
@@ -62,96 +45,34 @@ public class IndexedItemTransaction implements IndexedItemCollection {
 
   public static IndexedItemTransaction create(
       VirtualFile.VirtualFileIndexedItemCollection base, AppView<?> appView) {
-    if (appView.testing().enableClassToDexDistributionRefinement(appView.options())) {
-      return new IndexedItemTransaction(base, appView);
-    } else {
-      // Avoid overhead from reference counting. Notably, when the reference counters are needed,
-      // we must collect all items referenced from the class in a new set. Without reference
-      // counters, when a given item is already referenced from the virtual file, we can simply
-      // skip collecting the item and all of its descendants.
-      return new IndexedItemTransactionWithoutReferenceCounting(base, appView);
-    }
+    return new IndexedItemTransaction(base, appView);
   }
 
   public LensCodeRewriterUtils getRewriter() {
     return rewriter;
   }
 
-  <T extends DexItem> boolean addItemWithReferenceCount(
-      T item,
-      Reference2IntMap<T> baseSet,
-      Reference2IntMap<T> transactionSet,
-      Set<T> transactionCurrentClassSet) {
+  private <T extends DexItem> boolean addItem(
+      T item, Reference2IntMap<T> baseSet, Set<T> transactionSet) {
     assert currentClass != null;
-    return transactionCurrentClassSet.add(item);
+    if (baseSet.containsKey(item)) {
+      return false;
+    }
+    return transactionSet.add(item);
   }
 
   public void addClassAndDependencies(DexProgramClass clazz) {
     clazz.collectIndexedItems(appView, this, rewriter);
-    tearDownAfterTracing();
-  }
-
-  public void setupForTracing(DexProgramClass clazz) {
-    assert currentClass == null;
-    currentClass = clazz;
-    callSitesInCurrentClass = Sets.newIdentityHashSet();
-    fieldsInCurrentClass = Sets.newIdentityHashSet();
-    methodsInCurrentClass = Sets.newIdentityHashSet();
-    methodHandlesInCurrentClass = Sets.newIdentityHashSet();
-    protosInCurrentClass = Sets.newIdentityHashSet();
-    stringsInCurrentClass = Sets.newIdentityHashSet();
-    typesInCurrentClass = Sets.newIdentityHashSet();
-  }
-
-  public void tearDownAfterTracing() {
     currentClass = null;
-    commitItemsInCurrentClass(callSites, callSitesInCurrentClass);
-    callSitesInCurrentClass = null;
-    commitItemsInCurrentClass(fields, fieldsInCurrentClass, base.fields, fieldsAlreadyInBase);
-    fieldsInCurrentClass = null;
-    commitItemsInCurrentClass(methods, methodsInCurrentClass, base.methods, methodsAlreadyInBase);
-    methodsInCurrentClass = null;
-    commitItemsInCurrentClass(methodHandles, methodHandlesInCurrentClass);
-    methodHandlesInCurrentClass = null;
-    commitItemsInCurrentClass(protos, protosInCurrentClass);
-    protosInCurrentClass = null;
-    commitItemsInCurrentClass(strings, stringsInCurrentClass);
-    stringsInCurrentClass = null;
-    commitItemsInCurrentClass(types, typesInCurrentClass, base.types, typesAlreadyInBase);
-    typesInCurrentClass = null;
-  }
-
-  private <T> void commitItemsInCurrentClass(Reference2IntMap<T> committedItems, Set<T> items) {
-    for (T item : items) {
-      int counter = committedItems.containsKey(item) ? committedItems.getInt(item) : 0;
-      assert counter != NO_REF_COUNT;
-      committedItems.put(item, counter + 1);
-    }
-    items.clear();
-  }
-
-  private <T> void commitItemsInCurrentClass(
-      Reference2IntMap<T> committedItems,
-      Set<T> items,
-      Reference2IntMap<T> baseCommittedItems,
-      Reference2IntMap<T> committedItemsAlreadyInBase) {
-    for (T item : items) {
-      Reference2IntMap<T> committedItemsForItem =
-          baseCommittedItems.containsKey(item) ? committedItemsAlreadyInBase : committedItems;
-      int counter =
-          committedItemsForItem.containsKey(item) ? committedItemsForItem.getInt(item) : 0;
-      assert counter != NO_REF_COUNT;
-      committedItemsForItem.put(item, counter + 1);
-    }
-    items.clear();
   }
 
   DexProgramClass currentClass = null;
 
   @Override
   public boolean addClass(DexProgramClass clazz) {
+    assert currentClass == null;
     if (!base.classes.contains(clazz) && classes.add(clazz)) {
-      setupForTracing(clazz);
+      currentClass = clazz;
       return true;
     }
     return false;
@@ -159,17 +80,17 @@ public class IndexedItemTransaction implements IndexedItemCollection {
 
   @Override
   public boolean addField(DexField field) {
-    return addItemWithReferenceCount(field, base.fields, fields, fieldsInCurrentClass);
+    return addItem(field, base.fields, fields);
   }
 
   @Override
   public boolean addMethod(DexMethod method) {
-    return addItemWithReferenceCount(method, base.methods, methods, methodsInCurrentClass);
+    return addItem(method, base.methods, methods);
   }
 
   @Override
   public boolean addString(DexString string) {
-    return addItemWithReferenceCount(string, base.strings, strings, stringsInCurrentClass);
+    return addItem(string, base.strings, strings);
   }
 
   public void addChecksumString(DexString string) {
@@ -181,29 +102,22 @@ public class IndexedItemTransaction implements IndexedItemCollection {
   }
 
   private void addChecksumOrMarkerString(DexString string) {
-    if (base.strings.containsKey(string)) {
-      // If this checksum or marker is already present in the DEX, we need to clear the reference
-      // counter. Otherwise, we may incorrectly conclude that the string can be removed from the DEX
-      // file if the class referencing the string is moved to a different file.
-      //
-      // Note that strictly speaking, at this point the transaction has not been committed, yet we
-      // still update the virtual file directly. This is OK only because we always commit all
-      // checksums and markers (i.e., this transaction is guaranteed to be committed in the future).
-      base.strings.put(string, NO_REF_COUNT);
-    } else {
-      strings.put(string, NO_REF_COUNT);
-    }
+    // Note that strictly speaking, at this point the transaction has not been committed, yet we
+    // still update the virtual file directly. This is OK only because we always commit all
+    // checksums and markers (i.e., this transaction is guaranteed to be committed in the future).
+    assert isEmpty();
+    base.strings.put(string, base.strings.getInt(string) + 1);
   }
 
   @Override
   public boolean addType(DexType type) {
     assert SyntheticNaming.verifyNotInternalSynthetic(type);
-    return addItemWithReferenceCount(type, base.types, types, typesInCurrentClass);
+    return addItem(type, base.types, types);
   }
 
   @Override
   public boolean addProto(DexProto proto) {
-    if (addItemWithReferenceCount(proto, base.protos, protos, protosInCurrentClass)) {
+    if (addItem(proto, base.protos, protos)) {
       DexString shorty =
           base.shortyCache.computeIfAbsent(
               proto.createShortyString(), appView.dexItemFactory()::createString);
@@ -215,13 +129,12 @@ public class IndexedItemTransaction implements IndexedItemCollection {
 
   @Override
   public boolean addCallSite(DexCallSite callSite) {
-    return addItemWithReferenceCount(callSite, base.callSites, callSites, callSitesInCurrentClass);
+    return addItem(callSite, base.callSites, callSites);
   }
 
   @Override
   public boolean addMethodHandle(DexMethodHandle methodHandle) {
-    return addItemWithReferenceCount(
-        methodHandle, base.methodHandles, methodHandles, methodHandlesInCurrentClass);
+    return addItem(methodHandle, base.methodHandles, methodHandles);
   }
 
   public int getNumberOfMethods() {
@@ -240,12 +153,10 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     return fields.size() + base.getNumberOfFields();
   }
 
-  private <T extends DexItem> void commitItemsTo(
-      Reference2IntMap<T> items, Reference2IntMap<T> committedItems) {
-    for (Reference2IntMap.Entry<T> entry : items.reference2IntEntrySet()) {
-      T item = entry.getKey();
-      int committedCounter = committedItems.containsKey(item) ? committedItems.getInt(item) : 0;
-      committedItems.put(item, committedCounter + entry.getIntValue());
+  private <T extends DexItem> void commitItemsTo(Set<T> items, Reference2IntMap<T> committedItems) {
+    for (T item : items) {
+      assert !committedItems.containsKey(item);
+      committedItems.put(item, 0);
     }
     items.clear();
   }
@@ -255,25 +166,19 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     classes.clear();
     commitItemsTo(callSites, base.callSites);
     commitItemsTo(fields, base.fields);
-    commitItemsTo(fieldsAlreadyInBase, base.fields);
     commitItemsTo(methods, base.methods);
-    commitItemsTo(methodsAlreadyInBase, base.methods);
     commitItemsTo(methodHandles, base.methodHandles);
     commitItemsTo(strings, base.strings);
     commitItemsTo(protos, base.protos);
     commitItemsTo(types, base.types);
-    commitItemsTo(typesAlreadyInBase, base.types);
   }
 
   public void abort() {
     classes.clear();
     fields.clear();
-    fieldsAlreadyInBase.clear();
     methods.clear();
-    methodsAlreadyInBase.clear();
     protos.clear();
     types.clear();
-    typesAlreadyInBase.clear();
     strings.clear();
     callSites.clear();
     methodHandles.clear();
@@ -282,12 +187,9 @@ public class IndexedItemTransaction implements IndexedItemCollection {
   public boolean isEmpty() {
     return classes.isEmpty()
         && fields.isEmpty()
-        && fieldsAlreadyInBase.isEmpty()
         && methods.isEmpty()
-        && methodsAlreadyInBase.isEmpty()
         && protos.isEmpty()
         && types.isEmpty()
-        && typesAlreadyInBase.isEmpty()
         && strings.isEmpty()
         && callSites.isEmpty()
         && methodHandles.isEmpty();
