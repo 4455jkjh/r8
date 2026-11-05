@@ -35,19 +35,20 @@ public class DexItemFactoryTest extends TestBase {
   public void commonItems() {
     DexItemFactory factory = new DexItemFactory();
 
-    Object[] data = new Object[]{
-        "B", factory.byteDescriptor, factory.byteType,
-        "C", factory.charDescriptor, factory.charType,
-        "D", factory.doubleDescriptor, factory.doubleType,
-        "F", factory.floatDescriptor, factory.floatType,
-        "I", factory.intDescriptor, factory.intType,
-        "J", factory.longDescriptor, factory.longType,
-        "S", factory.shortDescriptor, factory.shortType,
-        "V", factory.voidDescriptor, factory.voidType,
-        "Z", factory.booleanDescriptor, factory.booleanType,
-        "Ljava/lang/String;", factory.stringDescriptor, factory.stringType,
-        "Ljava/lang/Object;", factory.objectDescriptor, factory.objectType,
-    };
+    Object[] data =
+        new Object[] {
+          "B", factory.byteDescriptor, factory.byteType,
+          "C", factory.charDescriptor, factory.charType,
+          "D", factory.doubleDescriptor, factory.doubleType,
+          "F", factory.floatDescriptor, factory.floatType,
+          "I", factory.intDescriptor, factory.intType,
+          "J", factory.longDescriptor, factory.longType,
+          "S", factory.shortDescriptor, factory.shortType,
+          "V", factory.voidDescriptor, factory.voidType,
+          "Z", factory.booleanDescriptor, factory.booleanType,
+          "Ljava/lang/String;", factory.stringDescriptor, factory.stringType,
+          "Ljava/lang/Object;", factory.objectDescriptor, factory.objectType,
+        };
 
     for (int i = 0; i < data.length; i += 3) {
       DexString string1 = factory.createString((String) data[i]);

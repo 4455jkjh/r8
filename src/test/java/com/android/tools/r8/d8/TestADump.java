@@ -18,11 +18,7 @@ class TestADump implements Opcodes {
     AnnotationVisitor annotationVisitor0;
 
     classWriter.visit(
-        V1_8, ACC_SUPER,
-        "com/android/tools/r8/d8/TestA",
-        null,
-        "java/lang/Object",
-        null);
+        V1_8, ACC_SUPER, "com/android/tools/r8/d8/TestA", null, "java/lang/Object", null);
 
     classWriter.visitSource("DuplicateAnnotationTest.java", null);
 
@@ -77,4 +73,3 @@ class TestADump implements Opcodes {
     return classWriter.toByteArray();
   }
 }
-

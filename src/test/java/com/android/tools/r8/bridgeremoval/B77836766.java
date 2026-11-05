@@ -41,6 +41,7 @@ public class B77836766 extends TestBase {
   /**
    * The below Jasmin code mimics the following Kotlin code:
    *
+   * <pre>
    * package java_pkg;
    *
    * public interface Itf1 {
@@ -60,15 +61,17 @@ public class B77836766 extends TestBase {
    * internal class Cls1() : AbsCls<String>(), Itf1
    *
    * internal class Cls2() : AbsCls<Integer>(), Itf2
-   *
+   * </pre>
    *
    * kotlinc introduced bridge methods Cls?#foo to AbsCls#foo:
    *
+   * <pre>
    * class Cls1 extends AbsCls implements Itf1 {
    *   public bridge synthetic void foo(String arg) {
    *     invoke-virtual Cls1#foo(Object)V
    *   }
    * }
+   * </pre>
    *
    * Note that we can't write such code in Java because javac requires Itf?#foo, which are
    * technically abstract methods, to be explicitly overridden.
@@ -79,7 +82,10 @@ public class B77836766 extends TestBase {
 
     ClassBuilder absCls = jasminBuilder.addClass("AbsCls");
     absCls.setAccess("public abstract");
-    absCls.addFinalMethod("foo", ImmutableList.of("Ljava/lang/Object;"), "V",
+    absCls.addFinalMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/Object;"),
+        "V",
         ".limit stack 3",
         ".limit locals 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -94,7 +100,10 @@ public class B77836766 extends TestBase {
     // Mimic Kotlin's "internal" class
     cls1.setAccess("");
     cls1.addRuntimeInvisibleAnnotation(KeepConstantArguments.class.getTypeName());
-    cls1.addBridgeMethod("foo", ImmutableList.of("Ljava/lang/String;"), "V",
+    cls1.addBridgeMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/String;"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         "aload_0",
@@ -193,6 +202,9 @@ public class B77836766 extends TestBase {
   }
 
   /**
+   *
+   *
+   * <pre>
    * class Base {
    *   void foo(Object o) {...}
    * }
@@ -203,19 +215,25 @@ public class B77836766 extends TestBase {
    *   // Bridge method deferring to Base#foo(Object):
    *   public bridge synthetic void foo(Integer o) {
    *     foo((Object) o);
-   *   } }
+   *   }
+   * }
    * class DerivedString extends Base {
    *   // Regular non-bridge method calling Base#foo(Object):
    *   public void bar(String o) {
    *     foo(o);
-   *   } }
+   *   }
+   * }
+   * </pre>
    */
   @Test
   public void test_bridgeTargetInBase_bridgeAndNonBridge() throws Exception {
     JasminBuilder jasminBuilder = new JasminBuilder();
 
     ClassBuilder baseCls = jasminBuilder.addClass("Base");
-    baseCls.addVirtualMethod("foo", ImmutableList.of("Ljava/lang/Object;"), "V",
+    baseCls.addVirtualMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/Object;"),
+        "V",
         ".limit stack 3",
         ".limit locals 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -241,7 +259,10 @@ public class B77836766 extends TestBase {
 
     ClassBuilder cls2 = jasminBuilder.addClass("DerivedString", baseCls.name);
     cls2.addRuntimeInvisibleAnnotation(KeepConstantArguments.class.getTypeName());
-    cls2.addVirtualMethod("bar", ImmutableList.of("Ljava/lang/String;"), "V",
+    cls2.addVirtualMethod(
+        "bar",
+        ImmutableList.of("Ljava/lang/String;"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         "aload_0",
@@ -316,31 +337,43 @@ public class B77836766 extends TestBase {
   }
 
   /**
+   *
+   *
+   * <pre>
    * class Base {
    *   protected void foo(Object o) { ... }
    *   // Bridge method deferring to Base#foo(Object):
    *   public bridge synthetic void foo(Integer o) {
    *     foo((Object) o);
-   *   } }
+   *   }
+   * }
    * class DerivedString extends Base {
    *   // Regular non-bridge method calling Base#foo(Object):
    *   public void bar(String o) {
    *     foo(o);
-   *   } }
+   *   }
+   * }
+   * </pre>
    */
   @Test
   public void test_nonBridgeInSubType() throws Exception {
     JasminBuilder jasminBuilder = new JasminBuilder();
 
     ClassBuilder baseCls = jasminBuilder.addClass("Base");
-    baseCls.addVirtualMethod("foo", ImmutableList.of("Ljava/lang/Object;"), "V",
+    baseCls.addVirtualMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/Object;"),
+        "V",
         ".limit stack 3",
         ".limit locals 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
         "aload_1",
         "invokevirtual java/io/PrintStream/print(Ljava/lang/Object;)V",
         "return");
-    baseCls.addBridgeMethod("foo", ImmutableList.of("Ljava/lang/Integer;"), "V",
+    baseCls.addBridgeMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/Integer;"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         "aload_0",
@@ -350,7 +383,10 @@ public class B77836766 extends TestBase {
 
     ClassBuilder subCls = jasminBuilder.addClass("DerivedString", baseCls.name);
     subCls.addRuntimeInvisibleAnnotation(KeepConstantArguments.class.getTypeName());
-    subCls.addVirtualMethod("bar", ImmutableList.of("Ljava/lang/String;"), "V",
+    subCls.addVirtualMethod(
+        "bar",
+        ImmutableList.of("Ljava/lang/String;"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         "aload_0",
@@ -420,14 +456,20 @@ public class B77836766 extends TestBase {
     JasminBuilder jasminBuilder = new JasminBuilder();
 
     ClassBuilder cls = jasminBuilder.addClass("Base");
-    cls.addBridgeMethod("foo", ImmutableList.of("Ljava/lang/Integer;"), "V",
+    cls.addBridgeMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/Integer;"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         "aload_0",
         "aload_1",
         "invokevirtual " + cls.name + "/foo(Ljava/lang/Object;)V",
         "return");
-    cls.addVirtualMethod("foo", ImmutableList.of("Ljava/lang/Object;"), "V",
+    cls.addVirtualMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/Object;"),
+        "V",
         ".limit stack 3",
         ".limit locals 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -435,7 +477,10 @@ public class B77836766 extends TestBase {
         "invokevirtual java/io/PrintStream/print(Ljava/lang/Object;)V",
         "return");
     cls.addRuntimeInvisibleAnnotation(KeepConstantArguments.class.getTypeName());
-    cls.addVirtualMethod("bar", ImmutableList.of("Ljava/lang/String;"), "V",
+    cls.addVirtualMethod(
+        "bar",
+        ImmutableList.of("Ljava/lang/String;"),
+        "V",
         ".limit stack 2",
         ".limit locals 2",
         "aload_0",

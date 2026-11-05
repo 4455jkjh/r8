@@ -5,10 +5,12 @@
 package com.android.tools.r8.horizontalclassmerging;
 
 import static com.android.tools.r8.ir.conversion.ExtraUnusedParameter.computeExtraUnusedParameters;
+import static com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimizations.CfUtilityMethodsForCodeOptimizationsTemplates_isEqual;
 import static com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimizations.CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNotEquals;
 
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.ClassMergerGraphLens;
+import com.android.tools.r8.contexts.CompilationContext.MainThreadContext;
 import com.android.tools.r8.contexts.CompilationContext.UniqueContext;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMember;
@@ -17,6 +19,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -29,7 +32,8 @@ import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.conversion.ExtraConstantParameter;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
-import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.synthesis.SyntheticItems.SyntheticKindSelector;
+import com.android.tools.r8.synthesis.SyntheticMethodBuilder.SyntheticCodeGenerator;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -57,12 +61,9 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
   private final Map<DexMethod, ArgumentPermutation> methodArgumentPermutations;
   private final HorizontallyMergedClasses mergedClasses;
 
-  // Deterministic unique context for synthesizing a throwClassCastExceptionIfNotEquals() synthetic
-  // helper method.
-  private final UniqueContext uniqueContext;
-  private volatile ProgramMethod throwClassCastExceptionIfNotEqualsMethod;
-  private ProgramMethodSet throwClassCastExceptionIfNotEqualsMethodCallers =
-      ProgramMethodSet.createConcurrent();
+  // Synthetic helper methods that are synthesized on demand during lens code rewriting.
+  private SyntheticHelperMethod throwClassCastExceptionIfNotEqualsMethod;
+  private SyntheticHelperMethod isEqualMethod;
 
   private HorizontalClassMergerGraphLens(
       AppView<?> appView,
@@ -85,11 +86,24 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
         appView
             .definitionFor(ListUtils.sort(mergedClasses.getTargets(), DexType::compareTo).get(0))
             .asProgramClass();
-    this.uniqueContext =
-        appView
-            .createProcessorContext()
-            .createMainThreadContext()
-            .createUniqueContext(deterministicMergeTarget);
+    // Create the unique contexts eagerly to make the naming of the helper methods deterministic.
+    MainThreadContext mainThreadContext =
+        appView.createProcessorContext().createMainThreadContext();
+    DexItemFactory factory = appView.dexItemFactory();
+    this.throwClassCastExceptionIfNotEqualsMethod =
+        new SyntheticHelperMethod(
+            naming -> naming.THROW_CCE_IF_NOT_EQUALS,
+            factory.createProto(factory.voidType, factory.intType, factory.intType),
+            m ->
+                CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNotEquals(
+                    factory, m),
+            mainThreadContext.createUniqueContext(deterministicMergeTarget));
+    this.isEqualMethod =
+        new SyntheticHelperMethod(
+            naming -> naming.IS_EQUAL,
+            factory.createProto(factory.booleanType, factory.intType, factory.intType),
+            m -> CfUtilityMethodsForCodeOptimizationsTemplates_isEqual(factory, m),
+            mainThreadContext.createUniqueContext(deterministicMergeTarget));
   }
 
   DexMethod getNextMethodToInvoke(DexMethod method) {
@@ -105,45 +119,25 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
   // Synthesizes a throwClassCastExceptionIfNotEquals() synthetic helper method if one has not
   // already been synthesized. This may be called concurrently from lens code rewriting.
   public DexMethod ensureThrowClassCastExceptionIfNotEqualsMethod(ProgramMethod context) {
-    if (throwClassCastExceptionIfNotEqualsMethod == null) {
-      synchronized (this) {
-        if (throwClassCastExceptionIfNotEqualsMethod == null) {
-          DexItemFactory factory = appView.dexItemFactory();
-          SyntheticItems syntheticItems = appView.getSyntheticItems();
-          throwClassCastExceptionIfNotEqualsMethod =
-              syntheticItems.createMethod(
-                  naming -> naming.THROW_CCE_IF_NOT_EQUALS,
-                  uniqueContext,
-                  appView,
-                  builder ->
-                      builder
-                          .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
-                          .setApiLevelForCode(appView.computedMinApiLevel())
-                          .setApiLevelForDefinition(appView.computedMinApiLevel())
-                          .setClassFileVersion(CfVersion.V1_6)
-                          .setCode(
-                              m ->
-                                  CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNotEquals(
-                                      factory, m))
-                          .setProto(
-                              factory.createProto(
-                                  factory.voidType, factory.intType, factory.intType)));
-        }
-      }
+    return throwClassCastExceptionIfNotEqualsMethod.ensure(context);
+  }
+
+  // Synthesizes an isEqual() synthetic helper method if one has not already been synthesized. This
+  // may be called concurrently from lens code rewriting.
+  public DexMethod ensureIsEqualMethod(ProgramMethod context) {
+    return isEqualMethod.ensure(context);
+  }
+
+  public List<SyntheticHelperMethod> unsetSynthesizedHelperMethods() {
+    List<SyntheticHelperMethod> result = new ArrayList<>(2);
+    if (throwClassCastExceptionIfNotEqualsMethod.isSynthesized()) {
+      result.add(throwClassCastExceptionIfNotEqualsMethod);
     }
-    throwClassCastExceptionIfNotEqualsMethodCallers.add(context);
-    return throwClassCastExceptionIfNotEqualsMethod.getReference();
-  }
-
-  public ProgramMethod unsetThrowClassCastExceptionIfNotEqualsMethod() {
-    ProgramMethod result = throwClassCastExceptionIfNotEqualsMethod;
+    if (isEqualMethod.isSynthesized()) {
+      result.add(isEqualMethod);
+    }
     throwClassCastExceptionIfNotEqualsMethod = null;
-    return result;
-  }
-
-  public ProgramMethodSet unsetThrowClassCastExceptionIfNotEqualsMethodCallers() {
-    ProgramMethodSet result = throwClassCastExceptionIfNotEqualsMethodCallers;
-    throwClassCastExceptionIfNotEqualsMethodCallers = null;
+    isEqualMethod = null;
     return result;
   }
 
@@ -273,6 +267,68 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
       return lookup.combine(collisionResolution);
     }
     return lookup;
+  }
+
+  /** A synthetic helper method that is synthesized on demand during lens code rewriting. */
+  public class SyntheticHelperMethod {
+
+    private final SyntheticKindSelector kindSelector;
+    private final DexProto proto;
+    private final SyntheticCodeGenerator codeGenerator;
+    // Deterministic unique context for synthesizing the helper method.
+    private final UniqueContext uniqueContext;
+
+    private volatile ProgramMethod method;
+    private final ProgramMethodSet callers = ProgramMethodSet.createConcurrent();
+
+    private SyntheticHelperMethod(
+        SyntheticKindSelector kindSelector,
+        DexProto proto,
+        SyntheticCodeGenerator codeGenerator,
+        UniqueContext uniqueContext) {
+      this.kindSelector = kindSelector;
+      this.proto = proto;
+      this.codeGenerator = codeGenerator;
+      this.uniqueContext = uniqueContext;
+    }
+
+    private DexMethod ensure(ProgramMethod context) {
+      if (method == null) {
+        synchronized (this) {
+          if (method == null) {
+            method =
+                appView
+                    .getSyntheticItems()
+                    .createMethod(
+                        kindSelector,
+                        uniqueContext,
+                        appView,
+                        builder ->
+                            builder
+                                .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+                                .setApiLevelForCode(appView.computedMinApiLevel())
+                                .setApiLevelForDefinition(appView.computedMinApiLevel())
+                                .setClassFileVersion(CfVersion.V1_6)
+                                .setCode(codeGenerator)
+                                .setProto(proto));
+          }
+        }
+      }
+      callers.add(context);
+      return method.getReference();
+    }
+
+    private boolean isSynthesized() {
+      return method != null;
+    }
+
+    public ProgramMethod getMethod() {
+      return method;
+    }
+
+    public ProgramMethodSet getCallers() {
+      return callers;
+    }
   }
 
   public static class Builder

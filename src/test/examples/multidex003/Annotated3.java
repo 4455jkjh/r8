@@ -8,8 +8,5 @@ import multidex003.TestAnnotation3.Value;
 
 @TestAnnotation3(Value.V1)
 public class Annotated3 {
-    public void m() {
-
-    }
-
+  public void m() {}
 }

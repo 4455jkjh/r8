@@ -18,7 +18,10 @@ public class Regress129901036Test {
         noThrow();
         noThrow();
         // Workaround failed to handle a trivial loop when searching for a possible loop header.
-      } catch (Exception e) { while (true); }
+      } catch (Exception e) {
+        while (true)
+          ;
+      }
       // The normal successor may differ from the exceptional one and still cause the issue.
       it.hasNext();
     }

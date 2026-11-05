@@ -204,6 +204,10 @@ public abstract class DexClass extends DexDefinition
     this.interfaces = interfaces;
   }
 
+  public boolean hasSourceFile() {
+    return sourceFile != null;
+  }
+
   public DexString getSourceFile() {
     return sourceFile;
   }

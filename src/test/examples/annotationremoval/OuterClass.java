@@ -37,13 +37,14 @@ public class OuterClass {
     }
 
     InnerClass inner = new InnerClass(x);
-    MagicClass magic = new MagicClass() {
+    MagicClass magic =
+        new MagicClass() {
 
-      @Override
-      public int returnAnInt() {
-        return 124;
-      }
-    };
+          @Override
+          public int returnAnInt() {
+            return 124;
+          }
+        };
     MagicClass localMagic = new LocalMagic();
     return inner.computeAResult(42) + magic.returnAnInt() + localMagic.returnAnInt();
   }

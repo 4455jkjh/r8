@@ -66,8 +66,7 @@ public class JumboStringTest extends SmaliTestBase {
         DEFAULT_METHOD_NAME,
         ImmutableList.of(),
         2,
-        builders.getFirst().toString()
-    );
+        builders.getFirst().toString());
 
     smaliBuilder.addMainMethod(
         2,
@@ -75,8 +74,7 @@ public class JumboStringTest extends SmaliTestBase {
         "    invoke-static       {}, LTest;->method()Ljava/lang/String;",
         "    move-result-object  v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(Ljava/lang/String;)V",
-        "    return-void"
-    );
+        "    return-void");
 
     testForR8(parameters.getBackend())
         .addProgramDexFileData(smaliBuilder.compile())

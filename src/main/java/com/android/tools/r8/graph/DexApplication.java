@@ -137,7 +137,9 @@ public abstract class DexApplication implements DexDefinitionSupplier {
 
   public abstract static class Builder<S extends DexApplication, T extends Builder<S, T>> {
 
-    private final List<DexProgramClass> programClasses = new ArrayList<>();
+    ImmutableList<DexProgramClass> programClasses;
+    private List<DexProgramClass> pendingProgramClasses = new ArrayList<>();
+    boolean hasReplacedOrRemovedProgramClasses = false;
 
     final List<DataResourceProvider> dataResourceProviders = new ArrayList<>();
 
@@ -149,13 +151,18 @@ public abstract class DexApplication implements DexDefinitionSupplier {
     public Builder(InternalOptions options) {
       this.options = options;
       this.dexItemFactory = options.itemFactory;
+      this.programClasses = ImmutableList.of();
     }
 
     abstract T self();
 
     public Builder(DexApplication application) {
+      this(application, ImmutableList.copyOf(application.programClasses()));
+    }
+
+    Builder(DexApplication application, ImmutableList<DexProgramClass> programClasses) {
       flags = application.getFlags();
-      programClasses.addAll(application.programClasses());
+      this.programClasses = programClasses;
       dataResourceProviders.addAll(application.dataResourceProviders);
       proguardMap = application.getProguardMap();
       options = application.options;
@@ -181,15 +188,44 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       return self();
     }
 
+    List<DexProgramClass> commitPendingProgramClasses() {
+      if (pendingProgramClasses.isEmpty()) {
+        return Collections.emptyList();
+      }
+      programClasses =
+          ImmutableList.<DexProgramClass>builderWithExpectedSize(
+                  programClasses.size() + pendingProgramClasses.size())
+              .addAll(programClasses)
+              .addAll(pendingProgramClasses)
+              .build();
+      List<DexProgramClass> committedProgramClasses = pendingProgramClasses;
+      pendingProgramClasses = new ArrayList<>();
+      return committedProgramClasses;
+    }
+
     public synchronized T removeProgramClasses(Predicate<DexProgramClass> predicate) {
-      this.programClasses.removeIf(predicate);
+      ImmutableList.Builder<DexProgramClass> newProgramClasses = ImmutableList.builder();
+      for (DexProgramClass clazz : programClasses) {
+        if (!predicate.test(clazz)) {
+          newProgramClasses.add(clazz);
+        }
+      }
+      for (DexProgramClass clazz : pendingProgramClasses) {
+        if (!predicate.test(clazz)) {
+          newProgramClasses.add(clazz);
+        }
+      }
+      this.programClasses = newProgramClasses.build();
+      this.pendingProgramClasses.clear();
+      this.hasReplacedOrRemovedProgramClasses = true;
       return self();
     }
 
     public synchronized T replaceProgramClasses(Collection<DexProgramClass> newProgramClasses) {
       assert newProgramClasses != null;
-      this.programClasses.clear();
-      this.programClasses.addAll(newProgramClasses);
+      this.programClasses = ImmutableList.copyOf(newProgramClasses);
+      this.pendingProgramClasses.clear();
+      this.hasReplacedOrRemovedProgramClasses = true;
 
       DexApplicationReadFlags.Builder builder = DexApplicationReadFlags.builder();
       builder.setHasReadProgramClassFromDex(this.flags.hasReadProgramClassFromDex());
@@ -222,20 +258,21 @@ public abstract class DexApplication implements DexDefinitionSupplier {
     }
 
     public synchronized T addProgramClass(DexProgramClass clazz) {
-      programClasses.add(clazz);
+      pendingProgramClasses.add(clazz);
       return self();
     }
 
     public abstract void addProgramClassPotentiallyOverridingNonProgramClass(DexProgramClass clazz);
 
     public synchronized T addProgramClasses(Collection<DexProgramClass> classes) {
-      programClasses.addAll(classes);
+      pendingProgramClasses.addAll(classes);
       return self();
     }
 
     public abstract T addClasspathClass(DexClasspathClass clazz);
 
-    public List<DexProgramClass> getProgramClasses() {
+    public ImmutableList<DexProgramClass> getProgramClasses() {
+      assert pendingProgramClasses.isEmpty();
       return programClasses;
     }
 

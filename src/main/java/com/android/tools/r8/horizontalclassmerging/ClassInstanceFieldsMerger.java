@@ -221,6 +221,12 @@ public interface ClassInstanceFieldsMerger {
       assert Iterables.all(oldFields, oldField -> oldField.isFinal() == newField.isFinal());
       assert Iterables.all(oldFields, oldField -> oldField.isTransient() == newField.isTransient());
       assert Iterables.all(oldFields, oldField -> oldField.isVolatile() == newField.isVolatile());
+      // Final fields are never merged with missing fields (see
+      // CoroutineStateMachineMergeCandidates): keeping `final` would materialize a constructor
+      // barrier on initializers that previously had none (and leave the field unassigned in class
+      // files), whereas demoting `final` would drop the constructor barrier for classes that had
+      // the final field.
+      assert !newField.isFinal() || oldFields.size() == group.size();
     }
 
     @SuppressWarnings("ReferenceEquality")

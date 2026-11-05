@@ -80,7 +80,7 @@ public class UnusedInterfaceWithDefaultMethodTest extends TestBase {
   static class TestClass {
 
     public static void main(String[] args) {
-      indirection(new A());
+      indirection(System.currentTimeMillis() > 0 ? new A() : null);
     }
 
     @NeverInline

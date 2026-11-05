@@ -61,8 +61,11 @@ public class MoveStringConstantsTest extends TestBase {
 
     // Check the instruction used for testInlinedIntoVoidMethod
     MethodSubject methodThrowToBeInlined =
-        clazz.method("void", "foo", ImmutableList.of(
-            "java.lang.String", "java.lang.String", "java.lang.String", "java.lang.String"));
+        clazz.method(
+            "void",
+            "foo",
+            ImmutableList.of(
+                "java.lang.String", "java.lang.String", "java.lang.String", "java.lang.String"));
     assertTrue(methodThrowToBeInlined.isPresent());
 
     // CF should not canonicalize strings or lower them. This test ensures that strings are moved

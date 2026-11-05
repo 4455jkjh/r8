@@ -61,11 +61,7 @@ public abstract class R8RunExamplesTestBase extends TestBase {
   }
 
   protected static String[] makeTest(
-      Input input,
-      CompilerUnderTest compiler,
-      CompilationMode mode,
-      String clazz,
-      Output output) {
+      Input input, CompilerUnderTest compiler, CompilationMode mode, String clazz, Output output) {
     String pkg = clazz.substring(0, clazz.lastIndexOf('.'));
     return new String[] {pkg, input.name(), compiler.name(), mode.name(), clazz, output.name()};
   }
@@ -117,7 +113,7 @@ public abstract class R8RunExamplesTestBase extends TestBase {
   }
 
   private Path getInputFile() {
-    switch(input) {
+    switch (input) {
       case JAVAC:
         return getOriginalJarFile("");
       case JAVAC_ALL:
@@ -137,8 +133,8 @@ public abstract class R8RunExamplesTestBase extends TestBase {
   public Path getOriginalJarFile(String postFix) {
     return getExampleDir().resolve(pkg + postFix + JAR_EXTENSION);
   }
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Before
   public void compile() throws Exception {
@@ -147,17 +143,19 @@ public abstract class R8RunExamplesTestBase extends TestBase {
     }
     OutputMode outputMode = output == Output.CF ? OutputMode.ClassFile : OutputMode.DexIndexed;
     switch (compiler) {
-      case D8: {
-        assertTrue(output == Output.DEX);
-        D8.run(
-            D8Command.builder()
-                .addProgramFiles(getInputFile())
-                .setOutput(getOutputFile(), outputMode)
-                .setMode(mode)
-                .build());
-        break;
-      }
-      case R8: {
+      case D8:
+        {
+          assertTrue(output == Output.DEX);
+          D8.run(
+              D8Command.builder()
+                  .addProgramFiles(getInputFile())
+                  .setOutput(getOutputFile(), outputMode)
+                  .setMode(mode)
+                  .build());
+          break;
+        }
+      case R8:
+        {
           R8Command command =
               addInputFile(R8Command.builder())
                   .addLibraryFiles(
@@ -172,8 +170,8 @@ public abstract class R8RunExamplesTestBase extends TestBase {
                       ImmutableList.of("-keepattributes *", "-dontoptimize"), Origin.unknown())
                   .build();
           ToolHelper.runR8(command, this::configure);
-        break;
-      }
+          break;
+        }
       default:
         throw new Unreachable();
     }

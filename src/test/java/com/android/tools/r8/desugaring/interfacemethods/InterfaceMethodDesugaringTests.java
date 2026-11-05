@@ -218,16 +218,16 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
       cr.accept(
           new ClassVisitor(InternalOptions.ASM_VERSION, cw) {
             @Override
-            public MethodVisitor visitMethod(int access, String name,
-                String desc, String signature, String[] exceptions) {
+            public MethodVisitor visitMethod(
+                int access, String name, String desc, String signature, String[] exceptions) {
               MethodVisitor visitor = super.visitMethod(access, name, desc, signature, exceptions);
               return new MethodVisitor(InternalOptions.ASM_VERSION, visitor) {
                 @Override
                 public void visitMethodInsn(
                     int opcode, String owner, String name, String desc, boolean itf) {
-                  if (opcode == Opcodes.INVOKEINTERFACE &&
-                      owner.endsWith("InterfaceWithDefaults") &&
-                      name.equals("foo")) {
+                  if (opcode == Opcodes.INVOKEINTERFACE
+                      && owner.endsWith("InterfaceWithDefaults")
+                      && name.equals("foo")) {
                     assertEquals(0, patched.value);
                     super.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc, itf);
                     patched.value++;
@@ -238,7 +238,8 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
                 }
               };
             }
-          }, 0);
+          },
+          0);
       assertEquals(1, patched.value);
       return cw.toByteArray();
     }

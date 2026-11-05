@@ -93,8 +93,6 @@ public abstract class TestCompilerBuilder<
             options.testing.forcePruneMetaInfManifestMf = true;
             options.horizontalClassMergerOptions().enableForTesting();
             options.horizontalClassMergerOptions().setEnableInterfaceMerging();
-            assert !options.horizontalClassMergerOptions().enableCheckCastRewriting;
-            options.horizontalClassMergerOptions().enableCheckCastRewriting = true;
             options
                 .getCfCodeAnalysisOptions()
                 .setAllowUnreachableCfBlocks(false)

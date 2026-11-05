@@ -41,16 +41,18 @@ class Switches {
 
   public static void switchWithLocals(int value) {
     switch (value) {
-      case 0: {
-        int i = 42;
-        System.out.println(" " + i + value);
-        break;
-      }
-      case 2: {
-        double d = 1.0;
-        System.out.println(" " + d + value);
-        break;
-      }
+      case 0:
+        {
+          int i = 42;
+          System.out.println(" " + i + value);
+          break;
+        }
+      case 2:
+        {
+          double d = 1.0;
+          System.out.println(" " + d + value);
+          break;
+        }
     }
   }
 
@@ -90,16 +92,16 @@ class Switches {
     packedSwitch(0);
     packedSwitch(1);
     packedSwitch(2);
-    packedSwitch(-1);  // No such case, use fallthrough.
+    packedSwitch(-1); // No such case, use fallthrough.
     sparseSwitch(0);
     sparseSwitch(100);
     sparseSwitch(200);
-    sparseSwitch(-1);  // No such case, use fallthrough.
+    sparseSwitch(-1); // No such case, use fallthrough.
     switchWithLocals(0);
     switchWithLocals(2);
     maybePackedSwitch(1);
     maybePackedSwitch(10);
-    maybePackedSwitch(40);  // Fallthrough.
+    maybePackedSwitch(40); // Fallthrough.
     maybePackedSwitch(60);
   }
 }

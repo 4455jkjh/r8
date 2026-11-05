@@ -3,11 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.examples.regress_64881691;
 
-class A {
-}
+class A {}
 
-class B {
-}
+class B {}
 
 public class Regress {
 

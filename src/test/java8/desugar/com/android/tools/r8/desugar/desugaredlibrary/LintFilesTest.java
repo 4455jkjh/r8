@@ -44,9 +44,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class LintFilesTest extends DesugaredLibraryTestBase {
 
-  private static final String ANDROID_JAR_34 =
-      ToolHelper.THIRD_PARTY_DIR + "android_jar/lib-v34/android.jar";
-
   private final LibraryDesugaringSpecification libraryDesugaringSpecification;
 
   private List<String> lintContents;
@@ -176,10 +173,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
           jdkLibJar.toString(),
           directory.toString(),
           // TODO(b/289365156): Should probably not be hardcoded on U.
-          ToolHelper.THIRD_PARTY_DIR
-              + "android_jar/lib-v"
-              + AndroidApiLevel.U.getNumericString()
-              + "/android.jar"
+          ToolHelper.getAndroidJar(AndroidApiLevel.U).toString()
         });
     InternalOptions options = new InternalOptions(new DexItemFactory(), new Reporter());
     DesugaredLibrarySpecification desugaredLibrarySpecification =
@@ -224,10 +218,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
           jdkLibJar.toString(),
           directory2.toString(),
           // TODO(b/289365156): Should probably not be hardcoded on U.
-          ToolHelper.THIRD_PARTY_DIR
-              + "android_jar/lib-v"
-              + AndroidApiLevel.U.getNumericString()
-              + "/android.jar"
+          ToolHelper.getAndroidJar(AndroidApiLevel.U).toString()
         });
     List<String> html = Files.readAllLines(directory2.resolve("apis.html"));
     // The doc has the same content than the lint data that is tested above, this is just a sanity
@@ -255,7 +246,8 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
               StringResource.fromFile(spec.getSpecification()),
               ImmutableList.of(ArchiveProgramResourceProvider.fromArchive(jdkLibJar)),
               html,
-              ImmutableList.of(new ArchiveClassFileProvider(Paths.get(ANDROID_JAR_34))))
+              ImmutableList.of(
+                  new ArchiveClassFileProvider(ToolHelper.getAndroidJar(AndroidApiLevel.U))))
           .run(spec + ".html");
       Path lint = top.resolve("lint_" + spec);
       Files.createDirectories(lint);
@@ -264,7 +256,8 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
               StringResource.fromFile(spec.getSpecification()),
               ImmutableList.of(ArchiveProgramResourceProvider.fromArchive(jdkLibJar)),
               lint,
-              ImmutableList.of(new ArchiveClassFileProvider(Paths.get(ANDROID_JAR_34))))
+              ImmutableList.of(
+                  new ArchiveClassFileProvider(ToolHelper.getAndroidJar(AndroidApiLevel.U))))
           .run();
     }
   }

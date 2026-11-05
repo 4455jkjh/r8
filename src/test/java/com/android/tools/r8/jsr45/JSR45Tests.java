@@ -60,8 +60,7 @@ public class JSR45Tests extends TestBase {
   private static final Path SHRINK_NO_KEEP_CONFIG =
       Paths.get(ToolHelper.TESTS_SOURCE_DIR + "com/android/tools/r8/jsr45/keep-rules-4.txt");
 
-  @Rule
-  public TemporaryFolder tmpOutputDir = ToolHelper.getTemporaryFolderForTest();
+  @Rule public TemporaryFolder tmpOutputDir = ToolHelper.getTemporaryFolderForTest();
 
   private AndroidApp compileWithD8(Path intputPath, Path outputPath)
       throws CompilationFailedException {
@@ -119,9 +118,7 @@ public class JSR45Tests extends TestBase {
     checkAnnotationContent(INPUT_PATH, result);
   }
 
-  /**
-   * Check that when dontshrink is used the annotation is not removed due to obfuscation.
-   */
+  /** Check that when dontshrink is used the annotation is not removed due to obfuscation. */
   @Test
   public void testSourceDebugExtensionWithShrinking2() throws Exception {
     Path outputPath = tmpOutputDir.newFolder().toPath();

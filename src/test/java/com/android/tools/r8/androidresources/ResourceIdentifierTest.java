@@ -3,14 +3,16 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources;
 
-import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResource;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Consumer;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -33,7 +35,11 @@ public class ResourceIdentifierTest extends TestBase {
   @Parameters(name = "{0}, optimized: {1}, enableResourceIdPruning: {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDefaultDexRuntime().withAllApiLevels().build(),
+        getTestParameters()
+            .withDefaultDexRuntime()
+            .withAllApiLevels()
+            .withPartialCompilation()
+            .build(),
         BooleanUtils.values(),
         BooleanUtils.values());
   }
@@ -49,43 +55,52 @@ public class ResourceIdentifierTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
+    Assume.assumeTrue(optimized || parameters.getPartialCompilationTestParameters().isNone());
     AndroidTestResource testResources = getTestResources(temp);
     Path resourcesClass = AndroidResourceTestingUtils.resourcesClassAsDex(temp);
     byte[] withAndroidResourcesReference =
         AndroidResourceTestingUtils.transformResourcesReferences(FooBar.class);
 
-    testForR8(parameters.getBackend())
-        .setMinApi(parameters)
+    testForR8(parameters)
         .addProgramClassFileData(withAndroidResourcesReference)
         .addRunClasspathFiles(resourcesClass)
         .addAndroidResources(testResources)
         .addKeepMainRule(FooBar.class)
-        .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
         .applyIf(
             optimized,
-            builder ->
-                builder.addOptionsModification(
-                    options -> options.enableResourceIdPruning = enableResourceIdPruning))
+            builder -> {
+              Consumer<InternalOptions> setPruning =
+                  options -> options.enableResourceIdPruning = enableResourceIdPruning;
+              builder
+                  .enableOptimizedShrinking()
+                  .applyIf(
+                      builder.isR8PartialTestBuilder(),
+                      b -> b.addR8PartialR8OptionsModification(setPruning),
+                      b -> b.addOptionsModification(setPruning));
+            })
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {
               resourceTableInspector.assertContainsResourceWithName("id", "id_in_live_xml");
-              if (optimized) {
-                resourceTableInspector.assertDoesNotContainResourceWithName("string", "foobar");
-                if (enableResourceIdPruning) {
+              // Both modes keep resources looked up with constant names: safe mode through the
+              // string pool, optimized shrinking by tracing the live getIdentifier() calls.
+              resourceTableInspector.assertContainsResourceWithName("string", "foobar");
+              resourceTableInspector.assertContainsResourceWithName("id", "reflectively_used_id");
+              if (optimized && enableResourceIdPruning) {
+                resourceTableInspector.assertDoesNotContainResourceWithName("id", "id_in_dead_xml");
+                if (parameters.getPartialCompilationTestParameters().isNone()
+                    || parameters.getPartialCompilationTestParameters().isIncludeAll()) {
                   resourceTableInspector.assertDoesNotContainResourceWithName(
-                      "id", "reflectively_used_id");
-                  resourceTableInspector.assertDoesNotContainResourceWithName(
-                      "id", "id_in_dead_xml");
-                } else {
+                      "id", "dead_after_inlining_id");
+                } else if (parameters.getPartialCompilationTestParameters().isExcludeAll()) {
                   resourceTableInspector.assertContainsResourceWithName(
-                      "id", "reflectively_used_id");
-                  resourceTableInspector.assertContainsResourceWithName("id", "id_in_dead_xml");
+                      "id", "dead_after_inlining_id");
                 }
               } else {
-                resourceTableInspector.assertContainsResourceWithName("string", "foobar");
+                // Legacy mode and optimized mode without ID pruning retain all @id/* entries.
                 resourceTableInspector.assertContainsResourceWithName("id", "id_in_dead_xml");
-                resourceTableInspector.assertContainsResourceWithName("id", "reflectively_used_id");
+                resourceTableInspector.assertContainsResourceWithName(
+                    "id", "dead_after_inlining_id");
               }
             })
         .run(parameters.getRuntime(), FooBar.class)
@@ -99,10 +114,18 @@ public class ResourceIdentifierTest extends TestBase {
       System.out.println(resources.getIdentifier("foobar", "string", "com.android.tools.r8"));
       System.out.println(
           resources.getIdentifier("reflectively_used_id", "id", "com.android.tools.r8"));
+      if (alwaysFalse()) {
+        System.out.println(
+            resources.getIdentifier("dead_after_inlining_id", "id", "com.android.tools.r8"));
+      }
 
       System.out.println(R.id.id_in_live_xml);
       System.out.println(R.xml.file_id_in_live_xml);
       System.out.println(R.id.id_in_dead_xml);
+    }
+
+    private static boolean alwaysFalse() {
+      return false;
     }
   }
 
@@ -115,6 +138,7 @@ public class ResourceIdentifierTest extends TestBase {
 
     public static class id {
       public static int reflectively_used_id;
+      public static int dead_after_inlining_id;
       public static int id_in_live_xml;
       public static int id_in_dead_xml;
     }

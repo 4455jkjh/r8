@@ -6,9 +6,14 @@ package com.android.tools.r8.examples.invoke;
 
 public interface InvokeInterface {
   public void interface0();
+
   public void interface1(int a);
+
   public void interface2(int a, int b);
+
   public void interface3(int a, int b, int c);
+
   public void interface4(int a, int b, int c, int d);
+
   public void interfaceRange(int a, int b, int c, int d, int e, int f);
 }

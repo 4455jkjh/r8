@@ -14,9 +14,9 @@ import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.Box;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -163,11 +163,11 @@ public class AndroidAppDumpsTest extends TestBase {
 
       @Override
       public ProgramResource getProgramResource(String descriptor) {
-          return ProgramResource.fromBytes(
-              origin(clazz.getTypeName()),
-              Kind.CF,
-              ToolHelper.getClassAsBytes(clazz),
-              getClassDescriptors());
+        return ProgramResource.fromBytes(
+            origin(clazz.getTypeName()),
+            Kind.CF,
+            ToolHelper.getClassAsBytes(clazz),
+            getClassDescriptors());
       }
     };
   }

@@ -93,7 +93,7 @@ public class DescriptorUtilsTest extends TestBase {
     assertEquals("Ljava\\lang\\Object;", DescriptorUtils.guessTypeDescriptor(objBackslash));
     String objFileSeparatorChar =
         "java" + File.separatorChar + "lang" + File.separatorChar + "Object.class";
-    assertEquals("Ljava/lang/Object;",
-        DescriptorUtils.guessTypeDescriptor(Paths.get(objFileSeparatorChar)));
+    assertEquals(
+        "Ljava/lang/Object;", DescriptorUtils.guessTypeDescriptor(Paths.get(objFileSeparatorChar)));
   }
 }

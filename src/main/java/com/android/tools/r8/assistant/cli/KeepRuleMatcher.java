@@ -7,6 +7,7 @@ import com.android.tools.r8.assistant.cli.KeepRequirements.KnownMember;
 import com.android.tools.r8.assistant.postprocessing.model.ReflectiveEvent;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.ProguardAccessFlags;
+import com.android.tools.r8.shaking.ProguardClassNameList;
 import com.android.tools.r8.shaking.ProguardClassType;
 import com.android.tools.r8.shaking.ProguardIfRule;
 import com.android.tools.r8.shaking.ProguardKeepRule;
@@ -15,11 +16,16 @@ import com.android.tools.r8.shaking.ProguardKeepRuleModifiers;
 import com.android.tools.r8.shaking.ProguardKeepRuleType;
 import com.android.tools.r8.shaking.ProguardMemberRule;
 import com.android.tools.r8.shaking.ProguardMemberType;
+import com.android.tools.r8.shaking.ProguardNameMatcher;
 import com.android.tools.r8.shaking.ProguardTypeMatcher;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -181,6 +187,11 @@ final class KeepRuleMatcher {
 
   private final KeepRuleSet rules;
   private final KeepRequirements facts;
+  private final Map<ProguardIfRule, Optional<String>> firstPreconditionClass =
+      new IdentityHashMap<>();
+  private final Map<ProguardIfRule, ClassNameIndex<String>> preconditionClasses =
+      new IdentityHashMap<>();
+  private final Map<KeepRequirement, List<KeepRequirement>> resultMembers = new IdentityHashMap<>();
 
   KeepRuleMatcher(KeepRuleSet rules, KeepRequirements facts) {
     this.rules = rules;
@@ -191,7 +202,7 @@ final class KeepRuleMatcher {
   RequirementCoverage cover(KeepRequirement requirement) {
     List<RuleCoverage> ruleCoverages = new ArrayList<>();
     Coverage best = Coverage.NONE;
-    for (KeepRuleSet.Rule rule : rules.getRules()) {
+    for (KeepRuleSet.Rule rule : rules.getCandidateRules(requirement.getClassName())) {
       RuleCoverage ruleCoverage = check(requirement, rule);
       if (ruleCoverage.getCoverage() != Coverage.NONE) {
         ruleCoverages.add(ruleCoverage);
@@ -236,7 +247,11 @@ final class KeepRuleMatcher {
    * The member requirements returned by a bulk lookup, as member requirements justified by the same
    * events.
    */
-  static List<KeepRequirement> expandResultMembers(KeepRequirement requirement) {
+  List<KeepRequirement> expandResultMembers(KeepRequirement requirement) {
+    return resultMembers.computeIfAbsent(requirement, KeepRuleMatcher::computeResultMembers);
+  }
+
+  private static List<KeepRequirement> computeResultMembers(KeepRequirement requirement) {
     List<KeepRequirement> result = new ArrayList<>();
     for (MemberSignature member : requirement.getResultMembers()) {
       KeepRequirement memberRequirement =
@@ -291,40 +306,106 @@ final class KeepRuleMatcher {
   private RuleCoverage checkIfRule(
       KeepRequirement requirement, ProguardIfRule ifRule, KeepRuleSet.Rule rule) {
     ProguardKeepRule subsequentRule = ifRule.getSubsequentRule();
-    boolean hasBackReferences = subsequentRule.getBackReferences().iterator().hasNext();
-    Set<String> candidates = new TreeSet<>(facts.getObservedClasses());
-    candidates.add(requirement.getClassName());
-    for (String candidate : candidates) {
-      DexType candidateType = rules.getType(candidate);
-      if (candidateType == null || !ifRule.getClassNames().matches(candidateType)) {
+    if (!canApply(requirement, subsequentRule)) {
+      return new RuleCoverage(rule, Coverage.NONE, null);
+    }
+    if (!subsequentRule.hasBackReferences()) {
+      RuleCoverage subsequentCoverage = checkApplicableKeepRule(requirement, subsequentRule, rule);
+      if (subsequentCoverage.getCoverage() == Coverage.NONE) {
+        return subsequentCoverage;
+      }
+      String matched = getFirstPreconditionClass(ifRule, requirement.getClassName());
+      return conditional(
+          subsequentCoverage,
+          matched != null
+              ? getPreconditionReason(ifRule, matched)
+              : "applies only if a class not seen in the log is kept");
+    }
+    for (String candidate : getPreconditionCandidates(ifRule, requirement.getClassName())) {
+      if (!matchesPreconditionClass(ifRule, candidate)) {
         continue;
       }
       // The class names of the precondition have been matched, so back references in the
       // subsequent rule refer to the matched candidate.
-      RuleCoverage subsequentCoverage = checkKeepRule(requirement, subsequentRule, rule);
+      RuleCoverage subsequentCoverage = checkApplicableKeepRule(requirement, subsequentRule, rule);
       if (subsequentCoverage.getCoverage() != Coverage.NONE) {
-        String condition = "applies if " + candidate + " is kept";
-        if (ifRule.hasInheritanceClassName()
-            || !ifRule.getMemberRules().isEmpty()
-            || !ifRule.getClassAnnotations().isEmpty()
-            || !ifRule.getClassAccessFlags().isDefaultFlags()
-            || !ifRule.getNegatedClassAccessFlags().isDefaultFlags()) {
-          condition += " and its -if precondition holds (cannot be verified from the log alone)";
-        }
-        return conditional(subsequentCoverage, condition);
-      }
-      if (!hasBackReferences) {
-        return subsequentCoverage;
+        return conditional(subsequentCoverage, getPreconditionReason(ifRule, candidate));
       }
     }
-    if (hasBackReferences) {
-      return new RuleCoverage(rule, Coverage.NONE, null);
+    return new RuleCoverage(rule, Coverage.NONE, null);
+  }
+
+  private static String getPreconditionReason(ProguardIfRule ifRule, String candidate) {
+    String condition = "applies if " + candidate + " is kept";
+    if (ifRule.hasInheritanceClassName()
+        || ifRule.hasMemberRules()
+        || ifRule.hasClassAnnotations()
+        || !ifRule.getClassAccessFlags().isDefaultFlags()
+        || !ifRule.getNegatedClassAccessFlags().isDefaultFlags()) {
+      condition += " and its -if precondition holds (cannot be verified from the log alone)";
     }
-    RuleCoverage subsequentCoverage = checkKeepRule(requirement, subsequentRule, rule);
-    if (subsequentCoverage.getCoverage() == Coverage.NONE) {
-      return subsequentCoverage;
+    return condition;
+  }
+
+  private boolean matchesPreconditionClass(ProguardIfRule ifRule, String className) {
+    DexType type = rules.getType(className);
+    return type != null && ifRule.getClassNames().matches(type);
+  }
+
+  private String getFirstPreconditionClass(ProguardIfRule ifRule, String requirementClass) {
+    String matched =
+        firstPreconditionClass
+            .computeIfAbsent(ifRule, this::findFirstPreconditionClass)
+            .orElse(null);
+    if (!facts.getObservedClasses().contains(requirementClass)
+        && (matched == null || requirementClass.compareTo(matched) < 0)
+        && matchesPreconditionClass(ifRule, requirementClass)) {
+      return requirementClass;
     }
-    return conditional(subsequentCoverage, "applies only if a class not seen in the log is kept");
+    return matched;
+  }
+
+  private Optional<String> findFirstPreconditionClass(ProguardIfRule ifRule) {
+    for (String className : facts.getObservedClasses()) {
+      if (matchesPreconditionClass(ifRule, className)) {
+        return Optional.of(className);
+      }
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * The classes that the -if rule may be applied to when checking a requirement of the class,
+   * sorted: the class itself, and the observed classes that the class names of the -if rule match
+   * and for which the class names of the subsequent rule, with the back references replaced, can
+   * match the class.
+   */
+  private Collection<String> getPreconditionCandidates(ProguardIfRule ifRule, String className) {
+    List<String> candidates =
+        preconditionClasses
+            .computeIfAbsent(ifRule, this::indexPreconditionClasses)
+            .getCandidateList(className);
+    if (facts.getObservedClasses().contains(className)) {
+      return candidates;
+    }
+    Set<String> result = new TreeSet<>(candidates);
+    result.add(className);
+    return result;
+  }
+
+  /**
+   * Indexes the observed classes that the class names of the -if rule match, in sorted order, by
+   * the class names of the subsequent rule for that match.
+   */
+  private ClassNameIndex<String> indexPreconditionClasses(ProguardIfRule ifRule) {
+    ClassNameIndex<String> index = new ClassNameIndex<>();
+    ProguardClassNameList subsequentClassNames = ifRule.getSubsequentRule().getClassNames();
+    for (String className : facts.getObservedClasses()) {
+      if (matchesPreconditionClass(ifRule, className)) {
+        index.addMaterialized(className, subsequentClassNames);
+      }
+    }
+    return index;
   }
 
   private static RuleCoverage conditional(RuleCoverage subsequentCoverage, String condition) {
@@ -341,26 +422,23 @@ final class KeepRuleMatcher {
 
   private RuleCoverage checkKeepRule(
       KeepRequirement requirement, ProguardKeepRule keepRule, KeepRuleSet.Rule rule) {
+    if (!canApply(requirement, keepRule)) {
+      return new RuleCoverage(rule, Coverage.NONE, null);
+    }
+    return checkApplicableKeepRule(requirement, keepRule, rule);
+  }
+
+  /** Like {@link #checkKeepRule}, for a keep rule for which {@link #canApply} holds. */
+  private RuleCoverage checkApplicableKeepRule(
+      KeepRequirement requirement, ProguardKeepRule keepRule, KeepRuleSet.Rule rule) {
     RuleCoverage none = new RuleCoverage(rule, Coverage.NONE, null);
     ProguardKeepRuleType type = keepRule.getType();
-    if (type != ProguardKeepRuleType.KEEP
-        && type != ProguardKeepRuleType.KEEP_CLASS_MEMBERS
-        && type != ProguardKeepRuleType.KEEP_CLASSES_WITH_MEMBERS) {
-      return none;
-    }
-    if (requirement.isClassLevel() && type == ProguardKeepRuleType.KEEP_CLASS_MEMBERS) {
-      return none;
-    }
     String className = requirement.getClassName();
-    DexType classType = rules.getType(className);
-    if (classType == null || !keepRule.getClassNames().matches(classType)) {
+    if (!keepRule.getClassNames().matches(rules.getType(className))) {
       return none;
     }
     List<String> undecided = new ArrayList<>();
     Match classTypeMatch = matchClassType(keepRule, className);
-    if (classTypeMatch.isNo()) {
-      return none;
-    }
     addReason(classTypeMatch, undecided);
     if (!keepRule.getClassAccessFlags().isDefaultFlags()
         || !keepRule.getNegatedClassAccessFlags().isDefaultFlags()) {
@@ -426,6 +504,76 @@ final class KeepRuleMatcher {
       return new RuleCoverage(rule, Coverage.PARTIAL, String.join("; ", partial));
     }
     return new RuleCoverage(rule, Coverage.COVERED, null);
+  }
+
+  /**
+   * False if the keep rule cannot keep what the requirement needs, whichever classes its class
+   * names match. Unlike the class names, this does not depend on the back references of an -if
+   * rule.
+   */
+  private boolean canApply(KeepRequirement requirement, ProguardKeepRule keepRule) {
+    ProguardKeepRuleType type = keepRule.getType();
+    if (type != ProguardKeepRuleType.KEEP
+        && type != ProguardKeepRuleType.KEEP_CLASS_MEMBERS
+        && type != ProguardKeepRuleType.KEEP_CLASSES_WITH_MEMBERS) {
+      return false;
+    }
+    if (requirement.isClassLevel()
+        ? type == ProguardKeepRuleType.KEEP_CLASS_MEMBERS
+        : !canApplyMemberRules(requirement, keepRule.getMemberRules())) {
+      return false;
+    }
+    String className = requirement.getClassName();
+    return rules.getType(className) != null && !matchClassType(keepRule, className).isNo();
+  }
+
+  private static boolean canApplyMemberRules(
+      KeepRequirement requirement, List<ProguardMemberRule> memberRules) {
+    if (!requirement.isMember()) {
+      MemberSignature.Kind kind = requirement.getAllMembersKind();
+      for (ProguardMemberRule memberRule : memberRules) {
+        if (appliesToKind(memberRule, kind)
+            && (!requirement.hasResultMembers() || isWildcardFor(memberRule, kind))) {
+          return true;
+        }
+      }
+      return false;
+    }
+    MemberSignature member = requirement.getMember();
+    for (ProguardMemberRule memberRule : memberRules) {
+      if (!appliesToKind(memberRule, member.getKind())) {
+        continue;
+      }
+      ProguardMemberType ruleType = memberRule.getRuleType();
+      if (ruleType == ProguardMemberType.ALL
+          || ruleType == ProguardMemberType.ALL_FIELDS
+          || ruleType == ProguardMemberType.ALL_METHODS) {
+        return true;
+      }
+      if (!canMatchName(memberRule.getName(), member.getName())) {
+        continue;
+      }
+      if (ruleType == ProguardMemberType.FIELD
+          || canMatchArgumentCount(memberRule.getArguments(), member.getParameters())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean canMatchName(ProguardNameMatcher matcher, String name) {
+    if (matcher == null) {
+      return true;
+    }
+    String pattern = matcher.toString();
+    return pattern.equals("*") || pattern.indexOf('<') >= 0 || matcher.matches(name);
+  }
+
+  private static boolean canMatchArgumentCount(
+      List<ProguardTypeMatcher> arguments, List<String> parameters) {
+    return isAnyArguments(arguments)
+        || parameters == null
+        || (arguments != null && arguments.size() == parameters.size());
   }
 
   private static void addReason(Match match, List<String> reasons) {

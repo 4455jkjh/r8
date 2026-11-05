@@ -75,7 +75,10 @@ class Nullability {
   static class UnusedException extends Throwable {}
 
   enum Factor {
-    ONE, TWO, THREE, SIX
+    ONE,
+    TWO,
+    THREE,
+    SIX
   }
 
   int moreControlFlows(A a, Factor b) {

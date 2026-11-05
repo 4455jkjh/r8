@@ -12,7 +12,7 @@ import java.util.Map;
 public abstract class MultiClassSameReferencePolicy<T> extends MultiClassPolicy {
 
   @Override
-  public final Collection<HorizontalMergeGroup> apply(HorizontalMergeGroup group) {
+  public Collection<HorizontalMergeGroup> apply(HorizontalMergeGroup group) {
     Map<T, HorizontalMergeGroup> groups = new LinkedHashMap<>();
     for (DexProgramClass clazz : group) {
       T mergeKey = getMergeKey(clazz);

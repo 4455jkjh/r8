@@ -304,8 +304,7 @@ public class OutlineTest extends SmaliTestBase {
         "    invoke-static       { v1 }, LTest;->method(Ljava/lang/StringBuilder;)I",
         "    move-result         v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     testForR8(parameters.getBackend())
         .addProgramDexFileData(builder.compile())
@@ -1083,19 +1082,19 @@ public class OutlineTest extends SmaliTestBase {
   public void outlineReturnLong() throws Exception {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
-    MethodSignature signature = builder.addStaticMethod(
-        "long",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int"),
-        2,
-        "    new-instance        v0, Ljava/util/GregorianCalendar;",
-        "    invoke-direct       { v0 }, Ljava/util/GregorianCalendar;-><init>()V",
-        "    invoke-virtual      { v0, p0, p0 }, Ljava/util/Calendar;->set(II)V",
-        "    invoke-virtual      { v0, p0, p0 }, Ljava/util/Calendar;->set(II)V",
-        "    invoke-virtual      { v0 }, Ljava/util/Calendar;->getTimeInMillis()J",
-        "    move-result-wide    v0",
-        "    return-wide         v0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "long",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int"),
+            2,
+            "    new-instance        v0, Ljava/util/GregorianCalendar;",
+            "    invoke-direct       { v0 }, Ljava/util/GregorianCalendar;-><init>()V",
+            "    invoke-virtual      { v0, p0, p0 }, Ljava/util/Calendar;->set(II)V",
+            "    invoke-virtual      { v0, p0, p0 }, Ljava/util/Calendar;->set(II)V",
+            "    invoke-virtual      { v0 }, Ljava/util/Calendar;->getTimeInMillis()J",
+            "    move-result-wide    v0",
+            "    return-wide         v0");
 
     builder.addMainMethod(
         3,
@@ -1104,8 +1103,7 @@ public class OutlineTest extends SmaliTestBase {
         "    invoke-static       { v1 }, LTest;->method(I)J",
         "    move-result-wide    v1",
         "    invoke-virtual      { v0, v1, v2 }, Ljava/io/PrintStream;->print(J)V",
-        "    return-void"
-    );
+        "    return-void");
 
     testForR8(parameters.getBackend())
         .addProgramDexFileData(builder.compile())
@@ -1149,10 +1147,13 @@ public class OutlineTest extends SmaliTestBase {
   public void noOutlineSuperCalls() throws Exception {
     SmaliBuilder builder = new SmaliBuilder("Super");
     builder.addDefaultConstructor();
-    builder.addInstanceMethod("void", "set", ImmutableList.of("int", "int"), 0,
-        "return-void");
+    builder.addInstanceMethod("void", "set", ImmutableList.of("int", "int"), 0, "return-void");
 
-    builder.addInstanceMethod("java.lang.String", "toString", Collections.emptyList(), 1,
+    builder.addInstanceMethod(
+        "java.lang.String",
+        "toString",
+        Collections.emptyList(),
+        1,
         "const-string     v0, \"Hello\"",
         "return-object    v0");
 
@@ -1170,8 +1171,7 @@ public class OutlineTest extends SmaliTestBase {
         "    invoke-super        { v0, p0, p0 }, LTest;->set(II)V",
         "    invoke-virtual      { v0 }, LTest;->toString()Ljava/lang/String;",
         "    move-result-object  v0",
-        "    return-object       v0"
-    );
+        "    return-object       v0");
 
     builder.addMainMethod(
         3,
@@ -1180,8 +1180,7 @@ public class OutlineTest extends SmaliTestBase {
         "    invoke-static       { v1 }, LTest;->method(I)Ljava/lang/String;",
         "    move-result-object  v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(Ljava/lang/String;)V",
-        "    return-void"
-    );
+        "    return-void");
 
     Consumer<InternalOptions> options =
         configureOutlineOptions(
@@ -1210,20 +1209,19 @@ public class OutlineTest extends SmaliTestBase {
         ImmutableList.of("java.util.List", "int[]"),
         0,
         "    invoke-interface    { p0, p1 }, Ljava/util/List;->add(Ljava/lang/Object;)Z",
-        "    return-void "
-    );
+        "    return-void ");
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int[]",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of("int[]", "int[]"),
-        1,
-        "    new-instance        v0, Ljava/util/ArrayList;",
-        "    invoke-direct       { v0 }, Ljava/util/ArrayList;-><init>()V",
-        "    invoke-static       { v0, p0 }, LTest;->addToList(Ljava/util/List;[I)V",
-        "    invoke-static       { v0, p1 }, LTest;->addToList(Ljava/util/List;[I)V",
-        "    return-object       p0"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int[]",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of("int[]", "int[]"),
+            1,
+            "    new-instance        v0, Ljava/util/ArrayList;",
+            "    invoke-direct       { v0 }, Ljava/util/ArrayList;-><init>()V",
+            "    invoke-static       { v0, p0 }, LTest;->addToList(Ljava/util/List;[I)V",
+            "    invoke-static       { v0, p1 }, LTest;->addToList(Ljava/util/List;[I)V",
+            "    return-object       p0");
 
     builder.addMainMethod(
         3,
@@ -1232,8 +1230,7 @@ public class OutlineTest extends SmaliTestBase {
         "    invoke-static       { v1, v1 }, LTest;->method([I[I)[I",
         "    move-result-object  v1",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(Ljava/lang/Object;)V",
-        "    return-void"
-    );
+        "    return-void");
 
     testForR8(parameters.getBackend())
         .addProgramDexFileData(builder.compile())
@@ -1281,32 +1278,31 @@ public class OutlineTest extends SmaliTestBase {
         ImmutableList.of("java.util.List", "int[]"),
         0,
         "    invoke-interface    { p0, p1 }, Ljava/util/List;->add(Ljava/lang/Object;)Z",
-        "    return-void "
-    );
+        "    return-void ");
 
-    MethodSignature signature1 = builder.addStaticMethod(
-        "int",
-        "method1",
-        ImmutableList.of("int", "int"),
-        1,
-        "    add-int             v0, v1, v2",
-        "    sub-int             v0, v0, v1",
-        "    mul-int             v0, v2, v0",
-        "    div-int             v0, v0, v1",
-        "    return              v0"
-    );
+    MethodSignature signature1 =
+        builder.addStaticMethod(
+            "int",
+            "method1",
+            ImmutableList.of("int", "int"),
+            1,
+            "    add-int             v0, v1, v2",
+            "    sub-int             v0, v0, v1",
+            "    mul-int             v0, v2, v0",
+            "    div-int             v0, v0, v1",
+            "    return              v0");
 
-    MethodSignature signature2 = builder.addStaticMethod(
-        "int",
-        "method2",
-        ImmutableList.of("int", "int"),
-        1,
-        "    add-int             v0, v2, v1",
-        "    sub-int             v0, v0, v1",
-        "    mul-int             v0, v0, v2",
-        "    div-int             v0, v0, v1",
-        "    return              v0"
-    );
+    MethodSignature signature2 =
+        builder.addStaticMethod(
+            "int",
+            "method2",
+            ImmutableList.of("int", "int"),
+            1,
+            "    add-int             v0, v2, v1",
+            "    sub-int             v0, v0, v1",
+            "    mul-int             v0, v0, v2",
+            "    div-int             v0, v0, v1",
+            "    return              v0");
 
     builder.addMainMethod(
         4,
@@ -1319,8 +1315,7 @@ public class OutlineTest extends SmaliTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method2(II)I",
         "    move-result         v4",
         "    invoke-virtual      { v0, v4 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     testForR8(parameters.getBackend())
         .addProgramDexFileData(builder.compile())
@@ -1378,29 +1373,28 @@ public class OutlineTest extends SmaliTestBase {
         ImmutableList.of("java.util.List", "int[]"),
         0,
         "    invoke-interface    { p0, p1 }, Ljava/util/List;->add(Ljava/lang/Object;)Z",
-        "    return-void "
-    );
+        "    return-void ");
 
-    MethodSignature signature = builder.addStaticMethod(
-        "int",
-        "method",
-        ImmutableList.of("int", "int"),
-        1,
-        "    :try_start",
-        // Throwing instruction to ensure the handler range does not get collapsed.
-        "    div-int             v0, v1, v2",
-        "    add-int             v0, v1, v2",
-        "    sub-int             v0, v0, v1",
-        "    div-int             v0, v2, v0",
-        "    div-int             v0, v0, v1",
-        "    :try_end",
-        "    :return",
-        "    return              v0",
-        "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
-        "    :catch",
-        "    const/4             v0, -1",
-        "    goto :return"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "int",
+            "method",
+            ImmutableList.of("int", "int"),
+            1,
+            "    :try_start",
+            // Throwing instruction to ensure the handler range does not get collapsed.
+            "    div-int             v0, v1, v2",
+            "    add-int             v0, v1, v2",
+            "    sub-int             v0, v0, v1",
+            "    div-int             v0, v2, v0",
+            "    div-int             v0, v0, v1",
+            "    :try_end",
+            "    :return",
+            "    return              v0",
+            "    .catch Ljava/lang/ArithmeticException; {:try_start .. :try_end} :catch",
+            "    :catch",
+            "    const/4             v0, -1",
+            "    goto :return");
 
     builder.addMainMethod(
         4,
@@ -1410,8 +1404,7 @@ public class OutlineTest extends SmaliTestBase {
         "    invoke-static       { v1, v2 }, LTest;->method(II)I",
         "    move-result         v4",
         "    invoke-virtual      { v0, v4 }, Ljava/io/PrintStream;->print(I)V",
-        "    return-void"
-    );
+        "    return-void");
 
     testForR8(parameters.getBackend())
         .addProgramDexFileData(builder.compile())
@@ -1518,22 +1511,18 @@ public class OutlineTest extends SmaliTestBase {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
     // The result from the new-instance instructions are never used (<init> is not even called).
-    MethodSignature signature = builder.addStaticMethod(
-        "void",
-        DEFAULT_METHOD_NAME,
-        ImmutableList.of(),
-        1,
-        "    new-instance        v0, Ljava/lang/StringBuilder;",
-        "    new-instance        v0, Ljava/lang/StringBuilder;",
-        "    new-instance        v0, Ljava/lang/StringBuilder;",
-        "    return-void"
-    );
+    MethodSignature signature =
+        builder.addStaticMethod(
+            "void",
+            DEFAULT_METHOD_NAME,
+            ImmutableList.of(),
+            1,
+            "    new-instance        v0, Ljava/lang/StringBuilder;",
+            "    new-instance        v0, Ljava/lang/StringBuilder;",
+            "    new-instance        v0, Ljava/lang/StringBuilder;",
+            "    return-void");
 
-    builder.addMainMethod(
-        0,
-        "    invoke-static       { }, LTest;->method()V",
-        "    return-void"
-    );
+    builder.addMainMethod(0, "    invoke-static       { }, LTest;->method()V", "    return-void");
 
     testForR8(parameters.getBackend())
         .addProgramDexFileData(builder.compile())
@@ -1822,12 +1811,12 @@ public class OutlineTest extends SmaliTestBase {
 
     // Code where the outline argument is first used as java.lang.Object and afterwards
     // java.util.ArrayList.
-    List<String> codeToOutline = ImmutableList.of(
-        "    invoke-virtual      { v1, v2 }, Ljava/io/PrintStream;->print(Ljava/lang/Object;)V",
-        "    invoke-virtual      { v2 }, Ljava/util/ArrayList;->isEmpty()Z",
-        "    move-result         v0",
-        "    return              v0"
-    );
+    List<String> codeToOutline =
+        ImmutableList.of(
+            "    invoke-virtual      { v1, v2 }, Ljava/io/PrintStream;->print(Ljava/lang/Object;)V",
+            "    invoke-virtual      { v2 }, Ljava/util/ArrayList;->isEmpty()Z",
+            "    move-result         v0",
+            "    return              v0");
 
     String returnType = "boolean";
     MethodSignature signature1 =
@@ -2007,12 +1996,12 @@ public class OutlineTest extends SmaliTestBase {
 
     // Code where the outline argument is first used as java.lang.Iterable and afterwards
     // java.util.ArrayList.
-    List<String> codeToOutline = ImmutableList.of(
-        "    invoke-interface    { v1 }, Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
-        "    invoke-virtual      { v1 }, Ljava/util/ArrayList;->isEmpty()Z",
-        "    move-result         v0",
-        "    return              v0"
-    );
+    List<String> codeToOutline =
+        ImmutableList.of(
+            "    invoke-interface    { v1 }, Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
+            "    invoke-virtual      { v1 }, Ljava/util/ArrayList;->isEmpty()Z",
+            "    move-result         v0",
+            "    return              v0");
 
     String returnType = "boolean";
     MethodSignature signature1 =
@@ -2099,12 +2088,12 @@ public class OutlineTest extends SmaliTestBase {
 
     // Code where the outline argument is first used as java.lang.Iterable and afterwards
     // java.util.ArrayList.
-    List<String> codeToOutline = ImmutableList.of(
-        "    invoke-virtual      { v1 }, Ljava/util/ArrayList;->isEmpty()Z",
-        "    move-result         v0",
-        "    invoke-interface    { v1 }, Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
-        "    return              v0"
-    );
+    List<String> codeToOutline =
+        ImmutableList.of(
+            "    invoke-virtual      { v1 }, Ljava/util/ArrayList;->isEmpty()Z",
+            "    move-result         v0",
+            "    invoke-interface    { v1 }, Ljava/lang/Iterable;->iterator()Ljava/util/Iterator;",
+            "    return              v0");
 
     String returnType = "boolean";
     MethodSignature signature1 =

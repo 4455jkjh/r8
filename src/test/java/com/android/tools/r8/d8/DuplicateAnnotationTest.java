@@ -33,8 +33,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.METHOD, ElementType.FIELD})
-@interface TestKeep {
-}
+@interface TestKeep {}
 
 class TestA {
   @TestKeep
@@ -44,8 +43,7 @@ class TestA {
 }
 
 class TestB extends TestA {
-  @TestKeep
-  static TestA instance;
+  @TestKeep static TestA instance;
 
   @TestKeep
   void foo() {
@@ -160,5 +158,4 @@ public class DuplicateAnnotationTest extends TestBase {
         .run(parameters.getRuntime(), TestB.class.getTypeName())
         .assertSuccessWithOutput(StringUtils.lines("TestA::foo", "TestB::foo"));
   }
-
 }

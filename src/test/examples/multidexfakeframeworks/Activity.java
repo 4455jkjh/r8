@@ -4,6 +4,4 @@
 
 package multidexfakeframeworks;
 
-public class Activity {
-
-}
+public class Activity {}

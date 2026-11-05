@@ -7,20 +7,20 @@ package com.android.tools.r8.bridgeremoval.bridgestoremove;
 public class Outer {
 
   class SuperClass {
-    public void method() { }
+    public void method() {}
   }
 
   // As SuperClass is package private SubClass will have a bridge method for "method".
-  public class SubClass extends SuperClass { }
+  public class SubClass extends SuperClass {}
 
   public SubClass create() {
     return new SubClass();
   }
 
   static class StaticSuperClass {
-    public void method() { }
+    public void method() {}
   }
 
   // As SuperClass is package private SubClass will have a bridge method for "method".
-  public static class StaticSubClass extends StaticSuperClass { }
+  public static class StaticSubClass extends StaticSuperClass {}
 }

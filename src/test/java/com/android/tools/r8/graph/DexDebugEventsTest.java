@@ -33,11 +33,12 @@ public class DexDebugEventsTest extends TestBase {
   }
 
   static final DexItemFactory factory = new DexItemFactory();
-  static final DexMethod method = factory.createMethod(
-      factory.objectDescriptor,
-      factory.createString("foo"),
-      factory.voidDescriptor,
-      DexString.EMPTY_ARRAY);
+  static final DexMethod method =
+      factory.createMethod(
+          factory.objectDescriptor,
+          factory.createString("foo"),
+          factory.voidDescriptor,
+          DexString.EMPTY_ARRAY);
 
   @Test
   public void testSpecialOpcodeRepresentation() {
@@ -86,62 +87,87 @@ public class DexDebugEventsTest extends TestBase {
 
   @Test
   public void testMaxPcMinLine() {
-    testAdvancement(0, 16, 5, 1, events -> {
-      assertEquals(1, events.size());
-      assertTrue(events.get(0) instanceof Default);
-      Default event = (Default) events.get(0);
-      assertEquals(16, event.getPCDelta());
-      assertEquals(-4, event.getLineDelta());
-    });
+    testAdvancement(
+        0,
+        16,
+        5,
+        1,
+        events -> {
+          assertEquals(1, events.size());
+          assertTrue(events.get(0) instanceof Default);
+          Default event = (Default) events.get(0);
+          assertEquals(16, event.getPCDelta());
+          assertEquals(-4, event.getLineDelta());
+        });
   }
 
   @Test
   public void testMaxPcRemainingLine() {
-    testAdvancement(0, 16, 1, 2, events -> {
-      assertEquals(1, events.size());
-      assertTrue(events.get(0) instanceof Default);
-      Default event = (Default) events.get(0);
-      assertEquals(16, event.getPCDelta());
-      assertEquals(1, event.getLineDelta());
-    });
+    testAdvancement(
+        0,
+        16,
+        1,
+        2,
+        events -> {
+          assertEquals(1, events.size());
+          assertTrue(events.get(0) instanceof Default);
+          Default event = (Default) events.get(0);
+          assertEquals(16, event.getPCDelta());
+          assertEquals(1, event.getLineDelta());
+        });
   }
 
   @Test
   public void testMaxPcPlusOne() {
-    testAdvancement(0, 17, 1, 2, events -> {
-      assertEquals(2, events.size());
-      assertTrue(events.get(0) instanceof AdvancePC);
-      assertTrue(events.get(1) instanceof Default);
-      AdvancePC advancePC = (AdvancePC) events.get(0);
-      Default aDefault = (Default) events.get(1);
-      assertEquals(17, advancePC.delta + aDefault.getPCDelta());
-      assertEquals(1, aDefault.getLineDelta());
-    });
+    testAdvancement(
+        0,
+        17,
+        1,
+        2,
+        events -> {
+          assertEquals(2, events.size());
+          assertTrue(events.get(0) instanceof AdvancePC);
+          assertTrue(events.get(1) instanceof Default);
+          AdvancePC advancePC = (AdvancePC) events.get(0);
+          Default aDefault = (Default) events.get(1);
+          assertEquals(17, advancePC.delta + aDefault.getPCDelta());
+          assertEquals(1, aDefault.getLineDelta());
+        });
   }
 
   @Test
   public void testMaxPcMaxLine() {
     // If line delta is larger that 1 then there is not room for a pc delta of 16.
-    testAdvancement(0, 16, 1, 11, events -> {
-      assertEquals(2, events.size());
-      assertTrue(events.get(0) instanceof AdvancePC);
-      assertTrue(events.get(1) instanceof Default);
-      AdvancePC advancePC = (AdvancePC) events.get(0);
-      Default aDefault = (Default) events.get(1);
-      assertEquals(16, advancePC.delta + aDefault.getPCDelta());
-      assertEquals(10, aDefault.getLineDelta());
-    });
+    testAdvancement(
+        0,
+        16,
+        1,
+        11,
+        events -> {
+          assertEquals(2, events.size());
+          assertTrue(events.get(0) instanceof AdvancePC);
+          assertTrue(events.get(1) instanceof Default);
+          AdvancePC advancePC = (AdvancePC) events.get(0);
+          Default aDefault = (Default) events.get(1);
+          assertEquals(16, advancePC.delta + aDefault.getPCDelta());
+          assertEquals(10, aDefault.getLineDelta());
+        });
   }
 
   @Test
   public void testMaxLineRemainingPc() {
-    testAdvancement(0, 15, 1, 11, events -> {
-      assertEquals(1, events.size());
-      assertTrue(events.get(0) instanceof Default);
-      Default event = (Default) events.get(0);
-      assertEquals(15, event.getPCDelta());
-      assertEquals(10, event.getLineDelta());
-    });
+    testAdvancement(
+        0,
+        15,
+        1,
+        11,
+        events -> {
+          assertEquals(1, events.size());
+          assertTrue(events.get(0) instanceof Default);
+          Default event = (Default) events.get(0);
+          assertEquals(15, event.getPCDelta());
+          assertEquals(10, event.getLineDelta());
+        });
   }
 
   private void testAdvancement(

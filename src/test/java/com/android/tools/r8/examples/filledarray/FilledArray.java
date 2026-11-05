@@ -6,32 +6,57 @@ package com.android.tools.r8.examples.filledarray;
 import java.util.Arrays;
 
 public class FilledArray {
-  private static boolean[] booleans = new boolean[] { true, true, false, false };
-  private static byte[] bytes = new byte[] {
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, -19, -20, -96,
-      Byte.MAX_VALUE, Byte.MIN_VALUE };
+  private static boolean[] booleans = new boolean[] {true, true, false, false};
+  private static byte[] bytes =
+      new byte[] {
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        -19,
+        -20,
+        -96,
+        Byte.MAX_VALUE,
+        Byte.MIN_VALUE
+      };
   private static char[] chars = new char[] {'a', 'b', 'c', 'd'};
-  private static int[] ints = new int[] { Integer.MAX_VALUE, 0, -42, 42, Integer.MIN_VALUE };
-  private static short[] shorts = new short[] { Short.MAX_VALUE, 0, -42, 42, Short.MIN_VALUE };
-  private static long[] longs = new long[] {
-      Long.MAX_VALUE, 0x1234123412341234L, -0x1234123412341234L, Long.MIN_VALUE };
-  private static float[] floats = new float[] {
-      Float.MAX_VALUE, 23.23F, -43.123F, Float.MIN_VALUE, Float.MIN_NORMAL };
-  private static double[] doubles = new double[] {
-      Double.MAX_VALUE, 123123123.123, -43333.123, Double.MIN_VALUE, Double.MIN_NORMAL };
-
+  private static int[] ints = new int[] {Integer.MAX_VALUE, 0, -42, 42, Integer.MIN_VALUE};
+  private static short[] shorts = new short[] {Short.MAX_VALUE, 0, -42, 42, Short.MIN_VALUE};
+  private static long[] longs =
+      new long[] {Long.MAX_VALUE, 0x1234123412341234L, -0x1234123412341234L, Long.MIN_VALUE};
+  private static float[] floats =
+      new float[] {Float.MAX_VALUE, 23.23F, -43.123F, Float.MIN_VALUE, Float.MIN_NORMAL};
+  private static double[] doubles =
+      new double[] {
+        Double.MAX_VALUE, 123123123.123, -43333.123, Double.MIN_VALUE, Double.MIN_NORMAL
+      };
 
   public static void filledArrays() {
-    boolean[] localBooleans = new boolean[] { true, true, false, false };
+    boolean[] localBooleans = new boolean[] {true, true, false, false};
     localBooleans[0] = false;
-    byte[] localBytes = new byte[] { 21, 22, -23 };
-    char[] localChars = new char[] { 'a', 'b', 'c', 'd' };
-    int[] localInts = new int[] { Integer.MAX_VALUE, 0, -42, 42, Integer.MIN_VALUE };
-    short[] localShorts = new short[] { Short.MAX_VALUE, 0, -42, 42, Short.MIN_VALUE };
-    long[] localLongs= new long[] { 0x1234432112341234L, -0x1234123412344321L };
+    byte[] localBytes = new byte[] {21, 22, -23};
+    char[] localChars = new char[] {'a', 'b', 'c', 'd'};
+    int[] localInts = new int[] {Integer.MAX_VALUE, 0, -42, 42, Integer.MIN_VALUE};
+    short[] localShorts = new short[] {Short.MAX_VALUE, 0, -42, 42, Short.MIN_VALUE};
+    long[] localLongs = new long[] {0x1234432112341234L, -0x1234123412344321L};
     localLongs[1] = localLongs[1] + 2;
-    float[] localFloats = new float[] { 23.23F, -43.123F };
-    double[] localDoubles = new double[] { 123123123.123, -43333.123 };
+    float[] localFloats = new float[] {23.23F, -43.123F};
+    double[] localDoubles = new double[] {123123123.123, -43333.123};
     System.out.println("booleans");
     for (int i = 0; i < booleans.length; i++) {
       System.out.println(booleans[i]);
@@ -99,7 +124,7 @@ public class FilledArray {
   public static void filledArraysExceptions(int divisor) {
     try {
       // Array creations that can be turned into fill-array-data.
-      int[] ints = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+      int[] ints = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
       int[] ints2 = new int[5];
       ints2[0] = 0;
       ints2[1] = 1;

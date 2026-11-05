@@ -102,8 +102,7 @@ public class ResourceShrinkerTest extends TestBase {
     }
   }
 
-  private static class EmptyClass {
-  }
+  private static class EmptyClass {}
 
   @Test
   public void testEmptyClass() throws CompilationFailedException, IOException, ExecutionException {
@@ -212,20 +211,19 @@ public class ResourceShrinkerTest extends TestBase {
 
   @IntAnnotation(42)
   private static class Annotated {
-    @OuterAnnotation
-    Object defaultAnnotated = new Object();
+    @OuterAnnotation Object defaultAnnotated = new Object();
+
     @IntAnnotation(12)
     Object withValueAnnotated = new Object();
+
     @IntAnnotation(13)
     static Object staticValueAnnotated = new Object();
 
     @IntAnnotation(14)
-    public void annotatedPublic() {
-    }
+    public void annotatedPublic() {}
 
     @IntAnnotation(15)
-    public void annotatedPrivate() {
-    }
+    public void annotatedPrivate() {}
   }
 
   @Test
@@ -274,8 +272,7 @@ public class ResourceShrinkerTest extends TestBase {
         "const/4 v1, 3",
         "new-array v0, v1, [I",
         "fill-array-data v0, :array_data",
-        "return-object v0"
-    );
+        "return-object v0");
     AndroidApp app =
         AndroidApp.builder().addDexProgramData(builder.compile(), Origin.unknown()).build();
     TrackAll analysis = runOnApp(app);

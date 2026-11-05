@@ -28,9 +28,7 @@ public class ProguardMapMarkerTest extends TestBase {
 
   static class TestClass {
 
-    public static void main(String[] args) {
-
-    }
+    public static void main(String[] args) {}
   }
 
   private static final int EXPECTED_NUMBER_OF_KEYS_DEX = 6;

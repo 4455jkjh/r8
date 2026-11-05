@@ -130,8 +130,17 @@ final class KeepRuleDiff {
     for (KeepRequirement requirement : all) {
       coverages.add(matcher.cover(requirement));
     }
+    // The requirements of the classes that each rule can apply to, in the order of all.
+    Map<KeepRuleSet.Rule, List<KeepRequirement>> candidateRequirements = new IdentityHashMap<>();
+    for (KeepRequirement requirement : all) {
+      for (KeepRuleSet.Rule rule : ruleSet.getCandidateRules(requirement.getClassName())) {
+        candidateRequirements.computeIfAbsent(rule, k -> new ArrayList<>()).add(requirement);
+      }
+    }
     for (KeepRuleSet.Rule rule : ruleSet.getRules()) {
-      ruleResults.add(analyzeRule(rule, all, matcher));
+      ruleResults.add(
+          analyzeRule(
+              rule, candidateRequirements.getOrDefault(rule, Collections.emptyList()), matcher));
     }
     missing = KeepRuleMatcher.getMissing(coverages);
     List<KeepRequirement> missingRequirements = new ArrayList<>();
@@ -151,7 +160,7 @@ final class KeepRuleDiff {
   }
 
   private RuleResult analyzeRule(
-      KeepRuleSet.Rule rule, List<KeepRequirement> all, KeepRuleMatcher matcher) {
+      KeepRuleSet.Rule rule, List<KeepRequirement> requirements, KeepRuleMatcher matcher) {
     List<RuleMatch> covered = new ArrayList<>();
     Set<String> possibleReasons = new LinkedHashSet<>();
     if (!rule.isKeepRule()) {
@@ -162,13 +171,13 @@ final class KeepRuleDiff {
           Collections.emptyList(),
           Collections.emptyList());
     }
-    for (KeepRequirement requirement : all) {
+    for (KeepRequirement requirement : requirements) {
       RuleCoverage coverage = matcher.check(requirement, rule);
       if (coverage.getCoverage() == Coverage.NONE
           && requirement.isAllMembers()
           && requirement.hasResultMembers()) {
         // The rule may keep some of the members returned by the bulk lookup.
-        for (KeepRequirement member : KeepRuleMatcher.expandResultMembers(requirement)) {
+        for (KeepRequirement member : matcher.expandResultMembers(requirement)) {
           classify(member, matcher.check(member, rule), covered, possibleReasons);
         }
       } else {

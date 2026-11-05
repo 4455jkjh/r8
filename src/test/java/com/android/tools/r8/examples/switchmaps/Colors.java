@@ -4,7 +4,10 @@
 package com.android.tools.r8.examples.switchmaps;
 
 public enum Colors {
-  RED("rar"), BLUE("blew"), GREEN("soylent"), GRAY("fifty");
+  RED("rar"),
+  BLUE("blew"),
+  GREEN("soylent"),
+  GRAY("fifty");
 
   private String aField;
 

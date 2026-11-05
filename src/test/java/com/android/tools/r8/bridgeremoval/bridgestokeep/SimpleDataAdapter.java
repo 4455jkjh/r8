@@ -10,8 +10,7 @@ import com.android.tools.r8.NeverClassInline;
 public class SimpleDataAdapter extends SimpleObservableList<DataAdapter.Observer>
     implements DataAdapter {
 
-  public SimpleDataAdapter() {
-  }
+  public SimpleDataAdapter() {}
 
   // This class has no implementation of method registerObserver(DataAdapter.Observer observer)
   // from interface DataAdapter. There is one in SimpleObservableList<DataAdapter.Observer> so

@@ -38,14 +38,14 @@ public class ScopedExceptionsTestRunner extends DebugInfoTestBase {
   }
 
   private void checkScopedExceptions(DebugInfoInspector info) {
-    info.checkStartLine(10);
-    info.checkLineHasNoLocals(10);
-    info.checkNoLine(11);
-    info.checkLineHasNoLocals(12);
-    info.checkLineHasNoLocals(13);
-    info.checkLineHasExactLocals(14, "e", "java.lang.Throwable");
-    info.checkLineHasNoLocals(15);
-    info.checkLineExists(16);
+    info.checkStartLine(14);
+    info.checkLineHasNoLocals(14);
+    info.checkNoLine(15);
     info.checkLineHasNoLocals(16);
+    info.checkLineHasNoLocals(17);
+    info.checkLineHasExactLocals(18, "e", "java.lang.Throwable");
+    info.checkLineHasNoLocals(19);
+    info.checkLineExists(20);
+    info.checkLineHasNoLocals(20);
   }
 }

@@ -4,10 +4,7 @@
 package naming001;
 
 public class C {
-  static void f() {
-  }
+  static void f() {}
 
-  static void m() {
-  }
+  static void m() {}
 }
-

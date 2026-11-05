@@ -54,5 +54,4 @@ public class Sub2 extends Base implements Itf2 {
       // expected
     }
   }
-
 }

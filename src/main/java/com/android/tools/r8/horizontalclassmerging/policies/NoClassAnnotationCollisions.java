@@ -4,13 +4,45 @@
 
 package com.android.tools.r8.horizontalclassmerging.policies;
 
-import com.android.tools.r8.graph.DexProgramClass;
+import static com.android.tools.r8.utils.internal.IteratorUtils.createCircularIterator;
 
-public class NoClassAnnotationCollisions extends AtMostOneClassThatMatchesPolicy {
+import com.android.tools.r8.graph.DexAnnotationSet;
+import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
+import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
+import com.google.common.collect.ImmutableList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class NoClassAnnotationCollisions extends MultiClassPolicy {
 
   @Override
-  boolean atMostOneOf(DexProgramClass clazz) {
-    return clazz.hasAnnotations();
+  public Collection<HorizontalMergeGroup> apply(HorizontalMergeGroup group) {
+    // Create a new merge group for each distinct non-empty set of class annotations.
+    Map<DexAnnotationSet, HorizontalMergeGroup> newGroups = new LinkedHashMap<>();
+    for (DexProgramClass clazz : group) {
+      if (clazz.hasAnnotations()) {
+        newGroups
+            .computeIfAbsent(clazz.annotations(), ignore -> new HorizontalMergeGroup())
+            .add(clazz);
+      }
+    }
+
+    // If there was at most one distinct set of annotations, keep the original merge group.
+    if (newGroups.size() <= 1) {
+      return ImmutableList.of(group);
+    }
+
+    // Otherwise, distribute the non-annotated classes across the new merge groups.
+    Iterator<HorizontalMergeGroup> newGroupsIterator = createCircularIterator(newGroups.values());
+    for (DexProgramClass clazz : group) {
+      if (!clazz.hasAnnotations()) {
+        newGroupsIterator.next().add(clazz);
+      }
+    }
+    return removeTrivialGroups(newGroups.values());
   }
 
   @Override

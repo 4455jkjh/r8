@@ -41,7 +41,6 @@ import com.android.tools.r8.graph.MutableFieldAccessInfo;
 import com.android.tools.r8.graph.MutableFieldAccessInfoCollection;
 import com.android.tools.r8.graph.ObjectAllocationInfoCollection;
 import com.android.tools.r8.graph.ObjectAllocationInfoCollectionImpl;
-import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.SingleDispatchTargetLookupResult;
@@ -58,7 +57,6 @@ import com.android.tools.r8.naming.IdentifierNameStringCollection;
 import com.android.tools.r8.naming.SeedMapper;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration;
 import com.android.tools.r8.repackaging.RepackagingUtils;
-import com.android.tools.r8.shaking.KeepInfo.Joiner;
 import com.android.tools.r8.synthesis.CommittedItems;
 import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.InternalOptions;
@@ -310,7 +308,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
         previous.fieldAccessInfoCollection.withoutPrunedItems(prunedItems),
         previous.objectAllocationInfoCollection.withoutPrunedItems(prunedItems),
         pruneCallSites(previous.callSites, prunedItems),
-        extendPinnedItems(previous, prunedItems.getAdditionalPinnedItems()),
+        previous.keepInfo,
         previous.mayHaveSideEffects,
         pruneMethods(previous.alwaysInline, prunedItems, tasks),
         pruneMethods(previous.reprocess, prunedItems, tasks),
@@ -447,43 +445,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
         lockCandidates,
         initClassReferences,
         recordFieldValuesReferences);
-  }
-
-  private static KeepInfoCollection extendPinnedItems(
-      AppInfoWithLiveness previous, Collection<? extends DexReference> additionalPinnedItems) {
-    if (additionalPinnedItems == null || additionalPinnedItems.isEmpty()) {
-      return previous.keepInfo;
-    }
-    return previous.keepInfo.mutate(
-        collection -> {
-          for (DexReference reference : additionalPinnedItems) {
-            if (reference.isDexType()) {
-              DexProgramClass clazz =
-                  asProgramClassOrNull(previous.definitionFor(reference.asDexType()));
-              if (clazz != null) {
-                collection.joinClass(clazz, Joiner::disallowShrinking);
-              }
-            } else if (reference.isDexMethod()) {
-              DexMethod method = reference.asDexMethod();
-              DexProgramClass clazz = asProgramClassOrNull(previous.definitionFor(method.holder));
-              if (clazz != null) {
-                ProgramMethod definition = clazz.lookupProgramMethod(method);
-                if (definition != null) {
-                  collection.joinMethod(definition, Joiner::disallowShrinking);
-                }
-              }
-            } else {
-              DexField field = reference.asDexField();
-              DexProgramClass clazz = asProgramClassOrNull(previous.definitionFor(field.holder));
-              if (clazz != null) {
-                ProgramField definition = clazz.lookupProgramField(field);
-                if (definition != null) {
-                  collection.joinField(definition, Joiner::disallowShrinking);
-                }
-              }
-            }
-          }
-        });
   }
 
   public AppInfoWithLiveness(
@@ -946,7 +907,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     if (prunedItems.hasRemovedClasses()) {
       // Rebuild the hierarchy.
       objectAllocationInfoCollection.mutate(
-          mutator -> mutator.removeAllocationsForPrunedItems(prunedItems), this);
+          mutator -> mutator.removeAllocationsForPrunedItems(prunedItems, options()), this);
       keepInfo.mutate(keepInfo -> keepInfo.removeKeepInfoForPrunedItems(prunedItems));
     } else if (prunedItems.hasRemovedMembers()) {
       keepInfo.mutate(keepInfo -> keepInfo.removeKeepInfoForPrunedItems(prunedItems));

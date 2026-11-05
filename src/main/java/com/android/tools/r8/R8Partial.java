@@ -353,5 +353,7 @@ class R8Partial {
         options.getTestingOptions().forceDexContainerFormat;
     subCompilationOptions.getTestingOptions().enableDexConstString20 =
         options.getTestingOptions().enableDexConstString20;
+    subCompilationOptions.getTestingOptions().enableDexVersion35UpToApi30 =
+        options.getTestingOptions().enableDexVersion35UpToApi30;
   }
 }

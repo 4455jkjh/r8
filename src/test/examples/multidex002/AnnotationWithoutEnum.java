@@ -8,6 +8,4 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AnnotationWithoutEnum {
-
-}
+public @interface AnnotationWithoutEnum {}

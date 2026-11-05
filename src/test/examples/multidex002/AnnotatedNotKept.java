@@ -5,6 +5,4 @@
 package multidex002;
 
 @AnnotationWithoutEnum
-public class AnnotatedNotKept {
-
-}
+public class AnnotatedNotKept {}

@@ -7,8 +7,5 @@ package multidex003;
 @TestAnnotation(AnnotationValue.V1)
 public class Annotated {
 
-    public void m() {
-
-    }
-
+  public void m() {}
 }

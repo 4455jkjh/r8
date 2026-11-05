@@ -9,8 +9,7 @@ import com.android.tools.r8.bridgeremoval.bridgestokeep.ObservableList.Observer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SimpleObservableList<O extends Observer>
-    implements ObservableList<O> {
+public class SimpleObservableList<O extends Observer> implements ObservableList<O> {
 
   private List<O> observers = new ArrayList<>();
 

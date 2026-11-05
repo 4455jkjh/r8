@@ -2359,7 +2359,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
 
     @Override
     public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
-      throw throwCannotConvertToDex();
+      value.collectIndexedItems(appView, indexedItems);
     }
 
     @Override

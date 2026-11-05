@@ -90,16 +90,8 @@ public class ArgumentInfoCollectionTest extends TestBase {
 
     // Arguments removed: 0 1 2 3 4 -> 0 2 4.
     ArgumentInfoCollection.Builder builder1 = ArgumentInfoCollection.builder();
-    builder1.addArgumentInfo(
-        1,
-        RemovedArgumentInfo.builder()
-            .setType(factory.intType)
-            .build());
-    builder1.addArgumentInfo(
-        3,
-        RemovedArgumentInfo.builder()
-            .setType(factory.intType)
-            .build());
+    builder1.addArgumentInfo(1, RemovedArgumentInfo.builder().setType(factory.intType).build());
+    builder1.addArgumentInfo(3, RemovedArgumentInfo.builder().setType(factory.intType).build());
     ArgumentInfoCollection arguments1 = builder1.setArgumentInfosSize(5).build();
 
     // Arguments removed: 0 2 4 -> 0. Arguments 2 and 4 are at position 1 and 2 after first removal.

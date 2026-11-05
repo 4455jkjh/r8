@@ -85,5 +85,4 @@ public class LambdaTestRunner extends TestBase {
     instruction.print(printer);
     return printer.toString();
   }
-
 }

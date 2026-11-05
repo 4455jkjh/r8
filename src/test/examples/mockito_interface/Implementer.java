@@ -17,5 +17,4 @@ public class Implementer implements Interface {
   public void onEnterForeground() {
     logger.info("onEnterForeground called");
   }
-
 }

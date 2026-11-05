@@ -90,7 +90,7 @@ public class CompatProguardTest extends TestBase {
     assertEquals(1, options.proguardConfig.size());
     options = parseArgs("-xxx", "xxx");
     assertEquals(1, options.proguardConfig.size());
-    options = parseArgs("-xxx",  "-yyy");
+    options = parseArgs("-xxx", "-yyy");
     assertEquals(2, options.proguardConfig.size());
     options = parseArgs("-xxx", "xxx", "-yyy", "yyy");
     assertEquals(2, options.proguardConfig.size());

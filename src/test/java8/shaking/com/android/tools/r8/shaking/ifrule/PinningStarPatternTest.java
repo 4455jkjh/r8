@@ -60,14 +60,19 @@ public class PinningStarPatternTest extends TestBase {
   @Test
   public void testR8IfStarWithEmptyMethod() throws Exception {
     // We should also not keep B, since y() is dead (empty).
-    testKeepRule("-if class * { y(); } -keep class **B { *; }", EXPECTED_ABSENT, EXPECTED_PRESENT);
+    testKeepRule(
+        "-if class * { y(); } -keep class **B { *; }",
+        ImmutableList.of(A.class, B.class),
+        ImmutableList.of(TestClass.class));
   }
 
   @Test
   public void testR8IfStarField() throws Exception {
     // We should also not keep B, since the only_read field is dead.
     testKeepRule(
-        "-if class * { int only_read; } -keep class **B { *; }", EXPECTED_ABSENT, EXPECTED_PRESENT);
+        "-if class * { int only_read; } -keep class **B { *; }",
+        ImmutableList.of(A.class, B.class),
+        ImmutableList.of(TestClass.class));
   }
 
   private void testKeepRule(String keepRule, List<Class<?>> absent, List<Class<?>> present)

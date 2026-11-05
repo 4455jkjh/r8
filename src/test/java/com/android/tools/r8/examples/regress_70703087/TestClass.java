@@ -4,11 +4,9 @@
 package com.android.tools.r8.examples.regress_70703087;
 
 /**
- * AOSP JFuzz Tester.
- * Automatically generated program.
- * jfuzz -s 67746824 -d 1 -l 8 -i 2 -n 3 (version 1.4)
+ * AOSP JFuzz Tester. Automatically generated program. jfuzz -s 67746824 -d 1 -l 8 -i 2 -n 3
+ * (version 1.4)
  */
-
 import java.util.Arrays;
 
 public class TestClass {
@@ -27,6 +25,7 @@ public class TestClass {
     public int a() {
       return super.a() + ((--mI) >>> mI);
     }
+
     public int x() {
       return (Math.negateExact((mI--)));
     }
@@ -36,25 +35,27 @@ public class TestClass {
     public static int s() {
       return 772321235;
     }
+
     public int c() {
       return 1742917409;
     }
+
     public int x() {
       return -1360135619;
     }
   }
 
-  private A mA  = new B();
-  private B mB  = new B();
+  private A mA = new B();
+  private B mB = new B();
   private X mBX = new B();
-  private C mC  = new C();
+  private C mC = new C();
   private X mCX = new C();
 
   private boolean mZ = false;
-  private int     mI = 0;
-  private long    mJ = 0;
-  private float   mF = 0;
-  private double  mD = 0;
+  private int mI = 0;
+  private long mJ = 0;
+  private float mF = 0;
+  private double mD = 0;
 
   private double[] mArray = new double[700];
 
@@ -72,46 +73,53 @@ public class TestClass {
       while (++i0 < 700) {
         mJ -= (mB.a());
         mArray[i0] = (mB.x());
-        if ((-1926417383 < (((false || true) || true) ? 1210112326 : ((int) new Integer((Integer.MIN_VALUE)))))) {
+        if ((-1926417383
+            < (((false || true) || true)
+                ? 1210112326
+                : ((int) new Integer((Integer.MIN_VALUE)))))) {
           mI += (((int) new Integer((mI++))) % (mZ ? mI : -1938324616));
           for (int i1 = 0; i1 < 700; i1++) {
             mZ = ((boolean) new Boolean(mZ));
             mF += (Math.nextUp((++mF)));
             mI *= (Integer.MAX_VALUE);
             {
-              int lI0 = (- mI);
+              int lI0 = (-mI);
               {
                 int i2 = -1;
                 while (++i2 < 700) {
                   mF -= (++mF);
                   switch (i0) {
-                    case 427: {
-                      switch (i1) {
-                        case 684: {
-                          {
-                            int i3 = -1;
-                            while (++i3 < mArray.length) {
-                              continue;
+                    case 427:
+                      {
+                        switch (i1) {
+                          case 684:
+                            {
+                              {
+                                int i3 = -1;
+                                while (++i3 < mArray.length) {
+                                  continue;
+                                }
+                              }
+                              break;
                             }
-                          }
-                          break;
+                          default:
+                            {
+                              for (int i3 = 0; i3 < 700; i3++) {
+                                mZ = (false | (true || (mZ)));
+                                mJ >>= (mJ++);
+                                mZ ^= ((boolean) new Boolean(mZ));
+                              }
+                              break;
+                            }
                         }
-                        default: {
-                          for (int i3 = 0; i3 < 700; i3++) {
-                            mZ = (false | (true || (mZ)));
-                            mJ >>= (mJ++);
-                            mZ ^= ((boolean) new Boolean(mZ));
-                          }
-                          break;
-                        }
+                        mJ *= ((true || (mZ)) ? 612985119L : 2049818256L);
+                        break;
                       }
-                      mJ *= ((true || (mZ)) ? 612985119L : 2049818256L);
-                      break;
-                    }
-                    default: {
-                      mF += (Math.nextDown((++mF)));
-                      break;
-                    }
+                    default:
+                      {
+                        mF += (Math.nextDown((++mF)));
+                        break;
+                      }
                   }
                 }
               }
@@ -121,26 +129,29 @@ public class TestClass {
                 lI0 >>>= (false ? (Integer.MAX_VALUE) : ((int) mD));
               }
               switch (i0) {
-                case 197: {
-                  if ((false ^ true)) {
-                    for (int i2 = 0; i2 < 700; i2++) {
-                      mJ += (-676408943L << mJ);
+                case 197:
+                  {
+                    if ((false ^ true)) {
+                      for (int i2 = 0; i2 < 700; i2++) {
+                        mJ += (-676408943L << mJ);
+                      }
+                      mI /= ((1831995326 / mI) >>> -108611513);
+                    } else {
+                      mJ <<= (Math.multiplyExact(((~mJ) - 1612907666L), -42299883L));
+                      mI += (921426411 >>> (((boolean) new Boolean(mZ)) ? mI : -718350442));
                     }
-                    mI /= ((1831995326 / mI) >>> -108611513);
-                  } else {
-                    mJ <<= (Math.multiplyExact(((~ mJ) - 1612907666L), -42299883L));
-                    mI += (921426411 >>> (((boolean) new Boolean(mZ)) ? mI : -718350442));
+                    break;
                   }
-                  break;
-                }
-                default: {
-                  mZ ^= (! ((boolean) new Boolean((! false))));
-                  break;
-                }
+                default:
+                  {
+                    mZ ^= (!((boolean) new Boolean((!false))));
+                    break;
+                  }
               }
             }
             {
-              int i2 = -1;              while (++i2 < 700) {
+              int i2 = -1;
+              while (++i2 < 700) {
                 mZ = (Boolean.logicalAnd(false, (mZ ^ (mZ ^ (mZ)))));
               }
             }

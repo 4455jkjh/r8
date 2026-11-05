@@ -52,10 +52,14 @@ public class StaticLibraryValuesChangeTest extends TestBase {
 
     // Build the second version of LibraryClass
     JasminBuilder compileTimeLibrary = new JasminBuilder();
-    JasminBuilder.ClassBuilder clazz = compileTimeLibrary.addClass(
-        "com.android.tools.r8.rewrite.staticvalues.inlibraries.LibraryClass");
+    JasminBuilder.ClassBuilder clazz =
+        compileTimeLibrary.addClass(
+            "com.android.tools.r8.rewrite.staticvalues.inlibraries.LibraryClass");
     clazz.addStaticFinalField("x", "I", "2");
-    clazz.addStaticMethod("getX", ImmutableList.of(), "I",
+    clazz.addStaticMethod(
+        "getX",
+        ImmutableList.of(),
+        "I",
         ".limit stack 1",
         ".limit locals 0",
         "  iconst_2",
@@ -70,8 +74,7 @@ public class StaticLibraryValuesChangeTest extends TestBase {
         ImmutableList.of(),
         1,
         "    const/4             v0, 3",
-        "    return              v0"
-    );
+        "    return              v0");
 
     Path lib = temp.newFile("lib.dex").toPath().toAbsolutePath();
     FileUtils.writeToFile(lib, null, runtimeLibrary.compile());

@@ -41,8 +41,10 @@ public class Main {
   }
 
   private static Object createProxyOfFoo(final Object obj) {
-    Object proxyInstance = Proxy
-        .newProxyInstance(Foo.class.getClassLoader(), new Class[]{Foo.class},
+    Object proxyInstance =
+        Proxy.newProxyInstance(
+            Foo.class.getClassLoader(),
+            new Class[] {Foo.class},
             new InvocationHandler() {
               @Override
               public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
@@ -50,8 +52,11 @@ public class Main {
                 return null;
               }
             });
-    System.out.println("Created proxy class " + proxyInstance.getClass().getName()
-        + " which is a runtime implementation of Foo in addition to " + obj.getClass().getName());
+    System.out.println(
+        "Created proxy class "
+            + proxyInstance.getClass().getName()
+            + " which is a runtime implementation of Foo in addition to "
+            + obj.getClass().getName());
     return proxyInstance;
   }
 
@@ -67,5 +72,4 @@ public class Main {
       System.out.println("Bar.foo");
     }
   }
-
 }

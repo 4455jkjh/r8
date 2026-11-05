@@ -53,16 +53,16 @@ class NewArray {
   }
 
   public static void test() {
-    int x0[] = new int[]{};
-    int x1[] = new int[]{0};
-    int x2[] = new int[]{0, 1};
-    int x3[] = new int[]{0, 1, 2};
-    int x4[] = new int[]{0, 1, 2, 3};
-    int x5[] = new int[]{0, 1, 2, 3, 4};
-    int x6[] = new int[]{0, 1, 2, 3, 4, 5};
-    int x7[] = new int[]{0, 1, 2, 3, 4, 5, 6};
-    int x8[] = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
-    int x9[] = new int[]{0, 1, 0, 3, 4, 0, 6, 7};
+    int x0[] = new int[] {};
+    int x1[] = new int[] {0};
+    int x2[] = new int[] {0, 1};
+    int x3[] = new int[] {0, 1, 2};
+    int x4[] = new int[] {0, 1, 2, 3};
+    int x5[] = new int[] {0, 1, 2, 3, 4};
+    int x6[] = new int[] {0, 1, 2, 3, 4, 5};
+    int x7[] = new int[] {0, 1, 2, 3, 4, 5, 6};
+    int x8[] = new int[] {0, 1, 2, 3, 4, 5, 6, 7};
+    int x9[] = new int[] {0, 1, 0, 3, 4, 0, 6, 7};
     printArray(x0);
     printArray(x1);
     printArray(x2);
@@ -76,14 +76,14 @@ class NewArray {
   }
 
   public static void testIntArgs(int v0, int v1, int v2, int v3, int v4, int v5) {
-    int x0[] = new int[]{};
-    int x1[] = new int[]{v0};
-    int x2[] = new int[]{v0, v1};
-    int x3[] = new int[]{v0, v1, v2};
-    int x4[] = new int[]{v0, v1, v2, v3};
-    int x5[] = new int[]{v0, v1, v2, v3, v4};
-    int x6[] = new int[]{v0, v1, v2, v3, v4, v5};
-    int x7[] = new int[]{v0, v1, v2, v3, v4, v5, v0, v1, v0, v4, v0};
+    int x0[] = new int[] {};
+    int x1[] = new int[] {v0};
+    int x2[] = new int[] {v0, v1};
+    int x3[] = new int[] {v0, v1, v2};
+    int x4[] = new int[] {v0, v1, v2, v3};
+    int x5[] = new int[] {v0, v1, v2, v3, v4};
+    int x6[] = new int[] {v0, v1, v2, v3, v4, v5};
+    int x7[] = new int[] {v0, v1, v2, v3, v4, v5, v0, v1, v0, v4, v0};
     printArray(x0);
     printArray(x1);
     printArray(x2);
@@ -95,15 +95,15 @@ class NewArray {
   }
 
   public static void testObjectArg(A a) {
-    int x0[] = new int[]{};
-    int x1[] = new int[]{a.v0};
-    int x2[] = new int[]{a.v0, a.v1};
-    int x3[] = new int[]{a.v0, a.v1, a.v2};
-    int x4[] = new int[]{a.v0, a.v1, a.v2, a.v3};
-    int x5[] = new int[]{a.v0, a.v1, a.v2, a.v3, a.v4};
-    int x6[] = new int[]{a.v0, a.v1, a.v2, a.v3, a.v4, a.v5};
-    int x7[] = new int[]{a.v0, a.v1, a.v2, a.v3, a.v4, a.v5, a.v6};
-    int x8[] = new int[]{a.v0, a.v1, a.v2, a.v0, a.v3, a.v4, a.v5, a.v6};
+    int x0[] = new int[] {};
+    int x1[] = new int[] {a.v0};
+    int x2[] = new int[] {a.v0, a.v1};
+    int x3[] = new int[] {a.v0, a.v1, a.v2};
+    int x4[] = new int[] {a.v0, a.v1, a.v2, a.v3};
+    int x5[] = new int[] {a.v0, a.v1, a.v2, a.v3, a.v4};
+    int x6[] = new int[] {a.v0, a.v1, a.v2, a.v3, a.v4, a.v5};
+    int x7[] = new int[] {a.v0, a.v1, a.v2, a.v3, a.v4, a.v5, a.v6};
+    int x8[] = new int[] {a.v0, a.v1, a.v2, a.v0, a.v3, a.v4, a.v5, a.v6};
     printArray(x0);
     printArray(x1);
     printArray(x2);

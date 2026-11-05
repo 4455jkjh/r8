@@ -170,6 +170,10 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
         Objects::nonNull);
   }
 
+  public boolean hasSubclasses(S clazz) {
+    return !getSubclasses(clazz).isEmpty();
+  }
+
   public <TB, TC> TraversalContinuation<TB, TC> traverseTransitiveSubclasses(
       S clazz, Function<? super DexClass, TraversalContinuation<TB, TC>> fn) {
     TraversalContinuation<TB, TC> traversalContinuation = TraversalContinuation.doContinue();

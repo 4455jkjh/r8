@@ -6,6 +6,8 @@ package com.android.tools.r8.lightir;
 import com.android.tools.r8.cf.code.CfArithmeticBinop;
 import com.android.tools.r8.cf.code.CfArithmeticBinop.Opcode;
 import com.android.tools.r8.cf.code.CfLogicalBinop;
+import com.android.tools.r8.dex.IndexedItemCollection;
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
@@ -150,6 +152,11 @@ public class LirBuilder<V, EV> {
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
       acceptHashing(visitor);
     }
+
+    @Override
+    public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+      // Intentionally empty.
+    }
   }
 
   public static class IntSwitchPayload extends InstructionPayload
@@ -190,6 +197,11 @@ public class LirBuilder<V, EV> {
     @Override
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
       acceptHashing(visitor);
+    }
+
+    @Override
+    public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+      // Intentionally empty.
     }
   }
 
@@ -250,6 +262,18 @@ public class LirBuilder<V, EV> {
         }
       }
     }
+
+    @Override
+    public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+      for (DexType argType : argTypes) {
+        argType.collectIndexedItems(appView, indexedItems);
+      }
+      for (DexString argConstant : argConstants) {
+        if (argConstant != null) {
+          argConstant.collectIndexedItems(appView, indexedItems);
+        }
+      }
+    }
   }
 
   public static class StringSwitchPayload extends InstructionPayload
@@ -291,6 +315,11 @@ public class LirBuilder<V, EV> {
     public int internalLirConstantAcceptCompareTo(LirConstant other, CompareToVisitor visitor) {
       return acceptCompareTo((StringSwitchPayload) other, visitor);
     }
+
+    @Override
+    public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+      // Intentionally empty.
+    }
   }
 
   public static class NameComputationPayload extends InstructionPayload {
@@ -312,6 +341,11 @@ public class LirBuilder<V, EV> {
 
     @Override
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {}
+
+    @Override
+    public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+      // Intentionally empty.
+    }
 
     @SuppressWarnings("ReferenceEquality")
     public NameComputationPayload rewrittenWithLens(GraphLens graphLens, GraphLens codeLens) {
@@ -343,6 +377,13 @@ public class LirBuilder<V, EV> {
     @Override
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
       visitor.visitItemArray(fields);
+    }
+
+    @Override
+    public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+      for (DexField field : fields) {
+        field.collectIndexedItems(appView, indexedItems);
+      }
     }
   }
 

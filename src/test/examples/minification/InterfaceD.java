@@ -5,13 +5,9 @@ package minification;
 
 public interface InterfaceD {
 
-  /**
-   * This method is only defined here.
-   */
+  /** This method is only defined here. */
   int anotherFunctionFromIntToInt(int arg);
 
-  /**
-   * This method is also defined in {@link InterfaceA} and {@link InterfaceB};
-   */
+  /** This method is also defined in {@link InterfaceA} and {@link InterfaceB}; */
   int functionFromIntToInt(int arg);
 }

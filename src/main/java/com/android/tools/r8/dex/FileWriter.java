@@ -397,6 +397,24 @@ public class FileWriter {
             new UnsupportedDefaultInterfaceMethodDiagnostic(
                 holder.getOrigin(), MethodPosition.create(method)));
       }
+      if (options.isDexVersion35UpToApi30Enabled()) {
+        if (method.accessFlags.isPrivate()) {
+          throw new CompilationError(
+              "Cannot encode private instance interface method '"
+                  + method.getReference().toSourceString()
+                  + "' in DEX version 035, as private instance interface methods are not supported"
+                  + " by this DEX version.",
+              holder.getOrigin());
+        }
+        if (method.accessFlags.isNative()) {
+          throw new CompilationError(
+              "Cannot encode non-static native interface method '"
+                  + method.getReference().toSourceString()
+                  + "' in DEX version 035, as non-static native interface methods are not"
+                  + " supported by this DEX version.",
+              holder.getOrigin());
+        }
+      }
     }
 
     if (method.accessFlags.isPrivate()) {
@@ -856,12 +874,15 @@ public class FileWriter {
         && options.getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.R)) {
       return DexVersion.V40.getBytes();
     }
-    DexVersion dexVersion =
-        DexVersion.getDexVersion(options.getMinApiLevel())
-                .isGreaterThanOrEqualTo(
-                    DexVersion.getDexVersion(InternalOptions.containerDexApiLevel()))
-            ? DexVersion.V39
-            : DexVersion.getDexVersion(options.getMinApiLevel());
+    DexVersion dexVersion;
+    if (options.isDexVersion35UpToApi30Enabled()) {
+      dexVersion = DexVersion.V35;
+    } else if (DexVersion.getDexVersion(options.getMinApiLevel())
+        .isGreaterThanOrEqualTo(DexVersion.getDexVersion(InternalOptions.containerDexApiLevel()))) {
+      dexVersion = DexVersion.V39;
+    } else {
+      dexVersion = DexVersion.getDexVersion(options.getMinApiLevel());
+    }
     return options.testing.forceDexVersionBytes != null
         ? options.testing.forceDexVersionBytes
         : dexVersion.getBytes();

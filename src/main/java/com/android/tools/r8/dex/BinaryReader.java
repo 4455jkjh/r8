@@ -10,6 +10,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.LebUtils;
 import com.android.tools.r8.utils.internal.StreamUtils;
 import java.io.IOException;
+import java.util.Arrays;
 
 /** Base class for reading binary content. */
 public abstract class BinaryReader {
@@ -36,6 +37,21 @@ public abstract class BinaryReader {
     byte[] result = new byte[size];
     buffer.get(result);
     return result;
+  }
+
+  // Reads a NUL-terminated byte sequence (including the NUL). The buffer always wraps a whole
+  // byte[] (see constructor), so scan the array directly rather than calling get() per byte.
+  byte[] getNullTerminatedBytes() {
+    assert buffer.arrayOffset() == 0;
+    byte[] array = buffer.array();
+    int start = buffer.position();
+    int end = start;
+    while (array[end] != 0) {
+      end++;
+    }
+    end++;
+    buffer.position(end);
+    return Arrays.copyOfRange(array, start, end);
   }
 
   int getUleb128() {

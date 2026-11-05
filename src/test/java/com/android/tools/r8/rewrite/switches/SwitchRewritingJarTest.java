@@ -94,20 +94,22 @@ public class SwitchRewritingJarTest extends JasminTestBase {
 
     String switchCode;
     if (packed) {
-      switchCode = StringUtils.join(
-          "\n",
-          "    tableswitch " + key,
-          "      case_0",
-          "      default : case_default");
+      switchCode =
+          StringUtils.join(
+              "\n", "    tableswitch " + key, "      case_0", "      default : case_default");
     } else {
-      switchCode = StringUtils.join(
-          "\n",
-          "    lookupswitch",
-          "      " + key + " : case_0",
-          "      default : case_default");
+      switchCode =
+          StringUtils.join(
+              "\n",
+              "    lookupswitch",
+              "      " + key + " : case_0",
+              "      default : case_default");
     }
 
-    clazz.addStaticMethod("test", ImmutableList.of("I"), "I",
+    clazz.addStaticMethod(
+        "test",
+        ImmutableList.of("I"),
+        "I",
         "    .limit stack 1",
         "    .limit locals 1",
         "    iload 0",
@@ -145,7 +147,7 @@ public class SwitchRewritingJarTest extends JasminTestBase {
 
   @Test
   public void singleCaseJar() throws Exception {
-    for (boolean packed : new boolean[]{true, false}) {
+    for (boolean packed : new boolean[] {true, false}) {
       runSingleCaseJarTest(packed, Integer.MIN_VALUE);
       runSingleCaseJarTest(packed, -1);
       runSingleCaseJarTest(packed, 0);
@@ -154,8 +156,8 @@ public class SwitchRewritingJarTest extends JasminTestBase {
     }
   }
 
-  private void runLargerSwitchJarTest(int firstKey, int keyStep, int totalKeys,
-      Integer additionalLastKey) throws Exception {
+  private void runLargerSwitchJarTest(
+      int firstKey, int keyStep, int totalKeys, Integer additionalLastKey) throws Exception {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
@@ -176,7 +178,10 @@ public class SwitchRewritingJarTest extends JasminTestBase {
       targetCode.append("    goto return_\n");
     }
 
-    clazz.addStaticMethod("test", ImmutableList.of("I"), "I",
+    clazz.addStaticMethod(
+        "test",
+        ImmutableList.of("I"),
+        "I",
         "    .limit stack 1",
         "    .limit locals 1",
         "    iload 0",
@@ -267,7 +272,10 @@ public class SwitchRewritingJarTest extends JasminTestBase {
       y.append("    goto return_\n");
     }
 
-    clazz.addStaticMethod("test", ImmutableList.of("I"), "I",
+    clazz.addStaticMethod(
+        "test",
+        ImmutableList.of("I"),
+        "I",
         "    .limit stack 1",
         "    .limit locals 1",
         "    iload_0",
@@ -335,7 +343,10 @@ public class SwitchRewritingJarTest extends JasminTestBase {
         ImmutableList.of(0, 1000, 1001, 1002, 1003, 1004, 1005, 2000), -100, 2, 1, 0);
     runConvertCasesToIf(
         ImmutableList.of(Integer.MIN_VALUE, 1000, 1001, 1002, 1003, 1004, 1005, Integer.MAX_VALUE),
-        -100, 2, 1, 0);
+        -100,
+        2,
+        1,
+        0);
 
     // Switches that are completely converted to a combination of ifs and switches.
     if (parameters.isDexRuntime()) {
@@ -345,10 +356,16 @@ public class SwitchRewritingJarTest extends JasminTestBase {
           ImmutableList.of(0, 1, 2, 3, 4, 1000, 1001, 1002, 1003, 1004), -100, 5, 1, 0);
       runConvertCasesToIf(
           ImmutableList.of(-1000, 0, 1, 2, 3, 4, 1000, 1001, 1002, 1003, 1004, 1005),
-          -100,6,1,0);
+          -100,
+          6,
+          1,
+          0);
       runConvertCasesToIf(
           ImmutableList.of(-1000, 0, 1, 2, 3, 4, 5, 6, 1000, 1001, 1002, 1003, 1004, 1005, 1006),
-          -100,1,2,0);
+          -100,
+          1,
+          2,
+          0);
     } else {
       // runConvertCasesToIf(ImmutableList.of(1000, 2000, 3000, 4000, 5000, 6000), -100, 0, 0, 1);
       runConvertCasesToIf(ImmutableList.of(0, 1, 2, 3, 4), -100, 0, 1, 0);
@@ -358,21 +375,28 @@ public class SwitchRewritingJarTest extends JasminTestBase {
           ImmutableList.of(-1000, 0, 1, 2, 3, 4, 1000, 1001, 1002, 1003, 1004), -100, 1, 2, 0);
       runConvertCasesToIf(
           ImmutableList.of(-1000, 0, 1, 2, 3, 4, 1000, 1001, 1002, 1003, 1004, 2000),
-          -100,2,2,0);
+          -100,
+          2,
+          2,
+          0);
     }
     runConvertCasesToIf(
         ImmutableList.of(
-            -1000, -900, -800, -700, -600, -500, -400, -300,
-            1000, 1001, 1002, 1003, 1004,
-            2000, 2100, 2200, 2300, 2400, 2500),
-        -100,0,1,1);
+            -1000, -900, -800, -700, -600, -500, -400, -300, 1000, 1001, 1002, 1003, 1004, 2000,
+            2100, 2200, 2300, 2400, 2500),
+        -100,
+        0,
+        1,
+        1);
     // For small keys and 0 having If's is marginally better.
     runConvertCasesToIf(
         ImmutableList.of(
-            -1000, -900, -800, -700, -600, -500, -400, -300, -200, -100, -1, 0, 1,
-            1000, 1001, 1002, 1003, 1004,
-            2000, 2100, 2200, 2300, 2400, 2500),
-        -100,3,1,1);
+            -1000, -900, -800, -700, -600, -500, -400, -300, -200, -100, -1, 0, 1, 1000, 1001, 1002,
+            1003, 1004, 2000, 2100, 2200, 2300, 2400, 2500),
+        -100,
+        3,
+        1,
+        1);
 
     // Switches that hit maximum number of switchs and ifs.
     runConvertCasesToIf(
@@ -380,69 +404,57 @@ public class SwitchRewritingJarTest extends JasminTestBase {
     if (parameters.isDexRuntime()) {
       runConvertCasesToIf(
           ImmutableList.of(
-              0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-              101, 102, 103, 104, 105, 106, 107, 108, 109,
-              201, 202, 203, 204, 205, 206, 207, 208, 209,
-              301, 302, 303, 304, 305, 306, 307, 308, 309,
-              401, 402, 403, 404, 405, 406, 407, 408, 409,
-              501, 502, 503, 504, 505, 506, 507, 508, 509,
-              601, 602, 603, 604, 605, 606, 607, 608, 609,
-              701, 702, 703, 704, 705, 706, 707, 708, 709,
-              801, 802, 803, 804, 805, 806, 807, 808, 809,
-              901, 902, 903, 904, 905, 906, 907, 908, 909,
-              1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009,
-              1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109),
-          -100,8,9,1);
+              0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103, 104, 105, 106, 107, 108, 109, 201, 202,
+              203, 204, 205, 206, 207, 208, 209, 301, 302, 303, 304, 305, 306, 307, 308, 309, 401,
+              402, 403, 404, 405, 406, 407, 408, 409, 501, 502, 503, 504, 505, 506, 507, 508, 509,
+              601, 602, 603, 604, 605, 606, 607, 608, 609, 701, 702, 703, 704, 705, 706, 707, 708,
+              709, 801, 802, 803, 804, 805, 806, 807, 808, 809, 901, 902, 903, 904, 905, 906, 907,
+              908, 909, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1101, 1102, 1103,
+              1104, 1105, 1106, 1107, 1108, 1109),
+          -100,
+          8,
+          9,
+          1);
       runConvertCasesToIf(
           ImmutableList.of(
-              -2000, -1000,
-              0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-              101, 102, 103, 104, 105, 106, 107, 108, 109,
-              201, 202, 203, 204, 205, 206, 207, 208, 209,
-              301, 302, 303, 304, 305, 306, 307, 308, 309,
-              401, 402, 403, 404, 405, 406, 407, 408, 409,
-              501, 502, 503, 504, 505, 506, 507, 508, 509,
-              601, 602, 603, 604, 605, 606, 607, 608, 609,
-              701, 702, 703, 704, 705, 706, 707, 708, 709,
-              801, 802, 803, 804, 805, 806, 807, 808, 809,
-              901, 902, 903, 904, 905, 906, 907, 908, 909,
-              1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009,
-              1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109,
-              10000, 11000),
-          -100,8,9,1);
+              -2000, -1000, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103, 104, 105, 106, 107, 108,
+              109, 201, 202, 203, 204, 205, 206, 207, 208, 209, 301, 302, 303, 304, 305, 306, 307,
+              308, 309, 401, 402, 403, 404, 405, 406, 407, 408, 409, 501, 502, 503, 504, 505, 506,
+              507, 508, 509, 601, 602, 603, 604, 605, 606, 607, 608, 609, 701, 702, 703, 704, 705,
+              706, 707, 708, 709, 801, 802, 803, 804, 805, 806, 807, 808, 809, 901, 902, 903, 904,
+              905, 906, 907, 908, 909, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1101,
+              1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 10000, 11000),
+          -100,
+          8,
+          9,
+          1);
     } else {
       runConvertCasesToIf(
           ImmutableList.of(
-              0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-              101, 102, 103, 104, 105, 106, 107, 108, 109,
-              201, 202, 203, 204, 205, 206, 207, 208, 209,
-              301, 302, 303, 304, 305, 306, 307, 308, 309,
-              401, 402, 403, 404, 405, 406, 407, 408, 409,
-              501, 502, 503, 504, 505, 506, 507, 508, 509,
-              601, 602, 603, 604, 605, 606, 607, 608, 609,
-              701, 702, 703, 704, 705, 706, 707, 708, 709,
-              801, 802, 803, 804, 805, 806, 807, 808, 809,
-              901, 902, 903, 904, 905, 906, 907, 908, 909,
-              1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009,
-              1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109),
-          -100,0,9,1);
+              0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103, 104, 105, 106, 107, 108, 109, 201, 202,
+              203, 204, 205, 206, 207, 208, 209, 301, 302, 303, 304, 305, 306, 307, 308, 309, 401,
+              402, 403, 404, 405, 406, 407, 408, 409, 501, 502, 503, 504, 505, 506, 507, 508, 509,
+              601, 602, 603, 604, 605, 606, 607, 608, 609, 701, 702, 703, 704, 705, 706, 707, 708,
+              709, 801, 802, 803, 804, 805, 806, 807, 808, 809, 901, 902, 903, 904, 905, 906, 907,
+              908, 909, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1101, 1102, 1103,
+              1104, 1105, 1106, 1107, 1108, 1109),
+          -100,
+          0,
+          9,
+          1);
       runConvertCasesToIf(
           ImmutableList.of(
-              -2000, -1000,
-              0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-              101, 102, 103, 104, 105, 106, 107, 108, 109,
-              201, 202, 203, 204, 205, 206, 207, 208, 209,
-              301, 302, 303, 304, 305, 306, 307, 308, 309,
-              401, 402, 403, 404, 405, 406, 407, 408, 409,
-              501, 502, 503, 504, 505, 506, 507, 508, 509,
-              601, 602, 603, 604, 605, 606, 607, 608, 609,
-              701, 702, 703, 704, 705, 706, 707, 708, 709,
-              801, 802, 803, 804, 805, 806, 807, 808, 809,
-              901, 902, 903, 904, 905, 906, 907, 908, 909,
-              1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009,
-              1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109,
-              10000, 11000),
-          -100,0,9,1);
+              -2000, -1000, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103, 104, 105, 106, 107, 108,
+              109, 201, 202, 203, 204, 205, 206, 207, 208, 209, 301, 302, 303, 304, 305, 306, 307,
+              308, 309, 401, 402, 403, 404, 405, 406, 407, 408, 409, 501, 502, 503, 504, 505, 506,
+              507, 508, 509, 601, 602, 603, 604, 605, 606, 607, 608, 609, 701, 702, 703, 704, 705,
+              706, 707, 708, 709, 801, 802, 803, 804, 805, 806, 807, 808, 809, 901, 902, 903, 904,
+              905, 906, 907, 908, 909, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1101,
+              1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 10000, 11000),
+          -100,
+          0,
+          9,
+          1);
     }
   }
 }

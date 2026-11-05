@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -43,6 +44,7 @@ public class InvokeDirectNegativeTest extends TestBase {
         .addKeepMainRule(MAIN)
         .enableNeverClassInliningAnnotations()
         .enableInliningAnnotations()
+        .enableNoHorizontalClassMergingAnnotations()
         .addOptionsModification(
             o ->
                 o.testing.callSiteOptimizationInfoInspector = this::callSiteOptimizationInfoInspect)
@@ -81,8 +83,10 @@ public class InvokeDirectNegativeTest extends TestBase {
 
   static class Base {}
 
+  @NoHorizontalClassMerging
   static class Sub1 extends Base {}
 
+  @NoHorizontalClassMerging
   static class Sub2 extends Base {}
 
   @NeverClassInline

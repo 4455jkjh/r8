@@ -5,7 +5,6 @@
 package com.android.tools.r8.compose;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -37,10 +36,8 @@ public class UnusedComposeLambdaTest extends TestBase {
         .compile()
         .inspect(
             inspector -> {
-              assertTrue("Lambda1 should be present.", inspector.clazz(Lambda1.class).isPresent());
-              assertTrue(
-                  "Lambda2 should be deleted, but is not.",
-                  inspector.clazz(Lambda2.class).isPresent());
+              assertFalse("Lambda1 should be deleted.", inspector.clazz(Lambda1.class).isPresent());
+              assertFalse("Lambda2 should be deleted.", inspector.clazz(Lambda2.class).isPresent());
               assertFalse("Lambda3 should be deleted", inspector.clazz(Lambda3.class).isPresent());
             })
         .run(parameters.getRuntime(), TestClass.class)

@@ -5,13 +5,12 @@
 package multidex001;
 
 /**
- * Class directly referenced from Activity, will be kept in main dex. The class is not referenced
- * by <clinit> or <init>, its direct references are not kept in main dex.
+ * Class directly referenced from Activity, will be kept in main dex. The class is not referenced by
+ * <clinit> or <init>, its direct references are not kept in main dex.
  */
 public class ClassForMainDex {
 
-    public static int getVersion() {
-        return Version.getVersion();
-    }
-
+  public static int getVersion() {
+    return Version.getVersion();
+  }
 }

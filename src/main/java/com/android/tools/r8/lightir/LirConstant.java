@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.lightir;
 
+import com.android.tools.r8.dex.IndexedItemCollection;
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
@@ -74,6 +76,8 @@ public interface LirConstant {
 
   /** Implementation of hashing on the actual subtypes. */
   void internalLirConstantAcceptHashing(HashingVisitor visitor);
+
+  void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems);
 
   default boolean isDexField() {
     return false;

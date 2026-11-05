@@ -146,24 +146,28 @@ public class DebugLocalTests extends JasminTestBase {
   public void testNoLocalInfoOnStack() throws Exception {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
-    MethodSignature foo = clazz.addVirtualMethod("foo", ImmutableList.of(), "I",
-        ".var 0 is this LTest; from Init to End",
-        ".var 1 is x I from XStart to XEnd",
-        ".limit locals 2",
-        ".limit stack 1",
-        "Init:",
-        ".line 1",
-        "  ldc 0",
-        "  istore 1",
-        "XStart:",
-        ".line 2",
-        "  ldc 42",
-        "  istore 1",
-        "  iload 1",
-        "XEnd:",
-        ".line 3",
-        "  ireturn",
-        "End:");
+    MethodSignature foo =
+        clazz.addVirtualMethod(
+            "foo",
+            ImmutableList.of(),
+            "I",
+            ".var 0 is this LTest; from Init to End",
+            ".var 1 is x I from XStart to XEnd",
+            ".limit locals 2",
+            ".limit stack 1",
+            "Init:",
+            ".line 1",
+            "  ldc 0",
+            "  istore 1",
+            "XStart:",
+            ".line 2",
+            "  ldc 42",
+            "  istore 1",
+            "  iload 1",
+            "XEnd:",
+            ".line 3",
+            "  ireturn",
+            "End:");
 
     clazz.addMainMethod(
         ".limit stack 3",
@@ -200,57 +204,51 @@ public class DebugLocalTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    MethodSignature foo = clazz.addStaticMethod("foo", ImmutableList.of("I"), "I",
-        ".limit stack 2",
-        ".limit locals 2",
-        ".var 0 is param I from MethodStart to MethodEnd",
-        ".var 1 is x I from LabelXStart to LabelXEnd",
-        ".var 1 is y I from LabelYStart to LabelYEnd",
+    MethodSignature foo =
+        clazz.addStaticMethod(
+            "foo",
+            ImmutableList.of("I"),
+            "I",
+            ".limit stack 2",
+            ".limit locals 2",
+            ".var 0 is param I from MethodStart to MethodEnd",
+            ".var 1 is x I from LabelXStart to LabelXEnd",
+            ".var 1 is y I from LabelYStart to LabelYEnd",
+            "MethodStart:",
+            ".line 1",
+            "  ldc 0",
+            "  istore 1",
+            "LabelXStart:",
+            ".line 2",
+            "  invokestatic Test/ensureLine()V",
+            "LabelXEnd:",
+            "  iload 0",
+            "  lookupswitch",
+            "  1: Case1",
+            "  default: CaseDefault",
+            "Case1:",
+            ".line 3",
+            "  ldc 42",
+            "  istore 1",
+            "LabelYStart:",
+            ".line 4",
+            "  invokestatic Test/ensureLine()V",
+            "  goto AfterSwitch",
+            "CaseDefault:",
+            ".line 5",
+            "  ldc -42",
+            "  istore 1",
+            ".line 6",
+            "  invokestatic Test/ensureLine()V",
+            "AfterSwitch:",
+            ".line 7",
+            "  iload 1",
+            "  ireturn",
+            "LabelYEnd:",
+            "MethodEnd:");
 
-        "MethodStart:",
-        ".line 1",
-
-        "  ldc 0",
-        "  istore 1",
-        "LabelXStart:",
-        ".line 2",
-        "  invokestatic Test/ensureLine()V",
-        "LabelXEnd:",
-
-        "  iload 0",
-        "  lookupswitch",
-        "  1: Case1",
-        "  default: CaseDefault",
-
-        "Case1:",
-        ".line 3",
-        "  ldc 42",
-        "  istore 1",
-        "LabelYStart:",
-        ".line 4",
-        "  invokestatic Test/ensureLine()V",
-        "  goto AfterSwitch",
-
-        "CaseDefault:",
-        ".line 5",
-        "  ldc -42",
-        "  istore 1",
-        ".line 6",
-        "  invokestatic Test/ensureLine()V",
-
-        "AfterSwitch:",
-        ".line 7",
-        "  iload 1",
-        "  ireturn",
-        "LabelYEnd:",
-
-        "MethodEnd:"
-    );
-
-    clazz.addStaticMethod("ensureLine", ImmutableList.of(), "V",
-        ".limit stack 0",
-        ".limit locals 0",
-        "  return");
+    clazz.addStaticMethod(
+        "ensureLine", ImmutableList.of(), "V", ".limit stack 0", ".limit locals 0", "  return");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -285,55 +283,52 @@ public class DebugLocalTests extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    MethodSignature foo = clazz.addStaticMethod("foo", ImmutableList.of("I"), "I",
-        ".limit stack 2",
-        ".limit locals 2",
-        ".var 0 is param I from Init to End",
-        ".var 1 is x I from LabelStart1 to LabelEnd1",
-        ".var 1 is x I from LabelStart2 to LabelEnd2",
-        ".var 1 is x I from LabelStart3 to LabelEnd3",
-        ".var 1 is x I from LabelStart4 to LabelEnd4",
-        "Init:",
-        ".line 1",
-        "  iload 0",
-        "  istore 1",
+    MethodSignature foo =
+        clazz.addStaticMethod(
+            "foo",
+            ImmutableList.of("I"),
+            "I",
+            ".limit stack 2",
+            ".limit locals 2",
+            ".var 0 is param I from Init to End",
+            ".var 1 is x I from LabelStart1 to LabelEnd1",
+            ".var 1 is x I from LabelStart2 to LabelEnd2",
+            ".var 1 is x I from LabelStart3 to LabelEnd3",
+            ".var 1 is x I from LabelStart4 to LabelEnd4",
+            "Init:",
+            ".line 1",
+            "  iload 0",
+            "  istore 1",
+            "LabelStart1:",
+            ".line 2",
+            "  invokestatic Test/ensureLine()V",
+            "LabelEnd1:",
+            ".line 3",
+            "  invokestatic Test/ensureLine()V",
+            "LabelStart2:",
+            ".line 4",
+            "  invokestatic Test/ensureLine()V",
+            "LabelEnd2:",
+            ".line 5",
+            "  invokestatic Test/ensureLine()V",
+            "LabelStart3:",
+            ".line 6",
+            "  invokestatic Test/ensureLine()V",
+            "LabelEnd3:",
+            ".line 7",
+            "  invokestatic Test/ensureLine()V",
+            "LabelStart4:",
+            ".line 8",
+            "  invokestatic Test/ensureLine()V",
+            "LabelEnd4:",
+            ".line 9",
+            "  invokestatic Test/ensureLine()V",
+            "  iload 1",
+            "  ireturn",
+            "End:");
 
-        "LabelStart1:",
-        ".line 2",
-        "  invokestatic Test/ensureLine()V",
-        "LabelEnd1:",
-        ".line 3",
-        "  invokestatic Test/ensureLine()V",
-
-        "LabelStart2:",
-        ".line 4",
-        "  invokestatic Test/ensureLine()V",
-        "LabelEnd2:",
-        ".line 5",
-        "  invokestatic Test/ensureLine()V",
-
-        "LabelStart3:",
-        ".line 6",
-        "  invokestatic Test/ensureLine()V",
-        "LabelEnd3:",
-        ".line 7",
-        "  invokestatic Test/ensureLine()V",
-
-        "LabelStart4:",
-        ".line 8",
-        "  invokestatic Test/ensureLine()V",
-        "LabelEnd4:",
-        ".line 9",
-        "  invokestatic Test/ensureLine()V",
-        "  iload 1",
-        "  ireturn",
-        "End:"
-    );
-
-    clazz.addStaticMethod("ensureLine", ImmutableList.of(), "V",
-        ".limit stack 0",
-        ".limit locals 0",
-        "  return");
+    clazz.addStaticMethod(
+        "ensureLine", ImmutableList.of(), "V", ".limit stack 0", ".limit locals 0", "  return");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -372,71 +367,74 @@ public class DebugLocalTests extends JasminTestBase {
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
     /*
-     This is the original Java source code.
+      This is the original Java source code.
 
-     public static int argumentLiveAtReturn(int x) {  // Line 1
-       switch (x) {
-         case 0:
-           return 0;
-         case 1:
-           return 0;
-         case 2:
-           return 0;
-         case 100:
-           return 1;
-         case 101:
-           return 1;
-         case 102:
-           return 1;
-       }
-       return -1;
-     }
-   */
-    MethodSignature foo = clazz.addStaticMethod("argumentLiveAtReturn", ImmutableList.of("I"), "I",
-        ".limit stack 2",
-        ".limit locals 1",
-        ".var 0 is x I from L0 to L8",
-        "L0:",
-        ".line 2",
-        "  iload 0",
-        "lookupswitch",
-        "  0: L1",
-        "  1: L2",
-        "  2: L3",
-        "  100: L4",
-        "  101: L5",
-        "  102: L6",
-        "  default: L7",
-        "L1:",
-        ".line 4",
-        "  iconst_0",
-        "  ireturn",
-        "L2:",
-        ".line 6",
-        "  iconst_0",
-        "  ireturn",
-        "L3:",
-        ".line 8",
-        "  iconst_0",
-        "  ireturn",
-        "L4:",
-        ".line 10",
-        "  iconst_1",
-        "  ireturn",
-        "L5:",
-        ".line 12",
-        "  iconst_1",
-        "  ireturn",
-        "L6:",
-        ".line 14",
-        "  iconst_1",
-        "  ireturn",
-        "L7:",
-        ".line 16",
-        "  iconst_m1",
-        "  ireturn",
-        "L8:"
-    );
+      public static int argumentLiveAtReturn(int x) {  // Line 1
+        switch (x) {
+          case 0:
+            return 0;
+          case 1:
+            return 0;
+          case 2:
+            return 0;
+          case 100:
+            return 1;
+          case 101:
+            return 1;
+          case 102:
+            return 1;
+        }
+        return -1;
+      }
+    */
+    MethodSignature foo =
+        clazz.addStaticMethod(
+            "argumentLiveAtReturn",
+            ImmutableList.of("I"),
+            "I",
+            ".limit stack 2",
+            ".limit locals 1",
+            ".var 0 is x I from L0 to L8",
+            "L0:",
+            ".line 2",
+            "  iload 0",
+            "lookupswitch",
+            "  0: L1",
+            "  1: L2",
+            "  2: L3",
+            "  100: L4",
+            "  101: L5",
+            "  102: L6",
+            "  default: L7",
+            "L1:",
+            ".line 4",
+            "  iconst_0",
+            "  ireturn",
+            "L2:",
+            ".line 6",
+            "  iconst_0",
+            "  ireturn",
+            "L3:",
+            ".line 8",
+            "  iconst_0",
+            "  ireturn",
+            "L4:",
+            ".line 10",
+            "  iconst_1",
+            "  ireturn",
+            "L5:",
+            ".line 12",
+            "  iconst_1",
+            "  ireturn",
+            "L6:",
+            ".line 14",
+            "  iconst_1",
+            "  ireturn",
+            "L7:",
+            ".line 16",
+            "  iconst_m1",
+            "  ireturn",
+            "L8:");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -491,50 +489,52 @@ public class DebugLocalTests extends JasminTestBase {
         return -1;
       }
     */
-    MethodSignature foo = clazz.addStaticMethod("switchRewrite", ImmutableList.of("I"), "I",
-        ".limit stack 2",
-        ".limit locals 2",
-        ".var 0 is x I from L0 to L7",
-        ".var 1 is t I from L1 to L3",
-
-        "L0:",
-        ".line 3",
-        "  iload 0",
-        "  iconst_1",
-        "  iadd",
-        "  istore 1",
-        "L1:",
-        ".line 4",
-        "  iload 1",
-        "  istore 0",
-        "L2:",
-        ".line 5",
-        "  iload 0",
-        "  iload 0",
-        "  iadd",
-        "  istore 0",
-        "L3_ORIGINAL:",  // This is where javac normally ends t.
-        ".line 7",
-        "  iload 0",
-        "lookupswitch",
-        "  0: L4",
-        "  100: L5",
-        "  default: L6",
-        "L3:",           // Moved L3 here to end t on the switch instruction.
-        "L4:",
-        ".line 9",
-        "  iconst_0",
-        "  ireturn",
-        "L5:",
-        ".line 11",
-        "  iconst_1",
-        "  ireturn",
-        "L6:",
-        ".line 13",
-        "  iconst_m1",
-        "  ireturn",
-        "L7:"
-    );
+    MethodSignature foo =
+        clazz.addStaticMethod(
+            "switchRewrite",
+            ImmutableList.of("I"),
+            "I",
+            ".limit stack 2",
+            ".limit locals 2",
+            ".var 0 is x I from L0 to L7",
+            ".var 1 is t I from L1 to L3",
+            "L0:",
+            ".line 3",
+            "  iload 0",
+            "  iconst_1",
+            "  iadd",
+            "  istore 1",
+            "L1:",
+            ".line 4",
+            "  iload 1",
+            "  istore 0",
+            "L2:",
+            ".line 5",
+            "  iload 0",
+            "  iload 0",
+            "  iadd",
+            "  istore 0",
+            "L3_ORIGINAL:", // This is where javac normally ends t.
+            ".line 7",
+            "  iload 0",
+            "lookupswitch",
+            "  0: L4",
+            "  100: L5",
+            "  default: L6",
+            "L3:", // Moved L3 here to end t on the switch instruction.
+            "L4:",
+            ".line 9",
+            "  iconst_0",
+            "  ireturn",
+            "L5:",
+            ".line 11",
+            "  iconst_1",
+            "  ireturn",
+            "L6:",
+            ".line 13",
+            "  iconst_m1",
+            "  ireturn",
+            "L7:");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -597,70 +597,72 @@ public class DebugLocalTests extends JasminTestBase {
         return -1;
       }
     */
-    MethodSignature foo = clazz.addStaticMethod("switchRewrite", ImmutableList.of("I"), "I",
-        ".limit stack 2",
-        ".limit locals 2",
-        ".var 0 is x I from L0 to L11",
-        ".var 1 is t I from L1 to L3",
-
-        "L0:",
-        ".line 3",
-        "  iload 0",
-        "  iconst_1",
-        "  iadd",
-        "  istore 1",
-        "L1:",
-        ".line 4",
-        "  iload 1",
-        "  istore 0",
-        "L2:",
-        ".line 5",
-        "  iload 0",
-        "  iload 0",
-        "  iadd",
-        "  istore 0",
-        "L3_ORIGINAL:",  // This is where javac normally ends t.
-        ".line 7",
-        "  iload 0",
-        "lookupswitch",
-        "  0: L4",
-        "  1: L5",
-        "  2: L6",
-        "  100: L7",
-        "  101: L8",
-        "  102: L9",
-        "  default: L10",
-        "L3:",           // Moved L3 here to end t on the switch instruction.
-        "L4:",
-        ".line 9",
-        "  iconst_0",
-        "  ireturn",
-        "L5:",
-        ".line 11",
-        "  iconst_0",
-        "  ireturn",
-        "L6:",
-        ".line 13",
-        "  iconst_0",
-        "  ireturn",
-        "L7:",
-        ".line 15",
-        "  iconst_1",
-        "  ireturn",
-        "L8:",
-        ".line 17",
-        "  iconst_1",
-        "  ireturn",
-        "L9:",
-        ".line 19",
-        "  iconst_1",
-        "  ireturn",
-        "L10:",
-        ".line 21",
-        "  iconst_m1",
-        "  ireturn",
-        "L11:"
-    );
+    MethodSignature foo =
+        clazz.addStaticMethod(
+            "switchRewrite",
+            ImmutableList.of("I"),
+            "I",
+            ".limit stack 2",
+            ".limit locals 2",
+            ".var 0 is x I from L0 to L11",
+            ".var 1 is t I from L1 to L3",
+            "L0:",
+            ".line 3",
+            "  iload 0",
+            "  iconst_1",
+            "  iadd",
+            "  istore 1",
+            "L1:",
+            ".line 4",
+            "  iload 1",
+            "  istore 0",
+            "L2:",
+            ".line 5",
+            "  iload 0",
+            "  iload 0",
+            "  iadd",
+            "  istore 0",
+            "L3_ORIGINAL:", // This is where javac normally ends t.
+            ".line 7",
+            "  iload 0",
+            "lookupswitch",
+            "  0: L4",
+            "  1: L5",
+            "  2: L6",
+            "  100: L7",
+            "  101: L8",
+            "  102: L9",
+            "  default: L10",
+            "L3:", // Moved L3 here to end t on the switch instruction.
+            "L4:",
+            ".line 9",
+            "  iconst_0",
+            "  ireturn",
+            "L5:",
+            ".line 11",
+            "  iconst_0",
+            "  ireturn",
+            "L6:",
+            ".line 13",
+            "  iconst_0",
+            "  ireturn",
+            "L7:",
+            ".line 15",
+            "  iconst_1",
+            "  ireturn",
+            "L8:",
+            ".line 17",
+            "  iconst_1",
+            "  ireturn",
+            "L9:",
+            ".line 19",
+            "  iconst_1",
+            "  ireturn",
+            "L10:",
+            ".line 21",
+            "  iconst_m1",
+            "  ireturn",
+            "L11:");
 
     clazz.addMainMethod(
         ".limit stack 2",
@@ -695,34 +697,37 @@ public class DebugLocalTests extends JasminTestBase {
   public void testLocalEndAfterLine() throws Exception {
     JasminBuilder builder = new JasminBuilder();
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
-    MethodSignature foo = clazz.addStaticMethod("foo", ImmutableList.of("I"), "I",
-        ".limit stack 2",
-        ".limit locals 2",
-        ".var 0 is x I from L0 to L4",
-        ".var 1 is t I from L1 to L3",
-        "L0:",
-        ".line 1",
-        "  iload 0",
-        "  iconst_1",
-        "  iadd",
-        "  istore 1",
-        "L1:",
-        ".line 2",
-        "  iload 1",
-        "  istore 0",
-        "L2:",
-        ".line 3",
-        "  iload 0",
-        "  iload 0",
-        "  iadd",
-        "  istore 0",
-        ".line 4",
-        "  iload 0",
-        "L3:", // This should not end t on line 4!
-        ".line 5",
-        "  ireturn",
-        "L4:"
-    );
+    MethodSignature foo =
+        clazz.addStaticMethod(
+            "foo",
+            ImmutableList.of("I"),
+            "I",
+            ".limit stack 2",
+            ".limit locals 2",
+            ".var 0 is x I from L0 to L4",
+            ".var 1 is t I from L1 to L3",
+            "L0:",
+            ".line 1",
+            "  iload 0",
+            "  iconst_1",
+            "  iadd",
+            "  istore 1",
+            "L1:",
+            ".line 2",
+            "  iload 1",
+            "  istore 0",
+            "L2:",
+            ".line 3",
+            "  iload 0",
+            "  iload 0",
+            "  iadd",
+            "  istore 0",
+            ".line 4",
+            "  iload 0",
+            "L3:", // This should not end t on line 4!
+            ".line 5",
+            "  ireturn",
+            "L4:");
 
     clazz.addMainMethod(
         ".limit stack 2",

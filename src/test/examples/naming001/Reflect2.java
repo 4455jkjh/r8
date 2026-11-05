@@ -22,19 +22,13 @@ public class Reflect2 {
 
   private volatile Object c;
 
-  private void calledMethod() {
-  }
+  private void calledMethod() {}
 
-  public void m(A a) {
-  }
+  public void m(A a) {}
 
-  private void privateMethod(B b) {
-  }
+  private void privateMethod(B b) {}
 
-  class A {
-  }
+  class A {}
 
-  class B {
-  }
+  class B {}
 }
-

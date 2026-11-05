@@ -4,6 +4,4 @@
 
 package multidex002;
 
-public class ReferencedByEnum {
-
-}
+public class ReferencedByEnum {}

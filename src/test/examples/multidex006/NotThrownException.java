@@ -4,5 +4,4 @@
 
 package multidex006;
 
-public class NotThrownException extends RuntimeException {
-}
+public class NotThrownException extends RuntimeException {}

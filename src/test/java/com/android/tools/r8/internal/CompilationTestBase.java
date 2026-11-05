@@ -173,12 +173,16 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
         throw e;
       }
       for (ArtErrorInfo error : errors.subList(0, errors.size() - 1)) {
-        System.err.println(new ComparisonFailure(error.getMessage(),
-            "REFERENCE\n" + error.dump(theirs, false) + "\nEND REFERENCE",
-            "PROCESSED\n" + error.dump(ours, true) + "\nEND PROCESSED").toString());
+        System.err.println(
+            new ComparisonFailure(
+                    error.getMessage(),
+                    "REFERENCE\n" + error.dump(theirs, false) + "\nEND REFERENCE",
+                    "PROCESSED\n" + error.dump(ours, true) + "\nEND PROCESSED")
+                .toString());
       }
       ArtErrorInfo error = errors.get(errors.size() - 1);
-      throw new ComparisonFailure(error.getMessage(),
+      throw new ComparisonFailure(
+          error.getMessage(),
           "REFERENCE\n" + error.dump(theirs, false) + "\nEND REFERENCE",
           "PROCESSED\n" + error.dump(ours, true) + "\nEND PROCESSED");
     }

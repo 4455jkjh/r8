@@ -19,5 +19,4 @@ public class Shaking {
     aa.b();
     aa.foo();
   }
-
 }

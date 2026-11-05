@@ -29,6 +29,7 @@ public class GenericSignaturePrunedInterfacesObfuscationTest extends TestBase {
   public static TestParametersCollection data() {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
+
   @Test
   public void testR8() throws Exception {
     testForR8Compat(parameters.getBackend())

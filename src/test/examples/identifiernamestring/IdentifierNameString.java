@@ -11,5 +11,4 @@ import java.lang.annotation.Target;
 // It should not be discarded by javac.
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.FIELD, ElementType.METHOD})
-public @interface IdentifierNameString {
-}
+public @interface IdentifierNameString {}

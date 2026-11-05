@@ -9,7 +9,7 @@ abstract class PackagePrivateClass {
     System.out.println("Hello, I am aMethod");
   }
 
-  public final static void aStaticMethod() {
+  public static final void aStaticMethod() {
     System.out.println("Hello, I am aStaticMethod");
   }
 }

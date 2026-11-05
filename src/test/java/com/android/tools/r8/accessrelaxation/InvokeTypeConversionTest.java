@@ -48,22 +48,22 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
   private SmaliBuilder buildTestClass(String invokeLine) {
     SmaliBuilder builder = new SmaliBuilder(CLASS_NAME);
     builder.addDefaultConstructor();
-    builder.addPrivateInstanceMethod("int", "foo", ImmutableList.of(), 1,
-        "  const/4 v0, 0",
-        "  return v0");
-    builder.addPrivateStaticMethod("int", "bar", ImmutableList.of(), 1,
-        "  const/4 v0, 0",
-        "  return v0");
-    main = builder.addMainMethod(2,
-        "new-instance v1, L" + CLASS_NAME + ";",
-        "invoke-direct { v1 }, L" + CLASS_NAME + ";-><init>()V",
-        invokeLine,
-        "move-result v1",
-        "invoke-static { v1 }, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
-        "move-result-object v1",
-        "sget-object v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
-        "invoke-virtual { v0, v1 }, Ljava/io/PrintStream;->print(Ljava/lang/Object;)V",
-        "return-void");
+    builder.addPrivateInstanceMethod(
+        "int", "foo", ImmutableList.of(), 1, "  const/4 v0, 0", "  return v0");
+    builder.addPrivateStaticMethod(
+        "int", "bar", ImmutableList.of(), 1, "  const/4 v0, 0", "  return v0");
+    main =
+        builder.addMainMethod(
+            2,
+            "new-instance v1, L" + CLASS_NAME + ";",
+            "invoke-direct { v1 }, L" + CLASS_NAME + ";-><init>()V",
+            invokeLine,
+            "move-result v1",
+            "invoke-static { v1 }, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+            "move-result-object v1",
+            "sget-object v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
+            "invoke-virtual { v0, v1 }, Ljava/io/PrintStream;->print(Ljava/lang/Object;)V",
+            "return-void");
     return builder;
   }
 
@@ -106,8 +106,7 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
   // }
   @Test
   public void invokeDirectToAlreadyStaticMethod() throws Exception {
-    SmaliBuilder builder = buildTestClass(
-        "invoke-direct { v1 }, L" + CLASS_NAME + ";->bar()I");
+    SmaliBuilder builder = buildTestClass("invoke-direct { v1 }, L" + CLASS_NAME + ";->bar()I");
     run(
         builder,
         true,
@@ -137,8 +136,7 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
   // }
   @Test
   public void invokeDirectToPublicizedMethod() throws Exception {
-    SmaliBuilder builder = buildTestClass(
-        "invoke-direct { v1 }, L" + CLASS_NAME + ";->foo()I");
+    SmaliBuilder builder = buildTestClass("invoke-direct { v1 }, L" + CLASS_NAME + ";->foo()I");
     run(
         builder,
         false,
@@ -152,5 +150,4 @@ public class InvokeTypeConversionTest extends SmaliTestBase {
           assertTrue(code.instructions[2] instanceof DexInvokeVirtual);
         });
   }
-
 }

@@ -51,8 +51,7 @@ public class SmaliBuildTest extends SmaliTestBase {
         "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "    const-string        v1, \"Hello, world!\"",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "    return-void"
-    );
+        "    return-void");
 
     // No libraries added - java.lang.String is not present.
     AndroidApp originalApplication = buildApplication(builder);
@@ -71,8 +70,7 @@ public class SmaliBuildTest extends SmaliTestBase {
         "    sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "    const-string        v1, \"Hello, world!\"",
         "    invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "    return-void"
-    );
+        "    return-void");
 
     AndroidApp originalApp =
         AndroidApp.builder()

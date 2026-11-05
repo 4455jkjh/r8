@@ -115,6 +115,7 @@ public class DexProto extends IndexedDexItem
     return "Proto " + returnType + " " + parameters;
   }
 
+  @Override
   public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
     if (indexedItems.addProto(this)) {
       returnType.collectIndexedItems(appView, indexedItems);

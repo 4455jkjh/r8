@@ -7,8 +7,10 @@ package com.android.tools.r8.horizontalclassmerging.policies;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.horizontalclassmerging.CoroutineStateMachineMergeCandidates;
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.util.ArrayList;
@@ -19,8 +21,21 @@ import java.util.Map;
 
 public class MinimizeInstanceFieldCasts extends MultiClassPolicy {
 
+  private final CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates;
+
+  public MinimizeInstanceFieldCasts(
+      CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates) {
+    this.coroutineStateMachineMergeCandidates = coroutineStateMachineMergeCandidates;
+  }
+
   @Override
   public final Collection<HorizontalMergeGroup> apply(HorizontalMergeGroup group) {
+    // Coroutine state machine merge candidates may have different instance field types. Keep them
+    // together so that ClassInstanceFieldsMerger can overlap their fields.
+    if (coroutineStateMachineMergeCandidates.isCandidate(group.getClasses().getFirst())) {
+      return ListUtils.newArrayList(group);
+    }
+
     // First find all classes that can be merged without changing field types.
     Map<Multiset<DexType>, HorizontalMergeGroup> newGroups = new LinkedHashMap<>();
     group.forEach(clazz -> addExact(clazz, newGroups));

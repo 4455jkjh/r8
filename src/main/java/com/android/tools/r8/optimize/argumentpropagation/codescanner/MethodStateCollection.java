@@ -34,6 +34,10 @@ abstract class MethodStateCollection<K> {
 
   public void addMethodState(
       AppView<AppInfoWithLiveness> appView, K method, MethodState methodState) {
+    MethodState existing = methodStates.get(method);
+    if (existing != null && existing.isUnknown()) {
+      return;
+    }
     if (methodState.isUnknown()) {
       methodStates.put(method, methodState);
     } else {
@@ -68,6 +72,10 @@ abstract class MethodStateCollection<K> {
       K method,
       Function<MethodState, MethodState> methodStateSupplier,
       Timing timing) {
+    MethodState existing = methodStates.get(method);
+    if (existing != null && existing.isUnknown()) {
+      return;
+    }
     methodStates.compute(
         method,
         (ignore, existingMethodState) -> {
@@ -76,6 +84,9 @@ abstract class MethodStateCollection<K> {
             return newMethodState.isBottom() ? null : newMethodState;
           }
           assert !existingMethodState.isBottom();
+          if (existingMethodState.isUnknown()) {
+            return existingMethodState;
+          }
           timing.begin("Join temporary method state");
           MethodState joinResult =
               existingMethodState.mutableJoin(

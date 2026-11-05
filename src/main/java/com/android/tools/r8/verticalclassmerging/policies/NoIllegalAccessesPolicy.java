@@ -48,9 +48,9 @@ public class NoIllegalAccessesPolicy extends VerticalClassMergerPolicy {
     if (!target.isPublic()) {
       return true;
     }
-    for (DexType sourceInterface : source.getInterfaces()) {
-      DexClass sourceInterfaceClass = appView.definitionFor(sourceInterface);
-      if (sourceInterfaceClass != null && !sourceInterfaceClass.isPublic()) {
+    for (DexType sourceSuperType : source.allImmediateSupertypes()) {
+      DexClass sourceSuperClass = appView.definitionFor(sourceSuperType);
+      if (sourceSuperClass != null && !sourceSuperClass.isPublic()) {
         return true;
       }
     }

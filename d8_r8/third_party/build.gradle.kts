@@ -84,6 +84,60 @@ registerTestDep("aapt2", ThirdPartyDeps.aapt2, "AAPT2")
 
 registerTestDep("agsa", ThirdPartyDeps.agsa, "AGSA")
 
+registerTestDep("androidJar14", ThirdPartyDeps.androidJar14, "ANDROID_JAR_14")
+
+registerTestDep("androidJar15", ThirdPartyDeps.androidJar15, "ANDROID_JAR_15")
+
+registerTestDep("androidJar19", ThirdPartyDeps.androidJar19, "ANDROID_JAR_19")
+
+registerTestDep("androidJar21", ThirdPartyDeps.androidJar21, "ANDROID_JAR_21")
+
+registerTestDep("androidJar22", ThirdPartyDeps.androidJar22, "ANDROID_JAR_22")
+
+registerTestDep("androidJar23", ThirdPartyDeps.androidJar23, "ANDROID_JAR_23")
+
+registerTestDep("androidJar24", ThirdPartyDeps.androidJar24, "ANDROID_JAR_24")
+
+registerTestDep("androidJar25", ThirdPartyDeps.androidJar25, "ANDROID_JAR_25")
+
+registerTestDep("androidJar26", ThirdPartyDeps.androidJar26, "ANDROID_JAR_26")
+
+registerTestDep("androidJar27", ThirdPartyDeps.androidJar27, "ANDROID_JAR_27")
+
+registerTestDep("androidJar28", ThirdPartyDeps.androidJar28, "ANDROID_JAR_28")
+
+registerTestDep("androidJar29", ThirdPartyDeps.androidJar29, "ANDROID_JAR_29")
+
+registerTestDep("androidJar30", ThirdPartyDeps.androidJar30, "ANDROID_JAR_30")
+
+registerTestDep("androidJar31", ThirdPartyDeps.androidJar31, "ANDROID_JAR_31")
+
+registerTestDep("androidJar32", ThirdPartyDeps.androidJar32, "ANDROID_JAR_32")
+
+registerTestDep("androidJar33", ThirdPartyDeps.androidJar33, "ANDROID_JAR_33")
+
+registerTestDep("androidJar34", ThirdPartyDeps.androidJar34, "ANDROID_JAR_34")
+
+registerTestDep("androidJar35", ThirdPartyDeps.androidJar35, "ANDROID_JAR_35")
+
+registerTestDep("androidJar36", ThirdPartyDeps.androidJar36, "ANDROID_JAR_36")
+
+registerTestDep("androidJar36_1", ThirdPartyDeps.androidJar36_1, "ANDROID_JAR_36_1")
+
+registerTestDep("androidJar37", ThirdPartyDeps.androidJar37, "ANDROID_JAR_37")
+
+registerTestDep("androidJar37_1", ThirdPartyDeps.androidJar37_1, "ANDROID_JAR_37_1")
+
+registerTestDep("androidJar37_2", ThirdPartyDeps.androidJar37_2, "ANDROID_JAR_37_2")
+
+registerTestDep(
+  "androidJarLibcoreLatest",
+  ThirdPartyDeps.androidJarLibcoreLatest,
+  "ANDROID_JAR_LIBCORE_LATEST",
+)
+
+registerTestDep("androidJarMain", ThirdPartyDeps.androidJarMain, "ANDROID_JAR_MAIN")
+
 registerTestDep("apiDatabase", ThirdPartyDeps.apiDatabase, "API_DATABASE")
 
 registerTestDep("artDefault", ThirdPartyDeps.artDefault, "ART_DEFAULT")

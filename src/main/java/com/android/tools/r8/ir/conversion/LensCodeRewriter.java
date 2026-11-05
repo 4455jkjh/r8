@@ -811,49 +811,13 @@ public class LensCodeRewriter {
                     iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
                         code, blocks, ImmutableList.of(instanceGet, constNumber, invoke), options);
                   } else {
-                    If ifNe = new If(IfType.EQ, rewrittenCheckCast.outValue());
-                    ifNe.setPosition(Position.none());
-
-                    BasicBlock ifBlock = iterator.split(code, blocks);
-                    assert !ifBlock.hasCatchHandlers();
-
-                    BasicBlock nullBlock = ifBlock.listIterator().split(code, blocks);
-                    assert !nullBlock.hasCatchHandlers();
-
-                    BasicBlock nonNullBlock = nullBlock.listIterator().split(code, blocks);
-                    assert !nonNullBlock.hasCatchHandlers();
-                    assert blocks.peekPrevious() == nonNullBlock;
-
-                    BasicBlock nonNullContinuationBlock =
-                        nonNullBlock.listIterator().split(code, blocks);
-                    assert !nonNullContinuationBlock.hasCatchHandlers();
-
-                    BasicBlock continuationBlock =
-                        nonNullContinuationBlock.listIterator().split(code, blocks);
-                    if (block.hasCatchHandlers()) {
-                      nonNullBlock.copyCatchHandlers(code, blocks, block, options);
-                      continuationBlock.copyCatchHandlers(code, blocks, block, options);
-                    }
-
-                    ifBlock.exit().replace(ifNe);
-                    ifBlock.link(nonNullBlock);
-                    assert ifNe.targetFromNonNullObject() == nonNullBlock;
-                    assert ifNe.targetFromNullObject() == nullBlock;
-
-                    nullBlock.detachAllSuccessors();
-                    nullBlock.link(continuationBlock);
-
-                    blocks.positionAfterPreviousBlock(nonNullBlock);
-                    nonNullBlock
-                        .listIterator()
-                        .addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-                            code,
-                            blocks,
-                            ImmutableList.of(instanceGet, constNumber, invoke),
-                            options);
-
-                    blocks.positionBeforeSubsequentBlock(continuationBlock);
-                    assert blocks.peekNext() == continuationBlock;
+                    insertInstructionsIfNonZero(
+                        code,
+                        blocks,
+                        block,
+                        iterator,
+                        rewrittenCheckCast.outValue(),
+                        ImmutableList.of(instanceGet, constNumber, invoke));
                   }
                 }
               }
@@ -915,12 +879,94 @@ public class LensCodeRewriter {
           case INSTANCE_OF:
             {
               InstanceOf instanceOf = current.asInstanceOf();
-              new InstructionReplacer(code, current, iterator, affectedPhis, affectedValues)
-                  .replaceInstructionIfTypeChanged(
-                      instanceOf.getType(),
-                      (t, v) -> new InstanceOf(v, instanceOf.value(), t),
-                      graphLens,
-                      codeLens);
+              if (graphLens.isHorizontalClassMergerGraphLens()
+                  && appView.horizontallyMergedClasses().hasClassId(instanceOf.getType())) {
+                HorizontallyMergedClasses horizontallyMergedClasses =
+                    appView.horizontallyMergedClasses();
+                DexType targetType = graphLens.lookupType(instanceOf.getType(), codeLens);
+
+                // Check if the object is an instance of the merge target. This is inserted after
+                // the original instance-of, which is removed when its users have been rewritten.
+                InstanceOf targetInstanceOf =
+                    new InstanceOf(
+                        code.createValue(TypeElement.getInt()), instanceOf.value(), targetType);
+                targetInstanceOf.setPosition(instanceOf.getPosition());
+                iterator.add(targetInstanceOf);
+
+                // Get the class id from the object.
+                CheckCast checkCast =
+                    SafeCheckCast.builder()
+                        .setCastType(targetType)
+                        .setObject(instanceOf.value())
+                        .setFreshOutValue(
+                            code,
+                            targetType.toTypeElement(
+                                appView, instanceOf.value().getType().nullability()))
+                        .setPosition(instanceOf)
+                        .build();
+                InstanceGet instanceGet =
+                    InstanceGet.builder()
+                        .setField(horizontallyMergedClasses.getClassIdField(targetType))
+                        .setFreshOutValue(code, TypeElement.getInt())
+                        .setObject(checkCast.outValue())
+                        .setPosition(instanceOf)
+                        .build();
+
+                // Load the class id of the source class.
+                ConstNumber constNumber =
+                    ConstNumber.builder()
+                        .setFreshOutValue(code, TypeElement.getInt())
+                        .setValue(horizontallyMergedClasses.getClassId(instanceOf.getType()))
+                        .setPositionForNonThrowingInstruction(instanceOf.getPosition(), options)
+                        .build();
+
+                // Call a synthetic helper method that returns true if the loaded class id is equal
+                // to the class id of the source class.
+                InvokeStatic invoke =
+                    InvokeStatic.builder()
+                        .setArguments(instanceGet.outValue(), constNumber.outValue())
+                        .setFreshOutValue(code, TypeElement.getInt())
+                        .setIsInterface(false)
+                        .setMethod(
+                            graphLens
+                                .asHorizontalClassMergerGraphLens()
+                                .ensureIsEqualMethod(method))
+                        .setPosition(instanceOf)
+                        .build();
+
+                BasicBlock zeroBlock =
+                    insertInstructionsIfNonZero(
+                        code,
+                        blocks,
+                        block,
+                        iterator,
+                        targetInstanceOf.outValue(),
+                        ImmutableList.of(checkCast, instanceGet, constNumber, invoke));
+
+                // Join the results and replace the original instance-of.
+                BasicBlock continuationBlock = zeroBlock.getUniqueSuccessor();
+                Phi phi = code.createPhi(continuationBlock, TypeElement.getInt());
+                for (BasicBlock predecessor : continuationBlock.getPredecessors()) {
+                  phi.appendOperand(
+                      predecessor == zeroBlock ? targetInstanceOf.outValue() : invoke.outValue());
+                }
+                instanceOf.outValue().replaceUsers(phi);
+                instanceOf.removeOrReplaceByDebugLocalRead();
+              } else {
+                // Instance-of checks on arrays of merged classes cannot be rewritten to class id
+                // checks, so the merging policies must not merge such classes.
+                assert !instanceOf.getType().isArrayType()
+                    || !graphLens.isHorizontalClassMergerGraphLens()
+                    || !appView
+                        .horizontallyMergedClasses()
+                        .hasClassId(instanceOf.getType().getBaseType());
+                new InstructionReplacer(code, current, iterator, affectedPhis, affectedValues)
+                    .replaceInstructionIfTypeChanged(
+                        instanceOf.getType(),
+                        (t, v) -> new InstanceOf(v, instanceOf.value(), t),
+                        graphLens,
+                        codeLens);
+              }
             }
             break;
 
@@ -1062,6 +1108,63 @@ public class LensCodeRewriter {
     interfaceTypeToClassTypeRewriterHelper.processWorklist();
 
     assert code.isConsistentSSABeforeTypesAreCorrect(appView);
+  }
+
+  /**
+   * Splits the given block after the cursor of the given iterator and inserts the given
+   * instructions such that they are only executed if the given condition is non-zero (or non-null).
+   *
+   * <p>Returns the block that is executed if the condition is zero (or null), which has the
+   * continuation block as its unique successor. The block iterator is positioned before the
+   * continuation block.
+   */
+  @SuppressWarnings("ReferenceEquality")
+  private BasicBlock insertInstructionsIfNonZero(
+      IRCode code,
+      BasicBlockIterator blocks,
+      BasicBlock block,
+      InstructionListIterator iterator,
+      Value condition,
+      List<Instruction> instructions) {
+    If ifEqz = new If(IfType.EQ, condition);
+    ifEqz.setPosition(Position.none());
+
+    BasicBlock ifBlock = iterator.split(code, blocks);
+    assert !ifBlock.hasCatchHandlers();
+
+    BasicBlock zeroBlock = ifBlock.listIterator().split(code, blocks);
+    assert !zeroBlock.hasCatchHandlers();
+
+    BasicBlock nonZeroBlock = zeroBlock.listIterator().split(code, blocks);
+    assert !nonZeroBlock.hasCatchHandlers();
+    assert blocks.peekPrevious() == nonZeroBlock;
+
+    BasicBlock nonZeroContinuationBlock = nonZeroBlock.listIterator().split(code, blocks);
+    assert !nonZeroContinuationBlock.hasCatchHandlers();
+
+    BasicBlock continuationBlock = nonZeroContinuationBlock.listIterator().split(code, blocks);
+    if (block.hasCatchHandlers()) {
+      nonZeroBlock.copyCatchHandlers(code, blocks, block, options);
+      continuationBlock.copyCatchHandlers(code, blocks, block, options);
+    }
+
+    ifBlock.exit().replace(ifEqz);
+    ifBlock.link(nonZeroBlock);
+    assert ifEqz.targetFromCondition(1) == nonZeroBlock;
+    assert ifEqz.targetFromCondition(0) == zeroBlock;
+
+    zeroBlock.detachAllSuccessors();
+    zeroBlock.link(continuationBlock);
+
+    blocks.positionAfterPreviousBlock(nonZeroBlock);
+    nonZeroBlock
+        .listIterator()
+        .addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+            code, blocks, instructions, options);
+
+    blocks.positionBeforeSubsequentBlock(continuationBlock);
+    assert blocks.peekNext() == continuationBlock;
+    return zeroBlock;
   }
 
   private void insertReadCast(

@@ -300,26 +300,27 @@ public class RunJdwpTests extends TestBase {
 
   // The smoke tests are the set of tests that fail if there is no debugging info in the dex files.
   // We avoid running the remaining tests as part of the D8/R8 testing to reduce test time by >30m.
-  static final Set<String> SMOKE_TESTS = ImmutableSet.of(
-      "EventModifiers.InstanceOnlyModifierTest",
-      "Method.VariableTableTest",
-      "Method.VariableTableWithGenericTest",
-      "ObjectReference.ReferringObjectsTest",
-      // This test assumes specific register allocation to make sure that a temporary object
-      // is unreachable at a specific point in a method. That is not guaranteed. See b/36921933.
-      // Currently doesn't fail but may start failing again with a count one higher than expected.
-      "ReferenceType.InstancesTest",
-      "StackFrame.GetValues002Test",
-      "StackFrame.GetValuesTest",
-      "StackFrame.SetValues002Test",
-      "StackFrame.SetValuesTest",
-      "VirtualMachine.InstanceCountsTest",
-      // D8 causes/exposes line-table information issues with ART.
-      // The current line-table test in ART passes on runtimes >= K.
-      "Method.LineTableTest",
-      // Our extended line-table test fails on ART (for now it is suppressed for ART).
-      "LineTableDuplicatesTest"
-  );
+  static final Set<String> SMOKE_TESTS =
+      ImmutableSet.of(
+          "EventModifiers.InstanceOnlyModifierTest",
+          "Method.VariableTableTest",
+          "Method.VariableTableWithGenericTest",
+          "ObjectReference.ReferringObjectsTest",
+          // This test assumes specific register allocation to make sure that a temporary object
+          // is unreachable at a specific point in a method. That is not guaranteed. See b/36921933.
+          // Currently doesn't fail but may start failing again with a count one higher than
+          // expected.
+          "ReferenceType.InstancesTest",
+          "StackFrame.GetValues002Test",
+          "StackFrame.GetValuesTest",
+          "StackFrame.SetValues002Test",
+          "StackFrame.SetValuesTest",
+          "VirtualMachine.InstanceCountsTest",
+          // D8 causes/exposes line-table information issues with ART.
+          // The current line-table test in ART passes on runtimes >= K.
+          "Method.LineTableTest",
+          // Our extended line-table test fails on ART (for now it is suppressed for ART).
+          "LineTableDuplicatesTest");
 
   private static final Function<DexRuntime, File> d8Out =
       memoizeFunction(RunJdwpTests::compileLibraries);
@@ -336,7 +337,7 @@ public class RunJdwpTests extends TestBase {
     // Selects appropriate jar according to min api level for the selected runtime.
     AndroidApiLevel minApi = dexRuntime.getMinApiLevel();
     Path classPath = ToolHelper.getClassPathForTests();
-    Path testPath = classPath.resolve(Paths.get("com","android", "tools", "r8", "jdwp"));
+    Path testPath = classPath.resolve(Paths.get("com", "android", "tools", "r8", "jdwp"));
     List<Path> extraTestResources = new ArrayList<>(2 * EXTRA_TESTS.size());
     for (String test : EXTRA_TESTS.keySet()) {
       extraTestResources.add(testPath.resolve(test + ".class"));
@@ -375,12 +376,13 @@ public class RunJdwpTests extends TestBase {
     if (!RUN_ALL_TESTS) {
       Assume.assumeTrue("Skipping non-smoke test " + test, SMOKE_TESTS.contains(test));
     }
-    Assume.assumeTrue("Skipping flaky test " + test,
+    Assume.assumeTrue(
+        "Skipping flaky test " + test,
         !FLAKY_TESTS.containsKey(test) || FLAKY_TESTS.get(test).test(getDexVm(), tool));
     if (tool != Tool.JAVAC) {
       // Can we run the test on the current ART runtime ?
-      Assume.assumeTrue("Skipping test " + test + " because ART is not supported",
-          ToolHelper.artSupported());
+      Assume.assumeTrue(
+          "Skipping test " + test + " because ART is not supported", ToolHelper.artSupported());
     }
   }
 
@@ -388,23 +390,27 @@ public class RunJdwpTests extends TestBase {
     skipIfNeeded(test, tool);
     System.out.println("Running test " + test + " for tool " + tool);
     String lib = getTestLib(tool);
-    String pkg = EXTRA_TESTS.containsKey(test)
-        ? "com.android.tools.r8.jdwp"
-        : "org.apache.harmony.jpda.tests.jdwp";
+    String pkg =
+        EXTRA_TESTS.containsKey(test)
+            ? "com.android.tools.r8.jdwp"
+            : "org.apache.harmony.jpda.tests.jdwp";
     String testClass = pkg + "." + test;
 
     List<String> command;
     if (tool == Tool.JAVAC) {
       String run = "org.junit.runner.JUnitCore";
-      command = Arrays.asList(
-          ToolHelper.getJavaExecutable(),
-          "-cp", System.getProperty("java.class.path") + File.pathSeparator + lib,
-          run, testClass);
+      command =
+          Arrays.asList(
+              ToolHelper.getJavaExecutable(),
+              "-cp",
+              System.getProperty("java.class.path") + File.pathSeparator + lib,
+              run,
+              testClass);
     } else {
       // TODO(jmhenaff): fix issue with python scripts
-      Assume
-          .assumeTrue("Python script fails because of library names conflicts. Skipping",
-              !ToolHelper.isWindows());
+      Assume.assumeTrue(
+          "Python script fails because of library names conflicts. Skipping",
+          !ToolHelper.isWindows());
       command =
           Arrays.asList(
               RUN_SCRIPT, "--classpath=" + lib, "--version=" + getDexVm().getVersion(), testClass);
@@ -485,8 +491,7 @@ public class RunJdwpTests extends TestBase {
   }
 
   @Test
-  public void testClassType_InvokeMethodAfterMultipleThreadSuspensionTest_D8()
-      throws IOException {
+  public void testClassType_InvokeMethodAfterMultipleThreadSuspensionTest_D8() throws IOException {
     runTest("ClassType.InvokeMethodAfterMultipleThreadSuspensionTest", Tool.D8);
   }
 
@@ -511,8 +516,7 @@ public class RunJdwpTests extends TestBase {
   }
 
   @Test
-  public void testClassType_NewInstanceAfterMultipleThreadSuspensionTest_D8()
-      throws IOException {
+  public void testClassType_NewInstanceAfterMultipleThreadSuspensionTest_D8() throws IOException {
     runTest("ClassType.NewInstanceAfterMultipleThreadSuspensionTest", Tool.D8);
   }
 
@@ -547,8 +551,7 @@ public class RunJdwpTests extends TestBase {
   }
 
   @Test
-  public void testDeoptimization_DeoptimizationWithExceptionHandlingTest_D8()
-      throws IOException {
+  public void testDeoptimization_DeoptimizationWithExceptionHandlingTest_D8() throws IOException {
     runTest("Deoptimization.DeoptimizationWithExceptionHandlingTest", Tool.D8);
   }
 

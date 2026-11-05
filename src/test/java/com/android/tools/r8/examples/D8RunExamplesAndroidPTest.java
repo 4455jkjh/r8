@@ -32,7 +32,6 @@ public class D8RunExamplesAndroidPTest extends RunExamplesAndroidPTest<D8Command
       return withBuilderTransformation(b -> b.addClasspathFiles(classpath));
     }
 
-
     @Override
     void build(Path inputFile, Path out) throws Throwable {
       D8Command.Builder builder = D8Command.builder();

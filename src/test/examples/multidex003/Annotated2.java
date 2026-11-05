@@ -4,11 +4,7 @@
 
 package multidex003;
 
-
 @TestAnnotation2(AnnotationValue.V1)
 public class Annotated2 {
-    public void m() {
-
-    }
-
+  public void m() {}
 }

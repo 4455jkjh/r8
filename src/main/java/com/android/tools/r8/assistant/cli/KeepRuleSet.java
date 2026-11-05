@@ -20,6 +20,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationSource;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceFile;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceStrings;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
+import com.android.tools.r8.shaking.ProguardKeepRule;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.Reporter;
@@ -96,6 +97,8 @@ final class KeepRuleSet {
 
   private final DexItemFactory factory;
   private final List<Rule> rules;
+  private final ClassNameIndex<Rule> index = new ClassNameIndex<>();
+  private final Map<String, List<Rule>> candidateRules = new HashMap<>();
   private final ProguardKeepAttributes keepAttributes;
   private final List<String> warnings;
   private final Map<String, DexType> types = new HashMap<>();
@@ -107,6 +110,12 @@ final class KeepRuleSet {
       List<String> warnings) {
     this.factory = factory;
     this.rules = rules;
+    for (Rule rule : rules) {
+      ProguardKeepRule keepRule = getClassSelectingRule(rule.get());
+      if (keepRule != null) {
+        index.add(rule, keepRule.getClassNames());
+      }
+    }
     this.keepAttributes = keepAttributes;
     this.warnings = warnings;
   }
@@ -193,6 +202,25 @@ final class KeepRuleSet {
     return rules;
   }
 
+  /**
+   * The rules that can apply to the class, in the order of {@link #getRules()}. The other rules do
+   * not match the class name.
+   */
+  List<Rule> getCandidateRules(String className) {
+    return candidateRules.computeIfAbsent(className, index::getCandidateList);
+  }
+
+  /**
+   * The rule whose class names select the classes a rule applies to: the rule itself for a keep
+   * rule, the subsequent rule for an -if rule, and null for rules that keep nothing.
+   */
+  private static ProguardKeepRule getClassSelectingRule(ProguardConfigurationRule rule) {
+    if (rule.isProguardIfRule()) {
+      return rule.asProguardIfRule().getSubsequentRule();
+    }
+    return rule.isProguardKeepRule() ? rule.asProguardKeepRule() : null;
+  }
+
   List<String> getWarnings() {
     return warnings;
   }
@@ -211,11 +239,13 @@ final class KeepRuleSet {
    * the name is not a valid type name.
    */
   DexType getType(String typeName) {
-    if (!isValidTypeName(typeName)) {
-      return null;
+    DexType type = types.get(typeName);
+    if (type != null || !isValidTypeName(typeName)) {
+      return type;
     }
-    return types.computeIfAbsent(
-        typeName, name -> factory.createType(DescriptorUtils.javaTypeToDescriptor(name)));
+    type = factory.createType(DescriptorUtils.javaTypeToDescriptor(typeName));
+    types.put(typeName, type);
+    return type;
   }
 
   private static boolean isValidTypeName(String typeName) {

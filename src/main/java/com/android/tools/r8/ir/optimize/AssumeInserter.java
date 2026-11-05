@@ -265,28 +265,34 @@ public class AssumeInserter {
         resolutionResult
             .lookupDispatchTarget(appView, invoke, code.context())
             .getSingleDispatchTarget();
+    boolean hasAssumeNotNull = false;
     if (invoke.hasUsedOutValue() && invoke.getOutType().isReferenceType()) {
       AssumeInfo assumeInfo =
           AssumeInfoLookup.lookupAssumeInfo(
               appView, invoke, code.context(), resolutionResult, singleTarget);
       if (assumeInfo.getAssumeType().getNullability().isDefinitelyNotNull()) {
         assumedValuesBuilder.addNonNullValueKnownToDominateAllUsers(invoke, invoke.outValue());
+        hasAssumeNotNull = true;
       }
     }
 
     MethodOptimizationInfo optimizationInfo =
         resolutionResult.getOptimizationInfo(appView, invoke, singleTarget);
     if (optimizationInfo.isDefault()) {
-      return false;
+      return hasAssumeNotNull;
     }
 
-    boolean needsAssumeInstruction = false;
+    boolean needsAssumeInstruction = hasAssumeNotNull;
 
     // Case (2), invocations that are guaranteed to return a non-null value.
     if (invoke.hasUsedOutValue()) {
-      needsAssumeInstruction =
-          computeAssumedValuesForOutValue(
-              invoke, optimizationInfo.getDynamicType(), assumedValuesBuilder);
+      DynamicType dynamicType = optimizationInfo.getDynamicType();
+      if (hasAssumeNotNull) {
+        // The optimization info does not account for the non-null AssumeInfo.
+        dynamicType = dynamicType.withNullability(definitelyNotNull());
+      }
+      needsAssumeInstruction |=
+          computeAssumedValuesForOutValue(invoke, dynamicType, assumedValuesBuilder);
     }
 
     // Case (3), parameters that are not null or have a more specific type after the invocation.
@@ -356,16 +362,25 @@ public class AssumeInserter {
 
     DexClassAndField field = resolutionResult.getResolutionPair();
 
+    boolean hasAssumeNotNull = false;
     if (field.getType().isReferenceType()) {
       AssumeInfo assumeInfo = appView.getAssumeInfoCollection().getField(field);
       if (assumeInfo.getAssumeType().getNullability().isDefinitelyNotNull()) {
         assumedValuesBuilder.addNonNullValueKnownToDominateAllUsers(fieldGet, fieldGet.outValue());
+        hasAssumeNotNull = true;
       }
     }
 
     FieldOptimizationInfo optimizationInfo = field.getDefinition().getOptimizationInfo();
-    return computeAssumedValuesForOutValue(
-        fieldGet, optimizationInfo.getDynamicType(), assumedValuesBuilder);
+    DynamicType dynamicType = optimizationInfo.getDynamicType();
+    if (hasAssumeNotNull) {
+      // The optimization info does not account for the non-null AssumeInfo.
+      dynamicType = dynamicType.withNullability(definitelyNotNull());
+    }
+    boolean needsAssumeInstruction = hasAssumeNotNull;
+    needsAssumeInstruction |=
+        computeAssumedValuesForOutValue(fieldGet, dynamicType, assumedValuesBuilder);
+    return needsAssumeInstruction;
   }
 
   private boolean computeAssumedValuesForOutValue(

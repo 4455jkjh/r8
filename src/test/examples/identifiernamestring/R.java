@@ -15,5 +15,4 @@ public class R {
   static Method findMethod(Class clazz, String name, Class[] params) throws NoSuchMethodException {
     return clazz.getDeclaredMethod(name, params);
   }
-
 }

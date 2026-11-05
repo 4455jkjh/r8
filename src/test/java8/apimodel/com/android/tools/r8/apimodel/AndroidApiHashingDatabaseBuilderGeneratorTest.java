@@ -112,7 +112,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     if (cachedParsedApiClasses == null) {
       ApiDatabaseGeneratorCommand command =
           ApiDatabaseGeneratorCommand.builder()
-              .addXmlPath(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
+              .addXmlPath(TestDeps.getApiVersionsXmlPath(API_LEVEL))
               .addJarPath(ToolHelper.getAndroidJar(API_LEVEL))
               .build();
       cachedParsedApiClasses =
@@ -406,7 +406,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     Path apiLevels = temp.newFile("api_levels.ser").toPath();
     ApiDatabaseGeneratorCommand command =
         ApiDatabaseGeneratorCommand.builder()
-            .addXmlPath(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
+            .addXmlPath(TestDeps.getApiVersionsXmlPath(API_LEVEL))
             .addJarPath(ToolHelper.getAndroidJar(API_LEVEL))
             .setOutputPath(apiLevels)
             .build();
@@ -687,7 +687,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     Path apiLevels = temp.newFile("api_levels.ser").toPath();
     ApiDatabaseGeneratorCommand command =
         ApiDatabaseGeneratorCommand.builder()
-            .addXmlPath(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
+            .addXmlPath(TestDeps.getApiVersionsXmlPath(API_LEVEL))
             .addJarPath(ToolHelper.getAndroidJar(API_LEVEL))
             .setOutputPath(apiLevels)
             .build();

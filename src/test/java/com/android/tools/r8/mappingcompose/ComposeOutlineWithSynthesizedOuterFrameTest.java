@@ -23,19 +23,23 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-/** This is a regression test for b/569565949. */
+/** This is a regression test for b/569565949 and b/579315508. */
 @RunWith(Parameterized.class)
 public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
 
   @Parameter(0)
-  public boolean keepConstantArguments;
+  public boolean enableHorizontalClassMerging;
 
   @Parameter(1)
+  public boolean keepConstantArguments;
+
+  @Parameter(2)
   public TestParameters parameters;
 
-  @Parameters(name = "{1}, keepConstantArguments: {0}")
+  @Parameters(name = "{2}, enableHorizontalClassMerging: {0}, keepConstantArguments: {1}")
   public static List<Object[]> data() {
     return buildParameters(
+        BooleanUtils.values(),
         BooleanUtils.values(),
         getTestParameters().withDefaultDexRuntime().withMinimumApiLevel().build());
   }
@@ -57,7 +61,18 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
             .addConstantArgumentAnnotations()
             .enableConstantArgumentAnnotations(keepConstantArguments)
             .enableInliningAnnotations()
-            .enableNoHorizontalClassMergingAnnotations()
+            .addNoHorizontalClassMergingAnnotations()
+            .applyIf(
+                enableHorizontalClassMerging,
+                b ->
+                    b.addHorizontallyMergedClassesInspector(
+                        inspector ->
+                            inspector.assertIsCompleteMergeGroup(Caller1.class, Caller2.class)),
+                b ->
+                    b.enableNoHorizontalClassMergingAnnotations()
+                        .addHorizontallyMergedClassesInspector(
+                            inspector ->
+                                inspector.assertClassesNotMerged(Caller1.class, Caller2.class)))
             .compile()
             .inspectWithSyntheticItems(
                 (inspector, syntheticItems) -> {
@@ -69,7 +84,6 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
     Path r8OutputMap =
         FileUtils.writeTextFile(
             temp.newFolder().toPath().resolve("map.txt"), r8CompileResult.getProguardMap());
-
     testForD8(parameters.getBackend())
         .addProgramFiles(r8CompileResult.writeToZip())
         .setMinApi(parameters)
@@ -79,14 +93,43 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
         .addOptionsModification(o -> o.testing.forceJumboStringProcessing = true)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("0a", "step1", "step2", "0b", "step1", "step2");
+        .assertSuccessWithOutputLines(
+            "step1",
+            "step2",
+            "init1:1",
+            "step1",
+            "step2",
+            "init1:str:0",
+            "step1",
+            "step2",
+            "init2:1",
+            "step1",
+            "step2",
+            "0a",
+            "step1",
+            "step2",
+            "0b",
+            "step1",
+            "step2");
   }
 
   static class Main {
 
     public static void main(String[] args) {
+      consume(new Caller1(args.length));
+      consume(new Caller1(args.length + 1));
+      consume(new Caller1(String.valueOf(args.length)));
+      consume(new Caller2(args.length));
+      consume(new Caller2(args.length + 1));
       Caller1.call(args.length, "a");
       Caller2.call("b", args.length);
+    }
+
+    @NeverInline
+    static void consume(Object o) {
+      if (System.currentTimeMillis() < 0) {
+        System.out.println(o);
+      }
     }
   }
 
@@ -106,6 +149,19 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
   @NoHorizontalClassMerging
   static class Caller1 {
 
+    Caller1(int a) {
+      if (a > 0) {
+        System.out.println("init1:" + a);
+      }
+      Greeter.step1();
+      Greeter.step2();
+    }
+
+    @NeverInline
+    Caller1(String s) {
+      System.out.println("init1:str:" + s);
+    }
+
     @KeepConstantArguments
     @NeverInline
     static void call(int a, String b) {
@@ -117,6 +173,14 @@ public class ComposeOutlineWithSynthesizedOuterFrameTest extends TestBase {
 
   @NoHorizontalClassMerging
   static class Caller2 {
+
+    Caller2(int a) {
+      if (a > 0) {
+        System.out.println("init2:" + a);
+      }
+      Greeter.step1();
+      Greeter.step2();
+    }
 
     @KeepConstantArguments
     @NeverInline

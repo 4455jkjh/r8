@@ -93,11 +93,12 @@ public class SynchronizedMethodTestRunner extends DebugInfoTestBase {
   public void testMonitorExitLineInRelease()
       throws CompilationFailedException, IOException, ExecutionException {
     AndroidAppConsumers sink = new AndroidAppConsumers();
-    D8.run(D8Command.builder()
-        .addProgramFiles(ToolHelper.getClassFileForTestClass(clazz))
-        .setMode(CompilationMode.RELEASE)
-        .setProgramConsumer(sink.wrapDexIndexedConsumer(null))
-        .build());
+    D8.run(
+        D8Command.builder()
+            .addProgramFiles(ToolHelper.getClassFileForTestClass(clazz))
+            .setMode(CompilationMode.RELEASE)
+            .setProgramConsumer(sink.wrapDexIndexedConsumer(null))
+            .build());
     AndroidApp app = sink.build();
     DebugInfoInspector inspector = inspectMethod(app, clazz, "int", "syncStatic", "int");
     // The first line of syncStatic is 9 and thus the synthetic exit for the exceptional case will

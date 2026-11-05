@@ -42,7 +42,10 @@ public class EmptyBridgeTest extends TestBase {
     abs.addMethod("public bridge abstract", "emptyBridge", ImmutableList.of(), "V");
 
     ClassBuilder cls = jasminBuilder.addClass("Main");
-    cls.addVirtualMethod("bogus", ImmutableList.of(), "V",
+    cls.addVirtualMethod(
+        "bogus",
+        ImmutableList.of(),
+        "V",
         ".limit stack 3",
         ".limit locals 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
@@ -63,9 +66,15 @@ public class EmptyBridgeTest extends TestBase {
     String absClassName = abs.name;
     String mainClassName = cls.name;
     String proguardConfig =
-        "-allowaccessmodification" + System.lineSeparator()
-        + "-keep class " + mainClassName + "{ *; }" + System.lineSeparator()
-            + "-keep class " + absClassName + "{ *; }";
+        "-allowaccessmodification"
+            + System.lineSeparator()
+            + "-keep class "
+            + mainClassName
+            + "{ *; }"
+            + System.lineSeparator()
+            + "-keep class "
+            + absClassName
+            + "{ *; }";
     AndroidApp processedApp = compileWithR8(jasminBuilder.build(), proguardConfig);
 
     CodeInspector inspector = new CodeInspector(processedApp);
@@ -74,5 +83,4 @@ public class EmptyBridgeTest extends TestBase {
     MethodSubject methodSubject = classSubject.method("void", "emptyBridge", ImmutableList.of());
     assertThat(methodSubject, isPresent());
   }
-
 }

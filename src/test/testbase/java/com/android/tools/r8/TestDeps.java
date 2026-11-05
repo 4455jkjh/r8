@@ -6,11 +6,14 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import com.google.common.collect.ImmutableMap;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.Assume;
 
 /**
@@ -60,6 +63,31 @@ public class TestDeps {
     dependencies = new HashMap<>();
     dependencies.put("AAPT2", null);
     dependencies.put("AGSA", null);
+    dependencies.put("ANDROID_JAR_14", null);
+    dependencies.put("ANDROID_JAR_15", null);
+    dependencies.put("ANDROID_JAR_19", null);
+    dependencies.put("ANDROID_JAR_21", null);
+    dependencies.put("ANDROID_JAR_22", null);
+    dependencies.put("ANDROID_JAR_23", null);
+    dependencies.put("ANDROID_JAR_24", null);
+    dependencies.put("ANDROID_JAR_25", null);
+    dependencies.put("ANDROID_JAR_26", null);
+    dependencies.put("ANDROID_JAR_27", null);
+    dependencies.put("ANDROID_JAR_28", null);
+    dependencies.put("ANDROID_JAR_29", null);
+    dependencies.put("ANDROID_JAR_30", null);
+    dependencies.put("ANDROID_JAR_31", null);
+    dependencies.put("ANDROID_JAR_32", null);
+    dependencies.put("ANDROID_JAR_33", null);
+    dependencies.put("ANDROID_JAR_34", null);
+    dependencies.put("ANDROID_JAR_35", null);
+    dependencies.put("ANDROID_JAR_36", null);
+    dependencies.put("ANDROID_JAR_36_1", null);
+    dependencies.put("ANDROID_JAR_37", null);
+    dependencies.put("ANDROID_JAR_37_1", null);
+    dependencies.put("ANDROID_JAR_37_2", null);
+    dependencies.put("ANDROID_JAR_LIBCORE_LATEST", null);
+    dependencies.put("ANDROID_JAR_MAIN", null);
     dependencies.put("API_DATABASE", null);
     dependencies.put("ART_DEFAULT", null);
     dependencies.put("ART_5_1_1", null);
@@ -205,6 +233,191 @@ public class TestDeps {
 
   public static Path getAgsaDir() {
     return getDependency("AGSA");
+  }
+
+  public static Path getAndroidJar14Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(14));
+    return getDependency("ANDROID_JAR_14");
+  }
+
+  public static Path getAndroidJar15Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(15));
+    return getDependency("ANDROID_JAR_15");
+  }
+
+  public static Path getAndroidJar19Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(19));
+    return getDependency("ANDROID_JAR_19");
+  }
+
+  public static Path getAndroidJar21Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(21));
+    return getDependency("ANDROID_JAR_21");
+  }
+
+  public static Path getAndroidJar22Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(22));
+    return getDependency("ANDROID_JAR_22");
+  }
+
+  public static Path getAndroidJar23Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(23));
+    return getDependency("ANDROID_JAR_23");
+  }
+
+  public static Path getAndroidJar24Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(24));
+    return getDependency("ANDROID_JAR_24");
+  }
+
+  public static Path getAndroidJar25Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(25));
+    return getDependency("ANDROID_JAR_25");
+  }
+
+  public static Path getAndroidJar26Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(26));
+    return getDependency("ANDROID_JAR_26");
+  }
+
+  public static Path getAndroidJar27Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(27));
+    return getDependency("ANDROID_JAR_27");
+  }
+
+  public static Path getAndroidJar28Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(28));
+    return getDependency("ANDROID_JAR_28");
+  }
+
+  public static Path getAndroidJar29Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(29));
+    return getDependency("ANDROID_JAR_29");
+  }
+
+  public static Path getAndroidJar30Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(30));
+    return getDependency("ANDROID_JAR_30");
+  }
+
+  public static Path getAndroidJar31Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(31));
+    return getDependency("ANDROID_JAR_31");
+  }
+
+  public static Path getAndroidJar32Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(32));
+    return getDependency("ANDROID_JAR_32");
+  }
+
+  public static Path getAndroidJar33Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(33));
+    return getDependency("ANDROID_JAR_33");
+  }
+
+  public static Path getAndroidJar34Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(34));
+    return getDependency("ANDROID_JAR_34");
+  }
+
+  public static Path getAndroidJar35Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(35));
+    return getDependency("ANDROID_JAR_35");
+  }
+
+  public static Path getAndroidJar36Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(36));
+    return getDependency("ANDROID_JAR_36");
+  }
+
+  public static Path getAndroidJar36_1Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(36, 1));
+    return getDependency("ANDROID_JAR_36_1");
+  }
+
+  public static Path getAndroidJar37Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(37));
+    return getDependency("ANDROID_JAR_37");
+  }
+
+  public static Path getAndroidJar37_1Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(37, 1));
+    return getDependency("ANDROID_JAR_37_1");
+  }
+
+  public static Path getAndroidJar37_2Dir() {
+    assert canHaveAndroidJar(AndroidApiLevel.getAndroidApiLevel(37, 2));
+    return getDependency("ANDROID_JAR_37_2");
+  }
+
+  public static Path getAndroidJarLibcoreLatestDir() {
+    return getDependency("ANDROID_JAR_LIBCORE_LATEST");
+  }
+
+  public static Path getAndroidJarLibcoreLatestPath(String... path) {
+    return getDependencyPath("ANDROID_JAR_LIBCORE_LATEST", path);
+  }
+
+  public static Path getAndroidJarMainDir() {
+    assert canHaveAndroidJar(AndroidApiLevel.MAIN);
+    return getDependency("ANDROID_JAR_MAIN");
+  }
+
+  private static final Map<AndroidApiLevel, Supplier<Path>> ANDROID_JAR_DIRS =
+      ImmutableMap.<AndroidApiLevel, Supplier<Path>>builder()
+          .put(AndroidApiLevel.I, TestDeps::getAndroidJar14Dir)
+          .put(AndroidApiLevel.I_MR1, TestDeps::getAndroidJar15Dir)
+          .put(AndroidApiLevel.K, TestDeps::getAndroidJar19Dir)
+          .put(AndroidApiLevel.L, TestDeps::getAndroidJar21Dir)
+          .put(AndroidApiLevel.L_MR1, TestDeps::getAndroidJar22Dir)
+          .put(AndroidApiLevel.M, TestDeps::getAndroidJar23Dir)
+          .put(AndroidApiLevel.N, TestDeps::getAndroidJar24Dir)
+          .put(AndroidApiLevel.N_MR1, TestDeps::getAndroidJar25Dir)
+          .put(AndroidApiLevel.O, TestDeps::getAndroidJar26Dir)
+          .put(AndroidApiLevel.O_MR1, TestDeps::getAndroidJar27Dir)
+          .put(AndroidApiLevel.P, TestDeps::getAndroidJar28Dir)
+          .put(AndroidApiLevel.Q, TestDeps::getAndroidJar29Dir)
+          .put(AndroidApiLevel.R, TestDeps::getAndroidJar30Dir)
+          .put(AndroidApiLevel.S, TestDeps::getAndroidJar31Dir)
+          .put(AndroidApiLevel.Sv2, TestDeps::getAndroidJar32Dir)
+          .put(AndroidApiLevel.T, TestDeps::getAndroidJar33Dir)
+          .put(AndroidApiLevel.U, TestDeps::getAndroidJar34Dir)
+          .put(AndroidApiLevel.V, TestDeps::getAndroidJar35Dir)
+          .put(AndroidApiLevel.BAKLAVA, TestDeps::getAndroidJar36Dir)
+          .put(AndroidApiLevel.BAKLAVA_1, TestDeps::getAndroidJar36_1Dir)
+          .put(AndroidApiLevel.CINNAMON_BUN, TestDeps::getAndroidJar37Dir)
+          .put(AndroidApiLevel.CINNAMON_BUN_1, TestDeps::getAndroidJar37_1Dir)
+          .put(AndroidApiLevel.CINNAMON_BUN_2, TestDeps::getAndroidJar37_2Dir)
+          .put(AndroidApiLevel.MAIN, TestDeps::getAndroidJarMainDir)
+          .build();
+
+  /**
+   * Returns {@code true} if this API level is known to have an {@code android.jar}. Note that
+   * returning {@code false} is certain, while returning {@code true} means that its presence is
+   * dependent on the build configuration.
+   */
+  public static boolean canHaveAndroidJar(AndroidApiLevel apiLevel) {
+    return ANDROID_JAR_DIRS.containsKey(apiLevel);
+  }
+
+  public static Path getAndroidJarDir(AndroidApiLevel apiLevel) {
+    Supplier<Path> supplier = ANDROID_JAR_DIRS.get(apiLevel);
+    if (supplier == null) {
+      throw new Unreachable("No android.jar for API level " + apiLevel);
+    }
+    return supplier.get();
+  }
+
+  public static Path getAndroidJarPath(AndroidApiLevel apiLevel) {
+    return getAndroidJarDir(apiLevel).resolve("android.jar");
+  }
+
+  public static Path getApiVersionsXmlPath(AndroidApiLevel apiLevel) {
+    Path dir = getAndroidJarDir(apiLevel);
+    if (apiLevel == AndroidApiLevel.MAIN) {
+      return dir.resolve("data").resolve("api-versions.xml");
+    }
+    return dir.resolve("api-versions.xml");
   }
 
   public static Path getApiDatabasePath() {
@@ -709,6 +922,10 @@ public class TestDeps {
 
   public static Path getR8Jar() {
     return getDependencyPath("R8", "r8.jar");
+  }
+
+  public static Path getR8Path(String... path) {
+    return getDependencyPath("R8", path);
   }
 
   public static Path getR8WithDeps17Jar() {

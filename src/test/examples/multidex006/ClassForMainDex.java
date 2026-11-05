@@ -5,8 +5,8 @@
 package multidex006;
 
 /**
- * Class directly referenced from Activity, will be kept in main dex. The class is not referenced
- * by <clinit> or <init>, its direct references are not kept in main dex.
+ * Class directly referenced from Activity, will be kept in main dex. The class is not referenced by
+ * <clinit> or <init>, its direct references are not kept in main dex.
  */
 public class ClassForMainDex {
 
@@ -18,8 +18,5 @@ public class ClassForMainDex {
     }
   }
 
-  public static void doNothing() {
-
-  }
-
+  public static void doNothing() {}
 }

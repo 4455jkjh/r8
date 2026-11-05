@@ -37,7 +37,7 @@ public class AtomicFieldUpdaterTest extends CompatProguardSmaliTestBase {
   }
 
   private final String CLASS_NAME = "Example";
-  private final static String BOO = "Boo";
+  private static final String BOO = "Boo";
 
   @Test
   public void integerFieldUpdater_renamed() throws Exception {
@@ -55,10 +55,8 @@ public class AtomicFieldUpdaterTest extends CompatProguardSmaliTestBase {
     builder.addClass(BOO);
     builder.addStaticField("foo", "I");
 
-    List<String> pgConfigs = ImmutableList.of(
-        keepMainProguardConfiguration(CLASS_NAME),
-        "-dontshrink",
-        "-dontoptimize");
+    List<String> pgConfigs =
+        ImmutableList.of(keepMainProguardConfiguration(CLASS_NAME), "-dontshrink", "-dontoptimize");
     CodeInspector inspector = runCompatProguard(builder, pgConfigs);
 
     ClassSubject clazz = inspector.clazz(CLASS_NAME);
@@ -91,10 +89,8 @@ public class AtomicFieldUpdaterTest extends CompatProguardSmaliTestBase {
     builder.addClass(BOO);
     builder.addStaticField("foo", "J");
 
-    List<String> pgConfigs = ImmutableList.of(
-        keepMainProguardConfiguration(CLASS_NAME),
-        "-dontshrink",
-        "-dontoptimize");
+    List<String> pgConfigs =
+        ImmutableList.of(keepMainProguardConfiguration(CLASS_NAME), "-dontshrink", "-dontoptimize");
     CodeInspector inspector = runCompatProguard(builder, pgConfigs);
 
     ClassSubject clazz = inspector.clazz(CLASS_NAME);
@@ -128,10 +124,8 @@ public class AtomicFieldUpdaterTest extends CompatProguardSmaliTestBase {
     builder.addClass(BOO);
     builder.addStaticField("foo", "Ljava/lang/Object;");
 
-    List<String> pgConfigs = ImmutableList.of(
-        keepMainProguardConfiguration(CLASS_NAME),
-        "-dontshrink",
-        "-dontoptimize");
+    List<String> pgConfigs =
+        ImmutableList.of(keepMainProguardConfiguration(CLASS_NAME), "-dontshrink", "-dontoptimize");
     CodeInspector inspector = runCompatProguard(builder, pgConfigs);
 
     ClassSubject clazz = inspector.clazz(CLASS_NAME);

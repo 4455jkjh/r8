@@ -31,8 +31,8 @@ public class CodeGeneratorTestRunner extends DebugInfoTestBase {
   }
 
   /**
-   * Companion test checking the behavior when attached to a debugger
-   * {@link com.android.tools.r8.debug.LocalsTest#testLocalUsedBy2AddrInstruction}
+   * Companion test checking the behavior when attached to a debugger {@link
+   * com.android.tools.r8.debug.LocalsTest#testLocalUsedBy2AddrInstruction}
    */
   @Test
   public void test2AddrInstruction() throws Exception {
@@ -44,13 +44,12 @@ public class CodeGeneratorTestRunner extends DebugInfoTestBase {
     assertEquals(expected, runOnJava(clazz));
     assertEquals(expected, runOnArt(d8App, clazz.getCanonicalName(), parameters.getDexVm()));
 
-    DebugInfoInspector inspector = inspectMethod(d8App, clazz, "int", "intAddition", "int", "int",
-        "int");
+    DebugInfoInspector inspector =
+        inspectMethod(d8App, clazz, "int", "intAddition", "int", "int", "int");
     DexInstruction[] instructions = inspector.getMethod().getCode().asDexCode().instructions;
     assertTrue(instructions[0] instanceof DexAddInt2Addr);
     assertTrue(instructions[1] instanceof DexAddInt2Addr);
     assertTrue(instructions[2] instanceof DexAddInt);
     assertTrue(instructions[3] instanceof DexReturn);
   }
-
 }

@@ -449,6 +449,11 @@ public class DexString extends IndexedDexItem
     return offset;
   }
 
+  @Override
+  public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+    collectIndexedItems(indexedItems);
+  }
+
   public void collectIndexedItems(IndexedItemCollection indexedItems) {
     indexedItems.addString(this);
   }

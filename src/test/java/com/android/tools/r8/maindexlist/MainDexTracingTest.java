@@ -402,8 +402,8 @@ public class MainDexTracingTest extends TestBase {
             .collect(Collectors.toList());
     // Check that generated lists are the same as the reference list, except for lambda
     // classes which are only produced when running R8.
-    String[] r8RefList = new String(Files.readAllBytes(
-        expectedR8MainDexList), StandardCharsets.UTF_8).split("\n");
+    String[] r8RefList =
+        new String(Files.readAllBytes(expectedR8MainDexList), StandardCharsets.UTF_8).split("\n");
     for (int i = 0; i < r8RefList.length; i++) {
       String reference = r8RefList[i].trim();
       if (r8MainDexList.size() <= i) {
@@ -411,8 +411,8 @@ public class MainDexTracingTest extends TestBase {
       }
       checkSameMainDexEntry(reference, r8MainDexList.get(i), r8SyntheticItems);
     }
-    String[] refList = new String(Files.readAllBytes(
-        expectedMainDexList), StandardCharsets.UTF_8).split("\n");
+    String[] refList =
+        new String(Files.readAllBytes(expectedMainDexList), StandardCharsets.UTF_8).split("\n");
     for (int i = 0; i < refList.length; i++) {
       String reference = refList[i].trim();
       if (mainDexListFromD8.size() <= i) {
@@ -456,7 +456,7 @@ public class MainDexTracingTest extends TestBase {
     int index = 0;
     LinkedList<String> entryNames = new LinkedList<>();
     // We expect classes*.dex files first, in order, then the rest of the files, in order.
-    while(entries.hasMoreElements()) {
+    while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
       if (!entry.getName().startsWith("classes") || !entry.getName().endsWith(".dex")) {
         entryNames.add(entry.getName());

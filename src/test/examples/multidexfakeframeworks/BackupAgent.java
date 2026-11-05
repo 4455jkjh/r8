@@ -4,6 +4,4 @@
 
 package multidexfakeframeworks;
 
-public class BackupAgent {
-
-}
+public class BackupAgent {}

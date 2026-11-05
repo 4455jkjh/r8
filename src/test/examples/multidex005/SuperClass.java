@@ -4,5 +4,4 @@
 
 package multidex005;
 
-public class SuperClass extends SuperSuperClass {
-}
+public class SuperClass extends SuperSuperClass {}

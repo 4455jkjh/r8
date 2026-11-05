@@ -531,6 +531,30 @@ public abstract class ProguardTypeMatcher {
       return pattern;
     }
 
+    public String getMaterializedPattern() {
+      Int2ReferenceMap<String> materializedBackReferences = getCapturedBackReferences();
+      return materializedBackReferences == null
+          ? pattern
+          : removeMaterializedBackReferencesFromPattern(pattern, materializedBackReferences);
+    }
+
+    private Int2ReferenceMap<String> getCapturedBackReferences() {
+      Int2ReferenceMap<String> materializedBackReferences = null;
+      for (ProguardWildcard wildcard : wildcards) {
+        if (wildcard.isBackReference()) {
+          BackReference backReference = wildcard.asBackReference();
+          String captured = backReference.getCaptured();
+          if (captured != null) {
+            if (materializedBackReferences == null) {
+              materializedBackReferences = new Int2ReferenceOpenHashMap<>();
+            }
+            materializedBackReferences.put(backReference.referenceIndex, captured);
+          }
+        }
+      }
+      return materializedBackReferences;
+    }
+
     @Override
     public boolean matches(DexType type) {
       // TODO(herhut): Translate pattern to work on descriptors instead.
@@ -555,20 +579,15 @@ public abstract class ProguardTypeMatcher {
 
     @Override
     protected ProguardTypeMatcher materialize(DexItemFactory dexItemFactory) {
-      Int2ReferenceMap<String> materializedBackReferences = new Int2ReferenceOpenHashMap<>();
+      Int2ReferenceMap<String> materializedBackReferences = getCapturedBackReferences();
       List<ProguardWildcard> materializedWildcards = new ArrayList<>();
       for (ProguardWildcard wildcard : wildcards) {
-        ProguardWildcard materializedWildcard = wildcard.materialize();
-        if (materializedWildcard.isBackReference()) {
-          BackReference materializedBackReference = materializedWildcard.asBackReference();
-          materializedBackReferences.put(
-              materializedBackReference.referenceIndex, materializedBackReference.getCaptured());
-        } else {
-          materializedWildcards.add(materializedWildcard);
+        if (!wildcard.isBackReference() || wildcard.getCaptured() == null) {
+          materializedWildcards.add(wildcard.materialize());
         }
       }
 
-      if (!materializedBackReferences.isEmpty()) {
+      if (materializedBackReferences != null) {
         String newPattern =
             removeMaterializedBackReferencesFromPattern(pattern, materializedBackReferences);
         if (!newPattern.contains("*")) {

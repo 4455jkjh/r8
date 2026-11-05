@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.ClassRemapper;
@@ -85,40 +86,38 @@ public abstract class LargeProtoEnumTestBase extends TestBase {
   private static final String BASE_INTERNAL_NAME =
       DescriptorUtils.getInternalNameFromJavaType(LargeProtoEnumTestBase.class.getTypeName());
 
-  private static final SimpleRemapper PROTO_REMAPPER =
-      new SimpleRemapper(
-          ImmutableMap.<String, String>builder()
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(
-                      ProtocolMessageEnum.class.getTypeName()),
-                  "com/google/protobuf/ProtocolMessageEnum")
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(Descriptors.class.getTypeName()),
-                  "com/google/protobuf/Descriptors")
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(
-                      Descriptors.EnumDescriptor.class.getTypeName()),
-                  "com/google/protobuf/Descriptors$EnumDescriptor")
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(
-                      Descriptors.EnumValueDescriptor.class.getTypeName()),
-                  "com/google/protobuf/Descriptors$EnumValueDescriptor")
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(Internal.class.getTypeName()),
-                  "com/google/protobuf/Internal")
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(
-                      Internal.EnumLite.class.getTypeName()),
-                  "com/google/protobuf/Internal$EnumLite")
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(
-                      Internal.EnumLiteMap.class.getTypeName()),
-                  "com/google/protobuf/Internal$EnumLiteMap")
-              .put(
-                  DescriptorUtils.getInternalNameFromJavaType(
-                      Internal.EnumVerifier.class.getTypeName()),
-                  "com/google/protobuf/Internal$EnumVerifier")
-              .build());
+  private static final Map<String, String> PROTO_MAPPING =
+      ImmutableMap.<String, String>builder()
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(ProtocolMessageEnum.class.getTypeName()),
+              "com/google/protobuf/ProtocolMessageEnum")
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(Descriptors.class.getTypeName()),
+              "com/google/protobuf/Descriptors")
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(
+                  Descriptors.EnumDescriptor.class.getTypeName()),
+              "com/google/protobuf/Descriptors$EnumDescriptor")
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(
+                  Descriptors.EnumValueDescriptor.class.getTypeName()),
+              "com/google/protobuf/Descriptors$EnumValueDescriptor")
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(Internal.class.getTypeName()),
+              "com/google/protobuf/Internal")
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(Internal.EnumLite.class.getTypeName()),
+              "com/google/protobuf/Internal$EnumLite")
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(Internal.EnumLiteMap.class.getTypeName()),
+              "com/google/protobuf/Internal$EnumLiteMap")
+          .put(
+              DescriptorUtils.getInternalNameFromJavaType(
+                  Internal.EnumVerifier.class.getTypeName()),
+              "com/google/protobuf/Internal$EnumVerifier")
+          .build();
+
+  private static final SimpleRemapper PROTO_REMAPPER = new SimpleRemapper(PROTO_MAPPING);
 
   private static List<byte[]> standardProtoClassFileData;
   private static List<byte[]> protoLiteClassFileData;
@@ -153,10 +152,22 @@ public abstract class LargeProtoEnumTestBase extends TestBase {
   }
 
   public static byte[] remapProtoClasses(byte[] bytes) {
+    return remapProtoClasses(bytes, ImmutableMap.of());
+  }
+
+  public static byte[] remapProtoClasses(byte[] bytes, Map<String, String> extraMapping) {
+    SimpleRemapper remapper =
+        extraMapping.isEmpty()
+            ? PROTO_REMAPPER
+            : new SimpleRemapper(
+                ImmutableMap.<String, String>builder()
+                    .putAll(PROTO_MAPPING)
+                    .putAll(extraMapping)
+                    .build());
     ClassReader reader = new ClassReader(bytes);
     ClassWriter writer = new ClassWriter(0);
-    ClassRemapper remapper =
-        new ClassRemapper(writer, PROTO_REMAPPER) {
+    ClassRemapper classRemapper =
+        new ClassRemapper(writer, remapper) {
           @Override
           public void visitOuterClass(String owner, String name, String descriptor) {
             if (BASE_INTERNAL_NAME.equals(owner)) {
@@ -173,8 +184,30 @@ public abstract class LargeProtoEnumTestBase extends TestBase {
             super.visitInnerClass(name, outerName, innerName, access);
           }
         };
-    reader.accept(remapper, 0);
+    reader.accept(classRemapper, 0);
     return writer.toByteArray();
+  }
+
+  public static Map<String, String> getHelperInterfaceRemapping(
+      boolean underscoreSeparator, Class<?> enumClass, Class<?>... helperInterfaces) {
+    if (!underscoreSeparator) {
+      return ImmutableMap.of();
+    }
+    String enumInternalName = DescriptorUtils.getInternalNameFromJavaType(enumClass.getTypeName());
+    ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+    for (int i = 0; i < helperInterfaces.length; i++) {
+      builder.put(
+          DescriptorUtils.getInternalNameFromJavaType(helperInterfaces[i].getTypeName()),
+          enumInternalName + "_" + i);
+    }
+    return builder.build();
+  }
+
+  public static String getHelperInterfaceTypeName(
+      boolean underscoreSeparator, Class<?> enumClass, Class<?> helperInterface, int index) {
+    return underscoreSeparator
+        ? enumClass.getTypeName() + "_" + index
+        : helperInterface.getTypeName();
   }
 
   public static List<byte[]> getStandardProtoClassFileData() {
@@ -199,10 +232,25 @@ public abstract class LargeProtoEnumTestBase extends TestBase {
 
   public static List<byte[]> getProgramClassFileDataForProtoLite(Class<?> testClass)
       throws IOException {
+    return getProgramClassFileDataForProtoLite(testClass, ImmutableMap.of());
+  }
+
+  public static List<byte[]> getProgramClassFileDataForProtoLite(
+      Class<?> testClass,
+      boolean underscoreSeparator,
+      Class<?> enumClass,
+      Class<?>... helperInterfaces)
+      throws IOException {
+    return getProgramClassFileDataForProtoLite(
+        testClass, getHelperInterfaceRemapping(underscoreSeparator, enumClass, helperInterfaces));
+  }
+
+  public static List<byte[]> getProgramClassFileDataForProtoLite(
+      Class<?> testClass, Map<String, String> extraMapping) throws IOException {
     List<byte[]> classFileData = new ArrayList<>(getProtoLiteClassFileData());
     for (Path path :
         ToolHelper.getClassFilesForInnerClasses(Collections.singletonList(testClass))) {
-      classFileData.add(remapProtoClasses(Files.readAllBytes(path)));
+      classFileData.add(remapProtoClasses(Files.readAllBytes(path), extraMapping));
     }
     return classFileData;
   }

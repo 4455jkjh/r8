@@ -34,7 +34,10 @@ public class ComputeBlockTryRangeTest extends SmaliTestBase {
     SmaliBuilder builder = new SmaliBuilder("Test");
 
     builder.addStaticMethod(
-        "void", "main", Arrays.asList("java.lang.String[]"), 2,
+        "void",
+        "main",
+        Arrays.asList("java.lang.String[]"),
+        2,
         "  sget-object v1, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "  const v0, 1",
         "  invoke-static {v0}, LTest;->method(I)I",
@@ -46,23 +49,26 @@ public class ComputeBlockTryRangeTest extends SmaliTestBase {
         "  invoke-virtual {v1, v0}, Ljava/io/PrintStream;->println(I)V",
         "  return-void");
 
-    MethodSignature methodSig = builder.addStaticMethod(
-        "int", "method", Collections.singletonList("int"), 1,
-        "  const v0, 42",
-        "  goto :in_try",
-        ":try_start",
-        ":dead_code",
-        "  const v0, 0",
-        ":in_try",
-        "  div-int/2addr v0, v1",
-        "  return v0",
-        ":try_end",
-        "  .catch Ljava/io/IOException; {:try_start .. :try_end} :dead_code",
-        "  .catch Ljava/lang/Throwable; {:try_start .. :try_end} :return_half",
-        ":return_half",
-        "  const v1, 2",
-        "  goto :in_try"
-    );
+    MethodSignature methodSig =
+        builder.addStaticMethod(
+            "int",
+            "method",
+            Collections.singletonList("int"),
+            1,
+            "  const v0, 42",
+            "  goto :in_try",
+            ":try_start",
+            ":dead_code",
+            "  const v0, 0",
+            ":in_try",
+            "  div-int/2addr v0, v1",
+            "  return v0",
+            ":try_end",
+            "  .catch Ljava/io/IOException; {:try_start .. :try_end} :dead_code",
+            "  .catch Ljava/lang/Throwable; {:try_start .. :try_end} :return_half",
+            ":return_half",
+            "  const v1, 2",
+            "  goto :in_try");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);

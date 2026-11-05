@@ -57,18 +57,10 @@ public class R8RunExamplesTest extends R8RunExamplesTestBase {
               Input.JAVAC_ALL, CompilerUnderTest.R8, CompilationMode.RELEASE, test, Output.CF));
       fullTestList.add(
           makeTest(
-              Input.JAVAC_ALL,
-              CompilerUnderTest.R8,
-              CompilationMode.RELEASE,
-              test,
-              Output.CF));
+              Input.JAVAC_ALL, CompilerUnderTest.R8, CompilationMode.RELEASE, test, Output.CF));
       fullTestList.add(
           makeTest(
-              Input.JAVAC_ALL,
-              CompilerUnderTest.R8,
-              CompilationMode.RELEASE,
-              test,
-              Output.DEX));
+              Input.JAVAC_ALL, CompilerUnderTest.R8, CompilationMode.RELEASE, test, Output.DEX));
     }
     return addTestParameters(fullTestList);
   }
@@ -98,26 +90,22 @@ public class R8RunExamplesTest extends R8RunExamplesTestBase {
 
   @Override
   protected Map<String, TestCondition> getFailingRunCf() {
-    return new ImmutableMap.Builder<String, TestCondition>()
-        .build();
+    return new ImmutableMap.Builder<String, TestCondition>().build();
   }
 
   @Override
   protected Set<String> getFailingRunCfToDex() {
-    return new ImmutableSet.Builder<String>()
-        .build();
+    return new ImmutableSet.Builder<String>().build();
   }
 
   @Override
   protected Set<String> getFailingCompileCfToDex() {
-    return new ImmutableSet.Builder<String>()
-        .build();
+    return new ImmutableSet.Builder<String>().build();
   }
 
   @Override
   protected Set<String> getFailingCompileCf() {
-    return new ImmutableSet.Builder<String>()
-        .build();
+    return new ImmutableSet.Builder<String>().build();
   }
 
   @Override

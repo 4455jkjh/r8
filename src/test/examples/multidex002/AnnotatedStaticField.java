@@ -5,5 +5,6 @@
 package multidex002;
 
 public class AnnotatedStaticField {
-  @AnnotationWithEnum3(AnnotationWithEnum3.Value3.VAL3_2) public static String sValue = "myValue";
+  @AnnotationWithEnum3(AnnotationWithEnum3.Value3.VAL3_2)
+  public static String sValue = "myValue";
 }

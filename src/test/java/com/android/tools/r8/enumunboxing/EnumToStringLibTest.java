@@ -11,9 +11,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Assume;
 import org.junit.Test;
@@ -73,12 +73,12 @@ public class EnumToStringLibTest extends EnumUnboxingTestBase {
                 })
             .setMinApi(parameters)
             .compile();
-      compile
-          .run(parameters.getRuntime(), AlwaysCorrectProgram.class)
-          .assertSuccessWithOutputLines("0", "1", "2", "0", "1", "2", "0", "1", "2");
-      compile
-          .run(parameters.getRuntime(), AlwaysCorrectProgram2.class)
-          .assertSuccessWithOutputLines("0", "1", "2", "0", "1", "2");
+    compile
+        .run(parameters.getRuntime(), AlwaysCorrectProgram.class)
+        .assertSuccessWithOutputLines("0", "1", "2", "0", "1", "2", "0", "1", "2");
+    compile
+        .run(parameters.getRuntime(), AlwaysCorrectProgram2.class)
+        .assertSuccessWithOutputLines("0", "1", "2", "0", "1", "2");
   }
 
   private void assertEnumFieldsMinified(CodeInspector codeInspector) throws Exception {

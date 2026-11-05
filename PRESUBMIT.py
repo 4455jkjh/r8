@@ -31,7 +31,7 @@ def CheckDoNotMerge(input_api, output_api):
 
 
 def FormatPresubmitMessage(language):
-    cmd = 'tools/fmt_diff.py --format-precise-diff'
+    cmd = 'tools/fmt_diff.py'
     return f"""Please fix the {language} formatting by running:
 
   {cmd}
@@ -46,9 +46,9 @@ or bypass the checks with:
     """
 
 
-def CheckFormatting(input_api, output_api, branch=None):
+def CheckFormatting(input_api, output_api):
     files = [f.LocalPath() for f in input_api.AffectedFiles()]
-    check_results = fmt_diff.check(files, upstream_for_diff_formatting=branch)
+    check_results = fmt_diff.check(files)
     results = []
     for lang, errors in check_results.items():
         if errors:
@@ -245,7 +245,7 @@ def CheckChange(input_api, output_api):
                                 'refs/heads/', ''))
     results = []
     results.extend(CheckDoNotMerge(input_api, output_api))
-    results.extend(CheckFormatting(input_api, output_api, branch))
+    results.extend(CheckFormatting(input_api, output_api))
     results.extend(
         CheckDeterministicDebuggingChanged(input_api, output_api, branch))
     results.extend(CheckForAddedDisassemble(input_api, output_api))

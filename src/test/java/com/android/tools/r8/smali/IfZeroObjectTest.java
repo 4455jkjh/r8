@@ -36,21 +36,16 @@ public class IfZeroObjectTest extends SmaliTestBase {
 
   @Test
   public void testObjectIfs() throws Throwable {
-    ProcessResult result = testIfs("ExpectedToPass", Arrays.asList(
-        "eqz",
-        "nez"));
+    ProcessResult result = testIfs("ExpectedToPass", Arrays.asList("eqz", "nez"));
     assertEquals(result.toString(), 0, result.exitCode);
   }
 
   @Test
   public void testNumericIfs() throws Throwable {
-    ProcessResult result = testIfs("ExpectedToFail", Arrays.asList(
-        "ltz",
-        "gez",
-        "gtz",
-        "lez"));
+    ProcessResult result = testIfs("ExpectedToFail", Arrays.asList("ltz", "gez", "gtz", "lez"));
     assertEquals(result.toString(), 1, result.exitCode);
-    assertTrue("Did not find 'Verification error' in " + result.stderr,
+    assertTrue(
+        "Did not find 'Verification error' in " + result.stderr,
         result.stderr.contains("Verification error") || result.stderr.contains("VerifyError"));
   }
 
@@ -58,15 +53,17 @@ public class IfZeroObjectTest extends SmaliTestBase {
 
     SmaliBuilder builder = new SmaliBuilder(clazz);
     for (String ifZeroOp : ifZeroOps) {
-      builder.addStaticMethod("int", "if" + ifZeroOp, Collections.singletonList("java.lang.Object"),
+      builder.addStaticMethod(
+          "int",
+          "if" + ifZeroOp,
+          Collections.singletonList("java.lang.Object"),
           1,
           "    if-" + ifZeroOp + " p0, :L",
           "    const v0, 0",
           "    return v0",
           "  :L",
           "    const v0, 1",
-          "    return v0"
-      );
+          "    return v0");
     }
 
     List<String> main = new ArrayList<>();

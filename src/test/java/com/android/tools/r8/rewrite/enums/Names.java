@@ -12,14 +12,16 @@ import java.util.concurrent.TimeUnit;
 
 class Names {
   enum Number {
-    ONE, TWO;
+    ONE,
+    TWO;
 
     public static final Direction DOWN = Direction.DOWN;
     public static final Number DEFAULT = TWO;
   }
 
   enum Direction {
-    UP, DOWN
+    UP,
+    DOWN
   }
 
   @AssumeMayHaveSideEffects

@@ -3,18 +3,20 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.internal.benchmarks.appdumps;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.benchmarks.appdumps.AppDumpBenchmarkBuilder;
 import com.android.tools.r8.errors.CheckEnumUnboxedDiagnostic;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -89,13 +91,6 @@ public abstract class YouTubeBenchmarks extends BenchmarkBase {
     public YouTubeAppD8MergeWithMapOutput(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
     }
-
-    @Ignore("b/579315508")
-    @Override
-    @Test
-    public void testBenchmarks() throws Exception {
-      super.testBenchmarks();
-    }
   }
 
   public static class YouTubeAppR8 extends YouTubeBenchmarks {
@@ -114,6 +109,13 @@ public abstract class YouTubeBenchmarks extends BenchmarkBase {
 
     public YouTubeAppR8(BenchmarkConfig config, TestParameters parameters) {
       super(config, parameters);
+    }
+
+    @Test
+    @Override
+    public void testBenchmarks() throws Exception {
+      assumeTrue(ToolHelper.isLocalDevelopment());
+      super.testBenchmarks();
     }
   }
 }

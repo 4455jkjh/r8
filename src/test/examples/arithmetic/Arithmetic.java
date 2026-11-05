@@ -123,7 +123,7 @@ public class Arithmetic {
     float d = -c;
     System.out.println(c + d);
     double e = 43.43;
-    double f  = -e;
+    double f = -e;
     System.out.println(e + f);
     long g = 5000000000L;
     long h = -g;
@@ -148,16 +148,16 @@ public class Arithmetic {
   }
 
   public static void main(String[] args) {
-    addInts(new int[] { });
-    addInts(new int[] { 1 });
-    addInts(new int[] { 0, 1, 2, 3 });
-    addDoubles(new double[] { 0.0 });
-    addDoubles(new double[] { 0.0, 1.0, 2.0 });
-    addDoubles(new double[] { 0.0, 1.0, 2.0, 3.0 });
+    addInts(new int[] {});
+    addInts(new int[] {1});
+    addInts(new int[] {0, 1, 2, 3});
+    addDoubles(new double[] {0.0});
+    addDoubles(new double[] {0.0, 1.0, 2.0});
+    addDoubles(new double[] {0.0, 1.0, 2.0, 3.0});
     long l = 0x0000000100000000L;
-    addLongs(new long[] { });
-    addLongs(new long[] { l });
-    addLongs(new long[] { l, l + 1, l + 2 });
+    addLongs(new long[] {});
+    addLongs(new long[] {l});
+    addLongs(new long[] {l, l + 1, l + 2});
     binaryOps();
     moreOps();
     bitwiseInts(12345, 54321);

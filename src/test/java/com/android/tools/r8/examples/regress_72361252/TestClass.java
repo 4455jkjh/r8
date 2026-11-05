@@ -5,11 +5,9 @@
 package com.android.tools.r8.examples.regress_72361252;
 
 /**
- * AOSP JFuzz Tester.
- * Automatically generated program.
- * jfuzz -s 3131542579 -d 1 -l 8 -i 2 -n 3 (version 1.5)
+ * AOSP JFuzz Tester. Automatically generated program. jfuzz -s 3131542579 -d 1 -l 8 -i 2 -n 3
+ * (version 1.5)
  */
-
 import java.util.Arrays;
 
 public class TestClass {
@@ -28,6 +26,7 @@ public class TestClass {
     public int a() {
       return super.a() + (Integer.MAX_VALUE);
     }
+
     public int x() {
       return (mI & mI);
     }
@@ -37,25 +36,27 @@ public class TestClass {
     public static int s() {
       return 485062193;
     }
+
     public int c() {
       return -1161609244;
     }
+
     public int x() {
       return -210091649;
     }
   }
 
-  private A mA  = new B();
-  private B mB  = new B();
+  private A mA = new B();
+  private B mB = new B();
   private X mBX = new B();
-  private C mC  = new C();
+  private C mC = new C();
   private X mCX = new C();
 
   private boolean mZ = false;
-  private int     mI = 0;
-  private long    mJ = 0;
-  private float   mF = 0;
-  private double  mD = 0;
+  private int mI = 0;
+  private long mJ = 0;
+  private float mF = 0;
+  private double mD = 0;
 
   private float[][][][][][][][][] mArray = new float[1][1][1][1][1][1][1][1][1];
 
@@ -84,30 +85,30 @@ public class TestClass {
   }
 
   private double testMethod() {
-    mJ /= ( mI);
+    mJ /= (mI);
     mD *= (--mD);
     {
       long lJ0 = ((Math.incrementExact(mJ)) / ((long) (mF - -356872921.0f)));
       for (int i0 = 0; i0 < 1; i0++) {
         for (int i1 = 0; i1 < 1; i1++) {
           mF += (mC.s());
-          lJ0 += ((long)(int)(long) -1924533530L);
+          lJ0 += ((long) (int) (long) -1924533530L);
           mD = ((double) new Double((Double.POSITIVE_INFINITY)));
           mD = ((double) (49956622.0f / 1285981813.0f));
           continue;
         }
         for (int i1 = 0; i1 < 1; i1++) {
           if ((mZ)) {
-            mI >>= (- (mI & -1283058927));
+            mI >>= (-(mI & -1283058927));
             {
               int i2 = -1;
               while (++i2 < 1) {
                 try {
                   mD *= ((double) (++mArray[i1][0][i0][0][0][i0][i0][0][0]));
                   mD -= ((this instanceof TestClass) ? 110559916.0 : mD);
-                  lJ0 -= (- (+ 417176163L));
+                  lJ0 -= (-(+417176163L));
                   lJ0 /= (+ -491731430L);
-                  mI /= (-651651736 * ((int)(byte)(int) mI));
+                  mI /= (-651651736 * ((int) (byte) (int) mI));
                 } finally {
                   {
                     float[][][][][][][][][] tmp = {
@@ -118,7 +119,11 @@ public class TestClass {
                               {
                                 {
                                   {
-                                    { (mF * ((Math.signum(498770569.0f)) / mArray[i1][0][0][i1][i2][0][0][0][0])), },
+                                    {
+                                      (mF
+                                          * ((Math.signum(498770569.0f))
+                                              / mArray[i1][0][0][i1][i2][0][0][0][0])),
+                                    },
                                   },
                                 },
                               },
@@ -141,80 +146,91 @@ public class TestClass {
               {
                 int i2 = 0;
                 do {
-                  mArray[0][0][0][i0][0][0][i2][0][0] -= ((float) new Float((mArray[0][mArray.length - 1][0][i2][0][i0][0][i0][i1] / (++mF))));
+                  mArray[0][0][0][i0][0][0][i2][0][0] -=
+                      ((float)
+                          new Float(
+                              (mArray[0][mArray.length - 1][0][i2][0][i0][0][i0][i1] / (++mF))));
                 } while (++i2 < 1);
               }
             }
             switch (i0) {
-              case 0: {
-                mArray[mArray.length - 1][0][0][0][0][0][0][i0][i1] *= ((2005931898.0f >= -170622901.0f) ? 1714576973.0f : (+ ((true ? mF : (++mF)) / 1116904717.0f)));
-                break;
-              }
-              default: {
-                try {
-                  mD /= (mD++);
-                } catch (IllegalStateException ex1_0) {
-                  nop();
-                } catch (NullPointerException ex1_1) {
-                  mJ += (Long.numberOfLeadingZeros(686016417L));
-                  mJ %= (++lJ0);
-                } catch (IllegalArgumentException ex1_2) {
-                  lJ0 |= (--mJ);
-                } catch (ArrayIndexOutOfBoundsException ex1_3) {
-                  nop();
-                } finally {
-                  {
-                    float[][][][][][][][][] tmp = {
-                      {
+              case 0:
+                {
+                  mArray[mArray.length - 1][0][0][0][0][0][0][i0][i1] *=
+                      ((2005931898.0f >= -170622901.0f)
+                          ? 1714576973.0f
+                          : (+((true ? mF : (++mF)) / 1116904717.0f)));
+                  break;
+                }
+              default:
+                {
+                  try {
+                    mD /= (mD++);
+                  } catch (IllegalStateException ex1_0) {
+                    nop();
+                  } catch (NullPointerException ex1_1) {
+                    mJ += (Long.numberOfLeadingZeros(686016417L));
+                    mJ %= (++lJ0);
+                  } catch (IllegalArgumentException ex1_2) {
+                    lJ0 |= (--mJ);
+                  } catch (ArrayIndexOutOfBoundsException ex1_3) {
+                    nop();
+                  } finally {
+                    {
+                      float[][][][][][][][][] tmp = {
                         {
                           {
                             {
                               {
                                 {
                                   {
-                                    { (mF - mF), },
+                                    {
+                                      {
+                                        (mF - mF),
+                                      },
+                                    },
                                   },
                                 },
                               },
                             },
                           },
                         },
-                      },
-                    };
-                    mArray = tmp;
-                  }
-                  try {
-                    mD /= (Math.nextUp(mD));
-                    {
-                      int i2 = 0;
-                      do {
-                        lJ0 %= ((mZ) ? mJ : (- -1060440504L));
-                      } while (++i2 < 1);
+                      };
+                      mArray = tmp;
                     }
-                    mArray[mArray.length - 1][0][i0][0][mArray.length - 1][0][i0][0][0] *= ((float) (~ (mI++)));
-                  } finally {
                     try {
-                      mJ *= (--lJ0);
-                    } catch (IllegalStateException ex3_0) {
-                      for (int i2 = 1 - 1; i2 >= 0; i2--) {
-                        mI %= (~ (~ 2111805872));
+                      mD /= (Math.nextUp(mD));
+                      {
+                        int i2 = 0;
+                        do {
+                          lJ0 %= ((mZ) ? mJ : (- -1060440504L));
+                        } while (++i2 < 1);
                       }
+                      mArray[mArray.length - 1][0][i0][0][mArray.length - 1][0][i0][0][0] *=
+                          ((float) (~(mI++)));
                     } finally {
-                      lJ0 = ((Long.MAX_VALUE) + ((1268602383L >>> -366323683L) / 2001325153L));
+                      try {
+                        mJ *= (--lJ0);
+                      } catch (IllegalStateException ex3_0) {
+                        for (int i2 = 1 - 1; i2 >= 0; i2--) {
+                          mI %= (~(~2111805872));
+                        }
+                      } finally {
+                        lJ0 = ((Long.MAX_VALUE) + ((1268602383L >>> -366323683L) / 2001325153L));
+                      }
                     }
                   }
+                  break;
                 }
-                break;
-              }
             }
           } else {
             mF = (++mF);
           }
           if ((((mZ) & true) & true)) {
             try {
-              lJ0 |= (+ mJ);
+              lJ0 |= (+mJ);
             } catch (IllegalStateException ex1_0) {
-              lJ0 >>>= (- 34814636L);
+              lJ0 >>>= (-34814636L);
             } catch (NullPointerException ex1_1) {
               if (((boolean) new Boolean((1137859375L < -1146618420L)))) {
                 {
@@ -226,7 +242,9 @@ public class TestClass {
                             {
                               {
                                 {
-                                  { ((float) new Float(mF)), },
+                                  {
+                                    ((float) new Float(mF)),
+                                  },
                                 },
                               },
                             },
@@ -250,7 +268,9 @@ public class TestClass {
                           {
                             {
                               {
-                                { (mA.a()), },
+                                {
+                                  (mA.a()),
+                                },
                               },
                             },
                           },
@@ -264,15 +284,17 @@ public class TestClass {
             }
           } else {
             switch (i0) {
-              case 0: {
-                lJ0 -= (- mJ);
-                break;
-              }
-              default: {
-                mD += (((double) new Double(mD)) * ((double) new Double(mD)));
-                lJ0 <<= ((! (true & mZ)) ? -482511807L : lJ0);
-                break;
-              }
+              case 0:
+                {
+                  lJ0 -= (-mJ);
+                  break;
+                }
+              default:
+                {
+                  mD += (((double) new Double(mD)) * ((double) new Double(mD)));
+                  lJ0 <<= ((!(true & mZ)) ? -482511807L : lJ0);
+                  break;
+                }
             }
           }
         }

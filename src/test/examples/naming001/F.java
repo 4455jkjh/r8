@@ -5,7 +5,5 @@ package naming001;
 
 public class F extends E {
   @Override
-  public void keep() {
-  }
+  public void keep() {}
 }
-

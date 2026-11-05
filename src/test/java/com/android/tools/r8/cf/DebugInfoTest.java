@@ -14,6 +14,8 @@ public class DebugInfoTest {
 
   private static boolean arg;
 
+  // Line breaks are avoided to prevent DebugPosition; tested in DebugInfoTestRunner.java.
+  // @formatter:off
   private static void method() {
     int intVar;
     if (arg) {
@@ -23,4 +25,5 @@ public class DebugInfoTest {
       intVar = (int) floatVar2;
     }
   }
+  // @formatter:on
 }

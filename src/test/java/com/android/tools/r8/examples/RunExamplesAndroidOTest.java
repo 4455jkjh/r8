@@ -137,15 +137,16 @@ public abstract class RunExamplesAndroidOTest<
 
     <T extends InstructionSubject> C withInstructionCheck(
         Predicate<InstructionSubject> filter, Consumer<T> check) {
-      return withMethodCheck(method -> {
-        if (method.isAbstract()) {
-          return;
-        }
-        Iterator<T> iterator = method.iterateInstructions(filter);
-        while (iterator.hasNext()) {
-          check.accept(iterator.next());
-        }
-      });
+      return withMethodCheck(
+          method -> {
+            if (method.isAbstract()) {
+              return;
+            }
+            Iterator<T> iterator = method.iterateInstructions(filter);
+            while (iterator.hasNext()) {
+              check.accept(iterator.next());
+            }
+          });
     }
 
     C withOptionConsumer(Consumer<InternalOptions> consumer) {
@@ -394,13 +395,11 @@ public abstract class RunExamplesAndroidOTest<
     failsOn = builder.build();
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   boolean failsOn(Map<ToolHelper.DexVm.Version, List<String>> failsOn, String name) {
     Version vmVersion = parameters.getDexRuntimeVersion();
-    return failsOn.containsKey(vmVersion)
-        && failsOn.get(vmVersion).contains(name);
+    return failsOn.containsKey(vmVersion) && failsOn.get(vmVersion).contains(name);
   }
 
   boolean expectedToFail(String name) {
@@ -534,7 +533,6 @@ public abstract class RunExamplesAndroidOTest<
         .run();
   }
 
-
   @Test
   public void testLambdaDesugaringWithMainDexList1() throws Throwable {
     // Minimal case: there are synthesized classes but not form the main dex class.
@@ -559,7 +557,6 @@ public abstract class RunExamplesAndroidOTest<
         ImmutableList.of("interfacemethods.I2", "interfacemethods.I2$-CC"),
         false);
   }
-
 
   @Test
   public void testInterfaceDesugaringWithMainDexList2() throws Throwable {
@@ -635,8 +632,7 @@ public abstract class RunExamplesAndroidOTest<
     CodeInspector filePerInputClassIntermediateInspector =
         getMainDexInspector(dexesThroughFilePerInputClassIntermediate);
     Set<String> fullMainClasses = new HashSet<>();
-    fullInspector.forAllClasses(
-        clazz -> fullMainClasses.add(clazz.getFinalDescriptor()));
+    fullInspector.forAllClasses(clazz -> fullMainClasses.add(clazz.getFinalDescriptor()));
     Set<String> indexedIntermediateMainClasses = new HashSet<>();
     indexedIntermediateInspector.forAllClasses(
         clazz -> indexedIntermediateMainClasses.add(clazz.getFinalDescriptor()));
@@ -696,9 +692,11 @@ public abstract class RunExamplesAndroidOTest<
             .setIntermediate(true)
             .addProgramFiles(input);
     visitFiles(getLegacyClassesRoot(packageName), command::addProgramFiles);
-    ToolHelper.runD8(command, option -> {
-      option.interfaceMethodDesugaring = OffOrAuto.Auto;
-    });
+    ToolHelper.runD8(
+        command,
+        option -> {
+          option.interfaceMethodDesugaring = OffOrAuto.Auto;
+        });
 
     TestRunner<?> end =
         test(packageName + "dex", "N/A", "N/A")
@@ -714,15 +712,15 @@ public abstract class RunExamplesAndroidOTest<
     return dexesThroughIntermediate;
   }
 
-  abstract RunExamplesAndroidOTest<B>.TestRunner<?> test(String testName, String packageName,
-      String mainClass);
+  abstract RunExamplesAndroidOTest<B>.TestRunner<?> test(
+      String testName, String packageName, String mainClass);
 
   void execute(String testName, String qualifiedMainClass, Path[] jars, Path[] dexes) {
     execute(testName, qualifiedMainClass, jars, dexes, Collections.emptyList());
   }
 
-  void execute(String testName,
-      String qualifiedMainClass, Path[] jars, Path[] dexes, List<String> args) {
+  void execute(
+      String testName, String qualifiedMainClass, Path[] jars, Path[] dexes, List<String> args) {
     Assume.assumeTrue(ToolHelper.artSupported());
     boolean expectedToFail = expectedToFail(testName);
     try {

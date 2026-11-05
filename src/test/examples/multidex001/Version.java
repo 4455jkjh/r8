@@ -7,7 +7,7 @@ package multidex001;
 /* can go in secondary dex */
 public class Version {
 
-    public static int getVersion() {
-        return 1;
-    }
+  public static int getVersion() {
+    return 1;
+  }
 }

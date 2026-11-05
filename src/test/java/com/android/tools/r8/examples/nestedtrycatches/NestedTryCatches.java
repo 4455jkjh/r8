@@ -17,10 +17,10 @@ public class NestedTryCatches {
       throw _t;
     } finally {
       // Keep the two calls to throwException() the same line
-      if(_primaryExc!=null) {
+      if (_primaryExc != null) {
         try {
           throwException();
-        } catch(Throwable _suppressed) {
+        } catch (Throwable _suppressed) {
         }
       } else {
         throwException();

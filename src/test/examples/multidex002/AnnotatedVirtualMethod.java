@@ -7,7 +7,5 @@ package multidex002;
 public class AnnotatedVirtualMethod {
 
   @AnnotationWithEnum3(AnnotationWithEnum3.Value3.VAL3_2)
-  public void foo() {
-
-  }
+  public void foo() {}
 }

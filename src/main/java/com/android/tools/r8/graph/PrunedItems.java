@@ -15,19 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PrunedItems {
 
   private final DexApplication prunedApp;
-  private final Set<DexReference> additionalPinnedItems;
   private final Set<DexType> removedClasses;
   private final Set<DexField> removedFields;
   private final Set<DexMethod> removedMethods;
 
   private PrunedItems(
       DexApplication prunedApp,
-      Set<DexReference> additionalPinnedItems,
       Set<DexType> removedClasses,
       Set<DexField> removedFields,
       Set<DexMethod> removedMethods) {
     this.prunedApp = prunedApp;
-    this.additionalPinnedItems = additionalPinnedItems;
     this.removedClasses = removedClasses;
     this.removedFields = removedFields;
     this.removedMethods = removedMethods;
@@ -50,10 +47,7 @@ public class PrunedItems {
   }
 
   public boolean isEmpty() {
-    return additionalPinnedItems.isEmpty()
-        && removedClasses.isEmpty()
-        && removedFields.isEmpty()
-        && removedMethods.isEmpty();
+    return removedClasses.isEmpty() && removedFields.isEmpty() && removedMethods.isEmpty();
   }
 
   public boolean isRemoved(DexField field) {
@@ -74,10 +68,6 @@ public class PrunedItems {
 
   public DexApplication getPrunedApp() {
     return prunedApp;
-  }
-
-  public Set<? extends DexReference> getAdditionalPinnedItems() {
-    return additionalPinnedItems;
   }
 
   public boolean hasRemovedClasses() {
@@ -112,14 +102,12 @@ public class PrunedItems {
 
     private DexApplication prunedApp;
 
-    private final Set<DexReference> additionalPinnedItems;
     private Map<DexMethod, ProgramMethod> fullyInlinedMethods;
     private Set<DexType> removedClasses;
-    private final Set<DexField> removedFields;
+    private Set<DexField> removedFields;
     private Set<DexMethod> removedMethods;
 
     Builder() {
-      additionalPinnedItems = newEmptySet();
       fullyInlinedMethods = newEmptyMap();
       removedClasses = newEmptySet();
       removedFields = newEmptySet();
@@ -128,15 +116,18 @@ public class PrunedItems {
 
     Builder(PrunedItems prunedItems) {
       this();
-      additionalPinnedItems.addAll(prunedItems.getAdditionalPinnedItems());
       prunedApp = prunedItems.getPrunedApp();
-      removedClasses.addAll(prunedItems.getRemovedClasses());
-      removedFields.addAll(prunedItems.getRemovedFields());
-      removedMethods.addAll(prunedItems.getRemovedMethods());
+      addRemovedClasses(prunedItems.getRemovedClasses());
+      addRemovedFields(prunedItems.getRemovedFields());
+      addRemovedMethods(prunedItems.getRemovedMethods());
     }
 
     <T> Set<T> newEmptySet() {
       return Sets.newIdentityHashSet();
+    }
+
+    <T> Set<T> newEmptySet(int capacity) {
+      return SetUtils.newIdentityHashSet(capacity);
     }
 
     <S, T> Map<S, T> newEmptyMap() {
@@ -145,12 +136,6 @@ public class PrunedItems {
 
     public Builder setPrunedApp(DexApplication prunedApp) {
       this.prunedApp = prunedApp;
-      return this;
-    }
-
-    public Builder addAdditionalPinnedItems(
-        Collection<? extends DexReference> additionalPinnedItems) {
-      this.additionalPinnedItems.addAll(additionalPinnedItems);
       return this;
     }
 
@@ -175,6 +160,9 @@ public class PrunedItems {
     }
 
     public Builder addRemovedClasses(Set<DexType> removedClasses) {
+      if (this.removedClasses.isEmpty() && !removedClasses.isEmpty()) {
+        this.removedClasses = newEmptySet(removedClasses.size());
+      }
       this.removedClasses.addAll(removedClasses);
       return this;
     }
@@ -185,6 +173,9 @@ public class PrunedItems {
     }
 
     public Builder addRemovedFields(Collection<DexField> removedFields) {
+      if (this.removedFields.isEmpty() && !removedFields.isEmpty()) {
+        this.removedFields = newEmptySet(removedFields.size());
+      }
       this.removedFields.addAll(removedFields);
       return this;
     }
@@ -199,6 +190,9 @@ public class PrunedItems {
     }
 
     public Builder addRemovedMethods(Collection<DexMethod> removedMethods) {
+      if (this.removedMethods.isEmpty() && !removedMethods.isEmpty()) {
+        this.removedMethods = newEmptySet(removedMethods.size());
+      }
       this.removedMethods.addAll(removedMethods);
       return this;
     }
@@ -218,8 +212,7 @@ public class PrunedItems {
     }
 
     public PrunedItems build() {
-      return new PrunedItems(
-          prunedApp, additionalPinnedItems, removedClasses, removedFields, removedMethods);
+      return new PrunedItems(prunedApp, removedClasses, removedFields, removedMethods);
     }
   }
 
@@ -228,6 +221,11 @@ public class PrunedItems {
     @Override
     <T> Set<T> newEmptySet() {
       return SetUtils.newConcurrentHashSet();
+    }
+
+    @Override
+    <T> Set<T> newEmptySet(int capacity) {
+      return SetUtils.newConcurrentHashSet(capacity);
     }
 
     @Override

@@ -106,12 +106,17 @@ public class KotlinLambdaMergingKeepAttributesKotlinStyleTest extends KotlinTest
       HorizontallyMergedClassesInspector inspector,
       KotlinLambdasInInput lambdasInInput,
       SyntheticItemsTestUtils syntheticItems) {
+    // The data classes Alpha and Beta are merged, since the instance-of checks in their equals()
+    // methods are rewritten to class id checks.
+    ClassReference alpha = Reference.classFromTypeName(getTestName() + ".Alpha");
+    ClassReference beta = Reference.classFromTypeName(getTestName() + ".Beta");
+    inspector.assertIsCompleteMergeGroup(alpha, beta);
     if (parameters.isCfRuntime()) {
       if (kotlinParameters.getLambdaGeneration().isClass()) {
-        assertEquals(1, inspector.getMergeGroups().size());
-        assertEquals(19, inspector.getSources().size());
+        assertEquals(2, inspector.getMergeGroups().size());
+        assertEquals(20, inspector.getSources().size());
       } else {
-        inspector.assertNoClassesMerged();
+        inspector.assertNoOtherClassesMerged();
       }
     } else {
       if (kotlinParameters.getLambdaGeneration().isClass()) {

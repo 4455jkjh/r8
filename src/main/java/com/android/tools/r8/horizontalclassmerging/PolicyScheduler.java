@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.horizontalclassmerging.policies.CheckAbstractClasses;
 import com.android.tools.r8.horizontalclassmerging.policies.CheckSyntheticClasses;
+import com.android.tools.r8.horizontalclassmerging.policies.CoroutineStateMachinePolicy;
 import com.android.tools.r8.horizontalclassmerging.policies.FinalizeMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.policies.LimitClassGroups;
 import com.android.tools.r8.horizontalclassmerging.policies.LimitInterfaceGroups;
@@ -218,7 +219,14 @@ public class PolicyScheduler {
       ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     ImmutableList.Builder<Policy> builder = ImmutableList.builder();
-    addRequiredMultiClassPolicies(appView, runtimeTypeCheckInfo, builder);
+    CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates =
+        new CoroutineStateMachineMergeCandidates(appView, immediateSubtypingInfo);
+    addRequiredMultiClassPolicies(
+        appView,
+        immediateSubtypingInfo,
+        runtimeTypeCheckInfo,
+        coroutineStateMachineMergeCandidates,
+        builder);
     if (!appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView)) {
       AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
       addMultiClassPoliciesForMergingNonSyntheticClasses(appViewWithLiveness, builder);
@@ -226,7 +234,7 @@ public class PolicyScheduler {
     if (appView.hasLiveness()) {
       builder.add(new PreserveMethodCharacteristics(appView.withLiveness()));
     }
-    builder.add(new MinimizeInstanceFieldCasts());
+    builder.add(new MinimizeInstanceFieldCasts(coroutineStateMachineMergeCandidates));
     addMultiClassPoliciesForInterfaceMerging(appView, immediateSubtypingInfo, builder);
     return builder.add(new LimitClassGroups(appView), new FinalizeMergeGroup(appView)).build();
   }
@@ -254,17 +262,17 @@ public class PolicyScheduler {
 
   private static void addRequiredMultiClassPolicies(
       AppView<? extends AppInfoWithClassHierarchy> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       RuntimeTypeCheckInfo runtimeTypeCheckInfo,
+      CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates,
       ImmutableList.Builder<Policy> builder) {
-    ImmediateProgramSubtypingInfo immediateSubtypingInfo =
-        ImmediateProgramSubtypingInfo.create(appView);
     builder.add(
         new SameFilePolicy(appView),
         new CheckAbstractClasses(appView),
-        new NoClassAnnotationCollisions(),
         new SameFeatureSplit(appView),
         new SameStartupPartition(appView),
-        new SameInstanceFields(appView),
+        new CoroutineStateMachinePolicy(appView, coroutineStateMachineMergeCandidates),
+        new SameInstanceFields(appView, coroutineStateMachineMergeCandidates),
         new SameMainDexGroup(appView),
         new SameNestHost(appView),
         new SameParentClass(),
@@ -272,6 +280,9 @@ public class PolicyScheduler {
         new SyntheticItemsPolicy(appView),
         new RespectPackageBoundaries(appView),
         new NoDifferentApiReferenceLevel(appView),
+        // Run after the policies that group classes by a merge key, since this policy distributes
+        // the non-annotated classes across the groups of the annotated classes.
+        new NoClassAnnotationCollisions(),
         new NoIndirectRuntimeTypeChecks(appView, runtimeTypeCheckInfo),
         new NoWeakerAccessPrivileges(appView, immediateSubtypingInfo),
         new PreventClassMethodAndDefaultMethodCollisions(appView, immediateSubtypingInfo),

@@ -3,13 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package multidex001;
 
+public class MultiDexUpdateTest {
+  public MultiDexUpdateTest() {}
 
-public class MultiDexUpdateTest
-{
-    public MultiDexUpdateTest() {
-    }
-
-    public void testAllClassAvailable()
-    {
-    }
+  public void testAllClassAvailable() {}
 }

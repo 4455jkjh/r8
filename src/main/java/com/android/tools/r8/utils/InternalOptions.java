@@ -889,6 +889,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.enableResourceIdPruning", false);
 
+  // Under optimized resource shrinking, keep resources looked up with constant names through
+  // live calls to Resources.getIdentifier(String, String, String).
+  public boolean enableResourceGetIdentifierTracing =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enableResourceGetIdentifierTracing", true);
+
   // Flag to turn on/offLoad/store optimization in the Cf back-end.
   public boolean enableLoadStoreOptimization = true;
   // Flag to turn on/off desugaring in D8/R8.
@@ -2092,9 +2098,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
             "com.android.tools.r8.enableSameFilePolicy", false);
     private boolean enableSyntheticMerging = true;
 
-    // TODO(b/418674622): Enable check-cast-rewriting.
-    public boolean enableCheckCastRewriting = false;
-
     // Used in tests to enable horizontal class merging when compiling to class files.
     public void enableForTesting() {
       disable = OptionalBool.FALSE;
@@ -2438,6 +2441,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean usePcEncodingInCfForTesting = false;
     public boolean dexVersion40FromApiLevel30 =
         System.getProperty("com.android.tools.r8.dexVersion40ForApiLevel30") != null;
+    public boolean enableDexVersion35UpToApi30 =
+        System.getProperty("com.android.tools.r8.enableDexVersion35UpToApi30") != null;
     public boolean forceDexContainerFormat =
         System.getProperty("com.android.tools.r8.dexContainerExperiment") != null;
     public boolean enableDexConstString20 =
@@ -2937,6 +2942,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public boolean canUsePrivateInterfaceMethods() {
     return hasFeaturePresentFrom(privateInterfaceMethodsApiLevel());
+  }
+
+  // TODO(b/538384517): Remove the testing option and always emit DEX version 035 up to API 30.
+  public boolean isDexVersion35UpToApi30Enabled() {
+    return testing.enableDexVersion35UpToApi30
+        && isGeneratingDex()
+        && canUseDefaultAndStaticInterfaceMethods()
+        && !canUseNestBasedAccess()
+        && getMinApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R);
   }
 
   public static AndroidApiLevel varHandleApiLevel() {

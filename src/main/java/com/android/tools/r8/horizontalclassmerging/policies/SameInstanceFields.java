@@ -10,19 +10,41 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldAccessFlags;
+import com.android.tools.r8.horizontalclassmerging.CoroutineStateMachineMergeCandidates;
+import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassSameReferencePolicy;
 import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
 import com.android.tools.r8.utils.AndroidApiLevelUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
+import java.util.Collection;
 
 public class SameInstanceFields extends MultiClassSameReferencePolicy<Multiset<InstanceFieldInfo>> {
 
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
+  private final CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates;
 
-  public SameInstanceFields(AppView<? extends AppInfoWithClassHierarchy> appView) {
+  public SameInstanceFields(
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      CoroutineStateMachineMergeCandidates coroutineStateMachineMergeCandidates) {
     this.appView = appView;
+    this.coroutineStateMachineMergeCandidates = coroutineStateMachineMergeCandidates;
+  }
+
+  @Override
+  public Collection<HorizontalMergeGroup> apply(HorizontalMergeGroup group) {
+    // Coroutine state machine merge candidates are instead grouped by CoroutineStateMachinePolicy.
+    // TODO(b/579251034): Consider if this exemption can be avoided using store-store fences and
+    // generalized instance field merging.
+    if (coroutineStateMachineMergeCandidates.isCandidate(group.getClasses().getFirst())) {
+      assert Iterables.all(group, coroutineStateMachineMergeCandidates::isCandidate);
+      return ImmutableList.of(group);
+    }
+    assert Iterables.all(group, clazz -> !coroutineStateMachineMergeCandidates.isCandidate(clazz));
+    return super.apply(group);
   }
 
   @Override

@@ -592,8 +592,9 @@ public class ComposingBuilder {
       Map<String, String> inverseClassMapping =
           classNameMapper.getObfuscatedToOriginalMapping().inverse;
       for (Entry<String, MappedRangesOfName> entry : mapper.mappedRangesByRenamedName.entrySet()) {
-        List<MappedRangesOfName> mappedRangesOfNames =
-            entry.getValue().partitionOnMethodSignature();
+        MappedRangesOfName allRangesOfName = entry.getValue();
+        IntBox firstAvailableRange = new IntBox(-1);
+        List<MappedRangesOfName> mappedRangesOfNames = allRangesOfName.partitionOnMethodSignature();
         for (MappedRangesOfName rangesOfName : mappedRangesOfNames) {
           List<MappedRange> newRangesToCompose = rangesOfName.getMappedRanges();
           RangeBuilder minified = new RangeBuilder();
@@ -661,7 +662,13 @@ public class ComposingBuilder {
             }
           }
           composedRanges =
-              fixupOutlines(computedOutlineInformation, newRangesToCompose, composedRanges);
+              fixupOutlines(
+                  computedOutlineInformation,
+                  newRangesToCompose,
+                  composedRanges,
+                  minified,
+                  allRangesOfName,
+                  firstAvailableRange);
           MethodSignature residualSignature =
               rangesOfName
                   .getMemberNaming(mapper)
@@ -684,11 +691,19 @@ public class ComposingBuilder {
     private List<MappedRange> fixupOutlines(
         ComputedOutlineInformation computedOutlineInformation,
         List<MappedRange> newRangesToBeComposed,
-        List<MappedRange> composedRanges)
+        List<MappedRange> composedRanges,
+        RangeBuilder minified,
+        MappedRangesOfName allRangesOfName,
+        IntBox firstAvailableRange)
         throws MappingComposeException {
       composedRanges = fixupInlinedOutlines(computedOutlineInformation, composedRanges);
       fixupOutlineInformation(computedOutlineInformation, newRangesToBeComposed, composedRanges);
-      fixupOutlineCallsiteInformation(computedOutlineInformation, composedRanges);
+      fixupOutlineCallsiteInformation(
+          computedOutlineInformation,
+          composedRanges,
+          minified,
+          allRangesOfName,
+          firstAvailableRange);
       return composedRanges;
     }
 
@@ -848,7 +863,11 @@ public class ComposingBuilder {
     }
 
     private void fixupOutlineCallsiteInformation(
-        ComputedOutlineInformation computedOutlineInformation, List<MappedRange> composedRanges)
+        ComputedOutlineInformation computedOutlineInformation,
+        List<MappedRange> composedRanges,
+        RangeBuilder minified,
+        MappedRangesOfName allRangesOfName,
+        IntBox firstAvailableRange)
         throws MappingComposeException {
       Map<OutlineCallsiteMappingInformation, List<ComputedMappedRangeForOutline>>
           outlineCallsitesToPatchUp =
@@ -864,7 +883,15 @@ public class ComposingBuilder {
           ListUtils.sort(
               outlineCallsitesToPatchUp.keySet(),
               Comparator.comparing(mapping -> mapping.getOutline().toString()));
-      IntBox firstAvailableRange = new IntBox(lastComposedRange.minifiedRange.to + 1);
+      if (firstAvailableRange.isNegative()) {
+        int maxMinifiedTo = lastComposedRange.minifiedRange.to;
+        for (MappedRange range : allRangesOfName.getMappedRanges()) {
+          if (range.minifiedRange != null) {
+            maxMinifiedTo = Math.max(maxMinifiedTo, range.minifiedRange.to);
+          }
+        }
+        firstAvailableRange.set(maxMinifiedTo + 1);
+      }
       for (OutlineCallsiteMappingInformation outlineCallSite : outlineCallSites) {
         // It should be sufficient to patch any call-site because they are referencing the same
         // outline call-site information due to using an identity hashmap.
@@ -881,6 +908,7 @@ public class ComposingBuilder {
             positionInfo -> {
               int newIndex = firstAvailableRange.getAndIncrement();
               Range newMinifiedRange = new Range(newIndex, newIndex);
+              minified.addRange(newMinifiedRange);
               boolean isCaller = false;
               for (MappedRange existingMappedRange : positionInfo.mappedRanges()) {
                 int originalPosition =

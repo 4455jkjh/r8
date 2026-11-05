@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.profile.art;
 
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;

@@ -284,11 +284,18 @@ public class ClassMerger {
   }
 
   private void mergeAnnotations() {
-    assert group.getClasses().stream().filter(DexDefinition::hasAnnotations).count() <= 1;
-    for (DexProgramClass clazz : group.getSources()) {
-      if (clazz.hasAnnotations()) {
-        group.getTarget().setAnnotations(clazz.annotations());
-        break;
+    assert group.getClasses().stream()
+            .filter(DexDefinition::hasAnnotations)
+            .map(DexDefinition::annotations)
+            .distinct()
+            .count()
+        <= 1;
+    if (!group.getTarget().hasAnnotations()) {
+      for (DexProgramClass clazz : group.getSources()) {
+        if (clazz.hasAnnotations()) {
+          group.getTarget().setAnnotations(clazz.annotations());
+          break;
+        }
       }
     }
   }
@@ -448,7 +455,11 @@ public class ClassMerger {
 
     private boolean requiresClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
       if (runtimeTypeCheckInfo != null
-          && Iterables.any(group, runtimeTypeCheckInfo::isCheckCastType)) {
+          && Iterables.any(
+              group,
+              clazz ->
+                  runtimeTypeCheckInfo.isCheckCastType(clazz)
+                      || runtimeTypeCheckInfo.isInstanceOfType(clazz))) {
         return true;
       }
       if (virtualMethodMergers.stream()

@@ -39,9 +39,7 @@ public class MethodWithoutCodeAttributeTest extends TestBase {
   public void testD8() throws Exception {
     assumeTrue("D8 tests.", parameters.isDexRuntime());
     try {
-      testForD8()
-          .addProgramClassFileData(TestDump.dump())
-          .compile();
+      testForD8().addProgramClassFileData(TestDump.dump()).compile();
       fail("Expected to fail due to multiple annotations");
     } catch (CompilationFailedException e) {
       assertThat(
@@ -66,15 +64,12 @@ public class MethodWithoutCodeAttributeTest extends TestBase {
       MethodVisitor methodVisitor;
 
       classWriter.visit(
-          V1_8, ACC_SUPER,
-          "com/android/tools/r8/Test",
-          null,
-          "java/lang/Object",
-          null);
+          V1_8, ACC_SUPER, "com/android/tools/r8/Test", null, "java/lang/Object", null);
 
       {
-        methodVisitor = classWriter.visitMethod(
-            ACC_PUBLIC | ACC_SYNTHETIC, "foo", "(Ljava/lang/Object;)V", null, null);
+        methodVisitor =
+            classWriter.visitMethod(
+                ACC_PUBLIC | ACC_SYNTHETIC, "foo", "(Ljava/lang/Object;)V", null, null);
         methodVisitor.visitAnnotableParameterCount(1, false);
         // b/149808321: no code attribute
         methodVisitor.visitEnd();

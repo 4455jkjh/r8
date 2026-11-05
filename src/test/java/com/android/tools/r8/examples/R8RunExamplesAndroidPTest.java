@@ -23,33 +23,13 @@ public class R8RunExamplesAndroidPTest extends RunExamplesAndroidPTest<R8Command
 
   private static Map<DexVm.Version, List<String>> alsoFailsOn =
       ImmutableMap.<DexVm.Version, List<String>>builder()
-          .put(DexVm.Version.V4_0_4,
-              ImmutableList.of(
-                  "invokecustom-with-shrinking"
-              ))
-          .put(DexVm.Version.V4_4_4,
-              ImmutableList.of(
-                  "invokecustom-with-shrinking"
-              ))
-          .put(DexVm.Version.V5_1_1,
-              ImmutableList.of(
-                  "invokecustom-with-shrinking"
-              ))
-          .put(DexVm.Version.V6_0_1,
-              ImmutableList.of(
-                  "invokecustom-with-shrinking"
-              ))
-          .put(DexVm.Version.V7_0_0,
-              ImmutableList.of(
-                  "invokecustom-with-shrinking"
-              ))
-          .put(DexVm.Version.V8_1_0,
-              ImmutableList.of(
-                  "invokecustom-with-shrinking"
-              ))
-          .put(DexVm.Version.DEFAULT,
-              ImmutableList.of(
-              ))
+          .put(DexVm.Version.V4_0_4, ImmutableList.of("invokecustom-with-shrinking"))
+          .put(DexVm.Version.V4_4_4, ImmutableList.of("invokecustom-with-shrinking"))
+          .put(DexVm.Version.V5_1_1, ImmutableList.of("invokecustom-with-shrinking"))
+          .put(DexVm.Version.V6_0_1, ImmutableList.of("invokecustom-with-shrinking"))
+          .put(DexVm.Version.V7_0_0, ImmutableList.of("invokecustom-with-shrinking"))
+          .put(DexVm.Version.V8_1_0, ImmutableList.of("invokecustom-with-shrinking"))
+          .put(DexVm.Version.DEFAULT, ImmutableList.of())
           .build();
 
   @Test
@@ -76,11 +56,13 @@ public class R8RunExamplesAndroidPTest extends RunExamplesAndroidPTest<R8Command
 
     @Override
     R8TestRunner withKeepAll() {
-      return withBuilderTransformation(builder ->
-          builder
-              .setDisableTreeShaking(true)
-              .setDisableMinification(true)
-              .addProguardConfiguration(ImmutableList.of("-keepattributes *"), Origin.unknown()));
+      return withBuilderTransformation(
+          builder ->
+              builder
+                  .setDisableTreeShaking(true)
+                  .setDisableMinification(true)
+                  .addProguardConfiguration(
+                      ImmutableList.of("-keepattributes *"), Origin.unknown()));
     }
 
     @Override

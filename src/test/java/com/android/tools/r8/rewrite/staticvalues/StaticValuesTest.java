@@ -64,16 +64,15 @@ public class StaticValuesTest extends SmaliTestBase {
         "sput                v0, LTest;->intField:I",
         "const-wide          v0, 4",
         "sput-wide           v0, LTest;->longField:J",
-        "const               v0, 0x40a00000",  // 5.0.
+        "const               v0, 0x40a00000", // 5.0.
         "sput                v0, LTest;->floatField:F",
-        "const-wide          v0, 0x4018000000000000L",  // 6.0.
+        "const-wide          v0, 0x4018000000000000L", // 6.0.
         "sput-wide           v0, LTest;->doubleField:D",
-        "const               v0, 0x37",  // ASCII 7.
+        "const               v0, 0x37", // ASCII 7.
         "sput-char           v0, LTest;->charField:C",
         "const-string        v0, \"8\"",
         "sput-object         v0, LTest;->stringField:Ljava/lang/String;",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         3,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -95,8 +94,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(C)V",
         "sget-object         v1, LTest;->stringField:Ljava/lang/String;",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -171,8 +169,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "sput                v0, LTest;->field2:I",
         "const               v0, 0",
         "sput                v0, LTest;->field1:I",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         2,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -180,8 +177,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(I)V",
         "sget                v1, LTest;->field2:I",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(I)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -210,8 +206,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "sput-object         v0, LTest;->stringField:Ljava/lang/String;",
         "sput-object         v0, LTest;->arrayField:[I",
         "sput-object         v0, LTest;->arrayField2:[[[[I",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         3,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -221,8 +216,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/Object;)V",
         "sget-object         v1, LTest;->arrayField2:[[[[I",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/Object;)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -251,8 +245,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "const-string        v0, \"Value2\"",
         "sput-object         v0, LTest;->stringField2:Ljava/lang/String;",
         "sput-object         v0, LTest;->stringField3:Ljava/lang/String;",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         3,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -262,8 +255,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
         "sget-object         v1, LTest;->stringField3:Ljava/lang/String;",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -302,8 +294,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "sput                v0, LTest;->intField:I",
         "const-string        v0, \"7\"",
         "sput-object         v0, LTest;->stringField:Ljava/lang/String;",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         2,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -311,8 +302,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(I)V",
         "sget-object         v1, LTest;->stringField:Ljava/lang/String;",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -335,9 +325,8 @@ public class StaticValuesTest extends SmaliTestBase {
     assertEquals(("7"), value.asDexValueString().getValue().toString());
 
     String result = runArt(processedApplication, parameters.getDexVm());
-    assertEquals(StringUtils.lines("3", "7") , result);
+    assertEquals(StringUtils.lines("3", "7"), result);
   }
-
 
   @Test
   public void testMultiplePutsWithControlFlow() throws Exception {
@@ -375,8 +364,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "sput                v0, LTest;->intField:I",
         "const-string        v0, \"7\"",
         "sput-object         v0, LTest;->stringField:Ljava/lang/String;",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         2,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -384,8 +372,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(I)V",
         "sget-object         v1, LTest;->stringField:Ljava/lang/String;",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -447,8 +434,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "sput-object         v1, " + descriptor + "->simpleName3:Ljava/lang/String;",
         "sput-object         v2, " + descriptor + "->name2:Ljava/lang/String;",
         "sput-object         v2, " + descriptor + "->name3:Ljava/lang/String;",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         3,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -464,8 +450,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
         "sget-object         v1, " + descriptor + "->name3:Ljava/lang/String;",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp originalApplication = buildApplication(builder);
     AndroidApp processedApplication = processApplication(originalApplication);
@@ -477,8 +462,8 @@ public class StaticValuesTest extends SmaliTestBase {
     assertThat(inspector.clazz(className).clinit(), isAbsent());
 
     String result = runArt(processedApplication, className, parameters.getDexVm());
-    assertEquals(StringUtils.lines("Test", className, "Test", className, "Test", className),
-        result);
+    assertEquals(
+        StringUtils.lines("Test", className, "Test", className, "Test", className), result);
   }
 
   @Test
@@ -501,8 +486,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0 }, Ljava/lang/Class;->getName()Ljava/lang/String;",
         "move-result-object  v0",
         "sput-object         v0, " + descriptor + "->name:Ljava/lang/String;",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         3,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
@@ -510,8 +494,7 @@ public class StaticValuesTest extends SmaliTestBase {
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
         "sget-object         v1, " + descriptor + "->name:Ljava/lang/String;",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(Ljava/lang/String;)V",
-        "return-void"
-    );
+        "return-void");
 
     builder.addClass("org.example.Test2");
 
@@ -532,18 +515,13 @@ public class StaticValuesTest extends SmaliTestBase {
     SmaliBuilder builder = new SmaliBuilder(DEFAULT_CLASS_NAME);
 
     builder.addStaticInitializer(
-        1,
-        "const               v0, 2",
-        "sput                v0, LOther;->field:I",
-        "return-void"
-    );
+        1, "const               v0, 2", "sput                v0, LOther;->field:I", "return-void");
     builder.addMainMethod(
         2,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "sget                v1, LOther;->field:I",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->println(I)V",
-        "return-void"
-    );
+        "return-void");
 
     builder.addClass("Other");
     builder.addStaticField("field", "I", "1");
@@ -578,15 +556,13 @@ public class StaticValuesTest extends SmaliTestBase {
         2,
         "const               v0, 3",
         "sput                v0, LTest;->intField:I",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         3,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "sget                v1, LTest;->intField:I",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp application = builder.build();
 
@@ -609,15 +585,13 @@ public class StaticValuesTest extends SmaliTestBase {
         2,
         "const               v0, 3",
         "sput                v0, LTest;->intField:I",
-        "return-void"
-    );
+        "return-void");
     builder.addMainMethod(
         3,
         "sget-object         v0, Ljava/lang/System;->out:Ljava/io/PrintStream;",
         "sget                v1, LTest;->intField:I",
         "invoke-virtual      { v0, v1 }, Ljava/io/PrintStream;->print(I)V",
-        "return-void"
-    );
+        "return-void");
 
     AndroidApp application = builder.build();
 
@@ -634,5 +608,4 @@ public class StaticValuesTest extends SmaliTestBase {
     assertEquals(1, result.exitCode);
     assertTrue(result.stderr.contains("java.lang.NoSuchFieldError"));
   }
-
 }

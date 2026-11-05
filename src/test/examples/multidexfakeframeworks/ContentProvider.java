@@ -4,6 +4,4 @@
 
 package multidexfakeframeworks;
 
-public class ContentProvider {
-
-}
+public class ContentProvider {}

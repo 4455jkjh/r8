@@ -10,6 +10,5 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AnnotationWithEnum {
 
-    ReferencedByAnnotation value();
-
+  ReferencedByAnnotation value();
 }

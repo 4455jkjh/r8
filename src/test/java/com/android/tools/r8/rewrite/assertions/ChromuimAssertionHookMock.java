@@ -9,4 +9,3 @@ public class ChromuimAssertionHookMock {
     System.out.println("Got AssertionError " + assertion);
   }
 }
-

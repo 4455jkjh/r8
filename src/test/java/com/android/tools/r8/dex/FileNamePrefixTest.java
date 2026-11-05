@@ -49,8 +49,7 @@ public class FileNamePrefixTest extends TestBase {
                 row -> ObjectArrays.concat(parameters, row)));
   }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void computePrefix() {

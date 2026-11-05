@@ -6,6 +6,5 @@ package multidex005;
 
 public class ParameterReference {
 
-  public void directReference(Object o, DirectlyReferenced ref) {
-  }
+  public void directReference(Object o, DirectlyReferenced ref) {}
 }

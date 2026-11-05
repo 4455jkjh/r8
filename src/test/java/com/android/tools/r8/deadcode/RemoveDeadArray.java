@@ -25,7 +25,7 @@ public class RemoveDeadArray extends TestBase {
   public static class TestClassWithCatch {
     static {
       try {
-        int[] foobar = new int[]{42, 42, 42, 42};
+        int[] foobar = new int[] {42, 42, 42, 42};
       } catch (Exception ex) {
         System.out.println("foobar");
       }
@@ -33,14 +33,15 @@ public class RemoveDeadArray extends TestBase {
   }
 
   public static class TestClass {
-    private static int[] foobar = new int[]{42, 42, 42, 42};
+    private static int[] foobar = new int[] {42, 42, 42, 42};
+
     public static void main(java.lang.String[] args) {
       ShouldGoAway[] willBeRemoved = new ShouldGoAway[4];
       ShouldGoAway[] willAlsoBeRemoved = new ShouldGoAway[0];
       System.out.println("foobar");
     }
 
-    public static class ShouldGoAway { }
+    public static class ShouldGoAway {}
   }
 
   private final TestParameters parameters;
@@ -54,7 +55,6 @@ public class RemoveDeadArray extends TestBase {
     // Todo(ricow): enable unused array removal for cf backend.
     return getTestParameters().withDexRuntimes().build();
   }
-
 
   @Test
   public void testDeadArraysRemoved() throws Exception {
@@ -71,7 +71,7 @@ public class RemoveDeadArray extends TestBase {
               assertTrue(main.streamInstructions().noneMatch(InstructionSubject::isNewArray));
             })
         .run(parameters.getRuntime(), TestClass.class.getName());
- }
+  }
 
   @Test
   public void testNotRemoveStaticCatch() throws Exception {

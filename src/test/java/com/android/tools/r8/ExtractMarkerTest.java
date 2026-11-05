@@ -27,9 +27,7 @@ public class ExtractMarkerTest extends TestBase {
 
   static class TestClass {
 
-    public static void main(String[] args) {
-
-    }
+    public static void main(String[] args) {}
   }
 
   private static final Path CLASS_FILE = ToolHelper.getClassFileForTestClass(TestClass.class);

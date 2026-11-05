@@ -15,6 +15,8 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.code.Position;
+import com.android.tools.r8.ir.code.Position.OutlineCallerPosition;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.MappingComposeException;
@@ -27,16 +29,23 @@ import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.IntBox;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.MappedPositionToClassNamingBuilder;
 import com.android.tools.r8.utils.timing.Timing;
+import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -191,8 +200,7 @@ public class LineNumberOptimizer {
           classNamingBuilder.addMappedPositions(
               methodResult.method,
               methodResult.mappedPositions,
-              methodResult.positionRemapper,
-              methodResult.canUsePc);
+              methodResult.outlineCalleePositions);
         }
       }
       return builder.build();
@@ -282,8 +290,7 @@ public class LineNumberOptimizer {
     if (code == null
         || !(code.isCfCode() || code.isDexCode())
         || appView.isCfByteCodePassThrough(method)) {
-      return new MethodPositionMapping(
-          method, Collections.emptyList(), positionRemapper, representation.canUseDexPc(methods));
+      return MethodPositionMapping.empty(method);
     }
     try (Timing ignored = timing.begin("Get mapped positions")) {
       int pcEncodingCutoff =
@@ -294,7 +301,7 @@ public class LineNumberOptimizer {
       List<MappedPosition> mappedPositions =
           positionToMappedRangeMapper.getMappedPositions(
               method, positionRemapper, methods.size() > 1, canUseDexPc, pcEncodingCutoff, timing);
-      return new MethodPositionMapping(method, mappedPositions, positionRemapper, canUseDexPc);
+      return MethodPositionMapping.create(method, mappedPositions, positionRemapper, canUseDexPc);
     }
   }
 
@@ -358,18 +365,76 @@ public class LineNumberOptimizer {
 
     private final ProgramMethod method;
     private final List<MappedPosition> mappedPositions;
-    private final MethodPositionRemapper positionRemapper;
-    private final boolean canUsePc;
+    private final Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions;
 
     private MethodPositionMapping(
         ProgramMethod method,
         List<MappedPosition> mappedPositions,
-        MethodPositionRemapper positionRemapper,
-        boolean canUsePc) {
+        Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions) {
       this.method = method;
       this.mappedPositions = mappedPositions;
-      this.positionRemapper = positionRemapper;
-      this.canUsePc = canUsePc;
+      this.outlineCalleePositions = outlineCalleePositions;
+    }
+
+    static MethodPositionMapping empty(ProgramMethod method) {
+      return new MethodPositionMapping(method, Collections.emptyList(), Collections.emptyMap());
+    }
+
+    static MethodPositionMapping create(
+        ProgramMethod method,
+        List<MappedPosition> mappedPositions,
+        MethodPositionRemapper positionRemapper,
+        boolean canUsePc) {
+      if (mappedPositions.isEmpty()) {
+        return empty(method);
+      }
+      mappedPositions.sort(Comparator.comparingInt(MappedPosition::getObfuscatedLine));
+      // Allocate synthetic placeholder line numbers for outline callee positions immediately after
+      // remapping this method's instruction positions, before moving on to the next overload in
+      // optimizePositionsForOverloads (which shares the same MethodPositionRemapper). This ensures
+      // that a method's outline callee placeholder positions are contiguous with its instruction
+      // positions rather than being allocated after subsequent overloads (see b/579315508).
+      Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions = Collections.emptyMap();
+      IntBox maxPc = new IntBox(ListUtils.last(mappedPositions).getObfuscatedLine());
+      for (MappedPosition mappedPosition : mappedPositions) {
+        Position position = mappedPosition.getPosition();
+        if (position.isOutlineCaller()) {
+          OutlineCallerPosition outlineCallerPosition = position.asOutlineCaller();
+          if (outlineCalleePositions.isEmpty()) {
+            outlineCalleePositions = new LinkedHashMap<>();
+          }
+          outlineCalleePositions.computeIfAbsent(
+              outlineCallerPosition,
+              key -> {
+                Int2IntMap positionMap = new Int2IntArrayMap();
+                key.getOutlinePositions()
+                    .forEach(
+                        (line, outlinePosition) -> {
+                          int placeHolderLineToBeFixed;
+                          if (canUsePc) {
+                            placeHolderLineToBeFixed = maxPc.get() + line + 1;
+                          } else {
+                            placeHolderLineToBeFixed =
+                                positionRemapper
+                                    .createRemappedPosition(outlinePosition)
+                                    .getSecond()
+                                    .getLine();
+                          }
+                          positionMap.put((int) line, placeHolderLineToBeFixed);
+                          maxPc.set(placeHolderLineToBeFixed);
+                        });
+                return positionMap;
+              });
+        }
+      }
+      if (canUsePc && !outlineCalleePositions.isEmpty()) {
+        // When PC-based encoding is used (for the first overload), DexPositionToPcMappedRangeMapper
+        // only advances positionRemapper up to the method's last instruction PC. Advance
+        // positionRemapper past the outline callee placeholder positions allocated above so that
+        // subsequent overloads do not reuse those line numbers.
+        positionRemapper.setNextOptimizedLineNumber(maxPc.get() + 1);
+      }
+      return new MethodPositionMapping(method, mappedPositions, outlineCalleePositions);
     }
   }
 }

@@ -37,7 +37,10 @@ public class Regress63598979 extends JasminTestBase {
     JasminBuilder builder = new JasminBuilder(ClassFileVersion.JDK_1_4);
     JasminBuilder.ClassBuilder clazz = builder.addClass("Test");
 
-    clazz.addStaticMethod("test1", ImmutableList.of("Z"), "Z",
+    clazz.addStaticMethod(
+        "test1",
+        ImmutableList.of("Z"),
+        "Z",
         ".limit stack 2",
         ".limit locals 2",
         "  iload 0",
@@ -50,7 +53,10 @@ public class Regress63598979 extends JasminTestBase {
         "L3:",
         "  ireturn");
 
-    clazz.addStaticMethod("test2", ImmutableList.of("Z"), "Z",
+    clazz.addStaticMethod(
+        "test2",
+        ImmutableList.of("Z"),
+        "Z",
         ".limit stack 2",
         ".limit locals 2",
         "  iload 0",
@@ -63,7 +69,10 @@ public class Regress63598979 extends JasminTestBase {
         "L3:",
         "  ireturn");
 
-    clazz.addStaticMethod("test3", ImmutableList.of("Z"), "Z",
+    clazz.addStaticMethod(
+        "test3",
+        ImmutableList.of("Z"),
+        "Z",
         ".limit stack 2",
         ".limit locals 2",
         "  iload 0",
@@ -76,8 +85,10 @@ public class Regress63598979 extends JasminTestBase {
         "L3:",
         "  ireturn");
 
-
-    clazz.addStaticMethod("test4", ImmutableList.of("Z"), "Z",
+    clazz.addStaticMethod(
+        "test4",
+        ImmutableList.of("Z"),
+        "Z",
         ".limit stack 2",
         ".limit locals 2",
         "  iload 0",

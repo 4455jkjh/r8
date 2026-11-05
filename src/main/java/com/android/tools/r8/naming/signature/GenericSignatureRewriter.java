@@ -109,9 +109,13 @@ public class GenericSignatureRewriter {
                                 .visitMethodSignature(method.getGenericSignature())
                             : method.getGenericSignature()));
               });
-          // TODO(b/274888318): Check this.
           for (RecordComponentInfo recordComponent : clazz.getRecordComponents()) {
-            genericSignatureTypeRewriter.rewrite(recordComponent.getSignature());
+            recordComponent.setSignature(
+                genericSignatureTypeRewriter.rewrite(
+                    classArgumentApplier != null
+                        ? classArgumentApplier.visitFieldTypeSignature(
+                            recordComponent.getSignature())
+                        : recordComponent.getSignature()));
           }
         },
         appView.options().getThreadingModule(),

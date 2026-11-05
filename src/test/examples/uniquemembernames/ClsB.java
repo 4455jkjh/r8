@@ -14,5 +14,4 @@ public class ClsB extends BaseCls {
   protected double bar() {
     return f2 != 0 ? c / f2 : Double.MAX_VALUE;
   }
-
 }

@@ -179,7 +179,7 @@ public class SetUtils {
   }
 
   public static <T> Set<T> unionIdentityHashSet(Set<T> one, Set<T> other) {
-    Set<T> union = Sets.newIdentityHashSet();
+    Set<T> union = newIdentityHashSet(one.size() + other.size());
     union.addAll(one);
     union.addAll(other);
     return union;

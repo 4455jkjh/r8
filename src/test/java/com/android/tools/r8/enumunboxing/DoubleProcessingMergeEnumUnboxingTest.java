@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.enumunboxing;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
@@ -12,8 +12,8 @@ import com.android.tools.r8.enumunboxing.examplelib1.JavaLibrary1;
 import com.android.tools.r8.enumunboxing.examplelib2.JavaLibrary2;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
@@ -68,7 +68,7 @@ public class DoubleProcessingMergeEnumUnboxingTest extends EnumUnboxingTestBase 
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
         .setMinApi(parameters)
         .compile()
-        .inspect(this::assertSharedUtilityClassPresent)
+        .inspect(this::assertSharedUtilityClassAbsent)
         .run(parameters.getRuntime(), App.class)
         .assertSuccess()
         .inspectStdOut(this::assertLines2By2Correct);
@@ -87,8 +87,8 @@ public class DoubleProcessingMergeEnumUnboxingTest extends EnumUnboxingTestBase 
         .writeToZip();
   }
 
-  private void assertSharedUtilityClassPresent(CodeInspector codeInspector) {
-    assertTrue(
+  private void assertSharedUtilityClassAbsent(CodeInspector codeInspector) {
+    assertFalse(
         codeInspector.allClasses().stream()
             .anyMatch(
                 clazz ->

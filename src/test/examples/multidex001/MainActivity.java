@@ -8,11 +8,9 @@ import multidexfakeframeworks.Activity;
 
 public class MainActivity extends Activity {
 
-    protected void onCreate() {
-    }
+  protected void onCreate() {}
 
-    public int getVersion() {
-        return ClassForMainDex.getVersion();
-    }
-
+  public int getVersion() {
+    return ClassForMainDex.getVersion();
+  }
 }

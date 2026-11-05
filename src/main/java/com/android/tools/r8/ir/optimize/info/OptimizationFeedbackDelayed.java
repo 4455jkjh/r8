@@ -21,12 +21,11 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFun
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.AppInfoWithLivenessModifier;
 import com.android.tools.r8.threading.ThreadingModule;
-import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.BitSet;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -36,39 +35,49 @@ public class OptimizationFeedbackDelayed extends OptimizationFeedback {
   // Caching of updated optimization info and processed status.
   private final AppInfoWithLivenessModifier appInfoWithLivenessModifier =
       AppInfoWithLiveness.modifier();
-  private final Map<DexEncodedField, MutableFieldOptimizationInfo> fieldOptimizationInfos =
-      new IdentityHashMap<>();
-  private final Map<DexEncodedMethod, MutableMethodOptimizationInfo> methodOptimizationInfos =
-      new IdentityHashMap<>();
-  private final Map<DexEncodedMethod, ConstraintWithTarget> processed = new IdentityHashMap<>();
+  private Map<DexEncodedField, MutableFieldOptimizationInfo> fieldOptimizationInfos =
+      new ConcurrentHashMap<>();
+  private Map<DexEncodedMethod, MutableMethodOptimizationInfo> methodOptimizationInfos =
+      new ConcurrentHashMap<>();
+  private Map<DexEncodedMethod, ConstraintWithTarget> processed = new ConcurrentHashMap<>();
 
-  private synchronized MutableFieldOptimizationInfo getFieldOptimizationInfoForUpdating(
-      DexEncodedField field) {
-    MutableFieldOptimizationInfo info = fieldOptimizationInfos.get(field);
-    if (info != null) {
-      return info;
-    }
-    info = field.getOptimizationInfo().toMutableOptimizationInfo().mutableCopy();
-    fieldOptimizationInfos.put(field, info);
-    return info;
+  private MutableFieldOptimizationInfo getFieldOptimizationInfoForUpdating(DexEncodedField field) {
+    return fieldOptimizationInfos.computeIfAbsent(
+        field, k -> k.getOptimizationInfo().toMutableOptimizationInfo().mutableCopy());
   }
 
-  private synchronized MutableMethodOptimizationInfo getMethodOptimizationInfoForUpdating(
-      DexEncodedMethod method) {
-    MutableMethodOptimizationInfo info = methodOptimizationInfos.get(method);
-    if (info != null) {
-      return info;
+  private void updatePendingFieldOptimizationInfo(
+      DexEncodedField field, Consumer<MutableFieldOptimizationInfo> consumer) {
+    MutableFieldOptimizationInfo info = getFieldOptimizationInfoForUpdating(field);
+    synchronized (info) {
+      consumer.accept(info);
     }
-    info = method.getOptimizationInfo().toMutableOptimizationInfo().mutableCopy();
-    methodOptimizationInfos.put(method, info);
-    return info;
+  }
+
+  private MutableMethodOptimizationInfo getMethodOptimizationInfoForUpdating(
+      DexEncodedMethod method) {
+    return methodOptimizationInfos.computeIfAbsent(
+        method, k -> k.getOptimizationInfo().toMutableOptimizationInfo().mutableCopy());
   }
 
   public MutableMethodOptimizationInfo getMethodOptimizationInfoForUpdating(ProgramMethod method) {
     return getMethodOptimizationInfoForUpdating(method.getDefinition());
   }
 
-  public synchronized boolean hasPendingOptimizationInfo(ProgramMethod method) {
+  private void updatePendingMethodOptimizationInfo(
+      DexEncodedMethod method, Consumer<MutableMethodOptimizationInfo> consumer) {
+    MutableMethodOptimizationInfo info = getMethodOptimizationInfoForUpdating(method);
+    synchronized (info) {
+      consumer.accept(info);
+    }
+  }
+
+  private void updatePendingMethodOptimizationInfo(
+      ProgramMethod method, Consumer<MutableMethodOptimizationInfo> consumer) {
+    updatePendingMethodOptimizationInfo(method.getDefinition(), consumer);
+  }
+
+  public boolean hasPendingOptimizationInfo(ProgramMethod method) {
     return methodOptimizationInfos.containsKey(method.getDefinition());
   }
 
@@ -93,24 +102,54 @@ public class OptimizationFeedbackDelayed extends OptimizationFeedback {
   }
 
   public void updateVisibleOptimizationInfo() {
-    // Remove methods that have become obsolete. A method may become obsolete, for example, as a
-    // result of the class staticizer, which aims to transform virtual methods on companion classes
-    // into static methods on the enclosing class of the companion class.
-    IteratorUtils.removeIf(
-        methodOptimizationInfos.entrySet().iterator(), entry -> entry.getKey().isObsolete());
-    IteratorUtils.removeIf(processed.entrySet().iterator(), entry -> entry.getKey().isObsolete());
-
     // Update field optimization info.
-    fieldOptimizationInfos.forEach(DexEncodedField::setOptimizationInfo);
-    fieldOptimizationInfos.clear();
+    if (!fieldOptimizationInfos.isEmpty()) {
+      fieldOptimizationInfos.forEach(DexEncodedField::setOptimizationInfo);
+      if (fieldOptimizationInfos.size() > 64) {
+        // Create a new map to ensure that small waves do not unnecessarily scan large empty hash
+        // tables.
+        fieldOptimizationInfos = new ConcurrentHashMap<>();
+      } else {
+        fieldOptimizationInfos.clear();
+      }
+    }
 
-    // Update method optimization info.
-    methodOptimizationInfos.forEach(DexEncodedMethod::setOptimizationInfo);
-    methodOptimizationInfos.clear();
+    // Update method optimization info, skipping methods that have become obsolete. A method may
+    // become obsolete, for example, as a result of the class staticizer, which aims to transform
+    // virtual methods on companion classes into static methods on the enclosing class of the
+    // companion class.
+    if (!methodOptimizationInfos.isEmpty()) {
+      methodOptimizationInfos.forEach(
+          (method, info) -> {
+            if (!method.isObsolete()) {
+              method.setOptimizationInfo(info);
+            }
+          });
+      if (methodOptimizationInfos.size() > 64) {
+        // Create a new map to ensure that small waves do not unnecessarily scan large empty hash
+        // tables.
+        methodOptimizationInfos = new ConcurrentHashMap<>();
+      } else {
+        methodOptimizationInfos.clear();
+      }
+    }
 
     // Mark the processed methods as processed.
-    processed.forEach(DexEncodedMethod::markProcessed);
-    processed.clear();
+    if (!processed.isEmpty()) {
+      processed.forEach(
+          (method, state) -> {
+            if (!method.isObsolete()) {
+              method.markProcessed(state);
+            }
+          });
+      if (processed.size() > 64) {
+        // Create a new map to ensure that small waves do not unnecessarily scan large empty hash
+        // tables.
+        processed = new ConcurrentHashMap<>();
+      } else {
+        processed.clear();
+      }
+    }
   }
 
   public boolean noUpdatesLeft() {
@@ -127,27 +166,27 @@ public class OptimizationFeedbackDelayed extends OptimizationFeedback {
 
   @Override
   public void markFieldCannotBeKept(DexEncodedField field) {
-    getFieldOptimizationInfoForUpdating(field).cannotBeKept();
+    updatePendingFieldOptimizationInfo(field, MutableFieldOptimizationInfo::cannotBeKept);
   }
 
   @Override
   public void markFieldAsDead(DexEncodedField field) {
-    getFieldOptimizationInfoForUpdating(field).markAsDead();
+    updatePendingFieldOptimizationInfo(field, MutableFieldOptimizationInfo::markAsDead);
   }
 
   @Override
   public void markFieldAsPropagated(DexEncodedField field) {
-    getFieldOptimizationInfoForUpdating(field).markAsPropagated();
+    updatePendingFieldOptimizationInfo(field, MutableFieldOptimizationInfo::markAsPropagated);
   }
 
   @Override
   public void markFieldHasDynamicType(DexEncodedField field, DynamicType dynamicType) {
-    getFieldOptimizationInfoForUpdating(field).setDynamicType(dynamicType);
+    updatePendingFieldOptimizationInfo(field, info -> info.setDynamicType(dynamicType));
   }
 
   @Override
   public void markFieldBitsRead(DexEncodedField field, int bitsRead) {
-    getFieldOptimizationInfoForUpdating(field).joinReadBits(bitsRead);
+    updatePendingFieldOptimizationInfo(field, info -> info.joinReadBits(bitsRead));
   }
 
   @Override
@@ -160,245 +199,272 @@ public class OptimizationFeedbackDelayed extends OptimizationFeedback {
         .get(field.getReference())
         .hasReflectiveAccess();
     assert verifyValuePropagationIsAllowed(field, appView);
-    getFieldOptimizationInfoForUpdating(field).setAbstractValue(abstractValue, field);
+    updatePendingFieldOptimizationInfo(field, info -> info.setAbstractValue(abstractValue, field));
   }
 
   // METHOD OPTIMIZATION INFO:
 
   @Override
-  public synchronized void markInlinedIntoSingleCallSite(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).markInlinedIntoSingleCallSite();
+  public void markInlinedIntoSingleCallSite(DexEncodedMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::markInlinedIntoSingleCallSite);
   }
 
   @Override
   public void markMethodCannotBeKept(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).cannotBeKept();
+    updatePendingMethodOptimizationInfo(method, MutableMethodOptimizationInfo::cannotBeKept);
   }
 
   @Override
-  public synchronized void methodInitializesClassesOnNormalExit(
+  public void methodInitializesClassesOnNormalExit(
       DexEncodedMethod method, Set<DexType> initializedClasses) {
-    getMethodOptimizationInfoForUpdating(method)
-        .markInitializesClassesOnNormalExit(initializedClasses);
+    updatePendingMethodOptimizationInfo(
+        method, info -> info.markInitializesClassesOnNormalExit(initializedClasses));
   }
 
   @Override
-  public synchronized void methodReturnsArgument(DexEncodedMethod method, int argument) {
-    getMethodOptimizationInfoForUpdating(method).markReturnsArgument(argument);
+  public void methodReturnsArgument(DexEncodedMethod method, int argument) {
+    updatePendingMethodOptimizationInfo(method, info -> info.markReturnsArgument(argument));
   }
 
   @Override
-  public synchronized void methodReturnsAbstractValue(
+  public void methodReturnsAbstractValue(
       DexEncodedMethod definition, AppView<AppInfoWithLiveness> appView, AbstractValue value) {
     assert verifyValuePropagationIsAllowed(definition, appView);
-    getMethodOptimizationInfoForUpdating(definition).setAbstractReturnValue(value, definition);
+    updatePendingMethodOptimizationInfo(
+        definition, info -> info.setAbstractReturnValue(value, definition));
   }
 
   @Override
   public void setAbstractFunction(DexEncodedMethod method, AbstractFunction abstractFunction) {
-    getMethodOptimizationInfoForUpdating(method).setAbstractFunction(abstractFunction);
+    updatePendingMethodOptimizationInfo(method, info -> info.setAbstractFunction(abstractFunction));
   }
 
   @Override
-  public synchronized void setDynamicReturnType(
+  public void setDynamicReturnType(
       DexEncodedMethod method, AppView<?> appView, DynamicType dynamicType) {
-    getMethodOptimizationInfoForUpdating(method).setDynamicType(appView, dynamicType, method);
+    updatePendingMethodOptimizationInfo(
+        method, info -> info.setDynamicType(appView, dynamicType, method));
   }
 
   @Override
-  public synchronized void methodNeverReturnsNormally(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).markNeverReturnsNormally();
+  public void methodNeverReturnsNormally(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::markNeverReturnsNormally);
   }
 
   @Override
-  public synchronized void methodMayNotHaveSideEffects(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).markMayNotHaveSideEffects();
+  public void methodMayNotHaveSideEffects(DexEncodedMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::markMayNotHaveSideEffects);
   }
 
   @Override
-  public synchronized void methodReturnValueOnlyDependsOnArguments(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).markReturnValueOnlyDependsOnArguments();
+  public void methodReturnValueOnlyDependsOnArguments(DexEncodedMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::markReturnValueOnlyDependsOnArguments);
   }
 
   @Override
-  public synchronized void markAsPropagated(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).markAsPropagated();
+  public void markAsPropagated(DexEncodedMethod method) {
+    updatePendingMethodOptimizationInfo(method, MutableMethodOptimizationInfo::markAsPropagated);
   }
 
   @Override
-  public synchronized void markProcessed(DexEncodedMethod method, ConstraintWithTarget state) {
+  public void markProcessed(DexEncodedMethod method, ConstraintWithTarget state) {
     processed.put(method, state);
   }
 
   @Override
-  public synchronized void setBridgeInfo(ProgramMethod method, BridgeInfo bridgeInfo) {
-    getMethodOptimizationInfoForUpdating(method).setBridgeInfo(bridgeInfo);
+  public void setBridgeInfo(ProgramMethod method, BridgeInfo bridgeInfo) {
+    updatePendingMethodOptimizationInfo(method, info -> info.setBridgeInfo(bridgeInfo));
   }
 
   @Override
-  public synchronized void setClassInlinerMethodConstraint(
+  public void setClassInlinerMethodConstraint(
       ProgramMethod method, ClassInlinerMethodConstraint classInlinerConstraint) {
-    getMethodOptimizationInfoForUpdating(method)
-        .setClassInlinerMethodConstraint(classInlinerConstraint);
+    updatePendingMethodOptimizationInfo(
+        method, info -> info.setClassInlinerMethodConstraint(classInlinerConstraint));
   }
 
   @Override
-  public synchronized void setEnumUnboxerMethodClassification(
+  public void setEnumUnboxerMethodClassification(
       ProgramMethod method, EnumUnboxerMethodClassification enumUnboxerMethodClassification) {
-    getMethodOptimizationInfoForUpdating(method)
-        .setEnumUnboxerMethodClassification(enumUnboxerMethodClassification);
+    updatePendingMethodOptimizationInfo(
+        method, info -> info.setEnumUnboxerMethodClassification(enumUnboxerMethodClassification));
   }
 
   @Override
-  public synchronized void setInstanceInitializerInfoCollection(
+  public void setInstanceInitializerInfoCollection(
       DexEncodedMethod method,
       InstanceInitializerInfoCollection instanceInitializerInfoCollection) {
-    getMethodOptimizationInfoForUpdating(method)
-        .setInstanceInitializerInfoCollection(instanceInitializerInfoCollection);
+    updatePendingMethodOptimizationInfo(
+        method,
+        info -> info.setInstanceInitializerInfoCollection(instanceInitializerInfoCollection));
   }
 
   @Override
-  public synchronized void setInitializerEnablingJavaVmAssertions(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).setInitializerEnablingJavaAssertions();
+  public void setInitializerEnablingJavaVmAssertions(DexEncodedMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::setInitializerEnablingJavaAssertions);
   }
 
   @Override
-  public synchronized void setNonNullParamOrThrow(DexEncodedMethod method, BitSet facts) {
-    getMethodOptimizationInfoForUpdating(method).setNonNullParamOrThrow(facts);
+  public void setNonNullParamOrThrow(DexEncodedMethod method, BitSet facts) {
+    updatePendingMethodOptimizationInfo(method, info -> info.setNonNullParamOrThrow(facts));
   }
 
   @Override
-  public synchronized void setNonNullParamOnNormalExits(DexEncodedMethod method, BitSet facts) {
-    getMethodOptimizationInfoForUpdating(method).setNonNullParamOnNormalExits(facts);
+  public void setNonNullParamOnNormalExits(DexEncodedMethod method, BitSet facts) {
+    updatePendingMethodOptimizationInfo(method, info -> info.setNonNullParamOnNormalExits(facts));
   }
 
   @Override
   public void setNopInliningConstraint(ProgramMethod method, SimpleInliningConstraint constraint) {
-    getMethodOptimizationInfoForUpdating(method).setNopInliningConstraint(constraint);
+    updatePendingMethodOptimizationInfo(method, info -> info.setNopInliningConstraint(constraint));
   }
 
   @Override
-  public synchronized void setSimpleInliningConstraint(
+  public void setSimpleInliningConstraint(
       ProgramMethod method, SimpleInliningConstraint constraint) {
-    getMethodOptimizationInfoForUpdating(method).setSimpleInliningConstraint(constraint);
+    updatePendingMethodOptimizationInfo(
+        method, info -> info.setSimpleInliningConstraint(constraint));
   }
 
   @Override
-  public synchronized void classInitializerMayBePostponed(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).markClassInitializerMayBePostponed();
+  public void classInitializerMayBePostponed(DexEncodedMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::markClassInitializerMayBePostponed);
   }
 
   @Override
   public void setParametersWithBitwiseOperations(
       ProgramMethod method, BitSet parametersWithBitwiseOperations) {
-    getMethodOptimizationInfoForUpdating(method)
-        .setParametersWithBitwiseOperations(parametersWithBitwiseOperations);
+    updatePendingMethodOptimizationInfo(
+        method, info -> info.setParametersWithBitwiseOperations(parametersWithBitwiseOperations));
   }
 
   @Override
-  public synchronized void setUnusedArguments(ProgramMethod method, BitSet unusedArguments) {
-    getMethodOptimizationInfoForUpdating(method).setUnusedArguments(unusedArguments);
+  public void setUnusedArguments(ProgramMethod method, BitSet unusedArguments) {
+    updatePendingMethodOptimizationInfo(method, info -> info.setUnusedArguments(unusedArguments));
   }
 
   // Unset methods.
 
   @Override
-  public synchronized void unsetAbstractReturnValue(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetAbstractReturnValue();
+  public void unsetAbstractReturnValue(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetAbstractReturnValue);
   }
 
   @Override
-  public synchronized void unsetBridgeInfo(DexEncodedMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetBridgeInfo();
+  public void unsetBridgeInfo(DexEncodedMethod method) {
+    updatePendingMethodOptimizationInfo(method, MutableMethodOptimizationInfo::unsetBridgeInfo);
   }
 
   @Override
-  public synchronized void unsetClassInitializerMayBePostponed(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetClassInitializerMayBePostponed();
+  public void unsetClassInitializerMayBePostponed(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetClassInitializerMayBePostponed);
   }
 
   @Override
-  public synchronized void unsetClassInlinerMethodConstraint(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetClassInlinerMethodConstraint();
+  public void unsetClassInlinerMethodConstraint(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetClassInlinerMethodConstraint);
   }
 
   @Override
-  public synchronized void unsetDynamicReturnType(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetDynamicType();
+  public void unsetDynamicReturnType(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(method, MutableMethodOptimizationInfo::unsetDynamicType);
   }
 
   @Override
-  public synchronized void unsetEnumUnboxerMethodClassification(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetEnumUnboxerMethodClassification();
+  public void unsetEnumUnboxerMethodClassification(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetEnumUnboxerMethodClassification);
   }
 
   @Override
-  public synchronized void unsetForceInline(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetForceInline();
+  public void unsetForceInline(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(method, MutableMethodOptimizationInfo::unsetForceInline);
   }
 
   @Override
-  public synchronized void unsetInitializedClassesOnNormalExit(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetInitializedClassesOnNormalExit();
+  public void unsetInitializedClassesOnNormalExit(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetInitializedClassesOnNormalExit);
   }
 
   @Override
-  public synchronized void unsetInitializerEnablingJavaVmAssertions(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetInitializerEnablingJavaVmAssertions();
+  public void unsetInitializerEnablingJavaVmAssertions(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetInitializerEnablingJavaVmAssertions);
   }
 
   @Override
-  public synchronized void unsetInlinedIntoSingleCallSite(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetInlinedIntoSingleCallSite();
+  public void unsetInlinedIntoSingleCallSite(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetInlinedIntoSingleCallSite);
   }
 
   @Override
-  public synchronized void unsetInstanceInitializerInfoCollection(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetInstanceInitializerInfoCollection();
+  public void unsetInstanceInitializerInfoCollection(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetInstanceInitializerInfoCollection);
   }
 
   @Override
-  public synchronized void unsetMayNotHaveSideEffects(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetMayNotHaveSideEffects();
+  public void unsetMayNotHaveSideEffects(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetMayNotHaveSideEffects);
   }
 
   @Override
-  public synchronized void unsetNeverReturnsNormally(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetNeverReturnsNormally();
+  public void unsetNeverReturnsNormally(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetNeverReturnsNormally);
   }
 
   @Override
-  public synchronized void unsetNonNullParamOnNormalExits(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetNonNullParamOnNormalExits();
+  public void unsetNonNullParamOnNormalExits(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetNonNullParamOnNormalExits);
   }
 
   @Override
-  public synchronized void unsetNonNullParamOrThrow(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetNonNullParamOrThrow();
+  public void unsetNonNullParamOrThrow(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetNonNullParamOrThrow);
   }
 
   @Override
-  public synchronized void unsetReturnedArgument(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetReturnedArgument();
+  public void unsetReturnedArgument(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetReturnedArgument);
   }
 
   @Override
-  public synchronized void unsetReturnValueOnlyDependsOnArguments(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetReturnValueOnlyDependsOnArguments();
+  public void unsetReturnValueOnlyDependsOnArguments(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetReturnValueOnlyDependsOnArguments);
   }
 
   @Override
   public void unsetNopInliningConstraint(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetNopInliningConstraint();
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetNopInliningConstraint);
   }
 
   @Override
-  public synchronized void unsetSimpleInliningConstraint(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetSimpleInliningConstraint();
+  public void unsetSimpleInliningConstraint(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetSimpleInliningConstraint);
   }
 
   @Override
-  public synchronized void unsetUnusedArguments(ProgramMethod method) {
-    getMethodOptimizationInfoForUpdating(method).unsetUnusedArguments();
+  public void unsetUnusedArguments(ProgramMethod method) {
+    updatePendingMethodOptimizationInfo(
+        method, MutableMethodOptimizationInfo::unsetUnusedArguments);
   }
 }

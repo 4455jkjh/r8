@@ -15,5 +15,4 @@ public class AnotherCls {
   int foo() {
     return b() - (int) b;
   }
-
 }

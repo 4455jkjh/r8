@@ -188,6 +188,10 @@ public class LargeProtoEnumRewriter {
         clazz -> {
           rewriteProgramClassInstructions(clazz, fieldMapping, methodMapping);
           updateInnerClassAttributes(clazz, largeEnums, helperInterfacesToRemove);
+          // Helper interfaces may be nest members of an enclosing outer proto class rather than
+          // the enum class itself.
+          clazz.removeNestMemberAttributes(
+              member -> helperInterfacesToRemove.contains(member.getNestMember()));
         },
         appView.options().getThreadingModule(),
         executorService);
@@ -239,23 +243,28 @@ public class LargeProtoEnumRewriter {
     if (iface.getType().isIdenticalTo(references.enumLiteType)) {
       return false;
     }
-    // Helper interfaces are named <EnumName><index>, e.g. Foo0, Foo1 for enum Foo.
+    // Helper interfaces are named <EnumName><index> or <EnumName>_<index>,
+    // e.g. Foo0, Foo1 or Foo_0, Foo_1 for enum Foo.
     DexString descriptor = clazz.getType().getDescriptor();
     DexString prefix = descriptor.substring(0, descriptor.length() - 1, factory);
     if (!iface.getType().getDescriptor().startsWith(prefix)) {
       return false;
     }
-    DexString suffix =
+    String suffix =
         iface
             .getType()
             .getDescriptor()
             .substring(
                 prefix.length(),
                 iface.getType().getDescriptor().length() - 1,
-                appView.dexItemFactory());
+                appView.dexItemFactory())
+            .toString();
+    if (suffix.startsWith("_")) {
+      suffix = suffix.substring(1);
+    }
     int helperIndex;
     try {
-      helperIndex = Integer.parseInt(suffix.toString());
+      helperIndex = Integer.parseInt(suffix);
     } catch (NumberFormatException e) {
       return false;
     }
@@ -311,9 +320,6 @@ public class LargeProtoEnumRewriter {
     for (DexProgramClass iface : helperInterfaces) {
       helperInterfacesToRemove.add(iface.getType());
     }
-    List<DexType> helperInterfaceTypes = ListUtils.map(helperInterfaces, DexClass::getType);
-    clazz.removeNestMemberAttributes(
-        member -> helperInterfaceTypes.contains(member.getNestMember()));
 
     Map<DexString, Integer> wireValueMap = new LinkedHashMap<>();
     List<WireValueInfo> wireValues = new ArrayList<>();

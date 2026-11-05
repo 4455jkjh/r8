@@ -5,21 +5,16 @@ package naming001;
 
 public class A {
 
-  A() {
-  }
+  A() {}
 
-  A(int i) {
-  }
+  A(int i) {}
 
   static {
     C.m();
   }
 
-  void m() {
-  }
+  void m() {}
 
   @SuppressWarnings("unused")
-  private void privateFunc() {
-  }
+  private void privateFunc() {}
 }
-

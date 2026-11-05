@@ -14,7 +14,7 @@ public class Main {
     assert foo.get(null).equals("foo");
     System.out.println(foo.get(null));
 
-    Method bar = a.getDeclaredMethod("bar", new Class[] { String.class });
+    Method bar = a.getDeclaredMethod("bar", new Class[] {String.class});
     assert bar != null;
     A instanceA = new A();
     String barResult = (String) bar.invoke(instanceA, "bar");

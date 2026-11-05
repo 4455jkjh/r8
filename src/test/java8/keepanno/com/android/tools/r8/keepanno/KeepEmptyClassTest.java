@@ -56,20 +56,15 @@ public class KeepEmptyClassTest extends KeepAnnoTestBase {
   private void checkOutput(CodeInspector inspector) {
     assertThat(inspector.clazz(B.class), isPresentAndNotRenamed());
     ClassSubject classA = inspector.clazz(A.class);
-    if (parameters.isNativeR8()) {
+    if (parameters.isCurrentR8()) {
       assertThat(classA, isAbsent());
     } else {
       assertTrue(parameters.isExtractRules());
-      // PG and R8 with keep rules will keep the residual class.
+      // PG and legacy R8 with keep rules will keep the residual class.
       assertThat(classA, isPresentAndRenamed());
-      // R8 using keep rules will soft-pin the precondition method too. The soft pinning is only
-      // applied in the first round of tree shaking, however, so R8 can still single caller inline
-      // the method after the final round of tree shaking.
       assertThat(
           classA.uniqueMethodWithOriginalName("foo"),
-          parameters.isPG() || (parameters.isCurrentR8() && parameters.isExtractRules())
-              ? isAbsent()
-              : isPresentAndRenamed());
+          parameters.isPG() ? isAbsent() : isPresentAndRenamed());
     }
   }
 

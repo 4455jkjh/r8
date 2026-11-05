@@ -51,21 +51,20 @@ public class NativeMethodWithCodeTest extends TestBase {
 
     ClassBuilder cls = jasminBuilder.addClass("Main");
     cls.addDefaultConstructor();
-    cls.addVirtualMethod("foo", ImmutableList.of("Ljava/lang/String;"), "V",
+    cls.addVirtualMethod(
+        "foo",
+        ImmutableList.of("Ljava/lang/String;"),
+        "V",
         ".limit stack 3",
         ".limit locals 2",
         "getstatic java/lang/System/out Ljava/io/PrintStream;",
         "aload_1",
         "invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V",
         "return");
-    cls.addNativeMethodWithCode("n1", ImmutableList.of("Ljava/lang/String;"), "V",
-        "return");
-    cls.addNativeMethodWithCode("n2", ImmutableList.of("Ljava/lang/String;"), "V",
-        "return");
-    cls.addNativeMethodWithCode("n3", ImmutableList.of("Ljava/lang/String;"), "V",
-        "return");
-    cls.addNativeMethodWithCode("n4", ImmutableList.of("Ljava/lang/String;"), "V",
-        "return");
+    cls.addNativeMethodWithCode("n1", ImmutableList.of("Ljava/lang/String;"), "V", "return");
+    cls.addNativeMethodWithCode("n2", ImmutableList.of("Ljava/lang/String;"), "V", "return");
+    cls.addNativeMethodWithCode("n3", ImmutableList.of("Ljava/lang/String;"), "V", "return");
+    cls.addNativeMethodWithCode("n4", ImmutableList.of("Ljava/lang/String;"), "V", "return");
     cls.addMainMethod(
         ".limit stack 4",
         ".limit locals 2",

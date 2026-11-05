@@ -100,6 +100,7 @@ public class VirtualMethodsEnumUnboxingTest extends EnumUnboxingTestBase {
       printPrivate();
     }
   }
+
   // Use two enums to test collision.
   @NeverClassInline
   enum MyEnum2 {

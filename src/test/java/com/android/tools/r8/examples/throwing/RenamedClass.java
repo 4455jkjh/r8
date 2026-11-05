@@ -12,8 +12,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * This class' logic is completely bogus. The only purpose is to be recursive to avoid inlining
- * and terminate.
+ * This class' logic is completely bogus. The only purpose is to be recursive to avoid inlining and
+ * terminate.
  */
 public class RenamedClass {
   public List list = new ArrayList();

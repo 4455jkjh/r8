@@ -68,6 +68,10 @@ public class IntBox {
     return get();
   }
 
+  public boolean isNegative() {
+    return get() < 0;
+  }
+
   public void set(int value) {
     this.value = value;
   }

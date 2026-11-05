@@ -72,8 +72,7 @@ public class BisectTest extends TestBase {
     SmaliBuilder builderGood = new SmaliBuilder();
     for (String clazz : CLASSES) {
       builderGood.addClass(clazz);
-      builderGood.addStaticMethod(
-          "void", VALID_METHOD, ImmutableList.of(), 0, "return-void");
+      builderGood.addStaticMethod("void", VALID_METHOD, ImmutableList.of(), 0, "return-void");
     }
     return AndroidApp.builder().addDexProgramData(builderGood.compile(), Origin.unknown()).build();
   }
@@ -84,11 +83,11 @@ public class BisectTest extends TestBase {
     for (String clazz : CLASSES) {
       builderBad.addClass(clazz);
       if (clazz.equals(ERRONEOUS_CLASS)) {
-        erroneousMethodSignature = builderBad.addStaticMethod(
-            "void", ERRONEOUS_METHOD, ImmutableList.of(), 0, "return-void");
+        erroneousMethodSignature =
+            builderBad.addStaticMethod(
+                "void", ERRONEOUS_METHOD, ImmutableList.of(), 0, "return-void");
       } else {
-        builderBad.addStaticMethod(
-            "void", VALID_METHOD, ImmutableList.of(), 0, "return-void");
+        builderBad.addStaticMethod("void", VALID_METHOD, ImmutableList.of(), 0, "return-void");
       }
     }
     return AndroidApp.builder().addDexProgramData(builderBad.compile(), Origin.unknown()).build();
@@ -151,7 +150,8 @@ public class BisectTest extends TestBase {
   private Result command(CodeInspector inspector) {
     if (inspector
         .clazz(ERRONEOUS_CLASS)
-        .method(erroneousMethodSignature.returnType,
+        .method(
+            erroneousMethodSignature.returnType,
             erroneousMethodSignature.name,
             erroneousMethodSignature.parameterTypes)
         .isPresent()) {

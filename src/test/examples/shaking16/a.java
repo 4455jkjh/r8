@@ -4,12 +4,12 @@
 package shaking16;
 
 public class a extends b {
-  
+
   public int a;
   public int b;
-  
+
   public a(int a, int b) {
-    super(a -1, b + 1);
+    super(a - 1, b + 1);
     this.a = a;
     this.b = b;
   }

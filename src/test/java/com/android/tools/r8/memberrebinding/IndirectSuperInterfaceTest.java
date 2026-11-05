@@ -21,10 +21,18 @@ public class IndirectSuperInterfaceTest extends TestBase {
 
   private static final List<Class<?>> CLASSES =
       ImmutableList.of(
-          InterfaceA.class, InterfaceASub.class, A.class,
-          InterfaceB.class, InterfaceBSub.class, B.class,
-          InterfaceC.class, InterfaceCSub.class, C.class,
-          InterfaceD.class, InterfaceDSub.class, D.class,
+          InterfaceA.class,
+          InterfaceASub.class,
+          A.class,
+          InterfaceB.class,
+          InterfaceBSub.class,
+          B.class,
+          InterfaceC.class,
+          InterfaceCSub.class,
+          C.class,
+          InterfaceD.class,
+          InterfaceDSub.class,
+          D.class,
           TestClass.class);
 
   // Test A: class A extends an empty class that implements a non-empty interface.

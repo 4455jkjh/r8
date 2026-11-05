@@ -4,9 +4,7 @@
 package com.android.tools.r8.benchmarks;
 
 import com.android.tools.r8.TestDeps;
-import com.android.tools.r8.ToolHelper;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.function.Supplier;
 
@@ -17,8 +15,7 @@ public class BenchmarkDependency {
   }
 
   public static BenchmarkDependency getAndroidJar30() {
-    return new BenchmarkDependency(
-        "android30jar", "lib-v30", Paths.get(ToolHelper.THIRD_PARTY_DIR, "android_jar"));
+    return new BenchmarkDependency("android30jar", TestDeps::getAndroidJar30Dir);
   }
 
   // Nice name of the dependency. Must be a valid dart identifier.

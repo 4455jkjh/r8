@@ -46,18 +46,15 @@ import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.internal.IntBox;
-import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.collections.OneShotCollectionConsumer;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -221,8 +218,7 @@ public class MappedPositionToClassNameMapperBuilder {
     public void addMappedPositions(
         ProgramMethod method,
         List<MappedPosition> mappedPositions,
-        MethodPositionRemapper positionRemapper,
-        boolean canUseDexPc) {
+        Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions) {
       DexEncodedMethod definition = method.getDefinition();
       DexMethod residualMethod =
           appView.getNamingLens().lookupMethod(method.getReference(), appView.dexItemFactory());
@@ -286,10 +282,8 @@ public class MappedPositionToClassNameMapperBuilder {
         boolean isSame = true;
         if (canStripOuterFrame) {
           for (MappedPosition mappedPosition : mappedPositions) {
-            Position outerMostAfterStrip = mappedPosition.getPosition();
-            while (outerMostAfterStrip.getCallerPosition().hasCallerPosition()) {
-              outerMostAfterStrip = outerMostAfterStrip.getCallerPosition();
-            }
+            Position outerMostAfterStrip =
+                getOutermostCallerAfterStrip(mappedPosition.getPosition());
             MethodSignature positionSignature =
                 MethodSignature.fromDexMethod(outerMostAfterStrip.getMethod());
             if (!positionSignature.type.equals(residualSignature.type)
@@ -345,8 +339,6 @@ public class MappedPositionToClassNameMapperBuilder {
             .setMappedPositionsOutline(mappedPositions);
         methodSpecificMappingInformation.add(OutlineMappingInformation.builder().build());
       }
-
-      mappedPositions.sort(Comparator.comparingInt(MappedPosition::getObfuscatedLine));
 
       Map<OutlineCallerPosition, MappedRange> outlineCallerPositions = new LinkedHashMap<>();
 
@@ -414,39 +406,33 @@ public class MappedPositionToClassNameMapperBuilder {
             info -> lastMappedRange.addMappingInformation(info, Unreachable::raise));
         i = j;
       }
-      IntBox maxPc = new IntBox(ListUtils.last(mappedPositions).getObfuscatedLine());
+      // Emit mapped ranges for the inlined positions of each outline callsite using the synthetic
+      // placeholder line numbers pre-allocated in MethodPositionMapping.create, and register the
+      // callsite with outlinesToFix so its OutlineCallsiteMappingInformation can be attached once
+      // the outline callee's obfuscated positions are known.
       for (Map.Entry<OutlineCallerPosition, MappedRange> outlinePositionEntry :
           outlineCallerPositions.entrySet()) {
-        Int2IntMap positionMap = new Int2IntArrayMap();
-        outlinePositionEntry
-            .getKey()
+        OutlineCallerPosition outlineCallerPosition = outlinePositionEntry.getKey();
+        Int2IntMap positionMap = outlineCalleePositions.get(outlineCallerPosition);
+        assert positionMap != null;
+        outlineCallerPosition
             .getOutlinePositions()
             .forEach(
                 (line, position) -> {
-                  int placeHolderLineToBeFixed;
-                  if (canUseDexPc) {
-                    placeHolderLineToBeFixed = maxPc.get() + line + 1;
-                  } else {
-                    placeHolderLineToBeFixed =
-                        positionRemapper.createRemappedPosition(position).getSecond().getLine();
-                  }
-                  positionMap.put((int) line, placeHolderLineToBeFixed);
-                  MappedRange lastRange =
-                      getMappedRangesForPosition(
-                          getOriginalMethodSignature,
-                          getBuilder(),
-                          position,
-                          residualSignature,
-                          nonCardinalRangeCache.get(
-                              placeHolderLineToBeFixed, placeHolderLineToBeFixed),
-                          nonCardinalRangeCache.get(position.getLine(), position.getLine()),
-                          cardinalRangeCache,
-                          canStripOuterFrame);
-                  maxPc.set(lastRange.minifiedRange.to);
+                  int placeHolderLineToBeFixed = positionMap.get((int) line);
+                  getMappedRangesForPosition(
+                      getOriginalMethodSignature,
+                      getBuilder(),
+                      position,
+                      residualSignature,
+                      nonCardinalRangeCache.get(placeHolderLineToBeFixed, placeHolderLineToBeFixed),
+                      nonCardinalRangeCache.get(position.getLine(), position.getLine()),
+                      cardinalRangeCache,
+                      canStripOuterFrame);
                 });
         outlinesToFix
             .computeIfAbsent(
-                outlinePositionEntry.getKey().getOutlineCallee(),
+                outlineCallerPosition.getOutlineCallee(),
                 outline -> new OutlineFixupBuilder(computeMappedMethod(outline, appView)))
             .addMappedRangeForOutlineCallee(outlinePositionEntry.getValue(), positionMap);
       }
@@ -481,6 +467,9 @@ public class MappedPositionToClassNameMapperBuilder {
       if (!method.getDefinition().isD8R8Synthesized() || mappedPositions.isEmpty()) {
         return false;
       }
+      boolean hasOutlineCaller = false;
+      boolean hasMultipleOutermostCallers = false;
+      DexMethod outerMostMethodAfterStrip = null;
       for (MappedPosition mappedPosition : mappedPositions) {
         Position position = mappedPosition.getPosition();
         if (!position.hasCallerPosition()) {
@@ -490,11 +479,44 @@ public class MappedPositionToClassNameMapperBuilder {
         if (position.isOutline()) {
           // Outline methods have synthetic positions that must be preserved for retracing.
           // Note that OutlineCallerPositions (and their outlinePositions) can have their synthetic
-          // outer frame stripped as long as they have a callerPosition (checked above).
+          // outer frame stripped as long as they have a callerPosition (checked above) and all
+          // positions in the method share the same outermost caller after stripping (checked
+          // below).
+          return false;
+        }
+        // If the synthetic method contains an outline caller and inlines positions from multiple
+        // different outermost callers (e.g., a synthetic constructor merging constructors from
+        // different classes), stripping the synthetic outer frame would produce ranges with
+        // different outermost original signatures for the same residual method. During mapping
+        // composition, partitioning by original method signature would then split the method's
+        // ranges (and the outline callsite placeholder ranges appended at the end of the method)
+        // across separate partitions so that outline callsite composition cannot find the
+        // placeholder ranges (see b/579315508).
+        if (position.isOutlineCaller()) {
+          hasOutlineCaller = true;
+        }
+        DexMethod currentOuterMostMethodAfterStrip =
+            getOutermostCallerAfterStrip(position).getMethod();
+        if (outerMostMethodAfterStrip == null) {
+          outerMostMethodAfterStrip = currentOuterMostMethodAfterStrip;
+        } else if (ObjectUtils.notIdentical(
+            currentOuterMostMethodAfterStrip, outerMostMethodAfterStrip)) {
+          hasMultipleOutermostCallers = true;
+        }
+        if (hasOutlineCaller && hasMultipleOutermostCallers) {
           return false;
         }
       }
       return true;
+    }
+
+    private Position getOutermostCallerAfterStrip(Position position) {
+      assert position.hasCallerPosition();
+      Position outerMostAfterStrip = position;
+      while (outerMostAfterStrip.getCallerPosition().hasCallerPosition()) {
+        outerMostAfterStrip = outerMostAfterStrip.getCallerPosition();
+      }
+      return outerMostAfterStrip;
     }
 
     private boolean verifySyntheticPositions(
@@ -510,8 +532,15 @@ public class MappedPositionToClassNameMapperBuilder {
           position
               .getOutlinePositions()
               .forEach(
-                  (line, outlinePosition) ->
-                      verifySyntheticPosition(thisMethod, d8R8Synthesized, outlinePosition));
+                  (line, outlinePosition) -> {
+                    verifySyntheticPosition(thisMethod, d8R8Synthesized, outlinePosition);
+                    assert !position.hasCallerPosition()
+                        || (outlinePosition.hasCallerPosition()
+                            && getOutermostCallerAfterStrip(position)
+                                .getMethod()
+                                .isIdenticalTo(
+                                    getOutermostCallerAfterStrip(outlinePosition).getMethod()));
+                  });
         }
       }
       return true;

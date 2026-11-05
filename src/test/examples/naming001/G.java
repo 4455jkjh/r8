@@ -5,12 +5,10 @@ package naming001;
 
 public class G implements H {
   @Override
-  public void m() {
-  }
+  public void m() {}
 
   public static void main(String[] args) {
     H i = new G();
     i.m();
   }
 }
-

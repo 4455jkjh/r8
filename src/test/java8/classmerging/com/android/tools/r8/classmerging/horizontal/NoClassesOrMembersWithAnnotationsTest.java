@@ -49,10 +49,7 @@ public class NoClassesOrMembersWithAnnotationsTest extends HorizontalClassMergin
         .addHorizontallyMergedClassesInspector(
             inspector ->
                 inspector
-                    .applyIf(
-                        enableProguardCompatibilityMode,
-                        i -> i.assertIsCompleteMergeGroup(A.class, C.class),
-                        i -> i.assertIsCompleteMergeGroup(A.class, B.class, C.class))
+                    .assertIsCompleteMergeGroup(A.class, B.class, C.class)
                     .assertNoOtherClassesMerged())
         .enableConstantArgumentAnnotations()
         .enableNeverClassInliningAnnotations()

@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.lightir.LirConstant;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.function.BiConsumer;
@@ -51,8 +50,6 @@ public abstract class DexReference extends IndexedDexItem implements LirConstant
     }
     throw new Unreachable();
   }
-
-  public abstract void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems);
 
   @SuppressWarnings("MissingImplementsComparable")
   public abstract int compareTo(DexReference other);

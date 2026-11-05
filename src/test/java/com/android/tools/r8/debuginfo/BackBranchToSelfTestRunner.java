@@ -39,11 +39,11 @@ public class BackBranchToSelfTestRunner extends DebugInfoTestBase {
   }
 
   private void checkBackBranchToSelf(DebugInfoInspector info) {
-    info.checkStartLine(10);
-    info.checkLineHasExactLocals(10, "loop", "boolean");
-    info.checkNoLine(11);
-    info.checkNoLine(12);
-    info.checkLineHasExactLocals(13, "loop", "boolean");
+    info.checkStartLine(14);
     info.checkLineHasExactLocals(14, "loop", "boolean");
+    info.checkNoLine(15);
+    info.checkNoLine(16);
+    info.checkLineHasExactLocals(17, "loop", "boolean");
+    info.checkLineHasExactLocals(18, "loop", "boolean");
   }
 }

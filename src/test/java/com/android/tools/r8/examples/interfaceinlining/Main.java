@@ -10,22 +10,27 @@ public class Main {
   public interface DataI {
     int field();
   }
+
   public static class Data implements DataI {
     final int a;
+
     public boolean equals(Object other) {
       if (other instanceof DataI) {
         return a == ((DataI) other).field();
       }
       return false;
     }
+
     Data(int a) {
       this.a = a;
     }
+
     public int field() {
       return a;
     }
   }
-  public static void main (String[] args) {
+
+  public static void main(String[] args) {
     System.out.print(new Data(1).equals(new Data(1)));
   }
 }

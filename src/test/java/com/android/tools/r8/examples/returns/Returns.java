@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.examples.returns;
 
-public class  Returns {
+public class Returns {
   public static void main(String[] args) {
     doubleJunk(); // Ignored to get pop2
     longJunk();

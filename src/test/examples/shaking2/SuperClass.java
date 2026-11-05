@@ -38,7 +38,9 @@ public abstract class SuperClass implements Interface {
     System.out.println("SuperClass::unusedVirtualMethod");
   }
 
-  public void unusedInterfaceMethod() { System.out.println("SuperClass::unusedInterfaceMethod"); }
+  public void unusedInterfaceMethod() {
+    System.out.println("SuperClass::unusedInterfaceMethod");
+  }
 
   public void accessFields() {
     System.out.println("SuperClass::fields: " + used);

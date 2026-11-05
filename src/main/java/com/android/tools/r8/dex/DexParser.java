@@ -83,7 +83,6 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ShortBuffer;
@@ -1375,13 +1374,7 @@ public class DexParser<T extends DexClass> {
     final int offset = stringIDs[index];
     dexReader.position(offset);
     int size = dexReader.getUleb128();
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
-    byte read;
-    do {
-      read = dexReader.get();
-      os.write(read);
-    } while (read != 0);
-    byte[] content = os.toByteArray();
+    byte[] content = dexReader.getNullTerminatedBytes();
     return Marker.hasMarkerPrefix(content)
         ? dexItemFactory.createMarkerString(size, content)
         : dexItemFactory.createString(size, content);

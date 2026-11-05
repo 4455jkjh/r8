@@ -208,6 +208,10 @@ public class FieldAssignmentTracker {
   }
 
   private void recordFieldPut(ProgramField field, Value value) {
+    ValueState existingState = fieldStates.get(field.getDefinition());
+    if (existingState != null && existingState.isUnknown()) {
+      return;
+    }
     // For now only attempt to prove that fields are definitely null. In order to prove a single
     // value for fields that are not definitely null, we need to prove that the given field is never
     // read before it is written.

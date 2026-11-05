@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.graph;
 
+import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.graph.GenericSignature.FieldTypeSignature;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.utils.structural.StructuralItem;
@@ -20,7 +21,7 @@ import org.objectweb.asm.RecordComponentVisitor;
 public class RecordComponentInfo implements StructuralItem<RecordComponentInfo> {
 
   private final DexField field;
-  private final FieldTypeSignature signature;
+  private FieldTypeSignature signature;
   private final List<DexAnnotation> annotations;
 
   private static void specify(StructuralSpecification<RecordComponentInfo, ?> spec) {
@@ -57,8 +58,20 @@ public class RecordComponentInfo implements StructuralItem<RecordComponentInfo> 
     return signature;
   }
 
+  public void setSignature(FieldTypeSignature signature) {
+    assert signature != null;
+    this.signature = signature;
+  }
+
   public List<DexAnnotation> getAnnotations() {
     return annotations;
+  }
+
+  public void collectIndexedItems(AppView<?> appView, IndexedItemCollection indexedItems) {
+    field.collectIndexedItems(appView, indexedItems);
+    for (DexAnnotation annotation : annotations) {
+      annotation.collectIndexedItems(appView, indexedItems);
+    }
   }
 
   public void write(

@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.ir.conversion;
 
-import static com.google.common.base.Predicates.alwaysTrue;
-
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexClass;
@@ -18,16 +16,13 @@ import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.itf.InterfaceProcessor;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.internal.MapUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
-import com.android.tools.r8.utils.internal.collections.ImmutableDeque;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +69,7 @@ public abstract class ClassConverter {
     }
   }
 
-  private static Deque<List<DexProgramClass>> getDeterministicNestWaves(
+  private static Map<DexType, List<DexProgramClass>> getDeterministicNestGroups(
       Collection<DexProgramClass> classes) {
     Map<DexType, List<DexProgramClass>> nestGroups = new IdentityHashMap<>();
     for (DexProgramClass clazz : classes) {
@@ -82,38 +77,10 @@ public abstract class ClassConverter {
         nestGroups.computeIfAbsent(clazz.getNestHost(), k -> new ArrayList<>()).add(clazz);
       }
     }
-    if (nestGroups.isEmpty()) {
-      return ImmutableDeque.of();
-    }
-    int maxGroupSize = 0;
     for (List<DexProgramClass> members : nestGroups.values()) {
-      maxGroupSize = Math.max(maxGroupSize, members.size());
       members.sort(Comparator.comparing(DexClass::getType));
     }
-    Deque<List<DexProgramClass>> processingList = new ArrayDeque<>(maxGroupSize);
-    for (int i = 0; i < maxGroupSize; i++) {
-      List<DexProgramClass> wave = new ArrayList<>(nestGroups.size());
-      final int index = i;
-      MapUtils.removeIf(
-          nestGroups,
-          (host, members) -> {
-            wave.add(members.get(index));
-            return index + 1 == members.size();
-          });
-      processingList.add(wave);
-    }
-    return processingList;
-  }
-
-  private static List<DexProgramClass> filterOutClassesInNests(
-      Collection<DexProgramClass> classes) {
-    List<DexProgramClass> filtered = new ArrayList<>(classes.size());
-    for (DexProgramClass clazz : classes) {
-      if (!clazz.isInANest()) {
-        filtered.add(clazz);
-      }
-    }
-    return filtered;
+    return nestGroups;
   }
 
   private void internalConvertClasses(
@@ -144,94 +111,82 @@ public abstract class ClassConverter {
         appView.appInfo().classes());
     assert instructionDesugaringEventConsumerForPrepareStep.verifyNothingToFinalize();
 
-    // When adding nest members to the wave we must do so deterministically.
-    Deque<List<DexProgramClass>> nestProcessingWaves = getDeterministicNestWaves(classes);
-    Collection<DexProgramClass> wave;
-    if (nestProcessingWaves.isEmpty()) {
-      wave = classes;
-    } else {
-      List<DexProgramClass> firstWave = filterOutClassesInNests(classes);
-      firstWave.addAll(nestProcessingWaves.removeFirst());
-      wave = firstWave;
+    // TODO(b/179755192): Avoid marking classes as scheduled by building up waves of methods.
+    for (DexProgramClass clazz : classes) {
+      methodProcessor.addScheduled(clazz);
     }
 
-    int round = 1;
-    while (!wave.isEmpty()) {
-      // TODO(b/179755192): Avoid marking classes as scheduled by building up waves of methods.
-      timing.begin("Wave " + round++);
-      for (DexProgramClass clazz : wave) {
-        methodProcessor.addScheduled(clazz);
-      }
+    CfInstructionDesugaringEventConsumer instructionDesugaringEventConsumerForWave =
+        CfInstructionDesugaringEventConsumer.createForD8(
+            appView, profileCollectionAdditions, resultBuilder, methodProcessor);
 
-      CfInstructionDesugaringEventConsumer instructionDesugaringEventConsumerForWave =
-          CfInstructionDesugaringEventConsumer.createForD8(
-              appView, profileCollectionAdditions, resultBuilder, methodProcessor);
+    // Process all classes and wait for all IR processing to complete. Members of the same nest
+    // are converted sequentially in a single task.
+    Map<DexType, List<DexProgramClass>> nestGroups = getDeterministicNestGroups(classes);
+    methodProcessor.newWave();
+    checkWaveDeterminism(classes);
+    ThreadUtils.processItemsThatMatches(
+        classes,
+        clazz ->
+            !clazz.isInANest()
+                || ObjectUtils.identical(nestGroups.get(clazz.getNestHost()).get(0), clazz),
+        (clazz, threadTiming) -> {
+          if (clazz.isInANest()) {
+            for (DexProgramClass member : nestGroups.get(clazz.getNestHost())) {
+              convertClass(member, instructionDesugaringEventConsumerForWave, threadTiming);
+            }
+          } else {
+            convertClass(clazz, instructionDesugaringEventConsumerForWave, threadTiming);
+          }
+        },
+        appView.options(),
+        executorService,
+        timing,
+        timing.beginMerger("Class conversion", executorService),
+        (i, clazz) -> clazz.getTypeName());
+    methodProcessor.awaitMethodProcessing();
 
-      // Process the wave and wait for all IR processing to complete.
-      methodProcessor.newWave();
-      checkWaveDeterminism(wave);
-      ThreadUtils.processItemsThatMatches(
-          wave,
-          alwaysTrue(),
-          (clazz, threadTiming) ->
-              convertClass(clazz, instructionDesugaringEventConsumerForWave, threadTiming),
-          appView.options(),
+    // Create a new processor context to ensure unique method processing contexts.
+    // To guarantee deterministic method processing ids it is important that a new wave is
+    // unconditionally created here, even if there is nothing to do. See also b/568088627.
+    methodProcessor.newWave();
+
+    // Finalize the desugaring of the processed classes. This may require processing (and
+    // reprocessing) of some methods.
+    List<ProgramMethod> needsProcessing =
+        instructionDesugaringEventConsumerForWave.finalizeDesugaring();
+    if (!needsProcessing.isEmpty()) {
+      CfInstructionDesugaringEventConsumer
+          instructionDesugaringEventConsumerForSyntheticPrepareStep =
+              CfInstructionDesugaringEventConsumer.createForD8(
+                  appView, profileCollectionAdditions, resultBuilder, methodProcessor);
+      converter.prepareDesugaring(
+          instructionDesugaringEventConsumerForSyntheticPrepareStep,
           executorService,
-          timing,
-          timing.beginMerger("Class conversion", executorService),
-          (i, clazz) -> clazz.getTypeName());
+          needsProcessing);
+      assert instructionDesugaringEventConsumerForSyntheticPrepareStep.verifyNothingToFinalize();
+
+      // Process the methods that require reprocessing. These are all simple bridge methods and
+      // should therefore not lead to additional desugaring.
+      ThreadUtils.processItems(
+          needsProcessing,
+          method -> {
+            DexEncodedMethod definition = method.getDefinition();
+            if (definition.isProcessed()) {
+              definition.markNotProcessed();
+            }
+            methodProcessor.processMethod(
+                method, instructionDesugaringEventConsumerForWave, Timing.empty());
+            if (interfaceProcessor != null) {
+              interfaceProcessor.processMethod(method, instructionDesugaringEventConsumerForWave);
+            }
+          },
+          appView.options().getThreadingModule(),
+          executorService);
+
+      // Verify there is nothing to finalize once method processing finishes.
       methodProcessor.awaitMethodProcessing();
-
-      // Create a new processor context to ensure unique method processing contexts.
-      // To guarantee deterministic method processing ids it is important that a new wave is
-      // unconditionally created here, even if there is nothing to do. See also b/568088627.
-      methodProcessor.newWave();
-
-      // Finalize the desugaring of the processed classes. This may require processing (and
-      // reprocessing) of some methods.
-      List<ProgramMethod> needsProcessing =
-          instructionDesugaringEventConsumerForWave.finalizeDesugaring();
-      if (!needsProcessing.isEmpty()) {
-        CfInstructionDesugaringEventConsumer
-            instructionDesugaringEventConsumerForSyntheticPrepareStep =
-                CfInstructionDesugaringEventConsumer.createForD8(
-                    appView, profileCollectionAdditions, resultBuilder, methodProcessor);
-        converter.prepareDesugaring(
-            instructionDesugaringEventConsumerForSyntheticPrepareStep,
-            executorService,
-            needsProcessing);
-        assert instructionDesugaringEventConsumerForSyntheticPrepareStep.verifyNothingToFinalize();
-
-        // Process the methods that require reprocessing. These are all simple bridge methods and
-        // should therefore not lead to additional desugaring.
-        ThreadUtils.processItems(
-            needsProcessing,
-            method -> {
-              DexEncodedMethod definition = method.getDefinition();
-              if (definition.isProcessed()) {
-                definition.markNotProcessed();
-              }
-              methodProcessor.processMethod(
-                  method, instructionDesugaringEventConsumerForWave, Timing.empty());
-              if (interfaceProcessor != null) {
-                interfaceProcessor.processMethod(method, instructionDesugaringEventConsumerForWave);
-              }
-            },
-            appView.options().getThreadingModule(),
-            executorService);
-
-        // Verify there is nothing to finalize once method processing finishes.
-        methodProcessor.awaitMethodProcessing();
-        assert instructionDesugaringEventConsumerForWave.verifyNothingToFinalize();
-      }
-
-      timing.end();
-
-      if (!nestProcessingWaves.isEmpty()) {
-        wave = nestProcessingWaves.removeFirst();
-      } else {
-        break;
-      }
+      assert instructionDesugaringEventConsumerForWave.verifyNothingToFinalize();
     }
   }
 

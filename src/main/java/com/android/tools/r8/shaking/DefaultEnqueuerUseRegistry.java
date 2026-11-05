@@ -237,7 +237,11 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
           appView.definitionFor(syntheticUnsafeClass.getUnsafeClass()).asProgramClass();
       registerInvokeStatic(syntheticUnsafeClass.getStoreStoreFenceMethod());
       enqueuer.applyMinimumKeepInfoWhenLive(
-          clazz, KeepClassInfo.newEmptyJoiner().disallowOptimization());
+          clazz,
+          KeepClassInfo.newEmptyJoiner()
+              .disallowOptimization()
+              .disallowShrinking()
+              .addReason(KeepReason.invokedFrom(getContext())));
       enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
           clazz.lookupProgramMethod(syntheticUnsafeClass.getClassInitializer()),
           KeepMethodInfo.newEmptyJoiner().disallowOptimization());
@@ -329,10 +333,26 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
     registerInvokeStatic(valueOf);
   }
 
+  private void registerTypeReferencedInTypeSwitchBootstrapArguments(DexType type) {
+    registerInstanceOf(type);
+    if (type.isClassType()) {
+      DexProgramClass clazz = asProgramClassOrNull(appView.definitionFor(type));
+      if (clazz != null) {
+        // Preserve semantics of type switches: Because invokedynamic typeSwitch is not desugared
+        // when compiling to CF, the class constant in the bootstrap arguments cannot be rewritten
+        // to check $r8$classId. Disallow horizontal merging to ensure R8 does not change a
+        // java.lang.MatchException into java.lang.ClassCastException.
+        enqueuer.mutateKeepInfo(
+            clazz, (k, c) -> k.joinClass(c, KeepClassInfo.Joiner::disallowHorizontalClassMerging));
+      }
+    }
+  }
+
   private void registerTypeSwitchCallSiteBootstrapArgs(DexCallSite callSite) {
     for (DexValue bootstrapArg : callSite.bootstrapArgs) {
       if (bootstrapArg.isDexValueType()) {
-        registerInstanceOf(bootstrapArg.asDexValueType().getValue());
+        registerTypeReferencedInTypeSwitchBootstrapArguments(
+            bootstrapArg.asDexValueType().getValue());
       } else {
         registerBoostrapArg(bootstrapArg, NOT_ARGUMENT_TO_LAMBDA_METAFACTORY);
         if (bootstrapArg.isDexValueConstDynamic()
@@ -352,7 +372,8 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
     DexType enumType = callSite.getMethodProto().getParameter(0);
     for (DexValue bootstrapArg : callSite.bootstrapArgs) {
       if (bootstrapArg.isDexValueType()) {
-        registerInstanceOf(bootstrapArg.asDexValueType().getValue());
+        registerTypeReferencedInTypeSwitchBootstrapArguments(
+            bootstrapArg.asDexValueType().getValue());
       } else {
         registerBoostrapArg(bootstrapArg, NOT_ARGUMENT_TO_LAMBDA_METAFACTORY);
         if (bootstrapArg.isDexValueString()) {

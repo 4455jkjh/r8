@@ -16,7 +16,7 @@ class A implements Comparable<A>, AnInterfaceWithATag {
     return "A";
   }
 
-  public void unused() { }
+  public void unused() {}
 
   @Override
   public int compareTo(A other) {

@@ -335,7 +335,32 @@ public object ThirdPartyDeps {
       testOnly = true,
       type = DependencyType.X20,
     )
-  public val androidJars: List<ThirdPartyDependency> = getThirdPartyAndroidJars()
+  public val androidJar14: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v14")
+  public val androidJar15: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v15")
+  public val androidJar19: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v19")
+  public val androidJar21: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v21")
+  public val androidJar22: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v22")
+  public val androidJar23: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v23")
+  public val androidJar24: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v24")
+  public val androidJar25: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v25")
+  public val androidJar26: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v26")
+  public val androidJar27: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v27")
+  public val androidJar28: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v28")
+  public val androidJar29: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v29")
+  public val androidJar30: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v30")
+  public val androidJar31: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v31")
+  public val androidJar32: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v32")
+  public val androidJar33: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v33")
+  public val androidJar34: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v34")
+  public val androidJar35: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v35")
+  public val androidJar36: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v36")
+  public val androidJar36_1: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v36.1")
+  public val androidJar37: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v37")
+  public val androidJar37_1: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v37.1")
+  public val androidJar37_2: ThirdPartyDependency = getThirdPartyAndroidJar("lib-v37.2")
+  public val androidJarLibcoreLatest: ThirdPartyDependency =
+    getThirdPartyAndroidJar("libcore_latest")
+  public val androidJarMain: ThirdPartyDependency = getThirdPartyAndroidJar("lib-main")
   public val apiDatabase: ThirdPartyDependency =
     ThirdPartyDependency(
       "apiDatabase",
@@ -806,39 +831,11 @@ public object ThirdPartyDeps {
     )
 }
 
-private fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {
-  return listOf(
-      "libcore_latest",
-      "lib-main",
-      "lib-v14",
-      "lib-v15",
-      "lib-v19",
-      "lib-v21",
-      "lib-v22",
-      "lib-v23",
-      "lib-v24",
-      "lib-v25",
-      "lib-v26",
-      "lib-v27",
-      "lib-v28",
-      "lib-v29",
-      "lib-v30",
-      "lib-v31",
-      "lib-v32",
-      "lib-v33",
-      "lib-v34",
-      "lib-v35",
-      "lib-v36",
-      "lib-v36.1",
-      "lib-v37",
-      "lib-v37.1",
-      "lib-v37.2",
-    )
-    .map(::getThirdPartyAndroidJar)
-}
-
 private fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
-  return ThirdPartyDependency(version, Paths.get("third_party", "android_jar", version).toFile())
+  return ThirdPartyDependency(
+    "android_jar_$version",
+    Paths.get("third_party", "android_jar", version).toFile(),
+  )
 }
 
 private fun getThirdPartyDex2Oat(version: String): ThirdPartyDependency {
@@ -890,22 +887,9 @@ private fun getThirdPartyDesugarLibraryRelease(version: String): ThirdPartyDepen
 }
 
 private fun allDependencies(): List<ThirdPartyDependency> {
-  val allDeps = mutableListOf<ThirdPartyDependency>()
-  ThirdPartyDeps::class.declaredMemberProperties.forEach {
-    val value = it.get(ThirdPartyDeps)
-    if (value is List<*>) {
-      value.forEach { dep ->
-        if (dep is ThirdPartyDependency) {
-          allDeps.add(dep)
-        } else {
-          throw RuntimeException("Cannot handle non ThirdPartyDependency dependency.")
-        }
-      }
-    } else {
-      allDeps.add(value as ThirdPartyDependency)
-    }
+  return ThirdPartyDeps::class.declaredMemberProperties.map {
+    it.get(ThirdPartyDeps) as ThirdPartyDependency
   }
-  return allDeps
 }
 
 public fun allPublicDependencies(): List<ThirdPartyDependency> {

@@ -4,5 +4,4 @@
 
 package multidex005;
 
-public interface Interface2 extends SuperInterface {
-}
+public interface Interface2 extends SuperInterface {}

@@ -430,6 +430,7 @@ public class LazyLoadedDexApplication extends DexApplication {
 
     @Override
     public LazyLoadedDexApplication build(Timing timing) {
+      commitPendingProgramClasses();
       return new LazyLoadedDexApplication(
           proguardMap,
           flags,

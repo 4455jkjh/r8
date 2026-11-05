@@ -86,12 +86,6 @@ public class InvalidMethodNames extends NameTestBase {
 
   @Test
   public void invalidMethodName() throws Exception {
-    runNameTesting(
-        validForJVM,
-        createJasminBuilder(),
-        CLASS_NAME,
-        RESULT,
-        validForArt,
-        name);
+    runNameTesting(validForJVM, createJasminBuilder(), CLASS_NAME, RESULT, validForArt, name);
   }
 }

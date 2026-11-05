@@ -39,8 +39,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
@@ -114,15 +112,15 @@ public class DexItemFactory {
   private Map<DexMethod, DexMethod> committedMethods = new HashMap<>();
 
   // DexDebugEvent Canonicalization.
-  private final Int2ReferenceMap<AdvanceLine> advanceLines = new Int2ReferenceOpenHashMap<>();
-  private final Int2ReferenceMap<AdvancePC> advancePCs = new Int2ReferenceOpenHashMap<>();
-  private final Int2ReferenceMap<Default> defaults = new Int2ReferenceOpenHashMap<>();
-  private final Int2ReferenceMap<EndLocal> endLocals = new Int2ReferenceOpenHashMap<>();
-  private final Int2ReferenceMap<RestartLocal> restartLocals = new Int2ReferenceOpenHashMap<>();
+  private final Map<Integer, AdvanceLine> advanceLines = new ConcurrentHashMap<>();
+  private final Map<Integer, AdvancePC> advancePCs = new ConcurrentHashMap<>();
+  private final Map<Integer, Default> defaults = new ConcurrentHashMap<>();
+  private final Map<Integer, EndLocal> endLocals = new ConcurrentHashMap<>();
+  private final Map<Integer, RestartLocal> restartLocals = new ConcurrentHashMap<>();
   private final SetEpilogueBegin setEpilogueBegin = new SetEpilogueBegin();
   private final SetPrologueEnd setPrologueEnd = new SetPrologueEnd();
-  private final Map<DexString, SetFile> setFiles = new HashMap<>();
-  private final Map<SetPositionFrame, SetPositionFrame> setInlineFrames = new HashMap<>();
+  private final Map<DexString, SetFile> setFiles = new ConcurrentHashMap<>();
+  private final Map<SetPositionFrame, SetPositionFrame> setInlineFrames = new ConcurrentHashMap<>();
   public final DexDebugEvent.Default zeroChangeDefaultEvent = createDefault(0, 0);
   public final DexDebugEvent.Default oneChangeDefaultEvent = createDefault(1, 1);
 
@@ -762,6 +760,11 @@ public class DexItemFactory {
   public final DexProto androidGetStringProto = createProto(stringType, intType);
   public final DexMethod androidResourcesGetStringMethod =
       createMethod(androidResourcesType, androidGetStringProto, getStringName);
+  public final DexMethod androidResourcesGetIdentifierMethod =
+      createMethod(
+          androidResourcesType,
+          createProto(intType, stringType, stringType, stringType),
+          "getIdentifier");
 
   public final StringBuildingMethods stringBuilderMethods =
       new StringBuildingMethods(stringBuilderType);
@@ -4558,6 +4561,10 @@ public class DexItemFactory {
     if (committed != null) {
       return committed;
     }
+    T pending = pendingMap.get(item);
+    if (pending != null) {
+      return pending;
+    }
     T previous = pendingMap.putIfAbsent(item, item);
     if (previous != null) {
       return previous;
@@ -4967,12 +4974,12 @@ public class DexItemFactory {
     if (committed != null) {
       return committed;
     }
-    if (descriptor.getFirstByteAsChar() != '[') {
-      return types.computeIfAbsent(descriptor, DexType::new);
-    }
     DexType pending = types.get(descriptor);
     if (pending != null) {
       return pending;
+    }
+    if (descriptor.getFirstByteAsChar() != '[') {
+      return types.computeIfAbsent(descriptor, DexType::new);
     }
     DexType elementType = createType(descriptor.toArrayElementDescriptor(this));
     return types.computeIfAbsent(descriptor, d -> new DexArrayType(d, elementType));
@@ -5154,37 +5161,47 @@ public class DexItemFactory {
   }
 
   public AdvanceLine createAdvanceLine(int delta) {
-    synchronized (advanceLines) {
-      return advanceLines.computeIfAbsent(delta, AdvanceLine::new);
+    AdvanceLine existing = advanceLines.get(delta);
+    if (existing != null) {
+      return existing;
     }
+    return advanceLines.computeIfAbsent(delta, AdvanceLine::new);
   }
 
   public AdvancePC createAdvancePC(int delta) {
-    synchronized (advancePCs) {
-      return advancePCs.computeIfAbsent(delta, AdvancePC::new);
+    AdvancePC existing = advancePCs.get(delta);
+    if (existing != null) {
+      return existing;
     }
+    return advancePCs.computeIfAbsent(delta, AdvancePC::new);
   }
 
   public Default createDefault(int value) {
-    synchronized (defaults) {
-      return defaults.computeIfAbsent(value, Default::new);
+    Default existing = defaults.get(value);
+    if (existing != null) {
+      return existing;
     }
+    return defaults.computeIfAbsent(value, Default::new);
   }
 
   public Default createDefault(int lineDelta, int pcDelta) {
-    return createDefault(Default.create(lineDelta, pcDelta).value);
+    return createDefault(Default.computeSpecialOpcode(lineDelta, pcDelta));
   }
 
   public EndLocal createEndLocal(int registerNum) {
-    synchronized (endLocals) {
-      return endLocals.computeIfAbsent(registerNum, EndLocal::new);
+    EndLocal existing = endLocals.get(registerNum);
+    if (existing != null) {
+      return existing;
     }
+    return endLocals.computeIfAbsent(registerNum, EndLocal::new);
   }
 
   public RestartLocal createRestartLocal(int registerNum) {
-    synchronized (restartLocals) {
-      return restartLocals.computeIfAbsent(registerNum, RestartLocal::new);
+    RestartLocal existing = restartLocals.get(registerNum);
+    if (existing != null) {
+      return existing;
     }
+    return restartLocals.computeIfAbsent(registerNum, RestartLocal::new);
   }
 
   public SetEpilogueBegin createSetEpilogueBegin() {
@@ -5196,16 +5213,22 @@ public class DexItemFactory {
   }
 
   public SetFile createSetFile(DexString fileName) {
-    synchronized (setFiles) {
-      return setFiles.computeIfAbsent(fileName, SetFile::new);
+    SetFile existing = setFiles.get(fileName);
+    if (existing != null) {
+      return existing;
     }
+    return setFiles.computeIfAbsent(fileName, SetFile::new);
   }
 
   // TODO(tamaskenez) b/69024229 Measure if canonicalization is worth it.
   public SetPositionFrame createPositionFrame(Position position) {
-    synchronized (setInlineFrames) {
-      return setInlineFrames.computeIfAbsent(new SetPositionFrame(position), p -> p);
+    SetPositionFrame frame = new SetPositionFrame(position);
+    SetPositionFrame existing = setInlineFrames.get(frame);
+    if (existing != null) {
+      return existing;
     }
+    SetPositionFrame previous = setInlineFrames.putIfAbsent(frame, frame);
+    return previous != null ? previous : frame;
   }
 
   @SuppressWarnings("ReferenceEquality")

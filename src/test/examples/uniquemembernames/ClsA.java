@@ -14,5 +14,4 @@ public class ClsA extends BaseCls {
   protected int foo() {
     return (int) bar();
   }
-
 }

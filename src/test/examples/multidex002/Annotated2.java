@@ -5,6 +5,4 @@
 package multidex002;
 
 @AnnotationWithClass(ReferencedByClassInAnnotation.class)
-public class Annotated2 {
-
-}
+public class Annotated2 {}

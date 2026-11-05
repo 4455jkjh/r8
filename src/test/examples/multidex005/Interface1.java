@@ -4,5 +4,4 @@
 
 package multidex005;
 
-public interface Interface1 {
-}
+public interface Interface1 {}

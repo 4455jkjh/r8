@@ -3,5 +3,4 @@
 // BSD-style license that can be found in the LICENSE file.
 package shaking4;
 
-public class A extends Superclass implements Interface {
-}
+public class A extends Superclass implements Interface {}

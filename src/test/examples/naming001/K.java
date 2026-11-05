@@ -8,7 +8,7 @@ public class K {
   private int h;
   private final int i2 = 7;
   private static int j;
-  private final static int i3 = 7;
+  private static final int i3 = 7;
 
   private static final Object o = "TAG";
   private static final String TAG = "TAG";
@@ -26,4 +26,3 @@ public class K {
     h = 7;
   }
 }
-

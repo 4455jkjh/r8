@@ -4,9 +4,7 @@
 package enclosingmethod_proguarded;
 
 public class OuterClass {
-  public class AClass {
-
-  }
+  public class AClass {}
 
   public void aMethod() {
     class AnotherClass extends AbstractClass {
@@ -17,12 +15,13 @@ public class OuterClass {
       }
     }
 
-    print(new AbstractClass() {
-      @Override
-      public int anInt() {
-        return 42;
-      }
-    });
+    print(
+        new AbstractClass() {
+          @Override
+          public int anInt() {
+            return 42;
+          }
+        });
     print(new AnotherClass());
   }
 

@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.kotlin;
 
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
@@ -26,6 +27,7 @@ public final class Kotlin {
   private final Intrinsics intrinsics;
   private final Metadata metadata;
   private final _Assertions assertions;
+  private final Continuations continuations;
 
   public static final String NAME = "kotlin";
   public static final String PACKAGE_PREFIX = "L" + NAME + "/";
@@ -97,6 +99,7 @@ public final class Kotlin {
     this.intrinsics = new Intrinsics();
     this.metadata = new Metadata();
     this.assertions = new _Assertions();
+    this.continuations = new Continuations();
   }
 
   public Functional functional() {
@@ -113,6 +116,10 @@ public final class Kotlin {
 
   public _Assertions assertions() {
     return assertions;
+  }
+
+  public Continuations continuations() {
+    return continuations;
   }
 
   public final class Functional {
@@ -261,6 +268,35 @@ public final class Kotlin {
           || method.isIdenticalTo(checkFieldIsNotNullObjectStringString)
           || method.isIdenticalTo(checkParameterIsNotNull)
           || method.isIdenticalTo(checkNotNullParameter);
+    }
+  }
+
+  public final class Continuations {
+    private final DexType continuationImplType =
+        factory.createType(PACKAGE_PREFIX + "coroutines/jvm/internal/ContinuationImpl;");
+    private final DexType restrictedContinuationImplType =
+        factory.createType(PACKAGE_PREFIX + "coroutines/jvm/internal/RestrictedContinuationImpl;");
+    private final DexType suspendLambdaType =
+        factory.createType(PACKAGE_PREFIX + "coroutines/jvm/internal/SuspendLambda;");
+    private final DexType restrictedSuspendLambdaType =
+        factory.createType(PACKAGE_PREFIX + "coroutines/jvm/internal/RestrictedSuspendLambda;");
+
+    private Continuations() {}
+
+    /**
+     * Returns true if {@code superType} is the super type of the state machine classes that the
+     * Kotlin compiler generates for suspend functions and suspend lambdas.
+     */
+    public boolean isCoroutineStateMachineSuperType(AppView<?> appView, DexType superType) {
+      return isCoroutineStateMachineSuperType(superType)
+          || isCoroutineStateMachineSuperType(appView.graphLens().getOriginalType(superType));
+    }
+
+    private boolean isCoroutineStateMachineSuperType(DexType type) {
+      return type.isIdenticalTo(continuationImplType)
+          || type.isIdenticalTo(restrictedContinuationImplType)
+          || type.isIdenticalTo(suspendLambdaType)
+          || type.isIdenticalTo(restrictedSuspendLambdaType);
     }
   }
 }

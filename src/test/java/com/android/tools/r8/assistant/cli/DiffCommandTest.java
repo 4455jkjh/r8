@@ -321,6 +321,72 @@ public class DiffCommandTest extends AssistantCommandTestBase {
   }
 
   @Test
+  public void testIfRuleWithBackReferences() throws Exception {
+    String caller = "com.example.Plugins.load(Plugins.java:12)";
+    Path log =
+        writeFile(
+            "if_backref.jsonl",
+            request(1, "CLASS_FOR_NAME", caller, "com.example.plugins.CsvPlugin", "true", LOADER),
+            returned(1, "com.example.plugins.CsvPlugin"),
+            request(2, "CLASS_FOR_NAME", caller, "com.example.plugins.CsvPlugin$1", "true", LOADER),
+            returned(2, "com.example.plugins.CsvPlugin$1"),
+            request(
+                3, "CLASS_FOR_NAME", caller, "com.example.plugins.JsonPlugin$1", "true", LOADER),
+            returned(3, "com.example.plugins.JsonPlugin$1"));
+    Path rules =
+        writeFile(
+            "rules.pro",
+            "-keep class com.example.plugins.CsvPlugin",
+            "-if class com.example.plugins.* -keep class com.example.plugins.<1>$?");
+    Path proposed = temp.getRoot().toPath().resolve("proposed.pro");
+    ProcessResult diff =
+        run(new DiffCommand(), "--log", log, "--rules", rules, "--output", proposed);
+    assertEquals(diff.toString(), 0, diff.exitCode);
+    assertEquals("", diff.stderr);
+    assertThat(
+        diff.stdout,
+        containsString(
+            StringUtils.unixLines(
+                "  class com.example.plugins.CsvPlugin$1",
+                "      Class.forName com.example.plugins.CsvPlugin$1 <- " + caller,
+                "      conditionally kept by "
+                    + rules
+                    + ":2: applies if com.example.plugins.CsvPlugin is kept")));
+    String proposedText = readFile(proposed);
+    assertThat(
+        proposedText,
+        containsString(
+            StringUtils.unixLines(
+                "# Added: the existing rules may keep this, but the logs cannot show it",
+                "# Class.forName com.example.plugins.CsvPlugin$1 <- " + caller,
+                "-keep class com.example.plugins.CsvPlugin$1")));
+    assertThat(
+        proposedText,
+        containsString(
+            StringUtils.unixLines(
+                "# Added: not kept by the existing rules",
+                "# Class.forName com.example.plugins.JsonPlugin$1 <- " + caller,
+                "-keep class com.example.plugins.JsonPlugin$1")));
+
+    ProcessResult suggest = run(new SuggestCommand(), "--log", log, "--rules", rules);
+    assertEquals(suggest.toString(), 0, suggest.exitCode);
+    assertThat(
+        suggest.stdout,
+        containsString(
+            StringUtils.unixLines(
+                "# Conditionally kept by "
+                    + rules
+                    + ":2: applies if com.example.plugins.CsvPlugin is kept",
+                "-keep class com.example.plugins.CsvPlugin$1")));
+    assertThat(
+        suggest.stdout,
+        containsString(
+            StringUtils.unixLines(
+                "# Class.forName com.example.plugins.JsonPlugin$1 <- " + caller,
+                "-keep class com.example.plugins.JsonPlugin$1")));
+  }
+
+  @Test
   public void testUsageErrors() {
     AssistantUsageException e =
         assertThrows(AssistantUsageException.class, () -> run(new DiffCommand()));

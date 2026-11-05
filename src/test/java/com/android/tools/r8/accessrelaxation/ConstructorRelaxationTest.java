@@ -158,7 +158,7 @@ class CtorTestMain {
 @RunWith(Parameterized.class)
 public final class ConstructorRelaxationTest extends AccessRelaxationTestBase {
   private static final Class<?>[] CLASSES = {
-      L1.class, L2_1.class, L2_2.class, L3_1.class, L3_2.class
+    L1.class, L2_1.class, L2_2.class, L3_1.class, L3_2.class
   };
 
   @Parameters(name = "{0}")
@@ -173,12 +173,7 @@ public final class ConstructorRelaxationTest extends AccessRelaxationTestBase {
   @Test
   public void test() throws Exception {
     String expectedOutput =
-        StringUtils.lines(
-            "private_x",
-            "21_main_y",
-            "22_L2_1_y",
-            "31_L2_1_y_41",
-            "22_32_main_z");
+        StringUtils.lines("private_x", "21_main_y", "22_L2_1_y", "31_L2_1_y_41", "22_32_main_z");
     Class<?> mainClass = CtorTestMain.class;
 
     R8TestMultiRunResult result =
@@ -215,5 +210,4 @@ public final class ConstructorRelaxationTest extends AccessRelaxationTestBase {
               });
     }
   }
-
 }

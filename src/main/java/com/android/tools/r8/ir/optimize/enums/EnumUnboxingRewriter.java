@@ -443,7 +443,8 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
   @SuppressWarnings("ReferenceEquality")
   // Rewrites specific enum methods, such as ordinal, into their corresponding enum unboxed
   // counterpart. The rewriting (== or match) is based on the following:
-  // - name, ordinal and compareTo are final and implemented only on java.lang.Enum,
+  // - name, ordinal and compareTo are final on java.lang.Enum, but may be invoked via a
+  //   superinterface such as java.lang.Comparable or an unrebound subtype,
   // - equals, hashCode are final and implemented in java.lang.Enum and java.lang.Object,
   // - getClass is final and implemented only in java.lang.Object,
   // - toString is non-final, implemented in java.lang.Object, java.lang.Enum and possibly
@@ -465,27 +466,30 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
     DexType enumType = getEnumClassTypeOrNull(invoke.getReceiver(), convertedEnums);
     DexMethod invokedMethod = invoke.getInvokedMethod();
     if (enumType != null) {
-      if (invokedMethod == factory.enumMembers.ordinalMethod
+      if (invokedMethod.match(factory.enumMembers.ordinalMethod)
           || invokedMethod.match(factory.enumMembers.hashCode)) {
         replaceEnumInvoke(
+            code,
             iterator,
             affectedValues,
             invoke,
             getSharedUtilityClass().ensureOrdinalMethod(appView, context, eventConsumer));
       } else if (invokedMethod.match(factory.enumMembers.equals)) {
         replaceEnumInvoke(
+            code,
             iterator,
             affectedValues,
             invoke,
             getSharedUtilityClass().ensureEqualsMethod(appView, context, eventConsumer));
-      } else if (invokedMethod == factory.enumMembers.compareTo
-          || invokedMethod == factory.enumMembers.compareToWithObject) {
+      } else if (invokedMethod.match(factory.enumMembers.compareTo)
+          || invokedMethod.match(factory.enumMembers.compareToWithObject)) {
         replaceEnumInvoke(
+            code,
             iterator,
             affectedValues,
             invoke,
             getSharedUtilityClass().ensureCompareToMethod(appView, context, eventConsumer));
-      } else if (invokedMethod == factory.enumMembers.nameMethod) {
+      } else if (invokedMethod.match(factory.enumMembers.nameMethod)) {
         rewriteNameMethod(iterator, invoke, enumType, context, eventConsumer);
       } else if (invokedMethod.match(factory.enumMembers.toString)) {
         DexMethod reboundMethod =
@@ -510,10 +514,11 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           DexClassAndMethod dexClassAndMethod = appView.definitionFor(lookupMethod);
           assert dexClassAndMethod != null;
           assert dexClassAndMethod.isProgramMethod();
-          replaceEnumInvoke(iterator, affectedValues, invoke, dexClassAndMethod.asProgramMethod());
+          replaceEnumInvoke(
+              code, iterator, affectedValues, invoke, dexClassAndMethod.asProgramMethod());
         }
       } else if (invokedMethod == factory.objectMembers.getClass) {
-        rewriteNullCheck(iterator, affectedValues, invoke, context, eventConsumer);
+        rewriteNullCheck(code, iterator, affectedValues, invoke, context, eventConsumer);
       } else if (invoke.isInvokeVirtual() || invoke.isInvokeInterface()) {
         DexMethod refinedDispatchMethodReference =
             enumUnboxingLens.lookupRefinedDispatchMethod(
@@ -525,7 +530,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           assert refinedDispatchMethod.isProgramMethod();
           InvokeStatic replacement =
               replaceEnumInvoke(
-                  iterator, affectedValues, invoke, refinedDispatchMethod.asProgramMethod());
+                  code, iterator, affectedValues, invoke, refinedDispatchMethod.asProgramMethod());
           if (replacement.hasOutValue()
               && refinedDispatchMethodReference.getReturnType().isIntType()
               && !invokedMethod.getReturnType().isIntType()) {
@@ -676,7 +681,8 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         Value argument = invoke.getFirstArgument();
         DexType enumType = getEnumClassTypeOrNull(argument, convertedEnums);
         if (enumType != null) {
-          rewriteNullCheck(instructionIterator, affectedValues, invoke, context, eventConsumer);
+          rewriteNullCheck(
+              code, instructionIterator, affectedValues, invoke, context, eventConsumer);
         }
       } else if (invokedMethod == factory.objectsMethods.requireNonNullWithMessage) {
         assert invoke.arguments().size() == 2;
@@ -684,6 +690,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         DexType enumType = getEnumClassTypeOrNull(argument, convertedEnums);
         if (enumType != null) {
           replaceEnumInvoke(
+              code,
               instructionIterator,
               affectedValues,
               invoke,
@@ -804,6 +811,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
   }
 
   private void rewriteNullCheck(
+      IRCode code,
       InstructionListIterator iterator,
       AffectedValues affectedValues,
       InvokeMethod invoke,
@@ -811,6 +819,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       EnumUnboxerMethodProcessorEventConsumer eventConsumer) {
     assert !invoke.hasOutValue() || !invoke.outValue().hasAnyUsers();
     replaceEnumInvoke(
+        code,
         iterator,
         affectedValues,
         invoke,
@@ -893,12 +902,42 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         .ensureGetInstanceFieldMethod(appView, field, context, eventConsumer);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private InvokeStatic replaceEnumInvoke(
+      IRCode code,
       InstructionListIterator iterator,
       AffectedValues affectedValues,
       InvokeMethod invoke,
       ProgramMethod method) {
-    return replaceEnumInvoke(iterator, affectedValues, invoke, method, invoke.arguments());
+    assert method.getDefinition().isStatic();
+    List<Value> arguments = invoke.arguments();
+    assert arguments.size() == method.getReference().getArity();
+    List<Value> rewrittenArguments = null;
+    Value zeroValue = null;
+    for (int i = 0; i < arguments.size(); i++) {
+      Value argument = arguments.get(i);
+      if (argument.getType().isNullType() && method.getParameter(i).isIntType()) {
+        if (rewrittenArguments == null) {
+          rewrittenArguments = new ArrayList<>(arguments.size());
+          for (int j = 0; j < i; j++) {
+            rewrittenArguments.add(arguments.get(j));
+          }
+          iterator.previous();
+          zeroValue = iterator.insertConstIntInstruction(code, options, 0);
+          Instruction next = iterator.next();
+          assert next == invoke;
+        }
+        rewrittenArguments.add(zeroValue);
+      } else if (rewrittenArguments != null) {
+        rewrittenArguments.add(argument);
+      }
+    }
+    return replaceEnumInvoke(
+        iterator,
+        affectedValues,
+        invoke,
+        method,
+        rewrittenArguments != null ? rewrittenArguments : arguments);
   }
 
   private InvokeStatic replaceEnumInvoke(

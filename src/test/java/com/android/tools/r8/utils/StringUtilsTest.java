@@ -38,8 +38,8 @@ public class StringUtilsTest extends TestBase {
     assertListEquals(ImmutableList.of(), StringUtils.splitLines(""));
     assertListEquals(ImmutableList.of(""), StringUtils.splitLines("\n"));
     assertListEquals(ImmutableList.of("", "", ""), StringUtils.splitLines("\n\n\n"));
-    assertListEquals(ImmutableList.of(" "," "), StringUtils.splitLines(" \n "));
-    assertListEquals(ImmutableList.of("a","b"), StringUtils.splitLines("a\nb"));
+    assertListEquals(ImmutableList.of(" ", " "), StringUtils.splitLines(" \n "));
+    assertListEquals(ImmutableList.of("a", "b"), StringUtils.splitLines("a\nb"));
 
     assertListEquals(ImmutableList.of("\r\r\r"), StringUtils.splitLines("\r\r\r"));
     assertListEquals(ImmutableList.of("", "\r"), StringUtils.splitLines("\r\n\r"));

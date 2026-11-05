@@ -39,5 +39,4 @@ public class Sub1 extends Base implements Itf1 {
     System.out.println(bar1(0));
     System.out.println(foo3());
   }
-
 }
