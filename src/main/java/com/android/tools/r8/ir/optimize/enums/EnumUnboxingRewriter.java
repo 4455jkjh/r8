@@ -748,7 +748,9 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         Value argument = invoke.getFirstArgument();
         DexType enumType = getEnumClassTypeOrNull(argument, convertedEnums);
         if (enumType != null) {
-          invoke.outValue().replaceUsers(argument);
+          if (invoke.hasOutValue()) {
+            invoke.outValue().replaceUsers(argument);
+          }
           instructionIterator.removeOrReplaceByDebugLocalRead();
         }
       }

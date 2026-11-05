@@ -4,10 +4,6 @@
 
 package com.android.tools.r8.enumunboxing;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
-import static org.junit.Assert.assertThrows;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
@@ -50,16 +46,10 @@ public class OrdinalHashCodeEnumUnboxingTest extends EnumUnboxingTestBase {
         .enableInliningAnnotations()
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
         .setMinApi(parameters)
-        // Should compile and succeed.
-        .apply(
-            b ->
-                assertThrows(
-                    CompilationFailedException.class,
-                    () ->
-                        b.compileWithExpectedDiagnostics(
-                            diagnostics ->
-                                diagnostics.assertErrorsMatch(
-                                    diagnosticException(NullPointerException.class)))));
+        .compile()
+        .run(parameters.getRuntime(), classToTest)
+        .assertSuccess()
+        .inspectStdOut(this::assertLines2By2Correct);
   }
 
   @NeverClassInline
