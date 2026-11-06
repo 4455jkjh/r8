@@ -21,7 +21,6 @@ import com.android.tools.r8.graph.ObjectToOffsetMapping;
 import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.utils.LebUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
@@ -123,7 +122,9 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
 
   final Collection<ProgramMethod> getCodeLayoutForClasses(Collection<DexProgramClass> classes) {
     ObjectToOffsetMapping mapping = virtualFile.getObjectMapping();
-    ProgramMethodMap<String> codeToDexSortingKeyMap = ProgramMethodMap.create();
+    ClassNameMapper proguardMap = appView.app().getProguardMap();
+    ProgramMethodMap<String> codeToDexSortingKeyMap =
+        proguardMap != null ? ProgramMethodMap.create() : null;
     Reference2IntMap<DexEncodedMethod> codeToAlignedSizeMap = new Reference2IntOpenHashMap<>();
     List<ProgramMethod> codesSorted = new ArrayList<>();
     DeduplicatedCodeCounts codeCounts = new DeduplicatedCodeCounts(appView);
@@ -139,13 +140,17 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
               codeToAlignedSizeMap.put(method.getDefinition(), alignedSize);
               codeCounts.recordCode(code, method, alignedSize);
               codesSorted.add(method);
-              codeToDexSortingKeyMap.put(
-                  method, getKeyForDexCodeSorting(method, appView.app().getProguardMap()));
+              if (codeToDexSortingKeyMap != null) {
+                codeToDexSortingKeyMap.put(method, getKeyForDexCodeSorting(method, proguardMap));
+              }
             }
           });
     }
     Comparator<ProgramMethod> defaultCodeSorting =
-        Comparator.comparing(codeToDexSortingKeyMap::get);
+        codeToDexSortingKeyMap != null
+            ? Comparator.comparing(codeToDexSortingKeyMap::get)
+            : (a, b) ->
+                a.getReference().acceptCompareTo(b.getReference(), mapping.getCompareToVisitor());
     int codesOffset = layout.getCodesOffset();
     if (appView.options().getTestingOptions().enableCodeItemSizePerReferenceLayout
         && LebUtils.crossesUleb128SizeBoundary(
@@ -189,16 +194,9 @@ public class DefaultMixedSectionLayoutStrategy extends MixedSectionLayoutStrateg
   }
 
   private static String getKeyForDexCodeSorting(ProgramMethod method, ClassNameMapper proguardMap) {
-    // TODO(b/173999869): Could this instead compute sorting using dex items?
-    Signature signature;
-    String originalClassName;
-    if (proguardMap != null) {
-      signature = proguardMap.originalSignatureOf(method.getReference());
-      originalClassName = proguardMap.originalNameOf(method.getHolderType());
-    } else {
-      signature = MethodSignature.fromDexMethod(method.getReference());
-      originalClassName = method.getHolderType().toSourceString();
-    }
+    assert proguardMap != null;
+    Signature signature = proguardMap.originalSignatureOf(method.getReference());
+    String originalClassName = proguardMap.originalNameOf(method.getHolderType());
     return originalClassName + signature;
   }
 
