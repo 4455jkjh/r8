@@ -37,6 +37,7 @@ import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.shaking.MainDexInfo;
+import com.android.tools.r8.threading.SynchronizedTaskCollection;
 import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
@@ -207,7 +208,7 @@ public class ApplicationReader {
   private TaskCollection<?> createReaderTaskCollection(ExecutorService executorService) {
     // Commit all statically known types before starting to read (e.g., java.lang.Object).
     factory.commitPendingItems();
-    return new TaskCollection<>(options, executorService);
+    return new SynchronizedTaskCollection<>(options, executorService);
   }
 
   private void awaitReaderTaskCollection(TaskCollection<?> tasks) throws ExecutionException {
@@ -338,13 +339,14 @@ public class ApplicationReader {
     tasks.submit(
         () -> {
           try {
-            builder.setProguardMap(
-                ClassNameMapper.mapperFromString(
-                    map.getString(),
-                    options.reporter,
-                    options.mappingComposeOptions().allowEmptyMappedRanges,
-                    options.testing.enableExperimentalMapFileVersion,
-                    true));
+            ClassNameMapper.mapperFromStringResource(
+                map,
+                options.reporter,
+                options.mappingComposeOptions().allowEmptyMappedRanges,
+                options.testing.enableExperimentalMapFileVersion,
+                true,
+                tasks,
+                builder::setProguardMap);
           } catch (IOException | ResourceException e) {
             throw new CompilationError("Failure to read proguard map file", e, map.getOrigin());
           }

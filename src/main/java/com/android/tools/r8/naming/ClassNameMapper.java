@@ -7,6 +7,8 @@ import static com.android.tools.r8.naming.ClassNameMapper.MissingFileAction.MISS
 import static com.android.tools.r8.utils.DescriptorUtils.descriptorToJavaType;
 
 import com.android.tools.r8.DiagnosticsHandler;
+import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.StringResource;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
@@ -17,14 +19,20 @@ import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.naming.mappinginformation.MapVersionMappingInformation;
 import com.android.tools.r8.position.Position;
+import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.BiMapContainer;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.ChainableStringConsumer;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,9 +53,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ClassNameMapper implements ProguardMap {
+
+  // Higher values lead to larger await times and smaller (single-threaded) merge times, whereas
+  // smaller values lead to smaller await times and larger (single-threaded) merge times. 32768
+  // strikes a good balance.
+  private static final int PARALLEL_CHUNK_LINE_COUNT = 32768;
 
   public enum MissingFileAction {
     MISSING_FILE_IS_EMPTY_MAP,
@@ -100,7 +114,8 @@ public class ClassNameMapper implements ProguardMap {
     }
 
     private ImmutableMap<String, ClassNamingForNameMapper> buildClassNameMappings() {
-      ImmutableMap.Builder<String, ClassNamingForNameMapper> builder = ImmutableMap.builder();
+      ImmutableMap.Builder<String, ClassNamingForNameMapper> builder =
+          ImmutableMap.builderWithExpectedSize(mapping.size());
       mapping.forEach(
           (renamedName, valueBuilder) -> builder.put(renamedName, valueBuilder.build()));
       return builder.build();
@@ -184,6 +199,26 @@ public class ClassNameMapper implements ProguardMap {
         builder -> builder.setBuildPreamble(buildPreamble));
   }
 
+  public static void mapperFromStringResource(
+      StringResource resource,
+      DiagnosticsHandler diagnosticsHandler,
+      boolean allowEmptyMappedRanges,
+      boolean allowExperimentalMapping,
+      boolean buildPreamble,
+      TaskCollection<?> tasks,
+      Consumer<ClassNameMapper> consumer)
+      throws IOException, ResourceException, ExecutionException {
+    mapperFromBufferedReaderWithFiltering(
+        resource.getBufferedReader(),
+        MapVersion.MAP_VERSION_NONE,
+        diagnosticsHandler,
+        allowEmptyMappedRanges,
+        allowExperimentalMapping,
+        builder -> builder.setBuildPreamble(buildPreamble),
+        tasks,
+        consumer);
+  }
+
   private static ClassNameMapper mapperFromBufferedReader(
       BufferedReader reader, DiagnosticsHandler diagnosticsHandler) throws IOException {
     return mapperFromBufferedReader(reader, diagnosticsHandler, false, false, false);
@@ -213,18 +248,238 @@ public class ClassNameMapper implements ProguardMap {
       boolean allowExperimentalMapping,
       Consumer<ClassNameMapper.Builder> builderConsumer)
       throws IOException {
+    return mapperFromLineReaderWithFiltering(
+        reader,
+        mapVersion,
+        diagnosticsHandler,
+        allowEmptyMappedRanges,
+        allowExperimentalMapping,
+        builderConsumer,
+        0);
+  }
+
+  private static ClassNameMapper mapperFromLineReaderWithFiltering(
+      LineReader reader,
+      MapVersion mapVersion,
+      DiagnosticsHandler diagnosticsHandler,
+      boolean allowEmptyMappedRanges,
+      boolean allowExperimentalMapping,
+      Consumer<ClassNameMapper.Builder> builderConsumer,
+      int startLineNo)
+      throws IOException {
     try (ProguardMapReader proguardReader =
         new ProguardMapReader(
             reader,
             diagnosticsHandler != null ? diagnosticsHandler : new Reporter(),
             allowEmptyMappedRanges,
             allowExperimentalMapping,
-            mapVersion)) {
+            mapVersion,
+            startLineNo)) {
       ClassNameMapper.Builder builder = ClassNameMapper.builder();
       builderConsumer.accept(builder);
       proguardReader.parse(builder);
       return builder.build();
     }
+  }
+
+  private static boolean isClassHeaderLine(String line) {
+    return !line.isEmpty()
+        && !StringUtils.isWhitespace(line.codePointAt(0))
+        && line.charAt(0) != '#';
+  }
+
+  public static void mapperFromBufferedReaderWithFiltering(
+      BufferedReader reader,
+      MapVersion mapVersion,
+      DiagnosticsHandler diagnosticsHandler,
+      boolean allowEmptyMappedRanges,
+      boolean allowExperimentalMapping,
+      Consumer<ClassNameMapper.Builder> builderConsumer,
+      TaskCollection<?> tasks,
+      Consumer<ClassNameMapper> consumer)
+      throws IOException, ExecutionException {
+    if (tasks.getNumberOfThreadsOrDefault(1) > 1) {
+      mapperFromBufferedReaderWithFilteringConcurrent(
+          reader,
+          mapVersion,
+          diagnosticsHandler,
+          allowEmptyMappedRanges,
+          allowExperimentalMapping,
+          builderConsumer,
+          tasks,
+          consumer);
+    } else {
+      consumer.accept(
+          mapperFromLineReaderWithFiltering(
+              LineReader.fromBufferedReader(reader),
+              mapVersion,
+              diagnosticsHandler,
+              allowEmptyMappedRanges,
+              allowExperimentalMapping,
+              builderConsumer));
+    }
+  }
+
+  private static void mapperFromBufferedReaderWithFilteringConcurrent(
+      BufferedReader reader,
+      MapVersion mapVersion,
+      DiagnosticsHandler diagnosticsHandler,
+      boolean allowEmptyMappedRanges,
+      boolean allowExperimentalMapping,
+      Consumer<ClassNameMapper.Builder> builderConsumer,
+      TaskCollection<?> tasks,
+      Consumer<ClassNameMapper> consumer)
+      throws IOException, ExecutionException {
+    try (BufferedReader bufferedReader = reader) {
+      // Parse the map header.
+      List<String> headerLines = new ArrayList<>();
+      List<String> currentLines = new ArrayList<>(PARALLEL_CHUNK_LINE_COUNT);
+      ClassNameMapper headerMapper =
+          parseHeaderMapper(
+              bufferedReader,
+              mapVersion,
+              diagnosticsHandler,
+              allowEmptyMappedRanges,
+              allowExperimentalMapping,
+              builderConsumer,
+              headerLines,
+              currentLines);
+      if (currentLines.isEmpty()) {
+        consumer.accept(headerMapper);
+        return;
+      }
+
+      // Extract the map version from the header.
+      MapVersionMappingInformation mapVersionInfo = headerMapper.getFirstMapVersionInformation();
+      if (mapVersionInfo != null) {
+        mapVersion = mapVersionInfo.getMapVersion(allowExperimentalMapping);
+      }
+
+      // Parse the mapping file concurrently in chunks of 65536 lines.
+      List<Box<ClassNameMapper>> classNameMappersToMerge =
+          Lists.newArrayList(new Box<>(headerMapper));
+      int currentLinesStartLineNo = headerLines.size();
+      AtomicInteger pending = new AtomicInteger(1);
+      String line;
+      while ((line = bufferedReader.readLine()) != null) {
+        if (isClassHeaderLine(line) && currentLines.size() >= PARALLEL_CHUNK_LINE_COUNT) {
+          forkParseCurrentLines(
+              tasks,
+              classNameMappersToMerge,
+              pending,
+              currentLines,
+              currentLinesStartLineNo,
+              mapVersion,
+              diagnosticsHandler,
+              allowEmptyMappedRanges,
+              allowExperimentalMapping,
+              consumer);
+          currentLinesStartLineNo += currentLines.size();
+          currentLines = new ArrayList<>(PARALLEL_CHUNK_LINE_COUNT);
+        }
+        currentLines.add(line);
+      }
+
+      // Parse any outstanding lines on the main thread.
+      classNameMappersToMerge.add(
+          new Box<>(
+              mapperFromLineReaderWithFiltering(
+                  LineReader.fromList(currentLines),
+                  mapVersion,
+                  diagnosticsHandler,
+                  allowEmptyMappedRanges,
+                  allowExperimentalMapping,
+                  builder -> {},
+                  currentLinesStartLineNo)));
+      if (pending.decrementAndGet() == 0) {
+        consumer.accept(mergeClassNameMappers(classNameMappersToMerge));
+      }
+    }
+  }
+
+  private static ClassNameMapper parseHeaderMapper(
+      BufferedReader bufferedReader,
+      MapVersion mapVersion,
+      DiagnosticsHandler diagnosticsHandler,
+      boolean allowEmptyMappedRanges,
+      boolean allowExperimentalMapping,
+      Consumer<ClassNameMapper.Builder> builderConsumer,
+      List<String> headerLines,
+      List<String> firstChunkLines)
+      throws IOException {
+    String line;
+    while ((line = bufferedReader.readLine()) != null) {
+      if (isClassHeaderLine(line)) {
+        firstChunkLines.add(line);
+        break;
+      }
+      headerLines.add(line);
+    }
+    return mapperFromLineReaderWithFiltering(
+        LineReader.fromList(headerLines),
+        mapVersion,
+        diagnosticsHandler,
+        allowEmptyMappedRanges,
+        allowExperimentalMapping,
+        builderConsumer,
+        0);
+  }
+
+  private static void forkParseCurrentLines(
+      TaskCollection<?> tasks,
+      List<Box<ClassNameMapper>> classNameMappers,
+      AtomicInteger pending,
+      List<String> chunkLines,
+      int startLineNo,
+      MapVersion mapVersion,
+      DiagnosticsHandler handler,
+      boolean allowEmptyMappedRanges,
+      boolean allowExperimentalMapping,
+      Consumer<ClassNameMapper> consumer)
+      throws ExecutionException {
+    Box<ClassNameMapper> classNameMapper = new Box<>();
+    classNameMappers.add(classNameMapper);
+    pending.incrementAndGet();
+    tasks.submit(
+        () -> {
+          classNameMapper.set(
+              mapperFromLineReaderWithFiltering(
+                  LineReader.fromList(chunkLines),
+                  mapVersion,
+                  handler,
+                  allowEmptyMappedRanges,
+                  allowExperimentalMapping,
+                  builder -> {},
+                  startLineNo));
+          if (pending.decrementAndGet() == 0) {
+            consumer.accept(mergeClassNameMappers(classNameMappers));
+          }
+        });
+  }
+
+  private static ClassNameMapper mergeClassNameMappers(
+      List<Box<ClassNameMapper>> classNameMappers) {
+    ClassNameMapper headerClassNameMapper = ListUtils.first(classNameMappers).get();
+    assert headerClassNameMapper.getClassNameMappings().isEmpty();
+    int totalClasses = 0;
+    int totalSourceFiles = 0;
+    for (ClassNameMapper classNameMapper : Iterables.transform(classNameMappers, Box::get)) {
+      totalClasses += classNameMapper.getClassNameMappings().size();
+      totalSourceFiles += classNameMapper.getOriginalSourceFiles().size();
+    }
+    ImmutableMap.Builder<String, ClassNamingForNameMapper> classNameMappingsBuilder =
+        ImmutableMap.builderWithExpectedSize(totalClasses);
+    ImmutableMap.Builder<String, String> originalSourceFiles =
+        ImmutableMap.builderWithExpectedSize(totalSourceFiles);
+    for (ClassNameMapper classNameMapper : Iterables.transform(classNameMappers, Box::get)) {
+      classNameMappingsBuilder.putAll(classNameMapper.getClassNameMappings());
+      originalSourceFiles.putAll(classNameMapper.getOriginalSourceFiles());
+    }
+    return new ClassNameMapper(
+        classNameMappingsBuilder.buildKeepingLast(),
+        headerClassNameMapper.mapVersions,
+        originalSourceFiles.buildKeepingLast(),
+        headerClassNameMapper.preamble);
   }
 
   private final ImmutableMap<String, ClassNamingForNameMapper> classNameMappings;
@@ -260,6 +515,10 @@ public class ClassNameMapper implements ProguardMap {
         (s, classNamingForNameMapper) ->
             packages.add(DescriptorUtils.getPackageNameFromTypeName(s)));
     return packages;
+  }
+
+  public Map<String, String> getOriginalSourceFiles() {
+    return originalSourceFiles;
   }
 
   public void setPreamble(List<String> preamble) {

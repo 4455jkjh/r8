@@ -6,6 +6,7 @@ package com.android.tools.r8.naming;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.List;
 
 /** This is an abstraction over BufferedReader */
 public interface LineReader {
@@ -16,6 +17,10 @@ public interface LineReader {
 
   static LineReader fromBufferedReader(BufferedReader bufferedReader) {
     return new BufferedLineReader(bufferedReader);
+  }
+
+  static LineReader fromList(List<String> lines) {
+    return new ListLineReader(lines);
   }
 
   class BufferedLineReader implements LineReader {
@@ -35,5 +40,23 @@ public interface LineReader {
     public void close() throws IOException {
       bufferedReader.close();
     }
+  }
+
+  class ListLineReader implements LineReader {
+
+    private final List<String> lines;
+    private int index = 0;
+
+    private ListLineReader(List<String> lines) {
+      this.lines = lines;
+    }
+
+    @Override
+    public String readLine() {
+      return index < lines.size() ? lines.get(index++) : null;
+    }
+
+    @Override
+    public void close() {}
   }
 }
