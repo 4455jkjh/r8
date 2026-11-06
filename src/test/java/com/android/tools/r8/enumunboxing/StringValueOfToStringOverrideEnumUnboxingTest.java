@@ -147,50 +147,7 @@ public class StringValueOfToStringOverrideEnumUnboxingTest extends EnumUnboxingT
         .enableInliningAnnotations()
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(
-            "A",
-            "NULL_STR",
-            "false",
-            canUseJavaUtilObjects(parameters) ? "B" : "MyEnum2",
-            "A",
-            "B",
-            "A",
-            "NULL_STR",
-            "false",
-            "null",
-            "false",
-            // Objects.toString() is backported below API level 19.
-            canUseJavaUtilObjects(parameters) ? "B" : "MyEnum2",
-            canUseJavaUtilObjects(parameters) ? "NULL_STR" : "null",
-            canUseJavaUtilObjects(parameters) ? "false" : "true",
-            "null",
-            "false",
-            "ABNULL_STRnull",
-            "ABNULL_STRnull",
-            "C",
-            "D",
-            "null",
-            "E",
-            "F",
-            "null",
-            "G",
-            "1",
-            "G",
-            "H",
-            "null",
-            "singleOnly",
-            "ONLY",
-            "null",
-            "multi1",
-            "M1",
-            "M2",
-            "null",
-            "S1",
-            "S2",
-            "null",
-            "start:OK",
-            "start:BOOM",
-            "start:null");
+        .assertSuccessWithOutputLines(EXPECTED);
   }
 
   @Test
@@ -201,36 +158,21 @@ public class StringValueOfToStringOverrideEnumUnboxingTest extends EnumUnboxingT
         .addKeepRules(enumKeepRules.getKeepRules())
         .addEnumUnboxingInspector(
             inspector ->
-                inspector.assertUnboxed(
-                    MyNullableValueOfEnum.class,
-                    MyNullableObjectsEnum.class,
-                    MyNullableSubclassedEnum.class,
-                    MyNullableStringBuilderEnum.class,
-                    MyNullableStringBufferEnum.class,
-                    MyNullableBuilderReceiverEnum.class,
-                    MyDefaultToStringNullableEnum.class))
+                inspector
+                    .assertNotUnboxed(
+                        MyNullableValueOfEnum.class,
+                        MyNullableSubclassedEnum.class,
+                        MyNullableStringBuilderEnum.class,
+                        MyNullableStringBufferEnum.class,
+                        MyNullableBuilderReceiverEnum.class)
+                    .assertUnboxedIf(
+                        !canUseJavaUtilObjects(parameters), MyNullableObjectsEnum.class)
+                    .assertUnboxed(MyDefaultToStringNullableEnum.class))
         .enableNeverClassInliningAnnotations()
         .enableInliningAnnotations()
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
         .run(parameters.getRuntime(), NullableMain.class)
-        .assertSuccessWithOutputLines(
-            "NV_A",
-            "NV_NULL_STR",
-            "null",
-            canUseJavaUtilObjects(parameters) ? "NO_A" : "no0",
-            "null",
-            "NS_A",
-            "NS_B",
-            "null",
-            "sb:SB_A",
-            "sb:null",
-            "sbuf:SBUF_A",
-            "sbuf:null",
-            "nbr:NBR_OK",
-            "nbr:NBR_BOOM",
-            "caught-npe",
-            "DEF_A",
-            "null");
+        .assertSuccessWithOutputLines(NULLABLE_EXPECTED);
   }
 
   @Test
@@ -240,7 +182,9 @@ public class StringValueOfToStringOverrideEnumUnboxingTest extends EnumUnboxingT
         .addProgramClassFileData(getTransformedNonConstNameEnum())
         .addKeepMainRule(NonConstNameMain.class)
         .addKeepRules(enumKeepRules.getKeepRules())
-        .addEnumUnboxingInspector(inspector -> inspector.assertNotUnboxed(MyNonConstNameEnum.class))
+        .addEnumUnboxingInspector(
+            inspector ->
+                inspector.assertUnboxedIf(enumKeepRules.isNone(), MyNonConstNameEnum.class))
         .enableNeverClassInliningAnnotations()
         .enableInliningAnnotations()
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))

@@ -36,6 +36,7 @@ import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.ir.code.InvokeStatic;
+import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.MemberType;
@@ -220,7 +221,8 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
               iterator,
               affectedPhis,
               affectedValues,
-              eventConsumer);
+              eventConsumer,
+              enumUnboxingLens);
         } else if (instruction.isStaticGet()) {
           rewriteStaticGet(
               code,
@@ -492,30 +494,12 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       } else if (invokedMethod.match(factory.enumMembers.nameMethod)) {
         rewriteNameMethod(iterator, invoke, enumType, context, eventConsumer);
       } else if (invokedMethod.match(factory.enumMembers.toString)) {
-        DexMethod reboundMethod =
-            invokedMethod.withHolder(unboxedEnumsData.representativeType(enumType), factory);
-        DexMethod lookupMethod =
-            enumUnboxingLens
-                .lookupMethod(
-                    reboundMethod,
-                    context.getReference(),
-                    invoke.getType(),
-                    enumUnboxingLens.getPrevious())
-                .getReference();
-        // If the SuperEnum had declared a toString() override, then the unboxer moves it to
-        // the local utility class method corresponding to that override.
-        // If a SubEnum had declared a toString() override, then the unboxer records a
-        // synthetic move from SuperEnum.toString() to the dispatch method on the local
-        // utility class.
-        // When they are the same, then there are no overrides of toString().
-        if (lookupMethod == reboundMethod) {
+        ProgramMethod toStringMethod =
+            lookupCustomToStringMethod(enumType, invoke.getType(), context, enumUnboxingLens);
+        if (toStringMethod == null) {
           rewriteNameMethod(iterator, invoke, enumType, context, eventConsumer);
         } else {
-          DexClassAndMethod dexClassAndMethod = appView.definitionFor(lookupMethod);
-          assert dexClassAndMethod != null;
-          assert dexClassAndMethod.isProgramMethod();
-          replaceEnumInvoke(
-              code, iterator, affectedValues, invoke, dexClassAndMethod.asProgramMethod());
+          replaceEnumInvoke(code, iterator, affectedValues, invoke, toStringMethod);
         }
       } else if (invokedMethod == factory.objectMembers.getClass) {
         rewriteNullCheck(code, iterator, affectedValues, invoke, context, eventConsumer);
@@ -550,8 +534,12 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       DexType enumArgType = getEnumClassTypeOrNull(enumArg, convertedEnums);
       if (enumArgType != null) {
         ProgramMethod stringValueOfMethod =
-            getLocalUtilityClass(enumArgType)
-                .ensureStringValueOfMethod(appView, context, eventConsumer);
+            lookupCustomToStringMethod(enumArgType, InvokeType.VIRTUAL, context, enumUnboxingLens);
+        if (stringValueOfMethod == null) {
+          stringValueOfMethod =
+              getLocalUtilityClass(enumArgType)
+                  .ensureStringValueOfMethod(appView, context, eventConsumer);
+        }
         InvokeStatic toStringInvoke =
             InvokeStatic.builder()
                 .setMethod(stringValueOfMethod)
@@ -637,7 +625,8 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       InstructionListIterator instructionIterator,
       Set<Phi> affectedPhis,
       AffectedValues affectedValues,
-      EnumUnboxerMethodProcessorEventConsumer eventConsumer) {
+      EnumUnboxerMethodProcessorEventConsumer eventConsumer,
+      EnumUnboxingLens enumUnboxingLens) {
     ProgramMethod context = code.context();
     DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
     if (singleTarget == null) {
@@ -698,7 +687,15 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
                   .ensureCheckNotZeroWithMessageMethod(appView, context, eventConsumer));
         }
       } else if (invokedMethod == factory.objectsMethods.toStringWithObject) {
-        rewriteStringValueOf(invoke, context, convertedEnums, instructionIterator, eventConsumer);
+        rewriteStringValueOf(
+            invoke,
+            code,
+            context,
+            convertedEnums,
+            instructionIterator,
+            affectedValues,
+            eventConsumer,
+            enumUnboxingLens);
       } else if (invokedMethod == factory.objectsMethods.equals) {
         assert invoke.arguments().size() == 2;
         if (Iterables.any(
@@ -732,7 +729,15 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
     // Calls to java.lang.String.
     if (invokedMethod.getHolderType() == factory.stringType) {
       if (invokedMethod == factory.stringMembers.valueOfObject) {
-        rewriteStringValueOf(invoke, context, convertedEnums, instructionIterator, eventConsumer);
+        rewriteStringValueOf(
+            invoke,
+            code,
+            context,
+            convertedEnums,
+            instructionIterator,
+            affectedValues,
+            eventConsumer,
+            enumUnboxingLens);
       }
       return;
     }
@@ -796,20 +801,54 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
 
   private void rewriteStringValueOf(
       InvokeStatic invoke,
+      IRCode code,
       ProgramMethod context,
       Map<Instruction, DexType> convertedEnums,
       InstructionListIterator instructionIterator,
-      EnumUnboxerMethodProcessorEventConsumer eventConsumer) {
+      AffectedValues affectedValues,
+      EnumUnboxerMethodProcessorEventConsumer eventConsumer,
+      EnumUnboxingLens enumUnboxingLens) {
     assert invoke.arguments().size() == 1;
     Value argument = invoke.getFirstArgument();
     DexType enumType = getEnumClassTypeOrNull(argument, convertedEnums);
     if (enumType != null) {
       ProgramMethod stringValueOfMethod =
-          getLocalUtilityClass(enumType).ensureStringValueOfMethod(appView, context, eventConsumer);
-      instructionIterator.replaceCurrentInstruction(
-          new InvokeStatic(
-              stringValueOfMethod.getReference(), invoke.outValue(), invoke.arguments()));
+          lookupCustomToStringMethod(enumType, InvokeType.VIRTUAL, context, enumUnboxingLens);
+      if (stringValueOfMethod == null) {
+        stringValueOfMethod =
+            getLocalUtilityClass(enumType)
+                .ensureStringValueOfMethod(appView, context, eventConsumer);
+      }
+      replaceEnumInvoke(code, instructionIterator, affectedValues, invoke, stringValueOfMethod);
     }
+  }
+
+  private ProgramMethod lookupCustomToStringMethod(
+      DexType enumType,
+      InvokeType invokeType,
+      ProgramMethod context,
+      EnumUnboxingLens enumUnboxingLens) {
+    DexMethod reboundMethod =
+        factory.enumMembers.toString.withHolder(
+            unboxedEnumsData.representativeType(enumType), factory);
+    DexMethod lookupMethod =
+        enumUnboxingLens
+            .lookupMethod(
+                reboundMethod, context.getReference(), invokeType, enumUnboxingLens.getPrevious())
+            .getReference();
+    // If the SuperEnum had declared a toString() override, then the unboxer moves it to
+    // the local utility class method corresponding to that override.
+    // If a SubEnum had declared a toString() override, then the unboxer records a
+    // synthetic move from SuperEnum.toString() to the dispatch method on the local
+    // utility class.
+    // When they are the same, then there are no overrides of toString().
+    if (lookupMethod.isIdenticalTo(reboundMethod)) {
+      return null;
+    }
+    DexClassAndMethod dexClassAndMethod = appView.definitionFor(lookupMethod);
+    assert dexClassAndMethod != null;
+    assert dexClassAndMethod.isProgramMethod();
+    return dexClassAndMethod.asProgramMethod();
   }
 
   private void rewriteNullCheck(
