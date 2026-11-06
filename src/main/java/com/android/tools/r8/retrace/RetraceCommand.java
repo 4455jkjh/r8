@@ -32,14 +32,6 @@ public class RetraceCommand {
     assert this.retracedStackTraceConsumer != null;
   }
 
-  public boolean printTimes() {
-    return System.getProperty("com.android.tools.r8.printtimes") != null;
-  }
-
-  public boolean printMemory() {
-    return System.getProperty("com.android.tools.r8.printmemory") != null;
-  }
-
   @Deprecated
   @SuppressWarnings("InlineMeSuggester")
   public StackTraceSupplier getStacktraceSupplier() {

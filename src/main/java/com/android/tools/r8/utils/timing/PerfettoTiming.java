@@ -151,7 +151,7 @@ public class PerfettoTiming extends TimingImplBase {
 
   @Override
   public Timing endAll() {
-    for (int i = 1; i < depth; i++) {
+    while (depth > 1) {
       end();
     }
     return this;

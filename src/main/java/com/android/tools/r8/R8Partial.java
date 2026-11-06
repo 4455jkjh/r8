@@ -86,7 +86,7 @@ class R8Partial {
     runR8Step(app, d8Result, statsMetadataBuilder, executor);
     timing.end();
 
-    if (options.isPrintTimesReportingEnabled()) {
+    if (options.isPerfettoTracingEnabled()) {
       timing.report();
     }
   }

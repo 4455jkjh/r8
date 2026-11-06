@@ -156,7 +156,7 @@ public class TraceReferences {
       timing.end();
     }
 
-    if (options.isPrintTimesReportingEnabled()) {
+    if (options.isPerfettoTracingEnabled()) {
       timing.report();
     }
   }

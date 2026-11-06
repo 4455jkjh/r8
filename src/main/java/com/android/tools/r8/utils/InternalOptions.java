@@ -420,13 +420,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   private long heapDumpId = -1;
-  public boolean printTimes = System.getProperty("com.android.tools.r8.printtimes") != null;
   public String perfettoTraceDumpDirectory =
       System.getProperty("com.android.tools.r8.dumptracetodirectory");
   public String perfettoTraceDumpFile = System.getProperty("com.android.tools.r8.dumptracetofile");
   public final int perfettoTraceThreads =
       SystemPropertyUtils.parseSystemPropertyOrDefault("com.android.tools.r8.trace.threads", -1);
-  // To print memory one also have to enable printtimes.
   public boolean printMemory = System.getProperty("com.android.tools.r8.printmemory") != null;
 
   public void dumpHeap(String name) {
@@ -441,8 +439,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     HeapUtils.dumpHeap(heapDir.resolve("heap" + heapDumpId + "-" + name + ".hprof"));
   }
 
-  public boolean isPrintTimesReportingEnabled() {
-    return (printTimes || perfettoTraceDumpDirectory != null || perfettoTraceDumpFile != null)
+  public boolean isPerfettoTracingEnabled() {
+    return (perfettoTraceDumpDirectory != null || perfettoTraceDumpFile != null)
         && partialSubCompilationConfiguration == null;
   }
 

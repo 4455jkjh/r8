@@ -401,7 +401,7 @@ public class R8 {
       }
 
       if (options.getKeepRadiusOptions().shouldExitEarly()) {
-        if (options.isPrintTimesReportingEnabled()) {
+        if (options.isPerfettoTracingEnabled()) {
           timing.endAll().report();
         }
         return;
@@ -648,7 +648,7 @@ public class R8 {
                 executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
 
             if (AssistantExporter.run(appView).shouldExitEarly()) {
-              if (options.isPrintTimesReportingEnabled()) {
+              if (options.isPerfettoTracingEnabled()) {
                 timing.endAll().report();
               }
               return;
@@ -981,7 +981,7 @@ public class R8 {
 
       options.printWarnings();
 
-      if (options.isPrintTimesReportingEnabled()) {
+      if (options.isPerfettoTracingEnabled()) {
         timing.report();
       }
     } catch (ExecutionException e) {

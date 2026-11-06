@@ -113,7 +113,7 @@ public class Relocator {
       timing.end();
 
       // Dump timings.
-      if (options.isPrintTimesReportingEnabled()) {
+      if (options.isPerfettoTracingEnabled()) {
         timing.report();
       }
     }

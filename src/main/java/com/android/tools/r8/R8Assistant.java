@@ -93,7 +93,7 @@ public class R8Assistant {
       throw unwrapExecutionException(e);
     } finally {
       options.signalFinishedToConsumers();
-      if (options.isPrintTimesReportingEnabled()) {
+      if (options.isPerfettoTracingEnabled()) {
         timing.report();
       }
     }

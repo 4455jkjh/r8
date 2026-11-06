@@ -102,10 +102,6 @@ def parse_options(argv):
     result.add_argument('--build-output',
                         '--build_output',
                         help='Output path where to write output from the build')
-    result.add_argument('--print-times',
-                        help='Print timing information from r8',
-                        default=False,
-                        action='store_true')
     result.add_argument(
         '--version',
         '-v',
@@ -273,8 +269,6 @@ def run(options, r8jar, testjars):
         cmd.append(
             f'-XX:StartFlightRecording=disk=true,dumponexit=true,filename={options.dump_jfr_to_file},settings=profile'
         )
-    if options.print_times:
-        cmd.append('-Dcom.android.tools.r8.printtimes=1')
     cmd.extend([
         f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
         f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',

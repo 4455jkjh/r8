@@ -631,7 +631,6 @@ def build_app_with_shrinker(app, options, temp_dir, app_dir, shrinker,
         'config_files_consumer': config_files_consumer,
         'properties': properties,
         'disable_desugared_lib': False,
-        'print_times': options.print_times,
         'java_opts': [],
     })
 
@@ -934,10 +933,6 @@ def parse_options(argv):
                         ' (defaults to app proguard config)',
                         choices=['default', 'force-enable', 'force-disable'],
                         default='default')
-    result.add_argument('--print-times',
-                        help='Print timing information from r8',
-                        default=False,
-                        action='store_true')
     result.add_argument('--print-dexsegments',
                         metavar='BENCHMARKNAME',
                         help='Print the sizes of individual dex segments as ' +
