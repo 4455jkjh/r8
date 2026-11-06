@@ -44,7 +44,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -644,15 +643,10 @@ public class ClassNameMapper implements ProguardMap {
 
   @SuppressWarnings("ReferenceEquality")
   public boolean verifyIsSorted() {
-    Iterator<Entry<String, ClassNamingForNameMapper>> iterator =
-        getClassNameMappings().entrySet().iterator();
-    Iterator<Entry<String, ClassNamingForNameMapper>> sortedIterator =
-        sorted().getClassNameMappings().entrySet().iterator();
-    while (iterator.hasNext()) {
-      Entry<String, ClassNamingForNameMapper> entry = iterator.next();
-      Entry<String, ClassNamingForNameMapper> otherEntry = sortedIterator.next();
-      assert entry.getKey().equals(otherEntry.getKey());
-      assert entry.getValue() == otherEntry.getValue();
+    String prevOriginalName = null;
+    for (ClassNamingForNameMapper naming : getClassNameMappings().values()) {
+      assert prevOriginalName == null || prevOriginalName.compareTo(naming.originalName) <= 0;
+      prevOriginalName = naming.originalName;
     }
     return true;
   }
