@@ -5,8 +5,8 @@
 package com.android.tools.r8.utils.positions;
 
 import static com.android.tools.r8.debuginfo.DebugRepresentation.getParameterCountForPcBasedDebugInfo;
+import static com.android.tools.r8.debuginfo.DebugRepresentation.verifyLastExecutableInstructionWithinBound;
 
-import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexDebugInfo;
@@ -14,10 +14,9 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.timing.Timing;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public interface PositionToMappedRangeMapper {
 
@@ -28,8 +27,6 @@ public interface PositionToMappedRangeMapper {
       boolean canUseDexPc,
       int pcEncodingCutoff,
       Timing timing);
-
-  void updateDebugInfoInCodeObjects(Timing timing);
 
   static PositionToMappedRangeMapper create(AppView<?> appView) {
     return appView.options().isGeneratingClassFiles()
@@ -42,10 +39,8 @@ public interface PositionToMappedRangeMapper {
     private final DexPositionToNoPcMappedRangeMapper noPcMapper;
     private final DexPositionToPcMappedRangeMapper pcMapper;
 
-    private final PcBasedDebugInfoRecorder pcBasedDebugInfoRecorder;
-
     private DexPositionToMappedRangeMapper(AppView<?> appView) {
-      pcBasedDebugInfoRecorder =
+      PcBasedDebugInfoRecorder pcBasedDebugInfoRecorder =
           appView.options().canUseNativeDexPcInsteadOfDebugInfo()
               ? new NativePcSupport()
               : new Pc2PcMappingSupport(appView.options());
@@ -66,48 +61,30 @@ public interface PositionToMappedRangeMapper {
               method, positionRemapper, pcEncodingCutoff, timing)
           : noPcMapper.optimizeDexCodePositions(method, positionRemapper, timing);
     }
-
-    @Override
-    public void updateDebugInfoInCodeObjects(Timing timing) {
-      pcBasedDebugInfoRecorder.updateDebugInfoInCodeObjects(timing);
-    }
   }
 
   interface PcBasedDebugInfoRecorder {
     /** Callback to record a code object with a given max instruction PC and parameter count. */
     void recordPcMappingFor(ProgramMethod method, int maxEncodingPc);
 
-    /**
-     * Install the correct debug info objects.
-     *
-     * <p>Must be called after all recordings have been given to allow computing the debug info
-     * items to be installed.
-     */
-    void updateDebugInfoInCodeObjects(Timing timing);
-
     int getPcEncoding(int pc);
   }
 
   class Pc2PcMappingSupport implements PcBasedDebugInfoRecorder {
 
-    private static class UpdateInfo {
-      final DexCode code;
+    private static class Key {
       final int paramCount;
       final int maxEncodingPc;
 
-      UpdateInfo(DexCode code, int paramCount, int maxEncodingPc) {
-        this.code = code;
+      Key(int paramCount, int maxEncodingPc) {
         this.paramCount = paramCount;
         this.maxEncodingPc = maxEncodingPc;
       }
 
-      // Used as key when building the shared debug info map.
-      // Only param and max-pc are part of the key.
-
       @Override
       @SuppressWarnings("EqualsUnsafeCast")
       public boolean equals(Object o) {
-        UpdateInfo that = (UpdateInfo) o;
+        Key that = (Key) o;
         return paramCount == that.paramCount && maxEncodingPc == that.maxEncodingPc;
       }
 
@@ -117,7 +94,7 @@ public interface PositionToMappedRangeMapper {
       }
     }
 
-    private final List<UpdateInfo> codesToUpdate = new ArrayList<>();
+    private final Map<Key, DexDebugInfo> debugInfos = new ConcurrentHashMap<>();
     private final InternalOptions options;
 
     public Pc2PcMappingSupport(InternalOptions options) {
@@ -135,31 +112,13 @@ public interface PositionToMappedRangeMapper {
       assert method.getDefinition().getCode().isDexCode();
       int parameterCount = getParameterCountForPcBasedDebugInfo(method, options);
       DexCode code = method.getDefinition().getDexCode();
-      assert DebugRepresentation.verifyLastExecutableInstructionWithinBound(code, maxEncodingPc);
-      UpdateInfo updateInfo = new UpdateInfo(code, parameterCount, maxEncodingPc);
-      synchronized (codesToUpdate) {
-        codesToUpdate.add(updateInfo);
-      }
-    }
-
-    @Override
-    public void updateDebugInfoInCodeObjects(Timing timing) {
-      timing.begin("Update debug info in code objects");
-      Map<UpdateInfo, DexDebugInfo> debugInfos = new HashMap<>();
-      codesToUpdate.forEach(
-          entry -> {
-            assert DebugRepresentation.verifyLastExecutableInstructionWithinBound(
-                entry.code, entry.maxEncodingPc);
-            DexDebugInfo debugInfo =
-                debugInfos.computeIfAbsent(entry, Pc2PcMappingSupport::buildPc2PcDebugInfo);
-            assert debugInfo.asPcBasedInfo().getMaxPc() == entry.maxEncodingPc;
-            entry.code.setDebugInfo(debugInfo);
-          });
-      timing.end();
-    }
-
-    private static DexDebugInfo buildPc2PcDebugInfo(UpdateInfo info) {
-      return new DexDebugInfo.PcBasedDebugInfo(info.paramCount, info.maxEncodingPc);
+      assert verifyLastExecutableInstructionWithinBound(code, maxEncodingPc);
+      Key key = new Key(parameterCount, maxEncodingPc);
+      DexDebugInfo debugInfo =
+          debugInfos.computeIfAbsent(
+              key, k -> new DexDebugInfo.PcBasedDebugInfo(k.paramCount, k.maxEncodingPc));
+      assert debugInfo.asPcBasedInfo().getMaxPc() == maxEncodingPc;
+      code.setDebugInfo(debugInfo);
     }
   }
 
@@ -179,11 +138,6 @@ public interface PositionToMappedRangeMapper {
     @Override
     public void recordPcMappingFor(ProgramMethod method, int maxEncodingPc) {
       clearDebugInfo(method);
-    }
-
-    @Override
-    public void updateDebugInfoInCodeObjects(Timing timing) {
-      // Already null out the info so nothing to do.
     }
   }
 }

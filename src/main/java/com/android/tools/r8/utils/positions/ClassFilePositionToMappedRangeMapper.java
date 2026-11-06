@@ -41,11 +41,6 @@ public class ClassFilePositionToMappedRangeMapper implements PositionToMappedRan
         : getMappedPositionsRemapped(method, positionRemapper, hasOverloads);
   }
 
-  @Override
-  public void updateDebugInfoInCodeObjects(Timing timing) {
-    // Intentionally empty.
-  }
-
   private List<MappedPosition> getMappedPositionsRemapped(
       ProgramMethod method, MethodPositionRemapper positionRemapper, boolean hasOverloads) {
     List<MappedPosition> mappedPositions = new ArrayList<>();

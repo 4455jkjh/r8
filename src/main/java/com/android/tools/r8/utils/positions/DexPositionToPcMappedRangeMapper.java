@@ -123,9 +123,16 @@ public class DexPositionToPcMappedRangeMapper {
     timing.end();
     timing.begin("Update mapped positions");
     Position oldPosition = remappedPosition.getFirst();
-    for (int currentPc = startPc; currentPc < endPc; currentPc++) {
+    if (startPc < endPc) {
+      // All PCs in [startPc, endPc) share the same Position and have consecutive PC encodings, so
+      // emitting only the first and last PC in the interval produces the exact same coalesced
+      // MappedRange in MappedPositionToClassNameMapperBuilder as emitting every PC in the range.
       mappedPositions.add(
-          new MappedPosition(oldPosition, debugInfoProvider.getPcEncoding(currentPc)));
+          new MappedPosition(oldPosition, debugInfoProvider.getPcEncoding(startPc)));
+      if (endPc > startPc + 1) {
+        mappedPositions.add(
+            new MappedPosition(oldPosition, debugInfoProvider.getPcEncoding(endPc - 1)));
+      }
     }
     timing.end();
   }

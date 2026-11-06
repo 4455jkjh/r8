@@ -158,7 +158,6 @@ public class LineNumberOptimizer {
 
     var optimizedClasses = optimizePositions(positionToMappedRangeMapper, timing);
     ClassNameMapper mapper = buildMapper(optimizedClasses, timing);
-    positionToMappedRangeMapper.updateDebugInfoInCodeObjects(timing);
 
     timing.end();
     return mapper;
