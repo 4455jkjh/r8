@@ -387,6 +387,62 @@ public class DiffCommandTest extends AssistantCommandTestBase {
   }
 
   @Test
+  public void testNarrowClassAnnotationsNativeAndWildcardIfRule() throws Exception {
+    String caller = "com.example.Main.main(Main.java:1)";
+    Path log =
+        writeFile(
+            "narrow_extra.jsonl",
+            request(1, "CLASS_GET_NAME", caller, "com.example.koin.Repo", "NAME"),
+            returned(1, "com.example.koin.Repo"),
+            request(
+                2,
+                "CLASS_GET_DECLARED_FIELD",
+                caller,
+                "java.nio.ByteBuffer",
+                "com.example.jni.PacketBuffer",
+                "buffer"),
+            returned(2, "java.nio.ByteBuffer buffer"),
+            request(
+                3,
+                "CLASS_GET_METHOD",
+                caller,
+                "java.lang.String",
+                "com.example.app.WineLauncher",
+                "getLanguage"),
+            returned(3, "java.lang.String getLanguage()"),
+            request(4, "CLASS_FOR_NAME", caller, "com.example.app.DemoMain", "true", LOADER),
+            returned(4, "com.example.app.DemoMain"));
+    Path rules =
+        writeFile(
+            "rules.pro",
+            "-keep @org.koin.core.annotation.Single class com.example.koin.** { *; }",
+            "-keep class com.example.jni.** { native <methods>; *; }",
+            "-if class **.DemoMain -keep class <1>.** { *; }");
+    Path proposed = temp.getRoot().toPath().resolve("proposed_extra.pro");
+    ProcessResult result =
+        run(new DiffCommand(), "--log", log, "--rules", rules, "--output", proposed);
+    assertEquals(result.toString(), 0, result.exitCode);
+    assertEquals("", result.stderr);
+    assertThat(result.stdout, containsString("Rules: 3 (3 narrowed)\n"));
+    String proposedText = readFile(proposed);
+    assertThat(proposedText, containsString("-keep class com.example.koin.Repo"));
+    assertThat(
+        proposedText,
+        containsString(
+            StringUtils.unixLines(
+                "-keep class com.example.jni.PacketBuffer {",
+                "    java.nio.ByteBuffer buffer;",
+                "}")));
+    assertThat(
+        proposedText,
+        containsString(
+            StringUtils.unixLines(
+                "-keep class com.example.app.WineLauncher {",
+                "    java.lang.String getLanguage();",
+                "}")));
+  }
+
+  @Test
   public void testUsageErrors() {
     AssistantUsageException e =
         assertThrows(AssistantUsageException.class, () -> run(new DiffCommand()));

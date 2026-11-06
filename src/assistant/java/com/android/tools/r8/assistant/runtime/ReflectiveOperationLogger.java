@@ -6,7 +6,10 @@ package com.android.tools.r8.assistant.runtime;
 
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
@@ -277,6 +280,146 @@ public class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
   public int onResourceBundleGetBundle(
       Stack stack, String baseName, Locale locale, ClassLoader classLoader) {
     report(stack, "Reflectively called ResourceBundle.getBundle on " + baseName);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetAnnotation(Stack stack, Class<?> clazz, Class<?> annotationClass) {
+    report(stack, "Reflectively called Class.getAnnotation on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetAnnotations(Stack stack, Class<?> clazz) {
+    report(stack, "Reflectively called Class.getAnnotations on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassIsAnnotationPresent(Stack stack, Class<?> clazz, Class<?> annotationClass) {
+    report(stack, "Reflectively called Class.isAnnotationPresent on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onFieldGetAnnotation(Stack stack, Field field, Class<?> annotationClass) {
+    report(stack, "Reflectively called Field.getAnnotation on " + field);
+    return NO_ID;
+  }
+
+  @Override
+  public int onFieldGetAnnotations(Stack stack, Field field) {
+    report(stack, "Reflectively called Field.getAnnotations on " + field);
+    return NO_ID;
+  }
+
+  @Override
+  public int onFieldIsAnnotationPresent(Stack stack, Field field, Class<?> annotationClass) {
+    report(stack, "Reflectively called Field.isAnnotationPresent on " + field);
+    return NO_ID;
+  }
+
+  @Override
+  public int onMethodGetAnnotation(Stack stack, Method method, Class<?> annotationClass) {
+    report(stack, "Reflectively called Method.getAnnotation on " + method);
+    return NO_ID;
+  }
+
+  @Override
+  public int onMethodGetAnnotations(Stack stack, Method method) {
+    report(stack, "Reflectively called Method.getAnnotations on " + method);
+    return NO_ID;
+  }
+
+  @Override
+  public int onMethodIsAnnotationPresent(Stack stack, Method method, Class<?> annotationClass) {
+    report(stack, "Reflectively called Method.isAnnotationPresent on " + method);
+    return NO_ID;
+  }
+
+  @Override
+  public int onConstructorGetAnnotation(
+      Stack stack, Constructor<?> constructor, Class<?> annotationClass) {
+    report(stack, "Reflectively called Constructor.getAnnotation on " + constructor);
+    return NO_ID;
+  }
+
+  @Override
+  public int onConstructorGetAnnotations(Stack stack, Constructor<?> constructor) {
+    report(stack, "Reflectively called Constructor.getAnnotations on " + constructor);
+    return NO_ID;
+  }
+
+  @Override
+  public int onConstructorIsAnnotationPresent(
+      Stack stack, Constructor<?> constructor, Class<?> annotationClass) {
+    report(stack, "Reflectively called Constructor.isAnnotationPresent on " + constructor);
+    return NO_ID;
+  }
+
+  @Override
+  public int onMethodGetGenericParameterTypes(Stack stack, Method method) {
+    report(stack, "Reflectively called Method.getGenericParameterTypes on " + method);
+    return NO_ID;
+  }
+
+  @Override
+  public int onMethodGetGenericReturnType(Stack stack, Method method) {
+    report(stack, "Reflectively called Method.getGenericReturnType on " + method);
+    return NO_ID;
+  }
+
+  @Override
+  public int onMethodGetGenericExceptionTypes(Stack stack, Method method) {
+    report(stack, "Reflectively called Method.getGenericExceptionTypes on " + method);
+    return NO_ID;
+  }
+
+  @Override
+  public int onFieldGetGenericType(Stack stack, Field field) {
+    report(stack, "Reflectively called Field.getGenericType on " + field);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetDeclaredClasses(Stack stack, Class<?> clazz) {
+    report(stack, "Reflectively called Class.getDeclaredClasses on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetClasses(Stack stack, Class<?> clazz) {
+    report(stack, "Reflectively called Class.getClasses on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetDeclaringClass(Stack stack, Class<?> clazz) {
+    report(stack, "Reflectively called Class.getDeclaringClass on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetEnclosingClass(Stack stack, Class<?> clazz) {
+    report(stack, "Reflectively called Class.getEnclosingClass on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onEnumValueOf(Stack stack, Class<?> enumType, String name) {
+    report(stack, "Reflectively called Enum.valueOf on " + enumType + "." + name);
+    return NO_ID;
+  }
+
+  @Override
+  public int onClassGetEnumConstants(Stack stack, Class<?> clazz) {
+    report(stack, "Reflectively called Class.getEnumConstants on " + clazz);
+    return NO_ID;
+  }
+
+  @Override
+  public int onUnsafeAllocateInstance(Stack stack, Object unsafe, Class<?> clazz) {
+    report(stack, "Reflectively called Unsafe.allocateInstance on " + clazz);
     return NO_ID;
   }
 

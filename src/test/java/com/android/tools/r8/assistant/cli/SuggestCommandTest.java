@@ -502,26 +502,57 @@ public class SuggestCommandTest extends AssistantCommandTestBase {
         case CLASS_GET_SUPERCLASS:
         case CLASS_GET_GENERIC_SUPERCLASS:
         case CLASS_GET_GENERIC_INTERFACES:
+        case CLASS_GET_ANNOTATIONS:
+        case CLASS_GET_DECLARED_CLASSES:
+        case CLASS_GET_CLASSES:
+        case CLASS_GET_DECLARING_CLASS:
+        case CLASS_GET_ENCLOSING_CLASS:
+        case CLASS_GET_ENUM_CONSTANTS:
+        case UNSAFE_ALLOCATE_INSTANCE:
           args = new String[] {"com.example.A"};
           break;
         case CLASS_IS_ASSIGNABLE_FROM:
         case CLASS_AS_SUBCLASS:
         case CLASS_IS_INSTANCE:
         case CLASS_CAST:
+        case CLASS_GET_ANNOTATION:
+        case CLASS_IS_ANNOTATION_PRESENT:
           args = new String[] {"com.example.A", "com.example.B"};
+          break;
+        case ENUM_VALUE_OF:
+          args = new String[] {"com.example.A", "VALUE"};
           break;
         case CLASS_GET_DECLARED_METHOD:
         case CLASS_GET_METHOD:
+        case METHOD_GET_ANNOTATIONS:
+        case METHOD_GET_GENERIC_PARAMETER_TYPES:
+        case METHOD_GET_GENERIC_RETURN_TYPE:
+        case METHOD_GET_GENERIC_EXCEPTION_TYPES:
           args = new String[] {"void", "com.example.A", "m"};
+          break;
+        case METHOD_GET_ANNOTATION:
+        case METHOD_IS_ANNOTATION_PRESENT:
+          args = new String[] {"void", "com.example.A", "m", "com.example.Ann"};
           break;
         case CLASS_GET_DECLARED_FIELD:
         case CLASS_GET_FIELD:
         case ATOMIC_FIELD_UPDATER_NEW_UPDATER:
+        case FIELD_GET_ANNOTATIONS:
+        case FIELD_GET_GENERIC_TYPE:
           args = new String[] {"int", "com.example.A", "f"};
+          break;
+        case FIELD_GET_ANNOTATION:
+        case FIELD_IS_ANNOTATION_PRESENT:
+          args = new String[] {"int", "com.example.A", "f", "com.example.Ann"};
           break;
         case CLASS_GET_DECLARED_CONSTRUCTOR:
         case CLASS_GET_CONSTRUCTOR:
+        case CONSTRUCTOR_GET_ANNOTATIONS:
           args = new String[] {"void", "com.example.A", "<init>"};
+          break;
+        case CONSTRUCTOR_GET_ANNOTATION:
+        case CONSTRUCTOR_IS_ANNOTATION_PRESENT:
+          args = new String[] {"void", "com.example.A", "<init>", "com.example.Ann"};
           break;
         case CLASS_GET_NAME:
           args = new String[] {"com.example.A", "NAME"};
@@ -558,6 +589,64 @@ public class SuggestCommandTest extends AssistantCommandTestBase {
                 + ": skipped 1 line that could not be read (malformed, or events of a type this"
                 + " version does not know)"),
         result.stderr);
+  }
+
+  @Test
+  public void testAnnotationsEnumsAndMemberSignatures() throws Exception {
+    String caller = "com.example.Main.main(Main.java:1)";
+    Path log =
+        writeFile(
+            "annotations_enums.jsonl",
+            request(
+                1,
+                "FIELD_GET_ANNOTATION",
+                caller,
+                "boolean",
+                "com.example.Filter",
+                "irreversible",
+                "com.example.JsonAdapter"),
+            returnedTypes(
+                1,
+                "com.example.JsonAdapter",
+                "class:com.example.GuardedBooleanAdapter",
+                "interface:com.example.JsonDeserializer"),
+            request(2, "ENUM_VALUE_OF", caller, "com.example.ThemeMode", "DARK"),
+            returned(2, "DARK"),
+            request(
+                3,
+                "METHOD_GET_GENERIC_PARAMETER_TYPES",
+                caller,
+                "java.lang.Object",
+                "com.example.FeedService",
+                "fetchFeed",
+                "kotlin.coroutines.Continuation"),
+            returnedTypes(3, "kotlin.coroutines.Continuation<...>"),
+            request(4, "CLASS_GET_DECLARED_CLASSES", caller, "com.example.NewsResource"),
+            returnedTypes(4, "com.example.NewsResource$Companion"));
+    ProcessResult result = run(new SuggestCommand(), "--log", log);
+    assertEquals(result.toString(), 0, result.exitCode);
+    assertEquals("", result.stderr);
+    assertThat(result.stdout, containsString(KeepRuleWriter.ANNOTATION_ATTRIBUTES_RULE));
+    assertThat(result.stdout, not(containsString("AnnotationDefault")));
+    assertThat(result.stdout, containsString(KeepRuleWriter.SIGNATURE_ATTRIBUTE_RULE));
+    assertThat(result.stdout, containsString(KeepRuleWriter.NESTING_ATTRIBUTES_RULE));
+    assertThat(
+        result.stdout,
+        containsString("-keep class com.example.GuardedBooleanAdapter {\n    <init>();\n}"));
+    assertThat(
+        result.stdout,
+        containsString("-keep interface com.example.JsonDeserializer {\n    <methods>;\n}"));
+    assertThat(result.stdout, containsString("-keep class com.example.ThemeMode {\n    <fields>;"));
+    assertThat(
+        result.stdout,
+        containsString(
+            "-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation"));
+    assertThat(result.stdout, containsString("-keep class com.example.NewsResource$Companion"));
+
+    Path rules = writeFile("annotation_attrs.pro", KeepRuleWriter.ANNOTATION_ATTRIBUTES_RULE);
+    ProcessResult withRules = run(new SuggestCommand(), "--log", log, "--rules", rules);
+    assertEquals(withRules.toString(), 0, withRules.exitCode);
+    assertThat(withRules.stdout, not(containsString(KeepRuleWriter.ANNOTATION_ATTRIBUTES_RULE)));
   }
 
   @Test

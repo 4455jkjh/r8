@@ -234,6 +234,11 @@ final class KeepRuleSet {
     return keepAttributes.signature;
   }
 
+  boolean keepsAnnotationAttributes() {
+    return keepAttributes.runtimeVisibleAnnotations
+        && keepAttributes.runtimeVisibleParameterAnnotations;
+  }
+
   /**
    * The type for a Java type name, created in the factory used for parsing the rules, or null if
    * the name is not a valid type name.

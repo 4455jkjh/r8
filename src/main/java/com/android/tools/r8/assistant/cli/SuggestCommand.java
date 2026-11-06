@@ -173,6 +173,9 @@ public class SuggestCommand extends AssistantCommand {
     boolean keepSignatureAttribute =
         !requirements.getSignatureAttributeEvents().isEmpty()
             && (ruleSet == null || !ruleSet.keepsSignatureAttribute());
+    boolean keepAnnotationAttributes =
+        !requirements.getAnnotationAttributeEvents().isEmpty()
+            && (ruleSet == null || !ruleSet.keepsAnnotationAttributes());
 
     StringBuilder builder = new StringBuilder();
     builder.append("# Keep rules suggested by the R8 Assistant\n");
@@ -210,7 +213,11 @@ public class SuggestCommand extends AssistantCommand {
     }
     ruleCount +=
         KeepRuleWriter.appendAttributeRules(
-            builder, requirements, keepNestingAttributes, keepSignatureAttribute);
+            builder,
+            requirements,
+            keepNestingAttributes,
+            keepSignatureAttribute,
+            keepAnnotationAttributes);
     if (ruleCount == 0) {
       builder.append('\n');
       builder.append(

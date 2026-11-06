@@ -95,9 +95,13 @@ final class ReflectiveEvents {
   static List<String> getSecondaryClassNames(ReflectiveEvent event) {
     List<String> result = new ArrayList<>();
     if (event.isClassOperation()) {
-      DexType argumentType = event.asClassOperation().getArgumentType();
-      if (argumentType != null) {
-        result.add(typeName(argumentType));
+      ReflectiveEventType type = event.getEventType();
+      if (type != ReflectiveEventType.CLASS_GET_ANNOTATION
+          && type != ReflectiveEventType.CLASS_IS_ANNOTATION_PRESENT) {
+        DexType argumentType = event.asClassOperation().getArgumentType();
+        if (argumentType != null) {
+          result.add(typeName(argumentType));
+        }
       }
     } else if (event.isProxyNewProxyInstance()) {
       DexType[] interfaces = event.asProxyNewProxyInstance().getInterfaces();
@@ -106,6 +110,25 @@ final class ReflectiveEvents {
       }
     }
     return result;
+  }
+
+  /**
+   * The annotation type requested by a single-annotation lookup such as {@code
+   * Class.getAnnotation}, or null.
+   */
+  static String getRequestedAnnotationType(ReflectiveEvent event) {
+    if (event.isClassOperation()) {
+      ReflectiveEventType type = event.getEventType();
+      if (type == ReflectiveEventType.CLASS_GET_ANNOTATION
+          || type == ReflectiveEventType.CLASS_IS_ANNOTATION_PRESENT) {
+        DexType argumentType = event.asClassOperation().getArgumentType();
+        return argumentType == null ? null : typeName(argumentType);
+      }
+    } else if (event.isClassGetMember()) {
+      DexType annotationType = event.asClassGetMember().getAnnotationType();
+      return annotationType == null ? null : typeName(annotationType);
+    }
+    return null;
   }
 
   /** All classes the event is about. */
@@ -211,8 +234,21 @@ final class ReflectiveEvents {
         return "ResourceBundle.getBundle";
       case SERVICE_LOADER_LOAD:
         return "ServiceLoader.load";
+      case ENUM_VALUE_OF:
+        return "Enum.valueOf";
+      case UNSAFE_ALLOCATE_INSTANCE:
+        return "Unsafe.allocateInstance";
       default:
         String name = event.getEventType().name();
+        if (name.startsWith("FIELD_")) {
+          return "Field." + toCamelCase(name.substring("FIELD_".length()), false);
+        }
+        if (name.startsWith("METHOD_")) {
+          return "Method." + toCamelCase(name.substring("METHOD_".length()), false);
+        }
+        if (name.startsWith("CONSTRUCTOR_")) {
+          return "Constructor." + toCamelCase(name.substring("CONSTRUCTOR_".length()), false);
+        }
         assert name.startsWith("CLASS_");
         return "Class." + toCamelCase(name.substring("CLASS_".length()), false);
     }
@@ -364,10 +400,14 @@ final class ReflectiveEvents {
       case CLASS_CAST:
       case CLASS_FOR_NAME:
       case CLASS_GET_COMPONENT_TYPE:
+      case CLASS_GET_DECLARING_CLASS:
+      case CLASS_GET_ENCLOSING_CLASS:
       case CLASS_GET_GENERIC_SUPERCLASS:
       case CLASS_GET_SUPERCLASS:
       case CLASS_LOADER_LOAD_CLASS:
       case CLASS_NEW_INSTANCE:
+      case FIELD_GET_GENERIC_TYPE:
+      case METHOD_GET_GENERIC_RETURN_TYPE:
       case RESOURCE_BUNDLE_GET_BUNDLE:
         for (Object result : event.getResults()) {
           if (result instanceof String) {
@@ -375,7 +415,12 @@ final class ReflectiveEvents {
           }
         }
         break;
+      case CLASS_GET_CLASSES:
+      case CLASS_GET_DECLARED_CLASSES:
       case CLASS_GET_GENERIC_INTERFACES:
+      case METHOD_GET_GENERIC_EXCEPTION_TYPES:
+      case METHOD_GET_GENERIC_PARAMETER_TYPES:
+      case SERVICE_LOADER_LOAD:
         for (Object result : event.getResults()) {
           if (result instanceof List) {
             for (Object element : (List<?>) result) {
@@ -383,6 +428,8 @@ final class ReflectiveEvents {
                 names.add((String) element);
               }
             }
+          } else if (result instanceof String) {
+            names.add((String) result);
           }
         }
         break;
@@ -390,6 +437,26 @@ final class ReflectiveEvents {
         break;
     }
     return names;
+  }
+
+  /**
+   * The string values in the results of annotation lookups (annotation type names and {@code
+   * class:...} or {@code interface:...} references).
+   */
+  static List<String> getAnnotationResultStrings(ReflectiveEvent event) {
+    List<String> strings = new ArrayList<>();
+    for (Object result : event.getResults()) {
+      if (result instanceof String) {
+        strings.add((String) result);
+      } else if (result instanceof List) {
+        for (Object element : (List<?>) result) {
+          if (element instanceof String) {
+            strings.add((String) element);
+          }
+        }
+      }
+    }
+    return strings;
   }
 
   /**

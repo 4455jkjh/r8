@@ -288,7 +288,158 @@ public class InstrumentedReflectiveMethodList {
         factory.classLoaderType,
         controlType);
 
+    // Annotation reflection methods.
+    DexType annotationType = factory.annotationType;
+    DexType annotationArrayType = annotationType.toArrayType(factory);
+    DexType annotationArray2DType = annotationArrayType.toArrayType(factory);
+    DexType annotatedElementType = factory.createType("Ljava/lang/reflect/AnnotatedElement;");
+
+    putAnnotationMethods(
+        builder,
+        factory.classType,
+        annotationType,
+        annotationArrayType,
+        "onClassGetAnnotation",
+        "onClassGetAnnotations",
+        "onClassIsAnnotationPresent");
+    putAnnotationMethods(
+        builder,
+        factory.fieldType,
+        annotationType,
+        annotationArrayType,
+        "onFieldGetAnnotation",
+        "onFieldGetAnnotations",
+        "onFieldIsAnnotationPresent");
+    putAnnotationMethods(
+        builder,
+        factory.methodType,
+        annotationType,
+        annotationArrayType,
+        "onMethodGetAnnotation",
+        "onMethodGetAnnotations",
+        "onMethodIsAnnotationPresent");
+    builder.put(
+        factory.createMethod(
+            factory.methodType,
+            factory.createProto(annotationArray2DType),
+            "getParameterAnnotations"),
+        getMethodReferenceWithParameterTypes("onMethodGetAnnotations", factory.methodType));
+    putAnnotationMethods(
+        builder,
+        factory.constructorType,
+        annotationType,
+        annotationArrayType,
+        "onConstructorGetAnnotation",
+        "onConstructorGetAnnotations",
+        "onConstructorIsAnnotationPresent");
+    putAnnotationMethods(
+        builder,
+        annotatedElementType,
+        annotationType,
+        annotationArrayType,
+        "onAnnotatedElementGetAnnotation",
+        "onAnnotatedElementGetAnnotations",
+        "onAnnotatedElementIsAnnotationPresent");
+
+    // Generic member signature methods.
+    DexType reflectTypeArray = reflectType.toArrayType(factory);
+    builder.put(
+        factory.createMethod(
+            factory.methodType, factory.createProto(reflectTypeArray), "getGenericParameterTypes"),
+        getMethodReferenceWithParameterTypes(
+            "onMethodGetGenericParameterTypes", factory.methodType));
+    builder.put(
+        factory.createMethod(
+            factory.methodType, factory.createProto(reflectType), "getGenericReturnType"),
+        getMethodReferenceWithParameterTypes("onMethodGetGenericReturnType", factory.methodType));
+    builder.put(
+        factory.createMethod(
+            factory.methodType, factory.createProto(reflectTypeArray), "getGenericExceptionTypes"),
+        getMethodReferenceWithParameterTypes(
+            "onMethodGetGenericExceptionTypes", factory.methodType));
+    builder.put(
+        factory.createMethod(factory.fieldType, factory.createProto(reflectType), "getGenericType"),
+        getMethodReferenceWithParameterTypes("onFieldGetGenericType", factory.fieldType));
+
+    // Nested class discovery methods.
+    builder.put(
+        factory.createMethod(
+            factory.classType, factory.createProto(factory.classArrayType), "getDeclaredClasses"),
+        getMethodReferenceWithClassParameter("onClassGetDeclaredClasses"));
+    builder.put(
+        factory.createMethod(
+            factory.classType, factory.createProto(factory.classArrayType), "getClasses"),
+        getMethodReferenceWithClassParameter("onClassGetClasses"));
+    builder.put(
+        factory.createMethod(
+            factory.classType, factory.createProto(factory.classType), "getDeclaringClass"),
+        getMethodReferenceWithClassParameter("onClassGetDeclaringClass"));
+    builder.put(
+        factory.createMethod(
+            factory.classType, factory.createProto(factory.classType), "getEnclosingClass"),
+        getMethodReferenceWithClassParameter("onClassGetEnclosingClass"));
+
+    // Enum reflection methods.
+    builder.put(
+        factory.createMethod(
+            factory.enumType,
+            factory.createProto(factory.enumType, factory.classType, factory.stringType),
+            "valueOf"),
+        getMethodReferenceWithClassAndStringParameter("onEnumValueOf"));
+    builder.put(
+        factory.createMethod(
+            factory.classType, factory.createProto(factory.objectArrayType), "getEnumConstants"),
+        getMethodReferenceWithClassParameter("onClassGetEnumConstants"));
+
+    // Unsafe.allocateInstance.
+    builder.put(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.objectType, factory.classType),
+            "allocateInstance"),
+        getMethodReferenceWithParameterTypes(
+            "onUnsafeAllocateInstance", factory.objectType, factory.classType));
+
     return builder.build();
+  }
+
+  private void putAnnotationMethods(
+      ImmutableMap.Builder<DexMethod, DexMethod> builder,
+      DexType receiverType,
+      DexType annotationType,
+      DexType annotationArrayType,
+      String onGetAnnotation,
+      String onGetAnnotations,
+      String onIsAnnotationPresent) {
+    DexMethod getAnnotationHook =
+        getMethodReferenceWithParameterTypes(onGetAnnotation, receiverType, factory.classType);
+    builder.put(
+        factory.createMethod(
+            receiverType, factory.createProto(annotationType, factory.classType), "getAnnotation"),
+        getAnnotationHook);
+    builder.put(
+        factory.createMethod(
+            receiverType,
+            factory.createProto(annotationType, factory.classType),
+            "getDeclaredAnnotation"),
+        getAnnotationHook);
+    DexMethod getAnnotationsHook =
+        getMethodReferenceWithParameterTypes(onGetAnnotations, receiverType);
+    builder.put(
+        factory.createMethod(
+            receiverType, factory.createProto(annotationArrayType), "getAnnotations"),
+        getAnnotationsHook);
+    builder.put(
+        factory.createMethod(
+            receiverType, factory.createProto(annotationArrayType), "getDeclaredAnnotations"),
+        getAnnotationsHook);
+    builder.put(
+        factory.createMethod(
+            receiverType,
+            factory.createProto(factory.booleanType, factory.classType),
+            "isAnnotationPresent"),
+        getMethodReferenceWithParameterTypes(
+            onIsAnnotationPresent, receiverType, factory.classType));
   }
 
   // ResourceBundle.getBundle is static, so the stub takes the same parameters.

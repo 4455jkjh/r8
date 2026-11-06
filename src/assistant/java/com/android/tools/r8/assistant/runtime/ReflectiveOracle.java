@@ -6,6 +6,9 @@ package com.android.tools.r8.assistant.runtime;
 import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver.ClassFlag;
 import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver.NameLookupType;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -371,6 +374,163 @@ public class ReflectiveOracle {
       String baseName, Locale locale, ClassLoader classLoader, ResourceBundle.Control control) {
     return getInstance()
         .onResourceBundleGetBundle(Stack.createStack(), baseName, locale, classLoader);
+  }
+
+  public static int onClassGetAnnotation(Class<?> clazz, Class<?> annotationClass) {
+    return getInstance().onClassGetAnnotation(Stack.createStack(), clazz, annotationClass);
+  }
+
+  public static int onClassGetAnnotations(Class<?> clazz) {
+    return getInstance().onClassGetAnnotations(Stack.createStack(), clazz);
+  }
+
+  public static int onClassIsAnnotationPresent(Class<?> clazz, Class<?> annotationClass) {
+    return getInstance().onClassIsAnnotationPresent(Stack.createStack(), clazz, annotationClass);
+  }
+
+  public static int onFieldGetAnnotation(Field field, Class<?> annotationClass) {
+    return getInstance().onFieldGetAnnotation(Stack.createStack(), field, annotationClass);
+  }
+
+  public static int onFieldGetAnnotations(Field field) {
+    return getInstance().onFieldGetAnnotations(Stack.createStack(), field);
+  }
+
+  public static int onFieldIsAnnotationPresent(Field field, Class<?> annotationClass) {
+    return getInstance().onFieldIsAnnotationPresent(Stack.createStack(), field, annotationClass);
+  }
+
+  public static int onMethodGetAnnotation(Method method, Class<?> annotationClass) {
+    return getInstance().onMethodGetAnnotation(Stack.createStack(), method, annotationClass);
+  }
+
+  public static int onMethodGetAnnotations(Method method) {
+    return getInstance().onMethodGetAnnotations(Stack.createStack(), method);
+  }
+
+  public static int onMethodIsAnnotationPresent(Method method, Class<?> annotationClass) {
+    return getInstance().onMethodIsAnnotationPresent(Stack.createStack(), method, annotationClass);
+  }
+
+  public static int onConstructorGetAnnotation(
+      Constructor<?> constructor, Class<?> annotationClass) {
+    return getInstance()
+        .onConstructorGetAnnotation(Stack.createStack(), constructor, annotationClass);
+  }
+
+  public static int onConstructorGetAnnotations(Constructor<?> constructor) {
+    return getInstance().onConstructorGetAnnotations(Stack.createStack(), constructor);
+  }
+
+  public static int onConstructorIsAnnotationPresent(
+      Constructor<?> constructor, Class<?> annotationClass) {
+    return getInstance()
+        .onConstructorIsAnnotationPresent(Stack.createStack(), constructor, annotationClass);
+  }
+
+  public static int onAnnotatedElementGetAnnotation(
+      AnnotatedElement element, Class<?> annotationClass) {
+    if (element instanceof Class) {
+      return getInstance()
+          .onClassGetAnnotation(Stack.createStack(), (Class<?>) element, annotationClass);
+    }
+    if (element instanceof Field) {
+      return getInstance()
+          .onFieldGetAnnotation(Stack.createStack(), (Field) element, annotationClass);
+    }
+    if (element instanceof Method) {
+      return getInstance()
+          .onMethodGetAnnotation(Stack.createStack(), (Method) element, annotationClass);
+    }
+    if (element instanceof Constructor) {
+      return getInstance()
+          .onConstructorGetAnnotation(
+              Stack.createStack(), (Constructor<?>) element, annotationClass);
+    }
+    return ReflectiveOperationReceiver.NO_ID;
+  }
+
+  public static int onAnnotatedElementGetAnnotations(AnnotatedElement element) {
+    if (element instanceof Class) {
+      return getInstance().onClassGetAnnotations(Stack.createStack(), (Class<?>) element);
+    }
+    if (element instanceof Field) {
+      return getInstance().onFieldGetAnnotations(Stack.createStack(), (Field) element);
+    }
+    if (element instanceof Method) {
+      return getInstance().onMethodGetAnnotations(Stack.createStack(), (Method) element);
+    }
+    if (element instanceof Constructor) {
+      return getInstance()
+          .onConstructorGetAnnotations(Stack.createStack(), (Constructor<?>) element);
+    }
+    return ReflectiveOperationReceiver.NO_ID;
+  }
+
+  public static int onAnnotatedElementIsAnnotationPresent(
+      AnnotatedElement element, Class<?> annotationClass) {
+    if (element instanceof Class) {
+      return getInstance()
+          .onClassIsAnnotationPresent(Stack.createStack(), (Class<?>) element, annotationClass);
+    }
+    if (element instanceof Field) {
+      return getInstance()
+          .onFieldIsAnnotationPresent(Stack.createStack(), (Field) element, annotationClass);
+    }
+    if (element instanceof Method) {
+      return getInstance()
+          .onMethodIsAnnotationPresent(Stack.createStack(), (Method) element, annotationClass);
+    }
+    if (element instanceof Constructor) {
+      return getInstance()
+          .onConstructorIsAnnotationPresent(
+              Stack.createStack(), (Constructor<?>) element, annotationClass);
+    }
+    return ReflectiveOperationReceiver.NO_ID;
+  }
+
+  public static int onMethodGetGenericParameterTypes(Method method) {
+    return getInstance().onMethodGetGenericParameterTypes(Stack.createStack(), method);
+  }
+
+  public static int onMethodGetGenericReturnType(Method method) {
+    return getInstance().onMethodGetGenericReturnType(Stack.createStack(), method);
+  }
+
+  public static int onMethodGetGenericExceptionTypes(Method method) {
+    return getInstance().onMethodGetGenericExceptionTypes(Stack.createStack(), method);
+  }
+
+  public static int onFieldGetGenericType(Field field) {
+    return getInstance().onFieldGetGenericType(Stack.createStack(), field);
+  }
+
+  public static int onClassGetDeclaredClasses(Class<?> clazz) {
+    return getInstance().onClassGetDeclaredClasses(Stack.createStack(), clazz);
+  }
+
+  public static int onClassGetClasses(Class<?> clazz) {
+    return getInstance().onClassGetClasses(Stack.createStack(), clazz);
+  }
+
+  public static int onClassGetDeclaringClass(Class<?> clazz) {
+    return getInstance().onClassGetDeclaringClass(Stack.createStack(), clazz);
+  }
+
+  public static int onClassGetEnclosingClass(Class<?> clazz) {
+    return getInstance().onClassGetEnclosingClass(Stack.createStack(), clazz);
+  }
+
+  public static int onEnumValueOf(Class<?> enumType, String name) {
+    return getInstance().onEnumValueOf(Stack.createStack(), enumType, name);
+  }
+
+  public static int onClassGetEnumConstants(Class<?> clazz) {
+    return getInstance().onClassGetEnumConstants(Stack.createStack(), clazz);
+  }
+
+  public static int onUnsafeAllocateInstance(Object unsafe, Class<?> clazz) {
+    return getInstance().onUnsafeAllocateInstance(Stack.createStack(), unsafe, clazz);
   }
 
   // Called after an instrumented reflective call returns normally, with the id returned by the

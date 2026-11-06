@@ -39,12 +39,12 @@ public class ReflectiveCallExtractorTest extends TestBase {
 
   @Test
   public void testGson() throws Exception {
-    test(TestDeps.getGsonJar(), 22, 6);
+    test(TestDeps.getGsonJar(), 24, 4);
   }
 
   @Test
   public void testGuava() throws Exception {
-    test(TestDeps.getGuavaJreJar(), 30, 9);
+    test(TestDeps.getGuavaJreJar(), 32, 7);
   }
 
   @Test
@@ -57,7 +57,7 @@ public class ReflectiveCallExtractorTest extends TestBase {
     Path programArchive =
         CompilerDump.fromArchive(TestDeps.getNowInAndroidDumpAppZip(), temp.newFolder().toPath())
             .getProgramArchive();
-    test(programArchive, 37, 16);
+    test(programArchive, 44, 9);
   }
 
   private void test(Path jar, int success, int failure) throws Exception {

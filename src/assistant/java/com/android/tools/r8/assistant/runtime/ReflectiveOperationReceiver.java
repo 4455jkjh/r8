@@ -5,7 +5,10 @@ package com.android.tools.r8.assistant.runtime;
 
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.util.Locale;
 
 // The onXxx callbacks are called before the reflective call and return an id for the event, or
@@ -85,6 +88,53 @@ public interface ReflectiveOperationReceiver {
   // The locale and class loader are null if the called overload does not take them.
   int onResourceBundleGetBundle(
       Stack stack, String baseName, Locale locale, ClassLoader classLoader);
+
+  int onClassGetAnnotation(Stack stack, Class<?> clazz, Class<?> annotationClass);
+
+  int onClassGetAnnotations(Stack stack, Class<?> clazz);
+
+  int onClassIsAnnotationPresent(Stack stack, Class<?> clazz, Class<?> annotationClass);
+
+  int onFieldGetAnnotation(Stack stack, Field field, Class<?> annotationClass);
+
+  int onFieldGetAnnotations(Stack stack, Field field);
+
+  int onFieldIsAnnotationPresent(Stack stack, Field field, Class<?> annotationClass);
+
+  int onMethodGetAnnotation(Stack stack, Method method, Class<?> annotationClass);
+
+  int onMethodGetAnnotations(Stack stack, Method method);
+
+  int onMethodIsAnnotationPresent(Stack stack, Method method, Class<?> annotationClass);
+
+  int onConstructorGetAnnotation(Stack stack, Constructor<?> constructor, Class<?> annotationClass);
+
+  int onConstructorGetAnnotations(Stack stack, Constructor<?> constructor);
+
+  int onConstructorIsAnnotationPresent(
+      Stack stack, Constructor<?> constructor, Class<?> annotationClass);
+
+  int onMethodGetGenericParameterTypes(Stack stack, Method method);
+
+  int onMethodGetGenericReturnType(Stack stack, Method method);
+
+  int onMethodGetGenericExceptionTypes(Stack stack, Method method);
+
+  int onFieldGetGenericType(Stack stack, Field field);
+
+  int onClassGetDeclaredClasses(Stack stack, Class<?> clazz);
+
+  int onClassGetClasses(Stack stack, Class<?> clazz);
+
+  int onClassGetDeclaringClass(Stack stack, Class<?> clazz);
+
+  int onClassGetEnclosingClass(Stack stack, Class<?> clazz);
+
+  int onEnumValueOf(Stack stack, Class<?> enumType, String name);
+
+  int onClassGetEnumConstants(Stack stack, Class<?> clazz);
+
+  int onUnsafeAllocateInstance(Stack stack, Object unsafe, Class<?> clazz);
 
   void onReflectiveOperationReturned(int id, Object result);
 
