@@ -187,7 +187,7 @@ public class ThreadUtils {
     int i = 0;
     for (T item : items) {
       if (itemPredicate.test(item)) {
-        String taskName = taskNameFunction.apply(i, item);
+        String taskName = timingMerger.isEmpty() ? null : taskNameFunction.apply(i, item);
         tasks.submitUnchecked(
             () -> {
               Timing threadTiming = timing.createThreadTiming(taskName, options);
