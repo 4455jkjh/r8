@@ -51,10 +51,6 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   // Only registers up to and including the registerLimit are allowed for this interval.
   private int registerLimit = U16BIT_MAX;
 
-  // Max register used for any of the non-spilled splits for these live intervals or for any of the
-  // live intervals that this live interval is connected to by phi moves. This is used to
-  // conservatively determine if it is safe to use rematerialization for this value.
-  private int maxNonSpilledRegister = NO_REGISTER;
   private boolean isRematerializable = false;
 
   public LiveIntervals(Value value) {
@@ -346,9 +342,15 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     liveAtMoveExceptionEntry = true;
   }
 
+  // Returns the max register used for any of the non-spilled splits for these live intervals.
+  //
+  // This is intentionally recomputed from the current register assignment each time it is needed.
+  // It must not be cached across the move insertion rounds of a single allocation, nor across
+  // allocation modes, since the register assignment of the splits can change in between.
+  @SuppressWarnings("ReferenceEquality")
   private int computeMaxNonSpilledRegister(LinearScanRegisterAllocator allocator) {
     assert splitParent == this;
-    assert maxNonSpilledRegister == NO_REGISTER;
+    int maxNonSpilledRegister = NO_REGISTER;
     if (!isSpilled()) {
       maxNonSpilledRegister = getRegister();
     }
@@ -359,18 +361,6 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
       }
     }
     return maxNonSpilledRegister;
-  }
-
-  public void setMaxNonSpilledRegister(int register, LinearScanRegisterAllocator allocator) {
-    assert allocator.maxVirtualRegister(register, splitParent.maxNonSpilledRegister) == register;
-    splitParent.maxNonSpilledRegister = register;
-  }
-
-  public int getMaxNonSpilledRegister(LinearScanRegisterAllocator allocator) {
-    if (splitParent.maxNonSpilledRegister != NO_REGISTER) {
-      return splitParent.maxNonSpilledRegister;
-    }
-    return splitParent.computeMaxNonSpilledRegister(allocator);
   }
 
   public boolean usesRegister(int n, boolean otherIsWide) {
@@ -743,6 +733,11 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     // If the constant is spilled when flowing to a phi and the phi has a register higher than what
     // can be const rematerialized then this value is not rematerializable and needs a register even
     // when spilled.
+    //
+    // Note that this only depends on the current register assignment. The result must be the same
+    // each time moves are inserted for the same register assignment, since the set of unused
+    // registers (and thereby the real argument registers used by unsplitArguments()) is derived
+    // from it.
     for (Phi phi : value.uniquePhiUsers()) {
       int reg = allocator.unadjustedRealRegisterFromAllocated(phi.getLiveIntervals().getRegister());
       if (reg >= U8BIT_MAX) {
@@ -751,6 +746,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
           if (operand == value) {
             JumpInstruction predExit = phi.getBlock().getPredecessors().get(predIndex).exit();
             if (getSplitCovering(predExit).isSpilled()) {
+              isRematerializable = false;
               return;
             }
           }
@@ -765,7 +761,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     // these computations. We use the unadjusted real register number to make sure that
     // isRematerializable for the same intervals does not change from one phase of
     // compilation to the next.
-    int maxNonSpilledRegister = getMaxNonSpilledRegister(allocator);
+    int maxNonSpilledRegister = computeMaxNonSpilledRegister(allocator);
     if (maxNonSpilledRegister == NO_REGISTER) {
       assert allSplitsAreSpilled();
       isRematerializable = true;

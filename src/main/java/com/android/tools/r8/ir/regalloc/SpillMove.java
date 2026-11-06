@@ -29,16 +29,6 @@ class SpillMove {
     return type.hashCode() + 3 * from.getRegister() + 5 * to.getRegister();
   }
 
-  public void updateMaxNonSpilled(LinearScanRegisterAllocator allocator) {
-    int maxFrom = from.getMaxNonSpilledRegister(allocator);
-    int maxTo = to.getMaxNonSpilledRegister(allocator);
-    if (allocator.maxVirtualRegister(maxFrom, maxTo) == maxFrom) {
-      to.setMaxNonSpilledRegister(maxFrom, allocator);
-    } else {
-      from.setMaxNonSpilledRegister(maxTo, allocator);
-    }
-  }
-
   @Override
   @SuppressWarnings("ReferenceEquality")
   public boolean equals(Object other) {
