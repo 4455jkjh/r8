@@ -1079,7 +1079,7 @@ public class IRConverter {
 
   private <EV, S extends LirStrategy<Value, EV>> IRCode doRoundtripWithStrategy(
       IRCode code, S strategy, String name, Timing timing) {
-    timing.begin("IR->LIR (" + name + ")");
+    timing.begin(name, n -> "IR->LIR (" + n + ")");
     LirCode<EV> lirCode =
         IR2LirConverter.translate(
             code,
@@ -1090,7 +1090,7 @@ public class IRConverter {
     // Check that printing does not fail.
     String lirString = lirCode.toString();
     assert !lirString.isEmpty();
-    timing.begin("LIR->IR (" + name + ")");
+    timing.begin(name, n -> "LIR->IR (" + n + ")");
     IRCode irCode =
         Lir2IRConverter.translate(
             code.context(),

@@ -8,6 +8,8 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.internal.ThrowingSupplier;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 public abstract class Timing implements AutoCloseable {
 
@@ -37,15 +39,23 @@ public abstract class Timing implements AutoCloseable {
     return timing;
   }
 
-  public Timing createThreadTiming(String title, InternalOptions options) {
-    return internalCreate(title, options, null);
-  }
+  public abstract Timing createThreadTiming(String title, InternalOptions options);
+
+  public abstract <T> Timing createThreadTiming(
+      T context, Function<T, String> titleSupplier, InternalOptions options);
+
+  public abstract Timing createThreadTiming(
+      int value, IntFunction<String> titleSupplier, InternalOptions options);
 
   public void notifyThreadTimingFinished() {
     // Intentionally empty.
   }
 
   public abstract Timing begin(String title);
+
+  public abstract <T> Timing begin(T context, Function<T, String> titleSupplier);
+
+  public abstract Timing begin(int value, IntFunction<String> titleSupplier);
 
   public abstract Timing end();
 

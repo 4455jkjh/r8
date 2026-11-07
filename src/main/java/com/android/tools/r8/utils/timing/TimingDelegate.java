@@ -5,6 +5,8 @@ package com.android.tools.r8.utils.timing;
 
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.internal.ThrowingSupplier;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 abstract class TimingDelegate extends Timing {
 
@@ -26,6 +28,18 @@ abstract class TimingDelegate extends Timing {
   @Override
   public Timing begin(String title) {
     delegate.begin(title);
+    return this;
+  }
+
+  @Override
+  public <T> Timing begin(T context, Function<T, String> titleSupplier) {
+    delegate.begin(context, titleSupplier);
+    return this;
+  }
+
+  @Override
+  public Timing begin(int value, IntFunction<String> titleSupplier) {
+    delegate.begin(value, titleSupplier);
     return this;
   }
 

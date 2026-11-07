@@ -165,7 +165,7 @@ public class LirConverter {
       return;
     }
 
-    timing.begin("LIR->LIR@" + graphLens.getClass().getName());
+    timing.begin(graphLens, lens -> "LIR->LIR@" + lens.getClass().getName());
     rewriteLirWithUnappliedLens(appView, alwaysTrue(), executorService);
     timing.end();
 
@@ -223,8 +223,7 @@ public class LirConverter {
     DeadCodeRemover deadCodeRemover = new DeadCodeRemover(appView);
     ProfileCollectionAdditions profileCollectionAdditions =
         ProfileCollectionAdditions.create(appView);
-    String output = appView.options().isGeneratingClassFiles() ? "CF" : "DEX";
-    timing.begin("LIR->IR->" + output);
+    timing.begin(appView.options().isGeneratingClassFiles() ? "LIR->IR->CF" : "LIR->IR->DEX");
     CodeRewriterPassCollection codeRewriterPassCollection =
         CodeRewriterPassCollection.createFromNullable(
             AdaptClassStringsRewriter.create(appView),
@@ -249,7 +248,8 @@ public class LirConverter {
                   DexEncodedMethod::hasCode,
                   m -> {
                     Timing threadTiming =
-                        timing.createThreadTiming(m.toSourceString(), appView.options());
+                        timing.createThreadTiming(
+                            m, ProgramMethod::toSourceString, appView.options());
                     finalizeLirMethodToOutputFormat(
                         m, deadCodeRemover, appView, codeRewriterPassCollection, threadTiming);
                     threadTimings.add(threadTiming.end());
@@ -324,8 +324,8 @@ public class LirConverter {
     subCompilationConfiguration.commitDexingOutputClasses(appView);
     timing.end();
 
-    String output = appView.options().isGeneratingClassFiles() ? "CF" : "DEX";
-    timing.begin("LIR->IR->" + output + " (D8)");
+    timing.begin(
+        appView.options().isGeneratingClassFiles() ? "LIR->IR->CF (D8)" : "LIR->IR->DEX (D8)");
     AppInfo d8AppInfo =
         AppInfo.createInitialAppInfo(
             appView.app(),

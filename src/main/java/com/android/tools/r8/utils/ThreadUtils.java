@@ -11,7 +11,6 @@ import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.collections.DexClassAndMemberMap;
 import com.android.tools.r8.utils.internal.ForEachable;
-import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 import com.android.tools.r8.utils.internal.ListUtils.ReferenceAndIntConsumer;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.ThrowingBiFunction;
@@ -139,15 +138,24 @@ public class ThreadUtils {
       Timing timing,
       TimingMerger timingMerger)
       throws ExecutionException {
-    processItemsThatMatches(
-        items,
-        itemPredicate,
-        consumer,
-        options,
-        executorService,
-        timing,
-        timingMerger,
-        (i, item) -> "Task " + i);
+    TaskCollection<Timing> tasks =
+        new TaskCollection<>(options.getThreadingModule(), executorService);
+    int i = 0;
+    for (T item : items) {
+      if (itemPredicate.test(item)) {
+        int taskIndex = i;
+        tasks.submitUnchecked(
+            () -> {
+              Timing threadTiming = timing.createThreadTiming(taskIndex, j -> "Task " + j, options);
+              consumer.accept(item, threadTiming);
+              return threadTiming.end();
+            });
+      }
+      i++;
+    }
+    Collection<Timing> timings = tasks.awaitWithResults(alwaysTrue());
+    timingMerger.add(timings);
+    timingMerger.end();
   }
 
   /** Does not process items where preprocessing returns null. */
@@ -180,22 +188,19 @@ public class ThreadUtils {
       ExecutorService executorService,
       Timing timing,
       TimingMerger timingMerger,
-      IntObjToObjFunction<T, String> taskNameFunction)
+      Function<T, String> taskNameFunction)
       throws ExecutionException {
     TaskCollection<Timing> tasks =
         new TaskCollection<>(options.getThreadingModule(), executorService);
-    int i = 0;
     for (T item : items) {
       if (itemPredicate.test(item)) {
-        String taskName = timingMerger.isEmpty() ? null : taskNameFunction.apply(i, item);
         tasks.submitUnchecked(
             () -> {
-              Timing threadTiming = timing.createThreadTiming(taskName, options);
+              Timing threadTiming = timing.createThreadTiming(item, taskNameFunction, options);
               consumer.accept(item, threadTiming);
               return threadTiming.end();
             });
       }
-      i++;
     }
     Collection<Timing> timings = tasks.awaitWithResults(alwaysTrue());
     timingMerger.add(timings);

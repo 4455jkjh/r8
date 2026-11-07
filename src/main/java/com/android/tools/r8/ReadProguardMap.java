@@ -19,7 +19,7 @@ public class ReadProguardMap {
   private void readProguardMapFile(String fileName) {
     try {
       System.out.println("  - reading " + fileName);
-      timing.begin("Reading " + fileName);
+      timing.begin(fileName, f -> "Reading " + f);
       ClassNameMapper.mapperFromFile(Paths.get(fileName));
       timing.end();
     } catch (IOException e) {

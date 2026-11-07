@@ -280,7 +280,7 @@ public class ApplicationWriter {
             virtualFiles,
             virtualFile -> {
               Timing fileTiming =
-                  timing.createThreadTiming("VirtualFile " + virtualFile.getId(), options);
+                  timing.createThreadTiming(virtualFile, f -> "VirtualFile " + f.getId(), options);
               writeVirtualFile(virtualFile, fileTiming, forcedStrings, startupProfileForWriting);
               fileTiming.end();
               return fileTiming;

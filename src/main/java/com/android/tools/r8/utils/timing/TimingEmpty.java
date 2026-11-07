@@ -6,6 +6,8 @@ package com.android.tools.r8.utils.timing;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.internal.ThrowingSupplier;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 class TimingEmpty extends Timing {
 
@@ -28,7 +30,29 @@ class TimingEmpty extends Timing {
   }
 
   @Override
+  public <T> Timing createThreadTiming(
+      T context, Function<T, String> titleSupplier, InternalOptions options) {
+    return this;
+  }
+
+  @Override
+  public Timing createThreadTiming(
+      int value, IntFunction<String> titleSupplier, InternalOptions options) {
+    return this;
+  }
+
+  @Override
   public Timing begin(String title) {
+    return this;
+  }
+
+  @Override
+  public <T> Timing begin(T context, Function<T, String> titleSupplier) {
+    return this;
+  }
+
+  @Override
+  public Timing begin(int value, IntFunction<String> titleSupplier) {
     return this;
   }
 

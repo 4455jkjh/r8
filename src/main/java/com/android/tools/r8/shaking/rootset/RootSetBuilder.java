@@ -573,7 +573,8 @@ public class RootSetBuilder {
             List<DexClass> job = new ArrayList<>(classes);
             tasks.submitUnchecked(
                 () -> {
-                  Timing threadTiming = timing.createThreadTiming("Process rule: " + rule, options);
+                  Timing threadTiming =
+                      timing.createThreadTiming(rule, r -> "Process rule: " + r, options);
                   process(job, rule, ifRulePreconditionMatch, threadTiming);
                   threadTiming.end().notifyThreadTimingFinished();
                 });

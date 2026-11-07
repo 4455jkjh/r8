@@ -177,7 +177,7 @@ public class AtomicFieldUpdaterInstrumentor {
       DexProgramClass clazz,
       ConcurrentHashMap<DexProgramClass, ClassWithAtomicsInfo> updaterClasses,
       Timing timing) {
-    timing.begin("AtomicFieldUpdaterInstrumentor: " + clazz.getSimpleName());
+    timing.begin(clazz, c -> "AtomicFieldUpdaterInstrumentor: " + c.getSimpleName());
 
     // Find relevant fields that are initialized in their clinit.
     var initialUpdaterFields = new HashSet<DexField>();

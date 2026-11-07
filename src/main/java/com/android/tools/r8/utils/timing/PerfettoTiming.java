@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import kotlinx.coroutines.Dispatchers;
 import okio.BufferedSink;
 import okio.Okio;
@@ -95,6 +97,22 @@ public class PerfettoTiming extends TimingImplBase {
 
   @Override
   public Timing createThreadTiming(String title, InternalOptions options) {
+    return internalCreateThreadTiming(options).begin(title);
+  }
+
+  @Override
+  public <T> Timing createThreadTiming(
+      T context, Function<T, String> titleSupplier, InternalOptions options) {
+    return internalCreateThreadTiming(options).begin(context, titleSupplier);
+  }
+
+  @Override
+  public Timing createThreadTiming(
+      int value, IntFunction<String> titleSupplier, InternalOptions options) {
+    return internalCreateThreadTiming(options).begin(value, titleSupplier);
+  }
+
+  private Timing internalCreateThreadTiming(InternalOptions options) {
     int threadId = (int) Thread.currentThread().getId();
     if (options.perfettoTraceThreads >= 0 && threadId != mainThreadId) {
       // Check if tracing should be enabled for the current thread.
@@ -111,7 +129,7 @@ public class PerfettoTiming extends TimingImplBase {
     }
     ThreadTrack newThreadTrack =
         processTrack.getOrCreateThreadTrack(threadId, currentTaskId(), "Worker");
-    return new PerfettoThreadTiming(this, newThreadTrack).begin(title);
+    return new PerfettoThreadTiming(this, newThreadTrack);
   }
 
   @Override

@@ -149,7 +149,7 @@ public class DexDistributionRefinement {
     boolean hasEmptyFiles = false;
     for (int i = 0; i < appView.testing().classToDexDistributionRefinementPasses; i++) {
       boolean changed = false;
-      timing.begin("Pass " + i);
+      timing.begin(i, pass -> "Pass " + pass);
       Iterator<VirtualFile> iterator = files.iterator();
       while (iterator.hasNext()) {
         VirtualFile file = iterator.next();
@@ -176,7 +176,7 @@ public class DexDistributionRefinement {
 
   private boolean refineFile(VirtualFile file, ExecutorService executorService, Timing timing)
       throws ExecutionException {
-    timing.begin("Refine file " + file.getId());
+    timing.begin(file, f -> "Refine file " + f.getId());
     boolean changed = false;
     LinkedHashSet<DexProgramClass> classesWithDeterministicOrder =
         fileToClassesWithDeterministicOrder.get(file);
@@ -198,7 +198,7 @@ public class DexDistributionRefinement {
         executorService,
         timing,
         timing.beginMerger("Fork", executorService),
-        (index, clazz) -> clazz.getTypeName());
+        DexClass::getTypeName);
     timing.end();
 
     // Move all classes single threaded.

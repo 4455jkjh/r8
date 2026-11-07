@@ -40,7 +40,7 @@ public abstract class EnqueuerWorklist {
     public abstract void run(Enqueuer enqueuer);
 
     public void run(Enqueuer enqueuer, Timing timing) {
-      timing.begin(getName());
+      timing.begin(this, EnqueuerAction::getName);
       run(enqueuer);
       timing.end();
     }
@@ -197,7 +197,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     public void run(Enqueuer enqueuer, Timing timing) {
-      timing.begin(getName());
+      timing.begin(this, EnqueuerAction::getName);
       enqueuer.markMethodAsLive(method, context, timing);
       timing.end();
     }
@@ -319,7 +319,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     public void run(Enqueuer enqueuer, Timing timing) {
-      timing.begin(getName());
+      timing.begin(this, EnqueuerAction::getName);
       enqueuer.processCodeBeforeTracing(method, timing);
       timing.end();
     }
@@ -339,7 +339,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     public void run(Enqueuer enqueuer, Timing timing) {
-      timing.begin(getName());
+      timing.begin(this, EnqueuerAction::getName);
       enqueuer.traceCode(method, timing);
       timing.end();
     }

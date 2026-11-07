@@ -144,7 +144,7 @@ public class R8LibraryDesugaring {
                   method -> {
                     Timing threadTiming =
                         timing
-                            .createThreadTiming(method.toSourceString(), options)
+                            .createThreadTiming(method, ProgramMethod::toSourceString, options)
                             .begin("Desugar");
                     MethodProcessingContext methodProcessingContext =
                         processorContext.createMethodProcessingContext(method);

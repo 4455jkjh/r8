@@ -143,7 +143,7 @@ public abstract class ClassConverter {
         executorService,
         timing,
         timing.beginMerger("Class conversion", executorService),
-        (i, clazz) -> clazz.getTypeName());
+        DexClass::getTypeName);
     methodProcessor.awaitMethodProcessing();
 
     // Create a new processor context to ensure unique method processing contexts.
