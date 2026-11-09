@@ -5,12 +5,11 @@ package com.android.tools.r8.ir.optimize.outliner;
 
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethod;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -35,53 +34,47 @@ public class OutlineWithExceptionHandlerVerificationErrorTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    R8FullTestBuilder testBuilder =
-        testForR8(parameters.getBackend())
-            .addProgramClasses(Main.class)
-            .addKeepMainRule(Main.class)
-            .enableInliningAnnotations()
-            .addOptionsModification(
-                options -> {
-                  options.outline.threshold = 2;
-                  options.outline.minSize = 3;
-                })
-            .setMinApi(parameters)
-            .collectSyntheticItems();
-    if (parameters.isCfRuntime()) {
-      // TODO(b/551348855): Outlining a sequence of non-throwing instructions followed by a
-      //  throwing void invoke in a basic block with catch handlers causes the non-throwing
-      //  return value of the outline to be defined by the throwing outline invoke, which is not
-      //  defined on the exceptional edge to the catch handler.
-      assertThrows(CompilationFailedException.class, testBuilder::compile);
-    } else {
-      // TODO(b/551348855): Should succeed with output lines "12", "18" instead of failing with
-      //  VerifyError.
-      testBuilder
-          .compile()
-          .inspectWithSyntheticItems(
-              (inspector, syntheticItems) -> {
-                ClassSubject outlineClass =
-                    inspector.syntheticClass(syntheticItems.syntheticOutlineClass(Main.class, 0));
-                assertThat(outlineClass, isPresent());
+    testForR8(parameters)
+        .addProgramClasses(Main.class)
+        .addKeepMainRule(Main.class)
+        .enableInliningAnnotations()
+        .addOptionsModification(
+            options -> {
+              options.outline.threshold = 2;
+              options.outline.minSize = 3;
+            })
+        .setMinApi(parameters)
+        .collectSyntheticItems()
+        .compile()
+        .inspectWithSyntheticItems(
+            (inspector, syntheticItems) -> {
+              ClassSubject outlineClass =
+                  inspector.syntheticClass(syntheticItems.syntheticOutlineClass(Main.class, 0));
+              assertThat(outlineClass, isPresent());
 
-                MethodSubject outlineMethod =
-                    outlineClass.uniqueMethodThatMatches(
-                        method -> method.getParameters().size() == 3);
-                assertThat(outlineMethod, isPresent());
+              MethodSubject outlineMethod = outlineClass.uniqueMethod();
+              assertThat(outlineMethod, isPresent());
+              assertEquals(4, outlineMethod.getParameters().size());
 
-                ClassSubject classSubject = inspector.clazz(Main.class);
-                assertThat(classSubject, isPresent());
-                assertThat(
-                    outlineMethod,
-                    invokesMethod(classSubject.uniqueMethodWithOriginalName("sink")));
-                assertThat(
-                    classSubject.uniqueMethodWithOriginalName("m1"), invokesMethod(outlineMethod));
-                assertThat(
-                    classSubject.uniqueMethodWithOriginalName("m2"), invokesMethod(outlineMethod));
-              })
-          .run(parameters.getRuntime(), Main.class)
-          .assertFailureWithErrorThatThrows(VerifyError.class);
-    }
+              ClassSubject classSubject = inspector.clazz(Main.class);
+              assertThat(classSubject, isPresent());
+
+              MethodSubject sinkMethod = classSubject.uniqueMethodWithOriginalName("sink");
+              assertThat(sinkMethod, isPresent());
+              assertThat(outlineMethod, not(invokesMethod(sinkMethod)));
+
+              MethodSubject m1Method = classSubject.uniqueMethodWithOriginalName("m1");
+              assertThat(m1Method, isPresent());
+              assertThat(m1Method, invokesMethod(outlineMethod));
+              assertThat(m1Method, invokesMethod(sinkMethod));
+
+              MethodSubject m2Method = classSubject.uniqueMethodWithOriginalName("m2");
+              assertThat(m2Method, isPresent());
+              assertThat(m2Method, invokesMethod(outlineMethod));
+              assertThat(m2Method, invokesMethod(sinkMethod));
+            })
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("12", "18");
   }
 
   public static class Main {
