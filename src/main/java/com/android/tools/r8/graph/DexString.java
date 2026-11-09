@@ -495,7 +495,62 @@ public class DexString extends IndexedDexItem
     }
   }
 
+  private static boolean isRelaxedDexIdentifierAsciiByte(byte b) {
+    assert b > 0;
+    boolean result =
+        (b >= 'a' && b <= 'z')
+            || (b >= 'A' && b <= 'Z')
+            || (b >= '0' && b <= '9')
+            || b == '$'
+            || b == '-'
+            || b == '_'
+            || b == ' ';
+    assert result == IdentifierUtils.isRelaxedDexIdentifierPart(b);
+    return result;
+  }
+
   public boolean isValidMethodName() {
+    int len = content.length - 1;
+    if (len <= 0) {
+      return false;
+    }
+    if (len != javaLangStringLength || content[len] != 0) {
+      return isValidMethodNameSlow();
+    }
+    if (content[0] == '<') {
+      if (len == 6
+          && content[1] == 'i'
+          && content[2] == 'n'
+          && content[3] == 'i'
+          && content[4] == 't'
+          && content[5] == '>') {
+        return true;
+      }
+      if (len == 8
+          && content[1] == 'c'
+          && content[2] == 'l'
+          && content[3] == 'i'
+          && content[4] == 'n'
+          && content[5] == 'i'
+          && content[6] == 't'
+          && content[7] == '>') {
+        return true;
+      }
+      return false;
+    }
+    for (int i = 0; i < len; i++) {
+      byte b = content[i];
+      if (b <= 0) {
+        return isValidMethodNameSlow();
+      }
+      if (!isRelaxedDexIdentifierAsciiByte(b)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean isValidMethodNameSlow() {
     try {
       return DescriptorUtils.isValidMethodName(decode());
     } catch (UTFDataFormatException e) {
@@ -504,6 +559,26 @@ public class DexString extends IndexedDexItem
   }
 
   public boolean isValidFieldName() {
+    int len = content.length - 1;
+    if (len <= 0) {
+      return false;
+    }
+    if (len != javaLangStringLength || content[len] != 0 || content[0] == '<') {
+      return isValidFieldNameSlow();
+    }
+    for (int i = 0; i < len; i++) {
+      byte b = content[i];
+      if (b <= 0) {
+        return isValidFieldNameSlow();
+      }
+      if (!isRelaxedDexIdentifierAsciiByte(b)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean isValidFieldNameSlow() {
     try {
       return DescriptorUtils.isValidFieldName(decode());
     } catch (UTFDataFormatException e) {
@@ -512,6 +587,36 @@ public class DexString extends IndexedDexItem
   }
 
   public boolean isValidClassDescriptor() {
+    int len = content.length - 1;
+    if (len < 3) {
+      return false;
+    }
+    if (content[0] != 'L' || content[len - 1] != ';') {
+      return false;
+    }
+    if (len != javaLangStringLength || content[len] != 0) {
+      return isValidClassDescriptorSlow();
+    }
+    if (content[1] == '/' || content[len - 2] == '/') {
+      return false;
+    }
+    for (int i = 1; i < len - 1; i++) {
+      byte b = content[i];
+      if (b <= 0) {
+        return isValidClassDescriptorSlow();
+      }
+      if (b == '/') {
+        if (content[i + 1] == '/') {
+          return false;
+        }
+      } else if (!isRelaxedDexIdentifierAsciiByte(b)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean isValidClassDescriptorSlow() {
     try {
       return DescriptorUtils.isValidClassDescriptor(decode());
     } catch (UTFDataFormatException e) {
@@ -520,6 +625,9 @@ public class DexString extends IndexedDexItem
   }
 
   public static boolean isValidSimpleName(AndroidApiLevel apiLevel, String string) {
+    if (string.isEmpty()) {
+      return false;
+    }
     // space characters are not allowed prior to Android R
     if (apiLevel.isLessThan(AndroidApiLevel.R)) {
       int cp;
@@ -535,15 +643,35 @@ public class DexString extends IndexedDexItem
   }
 
   public boolean isValidSimpleName(AndroidApiLevel apiLevel) {
+    int len = content.length - 1;
+    if (len <= 0) {
+      return false;
+    }
     // space characters are not allowed prior to Android R
     if (apiLevel.isLessThan(AndroidApiLevel.R)) {
-      try {
-        return isValidSimpleName(apiLevel, decode());
-      } catch (UTFDataFormatException e) {
-        return false;
+      if (len != javaLangStringLength || content[len] != 0) {
+        return isValidSimpleNameSlow(apiLevel);
+      }
+      for (int i = 0; i < len; i++) {
+        byte b = content[i];
+        if (b <= 0) {
+          return isValidSimpleNameSlow(apiLevel);
+        }
+        if (b == ' ') {
+          return false;
+        }
+        assert !IdentifierUtils.isUnicodeSpace(b);
       }
     }
     return true;
+  }
+
+  private boolean isValidSimpleNameSlow(AndroidApiLevel apiLevel) {
+    try {
+      return isValidSimpleName(apiLevel, decode());
+    } catch (UTFDataFormatException e) {
+      return false;
+    }
   }
 
   public String dump() {

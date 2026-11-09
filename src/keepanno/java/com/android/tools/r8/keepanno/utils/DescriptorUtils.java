@@ -37,7 +37,11 @@ public class DescriptorUtils {
     int cp;
     for (int i = 1; i < string.length() - 1; i += Character.charCount(cp)) {
       cp = string.codePointAt(i);
-      if (cp != '/' && !IdentifierUtils.isRelaxedDexIdentifierPart(cp)) {
+      if (cp == '/') {
+        if (string.charAt(i + 1) == '/') {
+          return false;
+        }
+      } else if (!IdentifierUtils.isRelaxedDexIdentifierPart(cp)) {
         return false;
       }
     }
