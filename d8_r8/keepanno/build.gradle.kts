@@ -26,8 +26,6 @@ val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig =
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
-tasks.named("generateProto") { dependsOn(sharedDepsConfig) }
-
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
   compileOnly(libs.asm)

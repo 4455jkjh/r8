@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import com.google.protobuf.gradle.GenerateProtoTask
 import com.google.protobuf.gradle.ProtobufExtension
 import com.google.protobuf.gradle.ProtobufPlugin
 import java.io.File
@@ -59,6 +60,9 @@ public class R8ConventionPlugin : Plugin<Project> {
                   }
                 }.path
             }
+          }
+          target.tasks.withType<GenerateProtoTask>().configureEach {
+            dependsOn(":third_party:download_protoc")
           }
         }
         is ErrorPronePlugin -> target.configureErrorProneForJavaCompile()
