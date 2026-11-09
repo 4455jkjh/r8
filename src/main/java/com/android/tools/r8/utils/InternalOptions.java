@@ -2381,6 +2381,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return classToDexDistributionRefinementPasses > 0;
     }
 
+    public boolean enableClassToDexDistributionRefinement(
+        InternalOptions options, VirtualFile virtualFile) {
+      return enableClassToDexDistributionRefinement(options)
+          && (options.canUseMultidex() || virtualFile.getId() != 0);
+    }
+
     public TriConsumer<AppView<?>, DexProgramClass, IndexedItemCollection>
         collectIndexedItemsCallback;
 

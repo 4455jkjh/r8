@@ -383,7 +383,7 @@ public class PackageSplitPopulator {
     int maxEntries = VirtualFile.MAX_ENTRIES;
     int maxFieldEntries = current.getMaxNumberOfFields();
     int maxTypeEntries = current.getMaxNumberOfTypes();
-    if (options.testing.classToDexDistributionRefinementPasses > 0
+    if (options.testing.enableClassToDexDistributionRefinement(options, current)
         && options.testing.classToDexDistributionRefinementLegRoomPercentage > 0) {
       // Leave a bit of room for the refinement to be more effective.
       double legRoomFraction =
@@ -401,23 +401,25 @@ public class PackageSplitPopulator {
       return;
     }
     cycler.restart();
-    VirtualFile current;
-    current = cycler.next();
+    VirtualFile current = getVirtualFile(cycler);
     for (DexProgramClass clazz : nonPackageClasses) {
-      if (current.isFull()) {
+      if (isFullEnough(current, options)) {
         current = getVirtualFile(cycler);
       }
+      boolean wasEmpty = current.isEmpty();
       current.addClass(clazz);
-      while (current.isFull()) {
-        // This only happens if we have a huge class, that takes up more than 20% of a dex file.
+      while (isFullEnough(current, options)) {
+        if (wasEmpty) {
+          if (current.isFull()) {
+            throw new InternalCompilerError(
+                "Class " + clazz.toString() + " does not fit into a single dex file.");
+          }
+          break;
+        }
         current.abortTransaction();
         current = getVirtualFile(cycler);
-        boolean wasEmpty = current.isEmpty();
+        wasEmpty = current.isEmpty();
         current.addClass(clazz);
-        if (wasEmpty && current.isFull()) {
-          throw new InternalCompilerError(
-              "Class " + clazz.toString() + " does not fit into a single dex file.");
-        }
       }
       current.commitTransaction();
     }

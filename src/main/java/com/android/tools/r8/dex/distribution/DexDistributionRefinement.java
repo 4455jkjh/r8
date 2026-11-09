@@ -95,7 +95,9 @@ public class DexDistributionRefinement {
             f ->
                 !f.isEmpty()
                     && predicate.test(f)
-                    && (appView.options().canUseMultidex() || f.getId() != 0));
+                    && appView
+                        .testing()
+                        .enableClassToDexDistributionRefinement(appView.options(), f));
     if (filesSubjectToRefinement.size() > 1) {
       timing.begin("Dex distribution refinement");
       new DexDistributionRefinement(
