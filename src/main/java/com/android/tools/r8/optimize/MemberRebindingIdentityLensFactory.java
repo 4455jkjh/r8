@@ -29,14 +29,14 @@ public class MemberRebindingIdentityLensFactory {
         new ReferencedMembersConsumer() {
           @Override
           public void onFieldReference(DexField field, ProgramMethod context) {
-            if (seen.add(field)) {
+            if (!seen.contains(field) && seen.add(field)) {
               builder.recordFieldAccess(field);
             }
           }
 
           @Override
           public void onMethodReference(DexMethod method, ProgramMethod context) {
-            if (seen.add(method)) {
+            if (!seen.contains(method) && seen.add(method)) {
               builder.recordMethodAccess(method);
             }
           }

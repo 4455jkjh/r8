@@ -65,7 +65,10 @@ public class JarApplicationReader {
   }
 
   public DexString getString(String string) {
-    return stringCache.computeIfAbsent(string, options.itemFactory::createString);
+    DexString existing = stringCache.get(string);
+    return existing != null
+        ? existing
+        : stringCache.computeIfAbsent(string, options.itemFactory::createString);
   }
 
   public DexType getType(Type type) {
