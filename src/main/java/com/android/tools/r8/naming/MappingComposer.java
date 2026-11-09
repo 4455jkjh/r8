@@ -35,7 +35,7 @@ public class MappingComposer {
     assert classNameMappers.length > 0;
     ComposingBuilder builder = new ComposingBuilder(options);
     for (ClassNameMapper classNameMapper : classNameMappers) {
-      builder.compose(classNameMapper);
+      builder.compose(classNameMapper, executorService);
     }
     return builder.finishToClassNameMapper(executorService);
   }

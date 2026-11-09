@@ -96,6 +96,43 @@ public class ComposingBuilder {
   }
 
   public void compose(ClassNameMapper classNameMapper) throws MappingComposeException {
+    startCompose(classNameMapper);
+    for (ClassNamingForNameMapper classMapping : classNameMapper.getClassNameMappings().values()) {
+      ComposingClassBuilder composingClassBuilder = createComposingClassBuilder(classMapping);
+      composingClassBuilder.compose(classNameMapper, classMapping);
+    }
+    committed.commit(current, classNameMapper);
+  }
+
+  public void compose(ClassNameMapper classNameMapper, ExecutorService executorService)
+      throws MappingComposeException, ExecutionException {
+    startCompose(classNameMapper);
+    // Ensure inverse mapping is pre-computed before concurrent class composition.
+    classNameMapper.getObfuscatedToOriginalMapping();
+    List<ComposingClassBuilder> buildersToCompose =
+        new ArrayList<>(classNameMapper.getClassNameMappings().size());
+    for (ClassNamingForNameMapper classMapping : classNameMapper.getClassNameMappings().values()) {
+      buildersToCompose.add(createComposingClassBuilder(classMapping));
+    }
+    try {
+      ThreadUtils.processItems(
+          buildersToCompose::forEach,
+          composingClassBuilder ->
+              composingClassBuilder.compose(
+                  classNameMapper,
+                  classNameMapper.getClassNaming(composingClassBuilder.getRenamedName())),
+          options.getThreadingModule(),
+          executorService);
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof MappingComposeException) {
+        throw (MappingComposeException) e.getCause();
+      }
+      throw e;
+    }
+    committed.commit(current, classNameMapper);
+  }
+
+  private void startCompose(ClassNameMapper classNameMapper) throws MappingComposeException {
     current = new ComposingData();
     MapVersionMappingInformation newMapVersionInfo =
         classNameMapper.getFirstMapVersionInformation();
@@ -117,13 +154,9 @@ public class ComposingBuilder {
       currentMapVersion =
           newMapVersionInfo.compose(currentMapVersion).asMapVersionMappingInformation();
     }
-    for (ClassNamingForNameMapper classMapping : classNameMapper.getClassNameMappings().values()) {
-      compose(classNameMapper, classMapping);
-    }
-    committed.commit(current, classNameMapper);
   }
 
-  private void compose(ClassNameMapper classNameMapper, ClassNamingForNameMapper classMapping)
+  private ComposingClassBuilder createComposingClassBuilder(ClassNamingForNameMapper classMapping)
       throws MappingComposeException {
     String originalName = classMapping.originalName;
     String renamedName = classMapping.renamedName;
@@ -141,7 +174,7 @@ public class ComposingBuilder {
               + renamedName
               + "'.");
     }
-    composingClassBuilder.compose(classNameMapper, classMapping);
+    return composingClassBuilder;
   }
 
   public String finish() {
@@ -213,24 +246,25 @@ public class ComposingBuilder {
      * RewriteFrameInformation contains condition clauses that are bound to the residual program. As
      * a result of that, we have to patch up the conditions when we compose new class mappings.
      */
-    private final List<RewriteFrameMappingInformation> rewriteFrameInformation = new ArrayList<>();
+    private final Set<RewriteFrameMappingInformation> rewriteFrameInformation =
+        Sets.newIdentityHashSet();
 
     /** Map of newly added outline call site informations which do not require any rewriting. */
     private Map<ClassTypeNameAndMethodName, OutlineCallsiteMappingInformation>
-        outlineCallsiteInformation = new HashMap<>();
+        outlineCallsiteInformation = new ConcurrentHashMap<>();
 
     /**
      * Map of updated outline definitions which has to be committed. The positions in the caller are
      * fixed at this point since these are local to the method when rewriting.
      */
     private final Map<ClassTypeNameAndMethodName, UpdateOutlineCallsiteInformation>
-        outlineSourcePositionsUpdated = new HashMap<>();
+        outlineSourcePositionsUpdated = new ConcurrentHashMap<>();
 
     /**
      * Map of signatures that should be removed when finalizing the composed map. The key is the
      * original name of a class.
      */
-    private final Map<String, Set<Signature>> signaturesToRemove = new HashMap<>();
+    private final Map<String, Set<Signature>> signaturesToRemove = new ConcurrentHashMap<>();
 
     private final List<String> preamble = new ArrayList<>();
 
@@ -300,7 +334,7 @@ public class ComposingBuilder {
         ComposingClassBuilder composingClassBuilder, Signature signature) {
       signaturesToRemove
           .computeIfAbsent(
-              composingClassBuilder.getOriginalName(), ignoreArgument(Sets::newHashSet))
+              composingClassBuilder.getOriginalName(), ignoreArgument(Sets::newConcurrentHashSet))
           .add(signature);
     }
 
@@ -309,18 +343,18 @@ public class ComposingBuilder {
       // First update the existing frame information to have new class name mappings.
       Map<String, String> inverse = classNameMapper.getObfuscatedToOriginalMapping().inverse;
       for (RewriteFrameMappingInformation rewriteMappingInfo : rewriteFrameInformation) {
-        rewriteMappingInfo
-            .getConditions()
-            .forEach(
-                rewriteCondition -> {
-                  ThrowsCondition throwsCondition = rewriteCondition.asThrowsCondition();
-                  if (throwsCondition != null) {
-                    throwsCondition.setClassReferenceInternal(
-                        mapTypeReference(inverse, throwsCondition.getClassReference()).asClass());
-                  }
-                });
+        for (RewriteFrameMappingInformation.Condition rewriteCondition :
+            rewriteMappingInfo.getConditions()) {
+          ThrowsCondition throwsCondition = rewriteCondition.asThrowsCondition();
+          if (throwsCondition != null) {
+            throwsCondition.setClassReferenceInternal(
+                mapClassReference(inverse, throwsCondition.getClassReference()));
+          }
+        }
       }
-      rewriteFrameInformation.addAll(current.rewriteFrameInformation);
+      for (ComposingClassBuilder classBuilder : current.classBuilders.values()) {
+        rewriteFrameInformation.addAll(classBuilder.rewriteFrameInformation);
+      }
     }
 
     private void commitOutlineCallsiteInformation(
@@ -403,9 +437,14 @@ public class ComposingBuilder {
             arrayReference.getDimensions());
       } else {
         assert typeReference.isClass();
-        String newTypeName = typeNameMap.get(typeReference.getTypeName());
-        return newTypeName == null ? typeReference : Reference.classFromTypeName(newTypeName);
+        return mapClassReference(typeNameMap, typeReference.asClass());
       }
+    }
+
+    private ClassReference mapClassReference(
+        Map<String, String> typeNameMap, ClassReference classReference) {
+      String newTypeName = typeNameMap.get(classReference.getTypeName());
+      return newTypeName == null ? classReference : Reference.classFromTypeName(newTypeName);
     }
   }
 
@@ -498,6 +537,7 @@ public class ComposingBuilder {
         new HashMap<>();
     private final Map<MethodSignature, MappedRange> methodsWithoutPosition = new HashMap<>();
     private final List<MappingInformation> additionalMappingInfo = new ArrayList<>();
+    private final List<RewriteFrameMappingInformation> rewriteFrameInformation = new ArrayList<>();
 
     private final ComposingData committed;
     private final ComposingData current;
@@ -950,40 +990,42 @@ public class ComposingBuilder {
         assert verifyAllOutlineCallSitesAreEqualTo(outlineCallSite, computedMappedRangeForOutlines);
         ComputedMappedRangeForOutline computedMappedRangeForOutline =
             ListUtils.first(computedMappedRangeForOutlines);
-        Int2IntSortedMap newPositionMap =
-            new Int2IntLinkedOpenHashMap(outlineCallSite.getPositions().size());
-        visitOutlineMappedPositions(
-            outlineCallSite,
-            computedMappedRangeForOutline.current.getOriginalSignature(),
-            positionInfo -> {
-              int newIndex = firstAvailableRange.getAndIncrement();
-              Range newMinifiedRange = new Range(newIndex, newIndex);
-              minified.addRange(newMinifiedRange);
-              boolean isCaller = false;
-              for (MappedRange existingMappedRange : positionInfo.mappedRanges()) {
-                int originalPosition =
-                    existingMappedRange.getOriginalLineNumber(
-                        positionInfo.outlineCallsitePosition());
-                Range newOriginalRange =
-                    isCaller
-                        ? new Range(originalPosition)
-                        : new Range(originalPosition, originalPosition);
-                MappedRange newMappedRange =
-                    new MappedRange(
-                        newMinifiedRange,
-                        existingMappedRange.getOriginalSignature(),
-                        newOriginalRange,
-                        lastComposedRange.getRenamedName());
-                if (!existingMappedRange.getAdditionalMappingInformation().isEmpty()) {
-                  newMappedRange.setAdditionalMappingInformationInternal(
-                      existingMappedRange.getAdditionalMappingInformation());
+        synchronized (outlineCallSite) {
+          Int2IntSortedMap newPositionMap =
+              new Int2IntLinkedOpenHashMap(outlineCallSite.getPositions().size());
+          visitOutlineMappedPositions(
+              outlineCallSite,
+              computedMappedRangeForOutline.current.getOriginalSignature(),
+              positionInfo -> {
+                int newIndex = firstAvailableRange.getAndIncrement();
+                Range newMinifiedRange = new Range(newIndex, newIndex);
+                minified.addRange(newMinifiedRange);
+                boolean isCaller = false;
+                for (MappedRange existingMappedRange : positionInfo.mappedRanges()) {
+                  int originalPosition =
+                      existingMappedRange.getOriginalLineNumber(
+                          positionInfo.outlineCallsitePosition());
+                  Range newOriginalRange =
+                      isCaller
+                          ? new Range(originalPosition)
+                          : new Range(originalPosition, originalPosition);
+                  MappedRange newMappedRange =
+                      new MappedRange(
+                          newMinifiedRange,
+                          existingMappedRange.getOriginalSignature(),
+                          newOriginalRange,
+                          lastComposedRange.getRenamedName());
+                  if (!existingMappedRange.getAdditionalMappingInformation().isEmpty()) {
+                    newMappedRange.setAdditionalMappingInformationInternal(
+                        existingMappedRange.getAdditionalMappingInformation());
+                  }
+                  composedRanges.add(newMappedRange);
+                  isCaller = true;
                 }
-                composedRanges.add(newMappedRange);
-                isCaller = true;
-              }
-              newPositionMap.put(positionInfo.outlinePosition(), newIndex);
-            });
-        outlineCallSite.setPositionsInternal(newPositionMap);
+                newPositionMap.put(positionInfo.outlinePosition(), newIndex);
+              });
+          outlineCallSite.setPositionsInternal(newPositionMap);
+        }
       }
     }
 
@@ -1149,7 +1191,7 @@ public class ComposingBuilder {
               .forEach(
                   condition -> {
                     if (condition.isThrowsCondition()) {
-                      current.rewriteFrameInformation.add(rewriteFrameMappingInformation);
+                      rewriteFrameInformation.add(rewriteFrameMappingInformation);
                     }
                   });
         } else if (mappingInformation.isOutlineCallsiteInformation()) {
