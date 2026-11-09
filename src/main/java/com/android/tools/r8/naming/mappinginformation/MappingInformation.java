@@ -70,6 +70,10 @@ public abstract class MappingInformation {
     return false;
   }
 
+  public boolean isMergedClassIdInformation() {
+    return false;
+  }
+
   public MapVersionMappingInformation asMapVersionMappingInformation() {
     return null;
   }
@@ -115,6 +119,10 @@ public abstract class MappingInformation {
   }
 
   public MergedClassesInformation asMergedClassesInformation() {
+    return null;
+  }
+
+  public MergedClassIdInformation asMergedClassIdInformation() {
     return null;
   }
 
@@ -190,7 +198,12 @@ public abstract class MappingInformation {
         PartitionFileNameInformation.deserialize(object, onMappingInfo);
         return;
       case MergedClassesInformation.ID:
-        MergedClassesInformation.deserialize(version, object, onMappingInfo);
+        MergedClassesInformation.deserialize(
+            version, object, diagnosticsHandler, lineNumber, onMappingInfo);
+        return;
+      case MergedClassIdInformation.ID:
+        MergedClassIdInformation.deserialize(
+            version, object, diagnosticsHandler, lineNumber, onMappingInfo);
         return;
       default:
         diagnosticsHandler.info(MappingInformationDiagnostics.noHandlerFor(lineNumber, id));

@@ -104,17 +104,13 @@ public class HorizontalMergingWithMergedClassesMappingTest extends TestBase {
         proguardMap
             .replace(
                 "# {\"id\":\"com.android.tools.r8.mapping\",\"version\":\"2.2\"}",
-                "# {\"id\":\"com.android.tools.r8.mapping\",\"version\":\"2.3\"}")
+                "# {\"id\":\"com.android.tools.r8.mapping\",\"version\":\"2.4\"}")
             .replace(
                 "com.android.tools.r8.retrace.classes.SynthesizeLineNumber$A -> a:",
                 StringUtils.joinLines(
                     "com.android.tools.r8.retrace.classes.SynthesizeLineNumber$A -> a:",
-                    "# {\"id\":\"com.android.tools.r8.mergedClasses\", \"kind\": \"horizontal\","
-                        + " \"classIdField\": \"$r8$classId\", \"mergedClasses\": [{ \"name\":"
-                        + " \"com.android.tools.r8.retrace.classes.SynthesizeLineNumber$A\","
-                        + " \"classId\": \"0\" }, { \"name\":"
-                        + " \"com.android.tools.r8.retrace.classes.SynthesizeLineNumber$B\","
-                        + " \"classId\": \"1\" }] }"));
+                    "# {\"id\":\"com.android.tools.r8.mergedClasses\","
+                        + "\"additionalMappings\":[\"$$0\",\"$$1\"]}"));
     compilationResult
         .run(parameters.getRuntime(), SynthesizeLineNumber.Main.class, "normal")
         .inspectOriginalStackTrace(

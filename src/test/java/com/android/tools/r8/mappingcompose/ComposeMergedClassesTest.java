@@ -31,20 +31,16 @@ public class ComposeMergedClassesTest extends TestBase {
 
   private static final String mappingFoo =
       StringUtils.unixLines(
-          "# { id: 'com.android.tools.r8.mapping', version: '2.3' }",
+          "# { id: 'com.android.tools.r8.mapping', version: '2.4' }",
           "com.foo -> a:",
-          "# { id: 'com.android.tools.r8.mergedClasses', kind: 'horizontal', classIdField: '$cid',"
-              + " mergedClasses: [{ name: 'com.foo', classId: '0' }, { name: 'com.bar', classId:"
-              + " '1' }] }");
+          "# { id: 'com.android.tools.r8.mergedClasses', additionalMappings: ['$$0', '$$1'] }");
   private static final String mappingBar =
       StringUtils.unixLines("# { id: 'com.android.tools.r8.mapping', version: '2.2' }", "a -> b:");
   private static final String mappingResult =
       StringUtils.unixLines(
-          "# {'id':'com.android.tools.r8.mapping','version':'2.3'}",
+          "# {'id':'com.android.tools.r8.mapping','version':'2.4'}",
           "com.foo -> b:",
-          "# {'id':'com.android.tools.r8.mergedClasses','kind':'horizontal','classIdField':'$cid',"
-              + "'mergedClasses':[{'name':'com.foo','classId':'0'},{'name':'com.bar',"
-              + "'classId':'1'}]}");
+          "# {'id':'com.android.tools.r8.mergedClasses','additionalMappings':['$$0','$$1']}");
 
   @Test
   public void testCompose() throws Exception {
