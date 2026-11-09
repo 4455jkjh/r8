@@ -202,7 +202,8 @@ public class StringConcatRemover extends CodeRewriterPass {
       } else {
         recipe.append('\u0001');
         dynamicValues.add(value);
-        dynamicTypes.add(argTypes[i]);
+        dynamicTypes.add(
+            value.getType().isStringType(dexItemFactory) ? dexItemFactory.stringType : argTypes[i]);
       }
     }
 
