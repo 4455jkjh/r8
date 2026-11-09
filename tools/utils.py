@@ -62,12 +62,9 @@ GRADLE_TASK_SWISS_ARMY_KNIFE = ':swissarmyknife:jar'
 GRADLE_TASK_KEEPANNOTOOLS = ':dist:keepAnnoToolsWithRelocatedDeps'
 GRADLE_TASK_KEEPANNOTOOLSLIB = 'test:keepAnnoToolsLib'
 GRADLE_TASK_TEST = ':test:test'
-GRADLE_TASK_ALL_TESTS_WITH_APPLY_MAPPING_JAR = ':test:rewriteTestsForR8LibWithRelocatedDeps'
-GRADLE_TASK_TESTBASE_WITH_APPLY_MAPPING_JAR = ':test:rewriteTestBaseForR8LibWithRelocatedDeps'
 GRADLE_TASK_TEST_DEPS_JAR = ':test:packageTestDeps'
 GRADLE_TASK_TEST_BASE_JAR = ':test:relocateTestBaseForR8LibWithRelocatedDeps'
 GRADLE_TASK_TEST_JAR = ':test:relocateTestsForR8LibWithRelocatedDeps'
-GRADLE_TASK_TEST_UNZIP_TESTBASE = ':test:unzipTestBase'
 GRADLE_TASK_PREPARE_TEST_ARTIFACTS = ':test:prepareTestArtifactsForR8LibWithRelocatedDeps'
 GRADLE_TASK_PREPARE_TEST_ARTIFACTS_NO_DEPS = ':test:prepareTestArtifactsForR8LibNoDeps'
 
@@ -97,10 +94,7 @@ KEEPANNOTOOLS_SRC_JAR = os.path.join(LIBS, 'r8-src.jar')
 
 R8_TESTS_JAR = os.path.join(LIBS, 'r8tests.jar')
 R8_TESTBASE_JAR = os.path.join(LIBS, 'r8test_base.jar')
-R8LIB_TESTBASE_JAR = os.path.join(LIBS, 'r8libtestbase-cf.jar')
-R8LIB_TESTS_JAR = os.path.join(LIBS, 'r8libtestdeps-cf.jar')
 R8_TESTS_DEPS_JAR = os.path.join(LIBS, 'test_deps_all.jar')
-R8LIB_TESTS_DEPS_JAR = R8_TESTS_DEPS_JAR
 MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8lib.zip')
 KEEPANNNO_TOOLS_MAVEN_ZIP_LIB = os.path.join(LIBS, 'keepanno-toolslib.zip')
 R8_ASSISTANT_MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8-assistantlib.zip')

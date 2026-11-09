@@ -379,15 +379,6 @@ def ParseOptions():
     return options, args
 
 
-def Build(options):
-    utils.Print('Building', quiet=options.quiet)
-    target = options.target or 'r8-full'
-    variant = 'lib'
-    build_cmd = GetRunCmd('N/A', target, variant, options,
-                          ['--iterations', '0'])
-    subprocess.check_call(build_cmd)
-
-
 def GetRunCmd(benchmark, target, variant, options, args, r8jar=None):
     base_cmd = [
         'tools/run_benchmark.py', '--benchmark', benchmark, '--target', target
@@ -593,7 +584,6 @@ def ArchiveOutputFile(file, dest, bucket=BUCKET, header=None, outdir=None):
 #     --bottom 7486f01e0622cb5935b77a92b59ddf1ca8dbd2e2
 def main():
     options, args = ParseOptions()
-    Build(options)
     any_failed = False
     # Results of this run by target and benchmark, for the weekly bundle.
     weekly_bundle_results = {}
@@ -657,7 +647,7 @@ def main():
                         benchmark_to_run, target, variant, options, [
                             '--iterations',
                             str(options.iterations_inner), '--output',
-                            benchmark_result_file, '--no-build'
+                            benchmark_result_file
                         ], r8jar)
                     try:
                         subprocess.check_call(iteration_cmd)

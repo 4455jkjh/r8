@@ -733,6 +733,69 @@ tasks {
       dependsOn(":tests_bootstrap:test")
     }
   }
+
+  fun registerBenchmarkTasks(
+    baseName: String,
+    classpathProviders: List<Provider<RegularFile>>,
+    useCustomR8Jar: Boolean = false,
+  ) {
+    register<RunBenchmarkTask>(baseName) {
+      dependsOn(sharedDepsConfig)
+      configureCommon(project)
+      testDataLocation.set(layout.dir(unzipTests.map { it.destinationDir }))
+      testBaseDataLocation.set(layout.dir(unzipTestBase.map { it.destinationDir }))
+      keepAnnoRuntimeClasspath.from(keepAnnoClassesConfig)
+      if (useCustomR8Jar) {
+        configureCustomR8Jar()
+      }
+      benchmarkClasspath.from(classpathProviders)
+    }
+
+    register<RunBenchmarkTask>("${baseName}Prebuilt") {
+      dependsOn(sharedDepsConfig)
+      configureCommon(project)
+      testDataLocation.set(unzipTests.get().destinationDir)
+      testBaseDataLocation.set(unzipTestBase.get().destinationDir)
+      keepAnnoRuntimeClasspath.from(keepAnnoClassesConfig.get().files)
+      if (useCustomR8Jar) {
+        configureCustomR8Jar()
+      }
+      benchmarkClasspath.from(classpathProviders.map { it.get().asFile })
+    }
+  }
+
+  registerBenchmarkTasks(
+    baseName = "runBenchmark",
+    classpathProviders =
+      listOf(
+        assembleR8LibWithRelocatedDeps.flatMap { it.outputJar },
+        rewriteTestsForR8LibWithRelocatedDeps.flatMap { it.outputFile },
+        rewriteTestBaseForR8LibWithRelocatedDeps.flatMap { it.outputFile },
+        packageTestDeps.flatMap { it.archiveFile },
+      ),
+  )
+
+  registerBenchmarkTasks(
+    baseName = "runBenchmarkNoLib",
+    classpathProviders =
+      listOf(
+        r8WithRelocatedDepsTask.flatMap { it.outputFile },
+        packageTests.flatMap { it.archiveFile },
+        packageTestBase.flatMap { it.archiveFile },
+        packageTestDeps.flatMap { it.archiveFile },
+      ),
+  )
+
+  registerBenchmarkTasks(
+    baseName = "runBenchmarkWithCustomJar",
+    classpathProviders =
+      listOf(
+        packageTests.flatMap { it.archiveFile },
+        packageTestBase.flatMap { it.archiveFile },
+        packageTestDeps.flatMap { it.archiveFile },
+      ),
+    useCustomR8Jar = true,
+  )
 }
 
 fun Task.getSingleOutputFile(): File = getOutputs().getSingleOutputFile()
