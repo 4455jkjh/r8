@@ -57,25 +57,38 @@ public abstract class Instruction
   Instruction prev;
   Instruction next;
   protected Value outValue;
-  protected final List<Value> inValues = new ArrayList<>();
+  protected final List<Value> inValues;
   private int number = -1;
   private Set<Value> debugValues;
   private Position position;
 
   protected Instruction(Value outValue) {
+    this.inValues = new ArrayList<>();
     setOutValue(outValue);
   }
 
   protected Instruction(Value outValue, Value inValue) {
-    addInValue(inValue);
+    if (inValue != null) {
+      this.inValues = new ArrayList<>(1);
+      addInValue(inValue);
+    } else {
+      this.inValues = new ArrayList<>();
+    }
     setOutValue(outValue);
   }
 
   protected Instruction(Value outValue, List<? extends Value> inValues) {
     if (inValues != null) {
-      for (Value v : inValues) {
-        addInValue(v);
+      this.inValues = new ArrayList<>(inValues);
+      for (Value value : inValues) {
+        assert value != null;
+        assert value.hasUsersInfo();
+        if (value.hasUsersInfo()) {
+          value.addUser(this);
+        }
       }
+    } else {
+      this.inValues = new ArrayList<>();
     }
     setOutValue(outValue);
   }
