@@ -61,7 +61,8 @@ public class StringConcatTest extends TestBase {
           "truetruetruefalsetrue0truenull",
           "true-3truedtruee",
           "a bc",
-          "a b c");
+          "a b c",
+          "ab12");
 
   @Parameter(0)
   public TestParameters parameters;
@@ -195,6 +196,16 @@ public class StringConcatTest extends TestBase {
 
     method = mainClass.uniqueMethodWithOriginalName("noOutValues_noSideEffects");
     assertThat("Empty method should be removed.", method, isPresent());
+
+    method = mainClass.uniqueMethodWithOriginalName("simplifyToStringAndValueOfTypes");
+    assertTrue(method.isPresent());
+    // TODO(b/467374229): Byte.valueOf and Short.valueOf should be unboxed by StringConcatOptimizer.
+    assertEquals(
+        2,
+        method
+            .streamInstructions()
+            .filter(ins -> ins.isInvokeStatic() && ins.getMethod().getName().isEqualTo("valueOf"))
+            .count());
   }
 
   static class Main {
@@ -271,6 +282,7 @@ public class StringConcatTest extends TestBase {
       numericAndBooleanStrings();
       regression_AssertionError_UnexpectedValuesLiveAtEntry();
       regression_IllegalStateException_Split();
+      simplifyToStringAndValueOfTypes();
     }
 
     @NeverInline
@@ -499,6 +511,16 @@ public class StringConcatTest extends TestBase {
       } catch (Throwable t) {
         System.out.println("catch");
       }
+    }
+
+    @NeverInline
+    public static void simplifyToStringAndValueOfTypes() {
+      boolean alwaysTrue = System.currentTimeMillis() > 0;
+      String s1 = (alwaysTrue ? "a" : "x").toString();
+      String s2 = String.valueOf(alwaysTrue ? "b" : "y");
+      byte b = alwaysTrue ? (byte) 1 : (byte) 2;
+      short s = alwaysTrue ? (short) 2 : (short) 3;
+      System.out.println(s1 + s2 + Byte.valueOf(b).toString() + Short.valueOf(s));
     }
   }
 }

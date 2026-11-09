@@ -23,7 +23,8 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class StringConcatFactoryArtTest extends TestBase {
 
-  static final String EXPECTED = StringUtils.lines("Values: true, 0, 1, 2, 3, 4.0, 5.0");
+  static final String EXPECTED =
+      StringUtils.lines("Values: true, 0, 1, 2, 3, 4.0, 5.0", "Strings: a, c", "23a");
   static final Class<?> MAIN = Main.class;
 
   private final TestParameters parameters;
@@ -41,27 +42,33 @@ public class StringConcatFactoryArtTest extends TestBase {
     this.parameters = parameters;
   }
 
-  private void checkInvokeDynamic(CodeInspector inspector) {
-    assertTrue(
-        inspector
-            .clazz(MAIN.getTypeName())
-            .uniqueMethodWithOriginalName("testPrimitives")
-            .streamInstructions()
-            .anyMatch(InstructionSubject::isInvokeDynamic));
-    assertTrue(
-        inspector
-            .clazz(MAIN.getTypeName())
-            .uniqueMethodWithOriginalName("testPrimitives")
-            .streamInstructions()
-            .filter(InstructionSubject::isInvokeDynamic)
-            .map(InstructionSubject::asInvokeDynamic)
-            .allMatch(
-                instruction ->
-                    instruction
-                        .getCallSite()
-                        .methodName
-                        .toString()
-                        .equals("makeConcatWithConstants")));
+  private void checkInvokeDynamic(CodeInspector inspector, boolean isD8OrR8) {
+    for (String methodName : new String[] {"testPrimitives", "testStrings", "testNoConstants"}) {
+      String expectedBootstrapMethodName =
+          isD8OrR8 && methodName.equals("testNoConstants")
+              ? "makeConcat"
+              : "makeConcatWithConstants";
+      assertTrue(
+          inspector
+              .clazz(MAIN.getTypeName())
+              .uniqueMethodWithOriginalName(methodName)
+              .streamInstructions()
+              .anyMatch(InstructionSubject::isInvokeDynamic));
+      assertTrue(
+          inspector
+              .clazz(MAIN.getTypeName())
+              .uniqueMethodWithOriginalName(methodName)
+              .streamInstructions()
+              .filter(InstructionSubject::isInvokeDynamic)
+              .map(InstructionSubject::asInvokeDynamic)
+              .allMatch(
+                  instruction ->
+                      instruction
+                          .getCallSite()
+                          .methodName
+                          .toString()
+                          .equals(expectedBootstrapMethodName)));
+    }
   }
 
   @Test
@@ -70,7 +77,7 @@ public class StringConcatFactoryArtTest extends TestBase {
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), MAIN)
-        .inspect(this::checkInvokeDynamic)
+        .inspect(inspector -> checkInvokeDynamic(inspector, false))
         .assertSuccessWithOutput(EXPECTED);
   }
 
@@ -85,9 +92,9 @@ public class StringConcatFactoryArtTest extends TestBase {
               opt.getTestingOptions().enableStringConcatFactoryForDex = true;
             })
         .compile()
-        .inspect(this::checkInvokeDynamic)
+        .inspect(inspector -> checkInvokeDynamic(inspector, true))
         .run(parameters.getRuntime(), MAIN)
-        .assertSuccessWithOutput(EXPECTED);
+        .assertFailureWithErrorThatThrows(BootstrapMethodError.class);
   }
 
   @Test
@@ -107,9 +114,12 @@ public class StringConcatFactoryArtTest extends TestBase {
             })
         .enableInliningAnnotations()
         .compile()
-        .inspect(this::checkInvokeDynamic)
+        .inspect(inspector -> checkInvokeDynamic(inspector, true))
         .run(parameters.getRuntime(), MAIN)
-        .assertSuccessWithOutput(EXPECTED);
+        .applyIf(
+            parameters.isDexRuntime(),
+            r -> r.assertFailureWithErrorThatThrows(BootstrapMethodError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED));
   }
 
   public static class Main {
@@ -121,6 +131,16 @@ public class StringConcatFactoryArtTest extends TestBase {
           "Values: " + z + ", " + b + ", " + s + ", " + i + ", " + l + ", " + f + ", " + d);
     }
 
+    @NeverInline
+    public static void testStrings(String s1, String s2) {
+      System.out.println("Strings: " + s1 + ", " + s2);
+    }
+
+    @NeverInline
+    public static void testNoConstants(int i, long l, String s) {
+      System.out.println("" + i + l + s);
+    }
+
     public static void main(String[] args) {
       testPrimitives(
           args.length == 0,
@@ -130,6 +150,8 @@ public class StringConcatFactoryArtTest extends TestBase {
           args.length + 3,
           args.length + 4,
           args.length + 5);
+      testStrings(args.length == 0 ? "a" : "b", args.length == 0 ? "c" : "d");
+      testNoConstants(args.length + 2, args.length + 3, args.length == 0 ? "a" : "b");
     }
   }
 }
