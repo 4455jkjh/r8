@@ -42,12 +42,8 @@ public class StringConcatFactoryArtTest extends TestBase {
     this.parameters = parameters;
   }
 
-  private void checkInvokeDynamic(CodeInspector inspector, boolean isD8OrR8) {
+  private void checkInvokeDynamic(CodeInspector inspector) {
     for (String methodName : new String[] {"testPrimitives", "testStrings", "testNoConstants"}) {
-      String expectedBootstrapMethodName =
-          isD8OrR8 && methodName.equals("testNoConstants")
-              ? "makeConcat"
-              : "makeConcatWithConstants";
       assertTrue(
           inspector
               .clazz(MAIN.getTypeName())
@@ -67,7 +63,7 @@ public class StringConcatFactoryArtTest extends TestBase {
                           .getCallSite()
                           .methodName
                           .toString()
-                          .equals(expectedBootstrapMethodName)));
+                          .equals("makeConcatWithConstants")));
     }
   }
 
@@ -77,7 +73,7 @@ public class StringConcatFactoryArtTest extends TestBase {
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), MAIN)
-        .inspect(inspector -> checkInvokeDynamic(inspector, false))
+        .inspect(this::checkInvokeDynamic)
         .assertSuccessWithOutput(EXPECTED);
   }
 
@@ -92,9 +88,9 @@ public class StringConcatFactoryArtTest extends TestBase {
               opt.getTestingOptions().enableStringConcatFactoryForDex = true;
             })
         .compile()
-        .inspect(inspector -> checkInvokeDynamic(inspector, true))
+        .inspect(this::checkInvokeDynamic)
         .run(parameters.getRuntime(), MAIN)
-        .assertFailureWithErrorThatThrows(BootstrapMethodError.class);
+        .assertSuccessWithOutput(EXPECTED);
   }
 
   @Test
@@ -114,12 +110,9 @@ public class StringConcatFactoryArtTest extends TestBase {
             })
         .enableInliningAnnotations()
         .compile()
-        .inspect(inspector -> checkInvokeDynamic(inspector, true))
+        .inspect(this::checkInvokeDynamic)
         .run(parameters.getRuntime(), MAIN)
-        .applyIf(
-            parameters.isDexRuntime(),
-            r -> r.assertFailureWithErrorThatThrows(BootstrapMethodError.class),
-            r -> r.assertSuccessWithOutput(EXPECTED));
+        .assertSuccessWithOutput(EXPECTED);
   }
 
   public static class Main {
