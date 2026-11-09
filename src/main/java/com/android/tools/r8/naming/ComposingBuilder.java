@@ -278,6 +278,10 @@ public class ComposingBuilder {
 
     private void commitClassBuilders(ComposingData current, ClassNameMapper classNameMapper)
         throws MappingComposeException {
+      if (classBuilders.isEmpty()) {
+        classBuilders = current.classBuilders;
+        return;
+      }
       Set<String> updatedClassBuilders = new HashSet<>();
       Map<String, ComposingClassBuilder> newClassBuilders = new HashMap<>();
       for (Entry<String, ComposingClassBuilder> newEntry : current.classBuilders.entrySet()) {
@@ -681,6 +685,7 @@ public class ComposingBuilder {
         throws MappingComposeException {
       Map<String, String> inverseClassMapping =
           classNameMapper.getObfuscatedToOriginalMapping().inverse;
+      boolean hasCommittedPreviousClassBuilders = !committedPreviousClassBuilders.isEmpty();
       for (Entry<String, MappedRangesOfName> entry : mapper.mappedRangesByRenamedName.entrySet()) {
         MappedRangesOfName allRangesOfName = entry.getValue();
         IntBox firstAvailableRange = new IntBox(-1);
@@ -688,77 +693,18 @@ public class ComposingBuilder {
         for (MappedRangesOfName rangesOfName : mappedRangesOfNames) {
           List<MappedRange> newRangesToCompose = rangesOfName.getMappedRanges();
           RangeBuilder minified = new RangeBuilder();
-          // The new minified ranges may have ranges that range over positions that has additional
-          // information, such as inlinees:
-          // Existing:
-          //  1:2:void caller():14:15 -> x
-          //  3:3:void inlinee():42:42 -> x
-          //  3:3:void caller():16:16 -> x
-          //  4:10:void caller():17:23 -> x
-          //  ...
-          // New mapping:
-          //  1:5:void x():1:5 -> y
-          //  6:10:void x():6:6 -> y
-          //  ...
-          // It is important that we therefore split up the new ranges to map everything back to the
-          // existing original mappings:
-          // Resulting mapping:
-          //  1:2:void caller():14:15 -> y
-          //  3:3:void inlinee():42:42 -> y
-          //  3:3:void caller():16:16 -> y
-          //  4:5:void caller():17:18 -> y
-          //  6:10:void caller():19:19 -> y
-          //  ...
-          List<MappedRange> composedRanges = new ArrayList<>();
-          ComputedOutlineInformation computedOutlineInformation = new ComputedOutlineInformation();
-          List<MappedRange> composedInlineFrames = new ArrayList<>();
-          for (int i = 0; i < newRangesToCompose.size(); i++) {
-            MappedRange mappedRange = newRangesToCompose.get(i);
-            minified.addRange(mappedRange.minifiedRange);
-            // Register mapping information that is dependent on the residual naming to allow
-            // updating later on.
-            registerMappingInformationFromMappedRanges(mappedRange);
-
-            MethodSignature originalSignature =
-                mappedRange.getOriginalSignature().asMethodSignature();
-
-            List<MappedRange> existingMappedRanges = null;
-            ComposingClassBuilder existingClassBuilder = getExistingClassBuilder(originalSignature);
-            if (existingClassBuilder != null) {
-              MethodSignature signature =
-                  (originalSignature.isQualified()
-                          ? originalSignature.toUnqualifiedSignature()
-                          : originalSignature)
-                      .asMethodSignature();
-              // Remove the existing entry since we are now composing the signature.
-              current.addSignatureToRemove(existingClassBuilder, signature);
-              existingMappedRanges = existingClassBuilder.getExistingMappedRanges(mappedRange);
-              assert existingMappedRanges != null
-                  || minified.hasValue()
-                  || mappedRange.getOriginalRangeOrIdentity() == null;
-            }
-            // Now that we have obtained a potential existing mapping, we can compose the frames.
-            List<MappedRange> newComposedRange =
+          List<MappedRange> composedRanges;
+          if (hasCommittedPreviousClassBuilders) {
+            composedRanges =
                 composeMappedRangesForMethod(
-                    existingClassBuilder,
-                    existingMappedRanges,
-                    mappedRange,
-                    computedOutlineInformation,
-                    !composedInlineFrames.isEmpty());
-            composedInlineFrames = composeInlineFrames(newComposedRange, composedInlineFrames);
-            if (!isInlineMappedRangeForComposition(newRangesToCompose, i)) {
-              composedRanges.addAll(composedInlineFrames);
-              composedInlineFrames = Collections.emptyList();
+                    newRangesToCompose, minified, allRangesOfName, firstAvailableRange);
+          } else {
+            for (MappedRange mappedRange : newRangesToCompose) {
+              minified.addRange(mappedRange.minifiedRange);
+              registerMappingInformationFromMappedRanges(mappedRange);
             }
+            composedRanges = newRangesToCompose;
           }
-          composedRanges =
-              fixupOutlines(
-                  computedOutlineInformation,
-                  newRangesToCompose,
-                  composedRanges,
-                  minified,
-                  allRangesOfName,
-                  firstAvailableRange);
           MethodSignature residualSignature =
               rangesOfName
                   .getMemberNaming(mapper)
@@ -776,6 +722,84 @@ public class ComposingBuilder {
           }
         }
       }
+    }
+
+    @SuppressWarnings("InconsistentOverloads")
+    private List<MappedRange> composeMappedRangesForMethod(
+        List<MappedRange> newRangesToCompose,
+        RangeBuilder minified,
+        MappedRangesOfName allRangesOfName,
+        IntBox firstAvailableRange)
+        throws MappingComposeException {
+      // The new minified ranges may have ranges that range over positions that has additional
+      // information, such as inlinees:
+      // Existing:
+      //  1:2:void caller():14:15 -> x
+      //  3:3:void inlinee():42:42 -> x
+      //  3:3:void caller():16:16 -> x
+      //  4:10:void caller():17:23 -> x
+      //  ...
+      // New mapping:
+      //  1:5:void x():1:5 -> y
+      //  6:10:void x():6:6 -> y
+      //  ...
+      // It is important that we therefore split up the new ranges to map everything back to
+      // the existing original mappings:
+      // Resulting mapping:
+      //  1:2:void caller():14:15 -> y
+      //  3:3:void inlinee():42:42 -> y
+      //  3:3:void caller():16:16 -> y
+      //  4:5:void caller():17:18 -> y
+      //  6:10:void caller():19:19 -> y
+      //  ...
+      List<MappedRange> composedRanges = new ArrayList<>();
+      ComputedOutlineInformation computedOutlineInformation = new ComputedOutlineInformation();
+      List<MappedRange> composedInlineFrames = new ArrayList<>();
+      for (int i = 0; i < newRangesToCompose.size(); i++) {
+        MappedRange mappedRange = newRangesToCompose.get(i);
+        minified.addRange(mappedRange.minifiedRange);
+        // Register mapping information that is dependent on the residual naming to allow
+        // updating later on.
+        registerMappingInformationFromMappedRanges(mappedRange);
+
+        MethodSignature originalSignature = mappedRange.getOriginalSignature().asMethodSignature();
+
+        List<MappedRange> existingMappedRanges = null;
+        ComposingClassBuilder existingClassBuilder = getExistingClassBuilder(originalSignature);
+        if (existingClassBuilder != null) {
+          MethodSignature signature =
+              (originalSignature.isQualified()
+                      ? originalSignature.toUnqualifiedSignature()
+                      : originalSignature)
+                  .asMethodSignature();
+          // Remove the existing entry since we are now composing the signature.
+          current.addSignatureToRemove(existingClassBuilder, signature);
+          existingMappedRanges = existingClassBuilder.getExistingMappedRanges(mappedRange);
+          assert existingMappedRanges != null
+              || minified.hasValue()
+              || mappedRange.getOriginalRangeOrIdentity() == null;
+        }
+        // Now that we have obtained a potential existing mapping, we can compose the frames.
+        List<MappedRange> newComposedRange =
+            composeMappedRangesForMethod(
+                existingClassBuilder,
+                existingMappedRanges,
+                mappedRange,
+                computedOutlineInformation,
+                !composedInlineFrames.isEmpty());
+        composedInlineFrames = composeInlineFrames(newComposedRange, composedInlineFrames);
+        if (!isInlineMappedRangeForComposition(newRangesToCompose, i)) {
+          composedRanges.addAll(composedInlineFrames);
+          composedInlineFrames = Collections.emptyList();
+        }
+      }
+      return fixupOutlines(
+          computedOutlineInformation,
+          newRangesToCompose,
+          composedRanges,
+          minified,
+          allRangesOfName,
+          firstAvailableRange);
     }
 
     private List<MappedRange> fixupOutlines(
