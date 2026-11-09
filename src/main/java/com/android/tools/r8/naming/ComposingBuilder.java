@@ -724,7 +724,7 @@ public class ComposingBuilder {
       }
     }
 
-    @SuppressWarnings("InconsistentOverloads")
+    @SuppressWarnings({"InconsistentOverloads", "ReferenceEquality"})
     private List<MappedRange> composeMappedRangesForMethod(
         List<MappedRange> newRangesToCompose,
         RangeBuilder minified,
@@ -755,6 +755,8 @@ public class ComposingBuilder {
       List<MappedRange> composedRanges = new ArrayList<>();
       ComputedOutlineInformation computedOutlineInformation = new ComputedOutlineInformation();
       List<MappedRange> composedInlineFrames = new ArrayList<>();
+      List<MappedRange> lastExistingMappedRanges = null;
+      ExistingMappings lastExistingMappings = null;
       for (int i = 0; i < newRangesToCompose.size(); i++) {
         MappedRange mappedRange = newRangesToCompose.get(i);
         minified.addRange(mappedRange.minifiedRange);
@@ -779,11 +781,16 @@ public class ComposingBuilder {
               || minified.hasValue()
               || mappedRange.getOriginalRangeOrIdentity() == null;
         }
+        if (existingMappedRanges != lastExistingMappedRanges) {
+          lastExistingMappedRanges = existingMappedRanges;
+          lastExistingMappings = ExistingMappings.create(existingMappedRanges);
+        }
         // Now that we have obtained a potential existing mapping, we can compose the frames.
         List<MappedRange> newComposedRange =
             composeMappedRangesForMethod(
                 existingClassBuilder,
                 existingMappedRanges,
+                lastExistingMappings,
                 mappedRange,
                 computedOutlineInformation,
                 !composedInlineFrames.isEmpty());
@@ -1082,6 +1089,7 @@ public class ComposingBuilder {
       List<MappedRange> mappedRanges();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void visitOutlineMappedPositions(
         OutlineCallsiteMappingInformation outlineCallSite,
         MethodSignature originalSignature,
@@ -1100,6 +1108,8 @@ public class ComposingBuilder {
         throw new MappingComposeException(
             "Could not find method positions for original signature '" + originalSignature + "'.");
       }
+      List<MappedRange> lastMappedRanges = null;
+      ExistingMappings existingMappings = null;
       for (Integer keyPosition : positionMap.keySet()) {
         int outlinePosition = keyPosition;
         int callsitePosition = positionMap.get(outlinePosition);
@@ -1112,9 +1122,12 @@ public class ComposingBuilder {
                   + originalSignature
                   + "'.");
         }
-        ExistingMappings existingMappings = ExistingMappings.create(mappedRanges);
+        if (mappedRanges != lastMappedRanges) {
+          lastMappedRanges = mappedRanges;
+          existingMappings = ExistingMappings.create(mappedRanges);
+        }
         List<MappedRange> mappedRangesForOutlinePosition =
-            existingMappings.getPreviousRanges(callsitePosition);
+            existingMappings != null ? existingMappings.getPreviousRanges(callsitePosition) : null;
         if (mappedRangesForOutlinePosition == null
             || mappedRangesForOutlinePosition.isEmpty()
             || !mappedRangesForOutlinePosition.get(0).minifiedRange.contains(callsitePosition)) {
@@ -1236,6 +1249,7 @@ public class ComposingBuilder {
     private List<MappedRange> composeMappedRangesForMethod(
         ComposingClassBuilder existingClassBuilder,
         List<MappedRange> existingRanges,
+        ExistingMappings mappedRangesForPosition,
         MappedRange newRange,
         ComputedOutlineInformation computedOutlineInformation,
         boolean isInlineFrame)
@@ -1252,7 +1266,6 @@ public class ComposingBuilder {
         return Collections.singletonList(
             composeOnMethodSignature(existingClassBuilder, newRange, lastExistingRange));
       }
-      ExistingMappings mappedRangesForPosition = ExistingMappings.create(existingRanges);
       List<MappedRange> newComposedRanges = new ArrayList<>();
       assert newRange.minifiedRange != null;
       int minifiedStart = newRange.minifiedRange.from;
@@ -1398,25 +1411,26 @@ public class ComposingBuilder {
       }
 
       private static ExistingMappings create(List<MappedRange> existingRanges) {
+        if (existingRanges == null || existingRanges.isEmpty()) {
+          return null;
+        }
         TreeMap<Integer, List<MappedRange>> mappedRangesForPosition = new TreeMap<>();
-        if (!existingRanges.isEmpty()) {
-          ImmutableList.Builder<MappedRange> builder = ImmutableList.builder();
-          Range lastRange = existingRanges.get(0).minifiedRange;
-          if (lastRange == null) {
-            assert existingRanges.size() == 1;
-            mappedRangesForPosition.put(
-                NO_RANGE_FROM, Collections.singletonList(existingRanges.get(0)));
-          } else {
-            for (MappedRange mappedRange : existingRanges) {
-              if (!lastRange.equals(mappedRange.minifiedRange)) {
-                mappedRangesForPosition.put(lastRange.from, builder.build());
-                builder = new ImmutableList.Builder<>();
-                lastRange = mappedRange.minifiedRange;
-              }
-              builder.add(mappedRange);
+        ImmutableList.Builder<MappedRange> builder = ImmutableList.builder();
+        Range lastRange = existingRanges.get(0).minifiedRange;
+        if (lastRange == null) {
+          assert existingRanges.size() == 1;
+          mappedRangesForPosition.put(
+              NO_RANGE_FROM, Collections.singletonList(existingRanges.get(0)));
+        } else {
+          for (MappedRange mappedRange : existingRanges) {
+            if (!lastRange.equals(mappedRange.minifiedRange)) {
+              mappedRangesForPosition.put(lastRange.from, builder.build());
+              builder = new ImmutableList.Builder<>();
+              lastRange = mappedRange.minifiedRange;
             }
-            mappedRangesForPosition.put(lastRange.from, builder.build());
+            builder.add(mappedRange);
           }
+          mappedRangesForPosition.put(lastRange.from, builder.build());
         }
         return new ExistingMappings(mappedRangesForPosition);
       }
