@@ -118,7 +118,8 @@ public class ProguardMapSupplier {
             () -> {
               try (Timing threadTiming =
                   timing.createThreadTiming("Write proguard map to consumer", appView.options())) {
-                ProguardMapId proguardMapId = proguardMapIdSupplier.awaitValue();
+                ProguardMapId proguardMapId =
+                    threadTiming.time("Await proguard map id", proguardMapIdSupplier::awaitValue);
                 ProguardMapMarkerInfo markerInfo =
                     ProguardMapMarkerInfo.builder()
                         .setCompilerName(compiler.name())
