@@ -25,9 +25,19 @@ tasks {
 
 val testngScope by configurations.dependencyScope("testngScope")
 val testngConfig by configurations.resolvable("testngConfig") { extendsFrom(testngScope) }
+val javaBasePatchSourcesScope by configurations.dependencyScope("javaBasePatchSourcesScope")
+val javaBasePatchSourcesConfig by
+  configurations.resolvable("javaBasePatchSourcesConfig") { extendsFrom(javaBasePatchSourcesScope) }
+val jdkTestLibrarySourcesScope by configurations.dependencyScope("jdkTestLibrarySourcesScope")
+val jdkTestLibrarySourcesConfig by
+  configurations.resolvable("jdkTestLibrarySourcesConfig") {
+    extendsFrom(jdkTestLibrarySourcesScope)
+  }
 
 dependencies {
   testngScope(libs.testng)
+  javaBasePatchSourcesScope(project(":third_party", "jdk11TestJavaBasePatchSources"))
+  jdkTestLibrarySourcesScope(project(":third_party", "jdk11TestLibrarySources"))
   runtimeOnlyData(project(":tests_java_8:desugar", "javaBaseExtension"))
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
   runtimeOnlyData(project(":third_party", "dependenciesBucket"))
@@ -55,19 +65,20 @@ val compileJavaBaseExtension =
     javaCompiler.set(javaToolchains.compilerFor { languageVersion.set(JavaLanguageVersion.of(11)) })
     sourceCompatibility = JavaVersion.VERSION_11.toString()
     targetCompatibility = JavaVersion.VERSION_11.toString()
-    val bootlibJavaBaseDir =
-      resolve(ThirdPartyDeps.jdk11Test, "lib", "testlibrary", "bootlib", "java.base")
-    source(bootlibJavaBaseDir, resolve(ThirdPartyDeps.jdk11Test, "lib", "testlibrary", "jdk"))
+    source(javaBasePatchSourcesConfig, jdkTestLibrarySourcesConfig)
     include("**/*.java")
     classpath = testngConfig
     destinationDirectory.set(layout.buildDirectory.dir("classes/javaBaseExtension"))
-    options.compilerArgs.addAll(
-      listOf(
-        "--add-reads",
-        "java.base=ALL-UNNAMED",
-        "--patch-module",
-        "java.base=${bootlibJavaBaseDir.singleFile.absolutePath}",
-      )
+    val javaBasePatchFiles: FileCollection = javaBasePatchSourcesConfig
+    options.compilerArgumentProviders.add(
+      CommandLineArgumentProvider {
+        listOf(
+          "--add-reads",
+          "java.base=ALL-UNNAMED",
+          "--patch-module",
+          "java.base=${javaBasePatchFiles.singleFile.absolutePath}",
+        )
+      }
     )
   }
 
