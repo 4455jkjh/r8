@@ -3,12 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.regalloc;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.google.common.base.Strings;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,10 +62,11 @@ public class ArgumentUnsplitInvalidatedByRematerializationTest extends TestBase 
   @Test
   public void testD8Debug() throws Exception {
     parameters.assumeDexRuntime();
-    // TODO(christofferqa): Should succeed.
-    Assert.assertThrows(
-        CompilationFailedException.class,
-        () -> testForD8(parameters).addProgramClassFileData(dump()).debug().compile());
+    testForD8(parameters)
+        .addProgramClassFileData(dump())
+        .debug()
+        .run(parameters.getRuntime(), "repro.Test")
+        .assertSuccessWithOutputLines("hit");
   }
 
   @Test
