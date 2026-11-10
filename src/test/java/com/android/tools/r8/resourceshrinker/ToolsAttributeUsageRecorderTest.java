@@ -14,8 +14,9 @@ import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorderKt;
+import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorder;
 import com.android.tools.r8.utils.ResourceShrinkerUtils;
+import java.io.IOException;
 import java.io.StringReader;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +36,7 @@ public class ToolsAttributeUsageRecorderTest extends TestBase {
   }
 
   @Test
-  public void testProcessRawXmlKeepAttributes() {
+  public void testProcessRawXmlKeepAttributes() throws IOException {
     ResourceShrinkerModel model = new ResourceShrinkerModel(NoDebugReporter.INSTANCE, true);
     assertTrue(model.isSafeMode());
 
@@ -46,13 +47,13 @@ public class ToolsAttributeUsageRecorderTest extends TestBase {
             + "    tools:discard=\"@layout/unused\"\n"
             + "    tools:shrinkMode=\"strict\" />\n";
 
-    ToolsAttributeUsageRecorderKt.processRawXml(new StringReader(xml), model);
+    ToolsAttributeUsageRecorder.processRawXml(new StringReader(xml), model);
 
     assertFalse(model.isSafeMode());
   }
 
   @Test
-  public void testProcessRawXmlXXEIgnoredSafely() {
+  public void testProcessRawXmlXXEIgnoredSafely() throws IOException {
     StringBuilder loggedOutput = new StringBuilder();
     TestDiagnosticMessages diagnostics = new TestDiagnosticMessagesImpl();
     ShrinkerDebugReporter reporter =
@@ -69,7 +70,7 @@ public class ToolsAttributeUsageRecorderTest extends TestBase {
             + "<resources xmlns:tools=\"http://schemas.android.com/tools\"\n"
             + "    tools:keep=\"&xxe;\" />\n";
 
-    ToolsAttributeUsageRecorderKt.processRawXml(
+    ToolsAttributeUsageRecorder.processRawXml(
         new StringReader(xmlWithXXE), model, "path/to/my_rules.xml");
 
     assertTrue(loggedOutput.toString().contains("path/to/my_rules.xml"));
@@ -85,7 +86,7 @@ public class ToolsAttributeUsageRecorderTest extends TestBase {
   }
 
   @Test
-  public void testProcessRawXmlEmptyFileIgnored() {
+  public void testProcessRawXmlEmptyFileIgnored() throws IOException {
     StringBuilder loggedOutput = new StringBuilder();
     TestDiagnosticMessages diagnostics = new TestDiagnosticMessagesImpl();
     ShrinkerDebugReporter reporter =
@@ -94,15 +95,15 @@ public class ToolsAttributeUsageRecorderTest extends TestBase {
 
     ResourceShrinkerModel model = new ResourceShrinkerModel(reporter, true);
 
-    ToolsAttributeUsageRecorderKt.processRawXml(new StringReader(""), model);
-    ToolsAttributeUsageRecorderKt.processRawXml(new StringReader("   \n\t  "), model);
+    ToolsAttributeUsageRecorder.processRawXml(new StringReader(""), model);
+    ToolsAttributeUsageRecorder.processRawXml(new StringReader("   \n\t  "), model);
 
     assertEquals("", loggedOutput.toString());
     diagnostics.assertNoMessages();
   }
 
   @Test
-  public void testProcessRawXmlInvalidXmlReportedPrettily() {
+  public void testProcessRawXmlInvalidXmlReportedPrettily() throws IOException {
     StringBuilder loggedOutput = new StringBuilder();
     TestDiagnosticMessages diagnostics = new TestDiagnosticMessagesImpl();
     ShrinkerDebugReporter reporter =
@@ -111,7 +112,7 @@ public class ToolsAttributeUsageRecorderTest extends TestBase {
 
     ResourceShrinkerModel model = new ResourceShrinkerModel(reporter, true);
 
-    ToolsAttributeUsageRecorderKt.processRawXml(
+    ToolsAttributeUsageRecorder.processRawXml(
         new StringReader("<resources><foo"), model, "res/raw/invalid.xml");
 
     String output = loggedOutput.toString();

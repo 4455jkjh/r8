@@ -17,8 +17,8 @@ import com.android.resources.ResourceType;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.R8ResourceShrinkerModel;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ShrinkerResult;
-import com.android.tools.r8.resourceshrinker.ResourceStoreUtilsKt;
-import com.android.tools.r8.resourceshrinker.ResourceTableUtilKt;
+import com.android.tools.r8.resourceshrinker.ResourceStoreUtils;
+import com.android.tools.r8.resourceshrinker.ResourceTableUtil;
 import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
 import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
 import com.android.tools.r8.resourceshrinker.obfuscation.ProguardMappingsRecorder;
@@ -165,8 +165,7 @@ public class LegacyResourceShrinker<T> {
   }
 
   public static Predicate<String> classNamesNeededForResourceShrinkingPredicate() {
-    return AppCompat.INSTANCE
-        .getRequiredClassNamesPredicate()
+    return AppCompat.getRequiredClassNamesPredicate()
         .or(DexUsageRecorder.getRequiredClassNamesPredicate());
   }
 
@@ -189,11 +188,11 @@ public class LegacyResourceShrinker<T> {
           new DexUsageRecorder.DexFileAnalysisCallback(inMemoryR8, model));
     }
     for (PathAndBytes pathAndBytes : manifest) {
-      ProtoAndroidManifestUsageRecorderKt.recordUsagesFromNode(
+      ProtoAndroidManifestUsageRecorder.recordUsagesFromNode(
           XmlNode.parseFrom(pathAndBytes.bytes), model);
     }
     for (byte[] keepBytes : keepRuleInput) {
-      ToolsAttributeUsageRecorderKt.processRawXml(getUtfReader(keepBytes), model);
+      ToolsAttributeUsageRecorder.processRawXml(getUtfReader(keepBytes), model);
     }
 
     ImmutableMap<String, PathAndBytes> resFolderMappings =
@@ -232,12 +231,12 @@ public class LegacyResourceShrinker<T> {
                 }));
     ImmutableSet.Builder<String> resEntriesToKeepBuilder = new ImmutableSet.Builder<>();
     for (PathAndBytes xmlInput : Iterables.concat(xmlInputs, resFolderInputs)) {
-      if (ResourceStoreUtilsKt.isJarPathReachable(resourceStore, xmlInput.path.toString())) {
+      if (ResourceStoreUtils.isJarPathReachable(resourceStore, xmlInput.path.toString())) {
         resEntriesToKeepBuilder.add(xmlInput.path.toString());
         if (xmlInput.duplicated) {
           // Ensure that we don't remove references to duplicated res folder entries.
           List<Resource> duplicatedResources =
-              ResourceStoreUtilsKt.getResourcesFor(resourceStore, xmlInput.path.toString());
+              ResourceStoreUtils.getResourcesFor(resourceStore, xmlInput.path.toString());
           unusedResources.removeAll(duplicatedResources);
         }
       }
@@ -252,7 +251,7 @@ public class LegacyResourceShrinker<T> {
     Map<T, byte[]> shrunkenTables = new HashMap<>();
     for (Entry<PathAndBytes, T> entry : resourceTables.entrySet()) {
       byte[] shrunkenTableBytes =
-          ResourceTableUtilKt.nullOutEntriesWithIds(entry.getKey().bytes, resourceIdsToRemove);
+          ResourceTableUtil.nullOutEntriesWithIds(entry.getKey().bytes, resourceIdsToRemove);
       shrunkenTables.put(entry.getValue(), shrunkenTableBytes);
     }
     return new ShrinkerResult<T>(

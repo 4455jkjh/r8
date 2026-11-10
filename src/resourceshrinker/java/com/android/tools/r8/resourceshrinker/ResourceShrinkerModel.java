@@ -16,20 +16,13 @@
 
 package com.android.tools.r8.resourceshrinker;
 
-import com.android.aapt.Resources.ResourceTable;
 import com.android.annotations.NonNull;
 import com.android.annotations.Nullable;
 import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
 import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscatedClasses;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,8 +39,6 @@ public class ResourceShrinkerModel {
   private ObfuscatedClasses obfuscatedClasses = ObfuscatedClasses.NO_OBFUSCATION;
 
   private final Set<String> strings = Sets.newHashSetWithExpectedSize(300);
-
-  private final Map<String, ResourceTable> resourceTableCache = Maps.newHashMap();
 
   private boolean foundGetIdentifier = false;
   private boolean foundWebContent = false;
@@ -165,22 +156,6 @@ public class ResourceShrinkerModel {
 
     new PossibleResourcesMarker(debugReporter, resourceStore, strings, foundWebContent)
         .markPossibleResourcesReachable();
-  }
-
-  /**
-   * Reads resource table from specified path and stores it in cache to be able to reuse it if the
-   * same resource table is requested by another unit.
-   */
-  public ResourceTable readResourceTable(Path resourceTablePath) {
-    return resourceTableCache.computeIfAbsent(
-        resourceTablePath.toString(),
-        (path) -> {
-          try {
-            return ResourceTable.parseFrom(Files.readAllBytes(resourceTablePath));
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
   }
 
   public boolean isSafeMode() {

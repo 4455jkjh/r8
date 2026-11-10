@@ -159,7 +159,7 @@ public class DexUsageRecorder {
       if ("android/content/res/Resources".equals(internalName)
           && "getIdentifier".equals(methodName)
           && "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I".equals(methodDescriptor)) {
-        if (AppCompat.INSTANCE.isAppCompatClass(
+        if (AppCompat.isAppCompatClass(
             toSourceClassName(internalName), model.getObfuscatedClasses())) {
           return;
         }

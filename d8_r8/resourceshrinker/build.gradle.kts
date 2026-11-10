@@ -3,23 +3,16 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.util.concurrent.Callable
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  // Kotlin version is fixed by create_local_maven_dependencies.py
-  id("org.jetbrains.kotlin.jvm")
+  `java-library`
   id("r8-conventions")
   id("dependencies-plugin")
 }
 
 val srcDir = getRoot().resolveAll("src", "resourceshrinker", "java")
 
-java {
-  sourceSets.main.configure {
-    kotlin.srcDir(srcDir)
-    java.srcDir(srcDir)
-  }
-}
+java { sourceSets.main.configure { java.srcDir(srcDir) } }
 
 fun jarDependencies(): FileCollection {
   return sourceSets.main
@@ -42,6 +35,7 @@ dependencies {
   compileOnly(libs.guava)
   compileOnly(libs.protobuf)
   compileOnly(libs.fastUtil)
+  implementation(libs.kotlinStdLib)
   implementation(libs.toolsAapt2Proto)
   implementation(libs.toolsLayoutlibApi)
   implementation(libs.toolsCommon)
@@ -49,7 +43,7 @@ dependencies {
 }
 
 tasks {
-  withType<KotlinCompile> { dependsOn(sharedDepsConfig) }
+  withType<JavaCompile> { dependsOn(sharedDepsConfig) }
   register<Jar>("depsJar") {
     from(Callable { jarDependencies().map(::zipTree) })
     exclude("**/*.proto")
@@ -67,7 +61,6 @@ configurations.consumable("resourceshrinkerDepsJar") {
 
 configurations.consumable("resourceshrinkerClasses") {
   outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-  outgoing.artifact(tasks.named<KotlinCompile>("compileKotlin").map { it.destinationDirectory })
 }
 
 configurations.consumable("resourceshrinkerSources") { outgoing.artifact(srcDir) }
