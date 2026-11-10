@@ -86,6 +86,7 @@ import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.mappinginformation.MergedClassesInformation;
 import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
+import com.android.tools.r8.optimize.compose.ComposeOptions;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInlinerOptions;
 import com.android.tools.r8.origin.Origin;
@@ -1210,6 +1211,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       new CallSiteOptimizationOptions();
   private final CfCodeAnalysisOptions cfCodeAnalysisOptions = new CfCodeAnalysisOptions();
   private final ClassInlinerOptions classInlinerOptions = new ClassInlinerOptions();
+  private final ComposeOptions composeOptions = new ComposeOptions(this);
   private final InlinerOptions inlinerOptions = new InlinerOptions(this);
   private final SingleCallerInlinerOptions singleCallerInlinerOptions =
       new SingleCallerInlinerOptions(this);
@@ -1344,6 +1346,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public CfCodeAnalysisOptions getCfCodeAnalysisOptions() {
     return cfCodeAnalysisOptions;
+  }
+
+  public ComposeOptions getComposeOptions() {
+    return composeOptions;
   }
 
   public RedundantBridgeRemovalOptions getRedundantBridgeRemovalOptions() {

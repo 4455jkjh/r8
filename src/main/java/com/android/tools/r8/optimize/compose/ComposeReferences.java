@@ -12,12 +12,19 @@ import com.android.tools.r8.graph.lens.GraphLens;
 
 public class ComposeReferences {
 
+  public final DexString endDefaultsName;
+  public final DexString getDefaultsInvalidName;
   public final DexString skipToGroupEndName;
+  public final DexString startDefaultsName;
+
   public final DexType composableType;
   public final DexMethod updatedChangedFlagsMethod;
 
   public ComposeReferences(DexItemFactory factory) {
+    endDefaultsName = factory.createString("endDefaults");
+    getDefaultsInvalidName = factory.createString("getDefaultsInvalid");
     skipToGroupEndName = factory.createString("skipToGroupEnd");
+    startDefaultsName = factory.createString("startDefaults");
     composableType = factory.createType("Landroidx/compose/runtime/Composable;");
     updatedChangedFlagsMethod =
         factory.createMethod(
@@ -27,8 +34,16 @@ public class ComposeReferences {
   }
 
   public ComposeReferences(
-      DexString skipToGroupEndName, DexType composableType, DexMethod updatedChangedFlagsMethod) {
+      DexString endDefaultsName,
+      DexString getDefaultsInvalidName,
+      DexString skipToGroupEndName,
+      DexString startDefaultsName,
+      DexType composableType,
+      DexMethod updatedChangedFlagsMethod) {
+    this.endDefaultsName = endDefaultsName;
+    this.getDefaultsInvalidName = getDefaultsInvalidName;
     this.skipToGroupEndName = skipToGroupEndName;
+    this.startDefaultsName = startDefaultsName;
     this.composableType = composableType;
     this.updatedChangedFlagsMethod = updatedChangedFlagsMethod;
   }
@@ -40,7 +55,10 @@ public class ComposeReferences {
 
   public ComposeReferences rewrittenWithLens(GraphLens graphLens, GraphLens codeLens) {
     return new ComposeReferences(
+        endDefaultsName,
+        getDefaultsInvalidName,
         skipToGroupEndName,
+        startDefaultsName,
         graphLens.lookupClassType(composableType, codeLens),
         graphLens.getRenamedMethodSignature(updatedChangedFlagsMethod, codeLens));
   }

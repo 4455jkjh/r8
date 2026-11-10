@@ -71,8 +71,11 @@ import java.util.Set;
 
 public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
 
+  private final ComposableBranchSimplifier composableBranchSimplifier;
+
   public BranchSimplifier(AppView<?> appView) {
     super(appView);
+    this.composableBranchSimplifier = ComposableBranchSimplifier.create(appView, this);
   }
 
   @Override
@@ -128,6 +131,12 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
           if (!block.exit().isIf()) {
             continue;
           }
+        }
+
+        if (composableBranchSimplifier != null
+            && composableBranchSimplifier.simplifyComposeDefaults(code, block)) {
+          simplified = true;
+          continue;
         }
 
         // Simplify if conditions when possible.
@@ -783,8 +792,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
   }
 
   @SuppressWarnings("ReferenceEquality")
-  private void rewriteIfToGoto(
-      BasicBlock block, If theIf, BasicBlock target, BasicBlock deadTarget) {
+  void rewriteIfToGoto(BasicBlock block, If theIf, BasicBlock target, BasicBlock deadTarget) {
     deadTarget.unlinkSinglePredecessorSiblingsAllowed();
     assert theIf == block.exit();
     block.replaceLastInstruction(new Goto());
