@@ -91,13 +91,11 @@ dependencies {
   coverageClassesScope(project(":keepradius", "keepradiusClasses"))
   coverageClassesScope(project(":libanalyzer", "libanalyzerClasses"))
   coverageClassesScope(project(":main", "mainClassesOutput"))
-  coverageClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
   coverageSourcesScope(project(":assistant", "assistantSources"))
   coverageSourcesScope(project(":keepanno", "keepannoSources"))
   coverageSourcesScope(project(":keepradius", "keepradiusSources"))
   coverageSourcesScope(project(":libanalyzer", "libanalyzerSources"))
   coverageSourcesScope(project(":main", "mainSources"))
-  coverageSourcesScope(project(":resourceshrinker", "resourceshrinkerSources"))
   coverageExecScope(project(":tests_java_8", "jacocoExecElements"))
   coverageExecScope(project(":tests_java_11", "jacocoExecElements"))
   coverageExecScope(project(":tests_java_17", "jacocoExecElements"))
@@ -668,7 +666,6 @@ tasks {
     sourceConfiguration(project(":keepradius"))
     sourceConfiguration(project(":keepanno"))
     sourceConfiguration(project(":libanalyzer"))
-    sourceConfiguration(project(":resourceshrinker"))
     sourceConfiguration(project(":main"))
   }
   register<Jar>("packageSources") {

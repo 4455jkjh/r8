@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -303,7 +304,7 @@ public class LegacyResourceShrinker<T> {
             if (length >= 4 && bytes[2] == (byte) 0x00 && bytes[3] == (byte) 0x00) {
               // UTF-32 Little Endian BOM: FF FE 00 00
               return new InputStreamReader(
-                  new ByteArrayInputStream(bytes, 4, length - 4), "UTF-32LE");
+                  new ByteArrayInputStream(bytes, 4, length - 4), Charset.forName("UTF-32LE"));
             }
 
             // UTF-16 Little Endian BOM: FF FE
@@ -320,10 +321,12 @@ public class LegacyResourceShrinker<T> {
               && bytes[3] == (byte) 0xFF) {
             // UTF-32 Big Endian BOM: 00 00 FE FF
             return new InputStreamReader(
-                new ByteArrayInputStream(bytes, 4, length - 4), "UTF-32BE");
+                new ByteArrayInputStream(bytes, 4, length - 4), Charset.forName("UTF-32BE"));
           }
           break;
         }
+      default:
+        break;
     }
 
     // No byte order mark: Assume UTF-8 (where the BOM is optional).
@@ -340,16 +343,16 @@ public class LegacyResourceShrinker<T> {
       this.path = path;
     }
 
-    public void setDuplicated(boolean duplicated) {
+    void setDuplicated(boolean duplicated) {
       this.duplicated = duplicated;
     }
 
-    public String getPathWithoutRes() {
+    String getPathWithoutRes() {
       assert path.startsWith("res/");
       return path.substring(4);
     }
 
-    public byte[] getBytes() {
+    byte[] getBytes() {
       return bytes;
     }
   }

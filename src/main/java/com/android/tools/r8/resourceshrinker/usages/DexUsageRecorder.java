@@ -12,6 +12,7 @@ import com.android.tools.r8.resourceshrinker.obfuscation.ClassAndMethod;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -28,7 +29,7 @@ public class DexUsageRecorder {
   public void recordUsages(ResourceShrinkerModel model) {
     try (Stream<Path> walk = Files.walk(root)) {
       walk.filter(Files::isRegularFile)
-          .filter(path -> path.toString().toLowerCase().endsWith(".dex"))
+          .filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".dex"))
           .forEach(
               path -> {
                 try {

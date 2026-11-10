@@ -33,11 +33,6 @@ java {
 val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig =
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
-val resourceShrinkerClassesScope = configurations.dependencyScope("resourceShrinkerClassesScope")
-val resourceShrinkerClassesConfig =
-  configurations.resolvable("resourceShrinkerClassesConfig") {
-    extendsFrom(resourceShrinkerClassesScope.get())
-  }
 val assistantClassesScope = configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
   configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope.get()) }
@@ -70,9 +65,6 @@ dependencies {
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
-  resourceShrinkerClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
-  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
-  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "agsa"))
@@ -264,7 +256,6 @@ fun Test.setupTestTask() {
         mainResources,
         keepAnnoClassesConfig,
         assistantClassesOutput,
-        resourceShrinkerClassesConfig,
       )
       .asPath
   systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)

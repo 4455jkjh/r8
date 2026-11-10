@@ -12,6 +12,7 @@ fastdoubleparser = "0.8.0"
 gcpGradlePlugin = "1.0.2"
 gson = "2.14.0"
 guava = "32.1.2-jre"
+j2objcAnnotations = "2.8"
 # Determined by Gradle, needs to be updated with Gradle upgrades.
 jacoco = "0.8.15"
 javassist = "3.29.2-GA"
@@ -55,6 +56,7 @@ fastUtil  = { module = "it.unimi.dsi:fastutil", version.ref = "fastUtil" }
 gcpGradlePlugin = { module = "androidx.build.gradle.gcpbuildcache:androidx.build.gradle.gcpbuildcache.gradle.plugin", version.ref = "gcpGradlePlugin" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 guava  = { module = "com.google.guava:guava", version.ref = "guava" }
+j2objcAnnotations = { module = "com.google.j2objc:j2objc-annotations", version.ref = "j2objcAnnotations" }
 jacocoAgent = { module = "org.jacoco:org.jacoco.agent", version.ref = "jacoco" }
 jacocoAnt = { module = "org.jacoco:org.jacoco.ant", version.ref = "jacoco" }
 javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
@@ -102,7 +104,16 @@ compilerDeps = ["androidxCollection",
     "fastUtil",
     "gson",
     "guava",
+    # Compile-only dependency of guava, which is referenced from the included guava classes.
+    "j2objcAnnotations",
     "kotlinMetadata",
+    "kotlinStdLib",
     "protobuf",
     "protobufUtil",
+    "toolsAapt2Proto",
     "zipflinger"]
+# Compiler dependencies that are included without their transitive dependencies, since these are
+# not used by R8.
+nonTransitiveDeps = ["toolsCommon",
+    "toolsLayoutlibApi",
+    "toolsSdkCommon"]

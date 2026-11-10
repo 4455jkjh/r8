@@ -23,11 +23,9 @@ java {
 val keepAnnoJarScope = configurations.dependencyScope("keepAnnoJarScope")
 val keepAnnoJarConfig =
   configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope.get()) }
-val resourceShrinkerDepsJarScope = configurations.dependencyScope("resourceShrinkerDepsJarScope")
-val resourceShrinkerDepsJarConfig =
-  configurations.resolvable("resourceShrinkerDepsJarConfig") {
-    extendsFrom(resourceShrinkerDepsJarScope.get())
-  }
+val distDepsJarScope = configurations.dependencyScope("distDepsJarScope")
+val distDepsJarConfig =
+  configurations.resolvable("distDepsJarConfig") { extendsFrom(distDepsJarScope.get()) }
 val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig =
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
@@ -135,9 +133,8 @@ dependencies {
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
-  resourceShrinkerDepsJarScope(project(":resourceshrinker", "resourceshrinkerDepsJar"))
-  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
-  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
+  distDepsJarScope(project(":dist", "filteredDepsJarConfig"))
+  implementation(project(":dist", "filteredDepsJarConfig"))
   implementation(libs.androidxCollection)
   implementation(libs.androidxTracingDriver)
   implementation(libs.androidxTracingDriverWire)
@@ -196,12 +193,12 @@ tasks {
 
   register<Jar>("assembleDepsJar") {
     dependsOn(keepAnnoJarConfig)
-    dependsOn(resourceShrinkerDepsJarConfig)
+    dependsOn(distDepsJarConfig)
     dependsOn(sharedDepsConfig)
     dependsOn(sharedTestDepsConfig)
     from(Callable { testDependencies().map(::zipTree) })
     from(keepAnnoJarConfig.map { it.map(::zipTree) })
-    from(resourceShrinkerDepsJarConfig.map { it.map(::zipTree) })
+    from(distDepsJarConfig.map { it.map(::zipTree) })
     exclude("com/android/tools/r8/keepanno/annotations/**")
     exclude("androidx/annotation/keep/**")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

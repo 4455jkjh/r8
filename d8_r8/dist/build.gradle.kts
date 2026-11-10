@@ -23,25 +23,31 @@ if (project.hasProperty("spdxVersion")) {
   project.version = project.property("spdxVersion")!!
 }
 
-// We need all the runtime deps for SPDX generation.
+// Dependencies that are included with their transitive (runtime) dependencies.
 val r8Deps =
   configurations.create("r8Deps") {
     isCanBeConsumed = false
     isCanBeResolved = true
   }
 
+// Dependencies that are included without their transitive dependencies.
+val r8NonTransitiveDepsScope = configurations.dependencyScope("r8NonTransitiveDepsScope")
+val r8NonTransitiveDeps =
+  configurations.resolvable("r8NonTransitiveDeps") {
+    extendsFrom(r8NonTransitiveDepsScope.get())
+    isTransitive = false
+  }
+
 dependencies {
-  compileOnly(libs.bundles.compilerDeps)
   r8Deps(libs.bundles.compilerDeps)
+  r8NonTransitiveDepsScope(libs.bundles.nonTransitiveDeps)
 }
 
 spdxSbom {
   targets {
     create("r8") {
-      // Use of both compileClasspath and runtimeClasspath due to how the
-      // dependencies jar is built and dependencies above therefore use
-      // compileOnly for actual runtime dependencies.
-      configurations.set(listOf("compileClasspath", "runtimeClasspath"))
+      // The dependencies that are included in the dependencies jar.
+      configurations.set(listOf(r8Deps.name, r8NonTransitiveDeps.name))
       scm {
         uri.set("https://r8.googlesource.com/r8/")
         if (project.hasProperty("spdxRevision")) {
@@ -192,7 +198,7 @@ tasks {
       val injected = project.objects.newInstance<InjectedArcOps>()
       from(
         Callable {
-          r8Deps.incoming.files
+          (r8Deps.incoming.files + r8NonTransitiveDeps.get().incoming.files)
             .filter {
               val path = it.absolutePath
               path.contains("third_party") &&
@@ -203,6 +209,8 @@ tasks {
         }
       )
 
+      exclude("**/*.proto")
+      exclude("versions-offline/**")
       archiveFileName.set("r8-deps-merged.jar")
       destinationDirectory.set(layout.buildDirectory.dir("libs"))
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -289,7 +297,6 @@ tasks {
 
   dependencies {
     add(depsJarFilesScope.name, files(filteredDepsJar))
-    add(depsJarFilesScope.name, project(":resourceshrinker", "resourceshrinkerDepsJar"))
     add(depsJarFilesScope.name, files(threadingModuleBlockingJar))
     add(depsJarFilesScope.name, files(threadingModuleSingleThreadedJar))
   }

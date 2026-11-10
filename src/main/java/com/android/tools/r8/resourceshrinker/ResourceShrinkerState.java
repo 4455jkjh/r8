@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -530,7 +531,7 @@ public class ResourceShrinkerState<T> {
       ProtoAndroidManifestUsageRecorder.recordUsagesFromNode(xmlNode, r8ResourceShrinkerModel)
           .forEach(resource -> trace(resource.value, xmlFile, callback));
     } catch (IOException e) {
-      errorHandler.apply(e);
+      throw errorHandler.apply(e);
     }
   }
 
@@ -852,7 +853,7 @@ public class ResourceShrinkerState<T> {
     final Primitive colorPrim;
 
     private String toHexColor(int value, int truncate) {
-      return "#" + Integer.toHexString(value).substring(truncate).toUpperCase();
+      return "#" + Integer.toHexString(value).substring(truncate).toUpperCase(Locale.ROOT);
     }
 
     ColorSingleValueResource(Primitive prim) {
