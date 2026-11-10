@@ -14,6 +14,8 @@ import com.android.ide.common.resources.ResourcesUtil;
 import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.R8ResourceShrinkerModel;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ShrinkerResult;
@@ -21,7 +23,6 @@ import com.android.tools.r8.resourceshrinker.ResourceStoreUtils;
 import com.android.tools.r8.resourceshrinker.ResourceTableUtil;
 import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
 import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
-import com.android.tools.r8.resourceshrinker.obfuscation.ProguardMappingsRecorder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -31,8 +32,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,36 +39,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
 public class LegacyResourceShrinker<T> {
-  private final Map<String, byte[]> dexInputs;
+  private final AppView<AppInfoWithClassHierarchy> appView;
   private final Collection<PathAndBytes> resFolderInputs;
   private final Collection<PathAndBytes> xmlInputs;
   private final List<byte[]> keepRuleInput;
-  private List<String> proguardMapStrings;
   private final ShrinkerDebugReporter debugReporter;
   private final List<PathAndBytes> manifest;
   private final Map<PathAndBytes, T> resourceTables;
-  private final DexAnalyser dexAnalyser;
 
   public static class Builder<T> {
 
-    private final Map<String, byte[]> dexInputs = new HashMap<>();
+    private AppView<AppInfoWithClassHierarchy> appView;
     private final Map<String, PathAndBytes> resFolderInputs = new HashMap<>();
     private final Map<String, PathAndBytes> xmlInputs = new HashMap<>();
     private final List<byte[]> keepRuleInput = new ArrayList<>();
 
     private final List<PathAndBytes> manifests = new ArrayList<>();
     private final Map<PathAndBytes, T> resourceTables = new HashMap<>();
-    private List<String> proguardMapStrings;
     private ShrinkerDebugReporter debugReporter;
-    private DexAnalyser dexAnalyser;
 
     private Builder() {}
+
+    public Builder<T> setAppView(AppView<AppInfoWithClassHierarchy> appView) {
+      this.appView = appView;
+      return this;
+    }
 
     public Builder<T> addManifest(String path, byte[] bytes) {
       manifests.add(new PathAndBytes(bytes, path));
@@ -78,11 +77,6 @@ public class LegacyResourceShrinker<T> {
 
     public Builder<T> addResourceTable(String path, byte[] bytes, T featureSplit) {
       resourceTables.put(new PathAndBytes(bytes, path), featureSplit);
-      return this;
-    }
-
-    public Builder<T> addDexInput(String classesLocation, byte[] bytes) {
-      dexInputs.put(classesLocation, bytes);
       return this;
     }
 
@@ -111,27 +105,16 @@ public class LegacyResourceShrinker<T> {
       return this;
     }
 
-    public Builder<T> setDexAnalyser(DexAnalyser dexAnalyser) {
-      this.dexAnalyser = dexAnalyser;
-      return this;
-    }
-
     public LegacyResourceShrinker<T> build() {
-      assert manifests != null && resourceTables != null && dexAnalyser != null;
+      assert appView != null;
       return new LegacyResourceShrinker<T>(
-          dexInputs,
+          appView,
           resFolderInputs.values(),
           manifests,
           resourceTables,
           xmlInputs.values(),
           keepRuleInput,
-          proguardMapStrings,
-          debugReporter,
-          dexAnalyser);
-    }
-
-    public void setProguardMapStrings(List<String> proguardMapStrings) {
-      this.proguardMapStrings = proguardMapStrings;
+          debugReporter);
     }
 
     public Builder<T> setShrinkerDebugReporter(ShrinkerDebugReporter debugReporter) {
@@ -141,33 +124,24 @@ public class LegacyResourceShrinker<T> {
   }
 
   private LegacyResourceShrinker(
-      Map<String, byte[]> dexInputs,
+      AppView<AppInfoWithClassHierarchy> appView,
       Collection<PathAndBytes> resFolderInputs,
       List<PathAndBytes> manifests,
       Map<PathAndBytes, T> resourceTables,
       Collection<PathAndBytes> xmlInputs,
       List<byte[]> additionalRawXmlInputs,
-      List<String> proguardMapStrings,
-      ShrinkerDebugReporter debugReporter,
-      DexAnalyser dexAnalyser) {
-    this.dexInputs = dexInputs;
+      ShrinkerDebugReporter debugReporter) {
+    this.appView = appView;
     this.resFolderInputs = resFolderInputs;
     this.manifest = manifests;
     this.resourceTables = resourceTables;
     this.xmlInputs = xmlInputs;
     this.keepRuleInput = additionalRawXmlInputs;
-    this.proguardMapStrings = proguardMapStrings;
     this.debugReporter = debugReporter;
-    this.dexAnalyser = dexAnalyser;
   }
 
   public static <T> Builder<T> builder() {
     return new Builder<T>();
-  }
-
-  public static Predicate<String> classNamesNeededForResourceShrinkingPredicate() {
-    return AppCompat.getRequiredClassNamesPredicate()
-        .or(DexUsageRecorder.getRequiredClassNamesPredicate());
   }
 
   public ShrinkerResult<T> run() throws IOException, ParserConfigurationException, SAXException {
@@ -176,18 +150,7 @@ public class LegacyResourceShrinker<T> {
       ResourceTable loadedResourceTable = ResourceTable.parseFrom(pathAndBytes.bytes);
       model.instantiateFromResourceTable(loadedResourceTable, false);
     }
-    if (proguardMapStrings != null) {
-      new ProguardMappingsRecorder(proguardMapStrings).recordObfuscationMappings(model);
-      proguardMapStrings = null;
-    }
-    for (Entry<String, byte[]> entry : dexInputs.entrySet()) {
-      // The analysis needs an origin for the dex files, synthesize an easy recognizable one.
-      Path inMemoryR8 = Paths.get("in_memory_r8_" + entry.getKey());
-      dexAnalyser.analyse(
-          entry.getValue(),
-          inMemoryR8.toString(),
-          new DexUsageRecorder.DexFileAnalysisCallback(inMemoryR8, model));
-    }
+    DexUsageRecorder.recordUsages(appView, model);
     for (PathAndBytes pathAndBytes : manifest) {
       ProtoAndroidManifestUsageRecorder.recordUsagesFromNode(
           XmlNode.parseFrom(pathAndBytes.bytes), model);

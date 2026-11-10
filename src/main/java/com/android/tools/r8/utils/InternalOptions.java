@@ -231,7 +231,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public CancelCompilationChecker cancelCompilationChecker = null;
   public AndroidResourceProvider androidResourceProvider = null;
   public AndroidResourceConsumer androidResourceConsumer = null;
-  public List<String> androidResourceProguardMapStrings = null;
 
   public ResourceShrinkerConfiguration resourceShrinkerConfiguration =
       ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;

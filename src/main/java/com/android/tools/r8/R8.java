@@ -7,7 +7,6 @@ import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.Com
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
-import com.android.tools.r8.DexIndexedConsumer.ForwardingConsumer;
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
 import com.android.tools.r8.assistant.AssistantExporter;
 import com.android.tools.r8.dex.ApplicationReader;
@@ -138,9 +137,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -934,27 +931,6 @@ public class R8 {
                           .isValid())
           : "Could not validate generic signatures";
 
-      Map<String, byte[]> dexFileContent = new ConcurrentHashMap<>();
-      if (options.androidResourceProvider != null
-          && options.androidResourceConsumer != null
-          // We trace the dex directly in the enqueuer.
-          && !options.isOptimizedResourceShrinking()) {
-        options.programConsumer =
-            wrapConsumerStoreBytesInList(
-                dexFileContent, (DexIndexedConsumer) options.programConsumer, "base");
-        if (options.hasFeatureSplitConfiguration()) {
-          int featureIndex = 0;
-          for (FeatureSplit featureSplit :
-              options.getFeatureSplitConfiguration().getFeatureSplits()) {
-            featureSplit.internalSetProgramConsumer(
-                wrapConsumerStoreBytesInList(
-                    dexFileContent,
-                    (DexIndexedConsumer) featureSplit.getProgramConsumer(),
-                    "feature" + featureIndex++));
-          }
-        }
-      }
-
       assert appView.verifyMovedMethodsHaveOriginalMethodPosition();
       timing.end();
 
@@ -974,8 +950,8 @@ public class R8 {
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
+      ResourceWriter.legacyWriteResources(appView, timing);
       writeApplication(appView, executorService, timing);
-      ResourceWriter.legacyWriteResources(appView, dexFileContent);
 
       assert appView.getDontWarnConfiguration().validate(options);
 
@@ -1043,21 +1019,6 @@ public class R8 {
       ExceptionUtils.withConsumeResourceHandler(
           options.reporter, options.configurationConsumer, builder.toString());
     }
-  }
-
-  private static ForwardingConsumer wrapConsumerStoreBytesInList(
-      Map<String, byte[]> dexFileContent,
-      DexIndexedConsumer programConsumer,
-      String classesPrefix) {
-
-    return new ForwardingConsumer(programConsumer) {
-      @Override
-      public void accept(
-          int fileIndex, ByteDataView data, Set<String> descriptors, DiagnosticsHandler handler) {
-        dexFileContent.put(classesPrefix + "_classes" + fileIndex + ".dex", data.copyByteData());
-        super.accept(fileIndex, data, descriptors, handler);
-      }
-    };
   }
 
   private static boolean allReferencesAssignedApiLevel(

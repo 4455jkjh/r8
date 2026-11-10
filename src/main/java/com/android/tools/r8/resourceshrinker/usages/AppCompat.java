@@ -16,10 +16,8 @@
 
 package com.android.tools.r8.resourceshrinker.usages;
 
-import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscatedClasses;
 import com.google.common.collect.ImmutableSet;
 import java.util.Set;
-import java.util.function.Predicate;
 
 public final class AppCompat {
 
@@ -34,12 +32,7 @@ public final class AppCompat {
 
   private AppCompat() {}
 
-  public static boolean isAppCompatClass(String name, ObfuscatedClasses obfuscation) {
-    return APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER.contains(
-        obfuscation.resolveOriginalClass(name));
-  }
-
-  public static Predicate<String> getRequiredClassNamesPredicate() {
-    return APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER::contains;
+  public static boolean isAppCompatClass(String originalClassName) {
+    return APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER.contains(originalClassName);
   }
 }

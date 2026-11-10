@@ -21,7 +21,6 @@ import com.android.annotations.Nullable;
 import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
-import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscatedClasses;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,7 +35,6 @@ public class ResourceShrinkerModel {
   private final ShrinkerDebugReporter debugReporter;
 
   private final ResourceStore resourceStore;
-  private ObfuscatedClasses obfuscatedClasses = ObfuscatedClasses.NO_OBFUSCATION;
 
   private final Set<String> strings = Sets.newHashSetWithExpectedSize(300);
 
@@ -56,16 +54,6 @@ public class ResourceShrinkerModel {
   @NonNull
   public ResourceStore getResourceStore() {
     return resourceStore;
-  }
-
-  @NonNull
-  public ObfuscatedClasses getObfuscatedClasses() {
-    return obfuscatedClasses;
-  }
-
-  /** Reports recorded mappings from obfuscated classes to original classes */
-  public void setObfuscatedClasses(@NonNull ObfuscatedClasses obfuscatedClasses) {
-    this.obfuscatedClasses = obfuscatedClasses;
   }
 
   public boolean hasResourceId(int resourceId) {

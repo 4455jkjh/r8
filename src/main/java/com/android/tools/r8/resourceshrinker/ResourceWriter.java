@@ -14,15 +14,14 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ShrinkerResult;
 import com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker;
-import com.android.tools.r8.resourceshrinker.usages.R8ResourceShrinker;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ResourceShrinkerUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
@@ -48,16 +47,14 @@ public class ResourceWriter {
   }
 
   public static void legacyWriteResources(
-      AppView<AppInfoWithClassHierarchy> appView, Map<String, byte[]> dexFileContent) {
+      AppView<AppInfoWithClassHierarchy> appView, Timing timing) {
     InternalOptions options = appView.options();
     if (!isEnabled(options) || appView.options().isOptimizedResourceShrinking()) {
       return;
     }
-    try {
+    try (Timing t0 = timing.begin("Legacy resource shrinking")) {
       LegacyResourceShrinker.Builder<FeatureSplit> resourceShrinkerBuilder =
-          LegacyResourceShrinker.builder();
-      resourceShrinkerBuilder.setDexAnalyser(new R8ResourceShrinker());
-      dexFileContent.forEach(resourceShrinkerBuilder::addDexInput);
+          LegacyResourceShrinker.<FeatureSplit>builder().setAppView(appView);
       legacyAddResourcesToBuilder(
           appView, resourceShrinkerBuilder, options.androidResourceProvider, FeatureSplit.BASE);
       if (options.hasFeatureSplitConfiguration()) {
@@ -71,9 +68,6 @@ public class ResourceWriter {
                 featureSplit);
           }
         }
-      }
-      if (options.androidResourceProguardMapStrings != null) {
-        resourceShrinkerBuilder.setProguardMapStrings(options.androidResourceProguardMapStrings);
       }
       resourceShrinkerBuilder.setShrinkerDebugReporter(
           ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(

@@ -7,192 +7,321 @@ package com.android.tools.r8.resourceshrinker.usages;
 import com.android.ide.common.resources.usage.ResourceUsageModel;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
+import com.android.tools.r8.dex.code.CfOrDexStaticFieldRead;
+import com.android.tools.r8.dex.code.DexConst;
+import com.android.tools.r8.dex.code.DexConst16;
+import com.android.tools.r8.dex.code.DexConst4;
+import com.android.tools.r8.dex.code.DexConstHigh16;
+import com.android.tools.r8.dex.code.DexConstWide16;
+import com.android.tools.r8.dex.code.DexConstWide32;
+import com.android.tools.r8.dex.code.DexFillArrayData;
+import com.android.tools.r8.dex.code.DexFillArrayDataPayload;
+import com.android.tools.r8.dex.code.DexInstruction;
+import com.android.tools.r8.dex.code.DexNewArray;
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexAnnotationElement;
+import com.android.tools.r8.graph.DexCode;
+import com.android.tools.r8.graph.DexEncodedField;
+import com.android.tools.r8.graph.DexEncodedMethod;
+import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DexValue;
+import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.ir.code.SingleConstant;
+import com.android.tools.r8.ir.code.WideConstant;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel;
-import com.android.tools.r8.resourceshrinker.obfuscation.ClassAndMethod;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Locale;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
+import java.util.ArrayList;
+import java.util.List;
 
-public class DexUsageRecorder {
+public final class DexUsageRecorder {
 
-  private final Path root;
-  private final DexAnalyser analyser;
+  private static final String ANDROID_RES = "android_res/";
 
-  public DexUsageRecorder(Path root, DexAnalyser analyser) {
-    this.root = root;
-    this.analyser = analyser;
+  private final AppView<AppInfoWithClassHierarchy> appView;
+  private final ResourceShrinkerModel model;
+  private final DexItemFactory factory;
+  private final GraphLens graphLens;
+  private final DexMethod getIdentifierMethod;
+  private final DexType webViewType;
+  private final DexString loadPrefix;
+
+  private DexUsageRecorder(
+      AppView<AppInfoWithClassHierarchy> appView, ResourceShrinkerModel model) {
+    this.appView = appView;
+    this.model = model;
+    this.factory = appView.dexItemFactory();
+    this.graphLens = appView.graphLens();
+    this.getIdentifierMethod =
+        factory.createMethod(
+            factory.androidResourcesType,
+            factory.createProto(
+                factory.intType, factory.stringType, factory.stringType, factory.stringType),
+            "getIdentifier");
+    this.webViewType = factory.createType("Landroid/webkit/WebView;");
+    this.loadPrefix = factory.createString("load");
   }
 
-  public void recordUsages(ResourceShrinkerModel model) {
-    try (Stream<Path> walk = Files.walk(root)) {
-      walk.filter(Files::isRegularFile)
-          .filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".dex"))
-          .forEach(
-              path -> {
-                try {
-                  analyser.analyse(
-                      Files.readAllBytes(path),
-                      path.toString(),
-                      new DexFileAnalysisCallback(path, model));
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+  public static void recordUsages(
+      AppView<AppInfoWithClassHierarchy> appView, ResourceShrinkerModel model) {
+    new DexUsageRecorder(appView, model).record();
+  }
+
+  private void record() {
+    InternalOptions options = appView.options();
+    boolean skipGlobalSynthetics = options.intermediate && options.hasGlobalSyntheticsConsumer();
+    for (DexProgramClass programClass : appView.appInfo().classesWithDeterministicOrder()) {
+      if (skipGlobalSynthetics
+          && appView.getSyntheticItems().isGlobalSyntheticClassTransitive(programClass)) {
+        continue;
+      }
+      visitClass(programClass);
     }
   }
 
-  public static Predicate<String> getRequiredClassNamesPredicate() {
-    return className -> className.contains("R$");
+  private void visitClass(DexProgramClass programClass) {
+    DexType originalType =
+        graphLens.getOriginalType(programClass.getType(), GraphLens.getIdentityLens());
+    String originalClassName = originalType.toSourceString();
+    boolean isRClass = getResourceClassType(originalClassName) != null;
+
+    if (!isRClass) {
+      for (DexEncodedField field :
+          programClass.staticFields(DexEncodedField::hasExplicitStaticValue)) {
+        processFieldValue(programClass, field.getStaticValue());
+      }
+    }
+
+    for (DexEncodedMethod method : programClass.allMethodsSorted()) {
+      if (isRClass && method.isClassInitializer()) {
+        continue;
+      }
+      processMethod(programClass, method);
+    }
+
+    if (!isRClass && programClass.hasClassOrMemberAnnotations()) {
+      processAnnotations(programClass);
+    }
   }
 
-  public static class DexFileAnalysisCallback implements AnalysisCallback {
-    private static final String ANDROID_RES = "android_res/";
-
-    private final Path path;
-    private final ResourceShrinkerModel model;
-    private boolean isRClass = false;
-    private final MethodVisitingStatus visitingMethod = new MethodVisitingStatus();
-
-    public DexFileAnalysisCallback(Path path, ResourceShrinkerModel model) {
-      this.path = path;
-      this.model = model;
+  private void processFieldValue(DexProgramClass programClass, DexValue value) {
+    switch (value.getValueKind()) {
+      case ARRAY:
+        for (DexValue elementValue : value.asDexValueArray().getValues()) {
+          if (elementValue.isDexValueInt()) {
+            referencedInt(programClass, elementValue.asDexValueInt().getValue());
+          }
+        }
+        break;
+      case INT:
+        referencedInt(programClass, value.asDexValueInt().getValue());
+        break;
+      case STRING:
+        referencedString(value.asDexValueString().getValue());
+        break;
+      default:
+        break;
     }
+  }
 
-    private static String toSourceClassName(String internalName) {
-      return internalName.replace('/', '.');
+  private void processMethod(DexProgramClass programClass, DexEncodedMethod method) {
+    DexCode code = method.getDexCode();
+    if (code == null) {
+      assert !method.hasCode() || method.getCode().isSharedCodeObject();
+      return;
     }
+    DexInstruction[] instructions = code.instructions;
+    IntSet methodIntArrayPayloadOffsets = null;
+    List<DexFillArrayDataPayload> payloads = null;
 
-    @Override
-    public boolean shouldProcess(String internalName) {
-      isRClass = isResourceClass(internalName);
-      return true;
-    }
-
-    private boolean isResourceClass(String internalName) {
-      String realClassName =
-          model.getObfuscatedClasses().resolveOriginalClass(toSourceClassName(internalName));
-      int lastDot = realClassName.lastIndexOf('.');
-      String lastPart = lastDot == -1 ? realClassName : realClassName.substring(lastDot + 1);
-      if (lastPart.startsWith("R$")) {
-        String typeName = lastPart.substring(2);
-        return ResourceType.fromClassName(typeName) != null;
+    for (int current = 0; current < instructions.length; current++) {
+      DexInstruction instruction = instructions[current];
+      if (isIntConstInstruction(instruction)) {
+        processIntConstInstruction(programClass, instruction);
+      } else if (instruction.isConstString()) {
+        referencedString(instruction.asConstString().getString());
+      } else if (instruction.isConstStringJumbo()) {
+        referencedString(instruction.asConstStringJumbo().getString());
+      } else if (instruction.isConstString20()) {
+        referencedString(instruction.asConstString20().getString());
+      } else if (instruction instanceof CfOrDexStaticFieldRead) {
+        referencedStaticField(((CfOrDexStaticFieldRead) instruction).getField());
+      } else if (instruction.isInvokeMethodOrInvokeMethodRange()) {
+        referencedMethod(method, instruction.asInvokeMethodOrInvokeMethodRange().getMethod());
+      } else if (instruction instanceof DexFillArrayData) {
+        if (current > 0 && instructions[current - 1] instanceof DexNewArray) {
+          DexNewArray newArray = (DexNewArray) instructions[current - 1];
+          if (newArray.getType().isNotIdenticalTo(factory.intArrayType)) {
+            continue;
+          }
+        }
+        DexFillArrayData fillArrayData = (DexFillArrayData) instruction;
+        if (methodIntArrayPayloadOffsets == null) {
+          methodIntArrayPayloadOffsets = new IntOpenHashSet();
+        }
+        methodIntArrayPayloadOffsets.add(
+            fillArrayData.getPayloadOffset() + fillArrayData.getOffset());
+      } else if (instruction instanceof DexFillArrayDataPayload) {
+        if (payloads == null) {
+          payloads = new ArrayList<>();
+        }
+        payloads.add((DexFillArrayDataPayload) instruction);
       }
-      return false;
     }
 
-    @Override
-    public void referencedInt(int value) {
-      if (shouldIgnoreField()) {
-        return;
-      }
-      Resource resource = model.getResourceStore().getResource(value);
-      if (ResourceUsageModel.markReachable(resource)) {
-        model
-            .getDebugReporter()
-            .debug(() -> "Marking " + resource + " reachable: referenced from " + path);
-      }
-    }
-
-    @Override
-    public void referencedStaticField(String internalName, String fieldName) {
-      if (shouldIgnoreField()) {
-        return;
-      }
-      ClassAndMethod realMethod =
-          model
-              .getObfuscatedClasses()
-              .resolveOriginalMethod(
-                  new ClassAndMethod(toSourceClassName(internalName), fieldName));
-
-      if (isValidResourceType(realMethod.getClassName())) {
-        int lastDollar = realMethod.getClassName().lastIndexOf('$');
-        String typePart =
-            lastDollar == -1
-                ? realMethod.getClassName()
-                : realMethod.getClassName().substring(lastDollar + 1);
-        ResourceType type = ResourceType.fromClassName(typePart);
-        if (type != null) {
-          for (Resource resource :
-              model.getResourceStore().getResources(type, realMethod.getMethodName())) {
-            ResourceUsageModel.markReachable(resource);
+    if (payloads != null && methodIntArrayPayloadOffsets != null) {
+      for (DexFillArrayDataPayload payload : payloads) {
+        if (methodIntArrayPayloadOffsets.contains(payload.getOffset())) {
+          for (int i = 0; i < payload.data.length / 2; i++) {
+            int intValue =
+                (payload.data[2 * i + 1] << 16) | Short.toUnsignedInt(payload.data[2 * i]);
+            referencedInt(programClass, intValue);
           }
         }
       }
     }
+  }
 
-    @Override
-    public void referencedString(String value) {
-      if (shouldIgnoreField()) {
-        return;
-      }
-      if (value.isEmpty() || value.length() > 80) {
-        return;
-      }
-      boolean allValid = true;
-      boolean hasIdentifierPart = false;
-      for (int i = 0; i < value.length(); i++) {
-        char c = value.charAt(i);
-        if (Character.isJavaIdentifierPart(c) || c == '.' || c == ':' || c == '/' || c == '%') {
-          if (Character.isJavaIdentifierPart(c)) {
-            hasIdentifierPart = true;
+  private void processAnnotations(DexProgramClass programClass) {
+    programClass.forEachAnnotation(
+        annotation -> {
+          for (DexAnnotationElement element : annotation.annotation.elements) {
+            processAnnotationValue(programClass, element.value);
           }
-        } else {
-          allValid = false;
-          break;
-        }
-      }
-      if (allValid && hasIdentifierPart) {
-        model.addStringConstant(value);
-        model.setFoundWebContent(model.isFoundWebContent() || value.contains(ANDROID_RES));
-      }
-    }
+        });
+  }
 
-    @Override
-    public void referencedMethod(String internalName, String methodName, String methodDescriptor) {
-      if (isRClass && visitingMethod.isVisiting && "<clinit>".equals(visitingMethod.methodName)) {
+  private void processAnnotationValue(DexProgramClass programClass, DexValue value) {
+    switch (value.getValueKind()) {
+      case ANNOTATION:
+        for (DexAnnotationElement element : value.asDexValueAnnotation().value.elements) {
+          processAnnotationValue(programClass, element.value);
+        }
+        break;
+      case ARRAY:
+        for (DexValue elementValue : value.asDexValueArray().getValues()) {
+          processAnnotationValue(programClass, elementValue);
+        }
+        break;
+      case INT:
+        referencedInt(programClass, value.asDexValueInt().getValue());
+        break;
+      case STRING:
+        referencedString(value.asDexValueString().getValue());
+        break;
+      default:
+        break;
+    }
+  }
+
+  private static boolean isIntConstInstruction(DexInstruction instruction) {
+    int opcode = instruction.getOpcode();
+    return opcode == DexConst4.OPCODE
+        || opcode == DexConst16.OPCODE
+        || opcode == DexConst.OPCODE
+        || opcode == DexConstWide32.OPCODE
+        || opcode == DexConstHigh16.OPCODE
+        || opcode == DexConstWide16.OPCODE;
+  }
+
+  private void processIntConstInstruction(
+      DexProgramClass programClass, DexInstruction instruction) {
+    int constantValue;
+    if (instruction instanceof SingleConstant) {
+      constantValue = ((SingleConstant) instruction).decodedValue();
+    } else if (instruction instanceof WideConstant) {
+      long wideValue = ((WideConstant) instruction).decodedValue();
+      if ((int) wideValue != wideValue) {
         return;
       }
-      if ("android/content/res/Resources".equals(internalName)
-          && "getIdentifier".equals(methodName)
-          && "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I".equals(methodDescriptor)) {
-        if (AppCompat.isAppCompatClass(
-            toSourceClassName(internalName), model.getObfuscatedClasses())) {
-          return;
+      constantValue = (int) wideValue;
+    } else {
+      throw new Unreachable("Not an int const instruction.");
+    }
+    referencedInt(programClass, constantValue);
+  }
+
+  private void referencedInt(DexProgramClass programClass, int value) {
+    Resource resource = model.getResourceStore().getResource(value);
+    if (ResourceUsageModel.markReachable(resource)) {
+      model
+          .getDebugReporter()
+          .debug(
+              () ->
+                  "Marking "
+                      + resource
+                      + " reachable: referenced from "
+                      + programClass.getOrigin());
+    }
+  }
+
+  private void referencedStaticField(DexField field) {
+    DexField originalField =
+        graphLens.getOriginalFieldSignature(field, GraphLens.getIdentityLens());
+    ResourceType type = getResourceClassType(originalField.getHolderType().toSourceString());
+    if (type != null) {
+      for (Resource resource :
+          model.getResourceStore().getResources(type, originalField.getName().toString())) {
+        ResourceUsageModel.markReachable(resource);
+      }
+    }
+  }
+
+  private void referencedString(DexString dexString) {
+    if (dexString.isEmpty() || dexString.length() > 80) {
+      return;
+    }
+    String value = dexString.toString();
+    boolean allValid = true;
+    boolean hasIdentifierPart = false;
+    for (int i = 0; i < value.length(); i++) {
+      char c = value.charAt(i);
+      if (Character.isJavaIdentifierPart(c) || c == '.' || c == ':' || c == '/' || c == '%') {
+        if (Character.isJavaIdentifierPart(c)) {
+          hasIdentifierPart = true;
         }
-        model.setFoundGetIdentifier(true);
+      } else {
+        allValid = false;
+        break;
       }
-      if ("android/webkit/WebView".equals(internalName) && methodName.startsWith("load")) {
-        model.setFoundWebContent(true);
+    }
+    if (allValid && hasIdentifierPart) {
+      model.addStringConstant(value);
+      model.setFoundWebContent(model.isFoundWebContent() || value.contains(ANDROID_RES));
+    }
+  }
+
+  private void referencedMethod(DexEncodedMethod caller, DexMethod method) {
+    if (method.isIdenticalTo(getIdentifierMethod)) {
+      DexType originalHolder =
+          graphLens
+              .getOriginalMethodSignature(caller.getReference(), GraphLens.getIdentityLens())
+              .getHolderType();
+      if (AppCompat.isAppCompatClass(originalHolder.toSourceString())) {
+        return;
       }
+      model.setFoundGetIdentifier(true);
     }
+    if (method.getHolderType().isIdenticalTo(webViewType)
+        && method.getName().startsWith(loadPrefix)) {
+      model.setFoundWebContent(true);
+    }
+  }
 
-    @Override
-    public void startMethodVisit(String methodName) {
-      visitingMethod.isVisiting = true;
-      visitingMethod.methodName = methodName;
+  private static ResourceType getResourceClassType(String className) {
+    int lastDot = className.lastIndexOf('.');
+    String lastPart = lastDot == -1 ? className : className.substring(lastDot + 1);
+    if (lastPart.startsWith("R$")) {
+      return ResourceType.fromClassName(lastPart.substring(2));
     }
-
-    @Override
-    public void endMethodVisit(String methodName) {
-      visitingMethod.isVisiting = false;
-      visitingMethod.methodName = null;
-    }
-
-    private boolean shouldIgnoreField() {
-      boolean visitingFromStaticInitRClass =
-          (isRClass && visitingMethod.isVisiting && "<clinit>".equals(visitingMethod.methodName));
-      return visitingFromStaticInitRClass || (isRClass && !visitingMethod.isVisiting);
-    }
-
-    private boolean isValidResourceType(String className) {
-      int lastDot = className.lastIndexOf('.');
-      String lastPart = lastDot == -1 ? className : className.substring(lastDot + 1);
-      return lastPart.startsWith("R$");
-    }
+    return null;
   }
 }
