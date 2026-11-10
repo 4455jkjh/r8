@@ -35,6 +35,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.code.SingleConstant;
 import com.android.tools.r8.ir.code.WideConstant;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -101,7 +102,7 @@ public final class DexUsageRecorder {
     }
 
     for (DexEncodedMethod method : programClass.allMethodsSorted()) {
-      if (isRClass && method.isClassInitializer()) {
+      if (isRClass && isRClassStaticInitMethod(method)) {
         continue;
       }
       processMethod(programClass, method);
@@ -110,6 +111,14 @@ public final class DexUsageRecorder {
     if (!isRClass && programClass.hasClassOrMemberAnnotations()) {
       processAnnotations(programClass);
     }
+  }
+
+  private boolean isRClassStaticInitMethod(DexEncodedMethod method) {
+    return method.isClassInitializer()
+        || (method.isStatic()
+            && DescriptorUtils.isRClassStaticInitOverflowMethodWithoutHolderCheck(
+                graphLens.getOriginalMethodSignature(
+                    method.getReference(), GraphLens.getIdentityLens())));
   }
 
   private void processFieldValue(DexProgramClass programClass, DexValue value) {
