@@ -263,10 +263,13 @@ tasks {
       r8License = File(getRootDir(), "LICENSE")
       libraryLicenseMap = File(getRootDir(), "LIBRARY-LICENSE")
       libraryLicenses = File(getRootDir(), "library-licensing")
+      // The artifacts that are included in the dependencies jar.
       dependencies =
-        configurations.named("runtimeClasspath").map { runtimeClasspath ->
-          runtimeClasspath.incoming.resolutionResult.allComponents.mapNotNull {
-            val compId = it.id
+        r8Deps.incoming.artifacts.resolvedArtifacts.zip(
+          r8NonTransitiveDeps.flatMap { it.incoming.artifacts.resolvedArtifacts }
+        ) { artifacts, nonTransitiveArtifacts ->
+          (artifacts + nonTransitiveArtifacts).mapNotNull {
+            val compId = it.id.componentIdentifier
             if (compId is ModuleComponentIdentifier) {
               "${compId.group}:${compId.module}"
             } else null

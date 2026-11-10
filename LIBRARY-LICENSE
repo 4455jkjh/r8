@@ -344,3 +344,57 @@
   license: The Apache License, Version 2.0
   licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
   url: http://commons.apache.org/proper/commons-codec
+- artifact: androidx.annotation:annotation-jvm
+  name: AndroidX Annotation
+  copyrightHolder: The Android Open Source Project
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: https://developer.android.com/jetpack/androidx/releases/annotation
+- artifact: androidx.collection:collection-jvm
+  name: AndroidX Collection
+  copyrightHolder: The Android Open Source Project
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: https://developer.android.com/jetpack/androidx/releases/collection
+- artifact: androidx.tracing:tracing-desktop
+  name: AndroidX Tracing
+  copyrightHolder: The Android Open Source Project
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: https://developer.android.com/jetpack/androidx/releases/tracing
+- artifact: androidx.tracing:tracing-wire-desktop
+  name: AndroidX Tracing Wire
+  copyrightHolder: The Android Open Source Project
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: https://developer.android.com/jetpack/androidx/releases/tracing
+- artifact: com.android:zipflinger
+  name: com.android.zipflinger
+  copyrightHolder: The Android Open Source Project
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: http://tools.android.com/
+- artifact: com.squareup.okio:okio-jvm
+  name: Okio
+  copyrightHolder: Square, Inc.
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: https://github.com/square/okio/
+- artifact: com.squareup.wire:wire-runtime-jvm
+  name: Wire Runtime
+  copyrightHolder: Square, Inc.
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: https://github.com/square/wire/
+- artifact: org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm
+  name: kotlinx.coroutines
+  copyrightHolder: JetBrains s.r.o.
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: https://github.com/Kotlin/kotlinx.coroutines
+- artifact: org.jspecify:jspecify
+  name: JSpecify annotations
+  copyrightHolder: The JSpecify Authors
+  license: The Apache License, Version 2.0
+  licenseUrl: http://www.apache.org/licenses/LICENSE-2.0.txt
+  url: http://jspecify.org/
