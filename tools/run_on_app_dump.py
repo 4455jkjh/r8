@@ -14,7 +14,6 @@ from datetime import datetime
 
 import adb
 import apk_masseur
-import as_utils
 import compiledump
 import gradle
 import jdk
@@ -1131,6 +1130,20 @@ def add_golem_resource(indentation, path, name, sha256=None):
     print_indented('extract: "gz");', indentation + 4)
 
 
+def move_file(src, dst, quiet=False):
+    assert os.path.isfile(src), 'Expected a file to be present at ' + src
+    if not quiet:
+        print('Moving `{}` to `{}`'.format(src, dst))
+    dst_parent = os.path.dirname(dst)
+    if dst_parent:
+        os.makedirs(dst_parent, exist_ok=True)
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
+    elif os.path.isfile(dst):
+        os.remove(dst)
+    shutil.move(src, dst)
+
+
 def main(argv):
     (options, args) = parse_options(argv)
 
@@ -1160,18 +1173,18 @@ def main(argv):
             target = 'r8-{}.jar'.format(options.hash)
             update_prebuilds_in_android.download_hash(
                 temp_dir, 'com/android/tools/r8/' + options.hash, target)
-            as_utils.MoveFile(os.path.join(temp_dir, target),
-                              os.path.join(temp_dir, 'r8lib.jar'),
-                              quiet=options.quiet)
+            move_file(os.path.join(temp_dir, target),
+                      os.path.join(temp_dir, 'r8lib.jar'),
+                      quiet=options.quiet)
         elif version_is_built_jar(options.version):
             # Download r8-<version>.jar from
             # https://storage.googleapis.com/r8-releases/raw/.
             target = 'r8-{}.jar'.format(options.version)
             update_prebuilds_in_android.download_version(
                 temp_dir, 'com/android/tools/r8/' + options.version, target)
-            as_utils.MoveFile(os.path.join(temp_dir, target),
-                              os.path.join(temp_dir, 'r8lib.jar'),
-                              quiet=options.quiet)
+            move_file(os.path.join(temp_dir, target),
+                      os.path.join(temp_dir, 'r8lib.jar'),
+                      quiet=options.quiet)
         elif options.version == 'main':
             if not options.no_build:
                 gradle.run_gradle([utils.GRADLE_TASK_R8, '-Pno_internal'])
