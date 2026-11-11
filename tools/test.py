@@ -559,7 +559,7 @@ def test(options, args):
         gradle_args.append("-Ptestfilter=" + "|".join(args))
 
     print_stacks_timeout = options.print_hanging_stacks
-    if (utils.is_bot() and not utils.IsWindows()) or print_stacks_timeout > -1:
+    if (utils.is_bot() and not utils.is_windows()) or print_stacks_timeout > -1:
         timestamp_file = os.path.join(utils.BUILD, 'last_test_time')
         if os.path.exists(timestamp_file):
             os.remove(timestamp_file)
@@ -705,7 +705,7 @@ def timeout_handler(timestamp_file, timeout_handler_period):
 
 def report_dir_path(index):
     p = REPORTS_PATH if index == 0 else '%s%d' % (REPORTS_PATH, index)
-    if utils.IsWindows():
+    if utils.is_windows():
         p = '\\\\?\\' + os.path.abspath(p)
     return p
 

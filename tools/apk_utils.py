@@ -3,7 +3,7 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-import optparse
+import argparse
 import os
 import shutil
 import subprocess
@@ -13,31 +13,30 @@ import time
 import utils
 import zip_utils
 
-USAGE = 'usage: %prog [options] <apk>'
+USAGE = '%(prog)s [options] <apk>'
 
 
-def parse_options():
-    parser = optparse.OptionParser(usage=USAGE)
-    parser.add_option('--keystore',
-                      help='keystore file (default ~/.android/app.keystore)',
-                      default='~/.android/app.keystore')
-    parser.add_option('--sign',
-                      help='Sign the passed in apk.',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--use_apksigner',
-                      help='Use apksigner to sign.',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--output',
-                      help='Where to put the signed apk.)',
-                      default=None)
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser(usage=USAGE)
+    parser.add_argument('--keystore',
+                        help='keystore file (default ~/.android/app.keystore)',
+                        default='~/.android/app.keystore')
+    parser.add_argument('--sign',
+                        help='Sign the passed in apk.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--use_apksigner',
+                        '--use-apksigner',
+                        help='Use apksigner to sign.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--output',
+                        help='Where to put the signed apk.',
+                        default=None)
+    parser.add_argument('apk', metavar='<apk>', help='APK to process')
 
-    (options, args) = parser.parse_args()
-    if len(args) != 1:
-        parser.error('Expected <apk> argument, got: ' + ' '.join(args))
-    apk = args[0]
-    return options, apk
+    options = parser.parse_args(argv)
+    return options, options.apk
 
 
 def add_baseline_profile_to_apk(apk, baseline_profile,

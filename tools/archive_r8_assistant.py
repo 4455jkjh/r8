@@ -48,7 +48,7 @@ def parse_options():
 
 
 def set_r_limit_to_max():
-    if utils.IsWindows():
+    if utils.is_windows():
         return
     (soft, hard) = resource.getrlimit(resource.RLIMIT_NOFILE)
     resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))

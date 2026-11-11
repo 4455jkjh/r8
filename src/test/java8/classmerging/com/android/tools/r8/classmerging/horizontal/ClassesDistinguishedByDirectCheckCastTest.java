@@ -7,6 +7,7 @@ package com.android.tools.r8.classmerging.horizontal;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import org.junit.Test;
 
 public class ClassesDistinguishedByDirectCheckCastTest extends HorizontalClassMergingTestBase {
@@ -23,6 +24,22 @@ public class ClassesDistinguishedByDirectCheckCastTest extends HorizontalClassMe
         .addHorizontallyMergedClassesInspector(
             inspector ->
                 inspector.assertIsCompleteMergeGroup(A.class, B.class).assertNoOtherClassesMerged())
+        .enableInliningAnnotations()
+        .enableNeverClassInliningAnnotations()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("foo", "fail", "fail", "bar");
+  }
+
+  @Test
+  public void testR8RuntimeTypeCheckMergingDisabled() throws Exception {
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Main.class)
+        .addOptionsModification(
+            options ->
+                options.horizontalClassMergerOptions().setEnableRuntimeTypeCheckMerging(false))
+        .addHorizontallyMergedClassesInspector(
+            HorizontallyMergedClassesInspector::assertNoClassesMerged)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
         .run(parameters.getRuntime(), Main.class)

@@ -44,7 +44,7 @@ public class SyntheticNaming {
   public final SyntheticKind ENUM_UNBOXING_LOCAL_UTILITY_CLASS =
       generator.forFixedClass("$EnumUnboxingLocalUtility");
   public final SyntheticKind ENUM_UNBOXING_SHARED_UTILITY_CLASS =
-      generator.forFixedClass("$EnumUnboxingSharedUtility");
+      generator.forFixedClass("$EnumUnboxingSharedUtility", true);
   public final SyntheticKind COMPANION_CLASS = generator.forFixedClass(COMPANION_CLASS_SUFFIX);
   public final SyntheticKind EMULATED_INTERFACE_CLASS =
       generator.forFixedClass(InterfaceDesugaringForTesting.EMULATED_INTERFACE_CLASS_SUFFIX);
@@ -80,7 +80,7 @@ public class SyntheticNaming {
       generator.forSingleMethodWithGlobalMerging("TypeSwitchHelperEnum");
   public final SyntheticKind ENUM_UNBOXING_CHECK_NOT_ZERO_METHOD =
       generator.forSingleMethodWithGlobalMerging("CheckNotZero");
-  public final SyntheticKind UNSAFE_HELPER = generator.forFixedClass("Unsafe");
+  public final SyntheticKind UNSAFE_HELPER = generator.forFixedClass("Unsafe", true);
   public final SyntheticKind RECORD_HELPER = generator.forSingleMethodWithGlobalMerging("Record");
   public final SyntheticKind BACKPORT = generator.forSingleMethodWithGlobalMerging("Backport");
   public final SyntheticKind BACKPORT_WITH_FORWARDING =
@@ -90,9 +90,9 @@ public class SyntheticNaming {
   public final SyntheticKind OBJECT_CLONE_OUTLINE = generator.forSingleMethod("ObjectCloneOutline");
   public final SyntheticKind TO_STRING_IF_NOT_NULL =
       generator.forSingleMethodWithGlobalMerging("ToStringIfNotNull");
-  public final SyntheticKind IS_EQUAL = generator.forSingleMethodWithGlobalMerging("IsEqual");
+  public final SyntheticKind IS_EQUAL = generator.forSingleMethodWithGlobalMerging("IsEqual", true);
   public final SyntheticKind THROW_CCE_IF_NOT_EQUALS =
-      generator.forSingleMethodWithGlobalMerging("ThrowCCEIfNotEquals");
+      generator.forSingleMethodWithGlobalMerging("ThrowCCEIfNotEquals", true);
   public final SyntheticKind THROW_CCE_IF_NOT_NULL =
       generator.forSingleMethodWithGlobalMerging("ThrowCCEIfNotNull");
   public final SyntheticKind THROW_CCE_IF_NULL =
@@ -184,26 +184,34 @@ public class SyntheticNaming {
       return register(new SyntheticMethodKind(getNextId(), descriptor, true));
     }
 
+    SyntheticKind forSingleMethodWithGlobalMerging(String descriptor, boolean forceBaseSplit) {
+      return register(new SyntheticMethodKind(getNextId(), descriptor, true, forceBaseSplit));
+    }
+
     // TODO(b/214901256): Remove once fixed.
     SyntheticKind forNonSharableInstanceClass(String descriptor) {
-      return register(new SyntheticClassKind(getNextId(), descriptor, false));
+      return register(new SyntheticClassKind(getNextId(), descriptor, false, false));
     }
 
     SyntheticKind forInstanceClass(String descriptor) {
-      return register(new SyntheticClassKind(getNextId(), descriptor, true));
+      return register(new SyntheticClassKind(getNextId(), descriptor, false, true));
     }
 
     SyntheticKind forFixedClass(String descriptor) {
+      return forFixedClass(descriptor, false);
+    }
+
+    SyntheticKind forFixedClass(String descriptor, boolean forceBaseSplit) {
       assert !descriptor.isEmpty();
-      return register(new SyntheticFixedClassKind(getNextId(), descriptor, false));
+      return register(new SyntheticFixedClassKind(getNextId(), descriptor, forceBaseSplit, false));
     }
 
     SyntheticKind forGlobalClass() {
-      return register(new SyntheticFixedClassKind(getNextId(), "", true));
+      return register(new SyntheticFixedClassKind(getNextId(), "", false, true));
     }
 
     SyntheticKind forGlobalClasspathClass() {
-      return register(new SyntheticFixedClassKind(getNextId(), "", false));
+      return register(new SyntheticFixedClassKind(getNextId(), "", false, false));
     }
 
     List<SyntheticKind> getAllKinds() {
@@ -226,10 +234,20 @@ public class SyntheticNaming {
 
     private final int id;
     private final String descriptor;
+    private final boolean forceBaseSplit;
 
     SyntheticKind(int id, String descriptor) {
+      this(id, descriptor, false);
+    }
+
+    SyntheticKind(int id, String descriptor, boolean forceBaseSplit) {
       this.id = id;
       this.descriptor = descriptor;
+      this.forceBaseSplit = forceBaseSplit;
+    }
+
+    public boolean getForceBaseSplit() {
+      return forceBaseSplit;
     }
 
     @Override
@@ -295,7 +313,12 @@ public class SyntheticNaming {
     private final boolean allowGlobalMerging;
 
     public SyntheticMethodKind(int id, String descriptor, boolean allowGlobalMerging) {
-      super(id, descriptor);
+      this(id, descriptor, allowGlobalMerging, false);
+    }
+
+    public SyntheticMethodKind(
+        int id, String descriptor, boolean allowGlobalMerging, boolean forceBaseSplit) {
+      super(id, descriptor, forceBaseSplit);
       this.allowGlobalMerging = allowGlobalMerging;
     }
 
@@ -350,8 +373,8 @@ public class SyntheticNaming {
     // TODO(b/214901256): Remove once fixed.
     private final boolean sharable;
 
-    SyntheticClassKind(int id, String descriptor, boolean sharable) {
-      super(id, descriptor);
+    SyntheticClassKind(int id, String descriptor, boolean forceBaseSplit, boolean sharable) {
+      super(id, descriptor, forceBaseSplit);
       this.sharable = sharable;
     }
 
@@ -390,8 +413,9 @@ public class SyntheticNaming {
   private static class SyntheticFixedClassKind extends SyntheticClassKind {
     private final boolean mayOverridesNonProgramType;
 
-    private SyntheticFixedClassKind(int id, String descriptor, boolean mayOverridesNonProgramType) {
-      super(id, descriptor, false);
+    private SyntheticFixedClassKind(
+        int id, String descriptor, boolean forceBaseSplit, boolean mayOverridesNonProgramType) {
+      super(id, descriptor, forceBaseSplit, false);
       this.mayOverridesNonProgramType = mayOverridesNonProgramType;
     }
 

@@ -15,7 +15,6 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.attributes.Attribute
-import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
@@ -247,13 +246,6 @@ private fun toNetworkOrder(data: ByteArray, dataIndex: Int): Long {
 
 private fun fromNetworkByteOrder(value: Long, dest: ByteArray, destIndex: Int) {
   for (i in 0..7) dest[i + destIndex] = (value shr (7 - i) * 8 and 0xffL).toByte()
-}
-
-public fun Project.resolve(
-  thirdPartyDependency: ThirdPartyDependency,
-  vararg paths: String,
-): ConfigurableFileCollection {
-  return files(project.getRoot().resolve(thirdPartyDependency.path).resolveAll(*paths))
 }
 
 public fun File.resolveAll(vararg xs: String): File {

@@ -522,6 +522,26 @@ registerTestDep("youtube2140", ThirdPartyDeps.youtube2140, "YOUTUBE_21_40")
 
 registerTestDep("youtube2140D8Merge", ThirdPartyDeps.youtube2140D8Merge, "YOUTUBE_21_40_D8_MERGE")
 
+configurations.consumable("jasminJar") {
+  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jasmin.packageName}")
+  outgoing.artifact(task.flatMap { it.outputDir.file("jasmin-2.4.jar") })
+}
+
+configurations.consumable("jdk11TestJavaBasePatchSources") {
+  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdk11Test.packageName}")
+  outgoing.artifact(task.flatMap { it.outputDir.dir("lib/testlibrary/bootlib/java.base") })
+}
+
+configurations.consumable("jdk11TestLibrarySources") {
+  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdk11Test.packageName}")
+  outgoing.artifact(task.flatMap { it.outputDir.dir("lib/testlibrary/jdk") })
+}
+
+configurations.consumable("jdwpTestsJar") {
+  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdwpTests.packageName}")
+  outgoing.artifact(task.flatMap { it.outputDir.file("apache-harmony-jdwp-tests-host.jar") })
+}
+
 tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
 configurations.consumable("sharedDepsFiles") {

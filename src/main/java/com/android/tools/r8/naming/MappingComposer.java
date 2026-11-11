@@ -5,6 +5,9 @@
 package com.android.tools.r8.naming;
 
 import com.android.tools.r8.utils.InternalOptions;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * MappingComposer is a utility to do composition of mapping files to map line numbers correctly
@@ -24,5 +27,16 @@ public class MappingComposer {
       builder.compose(classNameMapper);
     }
     return builder.finish();
+  }
+
+  public static ClassNameMapper composeToClassNameMapper(
+      InternalOptions options, ExecutorService executorService, ClassNameMapper... classNameMappers)
+      throws MappingComposeException, ExecutionException, IOException {
+    assert classNameMappers.length > 0;
+    ComposingBuilder builder = new ComposingBuilder(options);
+    for (ClassNameMapper classNameMapper : classNameMappers) {
+      builder.compose(classNameMapper, executorService);
+    }
+    return builder.finishToClassNameMapper(executorService);
   }
 }

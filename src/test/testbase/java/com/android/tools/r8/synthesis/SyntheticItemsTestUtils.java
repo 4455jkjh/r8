@@ -165,6 +165,12 @@ public abstract class SyntheticItemsTestUtils {
   public abstract ClassReference syntheticBackportWithForwardingClass(
       ClassReference classReference, int id);
 
+  public final ClassReference syntheticIsEqualClass(Class<?> clazz, int id) {
+    return syntheticIsEqualClass(Reference.classFromClass(clazz), id);
+  }
+
+  public abstract ClassReference syntheticIsEqualClass(ClassReference classReference, int id);
+
   public static ClassReference syntheticRecordTagClass() {
     return Reference.classFromDescriptor(DexItemFactory.recordTagDescriptorString);
   }
@@ -177,6 +183,13 @@ public abstract class SyntheticItemsTestUtils {
       ClassReference classReference, int id);
 
   public abstract ClassReference syntheticAutoCloseableForwarderClass(
+      ClassReference classReference, int id);
+
+  public final ClassReference syntheticThrowCCEIfNotEqualsClass(Class<?> clazz, int id) {
+    return syntheticThrowCCEIfNotEqualsClass(Reference.classFromClass(clazz), id);
+  }
+
+  public abstract ClassReference syntheticThrowCCEIfNotEqualsClass(
       ClassReference classReference, int id);
 
   public abstract ClassReference syntheticThrowIAEClass(ClassReference classReference, int id);
@@ -525,6 +538,11 @@ public abstract class SyntheticItemsTestUtils {
     }
 
     @Override
+    public ClassReference syntheticIsEqualClass(ClassReference classReference, int id) {
+      return lookupMethod(classReference, id, naming.IS_EQUAL);
+    }
+
+    @Override
     public ClassReference syntheticLambdaClass(ClassReference classReference, int id) {
       return lookupClass(classReference, id, naming.LAMBDA);
     }
@@ -548,6 +566,11 @@ public abstract class SyntheticItemsTestUtils {
     @Override
     public ClassReference syntheticRecordHelperClass(ClassReference classReference, int id) {
       return lookupMethod(classReference, id, naming.RECORD_HELPER);
+    }
+
+    @Override
+    public ClassReference syntheticThrowCCEIfNotEqualsClass(ClassReference classReference, int id) {
+      return lookupMethod(classReference, id, naming.THROW_CCE_IF_NOT_EQUALS);
     }
 
     @Override

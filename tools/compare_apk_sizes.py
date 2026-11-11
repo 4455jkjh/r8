@@ -6,8 +6,9 @@
 # Script for checking impact of a change by comparing the sizes of generated
 # classes in an apk.
 
+import argparse
+import contextlib
 import glob
-import optparse
 import os
 import shutil
 import sys
@@ -18,40 +19,41 @@ import zipfile
 import toolhelper
 import utils
 
-USAGE = """%prog [options] app1 app2
-  NOTE: This only makes sense if minification is disabled"""
-
 MAX_THREADS = 40
 
 
-def parse_options():
-    result = optparse.OptionParser(usage=USAGE)
-    result.add_option('--no-build',
-                      help='Run without building first',
-                      default=False,
-                      action='store_true')
-    result.add_option('--temp',
-                      help='Temporary directory to store extracted classes in')
-    result.add_option(
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser(
+        description='Compare sizes of generated classes in two APKs/DEXs. '
+        'NOTE: This only makes sense if minification is disabled.')
+    parser.add_argument('app1', help='First APK or DEX file to compare.')
+    parser.add_argument('app2', help='Second APK or DEX file to compare.')
+    parser.add_argument('--no-build',
+                        help='Run without building first',
+                        default=False,
+                        action='store_true')
+    parser.add_argument(
+        '--temp', help='Temporary directory to store extracted classes in')
+    parser.add_argument(
         '--use_code_size',
         help=
         'Use the size of code segments instead of the full size of the dex.',
         default=False,
         action='store_true')
-    result.add_option(
-        '--ignore_debug_info',
-        help='Do not include debug info in the comparison.',
-        default=False,
-        action='store_true')
-    result.add_option(
+    parser.add_argument('--ignore_debug_info',
+                        help='Do not include debug info in the comparison.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument(
         '--report', help='Print comparison to this location instead of stdout')
-    return result.parse_args()
+    return parser.parse_args(argv)
 
 
 def extract_apk(apk, output):
     if os.path.exists(output):
         shutil.rmtree(output)
-    zipfile.ZipFile(apk).extractall(output)
+    with zipfile.ZipFile(apk) as zf:
+        zf.extractall(output)
     with utils.ChangedWorkingDirectory(output):
         dex = glob.glob('*.dex')
         return [os.path.join(output, dexfile) for dexfile in dex]
@@ -63,14 +65,14 @@ def ensure_exists(files):
             raise Exception('%s does not exist' % f)
 
 
-def extract_classes(input, output, options):
+def extract_classes(inputs, output, options):
     if os.path.exists(output):
         shutil.rmtree(output)
     os.makedirs(output)
     args = ['--file-per-class', '--output', output]
     if options.no_build:
         args.extend(['--no-build'])
-    args.extend(input)
+    args.extend(inputs)
     extra_args = []
     if options.ignore_debug_info:
         extra_args.append('-Dcom.android.tools.r8.nullOutDebugInfo=1')
@@ -122,9 +124,7 @@ def generate_file_info(path, options):
     threads = []
     file_infos = list(file_info_map.values()) if options.use_code_size else []
     while len(file_infos) > 0 or len(threads) > 0:
-        for t in threads:
-            if not t.is_alive():
-                threads.remove(t)
+        threads = [t for t in threads if t.is_alive()]
         # sleep
         if len(threads) == MAX_THREADS or len(file_infos) == 0:
             time.sleep(0.5)
@@ -149,9 +149,11 @@ def print_info(app, app_files, only_in_app, bigger_in_app, output):
         ['  %s %s bytes' % (x, app_files[x].size) for x in only_app_sorted]))
     output.write('\n\n')
     output.write('Bigger in %s\n' % app)
+
     # Sort by the percentage diff compared to size
-    percent = lambda a: (0.0 + bigger_in_app.get(a)) / app_files.get(a
-                                                                    ).size * 100
+    def percent(a):
+        return (0.0 + bigger_in_app.get(a)) / app_files.get(a).size * 100
+
     for bigger in sorted(bigger_in_app, key=percent, reverse=True):
         output.write('  {0:.3f}% {1} bytes {2}\n'.format(
             percent(bigger), bigger_in_app[bigger], bigger))
@@ -178,23 +180,19 @@ def compare(app1_classes_dir, app2_classes_dir, app1, app2, options):
             bigger_in_app2[f] = app2_entry.size - app1_entry.size
         else:
             same_size.append(f)
-    output = open(options.report, 'w') if options.report else sys.stdout
-    print_info(app1, app1_files, only_in_app1, bigger_in_app1, output)
-    print_info(app2, app2_files, only_in_app2, bigger_in_app2, output)
-    output.write('Same size\n')
-    output.write('\n'.join(['  %s' % x for x in same_size]))
-    if options.report:
-        output.close()
+    output_ctx = (open(options.report, 'w')
+                  if options.report else contextlib.nullcontext(sys.stdout))
+    with output_ctx as output:
+        print_info(app1, app1_files, only_in_app1, bigger_in_app1, output)
+        print_info(app2, app2_files, only_in_app2, bigger_in_app2, output)
+        output.write('Same size\n')
+        output.write('\n'.join(['  %s' % x for x in same_size]))
 
 
-def Main():
-    (options, args) = parse_options()
-    if len(args) != 2:
-        print(args)
-        print('Takes exactly two arguments, the two apps to compare')
-        return 1
-    app1 = args[0]
-    app2 = args[1]
+def main(argv=None):
+    options = parse_options(argv)
+    app1 = options.app1
+    app2 = options.app2
     ensure_exists([app1, app2])
     with utils.TempDir() as temporary:
         # If a temp dir is passed in, use that instead of the generated temporary
@@ -215,4 +213,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

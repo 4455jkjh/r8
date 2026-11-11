@@ -1508,6 +1508,11 @@ public class ToolHelper {
     return getResourceAsReadOnlyFile(clazz, javaFileName);
   }
 
+  public static Path getAbsoluteResourceAsReadOnlyFile(String resourceName) {
+    return getResourceAsReadOnlyFile(
+        ToolHelper.class, resourceName.startsWith("/") ? resourceName : "/" + resourceName);
+  }
+
   /**
    * Retrieves a resource from the classpath as a {@link Path}.
    *

@@ -73,6 +73,7 @@ public class ClassNameMapper implements ProguardMap {
     private boolean addVersionAsPreamble = false;
     private final List<String> preamble = new ArrayList<>();
     private final Map<String, ClassNamingForNameMapper.Builder> mapping = new HashMap<>();
+    private ImmutableMap.Builder<String, ClassNamingForNameMapper> prebuiltClassMappings = null;
     private final LinkedHashSet<MapVersionMappingInformation> mapVersions = new LinkedHashSet<>();
     private final Map<String, String> originalSourceFiles = new HashMap<>();
 
@@ -83,6 +84,14 @@ public class ClassNameMapper implements ProguardMap {
           ClassNamingForNameMapper.builder(renamedName, originalName, originalSourceFiles::put);
       mapping.put(renamedName, classNamingBuilder);
       return classNamingBuilder;
+    }
+
+    public Builder putClassNaming(String renamedName, ClassNamingForNameMapper classNaming) {
+      if (prebuiltClassMappings == null) {
+        prebuiltClassMappings = ImmutableMap.builder();
+      }
+      prebuiltClassMappings.put(renamedName, classNaming);
+      return this;
     }
 
     public Builder setBuildPreamble(boolean buildPreamble) {
@@ -114,7 +123,9 @@ public class ClassNameMapper implements ProguardMap {
 
     private ImmutableMap<String, ClassNamingForNameMapper> buildClassNameMappings() {
       ImmutableMap.Builder<String, ClassNamingForNameMapper> builder =
-          ImmutableMap.builderWithExpectedSize(mapping.size());
+          prebuiltClassMappings != null
+              ? prebuiltClassMappings
+              : ImmutableMap.builderWithExpectedSize(mapping.size());
       mapping.forEach(
           (renamedName, valueBuilder) -> builder.put(renamedName, valueBuilder.build()));
       return builder.build();

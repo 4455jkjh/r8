@@ -3,7 +3,7 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-import optparse
+import argparse
 import os
 import subprocess
 import sys
@@ -79,39 +79,38 @@ VERBOSE_OPTIONS = [
 BOOT_IMAGE = {'12.0.0': 'apex/art_boot_images/javalib/boot.art'}
 
 
-def ParseOptions():
-    parser = optparse.OptionParser()
-    parser.add_option('--version',
-                      help='Version of dex2oat. (defaults to latest: ' +
-                      LATEST + ').',
-                      default=LATEST)
-    parser.add_option(
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dexfile',
+                        help='The dex/zip/jar/apk file to run dex2oat on.')
+    parser.add_argument('--version',
+                        help='Version of dex2oat. (defaults to latest: ' +
+                        LATEST + ').',
+                        default=LATEST)
+    parser.add_argument(
         '--device',
         help='Run dex2oat on this device (this is passed as the -s SERIAL.')
-    parser.add_option('--all',
-                      help='Run dex2oat on all possible versions',
-                      default=False,
-                      action='store_true')
-    parser.add_option(
+    parser.add_argument('--all',
+                        help='Run dex2oat on all possible versions',
+                        default=False,
+                        action='store_true')
+    parser.add_argument(
         '--output',
         help=
         'Where to place the output oat (defaults to no output / temp file).',
         default=None)
-    parser.add_option('--verbose',
-                      help='Enable verbose dex2oat logging.',
-                      choices=VERBOSE_OPTIONS,
-                      default=None)
-    parser.add_option('--dump-cfg',
-                      help='Dump the CFG to this file.',
-                      default=None)
-    return parser.parse_args()
+    parser.add_argument('--verbose',
+                        help='Enable verbose dex2oat logging.',
+                        choices=VERBOSE_OPTIONS,
+                        default=None)
+    parser.add_argument('--dump-cfg',
+                        help='Dump the CFG to this file.',
+                        default=None)
+    return parser.parse_args(argv)
 
 
-def Main():
-    (options, args) = ParseOptions()
-    if len(args) != 1:
-        print("Can only take a single dex/zip/jar/apk file as input.")
-        return 1
+def main(argv=None):
+    options = parse_options(argv)
     if options.version not in VERSIONS:
         print("Unknown version %s" % options.version)
         return 1
@@ -120,17 +119,17 @@ def Main():
             "--dump-cfg is only supported for standalone dex2oat versions (not host ART)."
         )
         return 1
-    if (options.device):
-        return run_device_dex2oat(options, args)
+    if options.device:
+        return run_device_dex2oat(options)
     else:
-        return run_host_dex2oat(options, args)
+        return run_host_dex2oat(options)
 
 
-def run_host_dex2oat(options, args):
+def run_host_dex2oat(options):
     if options.all and options.output:
         print("Can't write output when running all versions.")
         return 1
-    dexfile = args[0]
+    dexfile = options.dexfile
     oatfile = options.output
     versions = VERSIONS if options.all else [options.version]
     for version in versions:
@@ -157,9 +156,9 @@ def append_dex2oat_verbose_flags(options, cmd):
     return cmd
 
 
-def run_device_dex2oat(options, args):
+def run_device_dex2oat(options):
     serial = options.device
-    dexfile = args[0]
+    dexfile = options.dexfile
     device_dexfile = '/data/local/tmp/' + os.path.basename(dexfile)
     device_oatfile = '/data/local/tmp/unused.oat'
     cmd = adb_cmd(serial, 'shell', 'rm', '-f', device_dexfile, device_oatfile)
@@ -266,4 +265,4 @@ def dex2oat(options, dexfile, oatfile=None, version=None):
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())
