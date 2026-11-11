@@ -90,10 +90,6 @@ def GetJdk11Home():
     return GetJdkHome('jdk-11')
 
 
-def GetJdk9Home():
-    return GetJdkHome('openjdk-9.0.4')
-
-
 def GetJdk8Home():
     root = os.path.join(JDK_DIRS, 'jdk8')
     if defines.is_linux():

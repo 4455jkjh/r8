@@ -5,7 +5,6 @@
 
 import argparse
 import os
-import shutil
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -153,7 +152,7 @@ def parse_options(argv):
     result.add_argument('--skip-compilations',
                         help='Skip compilations (default disabled)',
                         default=False,
-                        action='store_true'),
+                        action='store_true')
     result.add_argument('--json-output',
                         help='Use json for reflective use (default disabled)',
                         default=False,

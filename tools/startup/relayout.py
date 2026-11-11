@@ -5,7 +5,6 @@
 
 import argparse
 import os
-import subprocess
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -62,14 +61,6 @@ def get_dex_to_relayout(options, temp):
         os.path.join(dex_dir, name) \
             for name in extracted_dex_files if name != desugared_library_dex], \
         os.path.join(dex_dir, desugared_library_dex)
-
-
-def has_desugared_library_dex(options):
-    if options.desugared_library == 'auto':
-        marker = extractmarker.extractmarker(options.apk,
-                                             build=not options.no_build)
-        return '~~L8' in marker
-    return options.desugared_library == 'true'
 
 
 def main(argv):
