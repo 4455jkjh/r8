@@ -4,266 +4,341 @@
 
 from os import path
 import datetime
-from subprocess import check_output, Popen, PIPE, STDOUT
+from subprocess import check_output, check_call, CalledProcessError, STDOUT, DEVNULL
 import inspect
 import os
+import re
 import sys
 # Add both current path to allow us to package import utils and the tools
-# dir to allow transitive (for utils) dependendies to be loaded.
-sys.path.append(path.dirname(inspect.getfile(lambda: None)))
-sys.path.append(os.path.join(
-    path.dirname(inspect.getfile(lambda: None)), 'tools'))
-from tools.utils import EnsureDepFromGoogleCloudStorage
-from tools.jdk import GetJavaExecutable
+# dir to allow transitive (for utils) dependencies to be loaded.
+repo_root = path.dirname(inspect.getfile(lambda: None))
+tools_dir = os.path.join(repo_root, 'tools')
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+if tools_dir not in sys.path:
+    sys.path.insert(0, tools_dir)
+
+from tools import utils
+
+VERSION_FILE = os.path.join(repo_root, 'src', 'main', 'java', 'com', 'android',
+                            'tools', 'r8', 'Version.java')
 
 
-KOTLIN_FMT_JAR = path.join(
-  'third_party',
-  'google',
-  'google-kotlin-format',
-  '0.54',
-  'ktfmt-0.54-jar-with-dependencies.jar')
+def GetVersion():
+    with open(VERSION_FILE) as f:
+        content = f.read()
+    match = re.search(r'\bLABEL\s*=\s*"([^"]+)"', content)
+    if not match:
+        raise RuntimeError(f'Unable to find LABEL in {VERSION_FILE}')
+    label = match.group(1)
+    if label == 'main':
+        return None
+    return utils.check_basic_semver_version(label,
+                                            'in Version.java',
+                                            components=3,
+                                            allowPrerelease=True)
 
-KOTLIN_FMT_SHA1 = path.join(
-    'third_party', 'google', 'google-kotlin-format', '0.54.tar.gz.sha1')
-KOTLIN_FMT_TGZ = path.join(
-    'third_party', 'google', 'google-kotlin-format', '0.54.tar.gz.sha1')
-KOTLIN_FMT_IGNORE = {
-  'src/test/java/com/android/tools/r8/kotlin/metadata/inline_class_fun_descriptor_classes_app/main.kt'
-}
-KOTLIN_FMT_BATCH_SIZE = 100
 
-FMT_CMD = path.join(
-    'third_party',
-    'google',
-    'google-java-format',
-    '1.24.0',
-    'google-java-format-1.24.0',
-    'scripts',
-    'google-java-format-diff.py')
+def IsReleaseBefore(major, minor, patch, version=None):
+    if version is None:
+        version = GetVersion()
+    if version is None:
+        return False
+    return utils.SemanticVersion(major, minor, patch, None).larger_than(version)
 
-FMT_CMD_JDK17 = path.join('tools','google-java-format-diff.py')
-FMT_SHA1 = path.join(
-    'third_party', 'google', 'google-java-format', '1.24.0.tar.gz.sha1')
-FMT_TGZ = path.join(
-    'third_party', 'google', 'google-java-format', '1.24.0.tar.gz')
 
 def CheckDoNotMerge(input_api, output_api):
-  for l in input_api.change.FullDescriptionText().splitlines():
-    if l.lower().startswith('do not merge'):
-      msg = 'Your cl contains: \'Do not merge\' - this will break WIP bots'
-      return [output_api.PresubmitPromptWarning(msg, [])]
-  return []
-
-def CheckFormatting(input_api, output_api, branch):
-  seen_kotlin_error = False
-  seen_java_error = False
-  pending_kotlin_files = []
-  EnsureDepFromGoogleCloudStorage(
-    KOTLIN_FMT_JAR, KOTLIN_FMT_TGZ, KOTLIN_FMT_SHA1, 'google-kotlin-format')
-  EnsureDepFromGoogleCloudStorage(
-    FMT_CMD, FMT_TGZ, FMT_SHA1, 'google-java-format')
-  results = []
-  for f in input_api.AffectedFiles():
-    path = f.LocalPath()
-    if not path.endswith('.java') and not path.endswith('.kt'):
-      continue
-    if path.endswith('.kt'):
-      if path in KOTLIN_FMT_IGNORE:
-        continue
-      pending_kotlin_files.append(path)
-      if len(pending_kotlin_files) == KOTLIN_FMT_BATCH_SIZE:
-        seen_kotlin_error = (CheckKotlinFormatting(pending_kotlin_files, output_api, results)
-                             or seen_kotlin_error)
-        pending_kotlin_files = []
-    else:
-      seen_java_error = (CheckJavaFormatting(path, branch, output_api, results)
-                         or seen_java_error)
-  # Check remaining Kotlin files if any.
-  if len(pending_kotlin_files) > 0:
-    seen_kotlin_error = (CheckKotlinFormatting(pending_kotlin_files, output_api, results)
-                         or seen_kotlin_error)
-  # Provide the reformatting commands if needed.
-  if seen_kotlin_error:
-    results.append(output_api.PresubmitError(KotlinFormatPresubmitMessage()))
-  if seen_java_error:
-    results.append(output_api.PresubmitError(JavaFormatPresubMessage()))
-
-  # Comment this out to easily presumbit changes
-  # results.append(output_api.PresubmitError("TESTING"))
-  return results
+    for l in input_api.change.FullDescriptionText().splitlines():
+        if l.lower().startswith('do not merge'):
+            msg = 'Your cl contains: \'Do not merge\' - this will break WIP bots'
+            return [output_api.PresubmitPromptWarning(msg, [])]
+    return []
 
 
-def CheckKotlinFormatting(paths, output_api, results):
-  paths_to_format = {
-      '--kotlinlang-style': [path for path in paths if path.startswith('src/keepanno/')],
-      '--google-style': [path for path in paths if not path.startswith('src/keepanno/')]
-  }
-  needs_formatting_count = 0
-  for format in ['--kotlinlang-style', '--google-style']:
-    cmd = [GetJavaExecutable(), '-jar', KOTLIN_FMT_JAR, format, '-n']
-    to_format = paths_to_format[format]
-    if len(to_format) > 0:
-      cmd.extend(to_format)
-      result = check_output(cmd)
-      if len(result) > 0:
-        with_format_error = result.splitlines()
-        for path in with_format_error:
-          results.append(
-            output_api.PresubmitError(
-              "File {path} needs formatting".format(path=path.decode('utf-8'))))
-      needs_formatting_count += len(result)
-  return needs_formatting_count > 0
+def FormatPresubmitMessage(language):
+    cmd = 'tools/fmt_diff.py'
+    return f"""Please fix the {language} formatting by running:
 
-
-def KotlinFormatPresubmitMessage():
-  return """Please fix the Kotlin formatting by running:
-
-  git diff $(git cl upstream) --name-only "*.kt" | grep -v "^src/keepanno/" | xargs {java} -jar {fmt_jar} --google-style
-  git diff $(git cl upstream) --name-only "*.kt" | grep "^src/keepanno/" | xargs {java} -jar {fmt_jar} --kotlinlang-style
+  {cmd}
 
 or fix formatting, commit and upload:
 
-  git diff $(git cl upstream) --name-only "*.kt" | grep -v "^src/keepanno/" | xargs {java} -jar {fmt_jar} --google-style && git commit -a --amend --no-edit && git cl upload
-  git diff $(git cl upstream) --name-only "*.kt" | grep "^src/keepanno/" | xargs {java} -jar {fmt_jar} --kotlinlang-style && git commit -a --amend --no-edit && git cl upload
+  {cmd} && git commit -a --amend --no-edit && git cl upload
 
-or bypass the checks with:
+To disable formatting for specific Java blocks, use `// @formatter:off` and `// @formatter:on` comments.
+To disable formatting for a Kotlin file, add a `// ktfmt:disable-file` comment.
 
-  git cl upload --bypass-hooks
-    """.format(java=GetJavaExecutable(), fmt_jar=KOTLIN_FMT_JAR)
+To skip formatting checks, for new CLs add footer to commit message:
 
+  git commit --amend --no-edit --trailer "Skip-Formatting: true"
 
-def CheckJavaFormatting(path, branch, output_api, results):
-  diff = check_output(
-      ['git', 'diff', '--no-prefix', '-U0', branch, '--', path])
+For existing CLs, add footer to CL description:
 
-  proc = Popen(FMT_CMD, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-  (stdout, stderr) = proc.communicate(input=diff)
-  if len(stdout) > 0:
-    results.append(output_api.PresubmitError(stdout.decode('utf-8')))
-  return len(stdout) > 0
+  git cl description -d | git interpret-trailers --trailer "Skip-Formatting: true" | git cl description -n -
+    """
 
 
-def JavaFormatPresubMessage():
-  return """Please fix the Java formatting by running:
+def EnsureDefaultJdk():
+    from tools import jdk
+    with open(jdk.GRADLE_DAEMON_JVM_PROPERTIES) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith('toolchainVersion='):
+                version = line.split('=', 1)[1].strip()
+                jdk_dir = jdk.GetOSJavaHome(
+                    os.path.join(jdk.JDK_DIRS, f'jdk-{version}'))
+                if os.path.exists(jdk_dir + '.tar.gz.sha1'):
+                    utils.ensure_google_download(jdk_dir)
+                return
 
-  git diff -U0 $(git cl upstream) | %s -p1 -i
 
-or fix formatting, commit and upload:
-
-  git diff -U0 $(git cl upstream) | %s -p1 -i && git commit -a --amend --no-edit && git cl upload
-
-or bypass the checks with:
-
-  git cl upload --bypass-hooks
-
-If formatting fails with 'No enum constant javax.lang.model.element.Modifier.SEALED' try
-
-  git diff -U0 $(git cl upstream) | %s %s %s -p1 -i && git commit -a --amend --no-edit && git cl upload
-  """ % (
-    FMT_CMD,
-    FMT_CMD,
-    FMT_CMD_JDK17,
-    '--google-java-format-jar',
-    'third_party/google/google-java-format/1.24.0/google-java-format-1.24.0-all-deps.jar')
+def CheckFormatting(input_api, output_api):
+    if is_skip_formatting_set(input_api) or IsReleaseBefore(9, 6, -1):
+        return []
+    # Imported locally to avoid crashing on older 9.0-9.5 branches.
+    from tools import fmt_diff
+    EnsureDefaultJdk()
+    files = [f.LocalPath() for f in input_api.AffectedFiles()]
+    check_results = fmt_diff.check(files)
+    results = []
+    for lang, errors in check_results.items():
+        if errors:
+            for err in errors:
+                results.append(output_api.PresubmitError(err))
+            results.append(
+                output_api.PresubmitError(FormatPresubmitMessage(lang)))
+    return results
 
 
 def CheckDeterministicDebuggingChanged(input_api, output_api, branch):
-  for f in input_api.AffectedFiles():
-    path = f.LocalPath()
-    if not path.endswith('InternalOptions.java'):
-      continue
-    diff = check_output(
-        ['git', 'diff', '--no-prefix', '-U0', branch, '--', path]).decode('utf-8')
-    if 'DETERMINISTIC_DEBUGGING' in diff:
-      return [output_api.PresubmitError(diff)]
-  return []
+    for f in input_api.AffectedFiles():
+        local_path = f.LocalPath()
+        if not local_path.endswith('InternalOptions.java'):
+            continue
+        diff = check_output(
+            ['git', 'diff', '--no-prefix', '-U0', branch, '--',
+             local_path]).decode('utf-8')
+        if 'DETERMINISTIC_DEBUGGING' in diff:
+            return [output_api.PresubmitError(diff)]
+    return []
 
+
+# File extension checks are kept local to avoid importing fmt_diff on older
+# 9.0-9.5 branches.
 def IsTestFile(file):
-  localPath = file.LocalPath()
-  return localPath.endswith('.java') and '/test/' in localPath
+    localPath = file.LocalPath()
+    return localPath.endswith('.java') and '/test/' in localPath
+
 
 def CheckForAddedDisassemble(input_api, output_api):
-  results = []
-  for (file, line_nr, line) in input_api.RightHandSideLines():
-    if IsTestFile(file) and '.disassemble()' in line:
-      results.append(
-          output_api.PresubmitError(
-              'Test call to disassemble\n%s:%s %s' % (file.LocalPath(), line_nr, line)))
-  return results
+    results = []
+    for (file, line_nr, line) in input_api.RightHandSideLines():
+        if IsTestFile(file) and '.disassemble()' in line:
+            results.append(
+                output_api.PresubmitError('Test call to disassemble\n%s:%s %s' %
+                                          (file.LocalPath(), line_nr, line)))
+    return results
+
 
 def CheckForAddedAllowXxxxxxMessages(input_api, output_api):
-  results = []
-  for (file, line_nr, line) in input_api.RightHandSideLines():
-    if (IsTestFile(file)
-        and ('.allowStdoutMessages()' in line or '.allowStderrMessages()' in line)):
-      results.append(
-          output_api.PresubmitError(
-              'Test call to allowStdoutMessages or allowStderrMessages\n%s:%s %s'
-              % (file.LocalPath(), line_nr, line)))
-  return results
+    results = []
+    for (file, line_nr, line) in input_api.RightHandSideLines():
+        if (IsTestFile(file) and ('.allowStdoutMessages()' in line or
+                                  '.allowStderrMessages()' in line)):
+            results.append(
+                output_api.PresubmitError(
+                    'Test call to allowStdoutMessages or allowStderrMessages\n%s:%s %s'
+                    % (file.LocalPath(), line_nr, line)))
+    return results
+
 
 def CheckForAddedPartialDebug(input_api, output_api):
-  results = []
-  for (file, line_nr, line) in input_api.RightHandSideLines():
-    if not file.LocalPath().endswith('.java'):
-      continue
-    if '.enablePrintPartialCompilationPartitioning(' in line:
-      results.append(
-          output_api.PresubmitError(
-              'Test call to enablePrintPartialCompilationPartitioning\n%s:%s %s' % (
-                file.LocalPath(), line_nr, line)))
-    if '.setPartialCompilationSeed(' in line:
-      results.append(
-          output_api.PresubmitError(
-              'Test call to setPartialCompilationSeed\n%s:%s %s' % (
-                file.LocalPath(), line_nr, line)))
-  return results
+    results = []
+    for (file, line_nr, line) in input_api.RightHandSideLines():
+        if not file.LocalPath().endswith('.java'):
+            continue
+        if '.enablePrintPartialCompilationPartitioning(' in line:
+            results.append(
+                output_api.PresubmitError(
+                    'Test call to enablePrintPartialCompilationPartitioning\n%s:%s %s'
+                    % (file.LocalPath(), line_nr, line)))
+        if '.setPartialCompilationSeed(' in line:
+            results.append(
+                output_api.PresubmitError(
+                    'Test call to setPartialCompilationSeed\n%s:%s %s' %
+                    (file.LocalPath(), line_nr, line)))
+    return results
 
-def CheckForCopyRight(input_api, output_api, branch):
-  results = []
-  for f in input_api.AffectedSourceFiles(None):
-    # Check if it is a new file.
-    if f.OldContents():
-      continue
-    contents = f.NewContents()
-    if (not contents) or (len(contents) == 0):
-      continue
-    if not CopyRightInContents(f, contents):
-      results.append(
-          output_api.PresubmitError('Could not find correctly formatted '
-                                    'copyright in file: %s' % f))
-  return results
 
-def CopyRightInContents(f, contents):
-  expected = '//'
-  if f.LocalPath().endswith('.py') or f.LocalPath().endswith('.sh'):
-    expected = '#'
-  expected = expected + ' Copyright (c) ' + str(datetime.datetime.now().year)
-  for content_line in contents:
-    if expected in content_line:
-      return True
-  return False
+def CheckForAddedHeadful(input_api, output_api):
+    results = []
+    for (file, line_nr, line) in input_api.RightHandSideLines():
+        if IsTestFile(file) and '.enableHeadful()' in line:
+            results.append(
+                output_api.PresubmitError(
+                    'Test call to enableHeadful\n%s:%s %s' %
+                    (file.LocalPath(), line_nr, line)))
+    return results
+
+
+def CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api):
+    matches = [(file, line_nr, line)
+               for (file, line_nr, line) in input_api.RightHandSideLines()
+               if IsTestFile(file) and '.withoutCollapsedDexRuntimes()' in line]
+    if not matches:
+        return []
+    version = GetVersion()
+    if not IsReleaseBefore(9, 6, -1, version):
+        return []
+    return [
+        output_api.PresubmitError(
+            'Test call to withoutCollapsedDexRuntimes is not allowed before branch 9.6 (current version %s)\n%s:%s %s'
+            % (version, file.LocalPath(), line_nr, line))
+        for (file, line_nr, line) in matches
+    ]
+
+
+def parse_bool_option(name, val):
+    val_lower = val.lower()
+    if val_lower == 'true':
+        return True
+    if val_lower == 'false':
+        return False
+    raise ValueError(
+        f"Invalid value for {name}: '{val}'. Expected 'true' or 'false'.")
+
+
+def get_footer_flag(input_api, footer_key):
+    if not input_api:
+        return None
+    values = input_api.change.GitFootersFromDescription().get(footer_key)
+    if values:
+        return parse_bool_option(footer_key, values[0])
+    return None
+
+
+def is_no_presubmit_set(input_api=None):
+    return bool(get_footer_flag(input_api, 'No-Presubmit'))
+
+
+def is_skip_formatting_set(input_api=None):
+    return bool(get_footer_flag(input_api, 'Skip-Formatting'))
+
+
+def is_allow_old_copyright_set(input_api=None):
+    return bool(get_footer_flag(input_api, 'Allow-Old-Copyright'))
+
+
+def CheckForCopyright(input_api, output_api, branch):
+    allow_old_copyright = is_allow_old_copyright_set(input_api)
+    results = []
+    # Include .gradle and .kts files in the copyright check.
+    files_to_check = input_api.DEFAULT_FILES_TO_CHECK + (
+        r'.*\.gradle$',
+        r'.*\.kts$',
+    )
+    file_filter = lambda file: input_api.FilterSourceFile(
+        file, files_to_check=files_to_check)
+    for f in input_api.AffectedSourceFiles(file_filter):
+        # Check if it is a new file.
+        if f.OldContents():
+            continue
+        contents = f.NewContents()
+        if (not contents) or (len(contents) == 0):
+            continue
+        error = CheckCopyrightInContents(
+            f, contents, output_api, allow_old_copyright=allow_old_copyright)
+        if error:
+            results.append(error)
+    return results
+
+
+def CheckCopyrightInContents(f,
+                             contents,
+                             output_api,
+                             allow_old_copyright=False):
+    prefix = '#' if (f.LocalPath().endswith('.py') or
+                     f.LocalPath().endswith('.sh')) else '//'
+    pattern = re.escape(prefix) + r' Copyright \(c\) (\d+)'
+    current_year = datetime.datetime.now().year
+    for content_line in contents:
+        match = re.search(pattern, content_line)
+        if match:
+            year = int(match.group(1))
+            if year == current_year:
+                return None
+            elif year < current_year:
+                if allow_old_copyright:
+                    return None
+                else:
+                    return output_api.PresubmitError(
+                        'Copyright found with old year (%s) in file: %s\n\n'
+                        'For new CLs, add footer to commit message:\n\n'
+                        '  git commit --amend --no-edit --trailer "Allow-Old-Copyright: true"\n\n'
+                        'For existing CLs, add footer to CL description:\n\n'
+                        '  git cl description -d | git interpret-trailers --trailer "Allow-Old-Copyright: true" | git cl description -n -'
+                        % (year, f))
+            else:
+                return output_api.PresubmitError(
+                    'Copyright found with future year in file: %s' % f)
+    return output_api.PresubmitError('No copyright found in file: %s' % f)
+
+
+def CheckLucicfg(input_api, output_api):
+    for f in input_api.AffectedFiles():
+        if f.LocalPath() == 'infra/config/global/main.star':
+            try:
+                check_call(
+                    ['lucicfg', 'validate', 'infra/config/global/main.star'],
+                    stdout=DEVNULL,
+                    stderr=STDOUT)
+            except CalledProcessError as e:
+                return [
+                    output_api.PresubmitError(
+                        'lucicfg validate infra/config/global/main.star failed')
+                ]
+            except FileNotFoundError:
+                return [output_api.PresubmitError('lucicfg not found in PATH')]
+    return []
+
+
+def GetUpstreamBranch(input_api):
+    try:
+        branch = check_output(['git', 'cl', 'upstream'],
+                              stderr=DEVNULL).decode('utf-8').strip()
+        if branch:
+            return branch.replace('refs/heads/', '')
+    except CalledProcessError:
+        pass
+    upstream = input_api.change.UpstreamBranch()
+    if upstream:
+        return upstream.replace('refs/heads/', '')
+    raise Exception('Unable to determine upstream branch')
+
 
 def CheckChange(input_api, output_api):
-  branch = (
-      check_output(['git', 'cl', 'upstream'])
-          .decode('utf-8')
-          .strip()
-          .replace('refs/heads/', ''))
-  results = []
-  results.extend(CheckDoNotMerge(input_api, output_api))
-  results.extend(CheckFormatting(input_api, output_api, branch))
-  results.extend(
-      CheckDeterministicDebuggingChanged(input_api, output_api, branch))
-  results.extend(CheckForAddedDisassemble(input_api, output_api))
-  results.extend(CheckForAddedAllowXxxxxxMessages(input_api, output_api))
-  results.extend(CheckForAddedPartialDebug(input_api, output_api))
-  results.extend(CheckForCopyRight(input_api, output_api, branch))
-  return results
+    if is_no_presubmit_set(input_api):
+        return []
+    branch = GetUpstreamBranch(input_api)
+    results = []
+    results.extend(CheckDoNotMerge(input_api, output_api))
+    results.extend(CheckFormatting(input_api, output_api))
+    results.extend(
+        CheckDeterministicDebuggingChanged(input_api, output_api, branch))
+    results.extend(CheckForAddedDisassemble(input_api, output_api))
+    results.extend(CheckForAddedAllowXxxxxxMessages(input_api, output_api))
+    results.extend(CheckForAddedPartialDebug(input_api, output_api))
+    results.extend(CheckForAddedHeadful(input_api, output_api))
+    results.extend(
+        CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api))
+    results.extend(CheckForCopyright(input_api, output_api, branch))
+    results.extend(CheckLucicfg(input_api, output_api))
+    return results
+
 
 def CheckChangeOnCommit(input_api, output_api):
-  return CheckChange(input_api, output_api)
+    return CheckChange(input_api, output_api)
+
 
 def CheckChangeOnUpload(input_api, output_api):
-  return CheckChange(input_api, output_api)
+    return CheckChange(input_api, output_api)
