@@ -235,18 +235,17 @@ public class ArgumentPropagator implements ReprocessingOptimization {
 
     // Set the optimization info on each method.
     Map<Set<DexProgramClass>, DexMethodSignatureSet> interfaceDispatchOutsideProgram =
-        new IdentityHashMap<>();
+        new ConcurrentHashMap<>();
     ProgramMethodSet prunedMethods =
         populateParameterOptimizationInfo(
             converter,
             immediateSubtypingInfo,
             stronglyConnectedProgramComponents,
-            (stronglyConnectedProgramComponent, signature) -> {
-              interfaceDispatchOutsideProgram
-                  .computeIfAbsent(
-                      stronglyConnectedProgramComponent, (unused) -> DexMethodSignatureSet.create())
-                  .add(signature);
-            },
+            (stronglyConnectedProgramComponent, signature) ->
+                interfaceDispatchOutsideProgram
+                    .computeIfAbsent(
+                        stronglyConnectedProgramComponent, ignoreKey(DexMethodSignatureSet::create))
+                    .add(signature),
             postMethodProcessorBuilder,
             executorService,
             timing);
