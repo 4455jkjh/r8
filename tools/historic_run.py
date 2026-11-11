@@ -8,8 +8,8 @@
 # commits that exists on cloud storage in the given range.  It will then run the
 # oldest and newest such commit, and gradually fill in the commits in between.
 
+import argparse
 import math
-import optparse
 import os
 import subprocess
 import sys
@@ -19,29 +19,29 @@ import utils
 MASTER_COMMITS = 'gs://r8-releases/raw/main'
 
 
-def ParseOptions(argv):
-    result = optparse.OptionParser()
-    result.add_option('--cmd', help='Command to run')
-    result.add_option('--top',
-                      default=top_or_default(),
-                      help='The most recent commit to test')
-    result.add_option('--bottom', help='The oldest commit to test')
-    result.add_option(
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cmd', help='Command to run')
+    parser.add_argument('--top',
+                        default=top_or_default(),
+                        help='The most recent commit to test')
+    parser.add_argument('--bottom', help='The oldest commit to test')
+    parser.add_argument(
         '--dry-run',
         help='Do not download or run the command, but print the actions',
         default=False,
         action='store_true')
-    result.add_option('--output',
-                      default='build',
-                      help='Directory where to output results')
-    result.add_option('--timeout',
-                      default=1000,
-                      help='Timeout in seconds (-1 for no timeout)',
-                      type=int)
-    return result.parse_args(argv)
+    parser.add_argument('--output',
+                        default='build',
+                        help='Directory where to output results')
+    parser.add_argument('--timeout',
+                        default=1000,
+                        help='Timeout in seconds (-1 for no timeout)',
+                        type=int)
+    return parser.parse_args(argv)
 
 
-class GitCommit(object):
+class GitCommit:
 
     def __init__(self, git_hash, destination_dir, destination, timestamp):
         self._branch = None
@@ -149,7 +149,7 @@ def git_commit_from_hash(hash):
 def enumerate_git_commits(top, bottom):
     if bottom is None:
         output = subprocess.check_output(
-            ['git', 'rev-list', '--first-parent', '-n', 1000, top])
+            ['git', 'rev-list', '--first-parent', '-n', '1000', top])
     else:
         output = subprocess.check_output(
             ['git', 'rev-list', '--first-parent',
@@ -275,8 +275,8 @@ def run_cmd(options, commit):
     print(status)
 
 
-def main(argv):
-    (options, args) = ParseOptions(argv)
+def main(argv=None):
+    options = parse_options(argv)
     if not options.cmd:
         raise Exception('Please specify a command')
     top = top_or_default(options.top)
@@ -286,4 +286,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())
