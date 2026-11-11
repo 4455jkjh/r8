@@ -8,12 +8,13 @@
 # force the tests to run, even if no input changed.
 
 import argparse
+import glob
 import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
-import glob
 
 import archive_desugar_jdk_libs
 import download_kotlin
@@ -22,11 +23,6 @@ import jdk
 import notify
 import testing_state
 import utils
-
-if utils.is_python3():
-    import threading
-else:
-    import thread
 
 ALL_ART_VMS = [
     "default", "17.2.0", "17.1.0", "17.0.0", "16.1.0", "16.0.0", "15.0.0",
@@ -51,7 +47,7 @@ DRY_RUN_RUNTIMES = ['dex-default', 'jdk11', 'none']
 CQ_RUNTIMES = [rt for rt in VALID_RUNTIMES if rt not in DRY_RUN_RUNTIMES]
 
 
-def ParseOptions():
+def parse_options():
     result = argparse.ArgumentParser()
     result.add_argument('--no-internal',
                         '--no_internal',
@@ -344,8 +340,8 @@ def art_7_0_0_symlinks():
                               lib64_tinfo_candidates)
 
 
-def Main():
-    (options, args) = ParseOptions()
+def main():
+    (options, args) = parse_options()
     return_code = test(options, options.filter)
     if return_code == 0 and options.land:
         land(options)
@@ -554,8 +550,8 @@ def test(options, args):
             return 0
     # Test filtering.
     if len(args) > 0:
-        for testFilter in args:
-            assert not ("|" in testFilter), "| is used as separating character"
+        for test_filter in args:
+            assert "|" not in test_filter, "| is used as separating character"
         gradle_args.append("-Ptestfilter=" + "|".join(args))
 
     print_stacks_timeout = options.print_hanging_stacks
@@ -566,15 +562,9 @@ def test(options, args):
         gradle_args.append('-Pupdate_test_timestamp=' + timestamp_file)
         print_stacks_timeout = (print_stacks_timeout if print_stacks_timeout
                                 != -1 else TIMEOUT_HANDLER_PERIOD)
-        if utils.is_python3():
-            threading.Thread(target=timeout_handler,
-                             args=(timestamp_file, print_stacks_timeout),
-                             daemon=True).start()
-        else:
-            thread.start_new_thread(timeout_handler, (
-                timestamp_file,
-                print_stacks_timeout,
-            ))
+        threading.Thread(target=timeout_handler,
+                         args=(timestamp_file, print_stacks_timeout),
+                         daemon=True).start()
     if not utils.is_bot():
         rotate_test_reports()
 
@@ -754,15 +744,15 @@ def compute_failed_tests(args):
         return None
     print("Reading failed tests in", report)
     failing = set()
-    inFailedSection = False
+    in_failed_section = False
     for line in open(report):
         l = line.strip()
         if l == "<h2>Failed tests</h2>":
-            inFailedSection = True
+            in_failed_section = True
         elif l.startswith("<h2>"):
-            inFailedSection = False
+            in_failed_section = False
         prefix = '<a href="classes/'
-        if inFailedSection and l.startswith(prefix):
+        if in_failed_section and l.startswith(prefix):
             href = l[len(prefix):l.index('">')]
             # Ignore enties ending with .html which are test classes, not test methods.
             if not href.endswith('.html'):
@@ -775,7 +765,7 @@ def compute_failed_tests(args):
 
 
 if __name__ == '__main__':
-    return_code = Main()
+    return_code = main()
     if return_code != 0:
         notify.notify("Tests failed.")
     else:

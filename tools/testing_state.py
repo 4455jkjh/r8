@@ -27,10 +27,10 @@ def set_up_test_state(gradle_args, testing_state_mode, testing_state_path):
 def fresh_testing_index(testing_state_dir):
     number = 0
     while True:
-        freshIndex = os.path.join(testing_state_dir, "index.%d.html" % number)
+        fresh_index = os.path.join(testing_state_dir, "index.%d.html" % number)
         number += 1
-        if not os.path.exists(freshIndex):
-            return freshIndex
+        if not os.path.exists(fresh_index):
+            return fresh_index
 
 
 def prepare_testing_index(testing_state_mode, testing_state_dir):
