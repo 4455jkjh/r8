@@ -126,14 +126,16 @@ public class TypeAnalysis {
   }
 
   private void removeRedundantAssumeInstructions(Consumer<Instruction> redundantAssumeConsumer) {
-    Set<Value> affectedValuesFromAssumeRemoval = Sets.newIdentityHashSet();
-    while (assumeRemover.removeRedundantAssumeInstructions(
-        affectedValuesFromAssumeRemoval, redundantAssumeConsumer)) {
-      widening(affectedValuesFromAssumeRemoval);
-      AffectedValues affectedValuesFromPhiRemoval = new AffectedValues();
-      code.removeAllDeadAndTrivialPhis(affectedValuesFromPhiRemoval);
-      narrowing(affectedValuesFromPhiRemoval);
-      affectedValuesFromAssumeRemoval.clear();
+    if (assumeRemover.hasAffectedAssumeInstructions()) {
+      Set<Value> affectedValuesFromAssumeRemoval = Sets.newIdentityHashSet();
+      while (assumeRemover.removeRedundantAssumeInstructions(
+          affectedValuesFromAssumeRemoval, redundantAssumeConsumer)) {
+        widening(affectedValuesFromAssumeRemoval);
+        AffectedValues affectedValuesFromPhiRemoval = new AffectedValues();
+        code.removeAllDeadAndTrivialPhis(affectedValuesFromPhiRemoval);
+        narrowing(affectedValuesFromPhiRemoval);
+        affectedValuesFromAssumeRemoval.clear();
+      }
     }
     if (!keepRedundantBlocksAfterAssumeRemoval) {
       code.removeRedundantBlocks();
