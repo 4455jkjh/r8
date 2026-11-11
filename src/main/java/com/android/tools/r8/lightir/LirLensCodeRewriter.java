@@ -109,6 +109,12 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     return -1;
   }
 
+  @Override
+  protected boolean needsValueOperandLists() {
+    // Lens rewriting only inspects constant operands.
+    return false;
+  }
+
   public void onTypeReference(DexType type) {
     addRewrittenMapping(type, graphLens.lookupType(type, codeLens));
   }

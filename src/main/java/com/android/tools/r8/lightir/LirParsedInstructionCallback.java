@@ -29,6 +29,7 @@ import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,6 +57,18 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
 
   /** Returns the index for the value associated with the current argument/instruction. */
   public abstract int getCurrentValueIndex();
+
+  /**
+   * Returns true if this callback inspects the SSA value operand lists passed to the list-based
+   * callbacks (invokes, phis, filled-new-array, etc.).
+   *
+   * <p>Callbacks that only inspect constant operands (e.g., the use-registry and lens rewriting)
+   * can return false to avoid decoding and allocating the operand lists. In that case the
+   * list-based callbacks receive an empty list. Remaining operands are skipped by the iterator.
+   */
+  protected boolean needsValueOperandLists() {
+    return true;
+  }
 
   public final int getCurrentInstructionIndex() {
     return getCurrentValueIndex() - code.getArgumentCount();
@@ -1277,6 +1290,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
         }
       case LirOpcodes.PHI:
         {
+          if (!needsValueOperandLists()) {
+            onPhi(Collections.emptyList());
+            return;
+          }
           List<EV> operands = new ArrayList<>();
           while (view.hasMoreOperands()) {
             operands.add(getNextValueOperand(view));
@@ -1431,7 +1448,11 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     return (DexMethod) getConstantItem(view.getNextConstantOperand());
   }
 
+  @SuppressWarnings("MixedMutabilityReturnType")
   private List<EV> getInvokeInstructionArguments(LirInstructionView view) {
+    if (!needsValueOperandLists()) {
+      return Collections.emptyList();
+    }
     List<EV> arguments = new ArrayList<>();
     while (view.hasMoreOperands()) {
       arguments.add(getNextValueOperand(view));
