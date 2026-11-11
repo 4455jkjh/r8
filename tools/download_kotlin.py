@@ -21,7 +21,7 @@ KOTLINC_LIB = os.path.join(utils.THIRD_PARTY, "kotlin", "kotlin-compiler-dev",
                            "kotlinc", "lib")
 
 
-def ParseOptions(args):
+def parse_options(args):
     parser = argparse.ArgumentParser(description='Update third_party Kotlin')
     parser.add_argument(
         '--version',
@@ -151,18 +151,19 @@ def check_pom(top_most_version_and_build):
     tree.parse(pom_file)
     #return tree.getroot().find("{%s}dependencies" % ns).text
     for dependency in tree.getroot().find("{%s}dependencies" % ns):
-        groupId = dependency.find("{%s}groupId" % ns).text
-        artifactId = dependency.find("{%s}artifactId" % ns).text
+        group_id = dependency.find("{%s}groupId" % ns).text
+        artifact_id = dependency.find("{%s}artifactId" % ns).text
         version = dependency.find("{%s}version" % ns).text
-        coordinates = ('{groupId}:{artifactId}:{version}'.format(
-            groupId=groupId, artifactId=artifactId, version=version))
+        coordinates = ('{group_id}:{artifact_id}:{version}'.format(
+            group_id=group_id, artifact_id=artifact_id, version=version))
         print('Dependecy: ' + coordinates)
         expected_dependencies = set()
-        for artifactId in ("kotlin-stdlib", "kotlin-stdlib-jdk8",
-                           "kotlin-script-runtime"):
+        for artifact_id in ("kotlin-stdlib", "kotlin-stdlib-jdk8",
+                            "kotlin-script-runtime"):
             expected_dependencies.add(
-                'org.jetbrains.kotlin:{artifactId}:{version}'.format(
-                    artifactId=artifactId, version=top_most_version_and_build))
+                'org.jetbrains.kotlin:{artifact_id}:{version}'.format(
+                    artifact_id=artifact_id,
+                    version=top_most_version_and_build))
         # Additional dependency from 2.4.0-dev-6891.
         semver = utils.check_basic_semver_version(top_most_version_and_build,
                                                   allowPrerelease=True)
@@ -188,7 +189,7 @@ def download_and_save(url, path, name=None):
 
 
 def main(args):
-    options = ParseOptions(args)
+    options = parse_options(args)
     print(options.version)
     if options.version == 'dev':
         download_newest()

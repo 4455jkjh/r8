@@ -7,11 +7,11 @@ import argparse
 import sys
 
 
-def ParseOptions():
+def parse_options():
     parser = argparse.ArgumentParser()
     parser.add_argument('--map',
                         help='Input mapping file to use for synthesizing new '
-                             'mapping file.',
+                        'mapping file.',
                         required=True)
     parser.add_argument('--output',
                         help='Path where to write output mapping file.',
@@ -28,24 +28,24 @@ def encode(s):
     return s.encode('utf-8')
 
 
-def IsSectionStart(line):
+def is_section_start(line):
     return ' -> ' in line and line.endswith(':\n')
 
 
-def ParseSectionStart(line):
+def parse_section_start(line):
     split = line.strip()[:-1].split(' -> ')
     assert len(split) == 2
     return (split[0], split[1])
 
 
-def EnsureUnique(name, indices):
+def ensure_unique(name, indices):
     index = indices.get(name, 0)
     indices[name] = index + 1
     return name if index == 0 else name + '$' + str(index)
 
 
 def main():
-    options = ParseOptions()
+    options = parse_options()
     header = []
     sections = []
     with open(options.map) as f:
@@ -62,10 +62,10 @@ def main():
                     past_header = True
             if len(line.strip()) == 0:
                 continue
-            if IsSectionStart(line):
+            if is_section_start(line):
                 if current_section is not None:
                     sections.append(current_section)
-                current_section = [ParseSectionStart(line)]
+                current_section = [parse_section_start(line)]
             else:
                 assert current_section is not None, lineno
                 current_section.append(encode(line))
@@ -84,7 +84,9 @@ def main():
         while size < target_size:
             for section in sections:
                 (left, right) = section[0]
-                section_header = encode(EnsureUnique(left, left_indices) + ' -> ' + EnsureUnique(right, right_indices) + ':\n')
+                section_header = encode(
+                    ensure_unique(left, left_indices) + ' -> ' +
+                    ensure_unique(right, right_indices) + ':\n')
                 f.write(section_header)
                 size = size + len(section_header)
                 for line in section[1:]:

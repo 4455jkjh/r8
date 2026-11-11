@@ -61,11 +61,11 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def Main():
+def main():
     args = parse_arguments()
     checkout_aosp(args.aosp_root, args.url, args.branch, args.manifest, args.j,
                   args.shallow)
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

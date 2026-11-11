@@ -111,7 +111,7 @@ def get_debugger_flags(version):
     return get_common_flags(version) + DEBUGGER_EXTRA_FLAGS
 
 
-def runDebuggee(version, args):
+def run_debuggee(version, args):
     art_dir = get_art_dir(version)
     lib_dir = get_lib_dir(version)
     fw_dir = get_fw_dir(version)
@@ -123,7 +123,7 @@ def runDebuggee(version, args):
     return subprocess.check_call(cmd)
 
 
-def runDebugger(version, classpath, args):
+def run_debugger(version, classpath, args):
     art_dir = get_art_dir(version)
     lib_dir = get_lib_dir(version)
     fw_dir = get_fw_dir(version)
@@ -171,13 +171,13 @@ def main():
     if not debuggee and len(args) == 0:
         args.append(DEFAULT_TEST)
     if debuggee:
-        return runDebuggee(version, args)
+        return run_debuggee(version, args)
     else:
         if len(args) == 0:
             args.append(DEFAULT_TEST)
         elif len(args) == 1:
             args = [TEST_RUNNER, args[0]]
-        return runDebugger(version, classpath, args)
+        return run_debugger(version, classpath, args)
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ SCRIPT = '/google/data/ro/teams/dart/golem/bin/golem4.dart'
 DART = os.path.join(utils.THIRD_PARTY, 'dart-sdk', 'bin', 'dart')
 
 
-def Main():
+def main():
     args = sys.argv[1:]
     if len(args) != 1 or '--help' in args:
         print(
@@ -23,4 +23,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())
