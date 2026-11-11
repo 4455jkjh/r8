@@ -304,6 +304,8 @@ public class PossibleResourcesMarker {
           case 'G':
             pattern = "-?[\\p{XDigit},.+eE]++";
             break;
+          default:
+            break;
         }
 
         // Allow space or 0 prefix

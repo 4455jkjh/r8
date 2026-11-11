@@ -19,6 +19,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
+import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.ClassInitializerDefaultsOptimization.ClassInitializerDefaultsResult;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
@@ -28,6 +29,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.DexClassAndFieldMap;
 import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -39,13 +41,86 @@ public abstract class FieldValueAnalysis {
 
   static class FieldInitializationInfo {
 
-    private final Instruction instruction;
+    private final AnalyzedCode analyzedCode;
+    final Instruction instruction;
     private final InstanceFieldInitializationInfo instanceFieldInitializationInfo;
 
     FieldInitializationInfo(
-        Instruction instruction, InstanceFieldInitializationInfo instanceFieldInitializationInfo) {
+        AnalyzedCode analyzedCode,
+        Instruction instruction,
+        InstanceFieldInitializationInfo instanceFieldInitializationInfo) {
+      this.analyzedCode = analyzedCode;
       this.instruction = instruction;
       this.instanceFieldInitializationInfo = instanceFieldInitializationInfo;
+    }
+
+    boolean dominatesNormalExits() {
+      return analyzedCode.dominatesNormalExits(instruction);
+    }
+
+    boolean isInInitializer() {
+      return analyzedCode.isInitializer();
+    }
+  }
+
+  /**
+   * The code of the initializer, or of a helper method that is only called from the initializer
+   * (directly or through other helpers). The code of a helper is analyzed as if it was inlined at
+   * its call site.
+   */
+  static class AnalyzedCode {
+
+    private final IRCode code;
+    private final AnalyzedCode parent;
+    private final InvokeMethod callSite;
+
+    private DominatorTree dominatorTree;
+    private Map<BasicBlock, AbstractFieldSet> fieldsMaybeReadBeforeBlockInclusiveCache;
+    private OptionalBool isStraightLineCode = OptionalBool.unknown();
+    private List<BasicBlock> normalExitBlocks;
+    private AbstractFieldSet readSet;
+
+    AnalyzedCode(IRCode code, AnalyzedCode parent, InvokeMethod callSite) {
+      this.code = code;
+      this.parent = parent;
+      this.callSite = callSite;
+    }
+
+    boolean isInitializer() {
+      return parent == null;
+    }
+
+    boolean isStraightLineCode() {
+      if (isStraightLineCode.isUnknown()) {
+        isStraightLineCode =
+            OptionalBool.of(
+                Iterables.all(code.getBlocks(), block -> block.getSuccessors().size() <= 1));
+      }
+      return isStraightLineCode.isTrue();
+    }
+
+    List<BasicBlock> getOrComputeNormalExitBlocks() {
+      if (normalExitBlocks == null) {
+        normalExitBlocks = code.computeNormalExitBlocks();
+      }
+      return normalExitBlocks;
+    }
+
+    DominatorTree getOrCreateDominatorTree() {
+      if (dominatorTree == null) {
+        dominatorTree = new DominatorTree(code, Assumption.NO_UNREACHABLE_BLOCKS);
+      }
+      return dominatorTree;
+    }
+
+    /** Returns true if the instruction is executed on all normal exits from the initializer. */
+    boolean dominatesNormalExits(Instruction instruction) {
+      if (!isStraightLineCode()
+          && !getOrCreateDominatorTree()
+              .dominatesAllOf(instruction.getBlock(), getOrComputeNormalExitBlocks())) {
+        return false;
+      }
+      return isInitializer() || parent.dominatesNormalExits(callSite);
     }
   }
 
@@ -54,8 +129,10 @@ public abstract class FieldValueAnalysis {
   final ProgramMethod context;
   final OptimizationFeedback feedback;
 
-  private DominatorTree dominatorTree;
-  private Map<BasicBlock, AbstractFieldSet> fieldsMaybeReadBeforeBlockInclusiveCache;
+  private final AnalyzedCode root;
+
+  // The analyzed helper methods, indexed by their call site.
+  private final Map<InvokeMethod, AnalyzedCode> helpers = new IdentityHashMap<>();
 
   final DexClassAndFieldMap<List<FieldInitializationInfo>> putsPerField =
       DexClassAndFieldMap.create();
@@ -66,20 +143,20 @@ public abstract class FieldValueAnalysis {
     this.code = code;
     this.feedback = feedback;
     this.context = code.context();
+    this.root = new AnalyzedCode(code, null, null);
   }
 
   DominatorTree getOrCreateDominatorTree() {
-    if (dominatorTree == null) {
-      dominatorTree = new DominatorTree(code, Assumption.NO_UNREACHABLE_BLOCKS);
-    }
-    return dominatorTree;
+    return root.getOrCreateDominatorTree();
   }
 
-  private Map<BasicBlock, AbstractFieldSet> getOrCreateFieldsMaybeReadBeforeBlockInclusive() {
-    if (fieldsMaybeReadBeforeBlockInclusiveCache == null) {
-      fieldsMaybeReadBeforeBlockInclusiveCache = createFieldsMaybeReadBeforeBlockInclusive();
+  private Map<BasicBlock, AbstractFieldSet> getOrCreateFieldsMaybeReadBeforeBlockInclusive(
+      AnalyzedCode analyzedCode) {
+    if (analyzedCode.fieldsMaybeReadBeforeBlockInclusiveCache == null) {
+      analyzedCode.fieldsMaybeReadBeforeBlockInclusiveCache =
+          createFieldsMaybeReadBeforeBlockInclusive(analyzedCode);
     }
-    return fieldsMaybeReadBeforeBlockInclusiveCache;
+    return analyzedCode.fieldsMaybeReadBeforeBlockInclusiveCache;
   }
 
   boolean isInstanceFieldValueAnalysis() {
@@ -100,51 +177,43 @@ public abstract class FieldValueAnalysis {
 
   abstract boolean isSubjectToOptimizationIgnoringPinning(DexClassAndField field);
 
-  abstract boolean isSubjectToOptimization(DexClassAndField field);
+  abstract boolean isSubjectToOptimization(DexClassAndField field, ProgramMethod context);
 
-  void recordFieldPut(ProgramField field, Instruction instruction) {
-    recordFieldPut(field, instruction, UnknownInstanceFieldInitializationInfo.getInstance());
+  /**
+   * Returns the code of the target of the given invoke if the target is a helper method that is
+   * only called from the given caller and should be analyzed as if it was inlined, or null.
+   */
+  IRCode getEffectivelyClinitOutline(InvokeMethod invoke, ProgramMethod caller) {
+    return null;
+  }
+
+  private void recordFieldPut(
+      ProgramField field, Instruction instruction, AnalyzedCode analyzedCode) {
+    recordFieldPut(
+        field, instruction, UnknownInstanceFieldInitializationInfo.getInstance(), analyzedCode);
   }
 
   void recordFieldPut(
       DexClassAndField field, Instruction instruction, InstanceFieldInitializationInfo info) {
+    recordFieldPut(field, instruction, info, root);
+  }
+
+  private void recordFieldPut(
+      DexClassAndField field,
+      Instruction instruction,
+      InstanceFieldInitializationInfo info,
+      AnalyzedCode analyzedCode) {
     putsPerField
         .computeIfAbsent(field, ignore -> new ArrayList<>())
-        .add(new FieldInitializationInfo(instruction, info));
+        .add(new FieldInitializationInfo(analyzedCode, instruction, info));
   }
 
   /** This method analyzes initializers with the purpose of computing field optimization info. */
   void computeFieldOptimizationInfo(ClassInitializerDefaultsResult classInitializerDefaultsResult) {
-    AppInfoWithLiveness appInfo = appView.appInfo();
-
     // Find all the static-put instructions that assign a field in the enclosing class which is
     // guaranteed to be assigned only in the current initializer.
-    for (BasicBlock block : code.getBlocks()) {
-      for (Instruction instruction : block.getInstructions()) {
-        if (instruction.isFieldPut()) {
-          FieldInstruction fieldPut = instruction.asFieldInstruction();
-          DexField fieldReference = fieldPut.getField();
-          ProgramField field = appInfo.resolveField(fieldReference).getProgramField();
-          if (field != null) {
-            if (isSubjectToOptimization(field)) {
-              recordFieldPut(field, fieldPut);
-            } else if (isStaticFieldValueAnalysis()
-                && field.getHolder().isEnum()
-                && isSubjectToOptimizationIgnoringPinning(field)) {
-              recordFieldPut(field, fieldPut);
-            }
-          }
-        } else if (isInstanceFieldValueAnalysis()
-            && instruction.isInvokeConstructor(appView.dexItemFactory())) {
-          InvokeDirect invoke = instruction.asInvokeDirect();
-          asInstanceFieldValueAnalysis().analyzeForwardingConstructorCall(invoke, code.getThis());
-        }
-      }
-    }
+    collectFieldPuts(root);
 
-    boolean isStraightLineCode =
-        Iterables.all(code.getBlocks(), block -> block.getSuccessors().size() <= 1);
-    List<BasicBlock> normalExitBlocks = code.computeNormalExitBlocks();
     putsPerField.forEach(
         (field, fieldPuts) -> {
           if (fieldPuts.size() > 1) {
@@ -159,14 +228,12 @@ public abstract class FieldValueAnalysis {
             return;
           }
           FieldInstruction fieldPut = instruction.asFieldInstruction();
-          if (!isStraightLineCode) {
-            if (!getOrCreateDominatorTree().dominatesAllOf(fieldPut.getBlock(), normalExitBlocks)) {
-              return;
-            }
+          if (!info.dominatesNormalExits()) {
+            return;
           }
           boolean priorReadsWillReadSameValue =
               !classInitializerDefaultsResult.hasStaticValue(field) && fieldPut.value().isZero();
-          if (!priorReadsWillReadSameValue && fieldMaybeReadBeforeInstruction(field, fieldPut)) {
+          if (!priorReadsWillReadSameValue && fieldMaybeReadBeforeInstruction(field, info)) {
             // TODO(b/172528424): Generalize to InstanceFieldValueAnalysis.
             if (isStaticFieldValueAnalysis()) {
               // At this point the value read in the field can be only the default static value, if
@@ -184,43 +251,97 @@ public abstract class FieldValueAnalysis {
         });
   }
 
+  private void collectFieldPuts(AnalyzedCode analyzedCode) {
+    AppInfoWithLiveness appInfo = appView.appInfo();
+    for (BasicBlock block : analyzedCode.code.getBlocks()) {
+      for (Instruction instruction : block.getInstructions()) {
+        if (instruction.isFieldPut()) {
+          FieldInstruction fieldPut = instruction.asFieldInstruction();
+          DexField fieldReference = fieldPut.getField();
+          ProgramField field = appInfo.resolveField(fieldReference).getProgramField();
+          if (field != null) {
+            if (isSubjectToOptimization(field, analyzedCode.code.context())) {
+              recordFieldPut(field, fieldPut, analyzedCode);
+            } else if (analyzedCode.isInitializer()
+                && isStaticFieldValueAnalysis()
+                && field.getHolder().isEnum()
+                && isSubjectToOptimizationIgnoringPinning(field)) {
+              recordFieldPut(field, fieldPut, analyzedCode);
+            }
+          }
+        } else if (isInstanceFieldValueAnalysis()
+            && instruction.isInvokeConstructor(appView.dexItemFactory())) {
+          InvokeDirect invoke = instruction.asInvokeDirect();
+          asInstanceFieldValueAnalysis().analyzeForwardingConstructorCall(invoke, code.getThis());
+        } else if (instruction.isInvokeMethod()) {
+          InvokeMethod invoke = instruction.asInvokeMethod();
+          IRCode helperCode = getEffectivelyClinitOutline(invoke, analyzedCode.code.context());
+          if (helperCode != null) {
+            AnalyzedCode helper = new AnalyzedCode(helperCode, analyzedCode, invoke);
+            helpers.put(invoke, helper);
+            collectFieldPuts(helper);
+          }
+        }
+      }
+    }
+  }
+
+  boolean fieldMaybeReadBeforeInstruction(DexClassAndField field, FieldInitializationInfo info) {
+    return fieldMaybeReadBeforeInstruction(field, info.analyzedCode, info.instruction);
+  }
+
+  /**
+   * Returns true if the field may be read before the given instruction in the given code, or before
+   * the call to the given code if it is the code of a helper method.
+   */
   @SuppressWarnings("ReferenceEquality")
-  private boolean fieldMaybeReadBeforeInstruction(DexClassAndField field, Instruction instruction) {
-    BasicBlock block = instruction.getBlock();
-
-    // First check if the field may be read in any of the (transitive) predecessor blocks.
-    if (fieldMaybeReadBeforeBlock(field, block)) {
-      return true;
+  private boolean fieldMaybeReadBeforeInstruction(
+      DexClassAndField field, AnalyzedCode analyzedCode, Instruction instruction) {
+    if (!getOrComputeReadSet(root).contains(field)) {
+      return false;
     }
 
-    // Then check if any of the instructions that precede the given instruction in the current block
-    // may read the field.
-    InstructionIterator instructionIterator = block.iterator();
-    while (instructionIterator.hasNext()) {
-      Instruction current = instructionIterator.next();
-      if (current == instruction) {
-        break;
-      }
-      if (current.readSet(appView, context).contains(field)) {
+    if (getOrComputeReadSet(analyzedCode).contains(field)) {
+      BasicBlock block = instruction.getBlock();
+
+      // First check if the field may be read in any of the (transitive) predecessor blocks.
+      if (fieldMaybeReadBeforeBlock(field, analyzedCode, block)) {
         return true;
       }
+
+      // Then check if any of the instructions that precede the given instruction in the current
+      // block may read the field.
+      InstructionIterator instructionIterator = block.iterator();
+      while (instructionIterator.hasNext()) {
+        Instruction current = instructionIterator.next();
+        if (current == instruction) {
+          break;
+        }
+        if (readSet(current).contains(field)) {
+          return true;
+        }
+      }
     }
 
-    // Otherwise, the field is not read prior to the given instruction.
-    return false;
+    // Otherwise, the field is not read prior to the given instruction, unless it is read prior to
+    // the call to this helper method.
+    return !analyzedCode.isInitializer()
+        && fieldMaybeReadBeforeInstruction(field, analyzedCode.parent, analyzedCode.callSite);
   }
 
-  private boolean fieldMaybeReadBeforeBlock(DexClassAndField field, BasicBlock block) {
+  private boolean fieldMaybeReadBeforeBlock(
+      DexClassAndField field, AnalyzedCode analyzedCode, BasicBlock block) {
     for (BasicBlock predecessor : block.getPredecessors()) {
-      if (fieldMaybeReadBeforeBlockInclusive(field, predecessor)) {
+      if (fieldMaybeReadBeforeBlockInclusive(field, analyzedCode, predecessor)) {
         return true;
       }
     }
     return false;
   }
 
-  private boolean fieldMaybeReadBeforeBlockInclusive(DexClassAndField field, BasicBlock block) {
-    return getOrCreateFieldsMaybeReadBeforeBlockInclusive().get(block).contains(field);
+  private boolean fieldMaybeReadBeforeBlockInclusive(
+      DexClassAndField field, AnalyzedCode analyzedCode, BasicBlock block) {
+    return getOrCreateFieldsMaybeReadBeforeBlockInclusive(analyzedCode).get(block).contains(field);
   }
 
   /**
@@ -228,9 +349,10 @@ public abstract class FieldValueAnalysis {
    * and its transitive predecessors.
    */
   @SuppressWarnings("ReferenceEquality")
-  private Map<BasicBlock, AbstractFieldSet> createFieldsMaybeReadBeforeBlockInclusive() {
+  private Map<BasicBlock, AbstractFieldSet> createFieldsMaybeReadBeforeBlockInclusive(
+      AnalyzedCode analyzedCode) {
     Map<BasicBlock, AbstractFieldSet> result = new IdentityHashMap<>();
-    Deque<BasicBlock> worklist = DequeUtils.newArrayDeque(code.entryBlock());
+    Deque<BasicBlock> worklist = DequeUtils.newArrayDeque(analyzedCode.code.entryBlock());
     while (!worklist.isEmpty()) {
       BasicBlock block = worklist.removeFirst();
       boolean seenBefore = result.containsKey(block);
@@ -270,10 +392,10 @@ public abstract class FieldValueAnalysis {
         // Finally, we update the read set with the fields that are read by the instructions in the
         // current block. This can be skipped if the block has already been processed.
         if (seenBefore) {
-          assert verifyFieldSetContainsAllFieldReadsInBlock(knownReadSet, block, context);
+          assert verifyFieldSetContainsAllFieldReadsInBlock(knownReadSet, block);
         } else {
           for (Instruction instruction : block.getInstructions()) {
-            AbstractFieldSet instructionReadSet = instruction.readSet(appView, context);
+            AbstractFieldSet instructionReadSet = readSet(instruction);
             if (instructionReadSet.isBottom()) {
               continue;
             }
@@ -313,9 +435,9 @@ public abstract class FieldValueAnalysis {
   }
 
   private boolean verifyFieldSetContainsAllFieldReadsInBlock(
-      KnownFieldSet readSet, BasicBlock block, ProgramMethod context) {
+      KnownFieldSet readSet, BasicBlock block) {
     for (Instruction instruction : block.getInstructions()) {
-      AbstractFieldSet instructionReadSet = instruction.readSet(appView, context);
+      AbstractFieldSet instructionReadSet = readSet(instruction);
       assert !instructionReadSet.isTop();
       if (instructionReadSet.isBottom()) {
         continue;
@@ -325,6 +447,50 @@ public abstract class FieldValueAnalysis {
       }
     }
     return true;
+  }
+
+  /**
+   * Returns the code of the helper called directly from the initializer by the given invoke, if it
+   * has been analyzed.
+   */
+  IRCode getAnalyzedHelperCode(InvokeMethod invoke) {
+    AnalyzedCode helper = helpers.get(invoke);
+    if (helper == null || !helper.parent.isInitializer()) {
+      return null;
+    }
+    return helper.code;
+  }
+
+  /**
+   * Returns the fields that may be read by the given instruction. For calls to analyzed helpers
+   * this is the set of fields read by the helper, instead of the unknown read set of the invoke.
+   */
+  private AbstractFieldSet readSet(Instruction instruction) {
+    if (instruction.isInvokeMethod()) {
+      AnalyzedCode helper = helpers.get(instruction.asInvokeMethod());
+      if (helper != null) {
+        return getOrComputeReadSet(helper);
+      }
+    }
+    return instruction.readSet(appView, context);
+  }
+
+  private AbstractFieldSet getOrComputeReadSet(AnalyzedCode analyzedCode) {
+    if (analyzedCode.readSet == null) {
+      ConcreteMutableFieldSet result = new ConcreteMutableFieldSet();
+      for (Instruction instruction : analyzedCode.code.instructions()) {
+        AbstractFieldSet instructionReadSet = readSet(instruction);
+        if (instructionReadSet.isTop()) {
+          analyzedCode.readSet = UnknownFieldSet.getInstance();
+          return analyzedCode.readSet;
+        }
+        if (!instructionReadSet.isBottom()) {
+          result.addAll(instructionReadSet.asConcreteFieldSet());
+        }
+      }
+      analyzedCode.readSet = result.isEmpty() ? EmptyFieldSet.getInstance() : result;
+    }
+    return analyzedCode.readSet;
   }
 
   abstract void updateFieldOptimizationInfo(

@@ -26,8 +26,8 @@ import com.android.tools.r8.utils.DumpInputFlags;
 import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.ImmutableList;
+import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -154,7 +154,7 @@ public class CompileDumpTest extends TestBase {
             compileDumpTemp.toString(),
             "--no-build",
             "-D" + InternalOptions.ALLOW_MIN_API_MINOR_LEVELS_PROPERTY_KEY + "=true");
-    builder.directory(Paths.get(ToolHelper.THIRD_PARTY_DIR).toAbsolutePath().getParent().toFile());
+    builder.directory(new File(ToolHelper.getProjectRoot()));
     ProcessResult result = ToolHelper.runProcess(builder);
     assertEquals(result.toString(), 0, result.exitCode);
     if (!supportsMinorApiLevel && apiLevel.getMinor() != 0) {

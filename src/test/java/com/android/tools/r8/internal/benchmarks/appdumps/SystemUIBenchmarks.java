@@ -63,12 +63,8 @@ public abstract class SystemUIBenchmarks extends BenchmarkBase {
         options ->
             options.getTestingOptions().enqueuerInspector =
                 (appInfo, enqueuerMode, timing) -> {
-                  if (appInfo.options().printTimes) {
-                    timing.end(); // End "Create result"
-                    timing.end(); // End "Trace application"
-                    timing.end(); // End "Enqueuer"
-                    timing.end(); // End "Strip unused code"
-                    timing.report(); // Report "R8 main"
+                  if (appInfo.options().isPerfettoTracingEnabled()) {
+                    timing.endAll().report();
                   }
                   throw new AbortBenchmarkException();
                 });

@@ -32,7 +32,6 @@ import com.android.tools.r8.ir.desugar.itf.L8InnerOuterAttributeEraser;
 import com.android.tools.r8.ir.desugar.lambda.LambdaDeserializationMethodRemover;
 import com.android.tools.r8.ir.optimize.ListIterationRewriter;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
-import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -399,8 +398,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
       MethodProcessingContext methodProcessingContext,
       Timing timing) {
     return ExceptionUtils.withOriginAndPositionAttachmentHandler(
-        method.getOrigin(),
-        new MethodPosition(method.getReference().asMethodReference()),
+        method,
         () ->
             rewriteNonDesugaredCodeInternal(
                 method,

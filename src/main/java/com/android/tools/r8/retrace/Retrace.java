@@ -280,7 +280,6 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
   public static void run(RetraceCommand command) {
     try {
       InternalOptions internalOptions = new InternalOptions();
-      internalOptions.printMemory = command.printMemory();
       Timing timing = Timing.createRoot("R8 retrace", internalOptions, null);
       RetraceOptions options = command.getOptions();
       MappingSupplier<?> mappingSupplier = options.getMappingSupplier();
@@ -324,7 +323,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
         }
         timing.end();
       }
-      if (command.printTimes()) {
+      if (internalOptions.isPerfettoTracingEnabled()) {
         timing.report();
       }
       mappingSupplier

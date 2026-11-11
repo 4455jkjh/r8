@@ -7,15 +7,18 @@ package com.android.tools.r8.ir.analysis.fieldvalueanalysis;
 import static com.android.tools.r8.ir.code.Opcodes.ARRAY_PUT;
 import static com.android.tools.r8.ir.code.Opcodes.ASSUME;
 import static com.android.tools.r8.ir.code.Opcodes.INVOKE_DIRECT;
+import static com.android.tools.r8.ir.code.Opcodes.RETURN;
 import static com.android.tools.r8.ir.code.Opcodes.STATIC_PUT;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexEncodedField;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.ProgramField;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.StaticFieldValues.EmptyStaticValues;
 import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
 import com.android.tools.r8.ir.analysis.type.Nullability;
@@ -30,15 +33,22 @@ import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.FieldInstruction;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
+import com.android.tools.r8.ir.code.InvokeMethod;
+import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.NewInstance;
+import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.optimize.ClassInitializerDefaultsOptimization.ClassInitializerDefaultsResult;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.ArrayUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -46,12 +56,17 @@ import java.util.Map;
 
 public class StaticFieldValueAnalysis extends FieldValueAnalysis {
 
+  private final MethodProcessor methodProcessor;
   private final StaticFieldValues.Builder builder;
   private final Map<Value, AbstractValue> computedValues = new IdentityHashMap<>();
 
   private StaticFieldValueAnalysis(
-      AppView<AppInfoWithLiveness> appView, IRCode code, OptimizationFeedback feedback) {
+      AppView<AppInfoWithLiveness> appView,
+      IRCode code,
+      OptimizationFeedback feedback,
+      MethodProcessor methodProcessor) {
     super(appView, code, feedback);
+    this.methodProcessor = methodProcessor;
     builder = StaticFieldValues.builder(code.context().getHolder());
   }
 
@@ -60,6 +75,7 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
       IRCode code,
       ClassInitializerDefaultsResult classInitializerDefaultsResult,
       OptimizationFeedback feedback,
+      MethodProcessor methodProcessor,
       Timing timing) {
     assert appView.appInfo().hasLiveness();
     assert appView.enableWholeProgramOptimizations();
@@ -69,7 +85,7 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
     }
     timing.begin("Analyze class initializer");
     StaticFieldValues result =
-        new StaticFieldValueAnalysis(appView.withLiveness(), code, feedback)
+        new StaticFieldValueAnalysis(appView.withLiveness(), code, feedback, methodProcessor)
             .analyze(classInitializerDefaultsResult);
     timing.end();
     return result;
@@ -115,11 +131,45 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
   }
 
   @Override
-  @SuppressWarnings("ReferenceEquality")
-  boolean isSubjectToOptimization(DexClassAndField field) {
+  boolean isSubjectToOptimization(DexClassAndField field, ProgramMethod context) {
     return field.getAccessFlags().isStatic()
-        && field.getHolderType() == context.getHolderType()
+        && field.getHolderType().isIdenticalTo(context.getHolderType())
         && appView.appInfo().isFieldOnlyWrittenInMethod(field, context);
+  }
+
+  /**
+   * Static methods on the enclosing class that are only called from the class initializer (directly
+   * or through other such methods) are analyzed as if they were inlined. This for example handles R
+   * classes where the class initializer exceeds the method size limit and is split into a chain of
+   * staticInit0(), staticInit1(), ... methods.
+   */
+  @Override
+  IRCode getEffectivelyClinitOutline(InvokeMethod invoke, ProgramMethod caller) {
+    // Only analyze helpers in the primary pass, where unique write contexts are available and
+    // non-converting IR building does not require post-pass code lens rewritings.
+    // If the call is covered by a catch handler, the helper may throw before its field puts and
+    // the caller may still exit normally.
+    if (!methodProcessor.isPrimaryMethodProcessor()
+        || !invoke.isInvokeStatic()
+        || invoke.getBlock().hasCatchHandlers()) {
+      return null;
+    }
+    ProgramMethod target = invoke.lookupSingleProgramTarget(appView, caller);
+    if (target == null
+        || target.getHolderType().isNotIdenticalTo(context.getHolderType())
+        || !target.getDefinition().hasCode()
+        || methodProcessor.isProcessedConcurrently(target)
+        || appView.isCfByteCodePassThrough(target)
+        || !methodProcessor.getCallSiteInformation().hasSingleCallSite(target, caller)) {
+      return null;
+    }
+    // When the callee is not processed, it may require lens code rewriting.
+    if (!target.getDefinition().isProcessed()) {
+      return null;
+    }
+    // A method reached from the class initializer that also calls itself has multiple call sites.
+    assert !target.isStructurallyEqualTo(caller);
+    return target.buildIR(appView, MethodConversionOptions.nonConverting());
   }
 
   @Override
@@ -187,7 +237,7 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
 
   private SingleFieldValue computeSingleFieldValue(DexClassAndField field, Value value) {
     assert !value.hasAliasedValue();
-    SingleFieldValue result = computeSingleEnumFieldValue(value);
+    SingleFieldValue result = computeSingleEnumFieldValue(field, value);
     if (result != null) {
       return result;
     }
@@ -205,15 +255,20 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
    * array field on the enum. Therefore, this code also allows {@param value} to be stored into an
    * array as long as the array is identified as being the {@code $VALUES} array.
    */
-  private SingleFieldValue computeSingleEnumFieldValue(Value value) {
+  private SingleFieldValue computeSingleEnumFieldValue(DexClassAndField field, Value value) {
     if (!context.getHolder().isEnum()) {
+      return null;
+    }
+    List<FieldInitializationInfo> puts = putsPerField.get(field);
+    assert puts.size() == 1;
+    if (!ListUtils.first(puts).isInInitializer()) {
       return null;
     }
     assert !value.hasAliasedValue();
     if (value.isPhi()) {
       return null;
     }
-    if (value.definition.isNewArrayEmptyOrNewArrayFilled()) {
+    if (value.definition.isNewArrayEmptyOrNewArrayFilled() || value.definition.isInvokeStatic()) {
       return computeSingleEnumFieldValueForValuesArray(value);
     }
     if (value.definition.isNewInstance()) {
@@ -223,7 +278,7 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
   }
 
   private SingleFieldValue computeSingleEnumFieldValueForValuesArray(Value value) {
-    if (!value.definition.isNewArrayEmptyOrNewArrayFilled()) {
+    if (!value.definition.isNewArrayEmptyOrNewArrayFilled() && !value.definition.isInvokeStatic()) {
       return null;
     }
     AbstractValue valuesValue = computedValues.get(value);
@@ -245,15 +300,93 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
 
   @SuppressWarnings("ReferenceEquality")
   private SingleFieldValue internalComputeSingleEnumFieldValueForValuesArray(Value value) {
-    NewArrayEmpty newArrayEmpty = value.definition.asNewArrayEmpty();
-    NewArrayFilled newArrayFilled = value.definition.asNewArrayFilled();
+    if (value.hasDebugUsers() || value.hasPhiUsers()) {
+      return null;
+    }
+
+    Value arrayValue;
+    boolean isHelperValuesArray = value.definition.isInvokeStatic();
+    DexEncodedField valuesField = null;
+    if (isHelperValuesArray) {
+      // The array is created in a helper such as javac's $values(), which is called from the class
+      // initializer as `$VALUES = $values()`. The result of the call must only be stored into a
+      // single static field (possibly through Assume instructions inserted for the non-null
+      // return value), so that the array does not escape from the class initializer.
+      InvokeStatic invoke = value.definition.asInvokeStatic();
+      for (Instruction user : value.aliasedUsers()) {
+        if (user.isAssume()) {
+          if (user.outValue().hasDebugUsers() || user.outValue().hasPhiUsers()) {
+            return null;
+          }
+        } else if (user.isStaticPut() && valuesField == null) {
+          DexField field = user.asStaticPut().getField();
+          if (field.getHolderType().isNotIdenticalTo(context.getHolderType())) {
+            return null;
+          }
+          valuesField = context.getHolder().lookupStaticField(field);
+          if (valuesField == null) {
+            return null;
+          }
+        } else {
+          return null;
+        }
+      }
+      assert valuesField != null;
+      // The helper code is only available if the helper is called directly from the class
+      // initializer, has no other call sites, and the call is not covered by a catch handler. The
+      // helper is therefore executed exactly once, when the class initializer reaches the invoke.
+      // Requiring a single block that ends in a return guarantees that all array-puts in the
+      // helper are executed before the array is returned.
+      IRCode helperCode = getAnalyzedHelperCode(invoke);
+      if (helperCode == null
+          || helperCode.getBlocks().size() != 1
+          || !helperCode.entryBlock().exit().isReturn()) {
+        return null;
+      }
+      Return returnInstruction = helperCode.entryBlock().exit().asReturn();
+      assert !returnInstruction.isReturnVoid();
+      arrayValue = returnInstruction.returnValue();
+      assert !arrayValue.hasAliasedValue();
+      if (arrayValue.isPhi()
+          || !arrayValue.definition.isNewArrayEmptyOrNewArrayFilled()
+          || arrayValue.hasDebugUsers()
+          || arrayValue.hasPhiUsers()) {
+        return null;
+      }
+      // The only side effects of the helper may be the array-puts into the returned array. These
+      // are checked separately, since ArrayPut.instructionMayHaveSideEffects() always returns
+      // true. The reads of the enum instances (static-gets on the enum class) do not have side
+      // effects, since the helper is on the enum class itself, which is already being initialized.
+      InstructionIterator iterator = helperCode.entryBlock().iterator();
+      while (iterator.hasNext()) {
+        Instruction instruction = iterator.next();
+        if (instruction == arrayValue.definition) {
+          break;
+        }
+        if (instruction.instructionMayHaveSideEffects(appView, helperCode.context())) {
+          return null;
+        }
+      }
+      while (iterator.hasNext()) {
+        Instruction instruction = iterator.next();
+        if (instruction.isArrayPut()) {
+          if (instruction.asArrayPut().array() != arrayValue) {
+            return null;
+          }
+        } else if (instruction.instructionMayHaveSideEffects(appView, helperCode.context())) {
+          return null;
+        }
+      }
+    } else {
+      arrayValue = value;
+    }
+
+    NewArrayEmpty newArrayEmpty = arrayValue.definition.asNewArrayEmpty();
+    NewArrayFilled newArrayFilled = arrayValue.definition.asNewArrayFilled();
     assert newArrayEmpty != null || newArrayFilled != null;
 
     DexType arrayType = newArrayEmpty != null ? newArrayEmpty.type : newArrayFilled.getArrayType();
     if (arrayType.getBaseType() != context.getHolder().type) {
-      return null;
-    }
-    if (value.hasDebugUsers() || value.hasPhiUsers()) {
       return null;
     }
 
@@ -278,12 +411,11 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
 
     // Populate / update array values from aput-object instructions, and find the static-put
     // instruction.
-    DexEncodedField valuesField = null;
-    for (Instruction user : value.aliasedUsers()) {
+    for (Instruction user : arrayValue.aliasedUsers()) {
       switch (user.opcode()) {
         case ARRAY_PUT:
           ArrayPut arrayPut = user.asArrayPut();
-          if (arrayPut.array() != value) {
+          if (arrayPut.array() != arrayValue) {
             return null;
           }
           int index = arrayPut.indexIfConstAndInBounds(valuesSize);
@@ -296,21 +428,33 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
           break;
 
         case ASSUME:
-          if (user.outValue().hasPhiUsers()) {
+          if (user.outValue().hasDebugUsers() || user.outValue().hasPhiUsers()) {
+            return null;
+          }
+          break;
+
+        case RETURN:
+          // Only the helper may return the array to the class initializer, where it is stored into
+          // the values field found above.
+          if (!isHelperValuesArray) {
             return null;
           }
           break;
 
         case STATIC_PUT:
-          DexEncodedField field =
-              context.getHolder().lookupStaticField(user.asStaticPut().getField());
-          if (field == null) {
+          // When the array is created in a helper, the values field is assigned in the class
+          // initializer. A static-put inside the helper would be a second assignment of the array.
+          if (isHelperValuesArray || valuesField != null) {
             return null;
           }
-          if (valuesField != null) {
+          DexField field = user.asStaticPut().getField();
+          if (field.getHolderType().isNotIdenticalTo(context.getHolderType())) {
             return null;
           }
-          valuesField = field;
+          valuesField = context.getHolder().lookupStaticField(field);
+          if (valuesField == null) {
+            return null;
+          }
           break;
 
         default:
@@ -341,15 +485,41 @@ public class StaticFieldValueAnalysis extends FieldValueAnalysis {
       return false;
     }
     Instruction definition = root.getDefinition();
+    ObjectState objectState;
     if (definition.isStaticGet()) {
-      // Enums with many instance rely on staticGets to set the $VALUES data instead of directly
-      // keeping the values in registers, due to the max capacity of the redundant field load
-      // elimination. The capacity has already been increased, so that this case is extremely
-      // uncommon (very large enums).
-      // TODO(b/169050248): We could consider analysing these to answer the object state here.
-      return false;
+      DexField fieldReference = definition.asStaticGet().getField();
+      if (fieldReference.getHolderType().isNotIdenticalTo(context.getHolderType())) {
+        return false;
+      }
+      ProgramField enumField = context.getHolder().lookupProgramField(fieldReference);
+      if (enumField == null || !enumField.getAccessFlags().isEnum()) {
+        return false;
+      }
+      List<FieldInitializationInfo> fieldPuts = putsPerField.get(enumField);
+      if (fieldPuts == null || fieldPuts.size() != 1) {
+        return false;
+      }
+      FieldInitializationInfo fieldInitializationInfo = ListUtils.first(fieldPuts);
+      Instruction fieldPut = fieldInitializationInfo.instruction;
+      if (!fieldInitializationInfo.isInInitializer()
+          || !fieldPut.isStaticPut()
+          || !fieldInitializationInfo.dominatesNormalExits()
+          || fieldMaybeReadBeforeInstruction(enumField, fieldInitializationInfo)) {
+        return false;
+      }
+      root = fieldPut.asStaticPut().value().getAliasedValue();
+      if (!root.isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
+        return false;
+      }
+      SingleFieldValue enumValue = computeSingleEnumFieldValueForInstance(root);
+      if (enumValue == null || enumValue.getField().isNotIdenticalTo(enumField.getReference())) {
+        return false;
+      }
+      definition = root.getDefinition();
+      objectState = enumValue.getObjectState();
+    } else {
+      objectState = root.computeObjectState(appView, context);
     }
-    ObjectState objectState = root.computeObjectState(appView, context);
     if (objectState.isEmpty()) {
       // We need the state of all fields for the analysis to be valuable.
       return false;

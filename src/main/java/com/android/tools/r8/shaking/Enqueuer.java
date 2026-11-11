@@ -4929,7 +4929,7 @@ public class Enqueuer {
     try {
       int round = 1;
       while (true) {
-        timing.begin("Compute fixpoint #" + round++);
+        timing.begin(round++, r -> "Compute fixpoint #" + r);
         long numberOfLiveItems = getNumberOfLiveItems();
 
         timing.begin("Process worklist");

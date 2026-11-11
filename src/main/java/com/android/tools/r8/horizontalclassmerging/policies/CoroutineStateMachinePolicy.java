@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.horizontalclassmerging.CoroutineStateMachineMergeCandidates;
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicyWithPreprocessing;
-import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
+import com.android.tools.r8.horizontalclassmerging.policies.CompatibleInstanceFields.InstanceFieldInfo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multiset;
 import java.util.Collection;
@@ -22,8 +22,8 @@ import java.util.concurrent.ExecutorService;
  * Separates Kotlin coroutine state machine merge candidates from all other classes, and groups the
  * candidates by their final fields.
  *
- * <p>Candidates are exempt from {@link SameInstanceFields} and {@link MinimizeInstanceFieldCasts}
- * (see {@link CoroutineStateMachineMergeCandidates}).
+ * <p>Candidates are exempt from {@link CompatibleInstanceFields} and {@link
+ * MinimizeInstanceFieldCasts} (see {@link CoroutineStateMachineMergeCandidates}).
  */
 public class CoroutineStateMachinePolicy extends MultiClassPolicyWithPreprocessing<Void> {
 

@@ -136,6 +136,29 @@ public class OptimizedRClassStaticInitOverflowTest extends TestBase {
   }
 
   @Test
+  public void testR8WithoutInliningOfStaticInitMethods() throws Exception {
+    testForR8(parameters)
+        .addProgramClasses(TestClass.class)
+        .addAndroidResources(splitResources)
+        .enableOptimizedShrinking()
+        .addKeepMainRule(TestClass.class)
+        .addKeepRules("-neverinline class " + R.class.getTypeName() + "$* { void staticInit*(); }")
+        .enableProguardTestOptions()
+        .compile()
+        .inspectShrunkenResources(this::assertShrunkenResources)
+        .inspect(
+            inspector -> {
+              // The staticInit<N>() methods are not inlined into <clinit>(), but the static field
+              // value analysis of <clinit>() still analyzes the fields they initialize, so all
+              // reads are folded into constants and the classes are removed.
+              assertThat(inspector.clazz(R.string.class), isAbsent());
+              assertThat(inspector.clazz(R.drawable.class), isAbsent());
+            })
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutput(expectedOutput(splitResources));
+  }
+
+  @Test
   public void testR8Debug() throws Exception {
     AndroidTestResource testResources = splitResources;
     testForR8(parameters)

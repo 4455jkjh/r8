@@ -7,7 +7,6 @@ import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,12 +40,7 @@ public class EnvironmentDependentClassInitializerInArrayTest extends TestBase {
         .addKeepMainRule(App.class)
         .enableNeverClassInliningAnnotations()
         .run(parameters.getRuntime(), App.class)
-        // TODO(b/557274033): C.<clinit> should not be postponed.
-        .assertSuccessWithOutputLines(
-            parameters.isDexRuntime()
-                    && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.T)
-                ? "0"
-                : "9");
+        .assertSuccessWithOutputLines("0");
   }
 
   public static class D {

@@ -10,8 +10,8 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
+import com.android.tools.r8.horizontalclassmerging.policies.CompatibleInstanceFields.InstanceFieldInfo;
 import com.android.tools.r8.horizontalclassmerging.policies.CoroutineStateMachinePolicy;
-import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
@@ -82,7 +82,7 @@ public class CoroutineStateMachineMergeCandidates {
       // field.
       // TODO(b/579251034): Consider allowing final fields to be merged with non-final and missing
       // fields when a store-store fence can be inserted in the instance initializers that assign
-      // them, and whether that allows avoiding the SameInstanceFields exemption.
+      // them, and whether that allows avoiding the CompatibleInstanceFields exemption.
       if (flags.isFinal()) {
         if (finalFields == null) {
           finalFields = HashMultiset.create();

@@ -33,11 +33,11 @@ The build setup follows these core principles:
 
   [main] ───────────────────────────> threading-module-blocking.jar ───────┐
   [main] ───────────────────────────> threading-module-single-threaded.jar ┼──> deps.jar
-  [third_party], [resourceshrinker] ───────────────────────────────────────┘       │
+  [third_party] ───────────────────────────────────────────────────────────┘       │
                                                                                    │
   [keepradius], [libanalyzer] ────────────────────────────────────────> proto.jar  │
                                                                            │       │
-  [main], [keepanno], [resourceshrinker],                                  │       │
+  [main], [keepanno],                                                      │       │
   [keepradius], [libanalyzer], [assistant] ──┬──> r8-src.jar               │       │
                                              │                             │       │
                                              └──> r8-full-exclude-deps.jar │       │
@@ -108,7 +108,6 @@ The build setup follows these core principles:
   - How: Compile classes from
     [`main`](./d8_r8/main),
     [`keepanno`](./d8_r8/keepanno),
-    [`resourceshrinker`](./d8_r8/resourceshrinker),
     [`keepradius`](./d8_r8/keepradius),
     [`libanalyzer`](./d8_r8/libanalyzer),
     and [`assistant`](./d8_r8/assistant).
@@ -119,16 +118,13 @@ The build setup follows these core principles:
   - How: Package sources from
     [`main`](./d8_r8/main),
     [`keepanno`](./d8_r8/keepanno),
-    [`resourceshrinker`](./d8_r8/resourceshrinker),
     [`keepradius`](./d8_r8/keepradius),
     [`libanalyzer`](./d8_r8/libanalyzer),
     and [`assistant`](./d8_r8/assistant).
 - [`deps.jar`](./build/libs/deps.jar):
-  - What: The JAR containing third-party dependencies, resource shrinker
-    dependencies, threading modules, and consolidated licensing.
+  - What: The JAR containing third-party dependencies, threading modules, and
+    consolidated licensing.
   - How: Runtime dependencies from [`third_party/`](./third_party),
-    resource shrinker dependencies from
-    [`resourceshrinker`](./d8_r8/resourceshrinker),
     [`threading-module-blocking.jar`](./build/libs/threading-module-blocking.jar),
     [`threading-module-single-threaded.jar`](./build/libs/threading-module-single-threaded.jar),
     and the consolidated `LICENSE` file are merged together.

@@ -358,9 +358,6 @@ public abstract class TestCompilerBuilder<
   }
 
   public CR benchmarkCompile(BenchmarkResults results) throws CompilationFailedException {
-    if (System.getProperty("com.android.tools.r8.printtimes") != null) {
-      allowStdoutMessages();
-    }
     isBenchmarkRunner = true;
     return internalCompileAndBenchmark(results);
   }

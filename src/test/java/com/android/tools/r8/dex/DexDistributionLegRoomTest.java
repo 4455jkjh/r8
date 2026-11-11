@@ -4,7 +4,6 @@
 package com.android.tools.r8.dex;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
@@ -12,6 +11,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.List;
@@ -30,7 +30,8 @@ public class DexDistributionLegRoomTest extends TestBase {
 
   private static final int CLASS_COUNT = 64;
   private static final int FIELDS_PER_CLASS = 1024;
-  private static Path inputApp;
+  private static Path packagedApp;
+  private static Path unpackagedApp;
 
   @Parameter(0)
   public TestParameters parameters;
@@ -38,18 +39,34 @@ public class DexDistributionLegRoomTest extends TestBase {
   @Parameter(1)
   public int legRoomPercentage;
 
-  @Parameters(name = "{0}, leg room: {1}%")
+  @Parameter(2)
+  public boolean usePackage;
+
+  @Parameters(name = "{0}, leg room: {1}%, package: {2}")
   public static List<Object[]> data() {
-    return buildParameters(getTestParameters().withNoneRuntime().build(), ImmutableList.of(0, 50));
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        ImmutableList.of(0, 50),
+        BooleanUtils.values());
   }
 
   @BeforeClass
-  public static void generateTestApplication() {
+  public static void generateTestApplications() {
     // 64 classes with 1024 fields each, exactly the 65536 field-ids allowed in one DEX file.
-    inputApp = getStaticTemp().getRoot().toPath().resolve("input_app.jar");
-    ArchiveConsumer consumer = new ArchiveConsumer(inputApp);
+    packagedApp = generateTestApplication(true);
+    unpackagedApp = generateTestApplication(false);
+  }
+
+  private static Path generateTestApplication(boolean usePackage) {
+    Path app =
+        getStaticTemp()
+            .getRoot()
+            .toPath()
+            .resolve(usePackage ? "packaged_app.jar" : "unpackaged_app.jar");
+    ArchiveConsumer consumer = new ArchiveConsumer(app);
     for (int c = 0; c < CLASS_COUNT; ++c) {
-      String descriptor = DescriptorUtils.javaTypeToDescriptor("package_a.Class" + c);
+      String packagePrefix = usePackage ? "package_" + c + "." : "";
+      String descriptor = DescriptorUtils.javaTypeToDescriptor(packagePrefix + "Class" + c);
       String internalName = descriptor.substring(1, descriptor.length() - 1);
       ClassWriter cw = new ClassWriter(0);
       cw.visit(
@@ -66,13 +83,14 @@ public class DexDistributionLegRoomTest extends TestBase {
       consumer.accept(ByteDataView.of(cw.toByteArray()), descriptor, null);
     }
     consumer.finished(null);
+    return app;
   }
 
   @Test
   public void test() throws Exception {
     // API level 36 allows 65536 field-ids, so without leg room all classes fit into one DEX file.
     testForD8(Backend.DEX)
-        .addProgramFiles(inputApp)
+        .addProgramFiles(usePackage ? packagedApp : unpackagedApp)
         .setMinApi(AndroidApiLevel.BAKLAVA)
         .release()
         .addOptionsModification(
@@ -81,8 +99,13 @@ public class DexDistributionLegRoomTest extends TestBase {
                     legRoomPercentage)
         .compile()
         .inspectMultiDex(
-            primaryDexInspector -> assertFalse(primaryDexInspector.allClasses().isEmpty()),
+            primaryDexInspector ->
+                assertEquals(
+                    legRoomPercentage == 0 ? CLASS_COUNT : CLASS_COUNT / 2,
+                    primaryDexInspector.allClasses().size()),
             secondaryDexInspector ->
-                assertEquals(legRoomPercentage == 0, secondaryDexInspector.allClasses().isEmpty()));
+                assertEquals(
+                    legRoomPercentage == 0 ? 0 : CLASS_COUNT / 2,
+                    secondaryDexInspector.allClasses().size()));
   }
 }

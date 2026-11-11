@@ -4374,7 +4374,7 @@ public class DexItemFactory {
     public DexMethod getAppendMethodForType(DexType argType) {
       switch (argType.toShorty()) {
         case 'L':
-          return appendObject;
+          return argType.isIdenticalTo(stringType) ? appendString : appendObject;
         case 'Z':
           return appendBoolean;
         case 'C':

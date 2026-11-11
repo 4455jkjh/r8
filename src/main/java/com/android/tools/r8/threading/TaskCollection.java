@@ -74,8 +74,7 @@ public class TaskCollection<T> {
       for (S item : items) {
         submit(
             () -> {
-              Timing threadTiming =
-                  timing.createThreadTiming(taskNameFunction.apply(item), options);
+              Timing threadTiming = timing.createThreadTiming(item, taskNameFunction, options);
               T result = fn.apply(item, threadTiming);
               threadTiming.end().notifyThreadTimingFinished();
               return result;

@@ -26,16 +26,12 @@ import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractor;
 import com.android.tools.r8.keepradius.KeepRadiusContainerUtils;
 import com.android.tools.r8.metadata.R8BuildMetadata;
-import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.naming.ClassNamingForNameMapper;
-import com.android.tools.r8.naming.InternalMapConsumer;
 import com.android.tools.r8.naming.InternalMapConsumerImpl;
 import com.android.tools.r8.naming.SourceFileRewriter;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.partial.R8PartialCompilationConfiguration;
 import com.android.tools.r8.profile.art.ArtProfileForRewriting;
-import com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.ProguardConfiguration;
@@ -74,7 +70,6 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.android.tools.r8.utils.internal.SetUtils;
-import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,7 +83,6 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -1511,21 +1505,15 @@ public final class R8Command extends BaseCompilerCommand {
             proguardMapConsumer,
             proguardConfiguration.isPrintMapping(),
             proguardConfiguration.getPrintMappingFile());
-    InternalMapConsumer internalMapConsumer =
+    internal.mapConsumer =
         wrapExistingInternalMapConsumerIfNotNull(
             internal.mapConsumer, partitionMapConsumer, MapConsumerToPartitionMapConsumer::new);
-    internalMapConsumer =
+    internal.mapConsumer =
         wrapExistingInternalMapConsumerIfNotNull(
-            internalMapConsumer,
+            internal.mapConsumer,
             mapConsumer,
             nonNullStringConsumer ->
                 InternalMapConsumerImpl.builder().setMapConsumer(mapConsumer).build());
-
-    internal.mapConsumer =
-        wrapExistingInternalMapConsumerIfNotNull(
-            internalMapConsumer,
-            androidResourceConsumer,
-            nonNulStringConsumer -> new ResourceShrinkerMapStringConsumer(internal));
     // Amend the usage information consumer with options from the proguard configuration.
     internal.usageInformationConsumer =
         wrapStringConsumer(
@@ -1683,34 +1671,6 @@ public final class R8Command extends BaseCompilerCommand {
       }
     }
     return optionConsumer;
-  }
-
-  private static class ResourceShrinkerMapStringConsumer implements InternalMapConsumer {
-
-    private final InternalOptions internal;
-    private final Predicate<String> classNamePredicate;
-    private StringBuilder resultBuilder = new StringBuilder();
-
-    ResourceShrinkerMapStringConsumer(InternalOptions internal) {
-      this.internal = internal;
-      this.classNamePredicate =
-          LegacyResourceShrinker.classNamesNeededForResourceShrinkingPredicate();
-    }
-
-    @Override
-    public void finished(DiagnosticsHandler handler) {
-      internal.androidResourceProguardMapStrings = StringUtils.splitLines(resultBuilder.toString());
-      resultBuilder = null;
-    }
-
-    @Override
-    public void accept(DiagnosticsHandler diagnosticsHandler, ClassNameMapper classNameMapper) {
-      for (ClassNamingForNameMapper entry : classNameMapper.getClassNameMappings().values()) {
-        if (classNamePredicate.test(entry.originalName)) {
-          resultBuilder.append(entry.toProguardMapSource());
-        }
-      }
-    }
   }
 
   private static class StandardOutConsumer extends StringConsumer.ForwardingConsumer {

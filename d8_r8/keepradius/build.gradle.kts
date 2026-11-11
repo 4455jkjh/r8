@@ -13,8 +13,6 @@ plugins {
   id("com.google.protobuf")
 }
 
-tasks.named("generateProto") { dependsOn(":third_party:downloadDeps") }
-
 val srcDir = getRoot().resolveAll("src", "keepradius", "java")
 
 java {

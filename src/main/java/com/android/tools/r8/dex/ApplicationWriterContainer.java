@@ -60,7 +60,7 @@ class ApplicationWriterContainer extends ApplicationWriter {
     // Write non container virtual files.
     timing.begin("Write non container virtual files");
     for (VirtualFile virtualFile : virtualFilesOutsideContainer) {
-      timing.begin("VirtualFile " + virtualFile.getId());
+      timing.begin(virtualFile, f -> "VirtualFile " + f.getId());
       writeVirtualFile(virtualFile, timing, forcedStrings, StartupProfile::empty);
       timing.end();
     }
@@ -99,7 +99,7 @@ class ApplicationWriterContainer extends ApplicationWriter {
 
     for (int i = 0; i < virtualFiles.size(); i++) {
       VirtualFile virtualFile = virtualFiles.get(i);
-      try (Timing t0 = timing.begin("VirtualFile " + virtualFile.getId())) {
+      try (Timing t0 = timing.begin(virtualFile, f -> "VirtualFile " + f.getId())) {
         if (virtualFile.isEmpty()) {
           continue;
         }

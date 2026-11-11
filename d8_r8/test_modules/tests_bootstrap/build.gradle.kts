@@ -42,8 +42,6 @@ dependencies {
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":main", "mainJar"))
-  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
-  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))

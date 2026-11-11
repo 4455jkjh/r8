@@ -23,7 +23,6 @@ dependencies {
   bundleScope(project(":keepanno", "keepannoJar"))
   bundleScope(project(":libanalyzer", "libanalyzer-jar"))
   bundleScope(project(":main", "mainJar"))
-  bundleScope(project(":resourceshrinker", "resourceshrinkerJar"))
 }
 
 tasks {

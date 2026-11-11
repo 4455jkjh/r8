@@ -91,7 +91,7 @@ public class ThreadTaskUtils {
       List<Timing> timings) {
     Timing threadTiming = timing.createThreadTiming("Timing", options);
     timings.set(taskIndex, threadTiming);
-    threadTiming.begin("Task " + (taskIndex + 1));
+    threadTiming.begin(taskIndex + 1, i -> "Task " + i);
     task.runWithRuntimeException(threadTiming);
     threadTiming.end();
     threadTiming.end();

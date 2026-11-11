@@ -119,9 +119,9 @@ public class InstanceFieldValueAnalysis extends FieldValueAnalysis {
   }
 
   @Override
-  @SuppressWarnings("ReferenceEquality")
-  boolean isSubjectToOptimization(DexClassAndField field) {
-    return !field.getAccessFlags().isStatic() && field.getHolderType() == context.getHolderType();
+  boolean isSubjectToOptimization(DexClassAndField field, ProgramMethod context) {
+    return !field.getAccessFlags().isStatic()
+        && field.getHolderType().isIdenticalTo(context.getHolderType());
   }
 
   @Override

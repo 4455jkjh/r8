@@ -50,12 +50,12 @@ public class TypeElementFactory {
     //      latest recursive call and fight to get access to .computeIfAbsent to add the
     //      ArrayTypeElement but only one will enter. The property that only one
     //      ArrayTypeElement is created per level therefore holds inductively.
+    ReferenceTypeElement existing = referenceTypes.get(type);
+    if (existing != null) {
+      return existing.getOrCreateVariant(nullability);
+    }
     TypeElement memberType = null;
     if (type.isArrayType()) {
-      ReferenceTypeElement existing = referenceTypes.get(type);
-      if (existing != null) {
-        return existing.getOrCreateVariant(nullability);
-      }
       memberType =
           TypeElement.fromDexType(
               type.getArrayElementType(), Nullability.maybeNull(), appView, true);
@@ -98,6 +98,10 @@ public class TypeElementFactory {
 
   public InterfaceCollection getOrComputeLeastUpperBoundOfImplementedInterfaces(
       DexType type, AppView<? extends AppInfoWithClassHierarchy> appView) {
+    InterfaceCollection existing = classTypeInterfaces.get(type);
+    if (existing != null) {
+      return existing;
+    }
     return classTypeInterfaces.computeIfAbsent(
         type,
         t -> {

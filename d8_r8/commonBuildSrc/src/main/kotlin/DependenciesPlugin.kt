@@ -146,6 +146,11 @@ public class DependenciesPlugin : Plugin<Project> {
       dependsOn(runtimeOnlyDataConfig)
       jvmArgumentProviders.add(TestDepsCommandLineArgumentProvider(entries = testDepsEntries))
     }
+
+    target.tasks.withType(RunBenchmarkTask::class.java).configureEach {
+      dependsOn(runtimeOnlyDataConfig)
+      this.testDepsEntries.set(testDepsEntries)
+    }
   }
 
   public companion object {

@@ -12,6 +12,7 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.environmentdependence.ValueGraph;
 import com.android.tools.r8.ir.analysis.environmentdependence.ValueGraph.Node;
@@ -19,19 +20,25 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.InstancePut;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeDirect;
+import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.LogicalBinop;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.NewArrayFilledData;
 import com.android.tools.r8.ir.code.NewInstance;
+import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Sets;
@@ -81,12 +88,26 @@ public class ValueMayDependOnEnvironmentAnalysis {
   private final AppView<AppInfoWithLiveness> appView;
   private final ProgramMethod context;
   private final DexItemFactory dexItemFactory;
+  // True if the analyzed code is a helper that is called from the class initializer of its holder.
+  private final boolean isClassInitializerHelper;
+  private final MethodProcessor methodProcessor;
   private final InternalOptions options;
 
-  public ValueMayDependOnEnvironmentAnalysis(AppView<AppInfoWithLiveness> appView, IRCode code) {
+  public ValueMayDependOnEnvironmentAnalysis(
+      AppView<AppInfoWithLiveness> appView, IRCode code, MethodProcessor methodProcessor) {
+    this(appView, code, methodProcessor, false);
+  }
+
+  private ValueMayDependOnEnvironmentAnalysis(
+      AppView<AppInfoWithLiveness> appView,
+      IRCode code,
+      MethodProcessor methodProcessor,
+      boolean isClassInitializerHelper) {
     this.appView = appView;
     this.context = code.context();
     this.dexItemFactory = appView.dexItemFactory();
+    this.isClassInitializerHelper = isClassInitializerHelper;
+    this.methodProcessor = methodProcessor;
     this.options = appView.options();
   }
 
@@ -152,9 +173,11 @@ public class ValueMayDependOnEnvironmentAnalysis {
       Set<Value> mutableValues,
       WorkList<Value> worklist) {
     return addConstantValueToValueGraph(value)
+        || addStaticGetValueToValueGraph(value)
         || addArrayValueToValueGraph(
             value, node, graph, consumedInstructions, mutableValues, worklist)
         || addInvokeVirtualValueToValueGraph(value)
+        || addInvokeStaticValueToValueGraph(value, mutableValues)
         || addLogicalBinopValueToValueGraph(value, node, graph, worklist)
         || addNewInstanceValueToValueGraph(
             value, node, graph, consumedInstructions, mutableValues, worklist);
@@ -179,6 +202,34 @@ public class ValueMayDependOnEnvironmentAnalysis {
       }
     }
     return false;
+  }
+
+  /**
+   * A read of a static field on the enclosing class does not depend on the environment if the field
+   * is never written, or if it is only written in the class initializer. In the latter case the
+   * read yields the default value of the field or a value that is assigned to the field by the
+   * class initializer. No edges are added for these values: this relies on the values of all
+   * static-put instructions in the class initializer being required to be independent of the
+   * environment by the class initializer side effect analysis, and therefore only applies when
+   * analyzing the class initializer or one of its helpers.
+   */
+  private boolean addStaticGetValueToValueGraph(Value value) {
+    if (!value.isDefinedByInstructionSatisfying(Instruction::isStaticGet)) {
+      return false;
+    }
+    DexField fieldReference = value.getDefinition().asStaticGet().getField();
+    if (fieldReference.getHolderType().isNotIdenticalTo(context.getHolderType())) {
+      return false;
+    }
+    ProgramField field = context.getHolder().lookupProgramField(fieldReference);
+    if (field == null || !field.getAccessFlags().isStatic()) {
+      return false;
+    }
+    if (!appView.appInfo().isFieldWritten(field)) {
+      return true;
+    }
+    return (context.getDefinition().isClassInitializer() || isClassInitializerHelper)
+        && appView.appInfo().isStaticFieldWrittenOnlyInEnclosingStaticInitializer(field);
   }
 
   @SuppressWarnings({"UnusedVariable", "ReferenceEquality"})
@@ -228,6 +279,7 @@ public class ValueMayDependOnEnvironmentAnalysis {
         worklist.addIfNotSeen(arrayPut.index());
         graph.addDirectedEdge(node, graph.createNodeIfAbsent(arrayPut.value()));
         worklist.addIfNotSeen(arrayPut.value());
+        consumedInstructions.add(instruction);
       } else if (instruction.isNewArrayFilledData()) {
         NewArrayFilledData newArrayFilledData = instruction.asNewArrayFilledData();
         Value array = newArrayFilledData.src();
@@ -242,7 +294,6 @@ public class ValueMayDependOnEnvironmentAnalysis {
         // array creation.
         break;
       }
-      consumedInstructions.add(instruction);
     }
     mutableValues.add(value);
     return true;
@@ -262,6 +313,50 @@ public class ValueMayDependOnEnvironmentAnalysis {
     }
 
     return false;
+  }
+
+  private boolean addInvokeStaticValueToValueGraph(Value value, Set<Value> mutableValues) {
+    if (!context.getDefinition().isClassInitializer()
+        || !methodProcessor.isPrimaryMethodProcessor()
+        || !value.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      return false;
+    }
+    InvokeStatic invoke = value.getDefinition().asInvokeStatic();
+    if (!invoke.arguments().isEmpty()
+        || invoke.getBlock().hasCatchHandlers()
+        || invoke.getInvokedMethod().getReturnType().isVoidType()) {
+      return false;
+    }
+    ProgramMethod singleTarget = invoke.lookupSingleProgramTarget(appView, context);
+    if (singleTarget == null
+        || singleTarget.getHolderType().isNotIdenticalTo(context.getHolderType())
+        || !singleTarget.getDefinition().hasCode()
+        || methodProcessor.isProcessedConcurrently(singleTarget)
+        || appView.isCfByteCodePassThrough(singleTarget)
+        || singleTarget.getOptimizationInfo().mayHaveSideEffects()) {
+      return false;
+    }
+    IRCode helperCode = singleTarget.buildIR(appView, MethodConversionOptions.nonConverting());
+    Set<Value> valuesRequiredToBeIndependentOfEnvironment = Sets.newIdentityHashSet();
+    if (helperCode.controlFlowMayDependOnEnvironment(
+        valuesRequiredToBeIndependentOfEnvironment::add)) {
+      return false;
+    }
+    List<BasicBlock> normalExitBlocks = helperCode.computeNormalExitBlocks();
+    if (normalExitBlocks.isEmpty()) {
+      return false;
+    }
+    for (BasicBlock normalExitBlock : normalExitBlocks) {
+      Return exit = normalExitBlock.exit().asReturn();
+      assert !exit.isReturnVoid();
+      valuesRequiredToBeIndependentOfEnvironment.add(exit.returnValue());
+    }
+    if (new ValueMayDependOnEnvironmentAnalysis(appView, helperCode, methodProcessor, true)
+        .anyValueMayDependOnEnvironment(valuesRequiredToBeIndependentOfEnvironment)) {
+      return false;
+    }
+    mutableValues.add(value);
+    return true;
   }
 
   private boolean isNonPinnedClassConstant(Value value) {
@@ -378,15 +473,17 @@ public class ValueMayDependOnEnvironmentAnalysis {
     while (!worklist.isEmpty()) {
       BasicBlock block = worklist.removeFirst();
       TrackedValuesState state = computeBlockEntryState(block, blockExitStates);
-      boolean changed = false;
       for (Instruction instruction : block.getInstructions()) {
+        if (instruction.hasOutValue() && values.contains(instruction.outValue())) {
+          state.startTrackingValue(instruction.outValue());
+        }
         if (whitelist.contains(instruction)) {
           continue;
         }
         if (instruction.isStaticPut()) {
           StaticPut staticPut = instruction.asStaticPut();
           if (state.isTrackingValue(staticPut.value())) {
-            changed |= state.recordTrackedValueHasEscaped();
+            state.recordTrackedValueHasEscaped();
           }
           if (state.hasTrackedValueEscaped()) {
             DexType holder = staticPut.getField().holder;
@@ -396,21 +493,45 @@ public class ValueMayDependOnEnvironmentAnalysis {
           }
           continue;
         }
+        if (instruction.isInstancePut()) {
+          InstancePut instancePut = instruction.asInstancePut();
+          if (state.isTrackingValue(instancePut.object()) || state.hasTrackedValueEscaped()) {
+            return true;
+          }
+          if (state.isTrackingValue(instancePut.value())) {
+            state.recordTrackedValueHasEscaped();
+          }
+          continue;
+        }
+        if (instruction.isArrayPut()) {
+          ArrayPut arrayPut = instruction.asArrayPut();
+          if (state.isTrackingValue(arrayPut.array()) || state.hasTrackedValueEscaped()) {
+            return true;
+          }
+          if (state.isTrackingValue(arrayPut.value())) {
+            state.recordTrackedValueHasEscaped();
+          }
+          continue;
+        }
+        if (instruction.isNewArrayFilledData()) {
+          NewArrayFilledData newArrayFilledData = instruction.asNewArrayFilledData();
+          if (state.isTrackingValue(newArrayFilledData.src()) || state.hasTrackedValueEscaped()) {
+            return true;
+          }
+          continue;
+        }
         if (instruction.instructionMayTriggerMethodInvocation(appView, context)) {
           if (instruction.hasInValueThatMatches(state::isTrackingValue)) {
-            changed |= state.recordTrackedValueHasEscaped();
+            state.recordTrackedValueHasEscaped();
           }
           if (state.hasTrackedValueEscaped()
               && instruction.instructionMayHaveSideEffects(appView, context)) {
             return true;
           }
         }
-        if (instruction.hasOutValue() && values.contains(instruction.outValue())) {
-          changed |= state.startTrackingValue(instruction.outValue());
-        }
       }
-      blockExitStates.put(block, state);
-      if (changed) {
+      TrackedValuesState previousExitState = blockExitStates.put(block, state);
+      if (!state.isEmpty() && !state.equals(previousExitState)) {
         worklist.addAll(block.getSuccessors());
       }
     }
@@ -442,12 +563,16 @@ public class ValueMayDependOnEnvironmentAnalysis {
       trackedValues.addAll(state.trackedValues);
     }
 
+    public boolean isEmpty() {
+      return !hasTrackedValueEscaped && trackedValues.isEmpty();
+    }
+
     public boolean hasTrackedValueEscaped() {
       return hasTrackedValueEscaped;
     }
 
     public boolean isTrackingValue(Value value) {
-      return trackedValues.contains(value);
+      return trackedValues.contains(value.getAliasedValue());
     }
 
     public boolean recordTrackedValueHasEscaped() {
@@ -460,6 +585,24 @@ public class ValueMayDependOnEnvironmentAnalysis {
 
     public boolean startTrackingValue(Value value) {
       return trackedValues.add(value);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof TrackedValuesState)) {
+        return false;
+      }
+      TrackedValuesState other = (TrackedValuesState) obj;
+      return hasTrackedValueEscaped == other.hasTrackedValueEscaped
+          && trackedValues.equals(other.trackedValues);
+    }
+
+    @Override
+    public int hashCode() {
+      return ObjectUtils.hashZL(hasTrackedValueEscaped, trackedValues);
     }
   }
 }

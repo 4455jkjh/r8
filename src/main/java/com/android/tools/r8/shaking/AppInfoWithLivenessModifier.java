@@ -20,7 +20,7 @@ public class AppInfoWithLivenessModifier {
   AppInfoWithLivenessModifier() {}
 
   public boolean isEmpty() {
-    return noLongerInstantiatedClasses.isEmpty();
+    return noLongerInstantiatedClasses.isEmpty() && noLongerWrittenFields.isEmpty();
   }
 
   public void removeInstantiatedType(DexProgramClass clazz) {
@@ -51,5 +51,6 @@ public class AppInfoWithLivenessModifier {
 
   private void clear() {
     noLongerInstantiatedClasses.clear();
+    noLongerWrittenFields.clear();
   }
 }

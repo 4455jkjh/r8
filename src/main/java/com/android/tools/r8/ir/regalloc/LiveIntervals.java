@@ -30,7 +30,11 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   public static final int NO_REGISTER = Integer.MIN_VALUE;
   public static final int CHILDREN_SORTING_CUTOFF = 100;
 
-  private final Value value;
+  // The value of these live intervals. When live intervals are coalesced, this is the value that
+  // starts first.
+  private Value value;
+  // All the values of these live intervals if they have been coalesced, and null otherwise.
+  private List<Value> coalescedValues = null;
   private LiveIntervals nextConsecutive;
   private LiveIntervals previousConsecutive;
   private final LiveIntervals splitParent;
@@ -265,6 +269,64 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   public void addUse(LiveIntervalsUse use) {
     uses.add(use);
     updateRegisterConstraint(use.getLimit());
+  }
+
+  /**
+   * Returns the values of these live intervals. This is a single value unless the live intervals
+   * have been coalesced.
+   */
+  public List<Value> getValues() {
+    return splitParent.isCoalesced()
+        ? splitParent.coalescedValues
+        : Collections.singletonList(value);
+  }
+
+  private boolean isCoalesced() {
+    return coalescedValues != null;
+  }
+
+  /**
+   * Merges the non-overlapping live intervals of other into these live intervals, so that all the
+   * values of both live intervals share the same register.
+   */
+  @SuppressWarnings("ReferenceEquality")
+  public void coalesce(LiveIntervals other) {
+    assert other != this;
+    assert getType() == other.getType();
+    assert isSplitParent() && !hasSplits();
+    assert other.isSplitParent() && !other.hasSplits();
+    assert !overlaps(other);
+    if (!isCoalesced()) {
+      coalescedValues = new ArrayList<>(getValues());
+    }
+    for (Value otherValue : other.getValues()) {
+      coalescedValues.add(otherValue);
+      otherValue.setLiveIntervals(this);
+    }
+    if (other.getStart() < getStart()) {
+      value = other.value;
+    }
+    ranges.addAll(other.ranges);
+    sortAndMergeRanges();
+    other.uses.forEach(this::addUse);
+    usedInMonitorOperations |= other.usedInMonitorOperations;
+    liveAtMoveExceptionEntry |= other.liveAtMoveExceptionEntry;
+  }
+
+  // Sorts the ranges of these live intervals, merging the ranges that overlap or touch.
+  private void sortAndMergeRanges() {
+    Collections.sort(ranges);
+    int mergedSize = 0;
+    for (int i = 0; i < ranges.size(); i++) {
+      LiveRange range = ranges.get(i);
+      LiveRange lastRange = mergedSize > 0 ? ranges.get(mergedSize - 1) : null;
+      if (lastRange != null && lastRange.end >= range.start) {
+        lastRange.end = Math.max(lastRange.end, range.end);
+      } else {
+        ranges.set(mergedSize++, range);
+      }
+    }
+    ranges.subList(mergedSize, ranges.size()).clear();
   }
 
   public void updateRegisterConstraint(int constraint) {
@@ -573,18 +635,13 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   }
 
   public void undoSplits() {
-    List<LiveRange> ranges = new ArrayList<>(this.ranges);
     for (LiveIntervals split : splitChildren) {
       ranges.addAll(split.ranges);
       for (LiveIntervalsUse use : split.uses) {
         addUse(use);
       }
     }
-    Collections.sort(ranges);
-    this.ranges.clear();
-    for (LiveRange range : ranges) {
-      addRange(range);
-    }
+    sortAndMergeRanges();
     splitChildren.clear();
     recomputeLimit();
   }
@@ -746,7 +803,9 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     // registers (and thereby the real argument registers used by unsplitArguments()) is derived
     // from it.
     for (Phi phi : value.uniquePhiUsers()) {
-      int reg = allocator.unadjustedRealRegisterFromAllocated(phi.getLiveIntervals().getRegister());
+      // The phi may be coalesced with values that start before it, so use the split at the phi.
+      LiveIntervals phiIntervals = phi.getLiveIntervals().getSplitCovering(phi.getBlock().entry());
+      int reg = allocator.unadjustedRealRegisterFromAllocated(phiIntervals.getRegister());
       if (reg >= U8BIT_MAX) {
         for (int predIndex = 0; predIndex < phi.getOperands().size(); predIndex++) {
           Value operand = phi.getOperand(predIndex);

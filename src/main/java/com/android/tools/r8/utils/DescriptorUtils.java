@@ -869,7 +869,7 @@ public class DescriptorUtils {
         && isRClassStaticInitOverflowMethodWithoutHolderCheck(method.getReference());
   }
 
-  private static boolean isRClassStaticInitOverflowMethodWithoutHolderCheck(DexMethod method) {
+  public static boolean isRClassStaticInitOverflowMethodWithoutHolderCheck(DexMethod method) {
     if (method.getArity() != 0 || !method.getReturnType().isVoidType()) {
       return false;
     }

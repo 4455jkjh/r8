@@ -9,6 +9,7 @@ import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -173,8 +174,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
         executorService,
         timing,
         timing.beginMerger("Initialize", executorService),
-        (i, stronglyConnectedComponent) ->
-            stronglyConnectedComponent.iterator().next().getTypeName());
+        stronglyConnectedComponent -> stronglyConnectedComponent.iterator().next().getTypeName());
 
     // Run IR analysis.
     ThreadUtils.processItemsThatMatches(
@@ -192,7 +192,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
         executorService,
         timing,
         timing.beginMerger("IR analysis", executorService),
-        (i, clazz) -> clazz.getTypeName());
+        DexClass::getTypeName);
 
     // Compute unused arguments.
     try (Timing t0 = timing.begin("Compute unused arguments")) {

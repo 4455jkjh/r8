@@ -55,6 +55,12 @@ public class MapVersionMappingInformation extends MappingInformation {
     return mapVersion;
   }
 
+  public MapVersion getMapVersion(boolean allowExperimentalMapping) {
+    return mapVersion == MapVersion.MAP_VERSION_EXPERIMENTAL && !allowExperimentalMapping
+        ? MapVersion.MAP_VERSION_NONE
+        : mapVersion;
+  }
+
   public String getValue() {
     return value;
   }

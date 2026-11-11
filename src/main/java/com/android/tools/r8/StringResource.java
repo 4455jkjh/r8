@@ -6,9 +6,12 @@ package com.android.tools.r8;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.internal.FileUtils;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public interface StringResource extends Resource {
@@ -57,6 +60,10 @@ public interface StringResource extends Resource {
    */
   String getString() throws ResourceException;
 
+  default BufferedReader getBufferedReader() throws ResourceException {
+    return new BufferedReader(new StringReader(getString()));
+  }
+
   class StringContentResource implements StringResource {
     private final Origin origin;
     private final String content;
@@ -101,6 +108,15 @@ public interface StringResource extends Resource {
     public String getString() throws ResourceException {
       try {
         return FileUtils.readTextFile(file, charset);
+      } catch (IOException e) {
+        throw new ResourceException(origin, e);
+      }
+    }
+
+    @Override
+    public BufferedReader getBufferedReader() throws ResourceException {
+      try {
+        return Files.newBufferedReader(file, charset);
       } catch (IOException e) {
         throw new ResourceException(origin, e);
       }

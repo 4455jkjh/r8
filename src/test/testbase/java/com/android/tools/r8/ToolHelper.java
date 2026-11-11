@@ -194,7 +194,6 @@ public class ToolHelper {
   public static final String LIBRARY_DESUGAR_SOURCE_DIR = getProjectRoot() + "src/library_desugar/";
   public static final String BUILD_DIR = getProjectRoot() + "build/";
   public static final String LIBS_DIR = BUILD_DIR + "libs/";
-  public static final String THIRD_PARTY_DIR = getProjectRoot() + "third_party/";
   public static final String TOOLS_DIR = getProjectRoot() + "tools/";
   public static final String TESTS_DIR = getProjectRoot() + "src/test/";
   public static final String TESTS_SOURCE_DIR = TESTS_DIR + "java/";

@@ -79,7 +79,7 @@ public class ArgumentPropagatorOptimizationInfoPropagator {
         executorService,
         timing,
         timing.beginMerger("Fork", executorService),
-        (i, classes) ->
+        classes ->
             classes.iterator().next().getTypeName()
                 + " ("
                 + classes.size()

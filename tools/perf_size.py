@@ -19,7 +19,6 @@ import git_utils
 import gradle
 import jdk
 import perf
-import run_benchmark
 import thread_utils
 from thread_utils import print_thread
 import utils
@@ -27,32 +26,32 @@ import utils
 BUCKET = 'perf-size-results'
 MAX_SUMMARY_BYTES = 4000
 
-SIZE_BENCHMARKS = {
-    'NowInAndroidAppWithResourceShrinking': 'android/nowinandroid',
-    'NowInAndroidAppPartial': 'android/nowinandroid',
-    'JetNewsApp': 'android/compose-samples/jetnews',
-    'ReplyApp': 'android/compose-samples/reply',
-    'TiviApp': 'tivi',
-    'ChromeApp': 'chrome',
-    'FeederApp': 'android/feeder',
-    'FeederAppPartial': 'android/feeder',
-    'BookStoryApp': 'android/bookstory',
-    'BookStoryAppPartial': 'android/bookstory',
-    'ReadYouApp': 'android/readyou',
-    'ReadYouAppPartial': 'android/readyou',
-    'FossifyFileManagerApp': 'android/fossify-filemanager',
-    'FossifyFileManagerAppPartial': 'android/fossify-filemanager',
-    'NewPipeKotlinApp': 'android/newpipe',
-    'NewPipeKotlinAppPartial': 'android/newpipe',
-    'TuskyApp': 'android/tusky',
-    'TuskyAppPartial': 'android/tusky',
-    'KeePassDXApp': 'android/keepassdx',
-    'KeePassDXAppPartial': 'android/keepassdx',
-    'OmniNotesApp': 'android/omninotes',
-    'OmniNotesAppPartial': 'android/omninotes',
-    'OpenTracksApp': 'android/opentracks',
-    'OpenTracksAppPartial': 'android/opentracks',
-}
+SIZE_BENCHMARKS = [
+    'NowInAndroidAppWithResourceShrinking',
+    'NowInAndroidAppPartial',
+    'JetNewsApp',
+    'ReplyApp',
+    'TiviApp',
+    'ChromeApp',
+    'FeederApp',
+    'FeederAppPartial',
+    'BookStoryApp',
+    'BookStoryAppPartial',
+    'ReadYouApp',
+    'ReadYouAppPartial',
+    'FossifyFileManagerApp',
+    'FossifyFileManagerAppPartial',
+    'NewPipeKotlinApp',
+    'NewPipeKotlinAppPartial',
+    'TuskyApp',
+    'TuskyAppPartial',
+    'KeePassDXApp',
+    'KeePassDXAppPartial',
+    'OmniNotesApp',
+    'OmniNotesAppPartial',
+    'OpenTracksApp',
+    'OpenTracksAppPartial',
+]
 
 SIZE_COMPILEDUMPS = {
     'Tachiyomi': 'tachiyomi',
@@ -144,7 +143,7 @@ def parse_options(argv=None):
         all_benchmarks = list(INTERNAL_SIZE_BENCHMARKS)
         all_compiledumps = []
     else:
-        all_benchmarks = list(SIZE_BENCHMARKS.keys())
+        all_benchmarks = list(SIZE_BENCHMARKS)
         all_compiledumps = list(SIZE_COMPILEDUMPS.keys())
     if options.benchmark is not None or options.compiledump is not None:
         options.benchmarks = list(dict.fromkeys(options.benchmark or []))
@@ -164,69 +163,35 @@ def parse_options(argv=None):
     return options, args
 
 
-def get_gradle_build_args(tasks):
-    build_args = list(tasks) + ['-Pno_internal']
-    utils.append_gradle_user_home_for_worktree(False, True, build_args)
-    if utils.is_bot() and '--no-daemon' not in build_args:
-        build_args.append('--no-daemon')
-    return build_args
+def positive_or_none(value):
+    return value if value is not None and value > 0 else None
 
 
-def ensure_build_artifacts(options):
-    gradle.ensure_jdk()
-    required_files = [
-        utils.R8_JAR,
-        utils.R8_TESTS_JAR,
-        utils.R8_TESTS_DEPS_JAR,
-        utils.R8_TESTBASE_JAR,
-        utils.BUILD_JAVA_MAIN_CLASSPATH,
-        os.path.join(utils.REPO_ROOT, 'd8_r8', 'keepanno', 'build', 'classes',
-                     'java', 'main'),
-        os.path.join(utils.REPO_ROOT, 'd8_r8', 'test_modules', 'tests_java_8',
-                     'build', 'classes', 'java', 'test'),
-        os.path.join(utils.REPO_ROOT, 'd8_r8', 'test_modules', 'testbase',
-                     'build', 'classes', 'java', 'main'),
-    ]
-    if options.no_build and all(os.path.exists(p) for p in required_files):
-        print('Using prebuilt R8 and test artifacts.')
-        return
-    build_targets = get_gradle_build_args([
-        utils.GRADLE_TASK_R8,
-        utils.GRADLE_TASK_KEEP_ANNO_JAR,
-        utils.GRADLE_TASK_TEST_DEPS_JAR,
-        utils.GRADLE_TASK_TEST_UNZIP_TESTBASE,
-        ':test:unzipTests',
-    ])
-    print('Building R8 and test artifacts for size presubmit...')
-    gradle.run_gradle(build_targets)
+def is_feature_output_jar(filename):
+    return filename.startswith('feature-') and filename.endswith('.out.jar')
 
 
-def ensure_dependencies(options):
-    deps_to_download = {
-        os.path.join(utils.OPENSOURCE_DUMPS_DIR, SIZE_BENCHMARKS[b])
-        for b in options.benchmarks
-        if b in SIZE_BENCHMARKS
-    } | {
-        os.path.join(utils.OPENSOURCE_DUMPS_DIR, SIZE_COMPILEDUMPS[c])
-        for c in options.compiledumps
-    }
-    if dex2oat.LATEST in dex2oat.HOST_ART_VERSIONS:
-        dex2oat_host_dir = os.path.join(utils.TOOLS_DIR, 'linux',
-                                        dex2oat.DIRS[dex2oat.LATEST])
-    else:
-        dex2oat_host_dir = os.path.join(utils.THIRD_PARTY, 'dex2oat',
-                                        dex2oat.LATEST)
-    deps_to_download.add(dex2oat_host_dir)
+def is_feature_resource_apk(filename):
+    return filename.startswith('feature-') and filename.endswith('.out.ap_')
 
-    for dep_path in sorted(deps_to_download):
-        if os.path.exists(dep_path + '.tar.gz.sha1'):
-            utils.ensure_google_download(dep_path, quiet=not options.verbose)
-    # Download the internal app dumps here, as the parallel benchmark runs
-    # would otherwise download the same dump concurrently.
-    for b in options.benchmarks:
-        if b in INTERNAL_SIZE_BENCHMARKS:
-            run_benchmark.ensure_internal_dependencies(
-                b, quiet=not options.verbose)
+
+def collect_benchmark_size_results(benchmarks, bench_results_dir, results_dict):
+    for benchmark_name in benchmarks:
+        target_dir = os.path.join(bench_results_dir, benchmark_name, 'r8-full')
+        result_json_path = os.path.join(target_dir, 'result.json')
+        duration_path = os.path.join(target_dir, 'duration_s')
+        with open(result_json_path, 'r') as f:
+            iter_res = json.load(f)['results'][0]
+        with open(duration_path, 'r') as f:
+            duration = float(f.read().strip())
+        results_dict[benchmark_name] = {
+            'name': benchmark_name,
+            'kind': 'benchmark (r8-full)',
+            'dex_size': positive_or_none(iter_res.get('code_size')),
+            'oat_size': positive_or_none(iter_res.get('oat_code_size')),
+            'resource_size': positive_or_none(iter_res.get('resource_size')),
+            'duration_s': round(duration, 1),
+        }
 
 
 def tag_local_r8_jar(src_jar, commit_sha, temp_dir, label='patch'):
@@ -256,73 +221,52 @@ def tag_local_r8_jar(src_jar, commit_sha, temp_dir, label='patch'):
     return tagged_jar
 
 
-def pos_or_none(val):
-    return val if val is not None and val > 0 else None
+def get_gradle_args(tasks, options):
+    gradle_args = list(tasks)
+    if not options.internal:
+        gradle_args.append('-Pno_internal')
+    utils.append_gradle_user_home_for_worktree(False, True, gradle_args)
+    if utils.is_bot() and '--no-daemon' not in gradle_args:
+        gradle_args.append('--no-daemon')
+    return gradle_args
 
 
-def is_feature_out_jar(fname):
-    return fname.startswith('feature-') and fname.endswith('.out.jar')
+def ensure_r8_jar(options):
+    build_targets = []
+    if not options.no_build:
+        build_targets.append(utils.GRADLE_TASK_R8)
+    if options.compiledumps and not options.benchmarks:
+        build_targets.extend(
+            [':third_party:downloadDeps', ':third_party:downloadTestDeps'])
+    if build_targets:
+        gradle.run_gradle(get_gradle_args(build_targets, options))
 
 
-def is_feature_out_ap(fname):
-    return fname.startswith('feature-') and fname.endswith('.out.ap_')
+def run_benchmarks_via_gradle(r8_jar, suite_temp, options, results_dict):
+    assert r8_jar is not None
+    if not options.benchmarks:
+        return
+    bench_results_dir = os.path.join(suite_temp, 'benchmarks')
+    os.makedirs(bench_results_dir, exist_ok=True)
 
-
-def run_single_benchmark(benchmark_name, r8_jar, version_label, temp_dir,
-                         options, results_dict, worker_id):
-    bench_temp = os.path.join(temp_dir, f'bench_{benchmark_name}')
-    os.makedirs(bench_temp, exist_ok=True)
-    result_json_path = os.path.join(bench_temp, 'result.json')
-
-    cmd = [
-        sys.executable,
-        os.path.join(utils.TOOLS_DIR, 'run_benchmark.py'),
-        '--benchmark',
-        benchmark_name,
-        '--target',
-        'r8-full',
-        '--nolib',
-        '--no-build',
-        '--warmup',
-        '0',
-        '--iterations',
-        '1',
-        '--version',
-        version_label,
-        '--version-jar',
-        r8_jar,
-        '--temp',
-        bench_temp,
-        '--output',
-        result_json_path,
-    ]
+    task = (':test:runBenchmarkWithCustomJarPrebuilt'
+            if options.no_build else ':test:runBenchmarkWithCustomJar')
+    gradle_args = get_gradle_args([
+        task,
+        f'-Pbenchmarks={",".join(options.benchmarks)}',
+        '-Ptarget=r8-full',
+        '-Pwarmup=0',
+        '-Pbenchmark_iterations=1',
+        f'-Pworkers={options.workers}',
+        f'-Poutput_dir={bench_results_dir}',
+        f'-Pr8_jar={os.path.abspath(r8_jar)}',
+    ], options)
     if options.verbose:
-        cmd.append('--verbose')
+        gradle_args.append('-Pverbose')
 
-    start = time.time()
-    print_thread(f'Running benchmark {benchmark_name} ({version_label})...',
-                 worker_id)
-    subprocess.check_call(cmd)
-    duration = time.time() - start
-
-    with open(result_json_path, 'r') as f:
-        iter_res = json.load(f)['results'][0]
-    dex_size = pos_or_none(iter_res.get('code_size'))
-    oat_size = pos_or_none(iter_res.get('oat_code_size'))
-    resource_size = pos_or_none(iter_res.get('resource_size'))
-
-    results_dict[benchmark_name] = {
-        'name': benchmark_name,
-        'kind': 'benchmark (r8-full)',
-        'dex_size': dex_size,
-        'oat_size': oat_size,
-        'resource_size': resource_size,
-        'duration_s': round(duration, 1),
-    }
-    print_thread(
-        f'Finished benchmark {benchmark_name} ({version_label}) in {duration:.1f}s: '
-        f'dex={dex_size}, oat={oat_size}, res={resource_size}', worker_id)
-    return 0
+    gradle.run_gradle(gradle_args, quiet=not options.verbose)
+    collect_benchmark_size_results(options.benchmarks, bench_results_dir,
+                                   results_dict)
 
 
 def run_single_compiledump(dump_name, compiler, r8_jar, version_label, temp_dir,
@@ -376,10 +320,10 @@ def run_single_compiledump(dump_name, compiler, r8_jar, version_label, temp_dir,
 
     dex_size = utils.compute_dex_size_in_zip(out_jar)
     for fname in os.listdir(dump_temp):
-        if is_feature_out_jar(fname):
+        if is_feature_output_jar(fname):
             dex_size += utils.compute_dex_size_in_zip(
                 os.path.join(dump_temp, fname))
-    dex_size = pos_or_none(dex_size)
+    dex_size = positive_or_none(dex_size)
 
     out_oat = os.path.join(dump_temp, 'out.oat')
     # Run dex2oat.py in a subprocess to avoid process-global os.chdir() across threads.
@@ -392,15 +336,15 @@ def run_single_compiledump(dump_name, compiler, r8_jar, version_label, temp_dir,
         dex2oat.LATEST,
         out_jar,
     ])
-    oat_size = pos_or_none(
+    oat_size = positive_or_none(
         os.path.getsize(out_oat) if os.path.isfile(out_oat) else None)
 
     res_files = [
         os.path.join(dump_temp, f)
         for f in os.listdir(dump_temp)
-        if f == 'app-res-out.ap_' or is_feature_out_ap(f)
+        if f == 'app-res-out.ap_' or is_feature_resource_apk(f)
     ]
-    resource_size = pos_or_none(
+    resource_size = positive_or_none(
         sum(os.path.getsize(p) for p in res_files) if res_files else None)
 
     duration = time.time() - start
@@ -423,10 +367,8 @@ def run_suite(r8_jar, version_label, temp_dir, options):
     suite_temp = os.path.join(temp_dir, f'suite_{version_label[:12]}')
     os.makedirs(suite_temp, exist_ok=True)
     results_dict = {}
+    run_benchmarks_via_gradle(r8_jar, suite_temp, options, results_dict)
     jobs = []
-    for b in options.benchmarks:
-        jobs.append(lambda wid, b=b: run_single_benchmark(
-            b, r8_jar, version_label, suite_temp, options, results_dict, wid))
     for c in options.compiledumps:
         for comp in COMPILEDUMP_COMPILERS:
             jobs.append(lambda wid, c=c, comp=comp: run_single_compiledump(
@@ -493,15 +435,14 @@ def compute_commit_baseline(commit_hash, temp_dir, options):
     try:
         print(f'Checking out {commit_hash[:8]} to compute baseline...')
         git_utils.GitCheckout(commit_hash, utils.REPO_ROOT)
-        ensure_dependencies(options)
-        gradle.run_gradle(get_gradle_build_args([utils.GRADLE_TASK_R8]))
+        gradle.run_gradle(get_gradle_args([utils.GRADLE_TASK_R8], options))
         base_jar = tag_local_r8_jar(utils.R8_JAR,
                                     commit_hash,
                                     temp_dir,
                                     label='base')
-        return run_suite(base_jar, commit_hash, temp_dir, options)
     finally:
         git_utils.GitCheckout(orig_ref, utils.REPO_ROOT)
+    return run_suite(base_jar, commit_hash, temp_dir, options)
 
 
 def resolve_baseline_results(options,
@@ -779,11 +720,10 @@ def generate_markdown_summary(base_hash,
 
 def main(argv=None):
     options, _ = parse_options(argv)
-    ensure_build_artifacts(options)
-    ensure_dependencies(options)
 
     head_hash = utils.get_HEAD_sha1()
     with utils.TempDir() as temp_dir:
+        ensure_r8_jar(options)
         tagged_r8_jar = tag_local_r8_jar(utils.R8_JAR,
                                          head_hash,
                                          temp_dir,

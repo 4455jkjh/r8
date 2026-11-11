@@ -91,7 +91,7 @@ public class BottomUpOutliner {
   }
 
   private void scan(DexProgramClass clazz, Timing timing) {
-    timing.begin("Scan " + clazz.getTypeName());
+    timing.begin(clazz, c -> "Scan " + c.getTypeName());
     DeadCodeRemover deadCodeRemover = new DeadCodeRemover(appView);
     clazz.forEachProgramMethodMatching(
         this::hasLirCodeMaybeSubjectToOutlining,

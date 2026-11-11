@@ -91,13 +91,11 @@ dependencies {
   coverageClassesScope(project(":keepradius", "keepradiusClasses"))
   coverageClassesScope(project(":libanalyzer", "libanalyzerClasses"))
   coverageClassesScope(project(":main", "mainClassesOutput"))
-  coverageClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
   coverageSourcesScope(project(":assistant", "assistantSources"))
   coverageSourcesScope(project(":keepanno", "keepannoSources"))
   coverageSourcesScope(project(":keepradius", "keepradiusSources"))
   coverageSourcesScope(project(":libanalyzer", "libanalyzerSources"))
   coverageSourcesScope(project(":main", "mainSources"))
-  coverageSourcesScope(project(":resourceshrinker", "resourceshrinkerSources"))
   coverageExecScope(project(":tests_java_8", "jacocoExecElements"))
   coverageExecScope(project(":tests_java_11", "jacocoExecElements"))
   coverageExecScope(project(":tests_java_17", "jacocoExecElements"))
@@ -668,7 +666,6 @@ tasks {
     sourceConfiguration(project(":keepradius"))
     sourceConfiguration(project(":keepanno"))
     sourceConfiguration(project(":libanalyzer"))
-    sourceConfiguration(project(":resourceshrinker"))
     sourceConfiguration(project(":main"))
   }
   register<Jar>("packageSources") {
@@ -733,6 +730,69 @@ tasks {
       dependsOn(":tests_bootstrap:test")
     }
   }
+
+  fun registerBenchmarkTasks(
+    baseName: String,
+    classpathProviders: List<Provider<RegularFile>>,
+    useCustomR8Jar: Boolean = false,
+  ) {
+    register<RunBenchmarkTask>(baseName) {
+      dependsOn(sharedDepsConfig)
+      configureCommon(project)
+      testDataLocation.set(layout.dir(unzipTests.map { it.destinationDir }))
+      testBaseDataLocation.set(layout.dir(unzipTestBase.map { it.destinationDir }))
+      keepAnnoRuntimeClasspath.from(keepAnnoClassesConfig)
+      if (useCustomR8Jar) {
+        configureCustomR8Jar()
+      }
+      benchmarkClasspath.from(classpathProviders)
+    }
+
+    register<RunBenchmarkTask>("${baseName}Prebuilt") {
+      dependsOn(sharedDepsConfig)
+      configureCommon(project)
+      testDataLocation.set(unzipTests.get().destinationDir)
+      testBaseDataLocation.set(unzipTestBase.get().destinationDir)
+      keepAnnoRuntimeClasspath.from(keepAnnoClassesConfig.get().files)
+      if (useCustomR8Jar) {
+        configureCustomR8Jar()
+      }
+      benchmarkClasspath.from(classpathProviders.map { it.get().asFile })
+    }
+  }
+
+  registerBenchmarkTasks(
+    baseName = "runBenchmark",
+    classpathProviders =
+      listOf(
+        assembleR8LibWithRelocatedDeps.flatMap { it.outputJar },
+        rewriteTestsForR8LibWithRelocatedDeps.flatMap { it.outputFile },
+        rewriteTestBaseForR8LibWithRelocatedDeps.flatMap { it.outputFile },
+        packageTestDeps.flatMap { it.archiveFile },
+      ),
+  )
+
+  registerBenchmarkTasks(
+    baseName = "runBenchmarkNoLib",
+    classpathProviders =
+      listOf(
+        r8WithRelocatedDepsTask.flatMap { it.outputFile },
+        packageTests.flatMap { it.archiveFile },
+        packageTestBase.flatMap { it.archiveFile },
+        packageTestDeps.flatMap { it.archiveFile },
+      ),
+  )
+
+  registerBenchmarkTasks(
+    baseName = "runBenchmarkWithCustomJar",
+    classpathProviders =
+      listOf(
+        packageTests.flatMap { it.archiveFile },
+        packageTestBase.flatMap { it.archiveFile },
+        packageTestDeps.flatMap { it.archiveFile },
+      ),
+    useCustomR8Jar = true,
+  )
 }
 
 fun Task.getSingleOutputFile(): File = getOutputs().getSingleOutputFile()

@@ -78,9 +78,9 @@ public class ProguardMapReader implements AutoCloseable {
   private final boolean allowExperimentalMapping;
   private boolean seenClassMapping = false;
 
-  private final CardinalPositionRangeAllocator cardinalRangeCache =
+  private static final CardinalPositionRangeAllocator cardinalRangeCache =
       PositionRangeAllocator.createCardinalPositionRangeAllocator();
-  private final NonCardinalPositionRangeAllocator nonCardinalRangeCache =
+  private static final NonCardinalPositionRangeAllocator nonCardinalRangeCache =
       PositionRangeAllocator.createNonCardinalPositionRangeAllocator();
 
   @Override
@@ -107,11 +107,28 @@ public class ProguardMapReader implements AutoCloseable {
       boolean allowEmptyMappedRanges,
       boolean allowExperimentalMapping,
       MapVersion mapVersion) {
+    this(
+        reader,
+        diagnosticsHandler,
+        allowEmptyMappedRanges,
+        allowExperimentalMapping,
+        mapVersion,
+        0);
+  }
+
+  ProguardMapReader(
+      LineReader reader,
+      DiagnosticsHandler diagnosticsHandler,
+      boolean allowEmptyMappedRanges,
+      boolean allowExperimentalMapping,
+      MapVersion mapVersion,
+      int lineNo) {
     this.reader = reader;
     this.diagnosticsHandler = diagnosticsHandler;
     this.allowEmptyMappedRanges = allowEmptyMappedRanges;
     this.allowExperimentalMapping = allowExperimentalMapping;
     this.version = mapVersion;
+    this.lineNo = lineNo;
     assert reader != null;
     assert diagnosticsHandler != null;
   }
@@ -208,16 +225,16 @@ public class ProguardMapReader implements AutoCloseable {
 
   private boolean skipLine(ProguardMap.Builder mapBuilder) throws IOException {
     lineOffset = 0;
-    boolean isEmptyOrCommentLine;
-    do {
-      line = reader.readLine();
+    while ((line = reader.readLine()) != null) {
       lineNo++;
-      isEmptyOrCommentLine = isEmptyOrCommentLine(line);
-      if (!seenClassMapping && isEmptyOrCommentLine) {
+      if (!isEmptyOrCommentLine(line)) {
+        return true;
+      }
+      if (!seenClassMapping) {
         mapBuilder.addPreambleLine(line);
       }
-    } while (hasLine() && isEmptyOrCommentLine);
-    return hasLine();
+    }
+    return false;
   }
 
   private boolean hasLine() {
@@ -324,16 +341,9 @@ public class ProguardMapReader implements AutoCloseable {
           info -> {
             MapVersionMappingInformation generatorInfo = info.asMapVersionMappingInformation();
             if (generatorInfo != null) {
-              if (generatorInfo.getMapVersion().equals(MapVersion.MAP_VERSION_EXPERIMENTAL)) {
-                // A mapping file that is marked "experimental" will be treated as an unversioned
-                // file if the compiler/tool is not explicitly running with experimental support.
-                version =
-                    allowExperimentalMapping
-                        ? MapVersion.MAP_VERSION_EXPERIMENTAL
-                        : MapVersion.MAP_VERSION_NONE;
-              } else {
-                version = generatorInfo.getMapVersion();
-              }
+              // A mapping file that is marked "experimental" will be treated as an unversioned
+              // file if the compiler/tool is not explicitly running with experimental support.
+              version = generatorInfo.getMapVersion(allowExperimentalMapping);
             }
             onMappingInfo.accept(info);
           });

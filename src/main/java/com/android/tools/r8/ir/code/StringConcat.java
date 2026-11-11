@@ -69,23 +69,26 @@ public class StringConcat extends Instruction {
   private static DexType[] normalizeArgTypes(DexType[] argTypes, DexItemFactory dexItemFactory) {
     DexType[] syntheticArgTypes = new DexType[argTypes.length];
     for (int i = 0; i < argTypes.length; ++i) {
-      DexType argType = argTypes[i];
-      switch (argType.toShorty()) {
-        case 'L':
-        case '[':
-          argType = dexItemFactory.objectType;
-          break;
-        case 'B':
-        case 'S':
-        case 'I':
-          argType = dexItemFactory.intType;
-          break;
-        default:
-          break;
-      }
-      syntheticArgTypes[i] = argType;
+      syntheticArgTypes[i] = normalizeArgType(argTypes[i], dexItemFactory);
     }
     return syntheticArgTypes;
+  }
+
+  public static DexType normalizeArgType(DexType argType, DexItemFactory dexItemFactory) {
+    switch (argType.toShorty()) {
+      case 'L':
+        return argType.isIdenticalTo(dexItemFactory.stringType)
+            ? dexItemFactory.stringType
+            : dexItemFactory.objectType;
+      case '[':
+        return dexItemFactory.objectType;
+      case 'B':
+      case 'S':
+      case 'I':
+        return dexItemFactory.intType;
+      default:
+        return argType;
+    }
   }
 
   private void assertValidState() {

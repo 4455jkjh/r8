@@ -20,7 +20,6 @@ import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.DeterminismChecker;
-import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.LongLivedProgramMethodSetBuilder;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
@@ -238,8 +237,7 @@ public class PostMethodProcessor extends MethodProcessorWithWave {
         assert feedback.noUpdatesLeft();
         converter.waveStart(wave, ++waveIndex);
         Collection<Timing> timings =
-            ThreadUtils.processItemsWithResults(
-                wave,
+            processWave(
                 method -> {
                   Timing time =
                       consumer.apply(

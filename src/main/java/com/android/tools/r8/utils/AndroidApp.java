@@ -288,7 +288,8 @@ public class AndroidApp {
       throws ResourceException {
     for (ProgramResourceProvider provider : programResourceProviders) {
       timing.begin(
-          "Process " + EnsureNonDexProgramResourceProvider.unwrap(provider).getClass().getName());
+          provider,
+          p -> "Process " + EnsureNonDexProgramResourceProvider.unwrap(p).getClass().getName());
       if (provider instanceof InternalProgramClassProvider) {
         InternalProgramClassProvider internalProvider = (InternalProgramClassProvider) provider;
         internalProviderConsumer.accept(internalProvider);

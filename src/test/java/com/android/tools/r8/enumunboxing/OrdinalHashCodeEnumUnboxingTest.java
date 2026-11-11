@@ -77,11 +77,28 @@ public class OrdinalHashCodeEnumUnboxingTest extends EnumUnboxingTestBase {
       Object o = new Object();
       System.out.println(System.identityHashCode(o));
       System.out.println(o.hashCode());
+      System.identityHashCode(args.length == 0 ? MyEnum.A : MyEnum.C);
+      unusedHash(MyEnum.A);
+      unusedHash(null);
+      deadStringBuilderWithHash(MyEnum.B);
+      deadStringBuilderWithHash(null);
     }
 
     @NeverInline
     private static int hash(MyEnum e) {
       return System.identityHashCode(e);
+    }
+
+    @NeverInline
+    private static void unusedHash(MyEnum e) {
+      System.identityHashCode(e);
+    }
+
+    @NeverInline
+    private static void deadStringBuilderWithHash(MyEnum e) {
+      if (new StringBuilder().append(System.identityHashCode(e)).toString() == null) {
+        throw new AssertionError();
+      }
     }
 
     @NeverInline

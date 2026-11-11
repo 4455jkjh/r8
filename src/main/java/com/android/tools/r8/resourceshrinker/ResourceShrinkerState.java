@@ -25,8 +25,8 @@ import com.android.ide.common.resources.usage.ResourceUsageModel;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
 import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
-import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorderKt;
-import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorderKt;
+import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorder;
+import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -418,7 +419,7 @@ public class ResourceShrinkerState<T> {
         (featureSplit, resourceTable) -> {
           shrunkenTables.put(
               featureSplit,
-              ResourceTableUtilKt.nullOutEntriesWithIds(resourceTable, resourceIdsToRemove, true)
+              ResourceTableUtil.nullOutEntriesWithIds(resourceTable, resourceIdsToRemove, true)
                   .toByteArray());
         });
     if (shrinkerDebugReporter.isDebugEnabled()) {
@@ -467,7 +468,7 @@ public class ResourceShrinkerState<T> {
   private ImmutableSet<String> getResEntriesToKeep(ResourceStore resourceStore) {
     ImmutableSet.Builder<String> resEntriesToKeep = new ImmutableSet.Builder<>();
     for (String path : Iterables.concat(xmlFileProviders.keySet(), resfileProviders.keySet())) {
-      if (ResourceStoreUtilsKt.isJarPathReachable(resourceStore, path)) {
+      if (ResourceStoreUtils.isJarPathReachable(resourceStore, path)) {
         resEntriesToKeep.add(path);
       }
     }
@@ -527,11 +528,10 @@ public class ResourceShrinkerState<T> {
       visitNode(xmlNode, xmlFile, null, callback);
       // Ensure that we trace the transitive reachable ids, without us having to iterate all
       // resources for the reachable marker.
-      ProtoAndroidManifestUsageRecorderKt.recordUsagesFromNode(xmlNode, r8ResourceShrinkerModel)
-          .iterator()
-          .forEachRemaining(resource -> trace(resource.value, xmlFile, callback));
+      ProtoAndroidManifestUsageRecorder.recordUsagesFromNode(xmlNode, r8ResourceShrinkerModel)
+          .forEach(resource -> trace(resource.value, xmlFile, callback));
     } catch (IOException e) {
-      errorHandler.apply(e);
+      throw errorHandler.apply(e);
     }
   }
 
@@ -766,7 +766,7 @@ public class ResourceShrinkerState<T> {
                     if (item.hasFile()) {
                       FileReference file = item.getFile();
                       if (file.getType() == FileReference.Type.PROTO_XML) {
-                        int id = ResourceTableUtilKt.toIdentifier(packageEntry, type, entry);
+                        int id = ResourceTableUtil.toIdentifier(packageEntry, type, entry);
                         resourceIdToXmlFiles
                             .computeIfAbsent(id, unused -> new HashSet<>())
                             .add(file.getPath());
@@ -795,7 +795,7 @@ public class ResourceShrinkerState<T> {
   public void updateModelWithManifestReferences() throws IOException {
     for (ManifestLocationAndProvider manifestProvider : manifestProviders) {
       try (InputStream is = manifestProvider.provider.get()) {
-        ProtoAndroidManifestUsageRecorderKt.recordUsagesFromNode(
+        ProtoAndroidManifestUsageRecorder.recordUsagesFromNode(
             XmlNode.parseFrom(is), r8ResourceShrinkerModel);
       }
     }
@@ -803,7 +803,7 @@ public class ResourceShrinkerState<T> {
 
   public void updateModelWithKeepXmlReferences() throws IOException {
     for (Supplier<InputStream> keepRuleFileProvider : keepRuleFileProviders) {
-      ToolsAttributeUsageRecorderKt.processRawXml(
+      ToolsAttributeUsageRecorder.processRawXml(
           getUtfReader(keepRuleFileProvider.get().readAllBytes()), r8ResourceShrinkerModel);
     }
   }
@@ -853,7 +853,7 @@ public class ResourceShrinkerState<T> {
     final Primitive colorPrim;
 
     private String toHexColor(int value, int truncate) {
-      return "#" + Integer.toHexString(value).substring(truncate).toUpperCase();
+      return "#" + Integer.toHexString(value).substring(truncate).toUpperCase(Locale.ROOT);
     }
 
     ColorSingleValueResource(Primitive prim) {
@@ -924,9 +924,8 @@ public class ResourceShrinkerState<T> {
 
     public void instantiateFromResourceTable(
         ResourceTable resourceTable, boolean includeStyleables) {
-      ResourceTableUtilKt.entriesSequence(resourceTable)
-          .iterator()
-          .forEachRemaining(
+      ResourceTableUtil.entries(resourceTable)
+          .forEach(
               entryWrapper -> {
                 ResourceType resourceType = ResourceType.fromClassName(entryWrapper.getType());
                 Entry entry = entryWrapper.getEntry();

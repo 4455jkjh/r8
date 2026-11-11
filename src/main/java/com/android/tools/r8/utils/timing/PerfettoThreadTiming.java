@@ -8,6 +8,8 @@ import androidx.tracing.PropagationUnsupportedToken;
 import androidx.tracing.ThreadTrack;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 class PerfettoThreadTiming extends TimingImplBase {
   // The API now allows you to specify the category and in the future let you conditionally turn on
@@ -26,6 +28,18 @@ class PerfettoThreadTiming extends TimingImplBase {
   @Override
   public Timing createThreadTiming(String title, InternalOptions options) {
     return parent.createThreadTiming(title, options);
+  }
+
+  @Override
+  public <T> Timing createThreadTiming(
+      T context, Function<T, String> titleSupplier, InternalOptions options) {
+    return parent.createThreadTiming(context, titleSupplier, options);
+  }
+
+  @Override
+  public Timing createThreadTiming(
+      int value, IntFunction<String> titleSupplier, InternalOptions options) {
+    return parent.createThreadTiming(value, titleSupplier, options);
   }
 
   @Override

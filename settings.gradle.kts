@@ -77,8 +77,6 @@ includeProject(":keepanno")
 
 includeProject(":libanalyzer")
 
-includeProject(":resourceshrinker")
-
 includeProject(":main")
 
 includeProject(":utils")

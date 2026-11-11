@@ -1173,10 +1173,14 @@ public class Outliner implements ReprocessingOptimization {
       }
 
       Instruction lastInstruction = currentCandidateInstructions.get(end - 1);
-      if (lastInstruction.getBlock().hasCatchHandlers()
-          && !lastInstruction.instructionInstanceCanThrow(appView, method)) {
-        reset(start + 1);
-        return;
+      if (lastInstruction.getBlock().hasCatchHandlers()) {
+        // If returnValue is defined before lastInstruction, it is not defined on the exceptional
+        // edge to catch handlers if the outlined method throws.
+        if (!lastInstruction.instructionInstanceCanThrow(appView, method)
+            || (returnValue != null && !lastInstruction.hasOutValue())) {
+          reset(start + 1);
+          return;
+        }
       }
 
       Outline outline =

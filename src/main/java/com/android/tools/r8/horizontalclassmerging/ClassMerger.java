@@ -453,7 +453,7 @@ public class ClassMerger {
       }
     }
 
-    private boolean requiresClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
+    public boolean requiresClassIdField(RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
       if (runtimeTypeCheckInfo != null
           && Iterables.any(
               group,
@@ -489,12 +489,15 @@ public class ClassMerger {
     }
   }
 
+  public static DexType classIdType(int groupSize, AppView<?> appView) {
+    return groupSize <= Byte.MAX_VALUE
+            && !appView.options().getTestingOptions().forceIntTypeForClassIdField
+        ? appView.dexItemFactory().byteType
+        : appView.dexItemFactory().intType;
+  }
+
   public static DexType classIdType(HorizontalMergeGroup group, AppView<?> appView) {
-    DexType classIdType =
-        group.size() <= Byte.MAX_VALUE
-                && !appView.options().getTestingOptions().forceIntTypeForClassIdField
-            ? appView.dexItemFactory().byteType
-            : appView.dexItemFactory().intType;
+    DexType classIdType = classIdType(group.size(), appView);
     assert !group.hasClassIdField() || group.getClassIdField().getType().isIdenticalTo(classIdType);
     return classIdType;
   }

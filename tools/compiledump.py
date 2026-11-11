@@ -91,10 +91,6 @@ def make_parser():
         help='Use the non-lib distribution (default uses the lib distribution)',
         default=False,
         action='store_true')
-    parser.add_argument('--print-times',
-                        help='Print timing information from r8',
-                        default=False,
-                        action='store_true')
     parser.add_argument(
         '--disable-assertions',
         '--disable_assertions',
@@ -680,8 +676,6 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         if args.dump_trace_to_directory is not None:
             cmd.append('-Dcom.android.tools.r8.dumptracetodirectory=' +
                        args.dump_trace_to_directory)
-        if args.print_times:
-            cmd.append('-Dcom.android.tools.r8.printtimes=1')
         if args.r8_flags:
             cmd.extend(args.r8_flags.split(' '))
         if 'properties' in args:

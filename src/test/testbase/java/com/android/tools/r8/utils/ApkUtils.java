@@ -7,9 +7,9 @@ package com.android.tools.r8.utils;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.google.common.collect.ImmutableList;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class ApkUtils {
 
@@ -24,7 +24,7 @@ public class ApkUtils {
             .add("--install")
             .add(apk.toString());
     ProcessBuilder builder = new ProcessBuilder(command.build());
-    builder.directory(Paths.get(ToolHelper.THIRD_PARTY_DIR).toAbsolutePath().getParent().toFile());
+    builder.directory(new File(ToolHelper.getProjectRoot()));
     return ToolHelper.runProcess(builder);
   }
 }

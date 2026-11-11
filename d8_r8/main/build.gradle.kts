@@ -46,9 +46,9 @@ dependencies {
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":keepradius", "keepradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
-  implementation(project(":resourceshrinker", "resourceshrinkerJar"))
   implementation(project(":utils"))
   compileOnly(libs.bundles.compilerDeps)
+  compileOnly(libs.bundles.nonTransitiveDeps)
 }
 
 tasks {

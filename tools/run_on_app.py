@@ -166,10 +166,6 @@ def ParseOptions(argv):
                         help='Setting the increment',
                         type=int,
                         default=32)
-    result.add_argument('--print-times',
-                        help='Include timing',
-                        default=False,
-                        action='store_true')
     result.add_argument('--cpu-list',
                         help='Run under \'taskset\' with these CPUs. See '
                         'the \'taskset\' -c option for the format')
@@ -446,9 +442,6 @@ def run_with_options(options,
             extra_args.append('-Xmx8G')
     if not options.ignore_java_version:
         utils.check_java_version()
-
-    if options.print_times:
-        extra_args.append('-Dcom.android.tools.r8.printtimes=1')
 
     if not options.disable_assertions:
         extra_args.append('-Dcom.android.tools.r8.enableTestAssertions=1')

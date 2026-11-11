@@ -180,7 +180,7 @@ public class UseCollector implements UseCollectorEventConsumer {
         executorService,
         timing,
         timing.beginMerger("Trace classes", executorService),
-        (index, clazz) -> clazz.getTypeName());
+        DexClass::getTypeName);
     nativeIdentification.processWorklist(executorService);
   }
 

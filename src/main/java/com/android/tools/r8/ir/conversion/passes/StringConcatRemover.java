@@ -184,12 +184,10 @@ public class StringConcatRemover extends CodeRewriterPass {
     List<DexType> dynamicTypes = new ArrayList<>();
 
     StringBuilder recipe = new StringBuilder();
-    boolean hasConstant = false;
     int inValueIdx = 0;
     for (int i = 0; i < argTypes.length; i++) {
       DexString argConstant = argConstants.get(i);
       if (argConstant != null) {
-        hasConstant = true;
         recipe.append(argConstant.toString());
         continue;
       }
@@ -197,24 +195,18 @@ public class StringConcatRemover extends CodeRewriterPass {
       Value aliasedValue = value.getAliasedValue();
       if (aliasedValue.isConstString()) {
         assert false : aliasedValue; // StringConcatOptimizer should have moved to argConstants.
-        hasConstant = true;
         recipe.append(aliasedValue.getDefinition().asConstString().getValue().toString());
       } else {
         recipe.append('\u0001');
         dynamicValues.add(value);
-        dynamicTypes.add(argTypes[i]);
+        dynamicTypes.add(
+            value.getType().isStringType(dexItemFactory) ? dexItemFactory.stringType : argTypes[i]);
       }
     }
 
-    List<DexValue> bootstrapArgs = new ArrayList<>();
-    DexMethod bootstrapMethod;
-    if (hasConstant) {
-      bootstrapArgs.add(
-          new DexValue.DexValueString(dexItemFactory.createString(recipe.toString())));
-      bootstrapMethod = dexItemFactory.stringConcatFactoryMembers.makeConcatWithConstants;
-    } else {
-      bootstrapMethod = dexItemFactory.stringConcatFactoryMembers.makeConcat;
-    }
+    List<DexValue> bootstrapArgs =
+        List.of(new DexValue.DexValueString(dexItemFactory.createString(recipe.toString())));
+    DexMethod bootstrapMethod = dexItemFactory.stringConcatFactoryMembers.makeConcatWithConstants;
 
     DexMethodHandle bootstrapMethodHandle =
         dexItemFactory.createMethodHandle(MethodHandleType.INVOKE_STATIC, bootstrapMethod, false);

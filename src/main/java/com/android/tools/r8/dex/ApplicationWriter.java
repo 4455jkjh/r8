@@ -280,7 +280,7 @@ public class ApplicationWriter {
             virtualFiles,
             virtualFile -> {
               Timing fileTiming =
-                  timing.createThreadTiming("VirtualFile " + virtualFile.getId(), options);
+                  timing.createThreadTiming(virtualFile, f -> "VirtualFile " + f.getId(), options);
               writeVirtualFile(virtualFile, fileTiming, forcedStrings, startupProfileForWriting);
               fileTiming.end();
               return fileTiming;
@@ -308,8 +308,7 @@ public class ApplicationWriter {
     ProguardMapSupplierResult mapSupplierResult = ProguardMapSupplierResult.createEmpty();
     try {
       timing.begin("Insert Attribute Annotations");
-      // TODO(b/151313715): Move this to the writer threads.
-      insertAttributeAnnotationsAndRemoveEmptyClassInitializers();
+      insertAttributeAnnotationsAndRemoveEmptyClassInitializers(executorService);
       timing.end();
 
       // Each DexCallSite must have its instruction offset set for sorting.
@@ -648,19 +647,27 @@ public class ApplicationWriter {
     }
   }
 
-  private void insertAttributeAnnotationsAndRemoveEmptyClassInitializers() {
+  private void insertAttributeAnnotationsAndRemoveEmptyClassInitializers(
+      ExecutorService executorService) throws ExecutionException {
     // Convert inner-class attributes to DEX annotations and remove empty class initializers.
-    for (DexProgramClass clazz : appView.appInfo().classes()) {
-      if (appView.enableWholeProgramOptimizations()
-          && options.isRelease()
-          && clazz.hasClassInitializer()
-          && clazz.getClassInitializer().getCode().isEmptyVoidMethod()) {
-        clazz.getMethodCollection().removeMethod(clazz.getClassInitializer().getReference());
-      }
-      insertAttributeAnnotationsForClass(clazz);
-      clazz.fields().forEach(this::insertAttributeAnnotationsForField);
-      clazz.methods().forEach(this::insertAttributeAnnotationsForMethod);
+    ThreadUtils.processItems(
+        appView.appInfo().classes(),
+        this::insertAttributeAnnotationsAndRemoveEmptyClassInitializersForClass,
+        appView.options().getThreadingModule(),
+        executorService);
+  }
+
+  private void insertAttributeAnnotationsAndRemoveEmptyClassInitializersForClass(
+      DexProgramClass clazz) {
+    if (appView.enableWholeProgramOptimizations()
+        && options.isRelease()
+        && clazz.hasClassInitializer()
+        && clazz.getClassInitializer().getCode().isEmptyVoidMethod()) {
+      clazz.getMethodCollection().removeMethod(clazz.getClassInitializer().getReference());
     }
+    insertAttributeAnnotationsForClass(clazz);
+    clazz.fields().forEach(this::insertAttributeAnnotationsForField);
+    clazz.methods().forEach(this::insertAttributeAnnotationsForMethod);
   }
 
   @SuppressWarnings("ReferenceEquality")

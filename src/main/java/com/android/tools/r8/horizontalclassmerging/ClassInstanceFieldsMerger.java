@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeUtils;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMergerGraphLens.Builder;
-import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
+import com.android.tools.r8.horizontalclassmerging.policies.CompatibleInstanceFields.InstanceFieldInfo;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
@@ -221,12 +221,23 @@ public interface ClassInstanceFieldsMerger {
       assert Iterables.all(oldFields, oldField -> oldField.isFinal() == newField.isFinal());
       assert Iterables.all(oldFields, oldField -> oldField.isTransient() == newField.isTransient());
       assert Iterables.all(oldFields, oldField -> oldField.isVolatile() == newField.isVolatile());
-      // Final fields are never merged with missing fields (see
+      // Final fields of coroutine state machines are never merged with missing fields (see
       // CoroutineStateMachineMergeCandidates): keeping `final` would materialize a constructor
       // barrier on initializers that previously had none (and leave the field unassigned in class
       // files), whereas demoting `final` would drop the constructor barrier for classes that had
-      // the final field.
-      assert !newField.isFinal() || oldFields.size() == group.size();
+      // the final field. Leaf classes with different instance fields may however be merged (see
+      // MinimizeInstanceFieldCasts), in which case the merged field remains final.
+      assert !newField.isFinal()
+          || oldFields.size() == group.size()
+          || !isCoroutineStateMachineGroup();
+    }
+
+    private boolean isCoroutineStateMachineGroup() {
+      return appView
+          .dexItemFactory()
+          .kotlin()
+          .continuations()
+          .isCoroutineStateMachineSuperType(appView, group.getSuperType());
     }
 
     @SuppressWarnings("ReferenceEquality")

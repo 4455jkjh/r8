@@ -231,7 +231,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public CancelCompilationChecker cancelCompilationChecker = null;
   public AndroidResourceProvider androidResourceProvider = null;
   public AndroidResourceConsumer androidResourceConsumer = null;
-  public List<String> androidResourceProguardMapStrings = null;
 
   public ResourceShrinkerConfiguration resourceShrinkerConfiguration =
       ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
@@ -420,13 +419,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   private long heapDumpId = -1;
-  public boolean printTimes = System.getProperty("com.android.tools.r8.printtimes") != null;
   public String perfettoTraceDumpDirectory =
       System.getProperty("com.android.tools.r8.dumptracetodirectory");
   public String perfettoTraceDumpFile = System.getProperty("com.android.tools.r8.dumptracetofile");
   public final int perfettoTraceThreads =
       SystemPropertyUtils.parseSystemPropertyOrDefault("com.android.tools.r8.trace.threads", -1);
-  // To print memory one also have to enable printtimes.
   public boolean printMemory = System.getProperty("com.android.tools.r8.printmemory") != null;
 
   public void dumpHeap(String name) {
@@ -441,8 +438,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     HeapUtils.dumpHeap(heapDir.resolve("heap" + heapDumpId + "-" + name + ".hprof"));
   }
 
-  public boolean isPrintTimesReportingEnabled() {
-    return (printTimes || perfettoTraceDumpDirectory != null || perfettoTraceDumpFile != null)
+  public boolean isPerfettoTracingEnabled() {
+    return (perfettoTraceDumpDirectory != null || perfettoTraceDumpFile != null)
         && partialSubCompilationConfiguration == null;
   }
 
@@ -2372,12 +2369,24 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enable2AddrHintsForLogicalBinop =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enable2AddrHintsForLogicalBinop", true);
+    public boolean enableHorizontalClassMergingWithDifferentFields =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableHorizontalClassMergingWithDifferentFields", true);
+    public boolean enablePhiLiveIntervalsCoalescing =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enablePhiLiveIntervalsCoalescing", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
         return false;
       }
       return classToDexDistributionRefinementPasses > 0;
+    }
+
+    public boolean enableClassToDexDistributionRefinement(
+        InternalOptions options, VirtualFile virtualFile) {
+      return enableClassToDexDistributionRefinement(options)
+          && (options.canUseMultidex() || virtualFile.getId() != 0);
     }
 
     public TriConsumer<AppView<?>, DexProgramClass, IndexedItemCollection>

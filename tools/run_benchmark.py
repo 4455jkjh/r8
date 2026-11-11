@@ -5,26 +5,11 @@
 
 import argparse
 import os
-import subprocess
 import sys
 
 import compiledump
 import gradle
-import jdk
 import utils
-
-GOLEM_BUILD_TARGETS_TESTS = [
-    utils.GRADLE_TASK_ALL_TESTS_WITH_APPLY_MAPPING_JAR,
-    utils.GRADLE_TASK_TESTBASE_WITH_APPLY_MAPPING_JAR,
-    utils.GRADLE_TASK_TEST_DEPS_JAR
-]
-GOLEM_BUILD_TARGETS = [
-    utils.GRADLE_TASK_R8LIB, utils.GRADLE_TASK_KEEP_ANNO_JAR
-] + GOLEM_BUILD_TARGETS_TESTS
-
-
-def get_jdk_home():
-    return jdk.GetDefaultJdkHome()
 
 
 def parse_options(argv):
@@ -102,10 +87,6 @@ def parse_options(argv):
     result.add_argument('--build-output',
                         '--build_output',
                         help='Output path where to write output from the build')
-    result.add_argument('--print-times',
-                        help='Print timing information from r8',
-                        default=False,
-                        action='store_true')
     result.add_argument(
         '--version',
         '-v',
@@ -135,203 +116,58 @@ def parse_options(argv):
     return options, args
 
 
-def ensure_internal_dependencies(benchmark, quiet=False):
-    if 'AGSA' in benchmark:
-        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
-                                               'closedsource-apps', 'agsa',
-                                               '20250412-v16.14.47'),
-                                  quiet=quiet)
-    elif 'SystemUI' in benchmark:
-        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY,
-                                               'closedsource-apps', 'systemui'),
-                                  quiet=quiet)
-    elif 'YouTubeAppD8Merge' in benchmark:
-        utils.ensure_x20_download(os.path.join(
-            utils.THIRD_PARTY, 'youtube', 'youtube.android_21.40_d8_merge'),
-                                  quiet=quiet)
-    elif 'YouTube' in benchmark:
-        utils.ensure_x20_download(os.path.join(utils.THIRD_PARTY, 'youtube',
-                                               'youtube.android_21.40'),
-                                  quiet=quiet)
+def is_internal_benchmark(benchmark):
+    return any(name in benchmark for name in ('AGSA', 'SystemUI', 'YouTube'))
+
+
+def build_gradle_args(options, temp):
+    if options.version or options.version_jar:
+        base_task = ':test:runBenchmarkWithCustomJar'
+    elif options.nolib:
+        base_task = ':test:runBenchmarkNoLib'
+    else:
+        base_task = ':test:runBenchmark'
+    task = f'{base_task}Prebuilt' if options.no_build else base_task
+    gradle_args = [
+        task,
+        f'-Pbenchmark={options.benchmark}',
+        f'-Ptarget={options.target}',
+    ]
+    if options.version or options.version_jar:
+        r8jar = options.version_jar or compiledump.download_distribution(
+            options.version, options, temp)
+        gradle_args.append(f'-Pr8_jar={os.path.abspath(r8jar)}')
+
+    if not is_internal_benchmark(options.benchmark):
+        gradle_args.append('-Pno_internal')
+
+    for flag in ('enable_assertions', 'debug_agent', 'verbose'):
+        if getattr(options, flag):
+            gradle_args.append(f'-P{flag}')
+
+    for prop, val in (('benchmark_iterations', options.iterations),
+                      ('warmup', options.warmup), ('heap_size',
+                                                   options.heap_size)):
+        if val is not None:
+            gradle_args.append(f'-P{prop}={val}')
+
+    for path_opt in ('output', 'build_output', 'temp', 'dump_jfr_to_file',
+                     'dump_gc_log_to_file', 'dump_heap_to_directory',
+                     'dump_keep_radius_to_directory',
+                     'dump_keep_radius_html_to_directory',
+                     'dump_trace_to_directory'):
+        val = getattr(options, path_opt)
+        if val:
+            gradle_args.append(f'-P{path_opt}={os.path.abspath(val)}')
+
+    utils.append_gradle_user_home_for_worktree(False, False, gradle_args)
+    return gradle_args
 
 
 def main(argv, temp):
-    options, args = parse_options(argv)
-
-    if options.output:
-        options.output = os.path.abspath(options.output)
-
-    if options.dump_jfr_to_file:
-        options.dump_jfr_to_file = os.path.abspath(options.dump_jfr_to_file)
-
-    if options.dump_gc_log_to_file:
-        options.dump_gc_log_to_file = os.path.abspath(
-            options.dump_gc_log_to_file)
-
-    if options.dump_heap_to_directory:
-        options.dump_heap_to_directory = os.path.abspath(
-            options.dump_heap_to_directory)
-
-    if options.dump_keep_radius_to_directory:
-        options.dump_keep_radius_to_directory = os.path.abspath(
-            options.dump_keep_radius_to_directory)
-
-    if options.dump_keep_radius_html_to_directory:
-        options.dump_keep_radius_html_to_directory = os.path.abspath(
-            options.dump_keep_radius_html_to_directory)
-
-    if options.dump_trace_to_directory:
-        options.dump_trace_to_directory = os.path.abspath(
-            options.dump_trace_to_directory)
-
-    if options.temp:
-        temp = options.temp
-        os.makedirs(temp, exist_ok=True)
-
-    if options.nolib:
-        testBuildTargets = [
-            utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR,
-            utils.GRADLE_TASK_TEST_UNZIP_TESTBASE
-        ]
-        buildTargets = [utils.GRADLE_TASK_R8, utils.GRADLE_TASK_KEEP_ANNO_JAR
-                       ] + testBuildTargets
-        r8jar = utils.R8_JAR
-        testjars = [
-            utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR, utils.R8_TESTBASE_JAR
-        ]
-    else:
-        testBuildTargets = GOLEM_BUILD_TARGETS_TESTS
-        buildTargets = GOLEM_BUILD_TARGETS
-        r8jar = utils.R8LIB_JAR
-        testjars = [
-            os.path.join(utils.R8LIB_TESTS_JAR),
-            os.path.join(utils.R8LIB_TESTS_DEPS_JAR),
-            os.path.join(utils.R8LIB_TESTBASE_JAR)
-        ]
-
-    if options.version or options.version_jar:
-        # r8 is downloaded so only test jar needs to be built.
-        buildTargets = testBuildTargets
-        r8jar = options.version_jar or compiledump.download_distribution(
-            options.version, options, temp)
-
-    if not options.no_build:
-        gradle.run_gradle(buildTargets + ['-Pno_internal'])
-
-    ensure_internal_dependencies(options.benchmark, quiet=options.quiet)
-
-    # Change the working directory to be in 'temp'.
-    # This is hard to do properly within the JVM so we do it here.
-    with utils.ChangedWorkingDirectory(temp):
-        return run(options, r8jar, testjars)
-
-
-def run(options, r8jar, testjars):
-    xms = '8g'
-    xmx = '8g'
-    if 'AGSA' in options.benchmark or 'YouTube' in options.benchmark:
-        xms = '32g'
-        xmx = '32g'
-    elif options.benchmark == 'SystemUIAppGc':
-        xms = '1760m'
-        xmx = '1760m'
-    if options.heap_size:
-        xms = options.heap_size
-        xmx = options.heap_size
-    jdkhome = get_jdk_home()
-    cmd = [
-        jdk.GetJavaExecutable(jdkhome),
-        '-Xms' + xms,
-        '-Xmx' + xmx,
-        '-XX:+TieredCompilation',
-        '-XX:TieredStopAtLevel=4',
-        '-DBENCHMARK_IGNORE_CODE_SIZE_DIFFERENCES',
-        f'-DBUILD_PROP_KEEPANNO_RUNTIME_PATH={utils.REPO_ROOT}/d8_r8/keepanno/build/classes/java/main',
-        # Since we change the working directory to a temp folder.
-        f'-DREPO_ROOT={utils.REPO_ROOT}'
-    ]
-    if options.enable_assertions:
-        cmd.append('-ea')
-    if options.dump_heap_to_directory:
-        cmd.append(
-            f'-Dcom.android.tools.r8.dumpheaptodirectory={options.dump_heap_to_directory}'
-        )
-    if options.dump_keep_radius_to_directory:
-        cmd.append('-Dcom.android.tools.r8.dumpkeepradiustodirectory=' +
-                   options.dump_keep_radius_to_directory)
-    if options.dump_keep_radius_html_to_directory:
-        cmd.append('-Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=' +
-                   options.dump_keep_radius_html_to_directory)
-    if options.dump_trace_to_directory:
-        cmd.append('-Dcom.android.tools.r8.dumptracetodirectory=' +
-                   options.dump_trace_to_directory)
-    if options.dump_gc_log_to_file:
-        cmd.append(
-            f'-Xlog:gc*,gc+phases=debug:file={options.dump_gc_log_to_file}:time,uptime,level,tags'
-        )
-    if options.dump_jfr_to_file:
-        cmd.append(
-            f'-XX:StartFlightRecording=disk=true,dumponexit=true,filename={options.dump_jfr_to_file},settings=profile'
-        )
-    if options.print_times:
-        cmd.append('-Dcom.android.tools.r8.printtimes=1')
-    cmd.extend([
-        f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
-        f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',
-        # Remember to update ensure_internal_dependencies() above when adding
-        # or updating internal benchmark dependencies below.
-        f'-DTEST_DEP_AGSA={utils.THIRD_PARTY}/closedsource-apps/agsa/20250412-v16.14.47',
-        f'-DTEST_DEP_ANDROID_JAR_30={utils.THIRD_PARTY}/android_jar/lib-v30',
-        f'-DTEST_DEP_BOOKSTORY={utils.OPENSOURCE_DUMPS_DIR}/android/bookstory',
-        f'-DTEST_DEP_CHROME_BENCHMARK={utils.OPENSOURCE_DUMPS_DIR}/chrome',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_CRANE={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/crane',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_JETCASTER={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetcaster',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_JETCHAT={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetchat',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_JETLAGGED={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetlagged',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_JETNEWS={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetnews',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_JETSNACK={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/jetsnack',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_OWL={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/owl',
-        f'-DTEST_DEP_COMPOSE_SAMPLES_REPLY={utils.OPENSOURCE_DUMPS_DIR}/android/compose-samples/reply',
-        f'-DTEST_DEP_DESUGAR_LIBRARY_RELEASE_2_0_3={utils.THIRD_PARTY}/openjdk/desugar_jdk_libs_releases/2.0.3',
-        f'-DTEST_DEP_DEX2OAT_36_0={utils.THIRD_PARTY}/dex2oat/36.0',
-        f'-DTEST_DEP_FEEDER={utils.OPENSOURCE_DUMPS_DIR}/android/feeder',
-        f'-DTEST_DEP_FOSSIFY_FILE_MANAGER={utils.OPENSOURCE_DUMPS_DIR}/android/fossify-filemanager',
-        f'-DTEST_DEP_JAVA_8_RUNTIME={utils.THIRD_PARTY}/openjdk/openjdk-rt-1.8',
-        f'-DTEST_DEP_KEEPASSDX={utils.OPENSOURCE_DUMPS_DIR}/android/keepassdx',
-        f'-DTEST_DEP_NEWPIPE={utils.OPENSOURCE_DUMPS_DIR}/android/newpipe',
-        f'-DTEST_DEP_NOWINANDROID={utils.OPENSOURCE_DUMPS_DIR}/android/nowinandroid',
-        f'-DTEST_DEP_OMNINOTES={utils.OPENSOURCE_DUMPS_DIR}/android/omninotes',
-        f'-DTEST_DEP_OPENTRACKS={utils.OPENSOURCE_DUMPS_DIR}/android/opentracks',
-        f'-DTEST_DEP_READYOU={utils.OPENSOURCE_DUMPS_DIR}/android/readyou',
-        f'-DTEST_DEP_RETRACE_BENCHMARK={utils.THIRD_PARTY}/retrace_benchmark',
-        f'-DTEST_DEP_SYSTEM_UI={utils.THIRD_PARTY}/closedsource-apps/systemui',
-        f'-DTEST_DEP_TIVI={utils.OPENSOURCE_DUMPS_DIR}/tivi',
-        f'-DTEST_DEP_TUSKY={utils.OPENSOURCE_DUMPS_DIR}/android/tusky',
-        f'-DTEST_DEP_YOUTUBE_21_40={utils.THIRD_PARTY}/youtube/youtube.android_21.40',
-        f'-DTEST_DEP_YOUTUBE_21_40_D8_MERGE={utils.THIRD_PARTY}/youtube/youtube.android_21.40_d8_merge',
-    ])
-    if options.iterations is not None:
-        if options.iterations == 0:
-            return
-        cmd.append(f'-DBENCHMARK_ITERATIONS={options.iterations}')
-    if options.output:
-        cmd.append(f'-DBENCHMARK_OUTPUT={options.output}')
-    if options.build_output:
-        cmd.append(f'-DBENCHMARK_BUILD_OUTPUT={options.build_output}')
-    if options.warmup is not None:
-        cmd.append(f'-DBENCHMARK_WARMUP_ITERATIONS={options.warmup}')
-    cmd.extend(['-cp', ':'.join([r8jar] + testjars)])
-    if options.debug_agent:
-        cmd.append(
-            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
-        )
-    cmd.extend([
-        'com.android.tools.r8.benchmarks.BenchmarkMainEntryRunner',
-        options.benchmark,
-        options.target,
-    ])
-    utils.PrintCmd(cmd, quiet=options.quiet)
-    return subprocess.check_call(cmd)
+    options, _ = parse_options(argv)
+    gradle_args = build_gradle_args(options, temp)
+    return gradle.run_gradle(gradle_args, quiet=options.quiet)
 
 
 if __name__ == '__main__':

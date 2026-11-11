@@ -368,6 +368,10 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     insertRangeInvokeMoves();
     insertInitializedThisMove();
     ImmutableList<BasicBlock> blocks = computeLivenessInformation();
+    if (options().getTestingOptions().enablePhiLiveIntervalsCoalescing
+        && !options().shouldCompileMethodInDebugMode(code.context())) {
+      coalescePhiLiveIntervals();
+    }
     timing.end();
     timing.begin("Allocate");
     performAllocation();
@@ -1301,22 +1305,23 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private boolean splitLiveIntervalsForInvokeRange() {
     boolean hasInvokeRangeLiveIntervals = false;
     for (LiveIntervals intervals : liveIntervals) {
-      Value value = intervals.getValue();
-      for (Invoke invoke : value.<Invoke>uniqueUsers(this::needsInvokeRangeLiveIntervals)) {
-        LiveIntervals overlappingIntervals = intervals.getSplitCovering(invoke.getNumber());
-        LiveIntervals invokeRangeIntervals;
-        if (overlappingIntervals.getStart() == toGapPosition(invoke.getNumber())) {
-          invokeRangeIntervals = overlappingIntervals;
-        } else {
-          invokeRangeIntervals = overlappingIntervals.splitBefore(invoke, mode);
-          unhandled.add(invokeRangeIntervals);
+      for (Value value : intervals.getValues()) {
+        for (Invoke invoke : value.<Invoke>uniqueUsers(this::needsInvokeRangeLiveIntervals)) {
+          LiveIntervals overlappingIntervals = intervals.getSplitCovering(invoke.getNumber());
+          LiveIntervals invokeRangeIntervals;
+          if (overlappingIntervals.getStart() == toGapPosition(invoke.getNumber())) {
+            invokeRangeIntervals = overlappingIntervals;
+          } else {
+            invokeRangeIntervals = overlappingIntervals.splitBefore(invoke, mode);
+            unhandled.add(invokeRangeIntervals);
+          }
+          invokeRangeIntervals.setIsInvokeRangeIntervals(invoke);
+          if (invoke.getNumber() + 1 < invokeRangeIntervals.getEnd()) {
+            LiveIntervals successorIntervals = invokeRangeIntervals.splitAfter(invoke, mode);
+            unhandled.add(successorIntervals);
+          }
+          hasInvokeRangeLiveIntervals = true;
         }
-        invokeRangeIntervals.setIsInvokeRangeIntervals(invoke);
-        if (invoke.getNumber() + 1 < invokeRangeIntervals.getEnd()) {
-          LiveIntervals successorIntervals = invokeRangeIntervals.splitAfter(invoke, mode);
-          unhandled.add(successorIntervals);
-        }
-        hasInvokeRangeLiveIntervals = true;
       }
     }
     return hasInvokeRangeLiveIntervals;
@@ -2022,6 +2027,14 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         || longHalfOverlappingLong(register, rightReg);
   }
 
+  // Returns true if the register of the intervals is constrained by a runtime bug workaround, see
+  // isRegisterRejectedByRuntimeWorkaround.
+  private boolean needsRuntimeWorkaround(LiveIntervals intervals) {
+    return needsLongResultOverlappingLongOperandsWorkaround(intervals)
+        || needsSingleResultOverlappingLongOperandsWorkaround(intervals)
+        || needsArrayGetWideWorkaround(intervals);
+  }
+
   // Returns true if the register cannot be assigned to the intervals due to a runtime bug.
   private boolean isRegisterRejectedByRuntimeWorkaround(int register, LiveIntervals intervals) {
     return (needsLongResultOverlappingLongOperandsWorkaround(intervals)
@@ -2591,14 +2604,19 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     updateRegisterHints(intervals);
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private void updateRegisterHints(LiveIntervals intervals) {
-    Value value = intervals.getValue();
+    for (Value value : intervals.getValues()) {
+      updateRegisterHints(intervals, value);
+    }
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  private void updateRegisterHints(LiveIntervals intervals, Value value) {
     // If the value flows into a phi, set the hint for all the operand splits that flow into the
     // phi and do not have hints yet.
     for (Phi phi : value.uniquePhiUsers()) {
       LiveIntervals phiIntervals = phi.getLiveIntervals();
-      if (!phiIntervals.hasHint()) {
+      if (phiIntervals != intervals.getSplitParent() && !phiIntervals.hasHint()) {
         phiIntervals.setHint(intervals, unhandled);
         for (int i = 0; i < phi.getOperands().size(); i++) {
           Value operand = phi.getOperand(i);
@@ -2623,7 +2641,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         BasicBlock pred = block.getPredecessors().get(i);
         LiveIntervals operandIntervals =
             operand.getLiveIntervals().getSplitCovering(pred.exit().getNumber());
-        operandIntervals.setHint(intervals, unhandled);
+        if (operandIntervals != intervals) {
+          operandIntervals.setHint(intervals, unhandled);
+        }
       }
     }
   }
@@ -3146,7 +3166,11 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
             split != null;
             split = sortedChildren.poll()) {
           int position = split.getStart();
-          if (!canSkipArgumentMove(split)) {
+          // A split that does not start where the previous split ends follows a lifetime hole. It
+          // starts at a block entry (handled by resolveControlFlow) or, for coalesced live
+          // intervals, at the definition of another value. The previous split is dead in the hole
+          // and may be in another register, so a move would only copy a stale value.
+          if (!canSkipArgumentMove(split) && position == current.getEnd()) {
             spillMoves.addSpillOrRestoreMove(toGapPosition(position), split, current);
           }
           current = split;
@@ -3355,6 +3379,45 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         thisIntervals.setIsLiveAtMoveExceptionEntry();
       }
     }
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  private void coalescePhiLiveIntervals() {
+    for (BasicBlock block : code.blocks) {
+      for (Phi phi : block.getPhis()) {
+        LiveIntervals phiIntervals = phi.getLiveIntervals();
+        for (Value operand : phi.getOperands()) {
+          LiveIntervals operandIntervals = operand.getLiveIntervals();
+          if (operandIntervals != phiIntervals
+              && operand.outType() == phi.outType()
+              && canCoalesce(operand)
+              && !phiIntervals.overlaps(operandIntervals)) {
+            phiIntervals.coalesce(operandIntervals);
+          }
+        }
+      }
+    }
+    // Remove the live intervals that have been coalesced into other live intervals.
+    liveIntervals.removeIf(intervals -> intervals.getValue().getLiveIntervals() != intervals);
+  }
+
+  // The allocator special cases some values based on their definition: arguments, constants,
+  // move-exception values, and the values subject to runtime bug workarounds. It only looks at the
+  // value of live intervals (LiveIntervals.getValue()), so these values are not coalesced.
+  private boolean canCoalesce(Value value) {
+    if (value.isPhi()) {
+      return true;
+    }
+    Instruction definition = value.definition;
+    LiveIntervals intervals = value.getLiveIntervals();
+    return !definition.isArgument()
+        && !value.isConstNumber()
+        && !definition.isMoveException()
+        // The out value of an invoke-range would share the invoke-range live intervals of an
+        // argument whose live range ends at the invoke.
+        && !(definition.isInvoke() && definition.asInvoke().requiredArgumentRegisters() > 5)
+        && !intervals.isNewStringInstanceDisallowingSpilling()
+        && !needsRuntimeWorkaround(intervals);
   }
 
   /** Compute live ranges based on liveAtEntry sets for all basic blocks. */

@@ -5,8 +5,20 @@ package com.android.tools.r8.utils.timing;
 
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.internal.ThrowingSupplier;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 abstract class TimingImplBase extends Timing {
+
+  @Override
+  public final <T> Timing begin(T context, Function<T, String> titleSupplier) {
+    return begin(titleSupplier.apply(context));
+  }
+
+  @Override
+  public final Timing begin(int value, IntFunction<String> titleSupplier) {
+    return begin(titleSupplier.apply(value));
+  }
 
   @Override
   public final <E extends Exception> void time(String title, ThrowingAction<E> action) throws E {

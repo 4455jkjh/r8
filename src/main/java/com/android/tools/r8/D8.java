@@ -342,7 +342,7 @@ public final class D8 {
       inputApp.signalFinishedToProviders(options.reporter);
       options.signalFinishedToConsumers();
       // Dump timings.
-      if (options.isPrintTimesReportingEnabled()) {
+      if (options.isPerfettoTracingEnabled()) {
         timing.report();
       }
     }

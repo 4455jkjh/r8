@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.fieldaccess.TrivialFieldAccessReprocessor;
 import com.android.tools.r8.ir.optimize.info.MethodResolutionOptimizationInfoAnalysis;
@@ -100,7 +101,7 @@ public class PrimaryR8IRConverter extends IRConverter {
                   primaryMethodProcessor,
                   methodProcessingContext,
                   MethodConversionOptions.forLirPhase(appView),
-                  timing.createThreadTiming(method.toSourceString(), options)),
+                  timing.createThreadTiming(method, ProgramMethod::toSourceString, options)),
           this::waveStart,
           this::waveDone,
           timing,
@@ -184,7 +185,7 @@ public class PrimaryR8IRConverter extends IRConverter {
                     postMethodProcessor,
                     methodProcessingContext,
                     MethodConversionOptions.forLirPhase(appView),
-                    timing.createThreadTiming(method.toSourceString(), options)),
+                    timing.createThreadTiming(method, ProgramMethod::toSourceString, options)),
             this,
             feedback,
             appView.options().getThreadingModule(),
@@ -243,7 +244,7 @@ public class PrimaryR8IRConverter extends IRConverter {
 
   public void waveStart(ProgramMethodSet wave, int waveId) {
     onWaveDoneActions = Collections.synchronizedList(new ArrayList<>());
-    timing.begin("Wave " + waveId);
+    timing.begin(waveId, id -> "Wave " + id);
   }
 
   public void waveDone(ProgramMethodSet wave, ExecutorService executorService) {

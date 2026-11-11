@@ -4,8 +4,10 @@
 package com.android.tools.r8.ir.optimize.string;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestMultiRunResult;
 import com.android.tools.r8.TestBase;
@@ -102,6 +104,20 @@ public class StringFormatTest extends TestBase {
             .run(parameters.getRuntime(), MAIN)
             .assertSuccessWithOutput(JAVA_OUTPUT);
     test(result, false);
+  }
+
+  @Test
+  public void testReleaseR8WithStringConcatInstruction() {
+    assertThrows(
+        CompilationFailedException.class,
+        () ->
+            testForR8(parameters.getBackend())
+                .addProgramClasses(MAIN, TestFormattable.class)
+                .addOptionsModification(opt -> opt.enableStringConcatInstruction = true)
+                .enableInliningAnnotations()
+                .addKeepMainRule(MAIN)
+                .setMinApi(parameters)
+                .compile());
   }
 
   @Test

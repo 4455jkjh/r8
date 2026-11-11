@@ -10,8 +10,10 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.utils.internal.TriFunction;
 import com.google.common.collect.ObjectArrays;
@@ -228,6 +230,11 @@ public abstract class ExceptionUtils {
   }
 
   public static RuntimeException unwrapExecutionException(ExecutionException executionException) {
+    Throwable cause = executionException.getCause();
+    if (cause instanceof Error) {
+      cause.addSuppressed(executionException);
+      throw (Error) cause;
+    }
     return new RuntimeException(executionException);
   }
 
@@ -258,6 +265,18 @@ public abstract class ExceptionUtils {
       throw e;
     } catch (RuntimeException e) {
       throw OriginAttachmentException.wrap(e, origin, position);
+    }
+  }
+
+  public static <T> T withOriginAndPositionAttachmentHandler(
+      ProgramMethod method, Supplier<T> action) {
+    try {
+      return action.get();
+    } catch (CancelCompilationException e) {
+      throw e;
+    } catch (RuntimeException e) {
+      throw OriginAttachmentException.wrap(
+          e, method.getOrigin(), new MethodPosition(method.getReference().asMethodReference()));
     }
   }
 

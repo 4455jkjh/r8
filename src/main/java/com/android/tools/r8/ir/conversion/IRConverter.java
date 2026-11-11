@@ -106,7 +106,6 @@ import com.android.tools.r8.lightir.LirStrategy.ExternalPhisStrategy;
 import com.android.tools.r8.lightir.PhiInInstructionsStrategy;
 import com.android.tools.r8.naming.IdentifierNameStringMarker;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorIROptimizer;
-import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryMethodOverrideAnalysis;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -539,8 +538,7 @@ public class IRConverter {
       MutableMethodConversionOptions conversionOptions,
       Timing timing) {
     return ExceptionUtils.withOriginAndPositionAttachmentHandler(
-        method.getOrigin(),
-        new MethodPosition(method.getReference().asMethodReference()),
+        method,
         () ->
             rewriteDesugaredCodeInternal(
                 method,
@@ -949,7 +947,7 @@ public class IRConverter {
       if (method.getDefinition().isClassInitializer()) {
         staticFieldValues =
             StaticFieldValueAnalysis.run(
-                appView, code, classInitializerDefaultsResult, feedback, timing);
+                appView, code, classInitializerDefaultsResult, feedback, methodProcessor, timing);
         reprocessingOptimizationCollection.classInitializerAnalysis(method, staticFieldValues);
       } else {
         instanceFieldInitializationInfos =
@@ -1081,7 +1079,7 @@ public class IRConverter {
 
   private <EV, S extends LirStrategy<Value, EV>> IRCode doRoundtripWithStrategy(
       IRCode code, S strategy, String name, Timing timing) {
-    timing.begin("IR->LIR (" + name + ")");
+    timing.begin(name, n -> "IR->LIR (" + n + ")");
     LirCode<EV> lirCode =
         IR2LirConverter.translate(
             code,
@@ -1092,7 +1090,7 @@ public class IRConverter {
     // Check that printing does not fail.
     String lirString = lirCode.toString();
     assert !lirString.isEmpty();
-    timing.begin("LIR->IR (" + name + ")");
+    timing.begin(name, n -> "LIR->IR (" + n + ")");
     IRCode irCode =
         Lir2IRConverter.translate(
             code.context(),
