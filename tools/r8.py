@@ -3,58 +3,60 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-import optparse
+import argparse
 import sys
 
 import toolhelper
 import utils
 
 
-def ParseOptions(argv):
-    parser = optparse.OptionParser(usage='%prog [options] -- [R8 options]')
-    parser.add_option('-c',
-                      '--commit-hash',
-                      '--commit_hash',
-                      help='Commit hash of R8 to use.',
-                      default=None)
-    parser.add_option(
+def parse_options(argv):
+    parser = argparse.ArgumentParser(usage='%(prog)s [options] -- [R8 options]')
+    parser.add_argument('-c',
+                        '--commit-hash',
+                        '--commit_hash',
+                        help='Commit hash of R8 to use.',
+                        default=None)
+    parser.add_argument(
         '--debug-agent',
         help=
         'Enable Java debug agent and suspend compilation (default disabled)',
         default=False,
         action='store_true')
-    parser.add_option('--disable-assertions',
-                      '--disable_assertions',
-                      help='Disable assertions when running',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--lib-android',
-                      help='Add the android.jar for the given API level',
-                      default=None,
-                      type=int)
-    parser.add_option('--lib-rt',
-                      help='Add rt.jar from openjdk-1.8',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--no-build',
-                      '--no_build',
-                      help='Do not build R8',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--print-runtimeraw',
-                      '--print_runtimeraw',
-                      metavar='BENCHMARKNAME',
-                      help='Print the line \'<BENCHMARKNAME>(RunTimeRaw):' +
-                      ' <elapsed> ms\' at the end where <elapsed> is' +
-                      ' the elapsed time in milliseconds.')
-    parser.add_option('--tag', help='Tag of R8 to use.', default=None)
-    parser.add_option('--version', help='Version of R8 to use.', default=None)
-    return parser.parse_args(argv)
+    parser.add_argument('--disable-assertions',
+                        '--disable_assertions',
+                        help='Disable assertions when running',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--lib-android',
+                        help='Add the android.jar for the given API level',
+                        default=None,
+                        type=int)
+    parser.add_argument('--lib-rt',
+                        help='Add rt.jar from openjdk-1.8',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--no-build',
+                        '--no_build',
+                        help='Do not build R8',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--print-runtimeraw',
+                        '--print_runtimeraw',
+                        metavar='BENCHMARKNAME',
+                        help='Print the line \'<BENCHMARKNAME>(RunTimeRaw):' +
+                        ' <elapsed> ms\' at the end where <elapsed> is' +
+                        ' the elapsed time in milliseconds.')
+    parser.add_argument('--tag', help='Tag of R8 to use.', default=None)
+    parser.add_argument('--version', help='Version of R8 to use.', default=None)
+    if '--' in argv:
+        idx = argv.index('--')
+        return parser.parse_args(argv[:idx]), argv[idx + 1:]
+    return parser.parse_known_args(argv)
 
 
 def main(argv):
-    (options, args) = ParseOptions(sys.argv)
-    r8_args = args[1:]
+    options, r8_args = parse_options(argv)
     if options.lib_android:
         r8_args.extend(['--lib', utils.get_android_jar(options.lib_android, 0)])
     if options.lib_rt:

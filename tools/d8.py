@@ -3,49 +3,51 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import argparse
+import sys
+
+import toolhelper
 import utils
 
-import optparse
-import sys
-import toolhelper
 
-
-def ParseOptions(argv):
-    parser = optparse.OptionParser(usage='%prog [options] -- [D8 options]')
-    parser.add_option('-c',
-                      '--commit-hash',
-                      '--commit_hash',
-                      help='Commit hash of D8 to use.',
-                      default=None)
-    parser.add_option('--debug-agent',
-                      '--debug_agent',
-                      help='Enable Java debug agent and suspend compilation',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--disable-assertions',
-                      '--disable_assertions',
-                      help='Disable assertions when running',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--print-runtimeraw',
-                      '--print_runtimeraw',
-                      metavar='BENCHMARKNAME',
-                      help='Print the line \'<BENCHMARKNAME>(RunTimeRaw):' +
-                      ' <elapsed> ms\' at the end where <elapsed> is' +
-                      ' the elapsed time in milliseconds.')
-    parser.add_option('--no-build',
-                      '--no_build',
-                      help='Do not build D8',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--version', help='Version of D8 to use.', default=None)
-    parser.add_option('--tag', help='Tag of D8 to use.', default=None)
-    return parser.parse_args(argv)
+def parse_options(argv):
+    parser = argparse.ArgumentParser(usage='%(prog)s [options] -- [D8 options]')
+    parser.add_argument('-c',
+                        '--commit-hash',
+                        '--commit_hash',
+                        help='Commit hash of D8 to use.',
+                        default=None)
+    parser.add_argument('--debug-agent',
+                        '--debug_agent',
+                        help='Enable Java debug agent and suspend compilation',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--disable-assertions',
+                        '--disable_assertions',
+                        help='Disable assertions when running',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--print-runtimeraw',
+                        '--print_runtimeraw',
+                        metavar='BENCHMARKNAME',
+                        help='Print the line \'<BENCHMARKNAME>(RunTimeRaw):' +
+                        ' <elapsed> ms\' at the end where <elapsed> is' +
+                        ' the elapsed time in milliseconds.')
+    parser.add_argument('--no-build',
+                        '--no_build',
+                        help='Do not build D8',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--version', help='Version of D8 to use.', default=None)
+    parser.add_argument('--tag', help='Tag of D8 to use.', default=None)
+    if '--' in argv:
+        idx = argv.index('--')
+        return parser.parse_args(argv[:idx]), argv[idx + 1:]
+    return parser.parse_known_args(argv)
 
 
 def main(argv):
-    (options, args) = ParseOptions(sys.argv)
-    d8_args = args[1:]
+    options, d8_args = parse_options(argv)
     time_consumer = lambda duration: print_duration(duration, options)
     return toolhelper.run('d8',
                           d8_args,
