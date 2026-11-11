@@ -6,7 +6,7 @@
 # Script for downloading from x20 a dependency in the same way we use cloud
 # storage.
 
-import optparse
+import argparse
 import os
 import shutil
 import sys
@@ -15,8 +15,11 @@ import utils
 GMSCORE_DEPS = '/google/data/ro/teams/r8/deps'
 
 
-def parse_options():
-    return optparse.OptionParser().parse_args()
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser(
+        description='Download a dependency from x20 or internal GCS.')
+    parser.add_argument('sha1_file', help='Path to the .tar.gz.sha1 file.')
+    return parser.parse_args(argv)
 
 
 def download(sha1, dest):
@@ -30,17 +33,16 @@ def download(sha1, dest):
     utils.download_file_from_cloud_storage(gcs_src, dest)
 
 
-def Main():
-    (options, args) = parse_options()
-    assert len(args) == 1
+def main():
+    options = parse_options()
     try:
-        utils.ensure_sha1_archive(args[0], download)
+        utils.ensure_sha1_archive(options.sha1_file, download)
     except Exception:
         print('File in %s or %s does not exist for %s' %
-              (GMSCORE_DEPS, utils.R8_INTERNAL_DEPS_BUCKET, args[0]))
+              (GMSCORE_DEPS, utils.R8_INTERNAL_DEPS_BUCKET, options.sha1_file))
         print('Maybe pass -Pno_internal to your gradle invocation')
         return 42
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

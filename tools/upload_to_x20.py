@@ -5,7 +5,7 @@
 
 # Script for uploading to x20 as a dependency in the same way we use cloud storage.
 
-import optparse
+import argparse
 import os
 import shutil
 import subprocess
@@ -15,8 +15,11 @@ import utils
 GMS_CORE_DEPS = '/google/data/rw/teams/r8/deps'
 
 
-def parse_options():
-    return optparse.OptionParser().parse_args()
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser(
+        description='Upload a dependency to x20 and internal GCS.')
+    parser.add_argument('name', help='Directory or file name to archive.')
+    return parser.parse_args(argv)
 
 
 def upload_file(filename, dest):
@@ -26,11 +29,10 @@ def upload_file(filename, dest):
 
 
 def main():
-    (options, args) = parse_options()
-    assert len(args) == 1
-    name = args[0]
+    options = parse_options()
+    name = options.name
     print('Creating archive for %s' % name)
-    if not name in os.listdir('.'):
+    if name not in os.listdir('.'):
         print(
             'You must be standing directly below the directory you are uploading'
         )
