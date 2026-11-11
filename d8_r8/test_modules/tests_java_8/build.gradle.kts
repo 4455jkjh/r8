@@ -204,6 +204,7 @@ tasks {
       include("$r8/cf/KeepDeserializeLambdaMethodTest.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
     }
+    from(root.resolveAll("src", "test")) { include("examplesDagger/**") }
   }
 
   register<JavaExec>("generateApiAmendments") {

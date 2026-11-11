@@ -61,6 +61,15 @@ public class DaggerUtils {
 
   public static Path compileWithAnnotationProcessing(
       String target, Collection<Path> sourceFiles, Collection<Path> classFiles) throws Exception {
+    return compileWithAnnotationProcessing(target, sourceFiles, classFiles, ImmutableList.of());
+  }
+
+  public static Path compileWithAnnotationProcessing(
+      String target,
+      Collection<Path> sourceFiles,
+      Collection<Path> classFiles,
+      Collection<String> options)
+      throws Exception {
     // Class files are provided in JAR files. Extract all the class names to pass to javac for
     // annotation processing.
     List<String> classNames = new ArrayList<>();
@@ -78,6 +87,7 @@ public class DaggerUtils {
     return TestBase.javac(getJdk(), TestBase.getStaticTemp())
         .setSource(target)
         .setTarget(target)
+        .addOptions(options)
         .addSourceFiles(sourceFiles)
         .addClassNames(classNames)
         .addClasspathFiles(classFiles)
