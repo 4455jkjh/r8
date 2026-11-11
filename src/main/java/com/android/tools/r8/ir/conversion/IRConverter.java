@@ -306,7 +306,9 @@ public class IRConverter {
     }
     passes.add(new SimplifyDebugLocal(appView));
     passes.add(new AtomicUpdaterInitializationRemover(appView));
-    passes.add(new AssertionsRewriter(appView));
+    if (AssertionsRewriter.isEnabled(options)) {
+      passes.add(new AssertionsRewriter(appView));
+    }
     return CodeRewriterPassCollection.create(passes);
   }
 

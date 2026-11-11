@@ -51,9 +51,11 @@ public class CodeRewriterPassCollection {
       // TODO(b/286345542): Run printMethod after each run.
       CodeRewriterResult result = pass.run(code, methodProcessor, methodProcessingContext, timing);
       changed |= result.hasChanged().isTrue();
-      previousMethodPrinting =
-          IRConverter.printMethodIR(
-              code, "IR after " + pass.getRewriterId(), previousMethodPrinting, options);
+      if (!options.extensiveLoggingFilter.isEmpty()) {
+        previousMethodPrinting =
+            IRConverter.printMethodIR(
+                code, "IR after " + pass.getRewriterId(), previousMethodPrinting, options);
+      }
     }
     return new Pair<>(changed, previousMethodPrinting);
   }

@@ -18,7 +18,7 @@ import com.android.tools.r8.ir.code.Value;
 public class CheckNotNullConverter {
 
   public static void runIfNecessary(AppView<?> appView, IRCode code) {
-    if (appView.enableWholeProgramOptimizations()) {
+    if (appView.enableWholeProgramOptimizations() && code.metadata().mayHaveInvokeMethod()) {
       assert code.isConsistentSSA(appView);
       run(appView.withClassHierarchy(), code);
       assert code.isConsistentSSA(appView);
