@@ -2,7 +2,7 @@
 # Copyright (c) 2019, the R8 project authors. Please see the AUTHORS file
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
-from __future__ import print_function
+import argparse
 import os
 import sys
 import zipfile
@@ -14,11 +14,11 @@ import zipfile
 # To make these apps work with R8 simulate program classes before library
 # classes by creating a new library jar which have all the provided library
 # classes which are not also in program classes.
-def SanitizeLibrariesInPgconf(sanitized_lib_path,
-                              sanitized_pgconf_path,
-                              pgconfs,
-                              injars=None,
-                              libraryjars=None):
+def sanitize_libraries_in_pgconf(sanitized_lib_path,
+                                 sanitized_pgconf_path,
+                                 pgconfs,
+                                 injars=None,
+                                 libraryjars=None):
     with open(sanitized_pgconf_path, 'w') as sanitized_pgconf:
         injars = [] if injars is None else injars
         libraryjars = [] if libraryjars is None else libraryjars
@@ -48,10 +48,10 @@ def SanitizeLibrariesInPgconf(sanitized_lib_path,
                     else:
                         sanitized_pgconf.write(line)
 
-    SanitizeLibraries(sanitized_lib_path, libraryjars, injars)
+    sanitize_libraries(sanitized_lib_path, libraryjars, injars)
 
 
-def SanitizeLibraries(sanitized_lib_path, libraryjars, injars):
+def sanitize_libraries(sanitized_lib_path, libraryjars, injars):
     program_entries = set()
     library_entries = set()
 
@@ -64,46 +64,52 @@ def SanitizeLibraries(sanitized_lib_path, libraryjars, injars):
         for libraryjar in libraryjars:
             with zipfile.ZipFile(libraryjar, 'r') as input_zf:
                 for zipinfo in input_zf.infolist():
-                    if (not zipinfo.filename in program_entries and
-                            not zipinfo.filename in library_entries):
+                    if (zipinfo.filename not in program_entries and
+                            zipinfo.filename not in library_entries):
                         library_entries.add(zipinfo.filename)
                         output_zf.writestr(zipinfo, input_zf.read(zipinfo))
 
 
-def usage(argv, error):
-    print(error)
-    print("Usage: sanitize_libraries.py <sanitized_lib> <sanitized_pgconf> (" +
-          "--injar <existing_injar>" + "|--libraryjar <existing_library_jar>" +
-          "|--pgconf <existing_pgconf>)+")
-    return 1
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser(
+        description='Create a sanitized library jar and Proguard configuration.'
+    )
+    parser.add_argument('sanitized_lib',
+                        help='Output path for the sanitized library jar.')
+    parser.add_argument(
+        'sanitized_pgconf',
+        help='Output path for the sanitized Proguard configuration.')
+    parser.add_argument('--injar',
+                        dest='injars',
+                        action='append',
+                        default=[],
+                        metavar='<existing_injar>',
+                        help='Program jar input.')
+    parser.add_argument('--libraryjar',
+                        dest='libraryjars',
+                        action='append',
+                        default=[],
+                        metavar='<existing_library_jar>',
+                        help='Library jar input.')
+    parser.add_argument('--pgconf',
+                        dest='pgconfs',
+                        action='append',
+                        default=[],
+                        metavar='<existing_pgconf>',
+                        help='Proguard configuration input.')
+    options = parser.parse_args(argv)
+    if not (options.pgconfs or options.injars or options.libraryjars):
+        parser.error(
+            'Expected at least one of --pgconf, --injar, or --libraryjar.')
+    return options
 
 
-def main(argv):
-    if (len(argv) < 4):
-        return usage(argv, "Wrong number of arguments!")
-    pgconfs = []
-    injars = []
-    libraryjars = []
-    i = 2
-    while i < len(argv):
-        directive = argv[i]
-        if directive not in ['--pgconf', '--injar', '--libraryjar']:
-            return usage(
-                argv,
-                'Unexpected argument, expected one of --pgconf, --injar, and ' +
-                '--libraryjar.')
-        if i + 1 >= len(argv):
-            return usage(argv, 'Expected argument after ' + directive + '.')
-        file = argv[i + 1]
-        if directive == '--pgconf':
-            pgconfs.append(file)
-        elif directive == '--injar':
-            injars.append(file)
-        elif directive == '--libraryjar':
-            libraryjars.append(file)
-        i = i + 2
-    SanitizeLibrariesInPgconf(argv[0], argv[1], pgconfs, injars, libraryjars)
+def main(argv=None):
+    options = parse_options(argv)
+    sanitize_libraries_in_pgconf(options.sanitized_lib,
+                                 options.sanitized_pgconf, options.pgconfs,
+                                 options.injars, options.libraryjars)
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

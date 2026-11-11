@@ -14,7 +14,7 @@ import time
 import archive
 import gradle
 import nest_data
-from sanitize_libraries import SanitizeLibraries, SanitizeLibrariesInPgconf
+from sanitize_libraries import sanitize_libraries, sanitize_libraries_in_pgconf
 import thread_utils
 from thread_utils import print_thread
 import toolhelper
@@ -490,9 +490,9 @@ def run_with_options(options,
             if has_injars_and_libraryjars(values['pgconf']):
                 sanitized_pgconf_path = os.path.join(os.path.abspath(outdir),
                                                      'sanitized.config')
-                SanitizeLibrariesInPgconf(sanitized_lib_path,
-                                          sanitized_pgconf_path,
-                                          values['pgconf'])
+                sanitize_libraries_in_pgconf(sanitized_lib_path,
+                                             sanitized_pgconf_path,
+                                             values['pgconf'])
                 libraries = [sanitized_lib_path]
                 args.extend(['--pg-conf', sanitized_pgconf_path])
                 inputs = []
@@ -503,8 +503,8 @@ def run_with_options(options,
                     args.extend(['--pg-conf', pgconf])
                 if 'sanitize_libraries' in values and values[
                         'sanitize_libraries']:
-                    SanitizeLibraries(sanitized_lib_path, values['libraries'],
-                                      values['inputs'])
+                    sanitize_libraries(sanitized_lib_path, values['libraries'],
+                                       values['inputs'])
                     libraries = [sanitized_lib_path]
             app_provided_pg_conf = True
             if 'pgconf_extra' in values:
