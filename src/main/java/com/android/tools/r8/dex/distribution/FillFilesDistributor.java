@@ -77,13 +77,7 @@ public class FillFilesDistributor extends DistributorBase {
           .run(executorService, timing);
     } else {
       new PackageSplitPopulator(
-              virtualFiles,
-              filesForDistribution,
-              appView,
-              classes,
-              originalNames,
-              startupProfile,
-              nextFileId)
+              virtualFiles, filesForDistribution, appView, classes, startupProfile, nextFileId)
           .run(executorService, timing);
     }
     addFeatureSplitFiles(featureSplitClasses, startupProfile, executorService, timing);

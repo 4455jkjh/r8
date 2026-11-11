@@ -35,6 +35,8 @@ public class DexMethod extends DexMember<DexEncodedMethod, DexMethod> {
     return !isIdenticalTo(other);
   }
 
+  public static final DexMethod[] EMPTY_ARRAY = {};
+
   public final DexProto proto;
 
   DexMethod(DexType holder, DexProto proto, DexString name, boolean skipNameValidationForTesting) {

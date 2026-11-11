@@ -33,6 +33,8 @@ import org.objectweb.asm.Opcodes;
 public final class DexCallSite extends IndexedDexItem
     implements StructuralItem<DexCallSite>, LirConstant {
 
+  public static final DexCallSite[] EMPTY_ARRAY = {};
+
   public final DexString methodName;
   public final DexProto methodProto;
 

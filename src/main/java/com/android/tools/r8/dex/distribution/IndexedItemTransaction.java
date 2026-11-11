@@ -61,8 +61,12 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     return transactionSet.add(item);
   }
 
-  public void addClassAndDependencies(DexProgramClass clazz) {
-    clazz.collectIndexedItems(appView, this, rewriter);
+  public void addClassAndDependencies(DexProgramClass clazz, PrecollectedClassItems precollected) {
+    if (precollected != null) {
+      precollected.replayInto(appView, this, clazz);
+    } else {
+      clazz.collectIndexedItems(appView, this, rewriter);
+    }
     currentClass = null;
   }
 

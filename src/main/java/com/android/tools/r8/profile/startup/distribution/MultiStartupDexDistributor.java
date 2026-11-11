@@ -5,7 +5,6 @@
 package com.android.tools.r8.profile.startup.distribution;
 
 import com.android.tools.r8.dex.VirtualFile;
-import com.android.tools.r8.dex.distribution.PackageSplitPopulator;
 import com.android.tools.r8.dex.distribution.VirtualFileCycler;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -32,7 +31,6 @@ public abstract class MultiStartupDexDistributor {
   public abstract void distribute(
       AppView<?> appView,
       List<DexProgramClass> classes,
-      PackageSplitPopulator packageSplitPopulator,
       VirtualFile virtualFile,
       VirtualFileCycler virtualFileCycler);
 
@@ -109,8 +107,6 @@ public abstract class MultiStartupDexDistributor {
             return startupProfile.containsMethodRule(method.getReference()) ? -1 : 1;
           }
         };
-      case "packageByName":
-        return new PackageByNameMultiStartupDexDistributor(startupProfile);
       case "packageByNumberOfStartupMethods":
         throw new Unimplemented();
       default:
@@ -130,7 +126,6 @@ public abstract class MultiStartupDexDistributor {
     public void distribute(
         AppView<?> appView,
         List<DexProgramClass> classes,
-        PackageSplitPopulator packageSplitPopulator,
         VirtualFile virtualFile,
         VirtualFileCycler virtualFileCycler) {
       Reference2IntMap<DexProgramClass> classMetrics =
@@ -172,29 +167,10 @@ public abstract class MultiStartupDexDistributor {
     public void distribute(
         AppView<?> appView,
         List<DexProgramClass> classes,
-        PackageSplitPopulator packageSplitPopulator,
         VirtualFile virtualFile,
         VirtualFileCycler virtualFileCycler) {
       // Add the (already sorted) startup classes one by one.
       distributeInOrder(appView, classes, virtualFile, virtualFileCycler);
-    }
-  }
-
-  private static class PackageByNameMultiStartupDexDistributor extends MultiStartupDexDistributor {
-
-    PackageByNameMultiStartupDexDistributor(StartupProfile startupProfile) {
-      super(startupProfile);
-    }
-
-    @Override
-    public void distribute(
-        AppView<?> appView,
-        List<DexProgramClass> classes,
-        PackageSplitPopulator packageSplitPopulator,
-        VirtualFile virtualFile,
-        VirtualFileCycler virtualFileCycler) {
-      virtualFileCycler.restart();
-      packageSplitPopulator.distributeClasses(classes);
     }
   }
 }
