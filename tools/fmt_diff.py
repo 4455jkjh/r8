@@ -36,9 +36,11 @@ FMT_IGNORE = {
 GOOGLE_YAPF_DIR = os.path.join(defines.THIRD_PARTY, 'google', 'yapf',
                                '20231013')
 GOOGLE_YAPF = os.path.join(GOOGLE_YAPF_DIR, 'yapf')
+PLATFORMDIRS_DIR = os.path.join(defines.THIRD_PARTY, 'platformdirs', '4.3.6')
 YAPF_PYTHON_PATH = [
     GOOGLE_YAPF_DIR,
-    os.path.join(GOOGLE_YAPF_DIR, 'third_party')
+    os.path.join(GOOGLE_YAPF_DIR, 'third_party'),
+    PLATFORMDIRS_DIR,
 ]
 
 NODE_DIR = os.path.join(defines.THIRD_PARTY, 'node', '24.16.0', 'linux')
@@ -47,13 +49,6 @@ NODE_BIN = os.path.join(NODE_DIR, 'bin', 'node')
 PRETTIER_DIR = os.path.join(defines.THIRD_PARTY, 'prettier', '3.8.3')
 PRETTIER_BIN = os.path.join(PRETTIER_DIR, 'node_modules', 'prettier', 'bin',
                             'prettier.cjs')
-
-PLATFORMDIRS_ERROR_MSG = (
-    "Error: Could not find a Python interpreter with `platformdirs` installed.\n"
-    "Please ensure it is installed in your environment:\n"
-    "  $ python3 -m venv .venv\n"
-    "  $ source .venv/bin/activate\n"
-    "  $ pip3 install platformdirs")
 
 
 def is_java_file(file_path):
@@ -128,33 +123,6 @@ def get_env_with_python_path():
     return new_env
 
 
-class PythonRuntime:
-
-    def __init__(self):
-        self.interpreter = None
-        self.has_failed = False
-
-    def initialize_runtime(self):
-        python_env = get_env_with_python_path()
-        for candidate in [
-                sys.executable, 'python3',
-                os.path.join('.venv', 'bin', 'python3'),
-                os.path.join('.venv', 'bin', 'python')
-        ]:
-            try:
-                check_call([candidate, '-c', 'import platformdirs'],
-                           stdout=DEVNULL,
-                           stderr=DEVNULL,
-                           env=python_env)
-                self.interpreter = candidate
-                return None
-            except (CalledProcessError, FileNotFoundError):
-                continue
-
-        self.has_failed = True
-        return PLATFORMDIRS_ERROR_MSG
-
-
 def get_java_format_base_command():
     java_bin = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
     return google_java_format_diff.get_base_command(java_bin,
@@ -169,8 +137,8 @@ def get_kotlin_format_base_command():
     ]
 
 
-def get_python_format_base_command(python_runtime):
-    return [python_runtime.interpreter, GOOGLE_YAPF, '--style', 'google']
+def get_python_format_base_command():
+    return [sys.executable, GOOGLE_YAPF, '--style', 'google']
 
 
 def get_prettier_base_command():
@@ -287,21 +255,16 @@ def check_kotlin_files(files, format_style, fix_formatting=False):
         return errors
 
 
-def prepare_check_python_files(python_runtime: PythonRuntime = None):
+def prepare_check_python_files():
     utils.ensure_google_download(GOOGLE_YAPF_DIR)
-    if python_runtime:
-        return python_runtime.initialize_runtime()
-    return None
+    utils.ensure_google_download(PLATFORMDIRS_DIR)
 
 
 # This function must be threadsafe.
 # prepare_check_python_files() must be called first.
-def check_python_files(files,
-                       python_runtime: PythonRuntime,
-                       fix_formatting=False):
+def check_python_files(files, fix_formatting=False):
     mode_flag = '--in-place' if fix_formatting else '--diff'
-    format_cmd = get_python_format_base_command(python_runtime) + [mode_flag
-                                                                  ] + files
+    format_cmd = get_python_format_base_command() + [mode_flag] + files
     python_env = get_env_with_python_path()
     try:
         check_output(format_cmd, stderr=STDOUT, env=python_env)
@@ -373,12 +336,8 @@ def check(files,
     if kotlin_files:
         prepare_check_kotlin_files()
 
-    python_runtime = PythonRuntime()
     if python_files:
-        init_error = prepare_check_python_files(python_runtime)
-        if init_error:
-            results['Python'].append(init_error)
-            return results
+        prepare_check_python_files()
 
     if web_files:
         prepare_check_web_files()
@@ -407,7 +366,6 @@ def check(files,
             futures.append(('Python',
                             executor.submit(check_python_files,
                                             batch,
-                                            python_runtime,
                                             fix_formatting=fix_formatting)))
 
         for batch in chunk_list(web_files, batch_size):
