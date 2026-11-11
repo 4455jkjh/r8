@@ -641,6 +641,20 @@ r8_tester_with_default(
     },
 )
 
+r8_builder(
+    "r8-presubmit-check",
+    bucket = "try",
+    priority = 20,
+    trigger = False,
+    dimensions = get_dimensions(),
+    execution_timeout = time.minute * 30,
+    expiration_timeout = time.hour * 35,
+    properties = {
+        "builder_group": "internal.client.r8",
+        "test_wrapper": "tools/run_presubmit.py",
+    },
+)
+
 luci.cq_tryjob_verifier(
     builder = "try/presubmit",
     cq_group = "main-cq",
@@ -651,6 +665,13 @@ luci.cq_tryjob_verifier(
     builder = "try/presubmit-dry-run",
     cq_group = "main-cq",
     mode_allowlist = [cq.MODE_DRY_RUN],
+)
+
+luci.cq_tryjob_verifier(
+    builder = "try/r8-presubmit-check",
+    cq_group = "main-cq",
+    disable_reuse = True,
+    mode_allowlist = [cq.MODE_DRY_RUN, cq.MODE_FULL_RUN],
 )
 
 r8_tester_with_default(
