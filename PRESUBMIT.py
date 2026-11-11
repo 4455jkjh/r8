@@ -2,7 +2,6 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from os import path
 import datetime
 from subprocess import check_output, check_call, CalledProcessError, STDOUT, DEVNULL
 import inspect
@@ -11,7 +10,7 @@ import re
 import sys
 # Add both current path to allow us to package import utils and the tools
 # dir to allow transitive (for utils) dependencies to be loaded.
-repo_root = path.dirname(inspect.getfile(lambda: None))
+repo_root = os.path.dirname(inspect.getfile(lambda: None))
 tools_dir = os.path.join(repo_root, 'tools')
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
@@ -24,7 +23,7 @@ VERSION_FILE = os.path.join(repo_root, 'src', 'main', 'java', 'com', 'android',
                             'tools', 'r8', 'Version.java')
 
 
-def GetVersion():
+def get_version():
     with open(VERSION_FILE) as f:
         content = f.read()
     match = re.search(r'\bLABEL\s*=\s*"([^"]+)"', content)
@@ -39,23 +38,23 @@ def GetVersion():
                                             allowPrerelease=True)
 
 
-def IsReleaseBefore(major, minor, patch, version=None):
+def is_release_before(major, minor, patch, version=None):
     if version is None:
-        version = GetVersion()
+        version = get_version()
     if version is None:
         return False
     return utils.SemanticVersion(major, minor, patch, None).larger_than(version)
 
 
-def CheckDoNotMerge(input_api, output_api):
-    for l in input_api.change.FullDescriptionText().splitlines():
-        if l.lower().startswith('do not merge'):
+def check_do_not_merge(input_api, output_api):
+    for line in input_api.change.FullDescriptionText().splitlines():
+        if line.lower().startswith('do not merge'):
             msg = 'Your cl contains: \'Do not merge\' - this will break WIP bots'
             return [output_api.PresubmitPromptWarning(msg, [])]
     return []
 
 
-def FormatPresubmitMessage(language):
+def format_presubmit_message(language):
     cmd = 'tools/fmt_diff.py'
     return f"""Please fix the {language} formatting by running:
 
@@ -78,7 +77,7 @@ For existing CLs, add footer to CL description:
     """
 
 
-def EnsureDefaultJdk():
+def ensure_default_jdk():
     from tools import jdk
     with open(jdk.GRADLE_DAEMON_JVM_PROPERTIES) as f:
         for line in f:
@@ -92,12 +91,12 @@ def EnsureDefaultJdk():
                 return
 
 
-def CheckFormatting(input_api, output_api):
-    if is_skip_formatting_set(input_api) or IsReleaseBefore(9, 6, -1):
+def check_formatting(input_api, output_api):
+    if is_skip_formatting_set(input_api) or is_release_before(9, 6, -1):
         return []
     # Imported locally to avoid crashing on older 9.0-9.5 branches.
     from tools import fmt_diff
-    EnsureDefaultJdk()
+    ensure_default_jdk()
     files = [f.LocalPath() for f in input_api.AffectedFiles()]
     check_results = fmt_diff.check(files)
     results = []
@@ -106,11 +105,11 @@ def CheckFormatting(input_api, output_api):
             for err in errors:
                 results.append(output_api.PresubmitError(err))
             results.append(
-                output_api.PresubmitError(FormatPresubmitMessage(lang)))
+                output_api.PresubmitError(format_presubmit_message(lang)))
     return results
 
 
-def CheckDeterministicDebuggingChanged(input_api, output_api, branch):
+def check_deterministic_debugging_changed(input_api, output_api, branch):
     for f in input_api.AffectedFiles():
         local_path = f.LocalPath()
         if not local_path.endswith('InternalOptions.java'):
@@ -125,26 +124,26 @@ def CheckDeterministicDebuggingChanged(input_api, output_api, branch):
 
 # File extension checks are kept local to avoid importing fmt_diff on older
 # 9.0-9.5 branches.
-def IsTestFile(file):
-    localPath = file.LocalPath()
-    return localPath.endswith('.java') and '/test/' in localPath
+def is_test_file(file):
+    local_path = file.LocalPath()
+    return local_path.endswith('.java') and '/test/' in local_path
 
 
-def CheckForAddedDisassemble(input_api, output_api):
+def check_for_added_disassemble(input_api, output_api):
     results = []
     for (file, line_nr, line) in input_api.RightHandSideLines():
-        if IsTestFile(file) and '.disassemble()' in line:
+        if is_test_file(file) and '.disassemble()' in line:
             results.append(
                 output_api.PresubmitError('Test call to disassemble\n%s:%s %s' %
                                           (file.LocalPath(), line_nr, line)))
     return results
 
 
-def CheckForAddedAllowXxxxxxMessages(input_api, output_api):
+def check_for_added_allow_xxxxxx_messages(input_api, output_api):
     results = []
     for (file, line_nr, line) in input_api.RightHandSideLines():
-        if (IsTestFile(file) and ('.allowStdoutMessages()' in line or
-                                  '.allowStderrMessages()' in line)):
+        if (is_test_file(file) and ('.allowStdoutMessages()' in line or
+                                    '.allowStderrMessages()' in line)):
             results.append(
                 output_api.PresubmitError(
                     'Test call to allowStdoutMessages or allowStderrMessages\n%s:%s %s'
@@ -152,7 +151,7 @@ def CheckForAddedAllowXxxxxxMessages(input_api, output_api):
     return results
 
 
-def CheckForAddedPartialDebug(input_api, output_api):
+def check_for_added_partial_debug(input_api, output_api):
     results = []
     for (file, line_nr, line) in input_api.RightHandSideLines():
         if not file.LocalPath().endswith('.java'):
@@ -170,10 +169,10 @@ def CheckForAddedPartialDebug(input_api, output_api):
     return results
 
 
-def CheckForAddedHeadful(input_api, output_api):
+def check_for_added_headful(input_api, output_api):
     results = []
     for (file, line_nr, line) in input_api.RightHandSideLines():
-        if IsTestFile(file) and '.enableHeadful()' in line:
+        if is_test_file(file) and '.enableHeadful()' in line:
             results.append(
                 output_api.PresubmitError(
                     'Test call to enableHeadful\n%s:%s %s' %
@@ -181,14 +180,16 @@ def CheckForAddedHeadful(input_api, output_api):
     return results
 
 
-def CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api):
-    matches = [(file, line_nr, line)
-               for (file, line_nr, line) in input_api.RightHandSideLines()
-               if IsTestFile(file) and '.withoutCollapsedDexRuntimes()' in line]
+def check_for_added_without_collapsed_dex_runtimes(input_api, output_api):
+    matches = [
+        (file, line_nr, line)
+        for (file, line_nr, line) in input_api.RightHandSideLines()
+        if is_test_file(file) and '.withoutCollapsedDexRuntimes()' in line
+    ]
     if not matches:
         return []
-    version = GetVersion()
-    if not IsReleaseBefore(9, 6, -1, version):
+    version = get_version()
+    if not is_release_before(9, 6, -1, version):
         return []
     return [
         output_api.PresubmitError(
@@ -229,7 +230,7 @@ def is_allow_old_copyright_set(input_api=None):
     return bool(get_footer_flag(input_api, 'Allow-Old-Copyright'))
 
 
-def CheckForCopyright(input_api, output_api, branch):
+def check_for_copyright(input_api, output_api):
     allow_old_copyright = is_allow_old_copyright_set(input_api)
     results = []
     # Include .gradle and .kts files in the copyright check.
@@ -244,19 +245,19 @@ def CheckForCopyright(input_api, output_api, branch):
         if f.OldContents():
             continue
         contents = f.NewContents()
-        if (not contents) or (len(contents) == 0):
+        if not contents:
             continue
-        error = CheckCopyrightInContents(
+        error = check_copyright_in_contents(
             f, contents, output_api, allow_old_copyright=allow_old_copyright)
         if error:
             results.append(error)
     return results
 
 
-def CheckCopyrightInContents(f,
-                             contents,
-                             output_api,
-                             allow_old_copyright=False):
+def check_copyright_in_contents(f,
+                                contents,
+                                output_api,
+                                allow_old_copyright=False):
     prefix = '#' if (f.LocalPath().endswith('.py') or
                      f.LocalPath().endswith('.sh')) else '//'
     pattern = re.escape(prefix) + r' Copyright \(c\) (\d+)'
@@ -284,7 +285,7 @@ def CheckCopyrightInContents(f,
     return output_api.PresubmitError('No copyright found in file: %s' % f)
 
 
-def CheckLucicfg(input_api, output_api):
+def check_lucicfg(input_api, output_api):
     for f in input_api.AffectedFiles():
         if f.LocalPath() == 'infra/config/global/main.star':
             try:
@@ -292,7 +293,7 @@ def CheckLucicfg(input_api, output_api):
                     ['lucicfg', 'validate', 'infra/config/global/main.star'],
                     stdout=DEVNULL,
                     stderr=STDOUT)
-            except CalledProcessError as e:
+            except CalledProcessError:
                 return [
                     output_api.PresubmitError(
                         'lucicfg validate infra/config/global/main.star failed')
@@ -302,7 +303,7 @@ def CheckLucicfg(input_api, output_api):
     return []
 
 
-def GetUpstreamBranch(input_api):
+def get_upstream_branch(input_api):
     try:
         branch = check_output(['git', 'cl', 'upstream'],
                               stderr=DEVNULL).decode('utf-8').strip()
@@ -316,29 +317,29 @@ def GetUpstreamBranch(input_api):
     raise Exception('Unable to determine upstream branch')
 
 
-def CheckChange(input_api, output_api):
+def check_change(input_api, output_api):
     if is_no_presubmit_set(input_api):
         return []
-    branch = GetUpstreamBranch(input_api)
+    branch = get_upstream_branch(input_api)
     results = []
-    results.extend(CheckDoNotMerge(input_api, output_api))
-    results.extend(CheckFormatting(input_api, output_api))
+    results.extend(check_do_not_merge(input_api, output_api))
+    results.extend(check_formatting(input_api, output_api))
     results.extend(
-        CheckDeterministicDebuggingChanged(input_api, output_api, branch))
-    results.extend(CheckForAddedDisassemble(input_api, output_api))
-    results.extend(CheckForAddedAllowXxxxxxMessages(input_api, output_api))
-    results.extend(CheckForAddedPartialDebug(input_api, output_api))
-    results.extend(CheckForAddedHeadful(input_api, output_api))
+        check_deterministic_debugging_changed(input_api, output_api, branch))
+    results.extend(check_for_added_disassemble(input_api, output_api))
+    results.extend(check_for_added_allow_xxxxxx_messages(input_api, output_api))
+    results.extend(check_for_added_partial_debug(input_api, output_api))
+    results.extend(check_for_added_headful(input_api, output_api))
     results.extend(
-        CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api))
-    results.extend(CheckForCopyright(input_api, output_api, branch))
-    results.extend(CheckLucicfg(input_api, output_api))
+        check_for_added_without_collapsed_dex_runtimes(input_api, output_api))
+    results.extend(check_for_copyright(input_api, output_api))
+    results.extend(check_lucicfg(input_api, output_api))
     return results
 
 
 def CheckChangeOnCommit(input_api, output_api):
-    return CheckChange(input_api, output_api)
+    return check_change(input_api, output_api)
 
 
 def CheckChangeOnUpload(input_api, output_api):
-    return CheckChange(input_api, output_api)
+    return check_change(input_api, output_api)
