@@ -3,8 +3,8 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import argparse
 import glob
-import optparse
 import os
 import shutil
 import subprocess
@@ -14,56 +14,63 @@ import apk_utils
 import utils
 import zip_utils
 
-USAGE = 'usage: %prog [options] <apk>'
+USAGE = '%(prog)s [options] <apk>'
 
 
-def parse_options():
-    parser = optparse.OptionParser(usage=USAGE)
-    parser.add_option('--clear-profile',
-                      help='To remove baseline.prof and baseline.profm from '
-                      'assets/dexopt/',
-                      default=False,
-                      action='store_true')
-    parser.add_option('--compress-dex',
-                      help='Whether the dex should be stored compressed',
-                      action='store_true',
-                      default=False)
-    parser.add_option('--dex',
-                      help='Directory or archive with dex files to use instead '
-                      'of those in the apk',
-                      default=None)
-    parser.add_option(
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser(usage=USAGE)
+    parser.add_argument('--clear-profile',
+                        help='To remove baseline.prof and baseline.profm from '
+                        'assets/dexopt/',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--compress-dex',
+                        help='Whether the dex should be stored compressed',
+                        action='store_true',
+                        default=False)
+    parser.add_argument(
+        '--dex',
+        help='Directory or archive with dex files to use instead '
+        'of those in the apk',
+        default=None)
+    parser.add_argument(
         '--desugared-library-dex',
         help='Path to desugared library dex file to use or archive '
         'containing a single classes.dex file',
         default=None)
-    parser.add_option(
+    parser.add_argument(
         '--resources',
         help=('pattern that matches resources to use instead of ' +
               'those in the apk'),
         default=None)
-    parser.add_option('--out',
-                      help='output file (default ./$(basename <apk>))',
-                      default=None)
-    parser.add_option('--keystore',
-                      help='keystore file (default ~/.android/app.keystore)',
-                      default=None)
-    parser.add_option(
+    parser.add_argument('--out',
+                        help='output file (default ./$(basename <apk>))',
+                        default=None)
+    parser.add_argument('--keystore',
+                        help='keystore file (default ~/.android/app.keystore)',
+                        default=None)
+    parser.add_argument(
         '--install',
         help='install the generated apk with adb options -t -r -d',
         default=False,
         action='store_true')
-    parser.add_option('--adb-options',
-                      help='additional adb options when running adb',
-                      default=None)
-    parser.add_option('--quiet', help='disable verbose logging', default=False)
-    parser.add_option('--sign-before-align',
-                      help='Sign the apk before aligning',
-                      default=False,
-                      action='store_true')
-    (options, apks) = parser.parse_args()
-    if len(apks) == 0:
-        parser.error('Expected one or more apk arguments, got none.')
+    parser.add_argument('--adb-options',
+                        help='additional adb options when running adb',
+                        default=None)
+    parser.add_argument('--quiet',
+                        help='disable verbose logging',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--sign-before-align',
+                        help='Sign the apk before aligning',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('apks',
+                        nargs='+',
+                        metavar='<apk>',
+                        help='APK(s) to process')
+    options = parser.parse_args(argv)
+    apks = vars(options).pop('apks')
     if len(apks) > 1 and options.out:
         parser.error('Cannot process multiple apks with --out')
     return options, apks
