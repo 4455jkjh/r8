@@ -18,8 +18,33 @@ if repo_root not in sys.path:
 if tools_dir not in sys.path:
     sys.path.insert(0, tools_dir)
 
-from tools import fmt_diff
 from tools import utils
+
+VERSION_FILE = os.path.join(repo_root, 'src', 'main', 'java', 'com', 'android',
+                            'tools', 'r8', 'Version.java')
+
+
+def GetVersion():
+    with open(VERSION_FILE) as f:
+        content = f.read()
+    match = re.search(r'\bLABEL\s*=\s*"([^"]+)"', content)
+    if not match:
+        raise RuntimeError(f'Unable to find LABEL in {VERSION_FILE}')
+    label = match.group(1)
+    if label == 'main':
+        return None
+    return utils.check_basic_semver_version(label,
+                                            'in Version.java',
+                                            components=3,
+                                            allowPrerelease=True)
+
+
+def IsReleaseBefore(major, minor, patch, version=None):
+    if version is None:
+        version = GetVersion()
+    if version is None:
+        return False
+    return utils.SemanticVersion(major, minor, patch, None).larger_than(version)
 
 
 def CheckDoNotMerge(input_api, output_api):
@@ -40,13 +65,39 @@ or fix formatting, commit and upload:
 
   {cmd} && git commit -a --amend --no-edit && git cl upload
 
-or bypass the checks with:
+To disable formatting for specific Java blocks, use `// @formatter:off` and `// @formatter:on` comments.
+To disable formatting for a Kotlin file, add a `// ktfmt:disable-file` comment.
 
-  git cl upload --bypass-hooks
+To skip formatting checks, for new CLs add footer to commit message:
+
+  git commit --amend --no-edit --trailer "Skip-Formatting: true"
+
+For existing CLs, add footer to CL description:
+
+  git cl description -d | git interpret-trailers --trailer "Skip-Formatting: true" | git cl description -n -
     """
 
 
+def EnsureDefaultJdk():
+    from tools import jdk
+    with open(jdk.GRADLE_DAEMON_JVM_PROPERTIES) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith('toolchainVersion='):
+                version = line.split('=', 1)[1].strip()
+                jdk_dir = jdk.GetOSJavaHome(
+                    os.path.join(jdk.JDK_DIRS, f'jdk-{version}'))
+                if os.path.exists(jdk_dir + '.tar.gz.sha1'):
+                    utils.ensure_google_download(jdk_dir)
+                return
+
+
 def CheckFormatting(input_api, output_api):
+    if is_skip_formatting_set(input_api) or IsReleaseBefore(9, 6, -1):
+        return []
+    # Imported locally to avoid crashing on older 9.0-9.5 branches.
+    from tools import fmt_diff
+    EnsureDefaultJdk()
     files = [f.LocalPath() for f in input_api.AffectedFiles()]
     check_results = fmt_diff.check(files)
     results = []
@@ -72,9 +123,11 @@ def CheckDeterministicDebuggingChanged(input_api, output_api, branch):
     return []
 
 
+# File extension checks are kept local to avoid importing fmt_diff on older
+# 9.0-9.5 branches.
 def IsTestFile(file):
     localPath = file.LocalPath()
-    return fmt_diff.is_java_file(localPath) and '/test/' in localPath
+    return localPath.endswith('.java') and '/test/' in localPath
 
 
 def CheckForAddedDisassemble(input_api, output_api):
@@ -102,7 +155,7 @@ def CheckForAddedAllowXxxxxxMessages(input_api, output_api):
 def CheckForAddedPartialDebug(input_api, output_api):
     results = []
     for (file, line_nr, line) in input_api.RightHandSideLines():
-        if not fmt_diff.is_java_file(file.LocalPath()):
+        if not file.LocalPath().endswith('.java'):
             continue
         if '.enablePrintPartialCompilationPartitioning(' in line:
             results.append(
@@ -128,46 +181,52 @@ def CheckForAddedHeadful(input_api, output_api):
     return results
 
 
-def CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api, branch):
-    while not branch.startswith('refs/remotes/origin/'):
-        try:
-            branch = (check_output([
-                'git', 'rev-parse', '--symbolic-full-name',
-                branch + '@{upstream}'
-            ]).decode('utf-8').strip().replace('refs/heads/', ''))
-        except CalledProcessError:
-            break
-    branch = branch.replace('refs/remotes/origin/', '').replace('origin/', '')
-    if branch == 'main':
+def CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api):
+    matches = [(file, line_nr, line)
+               for (file, line_nr, line) in input_api.RightHandSideLines()
+               if IsTestFile(file) and '.withoutCollapsedDexRuntimes()' in line]
+    if not matches:
         return []
-    semver = utils.check_basic_semver_version(
-        branch, ', release branch version should be x.y', components=2)
-    if semver.larger_than(utils.SemanticVersion(9, 5, None, None)):
+    version = GetVersion()
+    if not IsReleaseBefore(9, 6, -1, version):
         return []
-    results = []
-    for (file, line_nr, line) in input_api.RightHandSideLines():
-        if IsTestFile(file) and '.withoutCollapsedDexRuntimes()' in line:
-            results.append(
-                output_api.PresubmitError(
-                    'Test call to withoutCollapsedDexRuntimes is not allowed before branch 9.6 (current branch %s)\n%s:%s %s'
-                    % (branch, file.LocalPath(), line_nr, line)))
-    return results
+    return [
+        output_api.PresubmitError(
+            'Test call to withoutCollapsedDexRuntimes is not allowed before branch 9.6 (current version %s)\n%s:%s %s'
+            % (version, file.LocalPath(), line_nr, line))
+        for (file, line_nr, line) in matches
+    ]
 
 
-def is_allow_old_copyright_set(input_api=None):
-    val = os.environ.get('ALLOW_OLD_COPYRIGHT')
-    if val is None and input_api and hasattr(input_api, 'environ'):
-        val = input_api.environ.get('ALLOW_OLD_COPYRIGHT')
-    if val is None:
-        return False
+def parse_bool_option(name, val):
     val_lower = val.lower()
     if val_lower == 'true':
         return True
     if val_lower == 'false':
         return False
     raise ValueError(
-        f"Invalid value for ALLOW_OLD_COPYRIGHT: '{val}'. Expected 'true' or 'false'."
-    )
+        f"Invalid value for {name}: '{val}'. Expected 'true' or 'false'.")
+
+
+def get_footer_flag(input_api, footer_key):
+    if not input_api:
+        return None
+    values = input_api.change.GitFootersFromDescription().get(footer_key)
+    if values:
+        return parse_bool_option(footer_key, values[0])
+    return None
+
+
+def is_no_presubmit_set(input_api=None):
+    return bool(get_footer_flag(input_api, 'No-Presubmit'))
+
+
+def is_skip_formatting_set(input_api=None):
+    return bool(get_footer_flag(input_api, 'Skip-Formatting'))
+
+
+def is_allow_old_copyright_set(input_api=None):
+    return bool(get_footer_flag(input_api, 'Allow-Old-Copyright'))
 
 
 def CheckForCopyright(input_api, output_api, branch):
@@ -194,10 +253,11 @@ def CheckForCopyright(input_api, output_api, branch):
     return results
 
 
-def CheckCopyrightInContents(f, contents, output_api, allow_old_copyright=None):
-    if allow_old_copyright is None:
-        allow_old_copyright = is_allow_old_copyright_set()
-    prefix = '#' if (fmt_diff.is_python_file(f.LocalPath()) or
+def CheckCopyrightInContents(f,
+                             contents,
+                             output_api,
+                             allow_old_copyright=False):
+    prefix = '#' if (f.LocalPath().endswith('.py') or
                      f.LocalPath().endswith('.sh')) else '//'
     pattern = re.escape(prefix) + r' Copyright \(c\) (\d+)'
     current_year = datetime.datetime.now().year
@@ -212,9 +272,12 @@ def CheckCopyrightInContents(f, contents, output_api, allow_old_copyright=None):
                     return None
                 else:
                     return output_api.PresubmitError(
-                        'Copyright found with old year (%s) in file: %s\n'
-                        'To allow old copyright years, run:\n'
-                        '  ALLOW_OLD_COPYRIGHT=true git cl ..' % (year, f))
+                        'Copyright found with old year (%s) in file: %s\n\n'
+                        'For new CLs, add footer to commit message:\n\n'
+                        '  git commit --amend --no-edit --trailer "Allow-Old-Copyright: true"\n\n'
+                        'For existing CLs, add footer to CL description:\n\n'
+                        '  git cl description -d | git interpret-trailers --trailer "Allow-Old-Copyright: true" | git cl description -n -'
+                        % (year, f))
             else:
                 return output_api.PresubmitError(
                     'Copyright found with future year in file: %s' % f)
@@ -239,10 +302,24 @@ def CheckLucicfg(input_api, output_api):
     return []
 
 
+def GetUpstreamBranch(input_api):
+    try:
+        branch = check_output(['git', 'cl', 'upstream'],
+                              stderr=DEVNULL).decode('utf-8').strip()
+        if branch:
+            return branch.replace('refs/heads/', '')
+    except CalledProcessError:
+        pass
+    upstream = input_api.change.UpstreamBranch()
+    if upstream:
+        return upstream.replace('refs/heads/', '')
+    raise Exception('Unable to determine upstream branch')
+
+
 def CheckChange(input_api, output_api):
-    branch = (check_output(['git', 'cl',
-                            'upstream']).decode('utf-8').strip().replace(
-                                'refs/heads/', ''))
+    if is_no_presubmit_set(input_api):
+        return []
+    branch = GetUpstreamBranch(input_api)
     results = []
     results.extend(CheckDoNotMerge(input_api, output_api))
     results.extend(CheckFormatting(input_api, output_api))
@@ -253,7 +330,7 @@ def CheckChange(input_api, output_api):
     results.extend(CheckForAddedPartialDebug(input_api, output_api))
     results.extend(CheckForAddedHeadful(input_api, output_api))
     results.extend(
-        CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api, branch))
+        CheckForAddedWithoutCollapsedDexRuntimes(input_api, output_api))
     results.extend(CheckForCopyright(input_api, output_api, branch))
     results.extend(CheckLucicfg(input_api, output_api))
     return results
