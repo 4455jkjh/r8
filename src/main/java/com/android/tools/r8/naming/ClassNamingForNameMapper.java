@@ -115,10 +115,15 @@ public class ClassNamingForNameMapper implements ClassNaming {
         MethodSignature originalSignature,
         Range originalRange,
         String renamedName) {
-      MappedRange range =
-          new MappedRange(
-              minifiedRange, originalSignature, originalRange, renamedName, nextSequenceNumber++);
-      mappedRangesByName.computeIfAbsent(renamedName, ignored -> new ArrayList<>()).add(range);
+      return addMappedRange(
+          new MappedRange(minifiedRange, originalSignature, originalRange, renamedName));
+    }
+
+    public MappedRange addMappedRange(MappedRange range) {
+      range.sequenceNumber = nextSequenceNumber++;
+      mappedRangesByName
+          .computeIfAbsent(range.renamedName, ignored -> new ArrayList<>())
+          .add(range);
       return range;
     }
 
@@ -622,7 +627,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
      * The sole purpose of {@link #sequenceNumber} is to preserve the order of members read from a
      * Proguard-map.
      */
-    private final int sequenceNumber;
+    private int sequenceNumber;
 
     /**
      * We never emit member namings for methods so mapped ranges has to account for both positional

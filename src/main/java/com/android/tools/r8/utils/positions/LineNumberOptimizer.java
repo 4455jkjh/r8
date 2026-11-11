@@ -112,12 +112,12 @@ public class LineNumberOptimizer {
     return result;
   }
 
-  private ClassNameMapper composeOriginalMappingFile(ClassNameMapper mapper, Timing timing) {
+  private ClassNameMapper composeOriginalMappingFile(ClassNameMapper mapper, Timing timing)
+      throws ExecutionException {
     try (Timing ignored = timing.begin("Compose proguard map")) {
-      String composed =
-          MappingComposer.compose(
-              appView.options(), appView.appInfo().app().getProguardMap(), mapper);
-      mapper = ClassNameMapper.mapperFromStringWithPreamble(composed);
+      mapper =
+          MappingComposer.composeToClassNameMapper(
+              appView.options(), executorService, appView.appInfo().app().getProguardMap(), mapper);
     } catch (IOException | MappingComposeException e) {
       throw new CompilationError(e.getMessage(), e);
     }

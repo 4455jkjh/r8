@@ -25,6 +25,8 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.ChainableStringConsumer;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.IntBox;
@@ -40,7 +42,9 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -51,6 +55,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -140,15 +148,57 @@ public class ComposingBuilder {
     List<ComposingClassBuilder> classBuilders = new ArrayList<>(committed.classBuilders.values());
     classBuilders.sort(Comparator.comparing(ComposingClassBuilder::getOriginalName));
     StringBuilder sb = new StringBuilder();
-    committed.preamble.forEach(preambleLine -> sb.append(preambleLine).append("\n"));
-    if (currentMapVersion != null) {
-      sb.append("# ").append(currentMapVersion.serialize()).append("\n");
-    }
+    buildPreamble().forEach(preambleLine -> sb.append(preambleLine).append("\n"));
     ChainableStringConsumer wrap = ChainableStringConsumer.wrap(sb::append);
     for (ComposingClassBuilder classBuilder : classBuilders) {
       classBuilder.write(wrap);
     }
     return sb.toString();
+  }
+
+  private List<String> buildPreamble() {
+    List<String> preambleLines = new ArrayList<>(committed.preamble.size() + 1);
+    preambleLines.addAll(committed.preamble);
+    if (currentMapVersion != null) {
+      preambleLines.add("# " + currentMapVersion.serialize());
+    }
+    return preambleLines;
+  }
+
+  private void parsePreamble(ClassNameMapper.Builder builder) throws IOException {
+    List<String> preambleLines = buildPreamble();
+    if (preambleLines.isEmpty()) {
+      return;
+    }
+    try (ProguardMapReader reader =
+        new ProguardMapReader(
+            LineReader.fromList(preambleLines),
+            new Reporter(),
+            false,
+            false,
+            MapVersion.MAP_VERSION_NONE)) {
+      reader.parse(builder);
+    }
+  }
+
+  public ClassNameMapper finishToClassNameMapper(ExecutorService executorService)
+      throws ExecutionException, IOException {
+    List<ComposingClassBuilder> classBuilders = new ArrayList<>(committed.classBuilders.values());
+    classBuilders.sort(Comparator.comparing(ComposingClassBuilder::getOriginalName));
+    ClassNameMapper.Builder builder = ClassNameMapper.builder().setBuildPreamble(true);
+    parsePreamble(builder);
+    Map<String, String> concurrentSourceFiles = new ConcurrentHashMap<>();
+    Collection<ClassNamingForNameMapper> builtNamings =
+        ThreadUtils.processItemsWithResults(
+            classBuilders,
+            classBuilder -> classBuilder.buildClassNamingForNameMapper(concurrentSourceFiles::put),
+            options.getThreadingModule(),
+            executorService);
+    concurrentSourceFiles.forEach(builder::addFileName);
+    for (ClassNamingForNameMapper classNaming : builtNamings) {
+      builder.putClassNaming(classNaming.renamedName, classNaming);
+    }
+    return builder.build();
   }
 
   public static class ComposingData {
@@ -1468,6 +1518,35 @@ public class ComposingBuilder {
                                 .accept("\n");
                           }
                         }));
+      }
+    }
+
+    public ClassNamingForNameMapper buildClassNamingForNameMapper(
+        BiConsumer<String, String> originalSourceFileConsumer) {
+      ClassNamingForNameMapper.Builder builder =
+          ClassNamingForNameMapper.builder(renamedName, originalName, originalSourceFileConsumer);
+      additionalMappingInfo.forEach(
+          info -> builder.addMappingInformation(info, ConsumerUtils.emptyConsumer()));
+      writeFieldsToMapper(builder);
+      writeMethodsToMapper(builder);
+      return builder.build();
+    }
+
+    private void writeFieldsToMapper(ClassNamingForNameMapper.Builder builder) {
+      fieldMembers.forEach(
+          (residualSignature, fieldNaming) ->
+              builder.addMemberEntry(
+                  new MemberNaming(fieldNaming.getOriginalSignature(), residualSignature)));
+    }
+
+    private void writeMethodsToMapper(ClassNamingForNameMapper.Builder builder) {
+      methodsWithoutPosition.values().forEach(builder::addMappedRange);
+      ArrayList<MethodSignature> sortedSignatures = new ArrayList<>(methodsWithPosition.keySet());
+      sortedSignatures.sort(Comparator.comparing(Signature::getName));
+      for (MethodSignature key : sortedSignatures) {
+        methodsWithPosition
+            .get(key)
+            .visitSegments(mappedRanges -> mappedRanges.forEach(builder::addMappedRange));
       }
     }
 
