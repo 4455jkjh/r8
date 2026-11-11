@@ -24,7 +24,7 @@ def get_gradle_dir():
 
 
 def get_gradle_executable():
-    if utils.IsWindows():
+    if utils.is_windows():
         return os.path.join(get_gradle_dir(), 'bin', 'gradle.bat')
     else:
         return os.path.join(get_gradle_dir(), 'bin', 'gradle')

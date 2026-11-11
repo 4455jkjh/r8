@@ -14,7 +14,7 @@ import csv
 
 
 def get_profiler_executable():
-    if utils.IsWindows():
+    if utils.is_windows():
         return os.path.join(GRADLE_PROFILER_BIN, 'gradle-profiler.bat')
     else:
         return os.path.join(GRADLE_PROFILER_BIN, 'gradle-profiler')

@@ -27,9 +27,9 @@ def main():
         # Fallback to manual resolution
         jdk17_root = os.path.join(defines.REPO_ROOT, 'third_party', 'openjdk',
                                   'jdk-17')
-        if defines.IsLinux():
+        if defines.is_linux():
             jdk17_home = os.path.join(jdk17_root, 'linux')
-        elif defines.IsOsX():
+        elif defines.is_osx():
             jdk17_home = os.path.join(jdk17_root, 'osx', 'Contents', 'Home')
         else:
             jdk17_home = os.path.join(jdk17_root, 'windows')

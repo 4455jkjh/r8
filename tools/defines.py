@@ -13,13 +13,13 @@ REPO_ROOT = os.path.realpath(os.path.join(TOOLS_DIR, '..'))
 THIRD_PARTY = os.path.join(REPO_ROOT, 'third_party')
 
 
-def IsWindows():
+def is_windows():
     return sys.platform.startswith('win')
 
 
-def IsLinux():
+def is_linux():
     return sys.platform.startswith('linux')
 
 
-def IsOsX():
+def is_osx():
     return sys.platform.startswith('darwin')

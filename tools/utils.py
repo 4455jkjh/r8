@@ -342,8 +342,8 @@ def RunCmd(cmd,
             return stdout
 
 
-def IsWindows():
-    return defines.IsWindows()
+def is_windows():
+    return defines.is_windows()
 
 
 GRADLE_STOPPED = False
@@ -361,7 +361,7 @@ def stop_gradle():
         return
 
     gradle_dir = os.path.join(THIRD_PARTY, 'gradle')
-    if IsWindows():
+    if is_windows():
         gradle = os.path.join(gradle_dir, 'bin', 'gradle.bat')
     else:
         gradle = os.path.join(gradle_dir, 'bin', 'gradle')
@@ -739,11 +739,11 @@ def makedirs_if_needed(path):
 
 # TODO(b/542096534): Remove gsutil fallback once all bots use gcloud.
 def get_gsutil():
-    return 'gsutil.py.bat' if IsWindows() else 'gsutil.py'
+    return 'gsutil.py.bat' if is_windows() else 'gsutil.py'
 
 
 def get_gcloud():
-    return 'gcloud.cmd' if IsWindows() else 'gcloud'
+    return 'gcloud.cmd' if is_windows() else 'gcloud'
 
 
 def use_gcloud():

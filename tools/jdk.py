@@ -47,11 +47,11 @@ def GetJdkHome(name):
 
 
 def GetOSJavaHome(root):
-    if defines.IsLinux():
+    if defines.is_linux():
         return os.path.join(root, 'linux')
-    elif defines.IsOsX():
+    elif defines.is_osx():
         return os.path.join(root, 'osx', 'Contents', 'Home')
-    elif defines.IsWindows():
+    elif defines.is_windows():
         return os.path.join(root, 'windows')
     else:
         raise Exception('Unsupported platform'
@@ -62,11 +62,11 @@ def GetAllJdkDirs():
     dirs = []
     for jdk in ALL_JDKS:
         root = os.path.join(JDK_DIRS, jdk)
-        if defines.IsLinux():
+        if defines.is_linux():
             root = os.path.join(root, 'linux')
-        elif defines.IsOsX():
+        elif defines.is_osx():
             root = os.path.join(root, 'osx')
-        elif defines.IsWindows():
+        elif defines.is_windows():
             root = os.path.join(root, 'windows')
         else:
             raise Exception(
@@ -96,24 +96,24 @@ def GetJdk9Home():
 
 def GetJdk8Home():
     root = os.path.join(JDK_DIRS, 'jdk8')
-    if defines.IsLinux():
+    if defines.is_linux():
         return os.path.join(root, 'linux-x86')
-    elif defines.IsOsX():
+    elif defines.is_osx():
         return os.path.join(root, 'darwin-x86')
     else:
         return os.environ['JAVA_HOME']
 
 
 def GetJavaExecutable(jdkHome):
-    executable = 'java.exe' if defines.IsWindows() else 'java'
+    executable = 'java.exe' if defines.is_windows() else 'java'
     return os.path.join(jdkHome, 'bin', executable)
 
 
 def GetJavacExecutable(jdkHome):
-    executable = 'javac.exe' if defines.IsWindows() else 'javac'
+    executable = 'javac.exe' if defines.is_windows() else 'javac'
     return os.path.join(jdkHome, 'bin', executable)
 
 
 def GetJstackExecutable(jdkHome):
-    executable = 'jstack.exe' if defines.IsWindows() else 'jstack'
+    executable = 'jstack.exe' if defines.is_windows() else 'jstack'
     return os.path.join(jdkHome, 'bin', executable)

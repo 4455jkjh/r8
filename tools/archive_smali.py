@@ -61,7 +61,7 @@ def Main():
         raise Exception(
             'Option --version is required (when not using local checkout)')
 
-    if utils.is_bot() and not utils.IsWindows():
+    if utils.is_bot() and not utils.is_windows():
         set_rlimit_to_max()
 
     utils.ensure_google_download(utils.JAVA11_DIR)
