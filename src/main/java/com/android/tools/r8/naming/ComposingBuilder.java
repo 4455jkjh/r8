@@ -45,7 +45,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1563,9 +1563,9 @@ public class ComposingBuilder {
 
     private static class ComputedOutlineInformation {
       private final Map<OutlineCallsiteMappingInformation, List<ComputedMappedRangeForOutline>>
-          outlineCallsiteMappingInformationToPatchUp = new IdentityHashMap<>();
+          outlineCallsiteMappingInformationToPatchUp = new LinkedHashMap<>();
       private final Map<OutlineMappingInformation, List<ComputedMappedRangeForOutline>>
-          seenOutlineMappingInformation = new IdentityHashMap<>();
+          seenOutlineMappingInformation = new LinkedHashMap<>();
 
       private ComputedMappedRangeForOutline getComputedRange(
           MappingInformation outline, MappedRange current) {
