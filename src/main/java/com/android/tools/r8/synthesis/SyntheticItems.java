@@ -595,9 +595,14 @@ public class SyntheticItems {
   }
 
   public boolean hasKindThatMatches(
+      DexType type, BiPredicate<? super SyntheticKind, ? super SyntheticNaming> predicate) {
+    return Iterables.any(getSyntheticKinds(type), kind -> predicate.test(kind, naming));
+  }
+
+  public boolean hasKindThatMatches(
       DexProgramClass clazz,
       BiPredicate<? super SyntheticKind, ? super SyntheticNaming> predicate) {
-    return Iterables.any(getSyntheticKinds(clazz.getType()), kind -> predicate.test(kind, naming));
+    return hasKindThatMatches(clazz.getType(), predicate);
   }
 
   public boolean isSyntheticOfKind(DexType type, SyntheticKindSelector kindSelector) {
@@ -629,8 +634,7 @@ public class SyntheticItems {
 
   public FeatureSplit getContextualFeatureSplitOrDefault(DexType type, FeatureSplit defaultValue) {
     assert isSyntheticClass(type);
-    if (isSyntheticOfKind(type, kinds -> kinds.ENUM_UNBOXING_SHARED_UTILITY_CLASS)
-        || isSyntheticOfKind(type, kinds -> kinds.UNSAFE_HELPER)) {
+    if (hasKindThatMatches(type, (kind, naming) -> kind.getForceBaseSplit())) {
       return FeatureSplit.BASE;
     }
     List<SynthesizingContext> contexts = getSynthesizingContexts(type);
