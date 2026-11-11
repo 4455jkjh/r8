@@ -68,13 +68,6 @@ def get_java_env(env):
     return java_env
 
 
-def print_cmd(s):
-    if type(s) is list:
-        s = ' '.join(s)
-    print('Running: %s' % s)
-    sys.stdout.flush()
-
-
 def ensure_gradle():
     utils.ensure_google_download(GRADLE8_DIR)
 

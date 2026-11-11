@@ -50,7 +50,7 @@ def set_rlimit_to_max():
     resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
 
 
-def Main():
+def main():
     options = parse_options()
     if not utils.is_bot() and not options.dry_run:
         raise Exception('You are not a bot, don\'t archive builds. ' +
@@ -202,4 +202,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

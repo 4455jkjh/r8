@@ -3,8 +3,8 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import argparse
 import jdk
-import optparse
 import os
 
 import create_maven_release
@@ -27,31 +27,31 @@ import zipfile
 ARCHIVE_BUCKET = 'r8-releases'
 
 
-def parse_options():
-    result = optparse.OptionParser()
-    result.add_option('--dry-run',
-                      '--dry_run',
-                      help='Build only, no upload.',
-                      default=False,
-                      action='store_true')
-    result.add_option('--dry-run-output',
-                      '--dry_run_output',
-                      help='Output directory for \'build only, no upload\'.',
-                      type="string",
-                      action="store")
-    result.add_option(
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dry-run',
+                        '--dry_run',
+                        help='Build only, no upload.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--dry-run-output',
+                        '--dry_run_output',
+                        help='Output directory for \'build only, no upload\'.',
+                        type=str,
+                        action="store")
+    parser.add_argument(
         '--skip-gradle-build',
         '--skip_gradle_build',
         help='Skip Gradle build. Can only be used for local testing.',
         default=False,
         action='store_true')
-    result.add_option('--archive-details',
-                      '--archive_details',
-                      help='File to store JSON with archive details.',
-                      type="string",
-                      default=utils.ARCHIVE_DETAILS,
-                      action="store")
-    return result.parse_args()
+    parser.add_argument('--archive-details',
+                        '--archive_details',
+                        help='File to store JSON with archive details.',
+                        type=str,
+                        default=utils.ARCHIVE_DETAILS,
+                        action="store")
+    return parser.parse_args(argv)
 
 
 def get_version():
@@ -61,10 +61,6 @@ def get_version():
     ]).decode('utf-8')
     r8_version = output.splitlines()[0].strip()
     return r8_version.split()[1]
-
-
-def get_git_branches():
-    return subprocess.check_output(['git', 'show', '-s', '--pretty=%d', 'HEAD'])
 
 
 def get_git_hash():
@@ -255,8 +251,8 @@ def upload_file(src_file, version_or_path, dst_file, is_main, options):
             f'File available at: {get_url(version_or_path, dst_file, is_main)}')
 
 
-def main():
-    (options, args) = parse_options()
+def main(argv=None):
+    options = parse_options(argv)
     run(options)
 
 
