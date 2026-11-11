@@ -67,6 +67,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     }
     DexEncodedMethod method = code.method();
     returnBlockCanonicalizerRewriter.run(code, timing);
+    loopBackEdgeCanonicalizer.mergeTrivialGotosIntoLoopHeaders(code, deadCodeRemover, timing);
     workaroundBugs(code, timing);
     loopBackEdgeCanonicalizer.run(code, timing);
     code.traceBlocks();
