@@ -293,7 +293,7 @@ ALL_BENCHMARKS.update(LOCAL_BENCHMARKS)
 ALL_BENCHMARKS.update(BUILD_BENCHMARKS)
 BUCKET = "r8-perf-results"
 # Prefix of the weekly bundles that the perf page loads directly from the
-# bucket, see GetWeeklyBundleLocation().
+# bucket, see get_weekly_bundle_location().
 WEEKLY_PREFIX = 'weekly'
 SAMPLE_BENCHMARK_RESULT_JSON = {
     'benchmark_name': '<benchmark_name>',
@@ -309,7 +309,7 @@ SAMPLE_BENCHMARK_RESULT_JSON = {
 #                                                   meta
 # where results simply contains the result lines and
 # meta contains information about the execution (machine)
-def ParseOptions():
+def parse_options():
     result = argparse.ArgumentParser()
     result.add_argument('--benchmark',
                         help='Specific benchmark(s) to measure.',
@@ -379,7 +379,7 @@ def ParseOptions():
     return options, args
 
 
-def GetRunCmd(benchmark, target, variant, options, args, r8jar=None):
+def get_run_cmd(benchmark, target, variant, options, args, r8jar=None):
     base_cmd = [
         'tools/run_benchmark.py', '--benchmark', benchmark, '--target', target
     ]
@@ -395,21 +395,21 @@ def GetRunCmd(benchmark, target, variant, options, args, r8jar=None):
     return base_cmd + args
 
 
-def MergeBenchmarkResultJsonFiles(benchmark_result_json_files):
+def merge_benchmark_result_json_files(benchmark_result_json_files):
     merged_benchmark_result_json = None
     for benchmark_result_json_file in benchmark_result_json_files:
-        benchmark_result_json = ParseBenchmarkResultJsonFile(
+        benchmark_result_json = parse_benchmark_result_json_file(
             benchmark_result_json_file)
         if merged_benchmark_result_json is None:
             merged_benchmark_result_json = benchmark_result_json
         else:
-            MergeBenchmarkResultJsonFile(merged_benchmark_result_json,
-                                         benchmark_result_json)
+            merge_benchmark_result_json_file(merged_benchmark_result_json,
+                                             benchmark_result_json)
     return merged_benchmark_result_json
 
 
-def MergeBenchmarkResultJsonFile(merged_benchmark_result_json,
-                                 benchmark_result_json):
+def merge_benchmark_result_json_file(merged_benchmark_result_json,
+                                     benchmark_result_json):
     assert benchmark_result_json.keys() == SAMPLE_BENCHMARK_RESULT_JSON.keys()
     assert merged_benchmark_result_json[
         'benchmark_name'] == benchmark_result_json['benchmark_name']
@@ -417,7 +417,7 @@ def MergeBenchmarkResultJsonFile(merged_benchmark_result_json,
         benchmark_result_json['results'])
 
 
-def ParseBenchmarkResultJsonFile(result_json_file):
+def parse_benchmark_result_json_file(result_json_file):
     with open(result_json_file, 'r') as f:
         lines = f.readlines()
         return json.loads(''.join(lines))
@@ -457,10 +457,10 @@ def GetGSLocation(filename, bucket=BUCKET):
     return f'gs://{bucket}/{filename}'
 
 
-def ArchiveBenchmarkResult(benchmark, target, benchmark_result_json_files,
-                           options, temp):
+def archive_benchmark_result(benchmark, target, benchmark_result_json_files,
+                             options, temp):
     result_file = os.path.join(temp, 'result_file')
-    merged_result_json = MergeBenchmarkResultJsonFiles(
+    merged_result_json = merge_benchmark_result_json_files(
         benchmark_result_json_files)
     with open(result_file, 'w') as f:
         json.dump(merged_result_json, f)
@@ -475,7 +475,7 @@ def ArchiveBenchmarkResult(benchmark, target, benchmark_result_json_files,
 
 
 # Returns the ISO week of the given timestamp as WwwYyy, e.g. W43Y26.
-def GetIsoWeekFolder(timestamp):
+def get_iso_week_folder(timestamp):
     year, week, _ = datetime.datetime.fromtimestamp(
         timestamp, tz=datetime.timezone.utc).isocalendar()
     return f'W{week:02d}Y{year % 100:02d}'
@@ -483,7 +483,7 @@ def GetIsoWeekFolder(timestamp):
 
 # Returns a name for this perf.py run that is unique per build, target, and set
 # of benchmarks, since a build can run perf.py more than once.
-def GetWeeklyBundleRunName(benchmarks, target=None):
+def get_weekly_bundle_run_name(benchmarks, target=None):
     run_id = (os.environ.get('SWARMING_TASK_ID') or
               os.environ.get('KOKORO_BUILD_ID') or f'local-{int(time.time())}')
     key = f"{target or ''}:{','.join(sorted(set(benchmarks)))}"
@@ -498,20 +498,20 @@ def GetWeeklyBundleRunName(benchmarks, target=None):
 #   weekly/TARGET/WwwYyy/try/HASH/RUN.json for try commits, in the ISO week of
 #       their merge base with main,
 #   weekly/TARGET/releases/BRANCH/HASH/RUN.json for release branch commits.
-def GetWeeklyBundleLocation(commit, target, run_name, is_try):
+def get_weekly_bundle_location(commit, target, run_name, is_try):
     if is_try:
         merge_base = subprocess.check_output(
             ['git', 'merge-base',
              commit.parent_hash(), 'origin/main']).decode('utf-8').strip()
         parent = historic_run.git_commit_from_hash(merge_base)
-        week = GetIsoWeekFolder(parent.committer_timestamp())
+        week = get_iso_week_folder(parent.committer_timestamp())
         return (f'{WEEKLY_PREFIX}/{target}/{week}/try/{commit.hash()}/'
                 f'{run_name}.json', merge_base)
     branch = commit.branch()
     if branch and branch != 'main':
         return (f'{WEEKLY_PREFIX}/{target}/releases/{branch}/{commit.hash()}/'
                 f'{run_name}.json', None)
-    week = GetIsoWeekFolder(commit.committer_timestamp())
+    week = get_iso_week_folder(commit.committer_timestamp())
     return (f'{WEEKLY_PREFIX}/{target}/{week}/{commit.hash()}/{run_name}.json',
             None)
 
@@ -542,10 +542,10 @@ def ArchiveWeeklyBundle(benchmark_results,
     for target, target_benchmarks in benchmark_results.items():
         if not target_benchmarks:
             continue
-        run_name = GetWeeklyBundleRunName(target_benchmarks.keys(),
-                                          target=target)
-        location, parent_hash = GetWeeklyBundleLocation(commit, target,
-                                                        run_name, is_try)
+        run_name = get_weekly_bundle_run_name(target_benchmarks.keys(),
+                                              target=target)
+        location, parent_hash = get_weekly_bundle_location(
+            commit, target, run_name, is_try)
         commit_info = dict(base_commit_info)
         if parent_hash:
             commit_info['parent_hash'] = parent_hash
@@ -583,7 +583,7 @@ def ArchiveOutputFile(file, dest, bucket=BUCKET, header=None, outdir=None):
 #     --top 3373fd18453835bf49bff9f02523a507a2ebf317
 #     --bottom 7486f01e0622cb5935b77a92b59ddf1ca8dbd2e2
 def main():
-    options, args = ParseOptions()
+    options, args = parse_options()
     any_failed = False
     # Results of this run by target and benchmark, for the weekly bundle.
     weekly_bundle_results = {}
@@ -643,7 +643,7 @@ def main():
                     else:
                         benchmark_result_file = os.path.join(
                             temp_benchmark_target, f'result_file_{i}')
-                    iteration_cmd = GetRunCmd(
+                    iteration_cmd = get_run_cmd(
                         benchmark_to_run, target, variant, options, [
                             '--iterations',
                             str(options.iterations_inner), '--output',
@@ -675,12 +675,13 @@ def main():
                 if sub_benchmarks_for_target:
                     for sub_benchmark in sub_benchmarks_for_target:
                         target_results[
-                            benchmark + sub_benchmark] = ArchiveBenchmarkResult(
+                            benchmark +
+                            sub_benchmark] = archive_benchmark_result(
                                 benchmark + sub_benchmark, target,
                                 benchmark_result_json_files[sub_benchmark],
                                 options, temp)
                 else:
-                    target_results[benchmark] = ArchiveBenchmarkResult(
+                    target_results[benchmark] = archive_benchmark_result(
                         benchmark, target, benchmark_result_json_files, options,
                         temp)
 

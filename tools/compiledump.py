@@ -195,7 +195,7 @@ def error(msg):
     sys.exit(1)
 
 
-class Dump(object):
+class Dump:
 
     def __init__(self, directory):
         self.directory = directory
