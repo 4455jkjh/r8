@@ -12,6 +12,7 @@ import com.android.tools.r8.synthesis.SyntheticItems;
 
 public class NoDirectRuntimeTypeChecks extends SingleClassPolicy {
 
+  private final boolean enableRuntimeTypeCheckMerging;
   private final RuntimeTypeCheckInfo runtimeTypeCheckInfo;
   private final SyntheticItems syntheticItems;
 
@@ -20,6 +21,8 @@ public class NoDirectRuntimeTypeChecks extends SingleClassPolicy {
   }
 
   public NoDirectRuntimeTypeChecks(AppView<?> appView, RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
+    this.enableRuntimeTypeCheckMerging =
+        appView.options().horizontalClassMergerOptions().isRuntimeTypeCheckMergingEnabled();
     this.runtimeTypeCheckInfo = runtimeTypeCheckInfo;
     this.syntheticItems = appView.getSyntheticItems();
   }
@@ -31,9 +34,9 @@ public class NoDirectRuntimeTypeChecks extends SingleClassPolicy {
           : "Expected synthetic, got: " + clazz.getTypeName();
       return true;
     }
-    if (clazz.isInterface()) {
+    if (clazz.isInterface() || !enableRuntimeTypeCheckMerging) {
       // We cannot rewrite runtime type checks to classId comparisons, since we cannot add instance
-      // fields to interfaces.
+      // fields to interfaces. For classes, this rewriting can be disabled by a system property.
       return !runtimeTypeCheckInfo.isRuntimeCheckType(clazz);
     } else {
       // Allow check-casts and instance-of checks on the base type, since we can use the classId
