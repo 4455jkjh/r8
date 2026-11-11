@@ -165,7 +165,7 @@ def main():
     if desugar:
         assert options.desugar_jdk11
         builders = [DESUGAR_JDK11_BOT]
-        commit = git_utils.GetHeadRevision(utils.REPO_ROOT, use_main=True)
+        commit = git_utils.get_head_revision(utils.REPO_ROOT, use_main=True)
     if options.cl:
         trigger_cl(builders, options.cl)
         return 0

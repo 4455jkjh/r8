@@ -147,10 +147,10 @@ def Upload(options, file_name, destination, is_main):
 
 
 def CloneDesugaredLibrary(github_account, checkout_dir, desugar_jdk_libs_hash):
-    git_utils.GitClone(
+    git_utils.git_clone(
         'https://github.com/' + github_account + '/' + GITHUB_REPRO,
         checkout_dir)
-    git_utils.GitCheckout(desugar_jdk_libs_hash, checkout_dir)
+    git_utils.git_checkout(desugar_jdk_libs_hash, checkout_dir)
 
 
 def GetJavaEnv(androidHomeTemp):

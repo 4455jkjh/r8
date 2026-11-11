@@ -29,7 +29,7 @@ def git_new_branch(name, upstream=None):
 
 
 def git_commit(message):
-    git_utils.GitCommit(message)
+    git_utils.git_commit(message)
 
 
 def parse_options():
@@ -137,7 +137,7 @@ def run(args, branch):
         new_version = input(
             'Please enter the new version for the commit message: ')
 
-    message = git_utils.VersionCommitMessage(new_version, bugs=bugs)
+    message = git_utils.version_commit_message(new_version, bugs=bugs)
     git_commit(message)
     confirm_and_upload(branch, args, None)
     if not args.current_checkout and not args.yes:
@@ -193,7 +193,7 @@ def confirm_and_upload(local_branch_name, args, bugs):
     cmd = ['git', 'cl', 'upload', '--bypass-hooks']
     if args.yes:
         cmd.append('-f')
-    git_utils.GitClAppendReviewers(cmd, args.reviewer, args.send_mail)
+    git_utils.git_cl_append_reviewers(cmd, args.reviewer, args.send_mail)
     if not args.no_upload:
         subprocess.run(cmd)
     else:
@@ -232,7 +232,7 @@ def promote_dev(args):
             print("Promoting %s to %s" % (dev_version, version))
             sed(dev_version, version, VERSION_FILE)
 
-            message = git_utils.VersionCommitMessage(
+            message = git_utils.version_commit_message(
                 version,
                 description=('Promoting version %s to version %s' %
                              (dev_version, version)))

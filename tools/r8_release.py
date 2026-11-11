@@ -133,7 +133,7 @@ def prepare_release(args):
                 # Rewrite the version, commit and validate.
                 sed(old_version, version, R8_VERSION_FILE)
 
-                git_utils.GitCommit(git_utils.VersionCommitMessage(version))
+                git_utils.git_commit(git_utils.version_commit_message(version))
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash]).decode('utf-8')
@@ -142,8 +142,8 @@ def prepare_release(args):
                                              version)
 
                 cmd = ['git', 'cl', 'upload', '--no-squash', '--bypass-hooks']
-                git_utils.GitClAppendReviewers(cmd, args.reviewer,
-                                               args.send_mail)
+                git_utils.git_cl_append_reviewers(cmd, args.reviewer,
+                                                  args.send_mail)
 
                 maybe_check_call(args, cmd)
 
@@ -159,7 +159,7 @@ def prepare_release(args):
     return make_release
 
 
-version_commit_message = git_utils.VersionCommitMessage
+version_commit_message = git_utils.version_commit_message
 
 
 def maybe_tag(args, version):
@@ -1093,8 +1093,8 @@ def prepare_branch(args):
                 sed(version_prefix + old_version, version_prefix + full_version,
                     R8_VERSION_FILE)
 
-                git_utils.GitCommit(
-                    git_utils.VersionCommitMessage(full_version))
+                git_utils.git_commit(
+                    git_utils.version_commit_message(full_version))
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash])

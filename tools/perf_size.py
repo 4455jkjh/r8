@@ -434,14 +434,14 @@ def compute_commit_baseline(commit_hash, temp_dir, options):
     orig_ref = git_utils.get_head_ref()
     try:
         print(f'Checking out {commit_hash[:8]} to compute baseline...')
-        git_utils.GitCheckout(commit_hash, utils.REPO_ROOT)
+        git_utils.git_checkout(commit_hash, utils.REPO_ROOT)
         gradle.run_gradle(get_gradle_args([utils.GRADLE_TASK_R8], options))
         base_jar = tag_local_r8_jar(utils.R8_JAR,
                                     commit_hash,
                                     temp_dir,
                                     label='base')
     finally:
-        git_utils.GitCheckout(orig_ref, utils.REPO_ROOT)
+        git_utils.git_checkout(orig_ref, utils.REPO_ROOT)
     return run_suite(base_jar, commit_hash, temp_dir, options)
 
 
