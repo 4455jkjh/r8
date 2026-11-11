@@ -15,6 +15,14 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(11) }
 }
 
+tasks {
+  named<Copy>("processTestResources") {
+    from(sourceSets.test.get().java.srcDirs) {
+      include("com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactoryTestClass.java")
+    }
+  }
+}
+
 dependencies {
   runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
   runtimeOnlyData(project(":third_party", "desugarJdkLibs8"))

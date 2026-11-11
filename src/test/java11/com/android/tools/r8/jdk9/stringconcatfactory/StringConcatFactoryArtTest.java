@@ -9,40 +9,61 @@ import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 @RunWith(Parameterized.class)
 public class StringConcatFactoryArtTest extends TestBase {
 
   static final String EXPECTED =
-      StringUtils.lines("Values: true, 0, 1, 2, 3, 4.0, 5.0", "Strings: a, c", "23a");
-  static final Class<?> MAIN = Main.class;
+      StringUtils.lines("Values: true, A, 0, 1, 2, 3, 4.0, 5.0", "Strings: a, c", "23a");
+  static final Class<?> MAIN = StringConcatFactoryTestClass.class;
 
-  private final TestParameters parameters;
+  @Parameter(0)
+  public TestParameters parameters;
 
-  @Parameterized.Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters()
-        .withDexRuntime(Version.MAIN)
-        .withCfRuntimesStartingFromIncluding(CfVm.JDK11)
-        .withApiLevel(AndroidApiLevel.CINNAMON_BUN_2)
-        .build();
+  @Parameter(1)
+  public boolean makeConcatFromJavac;
+
+  @Parameterized.Parameters(name = "{0}, makeConcatFromJavac: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters()
+            .withDexRuntime(Version.MAIN)
+            .withCfRuntimesStartingFromIncluding(CfVm.JDK11)
+            .withApiLevel(AndroidApiLevel.CINNAMON_BUN_2)
+            .build(),
+        BooleanUtils.values());
   }
 
-  public StringConcatFactoryArtTest(TestParameters parameters) {
-    this.parameters = parameters;
+  private static Path compiledWithMakeConcatJar;
+
+  @BeforeClass
+  public static void compileWithMakeConcat() throws Exception {
+    compiledWithMakeConcatJar =
+        javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
+            .addSourceFiles(
+                ToolHelper.getSourceFileForTestClassFromResources(
+                    StringConcatFactoryTestClass.class))
+            .addOptions("-XDstringConcat=indy")
+            .compile();
   }
 
-  private void checkInvokeDynamic(CodeInspector inspector) {
+  private void checkInvokeDynamic(CodeInspector inspector, boolean expectMakeConcatWithConstants) {
     for (String methodName : new String[] {"testPrimitives", "testStrings", "testNoConstants"}) {
       assertTrue(
           inspector
@@ -63,7 +84,10 @@ public class StringConcatFactoryArtTest extends TestBase {
                           .getCallSite()
                           .methodName
                           .toString()
-                          .equals("makeConcatWithConstants")));
+                          .equals(
+                              expectMakeConcatWithConstants
+                                  ? "makeConcatWithConstants"
+                                  : "makeConcat")));
     }
   }
 
@@ -71,9 +95,13 @@ public class StringConcatFactoryArtTest extends TestBase {
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
-        .addInnerClassesAndStrippedOuter(getClass())
+        .applyIf(
+            makeConcatFromJavac,
+            b -> b.addProgramFiles(compiledWithMakeConcatJar),
+            b -> b.addProgramClasses(MAIN))
+        .addClasspathClasses(NeverInline.class)
         .run(parameters.getRuntime(), MAIN)
-        .inspect(this::checkInvokeDynamic)
+        .inspect(inspector -> checkInvokeDynamic(inspector, !makeConcatFromJavac))
         .assertSuccessWithOutput(EXPECTED);
   }
 
@@ -81,14 +109,14 @@ public class StringConcatFactoryArtTest extends TestBase {
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
     testForD8(parameters)
-        .addInnerClassesAndStrippedOuter(getClass())
+        .addProgramClasses(MAIN)
         .addOptionsModification(
             opt -> {
               opt.enableStringConcatInstruction = true;
               opt.getTestingOptions().enableStringConcatFactoryForDex = true;
             })
         .compile()
-        .inspect(this::checkInvokeDynamic)
+        .inspect(inspector -> checkInvokeDynamic(inspector, true))
         .run(parameters.getRuntime(), MAIN)
         .assertSuccessWithOutput(EXPECTED);
   }
@@ -96,7 +124,7 @@ public class StringConcatFactoryArtTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     testForR8(parameters)
-        .addInnerClassesAndStrippedOuter(getClass())
+        .addProgramClasses(MAIN)
         // Default is JDK-8 rt.jar which has no definition of StringConcatFactory.
         .applyIf(
             parameters.isCfRuntime(),
@@ -108,43 +136,11 @@ public class StringConcatFactoryArtTest extends TestBase {
               opt.enableStringConcatInstruction = true;
               opt.getTestingOptions().enableStringConcatFactoryForDex = true;
             })
-        .enableInliningAnnotations()
+        .enableProguardTestOptions()
+        .addKeepRules("-neverinline class " + MAIN.getTypeName() + "{ *** test*(...); }")
         .compile()
-        .inspect(this::checkInvokeDynamic)
+        .inspect(inspector -> checkInvokeDynamic(inspector, true))
         .run(parameters.getRuntime(), MAIN)
         .assertSuccessWithOutput(EXPECTED);
-  }
-
-  public static class Main {
-
-    @NeverInline
-    public static void testPrimitives(
-        boolean z, byte b, short s, int i, long l, float f, double d) {
-      System.out.println(
-          "Values: " + z + ", " + b + ", " + s + ", " + i + ", " + l + ", " + f + ", " + d);
-    }
-
-    @NeverInline
-    public static void testStrings(String s1, String s2) {
-      System.out.println("Strings: " + s1 + ", " + s2);
-    }
-
-    @NeverInline
-    public static void testNoConstants(int i, long l, String s) {
-      System.out.println("" + i + l + s);
-    }
-
-    public static void main(String[] args) {
-      testPrimitives(
-          args.length == 0,
-          (byte) args.length,
-          (short) (args.length + 1),
-          args.length + 2,
-          args.length + 3,
-          args.length + 4,
-          args.length + 5);
-      testStrings(args.length == 0 ? "a" : "b", args.length == 0 ? "c" : "d");
-      testNoConstants(args.length + 2, args.length + 3, args.length == 0 ? "a" : "b");
-    }
   }
 }
