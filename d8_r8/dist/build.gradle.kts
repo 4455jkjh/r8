@@ -84,6 +84,11 @@ val keepAnnoDepsJarExceptAsmConfig =
   configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
     extendsFrom(keepAnnoDepsJarExceptAsmScope.get())
   }
+val keepAnnoDepsJarOnlyAsmScope = configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
+val keepAnnoDepsJarOnlyAsmConfig =
+  configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
+    extendsFrom(keepAnnoDepsJarOnlyAsmScope.get())
+  }
 val keepAnnoToolsJarScope = configurations.dependencyScope("keepAnnoToolsJarScope")
 val keepAnnoToolsJarConfig =
   configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope.get()) }
@@ -113,6 +118,7 @@ dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
   keepRadiusProtoJarScope(project(":keepradius", "keepradiusProtoJar"))
   keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
+  keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
   keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
@@ -382,18 +388,29 @@ tasks {
     setOutputJarFile(File(rootDir, "build/libs/r8-assistantlib.jar"))
   }
 
-  register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
-    outputs.doNotCacheIf("Large standalone artifact (~8MB)") { true }
-    swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
-    compiler = "relocator"
-    inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
-    inputNoResFiles.from(keepAnnoToolsJarConfig)
-    val pkg = "com.android.tools.r8.keepanno"
-    extraArgs =
-      listOf("--map", "com.android.tools.r8.keepanno.**->${pkg}") +
-        relocateDepsExceptAsm(pkg) +
-        listOf("--map-diagnostics", "warning", "error")
-    outputFile = File(getRootDir(), "build/libs/keepanno-tools.jar")
+  val keepAnnoToolsWithRelocatedDeps =
+    register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
+      outputs.doNotCacheIf("Large standalone artifact (~8MB)") { true }
+      swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
+      compiler = "relocator"
+      inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
+      inputNoResFiles.from(keepAnnoToolsJarConfig)
+      val pkg = "com.android.tools.r8.keepanno"
+      extraArgs =
+        listOf("--map", "com.android.tools.r8.keepanno.**->${pkg}") +
+          relocateDepsExceptAsm(pkg) +
+          listOf("--map-diagnostics", "warning", "error")
+      outputFile = File(getRootDir(), "build/libs/keepanno-tools.jar")
+    }
+
+  register<CreateR8LibraryTask>("keepAnnoToolsLib") {
+    r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
+    inputJar = keepAnnoToolsWithRelocatedDeps.flatMap { it.outputFile }
+    pgConfigs.from(File(rootDir, "src/keepanno/keep.txt"))
+    inputClasspath.from(keepAnnoDepsJarOnlyAsmConfig)
+    enableKeepAnnotations = true
+
+    setOutputJarFile(File(rootDir, "build/libs/keepanno-toolslib.jar"))
   }
 
   register<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps") {

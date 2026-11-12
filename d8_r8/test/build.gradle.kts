@@ -50,11 +50,6 @@ val keepAnnoAndroidXAnnotationsJarConfig =
   configurations.resolvable("keepAnnoAndroidXAnnotationsJarConfig") {
     extendsFrom(keepAnnoAndroidXAnnotationsJarScope.get())
   }
-val keepAnnoDepsJarOnlyAsmScope = configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
-val keepAnnoDepsJarOnlyAsmConfig =
-  configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
-    extendsFrom(keepAnnoDepsJarOnlyAsmScope.get())
-  }
 val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig =
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
@@ -84,7 +79,6 @@ dependencies {
   sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
-  keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   coverageClassesScope(project(":assistant", "assistantClasses"))
   coverageClassesScope(project(":keepanno", "keepannoClasses"))
@@ -128,8 +122,6 @@ val processKeepRulesLibWithRelocatedDepsTask =
 val r8AssistantLibTask = project(":dist").tasks.named<CreateR8LibraryTask>("r8AssistantLib")
 val r8WithRelocatedDepsTask =
   project(":dist").tasks.named<SwissArmyKnifeTask>("r8WithRelocatedDeps")
-val keepAnnoToolsWithRelocatedDepsTask =
-  project(":dist").tasks.named<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps")
 
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
@@ -294,16 +286,6 @@ tasks {
         artifactName = r8LibArtifactName,
       )
     }
-
-  register<CreateR8LibraryTask>("keepAnnoToolsLib") {
-    r8compilerClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
-    inputJar = keepAnnoToolsWithRelocatedDepsTask.flatMap { it.outputFile }
-    pgConfigs.from(File(rootDir, "src/keepanno/keep.txt"))
-    inputClasspath.from(keepAnnoDepsJarOnlyAsmConfig)
-    enableKeepAnnotations = true
-
-    setOutputJarFile(File(rootDir, "build/libs/keepanno-toolslib.jar"))
-  }
 
   abstract class GenerateKeepRulesForR8LibTask : DefaultTask() {
     @get:InputFile abstract val r8LibJarMap: RegularFileProperty
