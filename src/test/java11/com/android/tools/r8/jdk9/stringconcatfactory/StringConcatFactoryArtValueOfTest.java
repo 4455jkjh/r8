@@ -18,7 +18,9 @@ import org.junit.runners.Parameterized.Parameter;
 @RunWith(Parameterized.class)
 public class StringConcatFactoryArtValueOfTest extends StringConcatFactoryTestBase {
 
-  static final String EXPECTED = StringUtils.lines("Values: true, A, 0, 1, 2, 3, 4.0, 5.0");
+  private static final String EXPECTED_LINE = "Values: true, A, 0, 1, 2, 3, 4.0, 5.0";
+  static final String EXPECTED =
+      StringUtils.lines(EXPECTED_LINE, EXPECTED_LINE, EXPECTED_LINE, EXPECTED_LINE);
   static final Class<?> MAIN = StringConcatFactoryValueOfTestClass.class;
 
   @Parameter(0)
@@ -40,11 +42,22 @@ public class StringConcatFactoryArtValueOfTest extends StringConcatFactoryTestBa
   }
 
   private void checkInvokeDynamic(CodeInspector inspector, boolean expectMakeConcatWithConstants) {
-    checkInvokeDynamic(inspector, MAIN, expectMakeConcatWithConstants, "testPrimitivesValueOf");
+    checkInvokeDynamic(
+        inspector,
+        MAIN,
+        expectMakeConcatWithConstants,
+        "testPrimitivesValueOf",
+        "testBoxedPrimitives",
+        "testBoxedPrimitivesValueOf",
+        "testNestedStringValueOf");
   }
 
-  private void checkValueOf(CodeInspector inspector, long expected) {
-    checkValueOf(inspector, MAIN, "testPrimitivesValueOf", expected);
+  private void checkValueOf(
+      CodeInspector inspector, long expectedSingle, long expectedDoubleNested) {
+    checkValueOf(inspector, MAIN, "testPrimitivesValueOf", expectedSingle);
+    checkValueOf(inspector, MAIN, "testBoxedPrimitives", expectedSingle);
+    checkValueOf(inspector, MAIN, "testBoxedPrimitivesValueOf", expectedDoubleNested);
+    checkValueOf(inspector, MAIN, "testNestedStringValueOf", expectedDoubleNested);
   }
 
   @Test
@@ -57,7 +70,7 @@ public class StringConcatFactoryArtValueOfTest extends StringConcatFactoryTestBa
             b -> b.addProgramClasses(MAIN))
         .run(parameters.getRuntime(), MAIN)
         .inspect(inspector -> checkInvokeDynamic(inspector, !makeConcatFromJavac))
-        .inspect(inspector -> checkValueOf(inspector, 8))
+        .inspect(inspector -> checkValueOf(inspector, 8, 16))
         .assertSuccessWithOutput(EXPECTED);
   }
 
@@ -70,8 +83,7 @@ public class StringConcatFactoryArtValueOfTest extends StringConcatFactoryTestBa
         .compile()
         .inspect(inspector -> checkInvokeDynamic(inspector, true))
         .run(parameters.getRuntime(), MAIN)
-        // TODO(b/576559667): All String.valueOf on primitives should be removed,
-        .inspect(inspector -> checkValueOf(inspector, 2))
+        .inspect(inspector -> checkValueOf(inspector, 0, 0))
         .assertSuccessWithOutput(EXPECTED);
   }
 
@@ -91,8 +103,7 @@ public class StringConcatFactoryArtValueOfTest extends StringConcatFactoryTestBa
         .compile()
         .inspect(inspector -> checkInvokeDynamic(inspector, true))
         .run(parameters.getRuntime(), MAIN)
-        // TODO(b/576559667): All String.valueOf on primitives should be removed,
-        .inspect(inspector -> checkValueOf(inspector, 2))
+        .inspect(inspector -> checkValueOf(inspector, 0, 0))
         .assertSuccessWithOutput(EXPECTED);
   }
 }

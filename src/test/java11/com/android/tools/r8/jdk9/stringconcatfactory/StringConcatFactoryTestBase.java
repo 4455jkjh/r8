@@ -98,7 +98,9 @@ public abstract class StringConcatFactoryTestBase extends TestBase {
             .map(InstructionSubject::getMethod)
             .filter(
                 dexMethod ->
-                    dexMethod.getHolderType().isIdenticalTo(inspector.getFactory().stringType))
+                    dexMethod.getHolderType().isIdenticalTo(inspector.getFactory().stringType)
+                        || inspector.getFactory().getPrimitiveFromBoxed(dexMethod.getHolderType())
+                            != null)
             .filter(
                 dexMethod ->
                     dexMethod.getName().isIdenticalTo(inspector.getFactory().valueOfMethodName))

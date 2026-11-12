@@ -156,7 +156,6 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
   }
 
   private boolean canSimplifyArgs(StringConcat stringConcat) {
-    DexString valueOfMethodName = dexItemFactory.valueOfMethodName;
     for (Value value : stringConcat.inValues()) {
       value = value.getAliasedValue();
       if (value.isPhi()) {
@@ -166,12 +165,7 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
       if (definition.isConstString() || definition.isConstNumber()) {
         return true;
       }
-      if (definition.isInvokeStatic()
-          && definition
-              .asInvokeStatic()
-              .getInvokedMethod()
-              .getName()
-              .isIdenticalTo(valueOfMethodName)) {
+      if (detectValueOfWithoutSideEffects(definition) != null) {
         return true;
       }
       if (isToStringInvoke(definition) && value.hasSingleUniqueUserAndNoOtherUsers()) {
@@ -230,22 +224,31 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
               // Remove the toString() instruction.
               instruction.removeOrReplaceByDebugLocalRead();
             }
-            argType = dexItemFactory.objectType;
+            argType =
+                receiver.getType().isStringType(dexItemFactory)
+                    ? dexItemFactory.stringType
+                    : dexItemFactory.objectType;
             value = receiver;
             aliasedValue = aliasedReceiver;
-            instruction = aliasedReceiver.getDefinition();
           }
         }
 
         // Simplify {String,Integer,etc}.valueOf(thing) -> thing.
-        DexMethod matchedMethod = detectValueOf(instruction);
-        if (matchedMethod != null) {
-          ValueUtils.removeAliasChain(value, aliasedValue);
-          Value newValue = instruction.getFirstOperand();
-          if (!aliasedValue.hasAnyUsers()) {
-            instruction.removeOrReplaceByDebugLocalRead();
+        while (!aliasedValue.isPhi()) {
+          Instruction valueOfInstruction = aliasedValue.getDefinition();
+          DexMethod matchedMethod = detectValueOfWithoutSideEffects(valueOfInstruction);
+          if (matchedMethod == null) {
+            break;
           }
-          argType = matchedMethod.getProto().getParameter(0);
+          ValueUtils.removeAliasChain(value, aliasedValue);
+          Value newValue = valueOfInstruction.getFirstOperand();
+          if (!aliasedValue.hasAnyUsers()) {
+            valueOfInstruction.removeOrReplaceByDebugLocalRead();
+          }
+          argType =
+              newValue.getType().isStringType(dexItemFactory)
+                  ? dexItemFactory.stringType
+                  : matchedMethod.getParameter(0);
           value = newValue;
           aliasedValue = value.getAliasedValue();
         }
@@ -258,7 +261,7 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
       }
 
       // If it wasn't converted to a constant, add as a Value.
-      builder.addValue(value, argType);
+      builder.addValue(value, StringConcat.normalizeArgType(argType, dexItemFactory));
     }
 
     if (builder.isSingleConstant()) {
@@ -276,22 +279,28 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
     return true;
   }
 
-  private DexMethod detectValueOf(Instruction instruction) {
+  private DexMethod detectValueOfWithoutSideEffects(Instruction instruction) {
     InvokeStatic invokeStatic = instruction.asInvokeStatic();
     if (invokeStatic == null) {
       return null;
     }
     DexMethod invokedMethod = invokeStatic.getInvokedMethod();
-    if (!invokedMethod.getName().isIdenticalTo(dexItemFactory.valueOfMethodName)) {
+    if (!invokedMethod.getName().isIdenticalTo(dexItemFactory.valueOfMethodName)
+        || invokedMethod.getArity() != 1) {
       return null;
     }
-    DexType argType = instruction.getFirstOperand().getType().toDexType(dexItemFactory);
-    DexMethod stringValueOf = dexItemFactory.stringMembers.getValueOfForDexType(argType);
+    DexType paramType = invokedMethod.getParameter(0);
+    DexMethod stringValueOf = dexItemFactory.stringMembers.getValueOfForDexType(paramType);
     if (invokedMethod.isIdenticalTo(stringValueOf)) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.stringMembers.valueOfObject)
+          && StringConcat.toStringMayHaveSideEffects(
+              dexItemFactory, instruction.getFirstOperand().getType())) {
+        return null;
+      }
       return invokedMethod;
     }
-    DexMethod boxedValueOf = dexItemFactory.getBoxPrimitiveMethod(argType);
-    if (boxedValueOf != null && invokedMethod.isIdenticalTo(boxedValueOf)) {
+    if (paramType.isPrimitiveType()
+        && dexItemFactory.boxedValueOfMethods().contains(invokedMethod)) {
       return invokedMethod;
     }
     return null;
@@ -350,7 +359,9 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
       case 'D':
         return dexItemFactory.createString(String.valueOf(asNumber.getDoubleValue()));
       case 'B':
+        return dexItemFactory.createString(String.valueOf((byte) asNumber.getIntValue()));
       case 'S':
+        return dexItemFactory.createString(String.valueOf((short) asNumber.getIntValue()));
       case 'I':
         return dexItemFactory.createString(String.valueOf(asNumber.getIntValue()));
       default:

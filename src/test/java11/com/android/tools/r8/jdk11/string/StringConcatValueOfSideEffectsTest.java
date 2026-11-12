@@ -12,7 +12,6 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
-import java.lang.invoke.StringConcatException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -54,7 +53,7 @@ public class StringConcatValueOfSideEffectsTest extends TestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .addOptionsModification(opt -> opt.enableStringConcatInstruction = true)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput(StringUtils.lines("23", "state=after"));
+        .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
   @Test
@@ -78,10 +77,7 @@ public class StringConcatValueOfSideEffectsTest extends TestBase {
         .enableInliningAnnotations()
         .addOptionsModification(options -> options.enableStringConcatInstruction = true)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            canUseStringConcatFactoryOnArt(parameters),
-            r -> r.assertFailureWithErrorThatThrows(StringConcatException.class),
-            r -> r.assertSuccessWithOutput(StringUtils.lines("01", "state=after")));
+        .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
   static class ToStringThatCounts {

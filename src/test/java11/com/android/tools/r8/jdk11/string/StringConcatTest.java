@@ -62,7 +62,7 @@ public class StringConcatTest extends TestBase {
           "true-3truedtruee",
           "a bc",
           "a b c",
-          "ab12");
+          "ab1233");
 
   @Parameter(0)
   public TestParameters parameters;
@@ -199,9 +199,8 @@ public class StringConcatTest extends TestBase {
 
     method = mainClass.uniqueMethodWithOriginalName("simplifyToStringAndValueOfTypes");
     assertTrue(method.isPresent());
-    // TODO(b/467374229): Byte.valueOf and Short.valueOf should be unboxed by StringConcatOptimizer.
     assertEquals(
-        2,
+        0,
         method
             .streamInstructions()
             .filter(ins -> ins.isInvokeStatic() && ins.getMethod().getName().isEqualTo("valueOf"))
@@ -520,7 +519,14 @@ public class StringConcatTest extends TestBase {
       String s2 = String.valueOf(alwaysTrue ? "b" : "y");
       byte b = alwaysTrue ? (byte) 1 : (byte) 2;
       short s = alwaysTrue ? (short) 2 : (short) 3;
-      System.out.println(s1 + s2 + Byte.valueOf(b).toString() + Short.valueOf(s));
+      int i = alwaysTrue ? 3 : 4;
+      System.out.println(
+          s1
+              + s2
+              + Byte.valueOf(b).toString()
+              + Short.valueOf(s)
+              + String.valueOf(Integer.valueOf(i))
+              + String.valueOf(String.valueOf(i)));
     }
   }
 }
