@@ -58,22 +58,23 @@ def get_jar_for_benchmark(benchmark):
 def run_art(dex):
     command = ['bash', ART, '-cp', dex, BENCHMARK_MAIN_CLASS]
     utils.PrintCmd(command)
-    benchmark_output = subprocess.check_output(command)
+    benchmark_output = subprocess.check_output(command, text=True)
     return get_result(benchmark_output)
 
 
 def adb(args):
     command = ['adb'] + args
     utils.PrintCmd(command)
-    return subprocess.check_output(['adb'] + args)
+    return subprocess.check_output(['adb'] + args, text=True)
 
 
 def get_result(output):
     # There is a lot of debug output, with the actual results being in the line with:
     # RESULTS,KtBench,KtBench,15719
     # structure.
-    for result in [s for s in output.splitlines() if s.startswith('RESULTS')]:
-        return s.split('RESULTS,KtBench,KtBench,')[1]
+    for line in output.splitlines():
+        if line.startswith('RESULTS'):
+            return line.split('RESULTS,KtBench,KtBench,')[1]
 
 
 def run_art_device(dex):

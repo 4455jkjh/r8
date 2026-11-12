@@ -5,10 +5,11 @@
 
 import re
 import subprocess
+import sys
 
 GMAVEN_PUBLISHER = '/google/bin/releases/android-devtools/gmaven/publisher/gmaven-publisher'
 GMAVEN_PUBLISH_STAGE_RELEASE_ID_PATTERN = re.compile(
-    'Release ID = ([0-9a-f\-]+)')
+    r'Release ID = ([0-9a-f-]+)')
 
 
 def publisher_stage(gfiles, dry_run=False):
@@ -29,7 +30,7 @@ def publisher_stage(gfiles, dry_run=False):
 
     matches = GMAVEN_PUBLISH_STAGE_RELEASE_ID_PATTERN.findall(
         output.decode("utf-8"))
-    if matches == None or len(matches) > 1:
+    if len(matches) != 1:
         print("Could not determine the release ID from the gmaven_publisher " +
               "output. Expected a line with 'Release ID = <release id>'.")
         print("Output was:")
