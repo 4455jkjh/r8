@@ -192,13 +192,11 @@ tasks {
   }
 
   register<Jar>("assembleDepsJar") {
-    dependsOn(keepAnnoJarConfig)
-    dependsOn(distDepsJarConfig)
     dependsOn(sharedDepsConfig)
     dependsOn(sharedTestDepsConfig)
     from(Callable { testDependencies().map(::zipTree) })
-    from(keepAnnoJarConfig.map { it.map(::zipTree) })
-    from(distDepsJarConfig.map { it.map(::zipTree) })
+    from(zipTrees(keepAnnoJarConfig))
+    from(zipTrees(distDepsJarConfig))
     exclude("com/android/tools/r8/keepanno/annotations/**")
     exclude("androidx/annotation/keep/**")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

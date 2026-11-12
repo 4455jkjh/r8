@@ -188,10 +188,6 @@ fun relocateDepsExceptAsm(pkg: String): List<String> {
   )
 }
 
-interface InjectedArcOps {
-  @get:Inject val arcOps: ArchiveOperations
-}
-
 tasks {
   val filteredDepsJar =
     register<Jar>("filteredDepsJar") {
@@ -280,9 +276,7 @@ tasks {
 
   val threadingModuleBlockingJar =
     register<Zip>("threadingModuleBlockingJar") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      dependsOn(mainJarConfig)
-      from(mainJarConfig.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(mainJarConfig))
       include("com/android/tools/r8/threading/providers/blocking/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-blocking.jar")
@@ -290,9 +284,7 @@ tasks {
 
   val threadingModuleSingleThreadedJar =
     register<Zip>("threadingModuleSingleThreadedJar") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      dependsOn(mainJarConfig)
-      from(mainJarConfig.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(mainJarConfig))
       include("com/android/tools/r8/threading/providers/singlethreaded/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-single-threaded.jar")
@@ -314,8 +306,7 @@ tasks {
   // Jar containing all 3p deps, plus R8 threading modules.
   val depsJar =
     register<Zip>("depsJar") {
-      dependsOn(depsJarFilesConfig)
-      from(Callable { depsJarFilesConfig.get().files.map(::zipTree) })
+      from(zipTrees(depsJarFilesConfig))
       from(consolidatedLicense)
       include("**/*.class")
       include("META-INF/services/kotlin.metadata.internal.extensions.MetadataExtensions")
@@ -335,18 +326,8 @@ tasks {
 
   val protoJar =
     register<Zip>("protoJar") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      dependsOn(keepRadiusProtoJarConfig, libanalyzerProtoJarConfig)
-      from(
-        keepRadiusProtoJarConfig
-          .flatMap { it.elements }
-          .map { it.map { injected.arcOps.zipTree(it) } }
-      )
-      from(
-        libanalyzerProtoJarConfig
-          .flatMap { it.elements }
-          .map { it.map { injected.arcOps.zipTree(it) } }
-      )
+      from(zipTrees(keepRadiusProtoJarConfig))
+      from(zipTrees(libanalyzerProtoJarConfig))
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")
       destinationDirectory.set(File(getRootDir(), "build/libs"))

@@ -132,10 +132,6 @@ val r8WithRelocatedDepsTask =
 val keepAnnoToolsWithRelocatedDepsTask =
   project(":dist").tasks.named<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps")
 
-interface InjectedArcOps {
-  @get:Inject val arcOps: ArchiveOperations
-}
-
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 
@@ -151,8 +147,7 @@ tasks {
 
   val packageTests =
     register<Jar>("packageTests") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(testJars))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8tests.jar")
@@ -160,13 +155,8 @@ tasks {
 
   val packageTestDeps =
     register<Jar>("packageTestDeps") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testDepsJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
-      from(
-        keepAnnoAndroidXAnnotationsJarConfig
-          .flatMap { it.elements }
-          .map { it.map { injected.arcOps.zipTree(it) } }
-      )
+      from(zipTrees(testDepsJars))
+      from(zipTrees(keepAnnoAndroidXAnnotationsJarConfig))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -175,8 +165,7 @@ tasks {
 
   val packageTestBase =
     register<Jar>("packageTestBase") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testbaseTestJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(testbaseTestJars))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8test_base.jar")
