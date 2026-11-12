@@ -110,9 +110,9 @@ def upload_benchmark(csv_path, outdir=None):
     if build_results:
         try:
             with utils.TempDir() as temp:
-                perf.ArchiveWeeklyBundle({'build': build_results},
-                                         temp,
-                                         outdir=outdir)
+                perf.archive_weekly_bundle({'build': build_results},
+                                           temp,
+                                           outdir=outdir)
         except Exception as e:
             print(f'Warning: failed to write weekly bundle: {e}',
                   file=sys.stderr)
@@ -127,11 +127,11 @@ def upload_run(benchmark_name, warmups, iterations, outdir):
         result_json = write_benchmark_output_to_file(output_file,
                                                      benchmark_name, warmups,
                                                      iterations)
-        benchmark_dest = perf.GetArtifactLocation(benchmark=benchmark_name,
-                                                  target=target_name,
-                                                  version=None,
-                                                  filename="result.json")
-        perf.ArchiveOutputFile(output_file, benchmark_dest, outdir=outdir)
+        benchmark_dest = perf.get_artifact_location(benchmark=benchmark_name,
+                                                    target=target_name,
+                                                    version=None,
+                                                    filename="result.json")
+        perf.archive_output_file(output_file, benchmark_dest, outdir=outdir)
 
         # Write metadata.
         if utils.is_bot():
@@ -139,11 +139,11 @@ def upload_run(benchmark_name, warmups, iterations, outdir):
             with open(meta_file, 'w') as f:
                 f.write("Produced by: " + (os.environ.get('SWARMING_BOT_ID') or
                                            os.environ.get('KOKORO_BUILD_ID')))
-            meta_dest = perf.GetArtifactLocation(benchmark=benchmark_name,
-                                                 target=target_name,
-                                                 version=None,
-                                                 filename='meta')
-            perf.ArchiveOutputFile(meta_file, meta_dest, outdir=outdir)
+            meta_dest = perf.get_artifact_location(benchmark=benchmark_name,
+                                                   target=target_name,
+                                                   version=None,
+                                                   filename='meta')
+            perf.archive_output_file(meta_file, meta_dest, outdir=outdir)
         return result_json
 
 

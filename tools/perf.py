@@ -423,12 +423,12 @@ def parse_benchmark_result_json_file(result_json_file):
         return json.loads(''.join(lines))
 
 
-def GetArtifactLocation(benchmark,
-                        target,
-                        version,
-                        filename,
-                        branch=None,
-                        is_try=False):
+def get_artifact_location(benchmark,
+                          target,
+                          version,
+                          filename,
+                          branch=None,
+                          is_try=False):
     if version:
         if is_try:
             assert branch is None, (
@@ -453,7 +453,7 @@ def GetArtifactLocation(benchmark,
         return f'{benchmark}/{target}/{commit.hash()}/{filename}'
 
 
-def GetGSLocation(filename, bucket=BUCKET):
+def get_gs_location(filename, bucket=BUCKET):
     return f'gs://{bucket}/{filename}'
 
 
@@ -464,13 +464,13 @@ def archive_benchmark_result(benchmark, target, benchmark_result_json_files,
         benchmark_result_json_files)
     with open(result_file, 'w') as f:
         json.dump(merged_result_json, f)
-    ArchiveOutputFile(result_file,
-                      GetArtifactLocation(benchmark,
-                                          target,
-                                          options.version,
-                                          'result.json',
-                                          is_try=options.is_try),
-                      outdir=options.outdir)
+    archive_output_file(result_file,
+                        get_artifact_location(benchmark,
+                                              target,
+                                              options.version,
+                                              'result.json',
+                                              is_try=options.is_try),
+                        outdir=options.outdir)
     return merged_result_json
 
 
@@ -516,11 +516,11 @@ def get_weekly_bundle_location(commit, target, run_name, is_try):
             None)
 
 
-def ArchiveWeeklyBundle(benchmark_results,
-                        temp,
-                        version=None,
-                        is_try=False,
-                        outdir=None):
+def archive_weekly_bundle(benchmark_results,
+                          temp,
+                          version=None,
+                          is_try=False,
+                          outdir=None):
     if version:
         if not compiledump.is_hash(version):
             return
@@ -562,17 +562,17 @@ def ArchiveWeeklyBundle(benchmark_results,
         bundle_file = os.path.join(temp, f'weekly_bundle_{target}.json')
         with open(bundle_file, 'w') as f:
             json.dump(bundle, f)
-        ArchiveOutputFile(bundle_file, location, outdir=outdir)
+        archive_output_file(bundle_file, location, outdir=outdir)
 
 
-def ArchiveOutputFile(file, dest, bucket=BUCKET, header=None, outdir=None):
+def archive_output_file(file, dest, bucket=BUCKET, header=None, outdir=None):
     if outdir:
         dest_in_outdir = os.path.join(outdir, dest)
         os.makedirs(os.path.dirname(dest_in_outdir), exist_ok=True)
         shutil.copyfile(file, dest_in_outdir)
     else:
         utils.upload_file_to_cloud_storage(file,
-                                           GetGSLocation(dest, bucket=bucket),
+                                           get_gs_location(dest, bucket=bucket),
                                            header=header)
 
 
@@ -609,12 +609,12 @@ def main():
                     assert len(sub_benchmarks_for_target) == 0, 'Unimplemented'
                     if options.outdir:
                         raise NotImplementedError
-                    output = GetGSLocation(
-                        GetArtifactLocation(benchmark,
-                                            target,
-                                            options.version,
-                                            'result.json',
-                                            is_try=options.is_try))
+                    output = get_gs_location(
+                        get_artifact_location(benchmark,
+                                              target,
+                                              options.version,
+                                              'result.json',
+                                              is_try=options.is_try))
                     if utils.cloud_storage_exists(output):
                         print(f'Skipping run, {output} already exists.')
                         continue
@@ -692,24 +692,24 @@ def main():
                         f.write("Produced by: " +
                                 (os.environ.get('SWARMING_BOT_ID') or
                                  os.environ.get('KOKORO_BUILD_ID')))
-                    ArchiveOutputFile(meta_file,
-                                      GetArtifactLocation(
-                                          benchmark,
-                                          target,
-                                          options.version,
-                                          'meta',
-                                          is_try=options.is_try),
-                                      outdir=options.outdir)
+                    archive_output_file(meta_file,
+                                        get_artifact_location(
+                                            benchmark,
+                                            target,
+                                            options.version,
+                                            'meta',
+                                            is_try=options.is_try),
+                                        outdir=options.outdir)
 
         # The weekly bundles are a new pipeline that runs next to the existing
         # one, so failing to write them must not fail the run.
         if weekly_bundle_results:
             try:
-                ArchiveWeeklyBundle(weekly_bundle_results,
-                                    temp,
-                                    version=options.version,
-                                    is_try=options.is_try,
-                                    outdir=options.outdir)
+                archive_weekly_bundle(weekly_bundle_results,
+                                      temp,
+                                      version=options.version,
+                                      is_try=options.is_try,
+                                      outdir=options.outdir)
             except Exception as e:
                 print(f'Warning: failed to write weekly bundle: {e}',
                       file=sys.stderr)

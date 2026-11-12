@@ -29,7 +29,7 @@ FILES = [
 def download_cloud_bucket(dest):
     os.makedirs(dest)
     start = time.time()
-    utils.download_file_from_cloud_storage(perf.GetGSLocation('*'),
+    utils.download_file_from_cloud_storage(perf.get_gs_location('*'),
                                            dest,
                                            concurrent=True,
                                            quiet=True,
@@ -149,12 +149,12 @@ def record_single_benchmark_result(commit, benchmark, local_bucket_dict, target,
     if is_try and commit.branch() is not None:
         # Try job has landed on main.
         return
-    filename = perf.GetArtifactLocation(benchmark,
-                                        target,
-                                        commit.hash(),
-                                        'result.json',
-                                        branch=commit.branch(),
-                                        is_try=is_try)
+    filename = perf.get_artifact_location(benchmark,
+                                          target,
+                                          commit.hash(),
+                                          'result.json',
+                                          branch=commit.branch(),
+                                          is_try=is_try)
     benchmark_data = parse_json_from_cloud_storage(filename, local_bucket_dict)
     if benchmark_data:
         benchmarks[benchmark] = benchmark_data
@@ -206,10 +206,10 @@ def archive_benchmark_results(benchmark_data, dest, outdir, temp):
         json.dump(benchmark_data, f)
 
     # Write output files to public bucket.
-    perf.ArchiveOutputFile(benchmark_data_file,
-                           dest,
-                           header='Cache-Control:no-store',
-                           outdir=outdir)
+    perf.archive_output_file(benchmark_data_file,
+                             dest,
+                             header='Cache-Control:no-store',
+                             outdir=outdir)
 
 
 def run_bucket():
@@ -280,7 +280,7 @@ def run(commits, local_bucket, temp, outdir=None):
     if outdir is None:
         for file in FILES:
             dest = os.path.join(utils.TOOLS_DIR, 'perf', file)
-            perf.ArchiveOutputFile(dest, file)
+            perf.archive_output_file(dest, file)
 
 
 def process_commits(commits, local_bucket_dict, temp, outdir, is_try=False):
