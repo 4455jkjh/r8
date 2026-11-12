@@ -20,6 +20,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.ArrayPut;
@@ -82,7 +83,8 @@ public class ReflectiveIdentification {
     DexType holder = invokedMethod.getHolderType();
     if (holder.isIdenticalTo(factory.classType)) {
       // java.lang.Class
-      if (invokedMethod.isIdenticalTo(classMethods.newInstance)) {
+      if (invokedMethod.isIdenticalTo(classMethods.isInstance)
+          || invokedMethod.isIdenticalTo(classMethods.newInstance)) {
         enqueue(method);
       } else if (classMethods.isReflectiveClassLookup(invokedMethod)
           || classMethods.isReflectiveMemberLookup(invokedMethod)) {
@@ -116,6 +118,11 @@ public class ReflectiveIdentification {
         identifierNameStringAdditions.add(invokedMethod);
         enqueue(method);
       }
+    } else if (factory
+        .kotlin()
+        .arraysKt()
+        .isFilterIsInstanceWithClassParameter(invokedMethod, appView)) {
+      enqueue(method);
     }
     if (identifierNameStrings.contains(invokedMethod)) {
       enqueue(method);
@@ -176,6 +183,9 @@ public class ReflectiveIdentification {
           || invokedMethod.isIdenticalTo(factory.classMethods.getDeclaredMethod)) {
         handleJavaLangClassGetMethod(method, invoke);
         return true;
+      } else if (invokedMethod.isIdenticalTo(factory.classMethods.isInstance)) {
+        handleJavaLangClassIsInstance(method, invoke);
+        return true;
       } else if (invokedMethod.isIdenticalTo(factory.classMethods.newInstance)) {
         handleJavaLangClassNewInstance(method, invoke);
         return true;
@@ -232,6 +242,12 @@ public class ReflectiveIdentification {
                     field, method));
         return true;
       }
+    } else if (factory
+        .kotlin()
+        .arraysKt()
+        .isFilterIsInstanceWithClassParameter(invokedMethod, appView)) {
+      handleKotlinCollectionsArraysKtFilterIsInstance(method, invoke);
+      return true;
     }
     if (identifierNameStrings.contains(invokedMethod)) {
       handleIdentifierNameStringMethod(method, invoke);
@@ -281,6 +297,18 @@ public class ReflectiveIdentification {
     if (referencedMethod != null) {
       eventConsumer.onJavaLangClassGetMethod(referencedMethod, method);
     }
+  }
+
+  /** Handles reflective uses of {@link Class#isInstance(Object)}. */
+  private void handleJavaLangClassIsInstance(ProgramMethod method, InvokeMethod invoke) {
+    if (!invoke.isInvokeVirtual()) {
+      assert false;
+      return;
+    }
+    handleClassValue(
+        method,
+        invoke.asInvokeVirtual().getReceiver(),
+        clazz -> eventConsumer.onJavaLangClassIsInstance(clazz, method));
   }
 
   /** Handles reflective uses of {@link Class#newInstance()}. */
@@ -519,6 +547,39 @@ public class ReflectiveIdentification {
                     : null);
     if (serviceClass != null || !implementationClasses.isEmpty()) {
       eventConsumer.onJavaUtilServiceLoaderLoad(serviceClass, implementationClasses, context);
+    }
+  }
+
+  private void handleKotlinCollectionsArraysKtFilterIsInstance(
+      ProgramMethod method, InvokeMethod invoke) {
+    if (!invoke.isInvokeStatic()) {
+      assert false;
+      return;
+    }
+    DexTypeList parameters = invoke.getInvokedMethod().getParameters();
+    for (int i = 0; i < parameters.size(); i++) {
+      if (parameters.get(i).isIdenticalTo(factory.classType)) {
+        handleClassValue(
+            method,
+            invoke.getArgument(i),
+            clazz -> eventConsumer.onKotlinCollectionsArraysKtFilterIsInstance(clazz, method));
+      }
+    }
+  }
+
+  private void handleClassValue(
+      ProgramMethod method, Value classValue, Consumer<DexProgramClass> notifier) {
+    DexType type = ConstantValueUtils.getDexTypeRepresentedByValueForTracing(classValue, appView);
+    if (type == null) {
+      return;
+    }
+    DexType baseType = type.getBaseType();
+    if (!baseType.isClassType()) {
+      return;
+    }
+    DexProgramClass clazz = appView.programDefinitionFor(baseType, method);
+    if (clazz != null) {
+      notifier.accept(clazz);
     }
   }
 

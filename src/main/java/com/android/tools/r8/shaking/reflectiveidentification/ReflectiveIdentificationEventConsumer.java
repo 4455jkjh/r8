@@ -20,6 +20,8 @@ public interface ReflectiveIdentificationEventConsumer {
 
   void onJavaLangClassGetMethod(ProgramMethod method, ProgramMethod context);
 
+  void onJavaLangClassIsInstance(DexProgramClass clazz, ProgramMethod context);
+
   void onJavaLangClassNewInstance(DexProgramClass clazz, ProgramMethod context);
 
   void onJavaLangReflectConstructorNewInstance(ProgramMethod initializer, ProgramMethod context);
@@ -40,6 +42,8 @@ public interface ReflectiveIdentificationEventConsumer {
       DexProgramClass serviceClass,
       Collection<DexProgramClass> implementationClasses,
       ProgramMethod context);
+
+  void onKotlinCollectionsArraysKtFilterIsInstance(DexProgramClass clazz, ProgramMethod context);
 
   void onIdentifierNameString(Definition definition, ProgramMember<?, ?> context);
 }

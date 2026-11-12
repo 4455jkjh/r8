@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.google.common.collect.ImmutableSet;
@@ -27,6 +28,7 @@ public final class Kotlin {
   private final Intrinsics intrinsics;
   private final Metadata metadata;
   private final _Assertions assertions;
+  private final ArraysKt arraysKt;
   private final Continuations continuations;
 
   public static final String NAME = "kotlin";
@@ -99,6 +101,7 @@ public final class Kotlin {
     this.intrinsics = new Intrinsics();
     this.metadata = new Metadata();
     this.assertions = new _Assertions();
+    this.arraysKt = new ArraysKt();
     this.continuations = new Continuations();
   }
 
@@ -116,6 +119,10 @@ public final class Kotlin {
 
   public _Assertions assertions() {
     return assertions;
+  }
+
+  public ArraysKt arraysKt() {
+    return arraysKt;
   }
 
   public Continuations continuations() {
@@ -268,6 +275,53 @@ public final class Kotlin {
           || method.isIdenticalTo(checkFieldIsNotNullObjectStringString)
           || method.isIdenticalTo(checkParameterIsNotNull)
           || method.isIdenticalTo(checkNotNullParameter);
+    }
+  }
+
+  public final class ArraysKt {
+    private final DexType arraysKtType =
+        factory.createType(PACKAGE_PREFIX + "collections/ArraysKt;");
+    private final DexType arraysJvmKtType =
+        factory.createType(PACKAGE_PREFIX + "collections/ArraysKt___ArraysJvmKt;");
+    private final DexString filterIsInstanceName = factory.createString("filterIsInstance");
+    private final DexString filterIsInstanceToName = factory.createString("filterIsInstanceTo");
+    private final DexProto filterIsInstanceProto =
+        factory.createProto(factory.javaUtilListType, factory.objectArrayType, factory.classType);
+    private final DexProto filterIsInstanceToProto =
+        factory.createProto(
+            factory.collectionType,
+            factory.objectArrayType,
+            factory.collectionType,
+            factory.classType);
+    private final DexMethod arraysKtFilterIsInstance =
+        factory.createMethod(arraysKtType, filterIsInstanceProto, filterIsInstanceName);
+    private final DexMethod arraysKtFilterIsInstanceTo =
+        factory.createMethod(arraysKtType, filterIsInstanceToProto, filterIsInstanceToName);
+    private final DexMethod arraysJvmKtFilterIsInstance =
+        factory.createMethod(arraysJvmKtType, filterIsInstanceProto, filterIsInstanceName);
+    private final DexMethod arraysJvmKtFilterIsInstanceTo =
+        factory.createMethod(arraysJvmKtType, filterIsInstanceToProto, filterIsInstanceToName);
+
+    private ArraysKt() {}
+
+    private boolean isFilterIsInstance(DexMethod method, AppView<?> appView) {
+      if (!method.getName().startsWith(filterIsInstanceName)) {
+        return false;
+      }
+      return isFilterIsInstance(method)
+          || isFilterIsInstance(appView.graphLens().getOriginalMethodSignature(method));
+    }
+
+    public boolean isFilterIsInstanceWithClassParameter(DexMethod method, AppView<?> appView) {
+      return isFilterIsInstance(method, appView)
+          && method.getParameters().contains(factory.classType);
+    }
+
+    private boolean isFilterIsInstance(DexMethod method) {
+      return method.isIdenticalTo(arraysKtFilterIsInstance)
+          || method.isIdenticalTo(arraysKtFilterIsInstanceTo)
+          || method.isIdenticalTo(arraysJvmKtFilterIsInstance)
+          || method.isIdenticalTo(arraysJvmKtFilterIsInstanceTo);
     }
   }
 

@@ -1595,7 +1595,7 @@ public class Enqueuer {
     markTypeAsLive(type, currentMethod);
   }
 
-  void traceInstanceOf(DexType type, ProgramMethod currentMethod) {
+  public void traceInstanceOf(DexType type, ProgramMethod currentMethod) {
     DexClass clazz = resolveBaseType(type, currentMethod);
     traceTypeReference(type, currentMethod);
     analyses.traceInstanceOf(type, clazz, currentMethod);
