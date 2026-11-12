@@ -27,14 +27,14 @@ def resolve_upstream(options):
     if options.upstream:
         return options.upstream
 
-    cl_upstream = subprocess.run(
-        ['git', 'cl', 'upstream'],
+    upstream = subprocess.run(
+        ['git', 'rev-parse', '--symbolic-full-name', '@{upstream}'],
         cwd=utils.REPO_ROOT,
         capture_output=True,
         text=True,
     )
-    if cl_upstream.returncode == 0 and cl_upstream.stdout.strip():
-        return cl_upstream.stdout.strip()
+    if upstream.returncode == 0 and upstream.stdout.strip():
+        return upstream.stdout.strip()
 
     revs = subprocess.check_output(
         ['git', 'rev-list', '--parents', '-n', '1', 'HEAD'],
