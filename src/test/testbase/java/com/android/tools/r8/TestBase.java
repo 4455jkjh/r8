@@ -5,6 +5,9 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.TestBuilder.getTestingAnnotations;
+import static com.android.tools.r8.ToolHelper.DexVm.Version.MAIN;
+import static com.android.tools.r8.utils.AndroidApiLevel.CINNAMON_BUN_2;
+import static com.android.tools.r8.utils.AndroidApiLevel.LATEST;
 import static com.android.tools.r8.utils.CfUtils.extractClassDescriptor;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
 import static com.google.common.collect.Lists.cartesianProduct;
@@ -2039,6 +2042,13 @@ public class TestBase {
   public boolean canUseFilledNewArrayOfNonStringObjects(TestParameters parameters) {
     return parameters.isDexRuntime()
         && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
+  }
+
+  public boolean canUseStringConcatFactoryOnArt(TestParameters parameters) {
+    assert LATEST.isEqualTo(CINNAMON_BUN_2);
+    return parameters.isDexRuntime()
+        && parameters.isDexRuntimeVersion(MAIN)
+        && parameters.getApiLevel().isGreaterThanOrEqualTo(apiLevelWithInvokeCustomSupport());
   }
 
   // TODO(b/131130038): Do not allow accessmodification when kept.
