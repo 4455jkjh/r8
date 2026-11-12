@@ -96,7 +96,6 @@ configurations.consumable("mainSources") {
   outgoing.artifact(srcDir)
 }
 
-// Contains partial class files of :main but not :utils nor third party dependencies.
 configurations.consumable("mainResources") {
   outgoing.artifact(tasks.named<ProcessResources>("processResources").map { it.destinationDir })
 }

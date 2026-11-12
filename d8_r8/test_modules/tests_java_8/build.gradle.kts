@@ -64,7 +64,7 @@ dependencies {
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
-  implementation(project(":main", "mainResources"))
+  runtimeOnly(project(":main", "mainResources"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "agsa"))
@@ -288,7 +288,7 @@ subprojects {
     add(sharedDepsScope.name, project(":third_party", "sharedDepsFiles"))
 
     add("implementation", project(":main", "mainClassesOutput"))
-    add("implementation", project(":main", "mainResources"))
+    add("runtimeOnly", project(":main", "mainResources"))
     add("implementation", project(":keepanno", "keepannoClasses"))
     add("implementation", project(":testbase"))
     add("implementation", project(":testbase", "depsJar"))

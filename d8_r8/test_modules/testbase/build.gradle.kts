@@ -132,7 +132,7 @@ dependencies {
   implementation(project(":keepanno", "keepannoJar"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
-  implementation(project(":main", "mainResources"))
+  runtimeOnly(project(":main", "mainResources"))
   distDepsJarScope(project(":dist", "filteredDepsJarConfig"))
   implementation(project(":dist", "filteredDepsJarConfig"))
   implementation(libs.androidxCollection)
