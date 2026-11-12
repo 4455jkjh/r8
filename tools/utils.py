@@ -231,10 +231,6 @@ def get_android_build_tools():
     raise Exception('Unable to find Android build-tools')
 
 
-def is_python3():
-    return sys.version_info.major == 3
-
-
 def Print(s, quiet=False):
     if quiet:
         return
@@ -953,51 +949,6 @@ class ChangedWorkingDirectory:
         if not self._quiet:
             print('Enter directory:', self._old_cwd)
         os.chdir(self._old_cwd)
-
-
-# Reading Android CTS test_result.xml
-
-
-class CtsModule:
-
-    def __init__(self, module_name):
-        self.name = module_name
-
-
-class CtsTestCase:
-
-    def __init__(self, test_case_name):
-        self.name = test_case_name
-
-
-class CtsTest:
-
-    def __init__(self, test_name, outcome):
-        self.name = test_name
-        self.outcome = outcome
-
-
-# Generator yielding CtsModule, CtsTestCase or CtsTest from
-# reading through a CTS test_result.xml file.
-def read_cts_test_result(file_xml):
-    re_module = re.compile('<Module name="([^"]*)"')
-    re_test_case = re.compile('<TestCase name="([^"]*)"')
-    re_test = re.compile('<Test result="(pass|fail)" name="([^"]*)"')
-    with open(file_xml) as f:
-        for line in f:
-            m = re_module.search(line)
-            if m:
-                yield CtsModule(m.groups()[0])
-                continue
-            m = re_test_case.search(line)
-            if m:
-                yield CtsTestCase(m.groups()[0])
-                continue
-            m = re_test.search(line)
-            if m:
-                outcome = m.groups()[0]
-                assert outcome in ['fail', 'pass']
-                yield CtsTest(m.groups()[1], outcome == 'pass')
 
 
 def grep_memoryuse(logfile):
