@@ -19,27 +19,6 @@ import perfetto_utils
 import utils
 
 
-def setup(options):
-    # Increase screen off timeout to avoid device screen turns off.
-    twenty_four_hours_in_millis = 24 * 60 * 60 * 1000
-    previous_screen_off_timeout = adb.get_screen_off_timeout(options.device_id)
-    adb.set_screen_off_timeout(twenty_four_hours_in_millis, options.device_id)
-
-    # Unlock device.
-    adb.unlock(options.device_id, options.device_pin)
-
-    teardown_options = {
-        'previous_screen_off_timeout': previous_screen_off_timeout
-    }
-    return teardown_options
-
-
-def teardown(options, teardown_options):
-    # Reset screen off timeout.
-    adb.set_screen_off_timeout(teardown_options['previous_screen_off_timeout'],
-                               options.device_id)
-
-
 def run_all(apk_or_apks, options, tmp_dir):
     # Launch app while collecting information.
     data_total = {}
