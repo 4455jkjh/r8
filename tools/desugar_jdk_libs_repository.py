@@ -152,7 +152,7 @@ def run(args):
                 args.release_version != configuration_version):
             raise Exception(
                 'Configuration version %s is different for specified version %s'
-                % (configuration_version, version))
+                % (configuration_version, args.release_version))
         version = configuration_version
         print("Name: %s" % name)
         print("Version: %s" % version)
