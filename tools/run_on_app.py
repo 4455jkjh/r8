@@ -3,7 +3,6 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from __future__ import print_function
 from glob import glob
 import argparse
 import copy
@@ -32,7 +31,7 @@ OOM_EXIT_CODE = 42
 TIMEOUT_KILL_CODE = -9
 
 
-def ParseOptions(argv):
+def parse_options(argv):
     result = argparse.ArgumentParser()
     result.add_argument('--compiler',
                         help='The compiler to use',
@@ -190,7 +189,7 @@ def ParseOptions(argv):
 # want to write these files in the locations specified.
 # Instead generate an auxiliary Proguard configuration placing these
 # output files together with the dex output.
-def GenerateAdditionalProguardConfiguration(temp, outdir):
+def generate_additional_proguard_configuration(temp, outdir):
     name = "output.config"
     with open(os.path.join(temp, name), 'w') as f:
         f.write('-printmapping ' + os.path.join(outdir, 'proguard.map') + "\n")
@@ -352,7 +351,7 @@ def track_time_in_memory(options, args):
 
 
 def main(argv):
-    (options, args) = ParseOptions(argv)
+    (options, args) = parse_options(argv)
     if options.expect_oom and not options.max_memory:
         raise Exception(
             'You should only use --expect-oom if also specifying --max-memory')
@@ -594,7 +593,7 @@ def run_with_options(options,
                 else:
                     pg_outdir = outdir
                 if not options.no_extra_pgconf:
-                    additional_pg_conf = GenerateAdditionalProguardConfiguration(
+                    additional_pg_conf = generate_additional_proguard_configuration(
                         temp, os.path.abspath(pg_outdir))
                     args.extend(['--pg-conf', additional_pg_conf])
             stdout_path = os.path.join(temp, 'stdout')
