@@ -8,15 +8,15 @@ import sys
 
 import main_utils
 
-utils = main_utils.GetUtils()
+utils = main_utils.get_utils()
 
 ANDROID_EMULATORS = os.path.join(utils.TOOLS_DIR, 'benchmarks',
                                  'android-sdk-linux')
 
 
-def Main():
+def main():
     utils.ensure_google_download(ANDROID_EMULATORS)
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

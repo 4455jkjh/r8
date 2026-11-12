@@ -5,7 +5,7 @@
 
 # Script for running kotlin based benchmarks
 
-import optparse
+import argparse
 import os
 import subprocess
 import sys
@@ -34,19 +34,19 @@ DEVICE_TEMP = '/data/local/temp/bench'
 
 
 def parse_options():
-    result = optparse.OptionParser()
-    result.add_option('--api',
-                      help='Android api level',
-                      default='26',
-                      choices=['21', '22', '23', '24', '25', '26'])
-    result.add_option('--benchmark',
-                      help='The benchmark to run',
-                      default='rgx',
-                      choices=['rgx', 'deltablue', 'sta', 'empty'])
-    result.add_option('--use-device',
-                      help='Run the benchmark on an attaced device',
-                      default=False,
-                      action='store_true')
+    result = argparse.ArgumentParser()
+    result.add_argument('--api',
+                        help='Android api level',
+                        default='26',
+                        choices=['21', '22', '23', '24', '25', '26'])
+    result.add_argument('--benchmark',
+                        help='The benchmark to run',
+                        default='rgx',
+                        choices=['rgx', 'deltablue', 'sta', 'empty'])
+    result.add_argument('--use-device',
+                        help='Run the benchmark on an attaced device',
+                        default=False,
+                        action='store_true')
     return result.parse_args()
 
 
@@ -86,8 +86,8 @@ def run_art_device(dex):
     return get_result(benchmark_output)
 
 
-def Main():
-    (options, args) = parse_options()
+def main():
+    options = parse_options()
     with utils.TempDir() as temp:
         dex_path = os.path.join(temp, "classes.jar")
         proguard_conf = os.path.join(temp, 'proguard.conf')
@@ -114,4 +114,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

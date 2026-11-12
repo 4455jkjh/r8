@@ -9,7 +9,7 @@ TOOLS_DIR = os.path.abspath(os.path.normpath(os.path.join(__file__, '..',
                                                           '..')))
 
 
-def GetUtils():
+def get_utils():
     '''Dynamically load the tools/utils.py python module.'''
     if TOOLS_DIR not in sys.path:
         sys.path.insert(0, TOOLS_DIR)
