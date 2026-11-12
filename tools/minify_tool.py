@@ -88,7 +88,8 @@ def extract_mainclass(input_jar):
         except KeyError:
             raise SystemExit(
                 'No --mainclass specified and no manifest in input JAR.')
-        mo = re.search(MANIFEST_PATTERN, input_zf.read(manifest))
+        mo = re.search(MANIFEST_PATTERN,
+                       input_zf.read(manifest).decode('utf-8'))
         if not mo:
             raise SystemExit(
                 'No --mainclass specified and no Main-Class in input JAR manifest.'

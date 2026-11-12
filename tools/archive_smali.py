@@ -100,7 +100,8 @@ def main():
                     raise Exception('Checkout %s has %s' %
                                     (options.checkout, message))
                 else:
-                    raise Exception('Tag % has %s' % (options.version, message))
+                    raise Exception('Tag %s has %s' %
+                                    (options.version, message))
 
             print('Building version: %s' % version)
 
