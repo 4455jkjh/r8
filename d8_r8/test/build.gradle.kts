@@ -53,6 +53,9 @@ val keepAnnoAndroidXAnnotationsJarConfig =
 val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig =
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
+val jdk25HomeScope = configurations.dependencyScope("jdk25HomeScope")
+val jdk25HomeConfig =
+  configurations.resolvable("jdk25HomeConfig") { extendsFrom(jdk25HomeScope.get()) }
 
 val coverageClassesScope = configurations.dependencyScope("coverageClassesScope")
 val coverageClassesConfig =
@@ -80,6 +83,7 @@ dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
+  jdk25HomeScope(project(":third_party", "jdk25Home"))
   coverageClassesScope(project(":assistant", "assistantClasses"))
   coverageClassesScope(project(":keepanno", "keepannoClasses"))
   coverageClassesScope(project(":keepradius", "keepradiusClasses"))
@@ -203,11 +207,7 @@ tasks {
   ) {
     swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     compiler = "tracereferences"
-    libs.from(
-      getJavaHome(Jdk.JDK_25),
-      packageTestDeps.flatMap { it.archiveFile },
-      mainDepsJarFilesConfig,
-    )
+    libs.from(jdk25HomeConfig, packageTestDeps.flatMap { it.archiveFile }, mainDepsJarFilesConfig)
     targetJarProviders.forEach { targets.from(it) }
     testJarProviders.forEach { sources.from(it) }
     outputFile = layout.buildDirectory.file("libs/$artifactName")
@@ -328,7 +328,7 @@ tasks {
   ) {
     swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     compiler = "r8"
-    libs.from(getJavaHome(Jdk.JDK_25))
+    libs.from(jdk25HomeConfig)
     classpath.from(r8JarProvider, packageTestDeps)
     if (addTestBaseClasspath) {
       classpath.from(packageTestBaseExcludeKeep)

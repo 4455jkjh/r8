@@ -547,6 +547,12 @@ configurations.consumable("jdwpTestsJar") {
   outgoing.artifact(task.flatMap { it.outputDir.file("apache-harmony-jdwp-tests-host.jar") })
 }
 
+configurations.consumable("jdk25Home") {
+  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdk25.packageName}")
+  val isMac = DefaultNativePlatform.getCurrentOperatingSystem().isMacOsX
+  outgoing.artifact(task.flatMap { if (isMac) it.outputDir.dir("Contents/Home") else it.outputDir })
+}
+
 tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
 configurations.consumable("sharedDepsFiles") {
