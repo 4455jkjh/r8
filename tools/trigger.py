@@ -5,8 +5,8 @@
 
 # Convenience script for triggering bots on specific commits.
 
+import argparse
 import git_utils
-import optparse
 import os
 import re
 import subprocess
@@ -25,26 +25,28 @@ SMALI_BOT = 'smali'
 
 
 def parse_options():
-    result = optparse.OptionParser()
-    result.add_option('--release',
-                      help='Run on the release branch builders.',
-                      default=False,
-                      action='store_true')
-    result.add_option('--cl',
-                      metavar='<url>',
-                      help='Run the specified cl on the bots. This should be '
-                      'the full url, e.g., '
-                      'https://r8-review.googlesource.com/c/r8/+/37420/1, '
-                      'or the CL and patch number, e.g., 37420/1')
-    result.add_option('--desugar-jdk11',
-                      help='Run the jdk11 library desugar and archiving bot.',
-                      default=False,
-                      action='store_true')
-    result.add_option('--smali',
-                      metavar='<version>',
-                      help='Build smali version <version>.')
-    result.add_option('--builder', help='Trigger specific builder')
-    (options, args) = result.parse_args()
+    result = argparse.ArgumentParser()
+    result.add_argument('--release',
+                        help='Run on the release branch builders.',
+                        default=False,
+                        action='store_true')
+    result.add_argument('--cl',
+                        metavar='<url>',
+                        help='Run the specified cl on the bots. This should be '
+                        'the full url, e.g., '
+                        'https://r8-review.googlesource.com/c/r8/+/37420/1, '
+                        'or the CL and patch number, e.g., 37420/1')
+    result.add_argument('--desugar-jdk11',
+                        help='Run the jdk11 library desugar and archiving bot.',
+                        default=False,
+                        action='store_true')
+    result.add_argument('--smali',
+                        metavar='<version>',
+                        help='Build smali version <version>.')
+    result.add_argument('--builder', help='Trigger specific builder')
+    result.add_argument('commit', nargs='*', metavar='<commit>')
+    options = result.parse_args()
+    args = options.commit
     if options.cl and not options.cl.startswith('http'):
         [cl_number, patch_number] = [int(x) for x in options.cl.split('/')]
         options.cl = 'https://r8-review.googlesource.com/c/r8/+/%s/%s' % (
