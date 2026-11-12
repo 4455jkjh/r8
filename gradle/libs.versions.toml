@@ -1,7 +1,7 @@
 [versions]
 androidxAnnotation = "1.10.0"
 androidxCollection = "1.6.0"
-androidxTracing = "2.0.3"
+androidxTracing = "2.0.5"
 # When updating update tools/asmifier.py and Toolhelper as well.
 asm = "9.10.1"
 ddmLib = "32.2.0"

@@ -10,14 +10,34 @@ import java.util.function.IntFunction;
 
 abstract class TimingImplBase extends Timing {
 
+  protected PerfettoThreadStack stack;
+
+  @Override
+  public final Timing begin(String title) {
+    stack.begin(title);
+    return this;
+  }
+
   @Override
   public final <T> Timing begin(T context, Function<T, String> titleSupplier) {
-    return begin(titleSupplier.apply(context));
+    stack.begin(context, titleSupplier);
+    return this;
   }
 
   @Override
   public final Timing begin(int value, IntFunction<String> titleSupplier) {
     return begin(titleSupplier.apply(value));
+  }
+
+  @Override
+  public final Timing end() {
+    stack.end();
+    return this;
+  }
+
+  @Override
+  public final TimingMerger beginMerger(String title, int numberOfThreads) {
+    return EmptyTimingMerger.get();
   }
 
   @Override

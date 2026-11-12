@@ -424,6 +424,20 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public String perfettoTraceDumpFile = System.getProperty("com.android.tools.r8.dumptracetofile");
   public final int perfettoTraceThreads =
       SystemPropertyUtils.parseSystemPropertyOrDefault("com.android.tools.r8.trace.threads", -1);
+  public boolean perfettoTraceLite =
+      SystemPropertyUtils.parseSystemPropertyOrDefault("com.android.tools.r8.trace.lite", false);
+  // A negative value means unset, see getPerfettoTraceMinValueMs().
+  public int perfettoTraceMinValueMs =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.trace.minvalue_ms", -1);
+
+  public int getPerfettoTraceMinValueMs() {
+    if (perfettoTraceMinValueMs >= 0) {
+      return perfettoTraceMinValueMs;
+    }
+    return perfettoTraceLite ? 2 : 0;
+  }
+
   public boolean printMemory = System.getProperty("com.android.tools.r8.printmemory") != null;
 
   public void dumpHeap(String name) {

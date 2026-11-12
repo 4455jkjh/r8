@@ -48,6 +48,20 @@ def make_parser():
     parser.add_argument('--dump-trace-to-directory',
                         '--dump_trace_to_directory',
                         help='Dump perfetto trace to the given directory')
+    parser.add_argument('--dump-trace-to-file',
+                        '--dump_trace_to_file',
+                        help='Dump perfetto trace to the given file')
+    parser.add_argument('--trace-lite',
+                        '--trace_lite',
+                        help='Enable lite perfetto tracing mode',
+                        default=False,
+                        action='store_true')
+    parser.add_argument(
+        '--trace-min-value-ms',
+        '--trace_min_value_ms',
+        help='Minimum slice duration in ms to record in perfetto trace',
+        type=int,
+        default=None)
     parser.add_argument('--jdk', help='JDK to use', choices=jdk.ALL_JDKS)
     parser.add_argument('--minify',
                         help='Force enable/disable minification'
@@ -494,8 +508,12 @@ def determine_properties(build_properties):
         # system-property-com.android.tools.r8.XXX=<value>
         if key.startswith('system-property-'):
             name = key[len('system-property-'):]
-            if name.endswith('dumpinputtofile') or name.endswith(
-                    'dumpinputtodirectory'):
+            if (name.endswith('dumpinputtofile') or
+                    name.endswith('dumpinputtodirectory') or
+                    name.endswith('dumptracetofile') or
+                    name.endswith('dumptracetodirectory') or
+                    name.endswith('trace.lite') or
+                    name.endswith('trace.minvalue_ms')):
                 continue
             if len(value) == 0:
                 args.append('-D' + name)
@@ -676,6 +694,15 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         if args.dump_trace_to_directory is not None:
             cmd.append('-Dcom.android.tools.r8.dumptracetodirectory=' +
                        args.dump_trace_to_directory)
+        if args.dump_trace_to_file is not None:
+            cmd.append('-Dcom.android.tools.r8.dumptracetofile=' +
+                       args.dump_trace_to_file)
+        if args.trace_lite:
+            cmd.append('-Dcom.android.tools.r8.trace.lite')
+        if args.trace_min_value_ms is not None:
+            cmd.append(
+                f'-Dcom.android.tools.r8.trace.minvalue_ms={args.trace_min_value_ms}'
+            )
         if args.r8_flags:
             cmd.extend(args.r8_flags.split(' '))
         if 'properties' in args:

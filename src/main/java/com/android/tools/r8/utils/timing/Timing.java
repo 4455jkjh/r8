@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.timing;
 
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
@@ -46,6 +47,11 @@ public abstract class Timing implements AutoCloseable {
 
   public abstract Timing createThreadTiming(
       int value, IntFunction<String> titleSupplier, InternalOptions options);
+
+  public final Timing createThreadTiming(DexClassAndMethod method, InternalOptions options) {
+    return createThreadTiming(
+        method, m -> m.getHolderType().getSimpleName() + "." + m.getName().toString(), options);
+  }
 
   public void notifyThreadTimingFinished() {
     // Intentionally empty.

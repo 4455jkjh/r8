@@ -60,6 +60,11 @@ abstract class TimingDelegate extends Timing {
   }
 
   @Override
+  public void notifyThreadTimingFinished() {
+    delegate.notifyThreadTimingFinished();
+  }
+
+  @Override
   public void report() {
     delegate.report();
   }

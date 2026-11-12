@@ -137,8 +137,7 @@ public class PrimaryMethodProcessor extends MethodProcessorWithWave {
                   Timing time =
                       consumer.apply(
                           method, processorContext.createMethodProcessingContext(method));
-                  time.end();
-                  timing.notifyThreadTimingFinished();
+                  time.end().notifyThreadTimingFinished();
                   return time;
                 },
                 appView.options().getThreadingModule(),

@@ -254,6 +254,16 @@ public abstract class RunBenchmarkTask : DefaultTask() {
         pathArg("dump_trace_to_directory") { "-Dcom.android.tools.r8.dumptracetodirectory=$it" }
       )
       extraJvmArgs.addAll(
+        pathArg("dump_trace_to_file") { "-Dcom.android.tools.r8.dumptracetofile=$it" }
+      )
+      extraJvmArgs.addAll(flagArg("trace_lite", "-Dcom.android.tools.r8.trace.lite"))
+      extraJvmArgs.addAll(
+        providers
+          .gradleProperty("trace_min_value_ms")
+          .map { listOf("-Dcom.android.tools.r8.trace.minvalue_ms=$it") }
+          .orElse(emptyList())
+      )
+      extraJvmArgs.addAll(
         pathArg("dump_gc_log_to_file") {
           "-Xlog:gc*,gc+phases=debug:file=$it:time,uptime,level,tags"
         }
