@@ -20,7 +20,6 @@
 # remember to update the x20 dependency afterwards if you want the numbers
 # tracked.
 
-from __future__ import print_function
 import argparse
 import minify_tool
 import os

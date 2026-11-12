@@ -241,7 +241,7 @@ def Print(s, quiet=False):
     print(s)
 
 
-def Warn(message):
+def warn(message):
     CRED = '\033[91m'
     CEND = '\033[0m'
     print(CRED + message + CEND)
@@ -328,7 +328,7 @@ def RunCmd(cmd,
             exit_code = process.poll()
             if exit_code or failed:
                 for line in stdout:
-                    Warn(line)
+                    warn(line)
                 if fail:
                     raise subprocess.CalledProcessError(
                         exit_code or -1, cmd, output='\n'.join(stdout))
@@ -374,7 +374,7 @@ def stop_gradle():
         subprocess.call(cmd, env=env)
         GRADLE_STOPPED = True
     except Exception as e:
-        Warn(f"Warning: Failed to stop gradle daemon: {e}")
+        warn(f"Warning: Failed to stop gradle daemon: {e}")
         GRADLE_STOPPED = True
 
 
@@ -509,7 +509,7 @@ def try_link_download_from_main_repo(path, worktree_root=None):
             pass
         return True
     except Exception as e:
-        Warn(
+        warn(
             f'Warning: Failed to link dependency from main repo {main_output_dir}: {e}'
         )
         return False
@@ -531,7 +531,7 @@ def ensure_worktree_deps(quiet=False, worktree_root=None):
             if try_link_download_from_main_repo(path, worktree_root=wt_root):
                 linked_deps += 1
     except Exception as e:
-        Warn(f'Warning: Failed to scan worktree dependencies: {e}')
+        warn(f'Warning: Failed to scan worktree dependencies: {e}')
 
     if linked_deps > 0 and not quiet:
         print(
@@ -604,7 +604,7 @@ def ensure_worktree_intellij_config(worktree_root=None):
             elif not os.path.exists(dst):
                 shutil.copy2(src, dst)
     except Exception as e:
-        Warn(
+        warn(
             f'Warning: Failed to configure IntelliJ settings for worktree: {e}')
 
 
@@ -643,7 +643,7 @@ def seed_gradle_user_home(gradle_user_home, worktree_root=None):
                           ignore=ignore_locks_and_mutable)
                 seeded_any = True
             except Exception as e:
-                Warn(
+                warn(
                     f'Warning: Failed to seed worktree Gradle caches from {src_caches}: {e}'
                 )
 

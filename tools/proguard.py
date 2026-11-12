@@ -28,13 +28,6 @@ VERSIONS = {
 VERSIONS[DEFAULT_ALIAS] = VERSIONS[DEFAULT]
 
 
-# Get versions sorted (nice for argument lists)
-def get_versions():
-    versions = list(VERSIONS.keys())
-    versions.sort()
-    return versions
-
-
 def is_valid_version(version):
     return version in VERSIONS
 
@@ -47,12 +40,6 @@ def get_validated_version(version):
 
 def get_jar(version=DEFAULT):
     return VERSIONS[get_validated_version(version)]
-
-
-def get_retrace_jar(version=DEFAULT):
-    if version == 'pg_internal':
-        raise ValueError("No retrace in internal distribution")
-    return get_jar().replace('proguard.jar', 'retrace.jar')
 
 
 def get_cmd(args, version=DEFAULT, jvm_args=None):
