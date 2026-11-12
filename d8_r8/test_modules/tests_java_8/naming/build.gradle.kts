@@ -9,9 +9,12 @@ java {
   sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "naming")) }
 }
 
+val testResourceDepsScope = configurations.dependencyScope("testResourceDepsScope")
+val testResourceDepsConfig =
+  configurations.resolvable("testResourceDepsConfig") { extendsFrom(testResourceDepsScope.get()) }
+
 tasks {
   named<Copy>("processTestResources") {
-    dependsOn(":third_party:download_examples")
     from(sourceSets.test.get().java.srcDirs) {
       include("com/android/tools/r8/naming/bridge/Creator.java")
       include("com/android/tools/r8/naming/bridge/Result.java")
@@ -20,13 +23,12 @@ tasks {
       include("com/android/tools/r8/naming/bridge/TesterImpl.java")
       include("com/android/tools/r8/naming/bridge/Main.java")
     }
-    from(getRoot().resolveAll("third_party", "examples", "classes")) {
-      include("adaptresourcefilenames/**")
-    }
+    from(testResourceDepsConfig) { include("adaptresourcefilenames/**") }
   }
 }
 
 dependencies {
+  testResourceDepsScope(project(":third_party", "examplesClasses"))
   runtimeOnlyData(project(":third_party", "examples"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))
   runtimeOnlyData(project(":third_party", "proguard7_0_0"))
