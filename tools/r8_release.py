@@ -162,13 +162,6 @@ def prepare_release(args):
 version_commit_message = git_utils.version_commit_message
 
 
-def maybe_tag(args, version):
-    maybe_check_call(args,
-                     ['git', 'tag', '-a', version, '-m',
-                      '"%s"' % version])
-    maybe_check_call(args, ['git', 'push', 'origin', 'refs/tags/%s' % version])
-
-
 def version_change_diff(diff, old_version, new_version):
     invalid_line = None
     for line in str(diff).splitlines():
@@ -203,15 +196,6 @@ def maybe_check_call(args, cmd):
     else:
         print(' '.join(cmd))
         return subprocess.check_call(cmd)
-
-
-def update_prebuilds(r8_checkout, version, checkout, keepanno=False):
-    path = os.path.join(r8_checkout, 'tools', 'update_prebuilds_in_android.py')
-    commit_arg = '--commit_hash=' if len(version) == 40 else '--version='
-    cmd = [path, '--targets=lib', '--maps', commit_arg + version, checkout]
-    if keepanno:
-        cmd.append("--keepanno")
-    subprocess.check_call(cmd)
 
 
 def prepare_maven(args):
@@ -447,10 +431,6 @@ Test: n/a"""
     return release_studio
 
 
-def g4_cp(old, new, file):
-    subprocess.check_call('g4 cp {%s,%s}/%s' % (old, new, file), shell=True)
-
-
 def g4_open(file):
     if not os.access(file, os.W_OK):
         subprocess.check_call('g4 open %s' % file, shell=True)
@@ -468,9 +448,9 @@ def g4_change(version, commit_info):
 
 
 def get_cl_id(c4_change_output):
-    startIndex = c4_change_output.find('Change ') + len('Change ')
-    endIndex = c4_change_output.find(' ', startIndex)
-    cl = c4_change_output[startIndex:endIndex]
+    start_index = c4_change_output.find('Change ') + len('Change ')
+    end_index = c4_change_output.find(' ', start_index)
+    cl = c4_change_output[start_index:end_index]
     assert cl.isdigit()
     return cl
 
