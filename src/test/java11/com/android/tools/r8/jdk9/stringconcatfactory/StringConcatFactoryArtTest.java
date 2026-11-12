@@ -3,20 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.jdk9.stringconcatfactory;
 
-import static org.junit.Assert.assertTrue;
-
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.codeinspector.InstructionSubject;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,7 +17,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
 @RunWith(Parameterized.class)
-public class StringConcatFactoryArtTest extends TestBase {
+public class StringConcatFactoryArtTest extends StringConcatFactoryTestBase {
 
   static final String EXPECTED =
       StringUtils.lines("Values: true, A, 0, 1, 2, 3, 4.0, 5.0", "Strings: a, c", "23a");
@@ -41,54 +31,24 @@ public class StringConcatFactoryArtTest extends TestBase {
 
   @Parameterized.Parameters(name = "{0}, makeConcatFromJavac: {1}")
   public static List<Object[]> data() {
-    return buildParameters(
-        getTestParameters()
-            .withDexRuntime(Version.MAIN)
-            .withCfRuntimesStartingFromIncluding(CfVm.JDK11)
-            .withApiLevel(AndroidApiLevel.CINNAMON_BUN_2)
-            .build(),
-        BooleanUtils.values());
+    return getArtTestParameters();
   }
 
   private static Path compiledWithMakeConcatJar;
 
   @BeforeClass
   public static void compileWithMakeConcat() throws Exception {
-    compiledWithMakeConcatJar =
-        javac(TestRuntime.getCheckedInJdk11(), getStaticTemp())
-            .addSourceFiles(
-                ToolHelper.getSourceFileForTestClassFromResources(
-                    StringConcatFactoryTestClass.class))
-            .addOptions("-XDstringConcat=indy")
-            .compile();
+    compiledWithMakeConcatJar = compileWithMakeConcat(MAIN);
   }
 
   private void checkInvokeDynamic(CodeInspector inspector, boolean expectMakeConcatWithConstants) {
-    for (String methodName : new String[] {"testPrimitives", "testStrings", "testNoConstants"}) {
-      assertTrue(
-          inspector
-              .clazz(MAIN.getTypeName())
-              .uniqueMethodWithOriginalName(methodName)
-              .streamInstructions()
-              .anyMatch(InstructionSubject::isInvokeDynamic));
-      assertTrue(
-          inspector
-              .clazz(MAIN.getTypeName())
-              .uniqueMethodWithOriginalName(methodName)
-              .streamInstructions()
-              .filter(InstructionSubject::isInvokeDynamic)
-              .map(InstructionSubject::asInvokeDynamic)
-              .allMatch(
-                  instruction ->
-                      instruction
-                          .getCallSite()
-                          .methodName
-                          .toString()
-                          .equals(
-                              expectMakeConcatWithConstants
-                                  ? "makeConcatWithConstants"
-                                  : "makeConcat")));
-    }
+    checkInvokeDynamic(
+        inspector,
+        MAIN,
+        expectMakeConcatWithConstants,
+        "testPrimitives",
+        "testStrings",
+        "testNoConstants");
   }
 
   @Test
@@ -110,11 +70,7 @@ public class StringConcatFactoryArtTest extends TestBase {
     parameters.assumeDexRuntime();
     testForD8(parameters)
         .addProgramClasses(MAIN)
-        .addOptionsModification(
-            opt -> {
-              opt.enableStringConcatInstruction = true;
-              opt.getTestingOptions().enableStringConcatFactoryForDex = true;
-            })
+        .apply(this::enableStringConcatFactoryForDex)
         .compile()
         .inspect(inspector -> checkInvokeDynamic(inspector, true))
         .run(parameters.getRuntime(), MAIN)
@@ -131,11 +87,7 @@ public class StringConcatFactoryArtTest extends TestBase {
             b -> b.addLibraryProvider(JdkClassFileProvider.fromSystemJdk()))
         .setMinApi(parameters)
         .addKeepMainRule(MAIN)
-        .addOptionsModification(
-            opt -> {
-              opt.enableStringConcatInstruction = true;
-              opt.getTestingOptions().enableStringConcatFactoryForDex = true;
-            })
+        .apply(this::enableStringConcatFactoryForDex)
         .enableProguardTestOptions()
         .addKeepRules("-neverinline class " + MAIN.getTypeName() + "{ *** test*(...); }")
         .compile()

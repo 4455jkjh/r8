@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.jdk9.stringconcatfactory;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationFailedException;
@@ -13,7 +12,6 @@ import com.android.tools.r8.DiagnosticsMatcher;
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8TestCompileResult;
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
@@ -22,14 +20,13 @@ import com.android.tools.r8.TestState;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class StringConcatFactoryTest extends TestBase {
+public class StringConcatFactoryTest extends StringConcatFactoryTestBase {
 
   static final String EXPECTED = StringUtils.lines("Hello 0");
   static final Class<?> MAIN = StringConcatFactoryUsage.class;
@@ -46,13 +43,11 @@ public class StringConcatFactoryTest extends TestBase {
   }
 
   private void checkInvokeDynamic(CodeInspector inspector) {
-    assertEquals(
-        parameters.isCfRuntime(),
-        inspector
-            .clazz(MAIN.getTypeName())
-            .uniqueMethodWithOriginalName("main")
-            .streamInstructions()
-            .anyMatch(InstructionSubject::isInvokeDynamic));
+    if (parameters.isCfRuntime()) {
+      checkInvokeDynamic(inspector, MAIN, true, "main");
+    } else {
+      checkNoInvokeDynamic(inspector, MAIN, "main");
+    }
   }
 
   @Test

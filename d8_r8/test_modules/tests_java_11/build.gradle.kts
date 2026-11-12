@@ -18,7 +18,13 @@ java {
 tasks {
   named<Copy>("processTestResources") {
     from(sourceSets.test.get().java.srcDirs) {
+      include(
+        "com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactoryArrayTestClass.java"
+      )
       include("com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactoryTestClass.java")
+      include(
+        "com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactoryValueOfTestClass.java"
+      )
     }
   }
 }
