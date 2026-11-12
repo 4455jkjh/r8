@@ -253,7 +253,7 @@ def PrintCmd(cmd, env=None, quiet=False, worker_id=None):
     if type(cmd) is list:
         cmd = ' '.join(cmd)
     if env:
-        env = ' '.join(['{}=\"{}\"'.format(x, y) for x, y in env.iteritems()])
+        env = ' '.join(['{}=\"{}\"'.format(x, y) for x, y in env.items()])
         print_thread('Running: {} {}'.format(env, cmd), worker_id)
     else:
         print_thread('Running: {}'.format(cmd), worker_id)
