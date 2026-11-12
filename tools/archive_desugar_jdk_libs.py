@@ -19,13 +19,13 @@
 # repository to fetch the artifact com.android.tools:desugar_jdk_libs:1.0.0
 
 import archive
+import argparse
 import defines
 import git_utils
 import gradle
 import hashlib
 import jdk
 import luci_utils
-import optparse
 import os
 import shutil
 import subprocess
@@ -80,41 +80,41 @@ DESUGAR_JDK_LIBS_HASH_FILE = os.path.join(defines.THIRD_PARTY, 'openjdk',
                                           'desugar_jdk_libs_hash')
 
 
-def ParseOptions(argv):
-    result = optparse.OptionParser()
-    result.add_option(
+def parse_options(argv):
+    result = argparse.ArgumentParser()
+    result.add_argument(
         '--variant',
         help="Variant(s) to build",
         metavar=('<variants(s)>'),
         choices=['jdk8', 'jdk11_legacy', 'jdk11_minimal', 'jdk11', 'jdk11_nio'],
         default=[],
         action='append')
-    result.add_option('--dry-run',
-                      '--dry_run',
-                      help='Running on bot, use third_party dependency.',
-                      default=False,
-                      action='store_true')
-    result.add_option('--dry-run-output',
-                      '--dry_run_output',
-                      help='Output directory for dry run.',
-                      type="string",
-                      action="store")
-    result.add_option('--github-account',
-                      '--github_account',
-                      help='GitHub account to clone from.',
-                      default="google",
-                      type="string",
-                      action="store")
-    result.add_option('--build_only',
-                      '--build-only',
-                      help='Build desugared library without archiving.',
-                      type="string",
-                      action="store")
-    (options, args) = result.parse_args(argv)
-    return (options, args)
+    result.add_argument('--dry-run',
+                        '--dry_run',
+                        help='Running on bot, use third_party dependency.',
+                        default=False,
+                        action='store_true')
+    result.add_argument('--dry-run-output',
+                        '--dry_run_output',
+                        help='Output directory for dry run.',
+                        type=str,
+                        action="store")
+    result.add_argument('--github-account',
+                        '--github_account',
+                        help='GitHub account to clone from.',
+                        default="google",
+                        type=str,
+                        action="store")
+    result.add_argument('--build_only',
+                        '--build-only',
+                        help='Build desugared library without archiving.',
+                        type=str,
+                        action="store")
+    options, args = result.parse_known_args(argv)
+    return options, args
 
 
-def GetVersion(version_file_name):
+def get_version(version_file_name):
     with open(version_file_name, 'r') as version_file:
         lines = [line.strip() for line in version_file.readlines()]
         lines = [line for line in lines if not line.startswith('#')]
@@ -128,7 +128,7 @@ def GetVersion(version_file_name):
         return version
 
 
-def Upload(options, file_name, destination, is_main):
+def upload(options, file_name, destination, is_main):
     print('Uploading %s to %s' % (file_name, destination))
     if options.dry_run:
         if options.dry_run_output:
@@ -146,32 +146,33 @@ def Upload(options, file_name, destination, is_main):
               destination.replace('gs://', utils.CLOUD_STORAGE_URL + '/', 1))
 
 
-def CloneDesugaredLibrary(github_account, checkout_dir, desugar_jdk_libs_hash):
+def clone_desugared_library(github_account, checkout_dir,
+                            desugar_jdk_libs_hash):
     git_utils.git_clone(
         'https://github.com/' + github_account + '/' + GITHUB_REPRO,
         checkout_dir)
     git_utils.git_checkout(desugar_jdk_libs_hash, checkout_dir)
 
 
-def GetJavaEnv(androidHomeTemp):
+def get_java_env(android_home_temp):
     java_env = dict(os.environ, JAVA_HOME=jdk.GetDefaultJdkHome())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
         jdk.GetDefaultJdkHome(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
-    java_env['ANDROID_HOME'] = androidHomeTemp
+    java_env['ANDROID_HOME'] = android_home_temp
     return java_env
 
 
-def setUpFakeAndroidHome(androidHomeTemp):
+def set_up_fake_android_home(android_home_temp):
     # Bazel will check if 30 is present then extract android.jar from 32.
     # We copy android.jar from third_party to mimic repository structure.
-    subpath = os.path.join(androidHomeTemp, "build-tools")
+    subpath = os.path.join(android_home_temp, "build-tools")
     cmd = ["mkdir", subpath]
     subprocess.check_call(cmd)
     subpath = os.path.join(subpath, "32.0.0")
     cmd = ["mkdir", subpath]
     subprocess.check_call(cmd)
-    subpath = os.path.join(androidHomeTemp, "platforms")
+    subpath = os.path.join(android_home_temp, "platforms")
     cmd = ["mkdir", subpath]
     subprocess.check_call(cmd)
     subpath30 = os.path.join(subpath, "android-30")
@@ -189,16 +190,16 @@ def setUpFakeAndroidHome(androidHomeTemp):
     subprocess.check_call(cmd)
 
 
-def BuildDesugaredLibrary(checkout_dir, variant, version=None):
+def build_desugared_library(checkout_dir, variant, version=None):
     if not variant in MAVEN_RELEASE_TARGET_MAP:
         raise Exception('Variant ' + variant + ' is not supported')
     if variant != 'jdk8' and variant != 'jdk11_legacy' and version is None:
         raise Exception('Variant ' + variant +
                         ' require version for undesugaring')
     with utils.ChangedWorkingDirectory(checkout_dir):
-        with utils.TempDir() as androidHomeTemp:
-            setUpFakeAndroidHome(androidHomeTemp)
-            javaEnv = GetJavaEnv(androidHomeTemp)
+        with utils.TempDir() as android_home_temp:
+            set_up_fake_android_home(android_home_temp)
+            java_env = get_java_env(android_home_temp)
             bazel = os.path.join(utils.BAZEL_DIR, 'lib', 'bazel', 'bin',
                                  'bazel')
             cmd = [
@@ -206,10 +207,10 @@ def BuildDesugaredLibrary(checkout_dir, variant, version=None):
                 '--verbose_failures', MAVEN_RELEASE_TARGET_MAP[variant]
             ]
             utils.PrintCmd(cmd)
-            subprocess.check_call(cmd, env=javaEnv)
+            subprocess.check_call(cmd, env=java_env)
             cmd = [bazel, 'shutdown']
             utils.PrintCmd(cmd)
-            subprocess.check_call(cmd, env=javaEnv)
+            subprocess.check_call(cmd, env=java_env)
 
         # Locate the library jar and the maven zip with the jar from the
         # bazel build.
@@ -229,7 +230,7 @@ def BuildDesugaredLibrary(checkout_dir, variant, version=None):
             # The undesugaring is temporary...
             undesugared_maven_zip = os.path.join(checkout_dir,
                                                  'undesugared_maven')
-            Undesugar(variant, maven_zip, version, undesugared_maven_zip)
+            undesugar(variant, maven_zip, version, undesugared_maven_zip)
             undesugared_maven_zip = os.path.join(checkout_dir,
                                                  'undesugared_maven.zip')
             return (library_jar, undesugared_maven_zip)
@@ -260,7 +261,7 @@ def write_sha1_for(file):
         file.write(hexdigest)
 
 
-def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
+def undesugar(variant, maven_zip, version, undesugared_maven_zip):
     gradle.run_gradle([
         utils.GRADLE_TASK_R8, utils.GRADLE_TASK_TEST_BASE_JAR,
         utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR,
@@ -274,7 +275,6 @@ def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
             '%s-%s.jar' % (LIBRARY_NAME_MAP[variant], version))
         print(desugar_jdk_libs_jar)
         undesugared_jar = os.path.join(tmp, 'undesugared.jar')
-        buildLibs = os.path.join(defines.REPO_ROOT, 'build', 'libs')
         cmd = [
             jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
             '%s:%s:%s:%s' % (utils.R8_JAR, utils.R8_TESTBASE_JAR,
@@ -303,23 +303,24 @@ def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
         print(output)
 
 
-def MustBeExistingDirectory(path):
+def must_be_existing_directory(path):
     if (not os.path.exists(path) or not os.path.isdir(path)):
         raise Exception(path + ' does not exist or is not a directory')
 
 
-def BuildAndUpload(options, variant):
+def build_and_upload(options, variant):
     desugar_jdk_libs_hash = ''
     with open(DESUGAR_JDK_LIBS_HASH_FILE, 'r') as input_hash:
         desugar_jdk_libs_hash = input_hash.readline().strip()
     if options.build_only:
         with utils.TempDir() as checkout_dir:
-            CloneDesugaredLibrary(options.github_account, checkout_dir,
-                                  desugar_jdk_libs_hash)
-            version = GetVersion(
+            clone_desugared_library(options.github_account, checkout_dir,
+                                    desugar_jdk_libs_hash)
+            version = get_version(
                 os.path.join(checkout_dir, VERSION_MAP[variant]))
             (library_jar,
-             maven_zip) = BuildDesugaredLibrary(checkout_dir, variant, version)
+             maven_zip) = build_desugared_library(checkout_dir, variant,
+                                                  version)
             shutil.copyfile(
                 library_jar,
                 os.path.join(options.build_only, os.path.basename(library_jar)))
@@ -332,9 +333,9 @@ def BuildAndUpload(options, variant):
     is_main = False
 
     with utils.TempDir() as checkout_dir:
-        CloneDesugaredLibrary(options.github_account, checkout_dir,
-                              desugar_jdk_libs_hash)
-        version = GetVersion(os.path.join(checkout_dir, VERSION_MAP[variant]))
+        clone_desugared_library(options.github_account, checkout_dir,
+                                desugar_jdk_libs_hash)
+        version = get_version(os.path.join(checkout_dir, VERSION_MAP[variant]))
 
         destination = archive.get_version_destination(
             'gs://', LIBRARY_NAME_MAP[variant] + '/' + version, is_main)
@@ -343,19 +344,19 @@ def BuildAndUpload(options, variant):
                             destination)
 
         (library_jar,
-         maven_zip) = BuildDesugaredLibrary(checkout_dir, variant, version)
+         maven_zip) = build_desugared_library(checkout_dir, variant, version)
 
         storage_path = LIBRARY_NAME_MAP[variant] + '/' + version
         # Upload the jar file with the library.
         destination = archive.get_upload_destination(
             storage_path, LIBRARY_NAME_MAP[variant] + '.jar', is_main)
-        Upload(options, library_jar, destination, is_main)
+        upload(options, library_jar, destination, is_main)
 
         # Upload the maven zip file with the library.
         destination = archive.get_upload_destination(storage_path,
                                                      MAVEN_RELEASE_ZIP[variant],
                                                      is_main)
-        Upload(options, maven_zip, destination, is_main)
+        upload(options, maven_zip, destination, is_main)
 
         # Copy the maven zip file with the library to bot cwd for upload to ResultDB.
         shutil.copyfile(maven_zip, MAVEN_RELEASE_ZIP[variant])
@@ -381,20 +382,20 @@ def BuildAndUpload(options, variant):
         destination = archive.get_upload_destination(storage_path,
                                                      'luci_invocation_id',
                                                      is_main)
-        Upload(options, luci_invocation_id_file, destination, is_main)
+        upload(options, luci_invocation_id_file, destination, is_main)
 
 
-def Main(argv):
-    (options, args) = ParseOptions(argv)
+def main(argv):
+    (options, args) = parse_options(argv)
     if (len(args) > 0):
         raise Exception('Unsupported arguments')
     if not utils.is_bot() and not (options.dry_run or options.build_only):
         raise Exception('You are not a bot, don\'t archive builds. ' +
                         'Use --dry-run or --build-only to test locally')
     if options.dry_run_output:
-        MustBeExistingDirectory(options.dry_run_output)
+        must_be_existing_directory(options.dry_run_output)
     if options.build_only:
-        MustBeExistingDirectory(options.build_only)
+        must_be_existing_directory(options.build_only)
     if utils.is_bot():
         archive.set_r_limit_to_max()
 
@@ -405,8 +406,8 @@ def Main(argv):
     utils.ensure_google_download(utils.DESUGAR_JDK_LIBS_11_DIR)
 
     for v in options.variant:
-        BuildAndUpload(options, v)
+        build_and_upload(options, v)
 
 
 if __name__ == '__main__':
-    sys.exit(Main(sys.argv[1:]))
+    sys.exit(main(sys.argv[1:]))

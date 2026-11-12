@@ -224,7 +224,7 @@ def run(args):
                     args.variant == Variant.jdk11 or
                     args.variant == Variant.jdk11_nio):
                 undesugared_if_needed = join(tmp_dir, 'undesugared.zip')
-                archive_desugar_jdk_libs.Undesugar(
+                archive_desugar_jdk_libs.undesugar(
                     str(args.variant),
                     join(checkout_dir, implementation_build_output), version,
                     undesugared_if_needed)

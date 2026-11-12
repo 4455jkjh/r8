@@ -395,7 +395,7 @@ def test(options, args):
         os.makedirs(desugar_jdk_libs_dir)
         print('Building desugared library.')
         with utils.TempDir() as checkout_dir:
-            archive_desugar_jdk_libs.CloneDesugaredLibrary(
+            archive_desugar_jdk_libs.clone_desugared_library(
                 'google', checkout_dir, 'HEAD')
             # Make sure bazel is extracted in third_party.
             utils.ensure_google_download(utils.BAZEL_DIR)
@@ -404,7 +404,7 @@ def test(options, args):
             utils.ensure_google_download(utils.JAVA17_DIR)
             utils.ensure_google_download(utils.JAVA21_DIR)
             (library_jar,
-             maven_zip) = archive_desugar_jdk_libs.BuildDesugaredLibrary(
+             maven_zip) = archive_desugar_jdk_libs.build_desugared_library(
                  checkout_dir, 'jdk11_legacy')
             desugar_jdk_libs = os.path.join(desugar_jdk_libs_dir,
                                             os.path.basename(library_jar))
