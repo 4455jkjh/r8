@@ -309,6 +309,9 @@ def check_lucicfg(input_api, output_api):
 
 
 def get_upstream_branch(input_api):
+    upstream = input_api.change.UpstreamBranch()
+    if upstream:
+        return upstream.replace('refs/heads/', '')
     try:
         branch = check_output(['git', 'cl', 'upstream'],
                               stderr=DEVNULL).decode('utf-8').strip()
@@ -316,9 +319,6 @@ def get_upstream_branch(input_api):
             return branch.replace('refs/heads/', '')
     except CalledProcessError:
         pass
-    upstream = input_api.change.UpstreamBranch()
-    if upstream:
-        return upstream.replace('refs/heads/', '')
     raise Exception('Unable to determine upstream branch')
 
 
