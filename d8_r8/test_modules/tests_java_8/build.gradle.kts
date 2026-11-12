@@ -152,14 +152,6 @@ dependencies {
   implementation(libs.playwright)
 }
 
-fun testDependencies(): FileCollection {
-  return sourceSets.test.get().compileClasspath.filter {
-    "$it".contains("third_party") &&
-      !"$it".contains("errorprone") &&
-      !"$it".contains("third_party/gradle")
-  }
-}
-
 tasks {
   val createArtTests =
     register<CreateArtTestsTask>("createArtTests") {

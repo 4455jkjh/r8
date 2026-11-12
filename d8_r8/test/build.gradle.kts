@@ -109,7 +109,6 @@ dependencies {
   testJarsScope(project(":tests_java_25", "testJar"))
   testJarsScope(project(":tests_bootstrap", "testJar"))
   testbaseTestJarsScope(project(":testbase", "testJar"))
-  testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   runtimeOnlyData(project(":tests_java_8", "runtimeOnlyDataElements"))
