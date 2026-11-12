@@ -119,7 +119,7 @@ def get_version(version_file_name):
         lines = [line.strip() for line in version_file.readlines()]
         lines = [line for line in lines if not line.startswith('#')]
         if len(lines) != 1:
-            raise Exception('Version file ' + version_file +
+            raise Exception('Version file ' + version_file_name +
                             ' is expected to have exactly one line')
         version = lines[0].strip()
         utils.check_basic_semver_version(version,
