@@ -186,7 +186,7 @@ def validate_version_change_diff(version_diff_output, old_version, new_version):
                        "Type '%s' to accept: " % accept_string)
         if answer != accept_string:
             print("You did not type '%s'" % accept_string)
-            print('Aborting dev release for %s' % version)
+            print('Aborting dev release for %s' % new_version)
             sys.exit(1)
 
 
@@ -213,7 +213,7 @@ def prepare_maven(args):
             release_id, "com.android.tools:r8:%s" % args.version[0],
             "r8lib.jar")
 
-        print
+        print()
         answer = input("Continue with publishing [y/N]:")
 
         if answer != 'y':
