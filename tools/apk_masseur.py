@@ -167,7 +167,7 @@ def has_wrong_compression(apk, compress_dex):
     stdout = subprocess.check_output(cmd).decode('utf-8').strip()
     expected = ' defN ' if compress_dex else ' stor '
     for line in stdout.splitlines():
-        if not expected in line:
+        if expected not in line:
             return True
     return False
 

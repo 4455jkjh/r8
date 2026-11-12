@@ -357,7 +357,7 @@ def determine_compiler(args, build_properties):
     if not compiler and 'tool' in build_properties:
         compiler = build_properties.get('tool').lower()
         if compiler == 'r8':
-            if not 'force-proguard-compatibility' in build_properties:
+            if 'force-proguard-compatibility' not in build_properties:
                 error(
                     "Unable to determine R8 compiler variant from build.properties."
                     " No value for 'force-proguard-compatibility'.")

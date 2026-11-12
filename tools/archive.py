@@ -84,7 +84,7 @@ def check_main(version):
             raise Exception('We are seeing origin/main in a commit that '
                             'don\'t have \'main\' as version')
         return False
-    if not 'origin/main' in branches:
+    if 'origin/main' not in branches:
         raise Exception('We are not seeing origin/main '
                         'in a commit that have \'main\' as version')
     return True

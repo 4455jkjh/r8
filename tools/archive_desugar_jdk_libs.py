@@ -191,7 +191,7 @@ def set_up_fake_android_home(android_home_temp):
 
 
 def build_desugared_library(checkout_dir, variant, version=None):
-    if not variant in MAVEN_RELEASE_TARGET_MAP:
+    if variant not in MAVEN_RELEASE_TARGET_MAP:
         raise Exception('Variant ' + variant + ' is not supported')
     if variant != 'jdk8' and variant != 'jdk11_legacy' and version is None:
         raise Exception('Variant ' + variant +

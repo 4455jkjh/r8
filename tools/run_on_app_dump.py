@@ -1060,7 +1060,7 @@ def print_golem_config(options):
             print_indented(
                 'StandardBenchmark(name, [Metric.RunTimeRaw, Metric.CodeSize]);',
                 indentation + 4)
-            if app.golem_duration != None:
+            if app.golem_duration is not None:
                 print_indented(
                     'final timeout = const Duration(seconds: %s);' %
                     app.golem_duration, indentation)

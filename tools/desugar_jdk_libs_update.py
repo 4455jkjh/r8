@@ -32,7 +32,7 @@ def get_git_hash(checkout_dir):
 
 def run(args):
     with utils.TempDir() as tmp_dir:
-        use_existing_checkout = args.desugar_jdk_libs_checkout != None
+        use_existing_checkout = args.desugar_jdk_libs_checkout is not None
         checkout_dir = (args.desugar_jdk_libs_checkout if use_existing_checkout
                         else join(tmp_dir, 'desugar_jdk_libs'))
         if (not use_existing_checkout):

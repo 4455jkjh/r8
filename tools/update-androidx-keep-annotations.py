@@ -57,7 +57,7 @@ def main():
                 'UsesReflectionToAccessMethod.kt',
                 'UsesReflectionToConstruct.kt',
             )
-            if not filename in files:
+            if filename not in files:
                 print('Skipping {filename}'.format(filename=filename))
                 continue
 

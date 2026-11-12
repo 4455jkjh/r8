@@ -173,7 +173,7 @@ def confirm_and_upload(local_branch_name, args, bugs):
     # Compute the set of bug refs from the commit message after confirmation.
     # If done before a conflicting cherry-pick status will potentially include
     # references that are orthogonal to the pick.
-    if bugs != None:
+    if bugs is not None:
         commit_message = subprocess.check_output(
             ['git', 'log', '--format=%B', '-n', '1', 'HEAD'])
         commit_lines = [

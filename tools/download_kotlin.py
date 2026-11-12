@@ -178,7 +178,7 @@ def check_pom(top_most_version_and_build):
             'org.jetbrains.intellij.deps:trove4j:1.0.20200330')
         expected_dependencies.add(
             'org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0')
-        if not coordinates in expected_dependencies:
+        if coordinates not in expected_dependencies:
             raise Exception('Unexpected dependency: ' + coordinates)
 
 

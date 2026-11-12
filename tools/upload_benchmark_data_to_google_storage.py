@@ -123,14 +123,14 @@ def get_try_commits(local_bucket_try_dict):
 
 
 def parse_json_from_cloud_storage(filename, local_bucket_dict):
-    if not filename in local_bucket_dict:
+    if filename not in local_bucket_dict:
         return None
     return json.loads(local_bucket_dict[filename])
 
 
 def record_benchmark_result(commit, benchmark, benchmark_info,
                             local_bucket_dict, target, benchmarks, is_try):
-    if not target in benchmark_info['targets']:
+    if target not in benchmark_info['targets']:
         return
     sub_benchmarks = benchmark_info.get('subBenchmarks', {})
     sub_benchmarks_for_target = sub_benchmarks.get(target, [])

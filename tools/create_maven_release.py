@@ -302,7 +302,7 @@ def generate_library_licenses():
             # to collected licenses if either name or url has not been recorded yet,
             # as some licenses with slightly different names point to the same url.
             if name and url:
-                if (not name in licenses) or (not url in license_urls):
+                if name not in licenses or url not in license_urls:
                     licenses.append(name)
                     license_urls.append(url)
                 name = None
@@ -536,7 +536,7 @@ def generate_desugar_configuration_maven_zip(out, configuration, implementation,
 
 def main(argv):
     options = parse_options(argv)
-    if options.out == None:
+    if options.out is None:
         raise Exception('Need to supply output zip with --out.')
     if options.desugar_configuration or options.desugar_configuration_jdk8:
         generate_desugar_configuration_maven_zip(

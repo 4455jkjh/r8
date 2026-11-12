@@ -456,7 +456,7 @@ def run_with_options(options,
         raise Exception("You need to specify '--compiler-build={}'".format(
             '|'.join(COMPILER_BUILDS)))
 
-    if not version_id in data.VERSIONS.keys():
+    if version_id not in data.VERSIONS.keys():
         print('No version {} for application {}'.format(version_id,
                                                         options.app))
         print('Valid versions are {}'.format(data.VERSIONS.keys()))

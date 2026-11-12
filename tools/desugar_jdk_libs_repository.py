@@ -148,7 +148,7 @@ def run(args):
         (name,
          configuration_version) = utils.desugar_configuration_name_and_version(
              configuration, False)
-        if (args.release_version != None and
+        if (args.release_version is not None and
                 args.release_version != configuration_version):
             raise Exception(
                 'Configuration version %s is different for specified version %s'
@@ -157,7 +157,7 @@ def run(args):
         print("Name: %s" % name)
         print("Version: %s" % version)
         # Checkout desugar_jdk_libs from GitHub
-        use_existing_checkout = args.desugar_jdk_libs_checkout != None
+        use_existing_checkout = args.desugar_jdk_libs_checkout is not None
         checkout_dir = (args.desugar_jdk_libs_checkout if use_existing_checkout
                         else join(tmp_dir, 'desugar_jdk_libs'))
         if (not args.release_version and not use_existing_checkout):
