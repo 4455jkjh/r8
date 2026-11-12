@@ -209,6 +209,9 @@ def parse_options(argv):
     group.add_argument('--desugar-configuration-jdk11-nio',
                        action='store_true',
                        help='Build desugar library configuration (JDK-11 nio)')
+    group.add_argument('--keepanno-tools',
+                       action='store_true',
+                       help='Build the keepanno-tools maven zip')
     group.add_argument('--r8-assistant',
                        action='store_true',
                        help='Build the r8-assistant maven zip')
@@ -560,11 +563,12 @@ def main(argv):
             options.out, utils.DESUGAR_CONFIGURATION_JDK11_NIO,
             utils.DESUGAR_IMPLEMENTATION_JDK11,
             utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP)
+    elif options.keepanno_tools:
+        generate_keepanno_tools_maven_zip(options.out)
     elif options.r8_assistant:
         generate_r8_assistant_maven_zip(options.out)
     else:
         generate_r8_maven_zip(options.out)
-        generate_keepanno_maven_zip(options.out)
 
 
 if __name__ == "__main__":
