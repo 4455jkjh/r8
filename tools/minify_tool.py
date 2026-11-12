@@ -141,4 +141,7 @@ def minify_tool(mainclass=None,
 
 
 if __name__ == '__main__':
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     sys.exit(minify_tool(**vars(parser.parse_args())))

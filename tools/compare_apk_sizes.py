@@ -190,6 +190,9 @@ def compare(app1_classes_dir, app2_classes_dir, app1, app2, options):
 
 
 def main(argv=None):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     options = parse_options(argv)
     app1 = options.app1
     app2 = options.app2

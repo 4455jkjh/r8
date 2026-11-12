@@ -15,6 +15,9 @@ ANDROID_EMULATORS = os.path.join(utils.TOOLS_DIR, 'benchmarks',
 
 
 def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     utils.ensure_google_download(ANDROID_EMULATORS)
 
 

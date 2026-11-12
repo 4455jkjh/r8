@@ -7,4 +7,7 @@ import sys
 import toolhelper
 
 if __name__ == '__main__':
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     sys.exit(toolhelper.run('maindex', sys.argv[1:]))

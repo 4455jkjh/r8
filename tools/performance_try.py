@@ -13,6 +13,9 @@ DART = os.path.join(utils.THIRD_PARTY, 'dart-sdk', 'bin', 'dart')
 
 
 def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     args = sys.argv[1:]
     if len(args) != 1 or '--help' in args:
         print(

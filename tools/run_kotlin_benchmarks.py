@@ -87,6 +87,9 @@ def run_art_device(dex):
 
 
 def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     options = parse_options()
     with utils.TempDir() as temp:
         dex_path = os.path.join(temp, "classes.jar")

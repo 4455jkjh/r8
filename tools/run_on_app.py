@@ -351,6 +351,9 @@ def track_time_in_memory(options, args):
 
 
 def main(argv):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     (options, args) = parse_options(argv)
     if options.expect_oom and not options.max_memory:
         raise Exception(

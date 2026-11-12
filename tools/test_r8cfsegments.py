@@ -54,6 +54,9 @@ def parse_arguments():
 
 
 def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     args = parse_arguments()
     utils.check_java_version()
     output_dir = args.output
