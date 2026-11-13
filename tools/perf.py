@@ -6,6 +6,7 @@
 import argparse
 import compiledump
 import datetime
+import git_utils
 import hashlib
 import historic_run
 import json
@@ -302,6 +303,17 @@ SAMPLE_BENCHMARK_RESULT_JSON = {
         'runtime': 0
     }]
 }
+# Directories whose changes are ignored when deciding whether to run benchmarks
+# on bots. Every entry must end with '/' because is_benchmark_ignored_path uses
+# str.startswith().
+BENCHMARK_IGNORED_DIRS = (
+    'd8_r8/test/',
+    'd8_r8/test_modules/',
+    'infra/',
+    'src/test/',
+    'tools/',
+)
+assert all(d.endswith('/') for d in BENCHMARK_IGNORED_DIRS)
 
 
 # Result structure on cloud storage
@@ -309,7 +321,7 @@ SAMPLE_BENCHMARK_RESULT_JSON = {
 #                                                   meta
 # where results simply contains the result lines and
 # meta contains information about the execution (machine)
-def parse_options():
+def parse_options(argv=None):
     result = argparse.ArgumentParser()
     result.add_argument('--benchmark',
                         help='Specific benchmark(s) to measure.',
@@ -343,6 +355,12 @@ def parse_options():
                         help='Run release benchmarks.',
                         action='store_true',
                         default=bool(os.environ.get('R8_BOT_RELEASE')))
+    result.add_argument(
+        '--skip-if-no-relevant-changes',
+        help='Skip if commit touches no benchmark-relevant files '
+        '(default on bots).',
+        action='store_true',
+        default=utils.is_bot())
     result.add_argument('--skip-if-output-exists',
                         help='Skip if output exists.',
                         action='store_true',
@@ -360,7 +378,7 @@ def parse_options():
                         help='Use R8 hash for the run (default local build)')
     result.add_argument('--version-jar',
                         help='The r8lib.jar for the given version.')
-    options, args = result.parse_known_args()
+    options, args = result.parse_known_args(argv)
     if options.benchmark:
         options.benchmarks = options.benchmark
     elif options.internal:
@@ -500,9 +518,7 @@ def get_weekly_bundle_run_name(benchmarks, target=None):
 #   weekly/TARGET/releases/BRANCH/HASH/RUN.json for release branch commits.
 def get_weekly_bundle_location(commit, target, run_name, is_try):
     if is_try:
-        merge_base = subprocess.check_output(
-            ['git', 'merge-base',
-             commit.parent_hash(), 'origin/main']).decode('utf-8').strip()
+        merge_base = git_utils.get_merge_base_with_main(commit.parent_hash())
         parent = historic_run.git_commit_from_hash(merge_base)
         week = get_iso_week_folder(parent.committer_timestamp())
         return (f'{WEEKLY_PREFIX}/{target}/{week}/try/{commit.hash()}/'
@@ -576,14 +592,52 @@ def archive_output_file(file, dest, bucket=BUCKET, header=None, outdir=None):
                                            header=header)
 
 
+def is_benchmark_ignored_path(path):
+    return path.startswith(BENCHMARK_IGNORED_DIRS)
+
+
+# Returns True when skipping is enabled and the target commit only touches paths
+# inside BENCHMARK_IGNORED_DIRS. Fails open (returns False) when using
+# --version-jar or if git lookup fails.
+def should_skip_commit(options):
+    if not options.skip_if_no_relevant_changes or options.version_jar:
+        return False
+    if options.version:
+        if not compiledump.is_hash(options.version):
+            return False
+        commit = historic_run.git_commit_from_hash(options.version)
+        if commit is None:
+            return False
+        commit_hash = commit.hash()
+    else:
+        commit_hash = utils.get_HEAD_sha1()
+    try:
+        changed_files = git_utils.get_changed_files(commit_hash,
+                                                    is_try=options.is_try)
+    except subprocess.CalledProcessError as e:
+        detail = e.stderr.strip() if e.stderr else str(e)
+        print(
+            f'Warning: failed to determine changed files for {commit_hash}: '
+            f'{detail}',
+            file=sys.stderr)
+        return False
+    if any(not is_benchmark_ignored_path(path) for path in changed_files):
+        return False
+    print(f'Skipping benchmark run: commit {commit_hash} touches no '
+          'benchmark-relevant files.')
+    return True
+
+
 # Usage with historic_run.py:
 # ./tools/historic_run.py
 #     --cmd "perf.py --skip-if-output-exists --version"
 #     --timeout -1
 #     --top 3373fd18453835bf49bff9f02523a507a2ebf317
 #     --bottom 7486f01e0622cb5935b77a92b59ddf1ca8dbd2e2
-def main():
-    options, args = parse_options()
+def main(argv=None):
+    options, args = parse_options(argv)
+    if should_skip_commit(options):
+        return 0
     any_failed = False
     # Results of this run by target and benchmark, for the weekly bundle.
     weekly_bundle_results = {}
