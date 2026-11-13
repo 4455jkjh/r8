@@ -124,7 +124,7 @@ def get_version(version_file_name):
         version = lines[0].strip()
         utils.check_basic_semver_version(version,
                                          'in version file ' + version_file_name,
-                                         allowPrerelease=True)
+                                         allow_prerelease=True)
         return version
 
 

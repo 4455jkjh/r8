@@ -35,7 +35,7 @@ def get_version():
     return utils.check_basic_semver_version(label,
                                             'in Version.java',
                                             components=3,
-                                            allowPrerelease=True)
+                                            allow_prerelease=True)
 
 
 def is_release_before(major, minor, patch, version=None):

@@ -75,9 +75,9 @@ def get_release_branches():
 
 def cmp_versions(x, y):
     semver_x = utils.check_basic_semver_version(x.version(),
-                                                allowPrerelease=True)
+                                                allow_prerelease=True)
     semver_y = utils.check_basic_semver_version(y.version(),
-                                                allowPrerelease=True)
+                                                allow_prerelease=True)
     if semver_x.larger_than(semver_y):
         return 1
     if semver_y.larger_than(semver_x):

@@ -99,7 +99,7 @@ def trigger_smali_builder(version):
     utils.check_basic_semver_version(
         version,
         'use semantic version of the smali version to built (pre-releases are not supported)',
-        allowPrerelease=False)
+        allow_prerelease=False)
     print(
         "Check that tag %s is created and pushed to the remote (e.g by running"
         % version)

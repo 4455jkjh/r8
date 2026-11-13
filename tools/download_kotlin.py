@@ -166,9 +166,9 @@ def check_pom(top_most_version_and_build):
                     version=top_most_version_and_build))
         # Additional dependency from 2.4.0-dev-6891.
         semver = utils.check_basic_semver_version(top_most_version_and_build,
-                                                  allowPrerelease=True)
+                                                  allow_prerelease=True)
         semver_6891 = utils.check_basic_semver_version("2.4.0-dev-6891",
-                                                       allowPrerelease=True)
+                                                       allow_prerelease=True)
         if semver.larger_than(semver_6891) or semver.equals_to(semver_6891):
             expected_dependencies.add(
                 'org.jetbrains.kotlin:kotlin-build-tools-api:{version}'.format(

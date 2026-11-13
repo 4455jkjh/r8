@@ -107,7 +107,8 @@ def main_download(hash_value,
                   keepanno=False):
     sbom_targets = []
     if version:
-        semver = utils.check_basic_semver_version(version, allowPrerelease=True)
+        semver = utils.check_basic_semver_version(version,
+                                                  allow_prerelease=True)
         # Generation of SBOM started from version 8.3.13-dev.
         if semver.larger_than(utils.SemanticVersion(8, 3, 12, 'dev')):
             sbom_targets = SBOM_TARGETS

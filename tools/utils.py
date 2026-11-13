@@ -1120,7 +1120,7 @@ def desugar_configuration_name_and_version(configuration, is_for_maven):
         # understand errors.
         check_basic_semver_version(version,
                                    'in ' + configuration,
-                                   allowPrerelease=False)
+                                   allow_prerelease=False)
         return (name, version)
 
 
@@ -1165,19 +1165,19 @@ class SemanticVersion:
 
 
 # Check that the passed string is formatted as a basic semver version (x.y.z or x.y.z-prerelease
-# depending on the value of allowPrerelease).
+# depending on the value of allow_prerelease).
 # See https://semver.org/. The regexp parts used are not all complient with what is suggested
 # on https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
 def check_basic_semver_version(version,
                                error_context='',
                                components=3,
-                               allowPrerelease=False):
+                               allow_prerelease=False):
     regexp = '^'
     for x in range(components):
         regexp += '([0-9]+)'
         if x < components - 1:
             regexp += '\\.'
-    if allowPrerelease:
+    if allow_prerelease:
         # This part is from
         # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
         regexp += r'(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?'
@@ -1190,10 +1190,10 @@ def check_basic_semver_version(version,
     if components == 2:
         return SemanticVersion(int(match.group(1)), int(match.group(2)), None,
                                None)
-    elif components == 3 and not allowPrerelease:
+    elif components == 3 and not allow_prerelease:
         return SemanticVersion(int(match.group(1)), int(match.group(2)),
                                int(match.group(3)), None)
-    elif components == 3 and allowPrerelease:
+    elif components == 3 and allow_prerelease:
         return SemanticVersion(int(match.group(1)), int(match.group(2)),
                                int(match.group(3)), match.group('prerelease'))
     else:

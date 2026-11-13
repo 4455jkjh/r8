@@ -1282,7 +1282,7 @@ def parse_options():
             print("ERROR: only one version supported for studio")
             sys.exit(1)
         semver = utils.check_basic_semver_version(args.version[0],
-                                                  allowPrerelease=True)
+                                                  allow_prerelease=True)
         if not semver.larger_than(utils.SemanticVersion(9, 5, 17, 'dev')):
             print("ERROR: Releasing to studio is only supported for R8 version "
                   "9.5.18-dev or higher")

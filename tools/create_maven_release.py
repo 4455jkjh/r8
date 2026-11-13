@@ -240,7 +240,7 @@ def determine_r8_assistant_version():
                 result = result[:result.find('"')]
                 utils.check_basic_semver_version(result,
                                                  'in ' + version_file,
-                                                 allowPrerelease=True)
+                                                 allow_prerelease=True)
                 return result
     raise Exception('Unable to determine R8 Assistant version.')
 
@@ -250,7 +250,8 @@ def determine_keepanno_tools_version():
     if version == 'main':
         return version
     else:
-        semver = utils.check_basic_semver_version(version, allowPrerelease=True)
+        semver = utils.check_basic_semver_version(version,
+                                                  allow_prerelease=True)
         if semver.prerelease == 'dev':
             return str(
                 utils.SemanticVersion(semver.major, semver.minor, 0,
