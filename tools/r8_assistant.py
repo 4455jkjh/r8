@@ -41,7 +41,7 @@ def main(argv):
               'Build failed or --no-build was specified.')
         return 1
 
-    java = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
+    java = jdk.get_java_executable(jdk.get_default_jdk_home())
     cmd = [java, '-jar', utils.R8_ASSISTANT_LIB_JAR] + args
     utils.PrintCmd(cmd)
     res = subprocess.run(cmd)

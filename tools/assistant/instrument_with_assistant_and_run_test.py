@@ -117,7 +117,7 @@ def check_reflective_operations(options, temp_dir):
         keep_info_dir = os.path.join(temp_dir, 'keepinfo')
         if os.path.exists(log_file) and os.path.exists(keep_info_dir):
             cmd = [
-                jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
+                jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
                 utils.R8_JAR,
                 'com.android.tools.r8.assistant.postprocessing.CheckReflectiveOperations',
                 log_file, keep_info_dir

@@ -71,7 +71,7 @@ def prepare_print_version(dist, temp):
         utils.REPO_ROOT,
         'src/main/java/com/android/tools/r8/utils/PrintR8Version.java')
     cmd = [
-        jdk.GetJavacExecutable(jdk.GetCompilationJdkHome()),
+        jdk.get_javac_executable(jdk.get_compilation_jdk_home()),
         wrapper_file,
         '-d',
         temp,
@@ -150,7 +150,7 @@ def tag_agp_version(agp_version, args):
             return 1
         print_version_helper = prepare_print_version(utils.R8_JAR, temp)
         output = subprocess.check_output([
-            jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
+            jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
             ':'.join([jar, print_version_helper]),
             'com.android.tools.r8.utils.PrintR8Version'
         ]).decode('utf-8')

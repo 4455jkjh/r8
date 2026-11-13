@@ -344,7 +344,7 @@ def stop_gradle():
         return
 
     try:
-        java_home = jdk.GetDefaultJdkHome()
+        java_home = jdk.get_default_jdk_home()
     except Exception as _:
         # No Gradle daemon is running if the JDK home can't be found.
         return
@@ -979,7 +979,7 @@ def grep_memoryuse(logfile):
 def get_dex_segment_sizes(dex_files):
     assert len(dex_files) > 0
     cmd = [
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-jar', R8_JAR,
+        jdk.get_java_executable(jdk.get_default_jdk_home()), '-jar', R8_JAR,
         'dexsegments'
     ]
     cmd.extend(dex_files)
@@ -1003,8 +1003,8 @@ def get_dex_segment_sizes(dex_files):
 # Return a dictionary: {segment_name -> segments_size}
 def get_cf_segment_sizes(cf_file):
     cmd = [
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', CF_SEGMENTS_TOOL,
-        'com.android.tools.r8.cf_segments.MeasureLib', cf_file
+        jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
+        CF_SEGMENTS_TOOL, 'com.android.tools.r8.cf_segments.MeasureLib', cf_file
     ]
     PrintCmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
@@ -1041,7 +1041,7 @@ def print_dexsegments(prefix, dex_files, worker_id=None):
 
 # Ensure that we are not benchmarking with a google jvm.
 def check_java_version():
-    cmd = [jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-version']
+    cmd = [jdk.get_java_executable(jdk.get_default_jdk_home()), '-version']
     output = subprocess.check_output(cmd,
                                      stderr=subprocess.STDOUT).decode('utf-8')
     m = re.search('openjdk version "([^"]*)"', output)

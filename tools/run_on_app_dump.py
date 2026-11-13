@@ -1049,7 +1049,7 @@ def print_golem_config(options):
     print_indented('final targetsCompat = ["R8"];', 2)
     print_indented('final targetsFull = ["R8-full-minify-optimize-shrink"];', 2)
     # Avoid calculating this for every app
-    add_golem_resource(2, jdk.GetJdk21Home(), 'openjdk')
+    add_golem_resource(2, jdk.get_jdk21_home(), 'openjdk')
     for app in options.apps:
         if app.folder and not app.internal:
             indentation = 2

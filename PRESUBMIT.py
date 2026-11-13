@@ -84,7 +84,7 @@ def ensure_default_jdk():
             line = line.strip()
             if line.startswith('toolchainVersion='):
                 version = line.split('=', 1)[1].strip()
-                jdk_dir = jdk.GetOSJavaHome(
+                jdk_dir = jdk.get_os_java_home(
                     os.path.join(jdk.JDK_DIRS, f'jdk-{version}'))
                 if os.path.exists(jdk_dir + '.tar.gz.sha1'):
                     utils.ensure_google_download(jdk_dir)

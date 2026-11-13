@@ -590,7 +590,7 @@ def compile_reflective_helper(temp, jdkhome, no_build=False):
         utils.REPO_ROOT, 'src/main/java/com/android/tools/r8/utils/compiledump')
 
     cmd = [
-        jdk.GetJavacExecutable(jdkhome),
+        jdk.get_javac_executable(jdkhome),
         '-d',
         temp,
         '-cp',
@@ -615,7 +615,7 @@ def compile_wrapper_with_javac(dist, temp, jdkhome, path):
         utils.REPO_ROOT,
         'src/main/java/com/android/tools/r8/utils/CompileDumpBase.java')
     cmd = [
-        jdk.GetJavacExecutable(jdkhome),
+        jdk.get_javac_executable(jdkhome),
         path,
         base_path,
         '-d',
@@ -633,9 +633,9 @@ def is_hash(version):
 
 def run1(out, args, otherargs, jdkhome=None, worker_id=None):
     if jdkhome is None:
-        # TODO(b/510836155): Should use GetDefaultJdkHome but it breaks.
-        jdkhome = jdk.GetJdk11Home()
-    compilation_jdkhome = jdk.GetCompilationJdkHome()
+        # TODO(b/510836155): Should use get_default_jdk_home but it breaks.
+        jdkhome = jdk.get_jdk11_home()
+    compilation_jdkhome = jdk.get_compilation_jdk_home()
     jvmargs = []
     compilerargs = []
     for arg in otherargs:
@@ -671,7 +671,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             version, args, temp)
         if ':' not in jar and not os.path.exists(jar):
             error("Distribution does not exist: " + jar)
-        cmd = [jdk.GetJavaExecutable(jdkhome)]
+        cmd = [jdk.get_java_executable(jdkhome)]
         cmd.extend(jvmargs)
         if args.debug_agent:
             if not args.nolib:
@@ -935,7 +935,7 @@ def summarize_jar(jar):
 
 def run(args, otherargs):
     gradle.ensure_jdk()
-    jdkhome = jdk.GetJdkHome(args.jdk) if args.jdk else None
+    jdkhome = jdk.get_jdk_home(args.jdk) if args.jdk else None
     if args.summary:
         summarize_dump_files(otherargs)
     elif args.loop:

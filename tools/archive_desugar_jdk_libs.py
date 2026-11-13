@@ -155,9 +155,9 @@ def clone_desugared_library(github_account, checkout_dir,
 
 
 def get_java_env(android_home_temp):
-    java_env = dict(os.environ, JAVA_HOME=jdk.GetDefaultJdkHome())
+    java_env = dict(os.environ, JAVA_HOME=jdk.get_default_jdk_home())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
-        jdk.GetDefaultJdkHome(), 'bin')
+        jdk.get_default_jdk_home(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
     java_env['ANDROID_HOME'] = android_home_temp
     return java_env
@@ -276,7 +276,7 @@ def undesugar(variant, maven_zip, version, undesugared_maven_zip):
         print(desugar_jdk_libs_jar)
         undesugared_jar = os.path.join(tmp, 'undesugared.jar')
         cmd = [
-            jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
+            jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
             '%s:%s:%s:%s' % (utils.R8_JAR, utils.R8_TESTBASE_JAR,
                              utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR),
             'com.android.tools.r8.desugar.desugaredlibrary.jdk11.DesugaredLibraryJDK11Undesugarer',

@@ -311,7 +311,7 @@ def run_single_compiledump(dump_name, compiler, r8_jar, version_label, temp_dir,
         worker_id)
     ret = compiledump.run1(dump_temp,
                            args, [],
-                           jdkhome=jdk.GetDefaultJdkHome(),
+                           jdkhome=jdk.get_default_jdk_home(),
                            worker_id=worker_id)
     out_jar = os.path.join(dump_temp, 'out.jar')
     if ret != 0 or not os.path.isfile(out_jar):

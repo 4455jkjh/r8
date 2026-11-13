@@ -16,37 +16,37 @@ DEFAULT_JDK_HOME = None
 
 
 # This JDK is used for everything except the compilation of the compiler.
-def GetDefaultJdkHome():
+def get_default_jdk_home():
     if DEFAULT_JDK_HOME is None:
         with open(GRADLE_DAEMON_JVM_PROPERTIES) as f:
             for line in f:
                 line = line.strip()
                 if line.startswith('toolchainVersion='):
                     version = line.split('=', 1)[1].strip()
-                    return GetJdkHome(f'jdk-{version}')
+                    return get_jdk_home(f'jdk-{version}')
         raise Exception('No toolchainVersion found in ' +
                         GRADLE_DAEMON_JVM_PROPERTIES)
     return DEFAULT_JDK_HOME
 
 
 # This JDK is used for compilation and tasks related to compilation of the compiler.
-def GetCompilationJdkHome():
-    return GetJdk11Home()
+def get_compilation_jdk_home():
+    return get_jdk11_home()
 
 
-def GetJdkHome(name):
+def get_jdk_home(name):
     if name == 'jdk8':
-        return GetJdk8Home()
+        return get_jdk8_home()
     third_party_jdk_root = os.path.join(JDK_DIRS, name)
     if not os.path.exists(third_party_jdk_root):
         raise Exception('No JDKs found in ' + third_party_jdk_root)
-    os_root = GetOSJavaHome(third_party_jdk_root)
+    os_root = get_os_java_home(third_party_jdk_root)
     if not os.path.exists(os_root):
         raise Exception('No platform JDK found in ' + os_root)
     return os_root
 
 
-def GetOSJavaHome(root):
+def get_os_java_home(root):
     if defines.is_linux():
         return os.path.join(root, 'linux')
     elif defines.is_osx():
@@ -58,7 +58,7 @@ def GetOSJavaHome(root):
                         ' (not detected as either of Linux, macOS or Windows)')
 
 
-def GetAllJdkDirs():
+def get_all_jdk_dirs():
     dirs = []
     for jdk in ALL_JDKS:
         root = os.path.join(JDK_DIRS, jdk)
@@ -78,19 +78,19 @@ def GetAllJdkDirs():
     return dirs
 
 
-def GetJdk21Home():
-    return GetJdkHome('jdk-21')
+def get_jdk21_home():
+    return get_jdk_home('jdk-21')
 
 
-def GetJdk17Home():
-    return GetJdkHome('jdk-17')
+def get_jdk17_home():
+    return get_jdk_home('jdk-17')
 
 
-def GetJdk11Home():
-    return GetJdkHome('jdk-11')
+def get_jdk11_home():
+    return get_jdk_home('jdk-11')
 
 
-def GetJdk8Home():
+def get_jdk8_home():
     root = os.path.join(JDK_DIRS, 'jdk8')
     if defines.is_linux():
         return os.path.join(root, 'linux-x86')
@@ -100,16 +100,16 @@ def GetJdk8Home():
         return os.environ['JAVA_HOME']
 
 
-def GetJavaExecutable(jdkHome):
+def get_java_executable(jdk_home):
     executable = 'java.exe' if defines.is_windows() else 'java'
-    return os.path.join(jdkHome, 'bin', executable)
+    return os.path.join(jdk_home, 'bin', executable)
 
 
-def GetJavacExecutable(jdkHome):
+def get_javac_executable(jdk_home):
     executable = 'javac.exe' if defines.is_windows() else 'javac'
-    return os.path.join(jdkHome, 'bin', executable)
+    return os.path.join(jdk_home, 'bin', executable)
 
 
-def GetJstackExecutable(jdkHome):
+def get_jstack_executable(jdk_home):
     executable = 'jstack.exe' if defines.is_windows() else 'jstack'
-    return os.path.join(jdkHome, 'bin', executable)
+    return os.path.join(jdk_home, 'bin', executable)

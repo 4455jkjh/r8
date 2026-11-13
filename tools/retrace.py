@@ -223,7 +223,7 @@ def run(map_path,
         debug=False,
         regex=None,
         verbose=False):
-    retrace_args = [jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())]
+    retrace_args = [jdk.get_java_executable(jdk.get_default_jdk_home())]
 
     if debug:
         retrace_args.append(

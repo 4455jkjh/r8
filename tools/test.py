@@ -666,7 +666,7 @@ def print_jstacks():
             columns = l.split()
             pid = columns[1]
             return_value = subprocess.call(
-                [jdk.GetJstackExecutable(jdk.GetDefaultJdkHome()), pid])
+                [jdk.get_jstack_executable(jdk.get_default_jdk_home()), pid])
             if return_value:
                 print('Could not jstack %s' % l)
 
