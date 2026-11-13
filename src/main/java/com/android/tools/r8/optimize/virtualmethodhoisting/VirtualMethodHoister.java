@@ -567,15 +567,19 @@ public class VirtualMethodHoister {
           .getMethodCollection()
           .replaceVirtualMethod(
               targetMethod.getReference(),
-              t ->
-                  sourceMethod
-                      .getDefinition()
-                      .toTypeSubstitutedMethodAsInlining(
-                          t.getReference(),
-                          factory,
-                          builder ->
-                              builder.modifyAccessFlags(
-                                  f -> f.demoteFromFinal().setAbstract().demoteFromAbstract())));
+              t -> {
+                DexEncodedMethod replacement =
+                    sourceMethod
+                        .getDefinition()
+                        .toTypeSubstitutedMethodAsInlining(
+                            t.getReference(),
+                            factory,
+                            builder ->
+                                builder.modifyAccessFlags(
+                                    f -> f.demoteFromFinal().setAbstract().demoteFromAbstract()));
+                t.setObsolete();
+                return replacement;
+              });
 
       // Record for lens and pruning.
       if (canRetargetInvokesToTargetMethod(sourceMethod, targetMethod)) {
