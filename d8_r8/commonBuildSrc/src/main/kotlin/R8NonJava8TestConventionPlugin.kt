@@ -26,14 +26,6 @@ public class R8NonJava8TestConventionPlugin : Plugin<Project> {
       add("runtimeOnlyDataScope", project(":testbase", "runtimeOnlyDataElements"))
     }
 
-    val sharedDepsScope = target.configurations.dependencyScope("sharedDepsScope")
-    val sharedDepsConfig =
-      target.configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-    target.dependencies.add(
-      sharedDepsScope.name,
-      target.dependencies.project(":third_party", "sharedDepsFiles"),
-    )
-    target.tasks.withType<JavaCompile>().configureEach { dependsOn(sharedDepsConfig) }
     target.tasks.withType<Test>().configureEach {
       TestingState.setUpTestingState(this)
       systemProperty(

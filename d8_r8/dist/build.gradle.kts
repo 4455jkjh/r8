@@ -126,19 +126,6 @@ dependencies {
   swissArmyKnifeScope(project(":swissarmyknife"))
 }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
-val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig =
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
-
-dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
-}
-
 val depsJarFilesScope = configurations.dependencyScope("depsJarFilesScope")
 
 configurations.consumable("depsJarFiles") { extendsFrom(depsJarFilesScope.get()) }

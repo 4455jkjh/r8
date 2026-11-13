@@ -22,12 +22,7 @@ java {
   }
 }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
 dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
   compileOnly(libs.asm)
   compileOnly(libs.guava)
   compileOnly(libs.protobuf)
@@ -35,7 +30,6 @@ dependencies {
 
 tasks {
   register<Jar>("keepAnnoAnnotationsJar") {
-    dependsOn(sharedDepsConfig)
     from(sourceSets.main.get().output)
     include("com/android/tools/r8/keepanno/annotations/*")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -43,7 +37,6 @@ tasks {
   }
 
   register<Jar>("keepAnnoLegacyAnnotationsJar") {
-    dependsOn(sharedDepsConfig)
     from(sourceSets.main.get().output)
     include("com/android/tools/r8/keepanno/annotations/*")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -51,14 +44,11 @@ tasks {
   }
 
   register<Jar>("keepAnnoAndroidXAnnotationsJar") {
-    dependsOn(sharedDepsConfig)
     from(sourceSets.main.get().output)
     include("androidx/annotation/keep/*")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
     archiveFileName.set("keepanno-annotations-androidx.jar")
   }
-
-  named<Jar>("jar") { dependsOn(sharedDepsConfig) }
 
   register<Javadoc>("keepAnnoAnnotationsDoc") {
     source = sourceSets.main.get().allJava
@@ -88,7 +78,6 @@ tasks {
   }
 
   register<Jar>("depsJarExceptAsm") {
-    dependsOn(sharedDepsConfig)
     from(Callable { dependenciesExceptAsm().map(::zipTree) })
     // TODO(b/428166503): Add license information.
     exclude("META-INF/*.kotlin_module")
@@ -106,7 +95,6 @@ tasks {
   }
 
   register<Jar>("depsJarOnlyAsm") {
-    dependsOn(sharedDepsConfig)
     from(Callable { dependenciesOnlyAsm().map(::zipTree) })
     // TODO(b/428166503): Add license information if needed.
     exclude("META-INF/*.kotlin_module")
@@ -124,7 +112,6 @@ tasks {
   }
 
   register<Jar>("toolsJar") {
-    dependsOn(sharedDepsConfig)
     from(sourceSets.main.get().output)
     // TODO(b/428166503): Add license information.
     entryCompression = ZipEntryCompression.STORED

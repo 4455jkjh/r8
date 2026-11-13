@@ -24,14 +24,7 @@ val bundledResourcesScope = configurations.dependencyScope("bundledResourcesScop
 val bundledResourcesConfig =
   configurations.resolvable("bundledResourcesConfig") { extendsFrom(bundledResourcesScope.get()) }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
-dependencies {
-  bundledResourcesScope(project(":third_party", "apiDatabase"))
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-}
+dependencies { bundledResourcesScope(project(":third_party", "apiDatabase")) }
 
 val internalJarScope = configurations.dependencyScope("internalJarScope")
 val internalJarResolvable =
@@ -64,19 +57,12 @@ tasks {
 }
 
 tasks.withType<JavaCompile> {
-  dependsOn(sharedDepsConfig)
   logger.info("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
 
-tasks.named<Jar>("sourcesJar") {
-  dependsOn(sharedDepsConfig)
-  from(bundledResourcesConfig)
-}
+tasks.named<Jar>("sourcesJar") { from(bundledResourcesConfig) }
 
-tasks.withType<ProcessResources> {
-  dependsOn(sharedDepsConfig)
-  from(bundledResourcesConfig)
-}
+tasks.withType<ProcessResources> { from(bundledResourcesConfig) }
 
 // Contains both :main jar and :utils jar but not third party dependencies.
 configurations.consumable("mainJar") {

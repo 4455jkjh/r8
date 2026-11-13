@@ -87,7 +87,13 @@ Follow the instructions in the above section.
    1. Select `r8/third_party/gradle` as "Local installation" in "Distribution"
 3. Sync the project using Gradle
 
-In order to run tests it may currently be necessary to run `tools/test.py` from the command line first.
+If third-party dependency downloads fail when running tests, try running:
+
+    $ tools/gradle.py downloadAllThirdparty
+
+External contributors without Google internal access should pass `--no-internal`:
+
+    $ tools/gradle.py --no-internal downloadAllThirdparty
 
 ## <a name="running-d8"></a>Running D8
 

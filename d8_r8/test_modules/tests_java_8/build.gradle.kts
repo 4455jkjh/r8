@@ -46,13 +46,7 @@ val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResources =
   configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
 dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
@@ -162,14 +156,8 @@ tasks {
       outputDir = layout.buildDirectory.dir("generated/test/java")
     }
   java.sourceSets.test.configure { java.srcDir(createArtTests) }
-  "compileTestJava" {
-    dependsOn(sharedDepsConfig)
-    dependsOn(":testbase:compileJava")
-  }
-  withType<JavaCompile> {
-    dependsOn(sharedDepsConfig)
-    dependsOn(":testbase:compileJava")
-  }
+  "compileTestJava" { dependsOn(":testbase:compileJava") }
+  withType<JavaCompile> { dependsOn(":testbase:compileJava") }
 
   withType<JavaExec> {
     if (name.endsWith("main()")) {
@@ -234,7 +222,6 @@ fun Test.setupTestTask() {
       .split(File.pathSeparator)[0],
   )
   dependsOn(distDepsFiles)
-  dependsOn(sharedDepsConfig)
   dependsOn(project(":dist").tasks.named("r8AssistantLib"))
   systemProperty(
     "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
@@ -280,13 +267,7 @@ subprojects {
     toolchain { languageVersion = JavaLanguageVersion.of(11) }
   }
 
-  val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-  val sharedDepsConfig =
-    configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
   dependencies {
-    add(sharedDepsScope.name, project(":third_party", "sharedDepsFiles"))
-
     add("implementation", project(":main", "mainClassesOutput"))
     add("runtimeOnly", project(":main", "mainResources"))
     add("implementation", project(":keepanno", "keepannoClasses"))
@@ -294,8 +275,6 @@ subprojects {
     add("implementation", project(":testbase", "depsJar"))
     runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   }
-
-  tasks.withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
   tasks.withType<Test> { setupTestTask() }
 
