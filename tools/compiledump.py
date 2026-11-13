@@ -935,7 +935,7 @@ def summarize_jar(jar):
 
 def run(args, otherargs):
     gradle.ensure_jdk()
-    jdkhome = jdk.GetJdkRoot(args.jdk) if args.jdk else None
+    jdkhome = jdk.GetJdkHome(args.jdk) if args.jdk else None
     if args.summary:
         summarize_dump_files(otherargs)
     elif args.loop:
