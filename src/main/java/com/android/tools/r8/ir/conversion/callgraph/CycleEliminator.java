@@ -141,8 +141,19 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
   // a cycle is found.
   private final TargetStack writerStack = new TargetStack();
 
-  // Set of nodes that have been visited entirely.
+  // Set of nodes that have been visited entirely in the current traversal and may still reach a
+  // cycle.
   private Set<N> marked = Sets.newIdentityHashSet();
+
+  // Set of nodes that have been visited entirely from which no cycle can be reached. Kept across
+  // traversals so that these nodes are not visited again.
+  private final Set<N> acyclic = Sets.newIdentityHashSet();
+
+  // The nodes on the DFS stack below this depth may still be able to reach a cycle after they have
+  // been visited entirely, and must therefore be added to `marked` rather than `acyclic`. This is
+  // set to the size of the stack when a cycle is found and the edge that closes it is kept, and
+  // when a node in `marked` is reached.
+  private int possiblyCyclicStackDepth = 0;
 
   // Call edges that should be removed when the caller has been processed. These are not removed
   // directly since that would lead to ConcurrentModificationExceptions.
@@ -177,6 +188,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
   private void prepareForNewTraversal() {
     assert calleesToBeRemoved.isEmpty();
     assert clinitCallStack.isEmpty();
+    assert possiblyCyclicStackDepth == 0;
     assert stack.isEmpty();
     assert stackEntryInfo.isEmpty();
     assert writersToBeRemoved.isEmpty();
@@ -192,6 +204,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
     assert stack.isEmpty();
     assert stackEntryInfo.isEmpty();
     assert writerStack.isEmpty();
+    acyclic.clear();
     removedCallEdges = new IdentityHashMap<>();
   }
 
@@ -260,8 +273,12 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
       WorkItem<N> workItem = workItems.removeFirst();
       if (workItem.isNode()) {
         N node = workItem.asNode().node;
+        if (acyclic.contains(node)) {
+          continue;
+        }
         if (marked.contains(node)) {
           // Already visited all nodes that can be reached from this node.
+          possiblyCyclicStackDepth = stack.size();
           continue;
         }
 
@@ -288,7 +305,13 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
         } else {
           assert !iteratorWorkItem.calleesAndWriters.hasNext();
           pop(iteratorWorkItem.callerOrReader);
-          marked.add(iteratorWorkItem.callerOrReader);
+          // The popped node was at index stack.size() on the stack.
+          if (stack.size() < possiblyCyclicStackDepth) {
+            possiblyCyclicStackDepth = stack.size();
+            marked.add(iteratorWorkItem.callerOrReader);
+          } else {
+            acyclic.add(iteratorWorkItem.callerOrReader);
+          }
 
           Collection<N> calleesToBeRemovedFromCaller =
               calleesToBeRemoved.remove(iteratorWorkItem.callerOrReader);
@@ -362,6 +385,7 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
 
       // The call edge cannot be removed due to force inlining. Find another call edge in the
       // cycle that can safely be removed instead.
+      possiblyCyclicStackDepth = stack.size();
       LinkedList<N> cycle = extractCycle(calleeOrWriter);
 
       // Break the cycle by finding an edge that can be removed without breaking force
@@ -429,6 +453,8 @@ public class CycleEliminator<N extends CycleEliminatorNode<N>> {
             <= currentCalleeOrWriterStackEntryInfo.index) {
       return false;
     }
+    // The edge that closes the cycle is kept.
+    possiblyCyclicStackDepth = stack.size();
     if (targetStack.hasProcessedEntryInCycle(currentCalleeOrWriterStackEntryInfo)) {
       return true;
     }
