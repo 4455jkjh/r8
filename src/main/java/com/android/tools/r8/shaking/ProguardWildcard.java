@@ -34,6 +34,8 @@ public abstract class ProguardWildcard {
   static class Pattern extends ProguardWildcard {
     final String pattern;
     private String captured = null;
+    // Whether a back reference reads the captured value. Only set before the rule is evaluated.
+    private boolean referenced = false;
 
     Pattern(String pattern) {
       this.pattern = pattern;
@@ -44,13 +46,17 @@ public abstract class ProguardWildcard {
     }
 
     @Override
-    synchronized void setCaptured(String captured) {
-      this.captured = captured;
+    void setCaptured(String captured) {
+      if (referenced) {
+        synchronized (this) {
+          this.captured = captured;
+        }
+      }
     }
 
     @Override
-    synchronized void clearCaptured() {
-      captured = null;
+    void clearCaptured() {
+      setCaptured(null);
     }
 
     @Override
@@ -64,6 +70,7 @@ public abstract class ProguardWildcard {
         return this;
       }
       Pattern copy = new Pattern(pattern);
+      copy.referenced = referenced;
       copy.setCaptured(captured);
       return copy;
     }
@@ -111,6 +118,7 @@ public abstract class ProguardWildcard {
 
     void setReference(Pattern reference) {
       this.reference = reference;
+      reference.referenced = true;
     }
 
     @Override
