@@ -29,7 +29,12 @@ public abstract class CfPostProcessingDesugaringCollection {
 
   public static CfPostProcessingDesugaringCollection createForD8(
       AppView<?> appView, InterfaceMethodProcessorFacade interfaceMethodProcessorFacade) {
-    return create(appView, interfaceMethodProcessorFacade, null);
+    InternalOptions options = appView.options();
+    if (appView.app().getFlags().hasReadProgramClassFromCf()
+        || options.partialSubCompilationConfiguration != null) {
+      return create(appView, interfaceMethodProcessorFacade, null);
+    }
+    return empty();
   }
 
   public static CfPostProcessingDesugaringCollection createForR8CfToCfDesugaring(
