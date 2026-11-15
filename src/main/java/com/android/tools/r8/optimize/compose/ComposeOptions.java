@@ -13,6 +13,9 @@ public class ComposeOptions {
   public boolean enableSimplifyDefaults =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.compose.enableSimplifyDefaults", false);
+  public boolean enableUnusedComposableArgumentSimplifier =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.compose.enableUnusedComposableArgumentSimplifier", false);
 
   public ComposeOptions(InternalOptions options) {
     this.options = options;
@@ -20,5 +23,9 @@ public class ComposeOptions {
 
   public boolean isSimplifyDefaultsEnabled() {
     return enableSimplifyDefaults && options.isOptimizing();
+  }
+
+  public boolean isUnusedComposableArgumentSimplifierEnabled() {
+    return enableUnusedComposableArgumentSimplifier && options.isRelease();
   }
 }
