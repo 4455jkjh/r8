@@ -44,7 +44,7 @@ public class StringConcatFactoryTest extends StringConcatFactoryTestBase {
 
   private void checkInvokeDynamic(CodeInspector inspector) {
     if (parameters.isCfRuntime()) {
-      checkInvokeDynamic(inspector, MAIN, true, "main");
+      checkInvokeDynamic(inspector, MAIN, true, "main", "Hello \1");
     } else {
       checkNoInvokeDynamic(inspector, MAIN, "main");
     }

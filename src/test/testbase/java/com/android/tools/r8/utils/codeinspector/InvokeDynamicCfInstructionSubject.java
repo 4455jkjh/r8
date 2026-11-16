@@ -19,7 +19,6 @@ public class InvokeDynamicCfInstructionSubject extends CfInstructionSubject
   public DexCallSite getCallSite() {
     return ((CfInvokeDynamic) instruction).getCallSite();
   }
-  ;
 
   @Override
   public InvokeDynamicInstructionSubject asInvokeDynamic() {

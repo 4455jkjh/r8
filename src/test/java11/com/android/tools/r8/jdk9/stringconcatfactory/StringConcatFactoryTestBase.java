@@ -16,13 +16,17 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
+import com.android.tools.r8.utils.codeinspector.InvokeDynamicInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class StringConcatFactoryTestBase extends TestBase {
 
@@ -65,24 +69,32 @@ public abstract class StringConcatFactoryTestBase extends TestBase {
       CodeInspector inspector,
       Class<?> clazz,
       boolean expectMakeConcatWithConstants,
-      String... methodNames) {
-    assertTrue(methodNames.length > 0);
+      String methodName,
+      String... expectedBootstrapArgs) {
+    assertTrue(expectedBootstrapArgs.length > 0);
     DexString expectedMethodName =
         expectMakeConcatWithConstants
             ? inspector.getFactory().stringConcatFactoryMembers.makeConcatWithConstants.getName()
             : inspector.getFactory().stringConcatFactoryMembers.makeConcat.getName();
-    for (String methodName : methodNames) {
-      MethodSubject method = inspector.clazz(clazz).uniqueMethodWithOriginalName(methodName);
-      assertThat(method, isPresent());
-      assertTrue(method.streamInstructions().anyMatch(InstructionSubject::isInvokeDynamic));
-      assertTrue(
-          method
-              .streamInstructions()
-              .filter(InstructionSubject::isInvokeDynamic)
-              .map(InstructionSubject::asInvokeDynamic)
-              .allMatch(
-                  instruction ->
-                      instruction.getCallSite().methodName.isIdenticalTo(expectedMethodName)));
+    MethodSubject method = inspector.clazz(clazz).uniqueMethodWithOriginalName(methodName);
+    assertThat(method, isPresent());
+    List<InvokeDynamicInstructionSubject> invokeDynamics =
+        method
+            .streamInstructions()
+            .filter(InstructionSubject::isInvokeDynamic)
+            .map(InstructionSubject::asInvokeDynamic)
+            .collect(Collectors.toList());
+    assertEquals(1, invokeDynamics.size());
+    InvokeDynamicInstructionSubject invokeDynamic = invokeDynamics.get(0);
+    assertEquals(expectedMethodName, invokeDynamic.getCallSite().methodName);
+    if (expectMakeConcatWithConstants) {
+      assertEquals(
+          ListUtils.map(
+              expectedBootstrapArgs,
+              s -> new DexValueString(inspector.getFactory().createString(s))),
+          invokeDynamic.getBootstrapArgs());
+    } else {
+      assertTrue(invokeDynamic.getBootstrapArgs().isEmpty());
     }
   }
 

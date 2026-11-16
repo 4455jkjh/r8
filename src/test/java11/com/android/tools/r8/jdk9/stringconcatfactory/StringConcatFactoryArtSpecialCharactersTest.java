@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.jdk9.stringconcatfactory;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -39,8 +41,16 @@ public class StringConcatFactoryArtSpecialCharactersTest extends StringConcatFac
     compiledWithMakeConcatJar = compileWithMakeConcat(MAIN);
   }
 
-  private void checkInvokeDynamic(CodeInspector inspector, boolean expectMakeConcatWithConstants) {
-    checkInvokeDynamic(inspector, MAIN, expectMakeConcatWithConstants, "testSpecialCharacters");
+  private void checkInvokeDynamic(
+      CodeInspector inspector,
+      boolean expectMakeConcatWithConstants,
+      String... expectedBootstrapArgs) {
+    checkInvokeDynamic(
+        inspector,
+        MAIN,
+        expectMakeConcatWithConstants,
+        "testSpecialCharacters",
+        expectedBootstrapArgs);
   }
 
   @Test
@@ -52,7 +62,10 @@ public class StringConcatFactoryArtSpecialCharactersTest extends StringConcatFac
             b -> b.addProgramFiles(compiledWithMakeConcatJar),
             b -> b.addProgramClasses(MAIN))
         .run(parameters.getRuntime(), MAIN)
-        .inspect(inspector -> checkInvokeDynamic(inspector, !makeConcatFromJavac))
+        .inspect(
+            inspector ->
+                checkInvokeDynamic(
+                    inspector, !makeConcatFromJavac, "\2\1\2\1\2", "Special: \1", "\2", "\1\2"))
         .assertSuccessWithOutput(EXPECTED);
   }
 
@@ -63,10 +76,12 @@ public class StringConcatFactoryArtSpecialCharactersTest extends StringConcatFac
         .addProgramClasses(MAIN)
         .apply(this::enableStringConcatFactoryForDex)
         .compile()
-        .inspect(inspector -> checkInvokeDynamic(inspector, true))
+        // TODO(b/576559667): The recipe should not inline \1 and \2 from constants.
+        .inspect(inspector -> checkInvokeDynamic(inspector, true, "Special: \1\1\2\1\1\2"))
         .run(parameters.getRuntime(), MAIN)
         // TODO(b/576559667): This should work.
-        .assertFailureWithErrorThatThrows(BootstrapMethodError.class);
+        .assertFailureWithErrorThatMatches(
+            containsString("StringConcatException: Unsupported extra arguments"));
   }
 
   @Test
@@ -83,9 +98,12 @@ public class StringConcatFactoryArtSpecialCharactersTest extends StringConcatFac
         .enableProguardTestOptions()
         .addKeepRules("-neverinline class " + MAIN.getTypeName() + "{ *** test*(...); }")
         .compile()
-        .inspect(inspector -> checkInvokeDynamic(inspector, true))
+        // TODO(b/576559667): The recipe should not inline \1 and \2 from constants.
+        .inspect(inspector -> checkInvokeDynamic(inspector, true, "Special: \1\1\2\1\1\2"))
         .run(parameters.getRuntime(), MAIN)
         // TODO(b/576559667): This should work (both on CF and ART).
-        .assertFailureWithErrorThatThrows(BootstrapMethodError.class);
+        .assertFailureWithErrorThatMatchesIf(
+            parameters.isDexRuntime(),
+            containsString("StringConcatException: Unsupported extra arguments"));
   }
 }

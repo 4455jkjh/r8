@@ -5,7 +5,13 @@
 package com.android.tools.r8.utils.codeinspector;
 
 import com.android.tools.r8.graph.DexCallSite;
+import com.android.tools.r8.graph.DexValue;
+import java.util.List;
 
 public interface InvokeDynamicInstructionSubject extends InstructionSubject {
   DexCallSite getCallSite();
+
+  default List<DexValue> getBootstrapArgs() {
+    return getCallSite().getBootstrapArgs();
+  }
 }

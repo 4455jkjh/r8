@@ -47,8 +47,10 @@ public class StringConcatFactoryArtTest extends StringConcatFactoryTestBase {
         MAIN,
         expectMakeConcatWithConstants,
         "testPrimitives",
-        "testStrings",
-        "testNoConstants");
+        "Values: \1, \1, \1, \1, \1, \1, \1, \1");
+    checkInvokeDynamic(
+        inspector, MAIN, expectMakeConcatWithConstants, "testStrings", "Strings: \1, \1");
+    checkInvokeDynamic(inspector, MAIN, expectMakeConcatWithConstants, "testNoConstants", "\1\1\1");
   }
 
   @Test

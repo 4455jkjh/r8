@@ -42,14 +42,19 @@ public class StringConcatFactoryArtValueOfTest extends StringConcatFactoryTestBa
   }
 
   private void checkInvokeDynamic(CodeInspector inspector, boolean expectMakeConcatWithConstants) {
+    String expectedRecipe = "Values: \1, \1, \1, \1, \1, \1, \1, \1";
+    checkInvokeDynamic(
+        inspector, MAIN, expectMakeConcatWithConstants, "testPrimitivesValueOf", expectedRecipe);
+    checkInvokeDynamic(
+        inspector, MAIN, expectMakeConcatWithConstants, "testBoxedPrimitives", expectedRecipe);
     checkInvokeDynamic(
         inspector,
         MAIN,
         expectMakeConcatWithConstants,
-        "testPrimitivesValueOf",
-        "testBoxedPrimitives",
         "testBoxedPrimitivesValueOf",
-        "testNestedStringValueOf");
+        expectedRecipe);
+    checkInvokeDynamic(
+        inspector, MAIN, expectMakeConcatWithConstants, "testNestedStringValueOf", expectedRecipe);
   }
 
   private void checkValueOf(

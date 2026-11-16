@@ -46,7 +46,12 @@ public class StringConcatFactoryArtArrayTest extends StringConcatFactoryTestBase
   }
 
   private void checkInvokeDynamic(CodeInspector inspector, boolean expectMakeConcatWithConstants) {
-    checkInvokeDynamic(inspector, MAIN, expectMakeConcatWithConstants, "testArrays");
+    checkInvokeDynamic(
+        inspector,
+        MAIN,
+        expectMakeConcatWithConstants,
+        "testArrays",
+        "Values: \1, \1, \1, \1, \1, \1, \1, \1, \1, \1");
   }
 
   @Test
