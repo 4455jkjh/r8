@@ -127,7 +127,7 @@ public class AssumeMethodInfoCollection {
     AssumeInfo rewrittenUnconditionalInfo =
         unconditionalInfo != null ? unconditionalInfo.rewrittenWithLens(appView, graphLens) : null;
     if (conditionalInfos.isEmpty()) {
-      return ObjectUtils.identical(rewrittenUnconditionalInfo, unconditionalInfo)
+      return ObjectUtils.notIdentical(rewrittenUnconditionalInfo, unconditionalInfo)
           ? new AssumeMethodInfoCollection(rewrittenUnconditionalInfo, conditionalInfos)
           : this;
     }
