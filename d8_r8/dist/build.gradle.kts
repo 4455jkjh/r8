@@ -30,24 +30,38 @@ val r8Deps =
     isCanBeResolved = true
   }
 
-// Dependencies that are included without their transitive dependencies.
-val r8NonTransitiveDepsScope = configurations.dependencyScope("r8NonTransitiveDepsScope")
-val r8NonTransitiveDeps =
-  configurations.resolvable("r8NonTransitiveDeps") {
-    extendsFrom(r8NonTransitiveDepsScope.get())
-    isTransitive = false
-  }
-
 dependencies {
   r8Deps(libs.bundles.compilerDeps)
-  r8NonTransitiveDepsScope(libs.bundles.nonTransitiveDeps)
+  r8Deps(libs.toolsCommon) {
+    // R8's resource shrinker does not use JNA native platform helpers in tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+  }
+  r8Deps(libs.toolsLayoutlibApi) {
+    // R8 only uses layoutlib resource model types, not its kxml2 parser or JNA via tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+  }
+  r8Deps(libs.toolsSdkCommon) {
+    // R8's resource shrinker only uses a subset of sdk-common and never invokes Studio SDK
+    // management, ADB/ddmlib, kxml2, JAXB, BouncyCastle, analytics, JNA, or kotlin-reflect.
+    exclude(group = "com.android.tools", module = "sdklib")
+    exclude(group = "com.android.tools.analytics-library")
+    exclude(group = "com.android.tools.ddms", module = "ddmlib")
+    exclude(group = "javax.inject", module = "javax.inject")
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+    exclude(group = "org.bouncycastle")
+    exclude(group = "org.glassfish.jaxb", module = "jaxb-runtime")
+    exclude(group = "org.jetbrains.intellij.deps", module = "trove4j")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-reflect")
+  }
 }
 
 spdxSbom {
   targets {
     create("r8") {
       // The dependencies that are included in the dependencies jar.
-      configurations.set(listOf(r8Deps.name, r8NonTransitiveDeps.name))
+      configurations.set(listOf(r8Deps.name))
       scm {
         uri.set("https://r8.googlesource.com/r8/")
         if (project.hasProperty("spdxRevision")) {
@@ -184,7 +198,7 @@ tasks {
       val injected = project.objects.newInstance<InjectedArcOps>()
       from(
         Callable {
-          (r8Deps.incoming.files + r8NonTransitiveDeps.get().incoming.files)
+          r8Deps.incoming.files
             .filter {
               val path = it.absolutePath
               path.contains("third_party") &&
@@ -251,10 +265,8 @@ tasks {
       libraryLicenses = File(getRootDir(), "library-licensing")
       // The artifacts that are included in the dependencies jar.
       dependencies =
-        r8Deps.incoming.artifacts.resolvedArtifacts.zip(
-          r8NonTransitiveDeps.flatMap { it.incoming.artifacts.resolvedArtifacts }
-        ) { artifacts, nonTransitiveArtifacts ->
-          (artifacts + nonTransitiveArtifacts).mapNotNull {
+        r8Deps.incoming.artifacts.resolvedArtifacts.map { artifacts ->
+          artifacts.mapNotNull {
             val compId = it.id.componentIdentifier
             if (compId is ModuleComponentIdentifier) {
               "${compId.group}:${compId.module}"

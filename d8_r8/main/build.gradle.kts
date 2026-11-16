@@ -45,7 +45,29 @@ dependencies {
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":utils"))
   compileOnly(libs.bundles.compilerDeps)
-  compileOnly(libs.bundles.nonTransitiveDeps)
+  compileOnly(libs.toolsCommon) {
+    // R8's resource shrinker does not use JNA native platform helpers in tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+  }
+  compileOnly(libs.toolsLayoutlibApi) {
+    // R8 only uses layoutlib resource model types, not its kxml2 parser or JNA via tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+  }
+  compileOnly(libs.toolsSdkCommon) {
+    // R8's resource shrinker only uses a subset of sdk-common and never invokes Studio SDK
+    // management, ADB/ddmlib, kxml2, JAXB, BouncyCastle, analytics, JNA, or kotlin-reflect.
+    exclude(group = "com.android.tools", module = "sdklib")
+    exclude(group = "com.android.tools.analytics-library")
+    exclude(group = "com.android.tools.ddms", module = "ddmlib")
+    exclude(group = "javax.inject", module = "javax.inject")
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+    exclude(group = "org.bouncycastle")
+    exclude(group = "org.glassfish.jaxb", module = "jaxb-runtime")
+    exclude(group = "org.jetbrains.intellij.deps", module = "trove4j")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-reflect")
+  }
 }
 
 tasks {
