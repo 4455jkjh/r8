@@ -187,7 +187,7 @@ final class KeepRuleMatcher {
 
   private final KeepRuleSet rules;
   private final KeepRequirements facts;
-  private final boolean allowNarrowingAnnotatedRules;
+  private final boolean allowNarrowing;
   private final Map<ProguardIfRule, Optional<String>> firstPreconditionClass =
       new IdentityHashMap<>();
   private final Map<ProguardIfRule, ClassNameIndex<String>> preconditionClasses =
@@ -198,10 +198,10 @@ final class KeepRuleMatcher {
     this(rules, facts, false);
   }
 
-  KeepRuleMatcher(KeepRuleSet rules, KeepRequirements facts, boolean allowNarrowingAnnotatedRules) {
+  KeepRuleMatcher(KeepRuleSet rules, KeepRequirements facts, boolean allowNarrowing) {
     this.rules = rules;
     this.facts = facts;
-    this.allowNarrowingAnnotatedRules = allowNarrowingAnnotatedRules;
+    this.allowNarrowing = allowNarrowing;
   }
 
   /** Computes the coverage of a requirement by all rules. */
@@ -320,6 +320,9 @@ final class KeepRuleMatcher {
       if (subsequentCoverage.getCoverage() == Coverage.NONE) {
         return subsequentCoverage;
       }
+      if (allowNarrowing && isBroadWildcardIfRule(ifRule)) {
+        return subsequentCoverage;
+      }
       String matched = getFirstPreconditionClass(ifRule, requirement.getClassName());
       return conditional(
           subsequentCoverage,
@@ -335,7 +338,7 @@ final class KeepRuleMatcher {
       // subsequent rule refer to the matched candidate.
       RuleCoverage subsequentCoverage = checkApplicableKeepRule(requirement, subsequentRule, rule);
       if (subsequentCoverage.getCoverage() != Coverage.NONE) {
-        if (isBroadWildcardIfRule(ifRule)) {
+        if (allowNarrowing && isBroadWildcardIfRule(ifRule)) {
           return subsequentCoverage;
         }
         return conditional(subsequentCoverage, getPreconditionReason(ifRule, candidate));
@@ -456,7 +459,7 @@ final class KeepRuleMatcher {
     Match classTypeMatch = matchClassType(keepRule, className);
     addReason(classTypeMatch, undecided);
     if (keepRule.hasClassAnnotations()
-        && (!allowNarrowingAnnotatedRules || keepRule.getMemberRules().isEmpty())) {
+        && (!allowNarrowing || keepRule.getMemberRules().isEmpty())) {
       undecided.add("class annotations are not in the log");
     }
     if (!keepRule.getClassAccessFlags().isDefaultFlags()

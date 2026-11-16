@@ -443,6 +443,45 @@ public class DiffCommandTest extends AssistantCommandTestBase {
   }
 
   @Test
+  public void testBackrefFreeWildcardIfAndAnnotationAttributesSummary() throws Exception {
+    String caller = "com.example.Main.main(Main.java:1)";
+    Path log =
+        writeFile(
+            "if_and_anno.jsonl",
+            request(1, "CLASS_FOR_NAME", caller, "com.example.plugin.CsvPlugin", "true", LOADER),
+            returned(1, "com.example.plugin.CsvPlugin"),
+            request(
+                2,
+                "CLASS_GET_ANNOTATION",
+                caller,
+                "com.example.plugin.CsvPlugin",
+                "com.example.PluginTag"),
+            returned(2, "@com.example.PluginTag"));
+    Path rules =
+        writeFile(
+            "rules_if_anno.pro",
+            "-if class com.example.Flag -keep class com.example.plugin.** { *; }");
+    Path proposed = temp.getRoot().toPath().resolve("proposed_if_anno.pro");
+    ProcessResult result =
+        run(new DiffCommand(), "--log", log, "--rules", rules, "--output", proposed);
+    assertEquals(result.toString(), 0, result.exitCode);
+    assertEquals("", result.stderr);
+    assertThat(result.stdout, containsString("Rules: 1 (1 narrowed)\n"));
+    assertThat(
+        result.stdout,
+        containsString(
+            "Not kept by the rules: the RuntimeVisibleAnnotations and"
+                + " RuntimeVisibleParameterAnnotations attributes, used by runtime annotation"
+                + " inspection."));
+    String proposedText = readFile(proposed);
+    assertThat(proposedText, containsString("-keep class com.example.plugin.CsvPlugin"));
+    assertThat(
+        proposedText,
+        containsString(
+            "-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations"));
+  }
+
+  @Test
   public void testUsageErrors() {
     AssistantUsageException e =
         assertThrows(AssistantUsageException.class, () -> run(new DiffCommand()));

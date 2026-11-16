@@ -753,6 +753,28 @@ public class SuggestCommandTest extends AssistantCommandTestBase {
   }
 
   @Test
+  public void testBroadWildcardIfRuleNotTreatedAsCovered() throws Exception {
+    String caller = "com.example.Main.main(Main.java:1)";
+    Path log =
+        writeFile(
+            "broad_if_suggest.jsonl",
+            request(1, "CLASS_FOR_NAME", caller, "com.example.Flag", "true", LOADER),
+            returned(1, "com.example.Flag"),
+            request(2, "CLASS_FOR_NAME", caller, "com.example.plugin.Csv", "true", LOADER),
+            returned(2, "com.example.plugin.Csv"));
+    Path rules =
+        writeFile(
+            "broad_if.pro",
+            "-keep class com.example.Flag",
+            "-if class **.Flag extends com.example.Base { void nope(); }"
+                + " -keep class <1>.plugin.** { *; }");
+    ProcessResult result = run(new SuggestCommand(), "--log", log, "--rules", rules);
+    assertEquals(result.toString(), 0, result.exitCode);
+    assertEquals("", result.stderr);
+    assertThat(result.stdout, containsString("-keep class com.example.plugin.Csv"));
+  }
+
+  @Test
   public void testUsageErrors() {
     AssistantUsageException e =
         assertThrows(AssistantUsageException.class, () -> run(new SuggestCommand()));

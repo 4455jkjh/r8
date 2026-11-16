@@ -583,6 +583,10 @@ final class KeepRuleDiff {
     return addSignatureAttribute;
   }
 
+  boolean needsAnnotationAttributes() {
+    return addAnnotationAttributes;
+  }
+
   String getProposedRules() {
     return proposedRules;
   }

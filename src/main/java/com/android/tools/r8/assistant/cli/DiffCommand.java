@@ -60,11 +60,13 @@ public class DiffCommand extends AssistantCommand {
             " rule it reports whether the logs justify it, whether it can be narrowed to what",
             " the logs show, or whether nothing it keeps was observed. It lists what the logs",
             " require but the rules do not keep (a crash risk in the release build), and",
-            " proposes rules. Rules are matched with R8's matchers. The logs show no class",
-            " hierarchy, annotations or most modifiers, so rules that select by them are",
-            " reported as undecided and kept as is, as are -if rules. Removing a rule that was",
-            " not observed is only safe if the logged runs exercised every code path that needs",
-            " it. Exit codes: 0 on success, 1 if the logs contain no events, 2 for invalid",
+            " proposes rules. Rules are matched with R8's matchers. Rules whose selectors",
+            " the logs alone cannot decide (such as extends/implements, member annotations,",
+            " class annotations without members, native-only rules, or unlogged modifiers)",
+            " are reported as undecided and kept as is, as are -if rules unless their",
+            " target combines ** with member rules. Removing a rule that was not observed",
+            " is only safe if the logged runs exercised every code path that needs it.",
+            " Exit codes: 0 on success, 1 if the logs contain no events, 2 for invalid",
             " input.",
             " Options:");
     return new CliParser<DiffCommand>(header)
@@ -205,6 +207,13 @@ public class DiffCommand extends AssistantCommand {
       out.println(
           "Not kept by the rules: the Signature attribute (-keepattributes Signature), used by"
               + " getGenericSuperclass() and getGenericInterfaces().");
+    }
+    if (diff.needsAnnotationAttributes()) {
+      out.println();
+      out.println(
+          "Not kept by the rules: the RuntimeVisibleAnnotations and"
+              + " RuntimeVisibleParameterAnnotations attributes, used by runtime annotation"
+              + " inspection.");
     }
   }
 
