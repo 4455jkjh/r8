@@ -7,19 +7,22 @@ package com.android.tools.r8.profile.art.completeness;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions.InlinerOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,14 +36,20 @@ public class MovedPrivateInterfaceMethodProfileRewritingTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
+  @Parameter(1)
+  public boolean enableDexVersion35UpToApi30;
+
+  @Parameters(name = "{0}, enableDexVersion35UpToApi30={1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
+        BooleanUtils.values());
   }
 
   @Test
   public void testJvm() throws Exception {
     parameters.assumeJvmTestParameters();
+    assumeFalse(enableDexVersion35UpToApi30);
     testForJvm(parameters)
         .addProgramClasses(Main.class, A.class)
         .addProgramClassFileData(getTransformedInterface())
@@ -50,10 +59,15 @@ public class MovedPrivateInterfaceMethodProfileRewritingTest extends TestBase {
 
   @Test
   public void testD8() throws Exception {
+    assumeFalse(parameters.isCfRuntime() && enableDexVersion35UpToApi30);
     testForD8(parameters.getBackend())
         .addProgramClasses(Main.class, A.class)
         .addProgramClassFileData(getTransformedInterface())
         .addArtProfileForRewriting(getArtProfile())
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableDexVersion35UpToApi30 =
+                    enableDexVersion35UpToApi30)
         .setMinApi(parameters)
         .compile()
         .inspectResidualArtProfile(this::inspectD8)
@@ -64,12 +78,17 @@ public class MovedPrivateInterfaceMethodProfileRewritingTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
+    assumeFalse(parameters.isCfRuntime() && enableDexVersion35UpToApi30);
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class, A.class)
         .addProgramClassFileData(getTransformedInterface())
         .addKeepMainRule(Main.class)
         .addArtProfileForRewriting(getArtProfile())
         .addOptionsModification(InlinerOptions::disableInlining)
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableDexVersion35UpToApi30 =
+                    enableDexVersion35UpToApi30)
         .enableNoVerticalClassMergingAnnotations()
         .setMinApi(parameters)
         .compile()
@@ -101,7 +120,8 @@ public class MovedPrivateInterfaceMethodProfileRewritingTest extends TestBase {
     inspect(
         profileInspector,
         inspector,
-        parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring());
+        parameters.canUseDefaultAndStaticInterfaceMethodsWhenDesugaring(),
+        true);
   }
 
   private void inspectR8(ArtProfileInspector profileInspector, CodeInspector inspector)
@@ -109,20 +129,29 @@ public class MovedPrivateInterfaceMethodProfileRewritingTest extends TestBase {
     inspect(
         profileInspector,
         inspector,
-        parameters.isCfRuntime() || parameters.canUseDefaultAndStaticInterfaceMethods());
+        parameters.isCfRuntime() || parameters.canUseDefaultAndStaticInterfaceMethods(),
+        false);
   }
 
   private void inspect(
       ArtProfileInspector profileInspector,
       CodeInspector inspector,
-      boolean canUseDefaultAndStaticInterfaceMethods)
+      boolean canUseDefaultAndStaticInterfaceMethods,
+      boolean isD8)
       throws Exception {
     if (canUseDefaultAndStaticInterfaceMethods) {
       ClassSubject iClassSubject = inspector.clazz(I.class);
       assertThat(iClassSubject, isPresent());
 
-      MethodSubject privateInterfaceMethodSubject = iClassSubject.uniqueMethodWithOriginalName("m");
+      boolean isStaticizedInD8 =
+          isD8
+              && enableDexVersion35UpToApi30
+              && parameters.isDexRuntime()
+              && parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R);
+      MethodSubject privateInterfaceMethodSubject =
+          iClassSubject.uniqueMethodWithOriginalName(isStaticizedInD8 ? "m$staticized" : "m");
       assertThat(privateInterfaceMethodSubject, isPresent());
+      assertEquals(!isD8 || isStaticizedInD8, privateInterfaceMethodSubject.isStatic());
 
       profileInspector
           .assertContainsClassRule(iClassSubject)

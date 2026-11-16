@@ -6,18 +6,20 @@ package com.android.tools.r8.desugar;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.Disassemble;
 import com.android.tools.r8.Disassemble.DisassembleCommand;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.debug.DebugTestBase;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.Command;
 import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
@@ -41,9 +43,13 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+  @Parameter(1)
+  public boolean enableDexVersion35UpToApi30;
+
+  @Parameters(name = "{0}, enableDexVersion35UpToApi30={1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   private void runDebugger(DebugTestConfig config, boolean isR8) throws Throwable {
@@ -62,6 +68,11 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
                     ? Collections.singletonList(checkLocal("this"))
                     : ImmutableList.of(checkNoLocal("this"), checkLocal("_this")));
 
+    boolean isLambdaMethodStaticizedInR8 =
+        enableDexVersion35UpToApi30
+            && parameters.isDexRuntime()
+            && parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R);
+
     runDebugTest(
         config,
         CLASS,
@@ -78,7 +89,7 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
         stepInto(INTELLIJ_FILTER),
         checkLine(17),
         // When desugaring, the LambdaClass will change this to a static (later moved to companion).
-        parameters.canUseDefaultAndStaticInterfaceMethods() && isR8
+        parameters.canUseDefaultAndStaticInterfaceMethods() && isR8 && !isLambdaMethodStaticizedInR8
             ? checkThisDefaultMethod
             : checkThisLambda,
         run());
@@ -87,6 +98,7 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
   @Test
   public void testJvm() throws Throwable {
     parameters.assumeJvmTestParameters();
+    assumeFalse(enableDexVersion35UpToApi30);
     testForJvm(parameters)
         .addProgramClassesAndInnerClasses(CLASS)
         .run(parameters.getRuntime(), CLASS)
@@ -96,12 +108,17 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
 
   @Test
   public void testR8() throws Throwable {
+    assumeFalse(parameters.isCfRuntime() && enableDexVersion35UpToApi30);
     testForR8(parameters.getBackend())
         .addProgramClassesAndInnerClasses(CLASS)
         .setMinApi(parameters)
         .addDontObfuscate()
         .addDontShrink()
         .addKeepAllAttributes()
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().enableDexVersion35UpToApi30 =
+                    enableDexVersion35UpToApi30)
         .debug()
         .compile()
         .assertNoMessages()
@@ -118,7 +135,11 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
     testForD8()
         .addProgramClassesAndInnerClasses(CLASS)
         .setMinApi(parameters)
-        .addOptionsModification(options -> options.emitLambdaMethodAnnotations = false)
+        .addOptionsModification(
+            options -> {
+              options.emitLambdaMethodAnnotations = false;
+              options.getTestingOptions().enableDexVersion35UpToApi30 = enableDexVersion35UpToApi30;
+            })
         .compile()
         .assertNoMessages()
         .writeToZip(out1)
@@ -139,6 +160,10 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
           .addClasspathFiles(ToolHelper.getClassPathForTests())
           .setIntermediate(true)
           .setMinApi(parameters)
+          .addOptionsModification(
+              options ->
+                  options.getTestingOptions().enableDexVersion35UpToApi30 =
+                      enableDexVersion35UpToApi30)
           .compile()
           .assertNoMessages()
           .writeToZip(mainOut);
@@ -151,6 +176,10 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
           .addClasspathFiles(ToolHelper.getClassPathForTests())
           .setIntermediate(true)
           .setMinApi(parameters)
+          .addOptionsModification(
+              options ->
+                  options.getTestingOptions().enableDexVersion35UpToApi30 =
+                      enableDexVersion35UpToApi30)
           .compile()
           .assertNoMessages()
           .writeToZip(out);
@@ -158,7 +187,14 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
 
     Path out2 = temp.newFolder().toPath().resolve("out2.zip");
     D8TestCompileResult compiledResult =
-        testForD8().addProgramFiles(outs).setMinApi(parameters).compile();
+        testForD8()
+            .addProgramFiles(outs)
+            .setMinApi(parameters)
+            .addOptionsModification(
+                options ->
+                    options.getTestingOptions().enableDexVersion35UpToApi30 =
+                        enableDexVersion35UpToApi30)
+            .compile();
 
     compiledResult
         .assertNoMessages()
