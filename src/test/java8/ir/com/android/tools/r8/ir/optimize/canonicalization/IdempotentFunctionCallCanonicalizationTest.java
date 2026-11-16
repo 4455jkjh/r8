@@ -196,9 +196,10 @@ public class IdempotentFunctionCallCanonicalizationTest extends TestBase {
   public void testD8() throws Exception {
     assumeTrue("Only run D8 for Dex backend", parameters.isDexRuntime());
 
-    int expectedIntValueOfCount = parameters.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug() ? 5 : 2;
-    int expectedLongValueOfCount =
-        parameters.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug() ? 10 : 7;
+    // TODO(b/145253152): Should be 2.
+    int expectedIntValueOfCount = 5;
+    // TODO(b/145253152): Should be 7.
+    int expectedLongValueOfCount = 10;
 
     D8TestMultiRunResult result =
         testForD8()

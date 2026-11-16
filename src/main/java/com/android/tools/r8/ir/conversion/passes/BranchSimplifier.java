@@ -673,8 +673,22 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
       return false;
     }
     If theIf = block.exit().asIf();
+    if (!theIf.isZeroTest()) {
+      return false;
+    }
+    if (theIf.getType() != IfType.GE && theIf.getType() != IfType.LT) {
+      return false;
+    }
     Value lhs = theIf.lhs();
     if (!lhs.getType().isInt()) {
+      return false;
+    }
+    // In ART's optimizing compiler, `VisitCondition` folds `HCompare(a, b)` followed by a
+    // comparison against 0 into a single direct `HCondition(a, b)` and removes the 3-way
+    // `HCompare`. Rewriting the `if` diamond into a shift consumes the `Cmp` result in `UShr`/`Not`
+    // instead of a condition, preventing ART from eliminating `HCompare` and from GVN-deduplicating
+    // it with other comparisons of the same operands. See also 735-checker-condition-merging.
+    if (lhs.isDefinedByInstructionSatisfying(Instruction::isCmp)) {
       return false;
     }
     BasicBlock trueBlock = theIf.getTrueTarget();
@@ -710,48 +724,46 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
     // Case 1: Sign-bit tests (`if-gez` / `if-ltz`).
     // An `if` diamond is 5 DEX code units (`if-*z` (2) + `const/4 0` (1) + `const/4 1` (1) +
     // `goto` (1)), whereas extracting the sign bit is 2 or 3 code units.
-    if (theIf.isZeroTest() && (theIf.getType() == IfType.GE || theIf.getType() == IfType.LT)) {
-      int geZeroInt = (theIf.getType() == IfType.GE ? trueNumber : falseNumber).getIntValue();
-      int ltZeroInt = (theIf.getType() == IfType.GE ? falseNumber : trueNumber).getIntValue();
-      if (geZeroInt == 0 && ltZeroInt == 1) {
-        // `lhs < 0 ? 1 : 0` -> `lhs >>> 31` (2 DEX code units: `ushr-int/lit8`).
-        ConstNumber const31 = code.createIntConstant(31);
-        const31.setPosition(phiPosition);
-        instructions.addBefore(const31, prevHead);
-        Value newOutValue = code.createValue(phi.getType(), phi.getLocalInfo());
-        phi.replaceUsers(newOutValue);
-        Instruction ushr = new Ushr(NumericType.INT, newOutValue, lhs, const31.outValue());
-        ushr.setPosition(phiPosition);
-        instructions.addBefore(ushr, prevHead);
-        rewriteIfToGoto(block, theIf, trueBlock, falseBlock);
-        return true;
+    int geZeroInt = (theIf.getType() == IfType.GE ? trueNumber : falseNumber).getIntValue();
+    int ltZeroInt = (theIf.getType() == IfType.GE ? falseNumber : trueNumber).getIntValue();
+    if (geZeroInt == 0 && ltZeroInt == 1) {
+      // `lhs < 0 ? 1 : 0` -> `lhs >>> 31` (2 DEX code units: `ushr-int/lit8`).
+      ConstNumber const31 = code.createIntConstant(31);
+      const31.setPosition(phiPosition);
+      instructions.addBefore(const31, prevHead);
+      Value newOutValue = code.createValue(phi.getType(), phi.getLocalInfo());
+      phi.replaceUsers(newOutValue);
+      Instruction ushr = new Ushr(NumericType.INT, newOutValue, lhs, const31.outValue());
+      ushr.setPosition(phiPosition);
+      instructions.addBefore(ushr, prevHead);
+      rewriteIfToGoto(block, theIf, trueBlock, falseBlock);
+      return true;
+    }
+    if (geZeroInt == 1 && ltZeroInt == 0) {
+      // `lhs >= 0 ? 1 : 0` -> `(~lhs) >>> 31` (3 DEX code units: `not-int` (1) +
+      // `ushr-int/lit8` (2)).
+      Value notValue = code.createValue(phi.getType());
+      Instruction notInstruction;
+      if (options.canUseNotInstruction()) {
+        notInstruction = new Not(NumericType.INT, notValue, lhs);
+      } else {
+        ConstNumber constMinus1 = code.createIntConstant(-1);
+        constMinus1.setPosition(phiPosition);
+        instructions.addBefore(constMinus1, prevHead);
+        notInstruction = Xor.create(NumericType.INT, notValue, lhs, constMinus1.outValue());
       }
-      if (geZeroInt == 1 && ltZeroInt == 0) {
-        // `lhs >= 0 ? 1 : 0` -> `(~lhs) >>> 31` (3 DEX code units: `not-int` (1) +
-        // `ushr-int/lit8` (2)).
-        Value notValue = code.createValue(phi.getType());
-        Instruction notInstruction;
-        if (options.canUseNotInstruction()) {
-          notInstruction = new Not(NumericType.INT, notValue, lhs);
-        } else {
-          ConstNumber constMinus1 = code.createIntConstant(-1);
-          constMinus1.setPosition(phiPosition);
-          instructions.addBefore(constMinus1, prevHead);
-          notInstruction = Xor.create(NumericType.INT, notValue, lhs, constMinus1.outValue());
-        }
-        notInstruction.setPosition(phiPosition);
-        instructions.addBefore(notInstruction, prevHead);
-        ConstNumber const31 = code.createIntConstant(31);
-        const31.setPosition(phiPosition);
-        instructions.addBefore(const31, prevHead);
-        Value newOutValue = code.createValue(phi.getType(), phi.getLocalInfo());
-        phi.replaceUsers(newOutValue);
-        Instruction ushr = new Ushr(NumericType.INT, newOutValue, notValue, const31.outValue());
-        ushr.setPosition(phiPosition);
-        instructions.addBefore(ushr, prevHead);
-        rewriteIfToGoto(block, theIf, trueBlock, falseBlock);
-        return true;
-      }
+      notInstruction.setPosition(phiPosition);
+      instructions.addBefore(notInstruction, prevHead);
+      ConstNumber const31 = code.createIntConstant(31);
+      const31.setPosition(phiPosition);
+      instructions.addBefore(const31, prevHead);
+      Value newOutValue = code.createValue(phi.getType(), phi.getLocalInfo());
+      phi.replaceUsers(newOutValue);
+      Instruction ushr = new Ushr(NumericType.INT, newOutValue, notValue, const31.outValue());
+      ushr.setPosition(phiPosition);
+      instructions.addBefore(ushr, prevHead);
+      rewriteIfToGoto(block, theIf, trueBlock, falseBlock);
+      return true;
     }
     return false;
   }
