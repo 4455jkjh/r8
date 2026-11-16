@@ -18,16 +18,13 @@ import java.util.stream.Collectors;
 
 public abstract class ProguardNameMatcher {
 
-  private static final ProguardNameMatcher MATCH_ALL_NAMES = new MatchAllNames();
-
-  private ProguardNameMatcher() {
-  }
+  private ProguardNameMatcher() {}
 
   public static ProguardNameMatcher create(IdentifierPatternWithWildcardsAndNegation pattern) {
     if (!pattern.isNegated()) {
       IdentifierPatternWithWildcards nonNegatedPattern = pattern.getNonNegatedPattern();
       if (nonNegatedPattern.isMatchAllNames()) {
-        return MATCH_ALL_NAMES;
+        return new MatchAllNames();
       }
       if (nonNegatedPattern.getWildcards().isEmpty()) {
         return new MatchSpecificName(pattern.getStringPattern());

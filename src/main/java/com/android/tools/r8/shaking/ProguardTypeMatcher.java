@@ -137,19 +137,20 @@ public abstract class ProguardTypeMatcher {
     }
     switch (identifierPatternWithWildcards.pattern) {
       case MATCH_ALL_PATTERN:
-        return MatchAllTypes.MATCH_ALL_TYPES;
+        return defaultAllMatcher();
       case MATCH_ANY_ARG_SEQUENCE_PATTERN:
         return MatchAnyArgSequence.MATCH_ANY_ARG_SEQUENCE;
       case MATCH_CLASS_PATTERN:
-        return MatchClassTypes.MATCH_CLASS_TYPES;
+        return allClassesMatcher();
       case LEGACY_MATCH_CLASS_PATTERN:
-        return MatchClassTypes.LEGACY_MATCH_CLASS_TYPES;
+        return new MatchClassTypes(LEGACY_MATCH_CLASS_PATTERN);
       case MATCH_BASIC_PATTERN:
-        return MatchBasicTypes.MATCH_BASIC_TYPES;
+        return new MatchBasicTypes();
       default:
         if (identifierPatternWithWildcards.wildcards.isEmpty()) {
-          return new MatchSpecificType(dexItemFactory.createType(
-              javaTypeToDescriptor(identifierPatternWithWildcards.pattern)));
+          return create(
+              dexItemFactory.createType(
+                  javaTypeToDescriptor(identifierPatternWithWildcards.pattern)));
         }
         return new MatchTypePattern(identifierPatternWithWildcards, kind);
     }
@@ -160,11 +161,11 @@ public abstract class ProguardTypeMatcher {
   }
 
   public static ProguardTypeMatcher allClassesMatcher() {
-    return MatchClassTypes.MATCH_CLASS_TYPES;
+    return new MatchClassTypes(MATCH_CLASS_PATTERN);
   }
 
   public static ProguardTypeMatcher defaultAllMatcher() {
-    return MatchAllTypes.MATCH_ALL_TYPES;
+    return new MatchAllTypes();
   }
 
   @Override
@@ -192,8 +193,6 @@ public abstract class ProguardTypeMatcher {
   }
 
   private static class MatchAllTypes extends ProguardTypeMatcher {
-
-    private static final ProguardTypeMatcher MATCH_ALL_TYPES = new MatchAllTypes();
 
     private final ProguardWildcard wildcard;
 
@@ -281,11 +280,6 @@ public abstract class ProguardTypeMatcher {
 
   private static class MatchClassTypes extends ProguardTypeMatcher {
 
-    private static final ProguardTypeMatcher MATCH_CLASS_TYPES =
-        new MatchClassTypes(MATCH_CLASS_PATTERN);
-    private static final ProguardTypeMatcher LEGACY_MATCH_CLASS_TYPES =
-        new MatchClassTypes(LEGACY_MATCH_CLASS_PATTERN);
-
     private final String pattern;
     private final ProguardWildcard wildcard;
 
@@ -347,8 +341,6 @@ public abstract class ProguardTypeMatcher {
   }
 
   private static class MatchBasicTypes extends ProguardTypeMatcher {
-
-    private static final ProguardTypeMatcher MATCH_BASIC_TYPES = new MatchBasicTypes();
 
     private final ProguardWildcard wildcard;
 
