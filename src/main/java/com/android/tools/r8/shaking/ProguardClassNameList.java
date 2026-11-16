@@ -7,6 +7,7 @@ import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DirectMappedDexApplication;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
@@ -41,6 +42,14 @@ public abstract class ProguardClassNameList {
   public abstract ProguardTypeMatcherAndNegation getLast();
 
   public abstract boolean isMatchAnyClassPattern();
+
+  /**
+   * Rewrites this list to a single match-all entry when it matches every class in {@code app}
+   * (e.g., {@code !a.B,**} or {@code !a.B,c.D,**} when there is no class {@code a.B}).
+   */
+  public ProguardClassNameList simplify(DirectMappedDexApplication app) {
+    return this;
+  }
 
   public abstract int size();
 
@@ -183,8 +192,16 @@ public abstract class ProguardClassNameList {
 
     final ProguardTypeMatcher className;
 
+    // The unsimplified list when rewritten by simplify(), preserved for rule diagnostics.
+    private final ProguardClassNameList original;
+
     private SingleClassNameList(ProguardTypeMatcher className) {
+      this(className, null);
+    }
+
+    private SingleClassNameList(ProguardTypeMatcher className, ProguardClassNameList original) {
       this.className = className;
+      this.original = original;
     }
 
     @Override
@@ -204,7 +221,11 @@ public abstract class ProguardClassNameList {
 
     @Override
     public void writeTo(StringBuilder builder) {
-      builder.append(className.toString());
+      if (original != null) {
+        original.writeTo(builder);
+      } else {
+        builder.append(className.toString());
+      }
     }
 
     @Override
@@ -264,7 +285,7 @@ public abstract class ProguardClassNameList {
 
     @Override
     protected SingleClassNameList materialize(DexItemFactory dexItemFactory) {
-      return new SingleClassNameList(className.materialize(dexItemFactory));
+      return new SingleClassNameList(className.materialize(dexItemFactory), original);
     }
 
     @Override
@@ -294,6 +315,16 @@ public abstract class ProguardClassNameList {
     @Override
     public boolean isMatchAnyClassPattern() {
       return false;
+    }
+
+    @Override
+    public ProguardClassNameList simplify(DirectMappedDexApplication app) {
+      for (ProguardTypeMatcher matcher : classNames) {
+        if (matcher.isMatchAnyClassPattern()) {
+          return new SingleClassNameList(matcher, this);
+        }
+      }
+      return this;
     }
 
     @Override
@@ -415,6 +446,27 @@ public abstract class ProguardClassNameList {
     @Override
     public boolean isMatchAnyClassPattern() {
       return false;
+    }
+
+    @Override
+    public ProguardClassNameList simplify(DirectMappedDexApplication app) {
+      for (Entry<ProguardTypeMatcher> className : classNames.object2BooleanEntrySet()) {
+        ProguardTypeMatcher matcher = className.getKey();
+        if (!className.getBooleanValue()) {
+          if (matcher.isMatchAnyClassPattern()) {
+            return new SingleClassNameList(matcher, this);
+          }
+          // Check if the remainder of this pattern matches all classes.
+          continue;
+        }
+        // A negated name only excludes a class if that class is in the app.
+        if (!matcher.hasSpecificType()
+            || !matcher.getSpecificType().isClassType()
+            || app.definitionFor(matcher.getSpecificType()) != null) {
+          return this;
+        }
+      }
+      return this;
     }
 
     @Override
