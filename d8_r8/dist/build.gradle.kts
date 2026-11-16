@@ -109,10 +109,7 @@ val mainResourcesConfig =
   configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope.get()) }
 val swissArmyKnifeScope = configurations.dependencyScope("swissArmyKnifeScope")
 val swissArmyKnifeConfig =
-  configurations.resolvable("swissArmyKnifeConfig") {
-    extendsFrom(swissArmyKnifeScope.get())
-    isTransitive = false
-  }
+  configurations.resolvable("swissArmyKnifeConfig") { extendsFrom(swissArmyKnifeScope.get()) }
 
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
@@ -123,7 +120,7 @@ dependencies {
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
   mainResourcesScope(project(":main", "mainResources"))
-  swissArmyKnifeScope(project(":swissarmyknife"))
+  swissArmyKnifeScope(project(":swissarmyknife", "swissArmyKnifeJar"))
 }
 
 val depsJarFilesScope = configurations.dependencyScope("depsJarFilesScope")

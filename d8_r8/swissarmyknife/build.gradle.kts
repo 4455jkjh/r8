@@ -39,3 +39,5 @@ tasks {
     archiveFileName.set("r8-full-exclude-deps.jar")
   }
 }
+
+configurations.consumable("swissArmyKnifeJar") { outgoing.artifact(tasks.named("jar")) }
