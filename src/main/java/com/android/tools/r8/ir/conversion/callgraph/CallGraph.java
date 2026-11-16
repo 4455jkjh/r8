@@ -6,17 +6,19 @@ package com.android.tools.r8.ir.conversion.callgraph;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.conversion.MethodProcessorWithWave;
 import com.android.tools.r8.ir.conversion.callgraph.CallSiteInformation.CallGraphBasedCallSiteInformation;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.collections.SortedProgramMethodSet;
-import com.google.common.collect.Sets;
+import com.android.tools.r8.utils.internal.ListUtils;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,6 +42,9 @@ import java.util.stream.Collectors;
  * <p>Recursive calls are not present.
  */
 public class CallGraph extends CallGraphBase<Node> {
+
+  // The nodes that became leaves (or roots) when the previous wave was extracted.
+  private List<Node> nextWave;
 
   CallGraph(Map<DexMethod, Node> nodes) {
     super(nodes);
@@ -84,9 +89,9 @@ public class CallGraph extends CallGraphBase<Node> {
   public ProgramMethodSet extractLeaves(Consumer<Node> nodeRemovalConsumer) {
     return extractNodes(
         Node::isLeaf,
-        node -> {
+        (node, newLeaves) -> {
           nodeRemovalConsumer.accept(node);
-          node.cleanCallersAndReadersForRemoval();
+          node.cleanCallersAndReadersForRemoval(newLeaves);
         });
   }
 
@@ -94,23 +99,24 @@ public class CallGraph extends CallGraphBase<Node> {
     return extractNodes(Node::isRoot, Node::cleanCalleesAndWritersForRemoval);
   }
 
-  private ProgramMethodSet extractNodes(Predicate<Node> predicate, Consumer<Node> clean) {
+  private ProgramMethodSet extractNodes(
+      Predicate<Node> predicate, BiConsumer<Node, List<Node>> clean) {
     ProgramMethodSet result =
         InternalOptions.DETERMINISTIC_DEBUGGING
             ? SortedProgramMethodSet.create()
             : ProgramMethodSet.create();
-    Set<Node> removed = Sets.newIdentityHashSet();
-    Iterator<Node> nodeIterator = nodes.values().iterator();
-    while (nodeIterator.hasNext()) {
-      Node node = nodeIterator.next();
-      if (predicate.test(node)) {
-        result.add(node.getProgramMethod());
-        nodeIterator.remove();
-        removed.add(node);
-      }
+    // Only the first wave is found by scanning all nodes.
+    List<Node> removed = nextWave != null ? nextWave : ListUtils.filter(nodes.values(), predicate);
+    nextWave = new ArrayList<>();
+    for (Node node : removed) {
+      assert predicate.test(node);
+      ProgramMethod method = node.getProgramMethod();
+      result.add(method);
+      nodes.remove(method.getReference());
+      clean.accept(node, nextWave);
     }
-    removed.forEach(clean);
     assert !result.isEmpty();
+    assert !nextWave.isEmpty() || nodes.isEmpty();
     return result;
   }
 }
