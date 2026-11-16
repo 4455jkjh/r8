@@ -8,6 +8,7 @@ When this page and the usage differ, follow the usage:
 java -jar "$R8_ASSISTANT_JAR" --help
 java -jar "$R8_ASSISTANT_JAR" instrument --help
 ```
+
 The commands exit with 0 on success, 1 when the command fails, and 2 for usage
 errors. On failure, a command prints a line that starts with `Error:`.
 
@@ -81,6 +82,25 @@ java -jar "$R8_ASSISTANT_JAR" diff \
 - `--rules`: a rule file to compare. Repeat it for several files.
 - `--output`: the file for the proposed rules. Without it, `diff` prints the
   proposed rules after the summary.
+
+`diff` assigns one of six verdicts to each rule and annotates the proposed
+rules file with a comment:
+
+- `JUSTIFIED` (`# Justified:`): the rule keeps what the logs require.
+- `NARROWED` (`# Narrowed:`): the rule keeps more than the logs require and is
+  replaced by narrower rules for the observed classes and members.
+- `NOT_OBSERVED` (`# Removed, not observed in the logs:`): nothing the rule
+  keeps was used reflectively in the logged runs.
+- `UNDECIDED` (`# Undecided, kept as is:`): logs do not decide the selector,
+  such as `extends`, `implements`, `-keepclasseswithmembers`, member
+  `@Annotation`, class `@Annotation` without members, `native`-only rules, or
+  unlogged modifiers. Class `@Annotation` with members and mixed `native`
+  rules are narrowed or removed.
+- `CONDITIONAL` (`# Conditional, kept as is:`): an `-if` rule that `diff` keeps
+  as is. `-if` rules whose target combines a `**` class wildcard with member
+  rules are narrowed or removed.
+- `NOT_ANALYZED` (`# Not analyzed, kept as is:`): a non-keep directive such as
+  `-assumenosideeffects` or `-checkdiscard`.
 
 ## query
 

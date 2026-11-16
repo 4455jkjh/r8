@@ -65,17 +65,24 @@ Classify every rule that you change:
 - **Observed**: the logs have events for the classes or members of the rule.
   Keep the rule, narrowed to the logged classes and members.
 - **Not observed**: the logs have no events for the classes of the rule, and a
-  journey ran the code that uses them. Confirm in the code that the journey
-  reached it. Narrow or delete the rule; the release replay decides.
-- **Uncovered**: no journey ran the code that uses the classes, or the log
-  leaves out the reflection that reaches them, as listed in
+  test or journey ran the code that uses them. Narrow or delete the rule; the
+  release replay decides.
+- **Undecided or conditional**: `diff` marks a rule `# Undecided, kept as is`
+  or `# Conditional, kept as is` when the logs alone do not decide its
+  selector, as listed in [references/cli.md](cli.md). Leave rules with these
+  verdicts unchanged.
+- **Uncovered**: no test or journey ran the code that uses the classes, or the
+  log leaves out the reflection that reaches them, as listed in
   [references/capture.md](capture.md). Leave the rule unchanged and list it in
   the report.
 
 "Not observed" is weak evidence. A deletion stays only when the release replay
-passes for the journeys that ran the code of the rule.
+passes for the flows that ran the code of the rule.
 
 ## Rule conventions
+
+`suggest` and `diff` emit class, member and `-keepattributes` rules from the
+logs. Apply these conventions where the logs alone do not decide:
 
 - Name exact classes. Never use package-wide wildcards.
 - Keep only the members that the logs show, and the constructors of classes
@@ -84,22 +91,14 @@ passes for the journeys that ran the code of the rule.
 - Add `allowobfuscation` only when no code looks up the name as a string.
   Gson and Moshi read field names, and `Class.forName`, `ClassLoader.loadClass`
   and `ResourceBundle.getBundle` read class names.
-- Keep the `volatile` modifier in rules for fields of atomic field updaters.
-  Without it, the release build fails with
-  `IllegalArgumentException: Must be volatile type`.
-- Keep the provider classes listed in `META-INF/services` for a
-  `SERVICE_LOADER_LOAD` event, with their no-argument constructors.
-- For a `RESOURCE_BUNDLE_GET_BUNDLE` event, keep the bundle classes of all
-  locales in one rule, `-keep class <base>, <base>_* { <init>(); }`, where
-  `<base>` is the base name in the first argument. The log shows only the
-  device locale.
-- A `RESOURCE_BUNDLE_GET_BUNDLE` result of `java.util.PropertyResourceBundle`
-  means that the bundle is a properties file, which needs no class rule.
-- For a `CLASS_GET_GENERIC_SUPERCLASS` or `CLASS_GET_GENERIC_INTERFACES` event
-  with a parameterized type in the debug result, add
-  `-keepattributes Signature` and `-keep,allowobfuscation,allowshrinking` rules
-  for the class and its generic supertype. R8 keeps attributes only for classes
-  that a rule matches.
+- For a `SERVICE_LOADER_LOAD` event whose result lists no providers, keep the
+  provider classes listed in `META-INF/services` with their no-argument
+  constructors.
+- For generic supertype, method or field events (`CLASS_GET_GENERIC_*`,
+  `METHOD_GET_GENERIC_*`, `FIELD_GET_GENERIC_TYPE`), the log records
+  `<raw type><...>` without its type arguments. When a library such as
+  Retrofit, Gson or Moshi reflects on those type arguments (for example
+  `ResponseType` in `Call<ResponseType>`), keep the type-argument classes too.
 - Match an anonymous class, such as `SyncRepository$1`, by its supertype with
   `class * extends` or `class * implements`. The number in its name changes
   when the code changes.
@@ -114,7 +113,7 @@ To find the owning file of an existing rule, search `configuration.txt`, as
 described in [references/setup.md](setup.md).
 
 Write a provenance comment on the line before each rule, with the call site
-and the journey, or with the retraced exception:
+and the test or journey:
 
 ```proguard
 # r8-assistant: Class.forName in ThemeLoader.load (journey settings).
@@ -126,39 +125,6 @@ and the journey, or with the retraced exception:
 -keepclassmembers class com.example.app.sync.SyncResponse {
   <fields>;
   <init>();
-}
-```
-
-## Write rules from a retraced stack trace
-
-When the log has no event for a crash, write the rule from the retraced stack
-trace. Retrace first, so that every class name is an original name:
-
-- `ClassNotFoundException` or `NoClassDefFoundError`: R8 removed or renamed
-  the class. Keep the class name.
-- `NoSuchMethodException`: keep the method with its parameter types.
-- `NoSuchFieldException`: keep the field.
-- `InstantiationException`, including `Fragment$InstantiationException`: keep
-  the constructor, usually `<init>()`.
-- `IllegalArgumentException: Must be volatile type`: keep the field with its
-  `volatile` modifier.
-- `SerializationException` from kotlinx.serialization: keep the `Companion`
-  field and the `serializer` method of the class.
-- `MissingResourceException` for a bundle base name: keep the bundle classes,
-  as for a `RESOURCE_BUNDLE_GET_BUNDLE` event in the rule conventions.
-- `ClassCastException` from `Class` to `ParameterizedType`, or a library error
-  about a missing type argument: keep the generic signature, as for the
-  generic events in the rule conventions.
-- `ExceptionInInitializerError`: retrace the cause and apply the matching case
-  in this list.
-- Data that goes missing, such as empty fields after Gson or Moshi parsing:
-  keep the fields and the constructor of the model class.
-
-```proguard
-# r8-assistant: Fragment$InstantiationException for SettingsFragment
-# (retraced logcat, journey settings).
--keep class com.example.app.settings.SettingsFragment {
-  public <init>();
 }
 ```
 

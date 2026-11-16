@@ -59,15 +59,18 @@ $zip.Dispose()
 
 ## Reproduce a crash
 
-Install the release APK, clear logcat, and launch the app:
+Install the release APK, find its launcher activity, clear logcat, and start
+the app:
 
 ```shell
 adb install -r app/build/outputs/apk/release/app-release.apk
+adb shell cmd package resolve-activity --brief com.example.app
 adb logcat -c
-adb shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
+adb shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.example.app/com.example.app.MainActivity
 ```
 
-Run the journey that crashes, then save logcat and retrace it:
+Run the journey to completion, dismissing any permission or onboarding dialogs,
+then save logcat and retrace it even if the screen appears to succeed:
 
 ```shell
 adb logcat -d > app/build/r8-assistant/logcat-settings.txt
@@ -84,13 +87,15 @@ grep -n -E \
   -e "FATAL EXCEPTION|ClassNotFoundException|NoClassDefFoundError" \
   -e "NoSuchMethodException|NoSuchFieldException|InstantiationException" \
   -e "IllegalAccessException|ExceptionInInitializerError" \
+  -e "MissingResourceException|NoSuchAlgorithmException" \
   -e "SerializationException|Must be volatile" \
   app/build/r8-assistant/retraced-settings.txt
 ```
 
-Count only matches from the app: a `FATAL EXCEPTION` block names the process
-in its `Process: com.example.app` line, and the stack frames name app classes.
-Quote the retraced exception and its top app frames in the report.
+Count matches from the app: both `FATAL EXCEPTION` blocks (`Process:
+com.example.app`) and caught exceptions from the app PID when a feature fails
+or falls back. Quote the retraced exception and its top app frames in the
+report.
 
 ## Release replay
 
@@ -100,17 +105,19 @@ Install the release APK without instrumentation:
 adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
-For each journey, stop the app, clear logcat, launch the app, and run the
-journey with all of its "Verify" and "Check" actions:
+For each UI journey, stop the app, clear logcat, start the launcher activity,
+and run the journey with all of its "Verify" and "Check" actions. Also run
+any release-compatible UI tests, as described in
+[references/journeys.md](journeys.md):
 
 ```shell
 adb shell am force-stop com.example.app
 adb logcat -c
-adb shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
+adb shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.example.app/com.example.app.MainActivity
 ```
 
 Then save, retrace and search logcat as in the crash reproduction. The release
-replay passes only when, for every journey:
+replay passes only when, for every exercised flow and release test:
 
 - Every action succeeds and every expectation holds. Data that the debug build
   shows, such as list entries or parsed fields, also shows in the release

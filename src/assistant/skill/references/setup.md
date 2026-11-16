@@ -234,9 +234,7 @@ app/build/r8-assistant/
   journeys/settings.xml         journey files that you wrote
 ```
 
-`./gradlew clean` deletes this directory, so do not run it during a run. At the
-end, offer to copy the journey files that you wrote into the project, as
-described in [references/journeys.md](journeys.md).
+`./gradlew clean` deletes this directory, so do not run it during a run.
 
 ## Windows
 

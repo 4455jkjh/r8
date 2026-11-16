@@ -72,11 +72,11 @@ For the following cases, tell the user why the skill does not apply and stop:
   give up R8 savings for code that does not need them.
 - Base every rule and every claim on a log event or a retraced stack trace, and
   quote that evidence in the report.
-- Keep a rule when no journey ran the code that uses its classes. Missing log
-  events are evidence only for code that a journey ran.
-- Keep a rule when the log leaves out the reflection that reaches its classes,
-  such as reflection inside the Android platform or by AndroidX and Kotlin code
-  on `androidx.`, `kotlin.` and `kotlinx.` classes. See the limits in
+- Keep a rule when no test or journey ran the code that uses its classes.
+  Missing log events are evidence only for code that ran.
+- Keep a rule when the log leaves out what reaches its classes, such as
+  reflection inside the Android platform or internal reflection within the same
+  `androidx.` or `kotlin.` library. See the limits in
   [references/capture.md](references/capture.md).
 - Write files only to `build/r8-assistant/` in the app module, for example
   `app/build/r8-assistant/`. Delete the log on the device after each pull, and
@@ -89,8 +89,8 @@ Stop, ask, and wait for the answer when:
 - Several devices are connected and `ANDROID_SERIAL` is not set.
 - The project has several app modules, product flavors or minified build
   types, and the request does not name one.
-- You need flows to exercise, and the project has no journey files or
-  instrumented tests for them.
+- You need flows to exercise, and the project has no instrumented tests or
+  journey files for them.
 - A step needs to uninstall the app, which deletes its data on the device.
 - A flow needs a login, a payment, or data that you do not have. Offer manual
   mode, where the user drives the app.
@@ -112,8 +112,8 @@ files and application IDs. Run every command from the project root.
 3. Run `suggest` on the log, and run `query` for the classes in the retraced
    stack trace, as described in [references/rules.md](references/rules.md).
 4. Add the rules that cover the crash to the rule file that owns the code,
-   each with a provenance comment. When the log has no matching event, write
-   the rule from the retraced stack trace.
+   each with a provenance comment. When the log has no matching event, see
+   [references/troubleshooting.md](references/troubleshooting.md).
 5. Run the verification gate. If it fails, return to step 3 with the new
    evidence.
 6. Report with the crash fix template in
@@ -125,15 +125,14 @@ files and application IDs. Run every command from the project root.
    the release replay as a baseline, as described in
    [references/release-verification.md](references/release-verification.md).
    Fix release-only crashes with workflow A first.
-2. Pick journeys with the layers in
-   [references/journeys.md](references/journeys.md), and capture a debug log
-   for every journey, as described in
-   [references/capture.md](references/capture.md).
+2. Exercise the app with its instrumented tests or with journeys in layers, as
+   described in [references/journeys.md](references/journeys.md), and capture
+   debug logs as described in [references/capture.md](references/capture.md).
 3. Run `diff` with all logs and all rule files that the project owns, as
    described in [references/rules.md](references/rules.md).
 4. Edit the rules in place. Narrow observed rules to the logged classes and
-   members, narrow or delete rules that are not observed, and leave uncovered
-   rules unchanged.
+   members, narrow or delete rules that are not observed, and leave undecided,
+   conditional and uncovered rules unchanged.
 5. Run the verification gate, then record the DEX size again.
 6. Present the diff and the evidence report with the narrowing template in
    [references/report.md](references/report.md). Do not commit.
@@ -142,19 +141,16 @@ files and application IDs. Run every command from the project root.
 
 Run the release replay after every rule change, as described in
 [references/release-verification.md](references/release-verification.md):
-build the release APK with R8, install it without instrumentation, run each
-journey, and check its expectations, logcat and the retraced stack traces.
-Pass only with zero failures.
+build the release APK with R8, install it without instrumentation, replay each
+flow or release-compatible test, and check expectations, logcat and the
+retraced stack traces. Pass only with zero failures.
 
 ## Report
 
 Use the templates in [references/report.md](references/report.md). Include the
-evidence for each rule, the journeys and their coverage, the result of the
-release replay, and for narrowing the DEX size before and after. Name the APK
-installed on the device at the end.
-
-Offer to copy the journey files that you wrote into the project, as described
-in [references/journeys.md](references/journeys.md).
+evidence for each rule, the tests and journeys with their coverage, the result
+of the release replay, and for narrowing the DEX size before and after. Name
+the APK installed on the device at the end.
 
 ## Commands
 
@@ -184,10 +180,10 @@ For errors, see [references/troubleshooting.md](references/troubleshooting.md).
   `connectedAndroidTest` also uninstalls the app, which deletes its data.
 - Adding `-keep class com.example.** { *; }` or `-dontobfuscate` to make a
   crash go away.
-- Deleting a rule because its classes have no events in the log of a journey
-  that never reached them.
+- Deleting a rule because its classes have no events in the log when no test
+  or journey reached them.
 - Writing a rule for a class name from an obfuscated stack trace without
   retracing it.
-- Running two journeys across an app restart without pulling the log in
-  between. Each new app process truncates the log.
+- Running two flows across an app restart without pulling the log in between.
+  Each new app process truncates the log.
 - Running `./gradlew clean` during a run. It deletes `build/r8-assistant/`.

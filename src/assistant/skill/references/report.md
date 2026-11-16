@@ -49,16 +49,19 @@ Write these sections:
    the DEX size before and after, in bytes and as a percentage.
 2. **Diff**: the change to each rule file, as a unified diff.
 3. **Evidence per rule**: a table with the rule, its evidence level
-   (observed, not observed or uncovered), the evidence, and the change.
-4. **Deleted rules**: for each rule deleted as not observed, the journey that
-   ran its code and the code that the journey reached.
-5. **Uncovered rules**: each rule left unchanged because no journey reached
-   its code, and the flow that would cover it.
-6. **Coverage**: each journey with its layer (journey file, instrumented test,
-   exploration or manual mode) and the screens that it reached.
-7. **Verification**: for each journey, the result of the release replay.
-8. **Risks**: flows that no journey covered, reflection that the log leaves
-   out, and broad rules from dependencies that stayed unchanged.
+   (observed, undecided, conditional, not observed or uncovered), the evidence,
+   and the change.
+4. **Deleted rules**: for each rule deleted as not observed, the test or
+   journey that ran its code and the code that it reached.
+5. **Uncovered rules**: each rule left unchanged because no test or journey
+   reached its code, and the flow that would cover it.
+6. **Coverage**: each test or journey with its layer (instrumented test,
+   journey file, exploration or manual mode) and the screens or features that
+   it reached.
+7. **Verification**: for each exercised flow or release test, the result of
+   the release replay.
+8. **Risks**: flows that no test or journey covered, reflection that the log
+   leaves out, and broad rules from dependencies that stayed unchanged.
 9. **Device**: the APK that is installed on the device at the end.
 
 State that the changes are not committed, and that the user reviews them

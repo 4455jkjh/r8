@@ -89,9 +89,13 @@ app, such as probing for an optional class.
 
 ## The crash has no matching log event
 
-The reflection runs inside `androidx.`, `kotlin.` or `kotlinx.` code, or in
-code that the journey did not reach in the debug build. Write the rule from the
-retraced stack trace, as described in [references/rules.md](rules.md).
+Either the debug journey did not reach the code path that crashed in release,
+or the failure happened outside logged reflection (such as reflection inside
+the Android platform, internal reflection within the same library, or a JNI
+call; see the limits in [references/capture.md](capture.md)). Run a journey
+that reaches the code path; when the failure is outside the log, keep the
+missing class or member from the retraced stack trace or report the cause to
+the user.
 
 ## `retrace` is missing
 
