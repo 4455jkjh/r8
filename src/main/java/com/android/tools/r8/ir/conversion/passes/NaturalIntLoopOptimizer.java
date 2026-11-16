@@ -204,9 +204,14 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     if (loop.loopBodyEntry != loop.backPredecessor) {
       return false;
     }
-    // Check that the If isntruction is on the form `ifge <phi>, <const>`.
-    if (loop.comparison.getType() != IfType.GE
-        || loop.comparison.rhs().getConstIntValueIfNonNegative() < 0) {
+    // Check that the If instruction is on the form `ifge <phi>, <const>` jumping to loopExit.
+    if (loop.comparison.isZeroTest()
+        || loop.comparison.getType() != IfType.GE
+        || loop.comparison.getTrueTarget() != loop.loopExit) {
+      return false;
+    }
+    int loopEnd = loop.comparison.rhs().getConstIntValueIfNonNegative();
+    if (loopEnd < 0 || loopEnd == Integer.MAX_VALUE) {
       return false;
     }
     // Check if the loop phi is only used by an ArrayGet instruction (other than the known If and
@@ -262,7 +267,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
       return false;
     }
     int size = arrayDefinition.getFirstOperand().getConstIntValueIfNonNegative();
-    if (size < 0) {
+    if (size < 0 || loopEnd > size) {
       return false;
     }
     // Optimize the loop.
@@ -295,6 +300,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     // Update the loop index end value from N to N+1.
     Value loopEndValue = loop.comparison.rhs();
     int loopEnd = loopEndValue.getConstIntValueIfNonNegative();
+    assert loopEnd >= 0 && loopEnd <= size && loopEnd < Integer.MAX_VALUE;
     ConstNumber newLoopEnd =
         ConstNumber.builder()
             .setValue(loopEnd + 1)
