@@ -37,9 +37,7 @@ import com.android.tools.r8.dex.SunMiscUnsafeResourceProvider;
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InternalCompilerError;
-import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.features.FeatureSplitConfiguration;
-import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
@@ -49,7 +47,6 @@ import com.android.tools.r8.profile.art.ArtProfileProviderUtils;
 import com.android.tools.r8.profile.startup.StartupProfileProviderUtils;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.startup.StartupProfileProvider;
-import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -85,7 +82,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -607,11 +603,7 @@ public class AndroidApp {
       int nextDexIndex = 0;
       nextDexIndex =
           dumpProgramResources(
-              dumpProgramFileName,
-              dumpOptions.getFeatureSplitConfiguration(),
-              nextDexIndex,
-              out,
-              options);
+              dumpProgramFileName, dumpOptions.getFeatureSplitConfiguration(), nextDexIndex, out);
       nextDexIndex = dumpClasspathResources(nextDexIndex, out);
       nextDexIndex = dumpLibraryResources(nextDexIndex, out);
     } catch (IOException | ResourceException e) {
@@ -725,24 +717,29 @@ public class AndroidApp {
       String archiveName,
       FeatureSplitConfiguration featureSplitConfiguration,
       int nextDexIndex,
-      ZipOutputStream out,
-      InternalOptions options)
+      ZipOutputStream out)
       throws IOException, ResourceException {
     Map<FeatureSplit, String> featureSplitArchiveNames =
         dumpFeatureSplitFileNames(featureSplitConfiguration, ".jar");
     Map<FeatureSplit, ByteArrayOutputStream> featureSplitArchiveByteStreams =
         new IdentityHashMap<>();
     Map<FeatureSplit, ZipOutputStream> featureSplitArchiveOutputStreams = new IdentityHashMap<>();
+    // The program resources of feature splits have not been read yet, so classes cannot be mapped
+    // to feature splits by type. Instead, map each feature split provider to its output archive.
+    Map<ProgramResourceProvider, ZipOutputStream> featureSplitProviderOutputStreams =
+        new IdentityHashMap<>();
     IntBox nextDexIndexCapture = new IntBox(nextDexIndex);
     try {
-      ClassToFeatureSplitMap classToFeatureSplitMap =
-          ClassToFeatureSplitMap.createInitialClassToFeatureSplitMap(featureSplitConfiguration);
       if (featureSplitConfiguration != null) {
         for (FeatureSplit featureSplit : featureSplitConfiguration.getFeatureSplits()) {
           ByteArrayOutputStream archiveByteStream = new ByteArrayOutputStream();
+          ZipOutputStream archiveOutputStream = new ZipOutputStream(archiveByteStream);
           featureSplitArchiveByteStreams.put(featureSplit, archiveByteStream);
-          featureSplitArchiveOutputStreams.put(
-              featureSplit, new ZipOutputStream(archiveByteStream));
+          featureSplitArchiveOutputStreams.put(featureSplit, archiveOutputStream);
+          for (ProgramResourceProvider provider :
+              featureSplitConfiguration.getFeatureSplitProgramResourceProviders(featureSplit)) {
+            featureSplitProviderOutputStreams.put(provider, archiveOutputStream);
+          }
         }
       }
       try (ByteArrayOutputStream archiveByteStream = new ByteArrayOutputStream()) {
@@ -764,6 +761,9 @@ public class AndroidApp {
             }
           }
           for (ProgramResourceProvider provider : programResourceProviders) {
+            ZipOutputStream cfArchiveOutputStream =
+                featureSplitProviderOutputStreams.getOrDefault(
+                    EnsureNonDexProgramResourceProvider.unwrap(provider), archiveOutputStream);
             ProgramResourceProviderUtils.forEachProgramResourceCompat(
                 provider,
                 programResource -> {
@@ -772,18 +772,7 @@ public class AndroidApp {
                         dumpProgramResource(
                             seen,
                             nextDexIndexCapture.get(),
-                            classDescriptor -> {
-                              if (featureSplitConfiguration != null) {
-                                DexType type = options.dexItemFactory().createType(classDescriptor);
-                                SyntheticItems syntheticItems = null;
-                                FeatureSplit featureSplit =
-                                    classToFeatureSplitMap.getFeatureSplit(type, syntheticItems);
-                                if (featureSplit != null && !featureSplit.isBase()) {
-                                  return featureSplitArchiveOutputStreams.get(featureSplit);
-                                }
-                              }
-                              return archiveOutputStream;
-                            },
+                            cfArchiveOutputStream,
                             archiveOutputStream,
                             programResource));
                   } catch (IOException e) {
@@ -847,11 +836,7 @@ public class AndroidApp {
             int oldDexIndex = nextDexIndex;
             nextDexIndex =
                 dumpProgramResource(
-                    seen,
-                    nextDexIndex,
-                    ignore -> archiveOutputStream,
-                    archiveOutputStream,
-                    programResource);
+                    seen, nextDexIndex, archiveOutputStream, archiveOutputStream, programResource);
             assert nextDexIndex == oldDexIndex;
           }
         }
@@ -864,7 +849,7 @@ public class AndroidApp {
   private static int dumpProgramResource(
       Object2IntMap<String> seen,
       int nextDexIndex,
-      Function<String, ZipOutputStream> cfArchiveOutputStream,
+      ZipOutputStream cfArchiveOutputStream,
       ZipOutputStream dexArchiveOutputStream,
       ProgramResource programResource)
       throws ResourceException, IOException {
@@ -885,8 +870,7 @@ public class AndroidApp {
       int dupCount = seen.getOrDefault(classDescriptor, 0);
       seen.put(classDescriptor, dupCount + 1);
       String entryName = dupCount == 0 ? classFileName : (classFileName + "." + dupCount + ".dup");
-      writeToZipStream(
-          cfArchiveOutputStream.apply(classDescriptor), entryName, bytes, ZipEntry.DEFLATED);
+      writeToZipStream(cfArchiveOutputStream, entryName, bytes, ZipEntry.DEFLATED);
     } else {
       assert programResource.getKind() == Kind.DEX;
       String entryName = "classes" + nextDexIndex++ + ".dex";
