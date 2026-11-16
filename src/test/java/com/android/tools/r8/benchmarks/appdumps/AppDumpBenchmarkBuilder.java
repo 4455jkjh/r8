@@ -8,6 +8,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.LibraryDesugaringTestConfiguration;
+import com.android.tools.r8.MapConsumer;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
@@ -455,7 +456,7 @@ public class AppDumpBenchmarkBuilder {
                                 .setConfigurationAnalysisHtmlReportConsumer(
                                     new StringConsumer.FileConsumer(outdir.resolve("report.html")));
                             testBuilder.setProguardMapConsumer(
-                                new StringConsumer.FileConsumer(outdir.resolve("mapping.txt")));
+                                new MapConsumer.FileConsumer(outdir.resolve("mapping.txt")));
                           })
                       .apply(configuration)
                       .applyIf(
@@ -623,7 +624,7 @@ public class AppDumpBenchmarkBuilder {
                                 builder.getExtractedFile(environment, builder.pgMapInput));
                             Path outdir = environment.getTemp().newFolder().toPath();
                             commandBuilder.setProguardMapConsumer(
-                                new StringConsumer.FileConsumer(outdir.resolve("mapping.txt")));
+                                new MapConsumer.FileConsumer(outdir.resolve("mapping.txt")));
                           })
                       .benchmarkCompile(results)
                       .applyIf(

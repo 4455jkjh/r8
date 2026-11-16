@@ -19,6 +19,10 @@ public interface MapConsumer extends StringConsumer {
   @KeepForApi
   class FileConsumer extends StringConsumer.FileConsumer implements MapConsumer {
 
+    // Mapping files can be hundreds of MB, so flush encoded bytes in larger chunks to reduce the
+    // number of write system calls.
+    private static final int OUTPUT_BUFFER_SIZE = 256 * 1024;
+
     private final MapConsumer consumer;
 
     public FileConsumer(Path outputPath) {
@@ -26,7 +30,7 @@ public interface MapConsumer extends StringConsumer {
     }
 
     public FileConsumer(Path outputPath, MapConsumer consumer) {
-      super(outputPath, consumer);
+      super(outputPath, consumer, OUTPUT_BUFFER_SIZE);
       this.consumer = consumer;
     }
 

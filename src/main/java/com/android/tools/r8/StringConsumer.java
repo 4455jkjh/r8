@@ -7,7 +7,11 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -87,6 +91,8 @@ public interface StringConsumer extends Finishable {
   class FileConsumer extends ForwardingConsumer {
 
     private final Path outputPath;
+    // Size of the buffer for encoded bytes, or 0 to use the default of Files.newBufferedWriter.
+    private final int outputBufferSize;
     private Charset encoding = StandardCharsets.UTF_8;
     private WriterConsumer delegate = null;
     private boolean failedToCreateDelegate = false;
@@ -98,8 +104,13 @@ public interface StringConsumer extends Finishable {
 
     /** Consumer that forwards to {@param consumer} and also writes to {@param outputPath}. */
     public FileConsumer(Path outputPath, StringConsumer consumer) {
+      this(outputPath, consumer, 0);
+    }
+
+    FileConsumer(Path outputPath, StringConsumer consumer, int outputBufferSize) {
       super(consumer);
       this.outputPath = outputPath;
+      this.outputBufferSize = outputBufferSize;
     }
 
     /** Get the output path that the consumer will write to. */
@@ -156,7 +167,17 @@ public interface StringConsumer extends Finishable {
         if (parent != null && !parent.toFile().exists()) {
           Files.createDirectories(parent);
         }
-        delegate = new WriterConsumer(origin, Files.newBufferedWriter(outputPath, encoding));
+        Writer writer;
+        if (outputBufferSize > 0) {
+          // Same as Files.newBufferedWriter, except that encoded bytes are flushed in chunks of
+          // outputBufferSize instead of 8 KB.
+          OutputStream stream =
+              new BufferedOutputStream(Files.newOutputStream(outputPath), outputBufferSize);
+          writer = new BufferedWriter(new OutputStreamWriter(stream, encoding.newEncoder()));
+        } else {
+          writer = Files.newBufferedWriter(outputPath, encoding);
+        }
+        delegate = new WriterConsumer(origin, writer);
       } catch (IOException e) {
         failedToCreateDelegate = true;
         handler.error(new ExceptionDiagnostic(e, origin));
