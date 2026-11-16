@@ -39,6 +39,8 @@ public class DirectMappedDexApplication extends DexApplication {
   // Unmodifiable mapping of all types to their definitions.
   private final IdentityHashMap<DexType, ProgramOrClasspathClass> programOrClasspathClasses;
   private final ImmutableMap<DexType, DexLibraryClass> libraryClasses;
+  // Identity-based copy of libraryClasses for lookup. libraryClasses is kept for iteration order.
+  private final IdentityHashMap<DexType, DexLibraryClass> libraryClassesLookup;
 
   // Collections of different types for iteration.
   private final ImmutableList<DexProgramClass> programClasses;
@@ -57,6 +59,7 @@ public class DirectMappedDexApplication extends DexApplication {
     super(proguardMap, flags, dataResourceProviders, options);
     this.programOrClasspathClasses = programOrClasspathClasses;
     this.libraryClasses = libraryClasses;
+    this.libraryClassesLookup = new IdentityHashMap<>(libraryClasses);
     this.programClasses = programClasses;
     this.classpathClasses = classpathClasses;
     this.keepDeclarations = keepDeclarations;
@@ -100,7 +103,7 @@ public class DirectMappedDexApplication extends DexApplication {
   @Override
   public ClassResolutionResult contextIndependentDefinitionForWithResolutionResult(DexType type) {
     assert type.isClassType() : "Cannot lookup definition for type: " + type;
-    DexLibraryClass libraryClass = libraryClasses.get(type);
+    DexLibraryClass libraryClass = libraryClassesLookup.get(type);
     ProgramOrClasspathClass programOrClasspathClass = programOrClasspathClasses.get(type);
     if (libraryClass == null && programOrClasspathClass == null) {
       return noResult();
@@ -120,7 +123,7 @@ public class DirectMappedDexApplication extends DexApplication {
     if (programOrClasspathClass != null && programOrClasspathClass.isProgramClass()) {
       return programOrClasspathClass.asDexClass();
     }
-    DexLibraryClass libraryClass = libraryClasses.get(type);
+    DexLibraryClass libraryClass = libraryClassesLookup.get(type);
     return libraryClass != null
         ? libraryClass
         : (programOrClasspathClass == null ? null : programOrClasspathClass.asDexClass());
@@ -129,7 +132,7 @@ public class DirectMappedDexApplication extends DexApplication {
   @Override
   public ProgramOrClasspathClass definitionForProgramOrClasspathClassNotOnLibrary(DexType type) {
     ProgramOrClasspathClass programOrClasspathClass = programOrClasspathClasses.get(type);
-    if (programOrClasspathClass != null && !libraryClasses.containsKey(type)) {
+    if (programOrClasspathClass != null && !libraryClassesLookup.containsKey(type)) {
       return programOrClasspathClass;
     }
     return null;

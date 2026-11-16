@@ -54,7 +54,7 @@ public class PathConstraintAnalysisUnitTest extends TestBase {
             .addLibraryFile(ToolHelper.getMostRecentAndroidJar())
             .build();
     AppView<AppInfoWithLiveness> appView = computeAppViewWithLiveness(app, Timing.empty());
-    CodeInspector inspector = new CodeInspector(app);
+    CodeInspector inspector = new CodeInspector(appView.appInfo().app());
     IRCode code =
         inspector.clazz(Main.class).uniqueMethodWithOriginalName("greet").buildIR(appView);
     PathConstraintAnalysis analysis =
