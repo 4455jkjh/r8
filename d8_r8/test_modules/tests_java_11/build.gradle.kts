@@ -21,6 +21,9 @@ tasks {
       include(
         "com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactoryArrayTestClass.java"
       )
+      include(
+        "com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactorySpecialCharactersTestClass.java"
+      )
       include("com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactoryTestClass.java")
       include(
         "com/android/tools/r8/jdk9/stringconcatfactory/StringConcatFactoryValueOfTestClass.java"
