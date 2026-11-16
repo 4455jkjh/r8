@@ -56,7 +56,7 @@ dependencies {
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":keepradius", "keepradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
-  implementation(project(":libanalyzer", "libanalyzer-compile-java"))
+  implementation(project(":libanalyzer", "libanalyzerJar"))
   implementation(project(":main", "mainClassesOutput"))
   runtimeOnly(project(":main", "mainResources"))
   implementation(project(":testbase"))

@@ -13,9 +13,9 @@ val bundleConfig = configurations.resolvable("bundleConfig") { extendsFrom(bundl
 
 dependencies {
   bundleScope(project(":assistant", "assistantJar"))
-  bundleScope(project(":keepradius", "keepradiusWithoutProtoJar"))
+  bundleScope(project(":keepradius", "keepradiusJar"))
   bundleScope(project(":keepanno", "keepannoJar"))
-  bundleScope(project(":libanalyzer", "libanalyzer-jar"))
+  bundleScope(project(":libanalyzer", "libanalyzerJar"))
   bundleScope(project(":main", "mainJar"))
 }
 
@@ -23,10 +23,14 @@ tasks {
   named<Jar>("jar") {
     from(zipTrees(bundleConfig)) {
       exclude("com/android/tools/r8/threading/providers/**")
+      exclude("com/android/tools/r8/keepradius/proto/**")
+      exclude("com/android/tools/r8/libanalyzer/proto/**")
       exclude("META-INF/*.kotlin_module")
       exclude("**/*.kotlin_metadata")
       exclude("keepradius.proto")
+      exclude("keepradiussummary.proto")
       exclude("keepspec.proto")
+      exclude("libraryanalyzerresult.proto")
       exclude("LICENSE")
       exclude("androidx/")
       exclude("androidx/annotation/")

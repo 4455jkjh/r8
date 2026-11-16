@@ -88,11 +88,9 @@ spdxSbom {
   }
 }
 
-val keepRadiusProtoJarScope = configurations.dependencyScope("keepRadiusProtoJarScope")
-val keepRadiusProtoJarConfig =
-  configurations.resolvable("keepRadiusProtoJarConfig") {
-    extendsFrom(keepRadiusProtoJarScope.get())
-  }
+val protoJarSourcesScope = configurations.dependencyScope("protoJarSourcesScope")
+val protoJarSourcesConfig =
+  configurations.resolvable("protoJarSourcesConfig") { extendsFrom(protoJarSourcesScope.get()) }
 val keepAnnoDepsJarExceptAsmScope = configurations.dependencyScope("keepAnnoDepsJarExceptAsmScope")
 val keepAnnoDepsJarExceptAsmConfig =
   configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
@@ -106,12 +104,6 @@ val keepAnnoDepsJarOnlyAsmConfig =
 val keepAnnoToolsJarScope = configurations.dependencyScope("keepAnnoToolsJarScope")
 val keepAnnoToolsJarConfig =
   configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope.get()) }
-
-val libanalyzerProtoJarScope = configurations.dependencyScope("libanalyzerProtoJarScope")
-val libanalyzerProtoJarConfig =
-  configurations.resolvable("libanalyzerProtoJarConfig") {
-    extendsFrom(libanalyzerProtoJarScope.get())
-  }
 
 val assistantJarScope = configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig =
@@ -127,13 +119,13 @@ val swissArmyKnifeConfig =
 
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
-  keepRadiusProtoJarScope(project(":keepradius", "keepradiusProtoJar"))
   keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
   keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
   keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
-  libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
   mainResourcesScope(project(":main", "mainResources"))
+  protoJarSourcesScope(project(":keepradius", "keepradiusJar"))
+  protoJarSourcesScope(project(":libanalyzer", "libanalyzerJar"))
   swissArmyKnifeScope(project(":swissarmyknife", "swissArmyKnifeJar"))
 }
 
@@ -328,8 +320,11 @@ tasks {
 
   val protoJar =
     register<Zip>("protoJar") {
-      from(zipTrees(keepRadiusProtoJarConfig))
-      from(zipTrees(libanalyzerProtoJarConfig))
+      from(zipTrees(protoJarSourcesConfig))
+      include(
+        "com/android/tools/r8/keepradius/proto/**",
+        "com/android/tools/r8/libanalyzer/proto/**",
+      )
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")
       destinationDirectory.set(File(getRootDir(), "build/libs"))

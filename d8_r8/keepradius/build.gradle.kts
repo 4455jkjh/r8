@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import com.google.protobuf.gradle.proto
-import org.gradle.api.tasks.bundling.Jar
 
 plugins {
   `java-library`
@@ -28,31 +27,7 @@ dependencies {
   compileOnly(libs.protobufUtil)
 }
 
-tasks {
-  jar {
-    exclude("keepradius.proto")
-    exclude("keepradiussummary.proto")
-    exclude("com/android/tools/r8/keepradius/proto/**")
-    archiveFileName.set("keepradius-exclude-deps.jar")
-  }
-
-  register<Jar>("protoJar") {
-    from(sourceSets.main.get().output)
-    include("com/android/tools/r8/keepradius/proto/**")
-    archiveFileName.set("keepradius-proto.jar")
-  }
-}
-
-configurations.consumable("keepradiusWithoutProtoJar") {
-  outgoing.artifact(tasks.named<Jar>("jar"))
-}
-
-configurations.consumable("keepradiusProtoJar") { outgoing.artifact(tasks.named<Jar>("protoJar")) }
-
-configurations.consumable("keepradiusJar") {
-  outgoing.artifact(tasks.named<Jar>("jar"))
-  outgoing.artifact(tasks.named<Jar>("protoJar"))
-}
+configurations.consumable("keepradiusJar") { outgoing.artifact(tasks.named("jar")) }
 
 configurations.consumable("keepradiusClasses") {
   outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })

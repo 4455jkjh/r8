@@ -126,7 +126,7 @@ dependencies {
 dependencies {
   keepAnnoJarScope(project(":keepanno", "keepannoJar"))
   implementation(project(":keepanno", "keepannoJar"))
-  implementation(project(":libanalyzer", "libanalyzer-compile-java"))
+  implementation(project(":libanalyzer", "libanalyzerJar"))
   implementation(project(":main", "mainClassesOutput"))
   runtimeOnly(project(":main", "mainResources"))
   distDepsJarScope(project(":dist", "filteredDepsJarConfig"))

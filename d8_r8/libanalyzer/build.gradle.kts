@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import com.google.protobuf.gradle.proto
-import org.gradle.api.tasks.bundling.Jar
 
 plugins {
   id("org.jetbrains.kotlin.jvm")
@@ -29,34 +28,7 @@ dependencies {
   compileOnly(project(":main", "mainClassesOutput"))
 }
 
-val jarTask =
-  tasks.named<Jar>("jar") {
-    exclude("libraryanalyzerresult.proto")
-    exclude("com/android/tools/r8/libanalyzer/proto/**")
-    archiveFileName.set("libanalyzer-exclude-deps.jar")
-    destinationDirectory.set(layout.buildDirectory.dir("sub-libs"))
-  }
-
-val protoJarTask =
-  tasks.register<Jar>("protoJar") {
-    from(sourceSets.main.get().output)
-    include("com/android/tools/r8/libanalyzer/proto/**")
-    archiveFileName.set("libanalyzer-proto.jar")
-    destinationDirectory.set(layout.buildDirectory.dir("sub-libs"))
-  }
-
-configurations.consumable("libanalyzer-jar") { outgoing.artifact(jarTask) }
-
-configurations.consumable("libanalyzer-proto-jar") { outgoing.artifact(protoJarTask) }
-
-val compileJavaJarTask =
-  tasks.register<Jar>("compileJavaJar") {
-    from(tasks.named("compileJava"))
-    archiveFileName.set("libanalyzer-compile-java.jar")
-    destinationDirectory.set(project.layout.buildDirectory.dir("sub-libs"))
-  }
-
-configurations.consumable("libanalyzer-compile-java") { outgoing.artifact(compileJavaJarTask) }
+configurations.consumable("libanalyzerJar") { outgoing.artifact(tasks.named("jar")) }
 
 configurations.consumable("libanalyzerClasses") {
   outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
