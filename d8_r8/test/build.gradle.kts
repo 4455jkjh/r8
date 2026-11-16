@@ -69,17 +69,7 @@ val coverageExecScope = configurations.dependencyScope("coverageExecScope")
 val coverageExecConfig =
   configurations.resolvable("coverageExecConfig") { extendsFrom(coverageExecScope.get()) }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
-val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig =
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
-
 dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
@@ -540,8 +530,6 @@ tasks {
         unzipRewrittenTests,
         unzipTests,
         unzipTestBase,
-        sharedDepsConfig,
-        sharedTestDepsConfig,
       )
       val r8LibJar = r8Lib.flatMap { it.outputJar }
       val r8LibPartitionMapFile = r8Lib.flatMap { it.outputPartitionMap }
@@ -679,8 +667,6 @@ tasks {
 
   test {
     if (!project.hasProperty("use_prebuilt_lib")) {
-      dependsOn(sharedDepsConfig)
-      dependsOn(sharedTestDepsConfig)
       // Build processkeepruleslib.jar when running with --only_internal.
       if (project.hasProperty("only_internal")) {
         dependsOn(processKeepRulesLibWithRelocatedDepsTask)
@@ -707,7 +693,6 @@ tasks {
     useCustomR8Jar: Boolean = false,
   ) {
     register<RunBenchmarkTask>(baseName) {
-      dependsOn(sharedDepsConfig)
       configureCommon(project)
       testDataLocation.set(layout.dir(unzipTests.map { it.destinationDir }))
       testBaseDataLocation.set(layout.dir(unzipTestBase.map { it.destinationDir }))
@@ -719,7 +704,6 @@ tasks {
     }
 
     register<RunBenchmarkTask>("${baseName}Prebuilt") {
-      dependsOn(sharedDepsConfig)
       configureCommon(project)
       testDataLocation.set(unzipTests.get().destinationDir)
       testBaseDataLocation.set(unzipTestBase.get().destinationDir)

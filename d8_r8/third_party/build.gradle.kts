@@ -555,16 +555,6 @@ configurations.consumable("jdk25Home") {
 
 tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
-configurations.consumable("sharedDepsFiles") {
-  publicTasks.forEach { taskProvider -> outgoing.artifact(taskProvider.flatMap { it.outputDir }) }
-}
-
 tasks.register("downloadTestDeps") { dependsOn(publicTestTasks) }
-
-configurations.consumable("sharedTestDepsFiles") {
-  publicTestTasks.forEach { taskProvider ->
-    outgoing.artifact(taskProvider.flatMap { it.outputDir })
-  }
-}
 
 tasks.register("downloadTestDepsInternal") { dependsOn(internalTestTasks) }
