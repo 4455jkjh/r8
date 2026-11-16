@@ -124,7 +124,7 @@ def run_gradle_in(gradle_cmd,
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
         if not quiet:
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
         return_value = subprocess.call(cmd, env=get_java_env(env))
         utils.GRADLE_STOPPED = False
         if throw_on_failure and return_value != 0:

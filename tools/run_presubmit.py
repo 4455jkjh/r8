@@ -82,7 +82,7 @@ def main(argv=None):
         description,
     ]
 
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     return subprocess.call(cmd, cwd=utils.REPO_ROOT)
 
 

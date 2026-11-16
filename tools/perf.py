@@ -458,7 +458,7 @@ def get_artifact_location(benchmark,
             return f'branches/{branch}/{benchmark}/{target}/{version}/{filename}'
         return f'{benchmark}/{target}/{version}/{filename}'
     else:
-        commit = utils.get_HEAD_commit()
+        commit = utils.get_head_commit()
         branch = commit.branch()
         if is_try:
             assert branch is None, (
@@ -544,7 +544,7 @@ def archive_weekly_bundle(benchmark_results,
         if commit is None:
             return
     else:
-        commit = utils.get_HEAD_commit()
+        commit = utils.get_head_commit()
     base_commit_info = {
         'author': commit.author_name(),
         'hash': commit.hash(),
@@ -610,7 +610,7 @@ def should_skip_commit(options):
             return False
         commit_hash = commit.hash()
     else:
-        commit_hash = utils.get_HEAD_sha1()
+        commit_hash = utils.get_head_sha1()
     try:
         changed_files = git_utils.get_changed_files(commit_hash,
                                                     is_try=options.is_try)
@@ -687,9 +687,10 @@ def main(argv=None):
 
                 failed = False
                 for i in range(options.iterations):
-                    utils.Print(
-                        f'Benchmarking {benchmark} ({i+1}/{options.iterations})',
-                        quiet=options.quiet)
+                    if not options.quiet:
+                        print(
+                            f'Benchmarking {benchmark} ({i+1}/{options.iterations})'
+                        )
                     if sub_benchmarks_for_target:
                         benchmark_result_file = os.path.join(
                             temp_benchmark_target, f'result_{i}')

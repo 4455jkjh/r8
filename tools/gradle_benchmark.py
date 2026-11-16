@@ -56,7 +56,7 @@ def run_gradle_profiler(cwd, benchmark_name, scenario_file, local_output_dir,
         cmd.extend([run_specific])
     else:
         cmd.extend(['--group', 'performance-suite'])
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     with utils.ChangedWorkingDirectory(cwd):
         return_value = subprocess.call(cmd, env=gradle.get_java_env(None))
     if throw_on_failure and return_value != 0:

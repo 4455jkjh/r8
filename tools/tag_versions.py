@@ -78,7 +78,7 @@ def prepare_print_version(dist, temp):
         '-cp',
         dist,
     ]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_output(cmd)
     return temp
 

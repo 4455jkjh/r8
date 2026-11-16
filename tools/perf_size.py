@@ -721,7 +721,7 @@ def generate_markdown_summary(base_hash,
 def main(argv=None):
     options, _ = parse_options(argv)
 
-    head_hash = utils.get_HEAD_sha1()
+    head_hash = utils.get_head_sha1()
     with utils.TempDir() as temp_dir:
         ensure_r8_jar(options)
         tagged_r8_jar = tag_local_r8_jar(utils.R8_JAR,

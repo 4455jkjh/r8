@@ -252,7 +252,7 @@ def run(map_path,
     if verbose:
         retrace_args.append('--verbose')
 
-    utils.PrintCmd(retrace_args, quiet=quiet)
+    utils.print_cmd(retrace_args, quiet=quiet)
     return subprocess.call(retrace_args)
 
 

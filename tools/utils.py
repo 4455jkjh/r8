@@ -231,19 +231,13 @@ def get_android_build_tools():
     raise Exception('Unable to find Android build-tools')
 
 
-def Print(s, quiet=False):
-    if quiet:
-        return
-    print(s)
-
-
 def warn(message):
     CRED = '\033[91m'
     CEND = '\033[0m'
     print(CRED + message + CEND)
 
 
-def PrintCmd(cmd, env=None, quiet=False, worker_id=None):
+def print_cmd(cmd, env=None, quiet=False, worker_id=None):
     if quiet:
         return
     if type(cmd) is list:
@@ -284,13 +278,13 @@ class ProgressLogger:
             sys.stdout.write(ProgressLogger.UP)
 
 
-def RunCmd(cmd,
-           env_vars=None,
-           quiet=False,
-           fail=True,
-           logging=True,
-           shell=False):
-    PrintCmd(cmd, env=env_vars, quiet=quiet)
+def run_cmd(cmd,
+            env_vars=None,
+            quiet=False,
+            fail=True,
+            logging=True,
+            shell=False):
+    print_cmd(cmd, env=env_vars, quiet=quiet)
     env = os.environ.copy()
     if env_vars:
         env.update(env_vars)
@@ -366,7 +360,7 @@ def stop_gradle():
         env['GRADLE_OPTS'] = '-Xmx1g'
 
         cmd = [gradle, '--stop']
-        PrintCmd(cmd)
+        print_cmd(cmd)
         subprocess.call(cmd, env=env)
         GRADLE_STOPPED = True
     except Exception as e:
@@ -399,7 +393,7 @@ def run_download(sha1, output_dir, success_file, internal, quiet=False):
     cmd = [sys.executable, download_script, sha1]
 
     if not quiet:
-        PrintCmd(cmd)
+        print_cmd(cmd)
         subprocess.check_call(cmd)
     else:
         subprocess.check_call(cmd, stdout=subprocess.DEVNULL)
@@ -691,26 +685,26 @@ def get_sha1(filename):
 
 def get_sha1_from_revision(revision):
     cmd = ['git', 'rev-parse', revision]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     with ChangedWorkingDirectory(REPO_ROOT):
         return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
-def get_HEAD_branch():
+def get_head_branch():
     result = subprocess.check_output(
         ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8')
     return result.strip()
 
 
-def get_HEAD_commit():
-    return historic_run.git_commit_from_hash(get_HEAD_sha1())
+def get_head_commit():
+    return historic_run.git_commit_from_hash(get_head_sha1())
 
 
-def get_HEAD_sha1():
+def get_head_sha1():
     return get_sha1_from_revision('HEAD')
 
 
-def get_HEAD_diff_stat():
+def get_head_diff_stat():
     return subprocess.check_output(['git', 'diff', '--stat']).decode('utf-8')
 
 
@@ -750,7 +744,7 @@ def upload_file_to_cloud_storage(source, destination, header=None):
         if header:
             cmd.extend(['-h', header])
         cmd.extend(['cp', source, destination])
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -782,7 +776,7 @@ def upload_directory_to_cloud_storage(source, destination, parallel=True):
             cmd += ['-m']
         cmd += ['cp', '-R']
         cmd += [source, destination_parent + '/']
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -798,7 +792,7 @@ def rsync_directory_to_cloud_storage(source, destination, parallel=True):
             cmd += ['-m']
         cmd += ['rsync', '-R']
         cmd += [source, destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -807,7 +801,7 @@ def ls_files_on_cloud_storage(destination):
         cmd = [get_gcloud(), 'storage', 'ls', destination]
     else:
         cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     return subprocess.check_output(cmd).decode('utf-8')
 
 
@@ -816,7 +810,7 @@ def file_exists_on_cloud_storage(destination):
         cmd = [get_gcloud(), 'storage', 'ls', destination]
     else:
         cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     return subprocess.call(cmd) == 0
 
 
@@ -843,7 +837,7 @@ def download_file_from_cloud_storage(source,
         if flags:
             cmd.extend(flags)
         cmd.extend([source, destination])
-    PrintCmd(cmd, quiet=not printcmd)
+    print_cmd(cmd, quiet=not printcmd)
     subprocess.check_call(cmd)
 
 
@@ -912,7 +906,7 @@ def cloud_storage_exists(destination):
         cmd = [get_gcloud(), 'storage', 'ls', destination]
     else:
         cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     exit_code = subprocess.call(cmd)
     return exit_code == 0
 
@@ -983,7 +977,7 @@ def get_dex_segment_sizes(dex_files):
         'dexsegments'
     ]
     cmd.extend(dex_files)
-    PrintCmd(cmd)
+    print_cmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
 
     matches = DEX_SEGMENTS_RESULT_PATTERN.findall(output)
@@ -1006,7 +1000,7 @@ def get_cf_segment_sizes(cf_file):
         jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
         CF_SEGMENTS_TOOL, 'com.android.tools.r8.cf_segments.MeasureLib', cf_file
     ]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
 
     matches = DEX_SEGMENTS_RESULT_PATTERN.findall(output)

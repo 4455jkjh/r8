@@ -74,7 +74,7 @@ def run(tool,
     if lib:
         cmd.extend(["--lib", lib])
     cmd.extend(args)
-    utils.PrintCmd(cmd, quiet=quiet, worker_id=worker_id)
+    utils.print_cmd(cmd, quiet=quiet, worker_id=worker_id)
     start = time.time()
     if timeout > 0:
         kill = lambda process: process.kill()

@@ -321,12 +321,12 @@ def prepare_studio(args):
                 sed(r'"com\.android\.tools:r8:[^"]+"',
                     f'"com.android.tools:r8:{version}"', artifacts_bzl)
             maven_fetch = os.path.join('bazel', 'maven', 'maven_fetch.sh')
-            utils.PrintCmd([maven_fetch])
+            utils.print_cmd([maven_fetch])
             subprocess.check_call([maven_fetch])
 
         with utils.ChangedWorkingDirectory(studio):
             cmd = ['tools/base/bazel/bazel', 'shutdown']
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(cmd)
 
         bugs = '\n'.join(map(lambda b: f'Bug: {b}',
@@ -414,7 +414,7 @@ Test: n/a"""
                            f'{options.studio_branch} --use-superproject '
                            '--partial-clone --clone-filter=blob:limit=10k && '
                            'repo sync -c -j16')
-                    utils.PrintCmd(cmd)
+                    utils.print_cmd(cmd)
                     subprocess.check_call(cmd, shell=True)
                 release_studio_in_checkout(temp, options)
                 if not options.yes:
@@ -684,10 +684,10 @@ def update_desugar_library_in_studio(args):
                 '--repo=https://maven.google.com com.android.tools:desugar_jdk_libs:%s'
                 % library_version
             ]
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(" ".join(cmd), shell=True)
             cmd = ['tools/base/bazel/bazel', 'shutdown']
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(cmd)
 
         prebuilts_tools = os.path.join(args.studio, 'prebuilts', 'tools')

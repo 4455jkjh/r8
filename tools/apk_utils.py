@@ -65,7 +65,7 @@ def align(apk, aligned_apk):
     zipalign_path = ('zipalign' if 'build_tools' in os.environ.get('PATH') else
                      os.path.join(utils.get_android_build_tools(), 'zipalign'))
     cmd = [zipalign_path, '-f', '-p', '4', apk, aligned_apk]
-    utils.RunCmd(cmd, quiet=True, logging=False)
+    utils.run_cmd(cmd, quiet=True, logging=False)
     return aligned_apk
 
 
@@ -84,15 +84,16 @@ def get_min_api(apk):
 
 
 def sign(unsigned_apk, signed_apk, keystore, quiet=False, logging=True):
-    utils.Print('Signing (ignore the warnings)', quiet=quiet)
+    if not quiet:
+        print('Signing (ignore the warnings)')
     cmd = ['zip', '-d', unsigned_apk, 'META-INF/*']
-    utils.RunCmd(cmd, quiet=quiet, logging=logging, fail=False)
+    utils.run_cmd(cmd, quiet=quiet, logging=logging, fail=False)
     cmd = [
         'jarsigner', '-sigalg', 'SHA1withRSA', '-digestalg', 'SHA1',
         '-keystore', keystore, '-storepass', 'android', '-signedjar',
         signed_apk, unsigned_apk, 'androiddebugkey'
     ]
-    utils.RunCmd(cmd, quiet=quiet)
+    utils.run_cmd(cmd, quiet=quiet)
 
 
 def sign_with_apksigner(unsigned_apk,
@@ -107,7 +108,7 @@ def sign_with_apksigner(unsigned_apk,
         'pass:' + password, '--min-sdk-version', '19', '--out', signed_apk,
         '--v2-signing-enabled', unsigned_apk
     ]
-    utils.RunCmd(cmd, quiet=quiet, logging=logging)
+    utils.run_cmd(cmd, quiet=quiet, logging=logging)
     return signed_apk
 
 

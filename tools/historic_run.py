@@ -221,7 +221,7 @@ def benchmark(commits, command, dryrun=False):
 
 
 def top_or_default(top=None):
-    return top if top else utils.get_HEAD_sha1()
+    return top if top else utils.get_head_sha1()
 
 
 def bottom_or_default(bottom=None):

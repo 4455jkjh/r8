@@ -43,7 +43,7 @@ def main(argv):
 
     java = jdk.get_java_executable(jdk.get_default_jdk_home())
     cmd = [java, '-jar', utils.R8_ASSISTANT_LIB_JAR] + args
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     res = subprocess.run(cmd)
     return res.returncode
 

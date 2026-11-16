@@ -206,10 +206,10 @@ def build_desugared_library(checkout_dir, variant, version=None):
                 bazel, '--bazelrc=/dev/null', 'build', '--spawn_strategy=local',
                 '--verbose_failures', MAVEN_RELEASE_TARGET_MAP[variant]
             ]
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(cmd, env=java_env)
             cmd = [bazel, 'shutdown']
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(cmd, env=java_env)
 
         # Locate the library jar and the maven zip with the jar from the

@@ -9,21 +9,21 @@ import subprocess
 
 def git_clone(url, checkout_dir):
     cmd = ['git', 'clone', url, checkout_dir]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     return subprocess.check_call(cmd)
 
 
 def git_checkout(revision, checkout_dir):
     with utils.ChangedWorkingDirectory(checkout_dir):
         cmd = ['git', 'checkout', revision]
-        utils.PrintCmd(cmd)
+        utils.print_cmd(cmd)
         return subprocess.check_call(cmd)
 
 
 def get_head_revision(checkout_dir, use_main=False):
     revision_from = 'origin/main' if use_main else 'HEAD'
     cmd = ['git', 'rev-parse', revision_from]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     with utils.ChangedWorkingDirectory(checkout_dir):
         return subprocess.check_output(cmd).strip().decode('utf-8')
 
@@ -43,7 +43,7 @@ def git_cl_append_reviewers(cmd, reviewer, send_mail):
 
 def git_commit(message):
     cmd = ['git', 'commit', '-a', '-m', message]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     return subprocess.check_call(cmd)
 
 
@@ -159,7 +159,7 @@ def get_candidate_main_commits(explicit_base_hash=None,
                                                 stderr=subprocess.PIPE,
                                                 text=True).strip()
         except subprocess.CalledProcessError:
-            start_ref = utils.get_HEAD_sha1()
+            start_ref = utils.get_head_sha1()
     try:
         log_cmd = [
             'git',

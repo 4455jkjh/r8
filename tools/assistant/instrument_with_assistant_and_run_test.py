@@ -23,11 +23,11 @@ class AttrDict(dict):
 
 def instrument_dex(options, temp_dir, instrumented_dex):
     with utils.TempDir() as compiledump_temp_dir:
-        utils.RunCmd(
+        utils.run_cmd(
             ['unzip', options.apk, '*.dex', '-d', compiledump_temp_dir])
         with utils.ChangedWorkingDirectory(compiledump_temp_dir):
             dex_jar = os.path.join(compiledump_temp_dir, 'dex.jar')
-            utils.RunCmd('zip %s *.dex' % dex_jar, shell=True)
+            utils.run_cmd('zip %s *.dex' % dex_jar, shell=True)
         args_for_assistant = AttrDict(
             vars(
                 argparse.Namespace(
@@ -122,7 +122,7 @@ def check_reflective_operations(options, temp_dir):
                 'com.android.tools.r8.assistant.postprocessing.CheckReflectiveOperations',
                 log_file, keep_info_dir
             ]
-            utils.RunCmd(cmd)
+            utils.run_cmd(cmd)
         else:
             raise Exception(
                 "Missing log file or keep info directory for reflective operations check."
