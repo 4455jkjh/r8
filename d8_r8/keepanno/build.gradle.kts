@@ -60,9 +60,7 @@ tasks {
       .get()
       .compileClasspath
       .filter({
-        "$it".contains("third_party") &&
-          "$it".contains("dependencies") &&
-          !("$it".contains("errorprone") || "$it".contains("ow2"))
+        "$it".contains("third_party") && "$it".contains("dependencies") && !"$it".contains("ow2")
       })
   }
 
@@ -71,9 +69,7 @@ tasks {
       .get()
       .compileClasspath
       .filter({
-        "$it".contains("third_party") &&
-          "$it".contains("dependencies") &&
-          ("$it".contains("errorprone") || "$it".contains("ow2"))
+        "$it".contains("third_party") && "$it".contains("dependencies") && "$it".contains("ow2")
       })
   }
 

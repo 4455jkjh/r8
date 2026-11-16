@@ -152,6 +152,8 @@ fun relocateDepsExceptAsm(pkg: String): List<String> {
     "--map",
     "com.google.common.**->${pkg}.com.google.common",
     "--map",
+    "com.google.errorprone.**->${pkg}.com.google.errorprone",
+    "--map",
     "com.google.gson.**->${pkg}.com.google.gson",
     "--map",
     "com.google.thirdparty.**->${pkg}.com.google.thirdparty",
@@ -193,9 +195,7 @@ tasks {
           r8Deps.incoming.files
             .filter {
               val path = it.absolutePath
-              path.contains("third_party") &&
-                path.contains("dependencies") &&
-                !path.contains("errorprone")
+              path.contains("third_party") && path.contains("dependencies")
             }
             .map { injected.arcOps.zipTree(it) }
         }
