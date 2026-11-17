@@ -64,6 +64,7 @@ public class StringConcatFactoryArtArrayTest extends StringConcatFactoryTestBase
             b -> b.addProgramClasses(MAIN))
         .run(parameters.getRuntime(), MAIN)
         .inspect(inspector -> checkInvokeDynamic(inspector, !makeConcatFromJavac))
+        .inspect(inspector -> checkValueOf(inspector, MAIN, "testArrays", 0))
         .inspectStdOut(s -> assertTrue(EXPECTED.matcher(s).matches()));
   }
 
@@ -75,8 +76,10 @@ public class StringConcatFactoryArtArrayTest extends StringConcatFactoryTestBase
         .apply(this::enableStringConcatFactoryForDex)
         .compile()
         .inspect(inspector -> checkInvokeDynamic(inspector, true))
+        .inspect(inspector -> checkValueOf(inspector, MAIN, "testArrays", 10))
         .run(parameters.getRuntime(), MAIN)
-        .assertFailureWithErrorThatThrows(BootstrapMethodError.class);
+        .assertSuccess()
+        .inspectStdOut(s -> assertTrue(EXPECTED.matcher(s).matches()));
   }
 
   @Test
@@ -94,11 +97,11 @@ public class StringConcatFactoryArtArrayTest extends StringConcatFactoryTestBase
         .addKeepRules("-neverinline class " + MAIN.getTypeName() + "{ *** test*(...); }")
         .compile()
         .inspect(inspector -> checkInvokeDynamic(inspector, true))
+        .inspect(
+            inspector ->
+                checkValueOf(inspector, MAIN, "testArrays", parameters.isCfRuntime() ? 0 : 10))
         .run(parameters.getRuntime(), MAIN)
-        // TODO(b/576559667): ART implementation does not support Object types.
-        .applyIf(
-            parameters.isCfRuntime(),
-            r -> r.assertSuccess().inspectStdOut(s -> assertTrue(EXPECTED.matcher(s).matches())),
-            r -> r.assertFailureWithErrorThatThrows(BootstrapMethodError.class));
+        .assertSuccess()
+        .inspectStdOut(s -> assertTrue(EXPECTED.matcher(s).matches()));
   }
 }

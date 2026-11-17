@@ -183,6 +183,7 @@ public class StringConcatRemover extends CodeRewriterPass {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void replaceWithInvokeCustom(
       IRCode code,
       IRCodeInstructionListIterator iterator,
@@ -193,6 +194,7 @@ public class StringConcatRemover extends CodeRewriterPass {
     List<Value> inValues = stringConcat.inValues();
     List<Value> dynamicValues = new ArrayList<>();
     List<DexType> dynamicTypes = new ArrayList<>();
+    List<Instruction> newInstructions = new ArrayList<>();
 
     StringBuilder recipe = new StringBuilder();
     List<DexValue> bootstrapArgs = new ArrayList<>();
@@ -212,10 +214,32 @@ public class StringConcatRemover extends CodeRewriterPass {
             aliasedValue.getDefinition().asConstString().getValue(), recipe, bootstrapArgs);
       } else {
         recipe.append('\u0001');
+        DexType type =
+            value.getType().isStringType(dexItemFactory) ? dexItemFactory.stringType : argTypes[i];
+        if (options.isGeneratingDex()
+            && type.isReferenceType()
+            && type.isNotIdenticalTo(dexItemFactory.stringType)) {
+          InvokeStatic valueOfInvoke =
+              InvokeStatic.builder()
+                  .setMethod(dexItemFactory.stringMembers.valueOfObject)
+                  .setSingleArgument(value)
+                  .setFreshOutValue(code, TypeElement.stringClassType(appView))
+                  .setPosition(stringConcat)
+                  .build();
+          newInstructions.add(valueOfInvoke);
+          value = valueOfInvoke.outValue();
+          type = dexItemFactory.stringType;
+        }
         dynamicValues.add(value);
-        dynamicTypes.add(
-            value.getType().isStringType(dexItemFactory) ? dexItemFactory.stringType : argTypes[i]);
+        dynamicTypes.add(type);
       }
+    }
+
+    if (!newInstructions.isEmpty()) {
+      Instruction shouldBeStringConcat = iterator.previous();
+      assert shouldBeStringConcat == stringConcat : iterator.peekNext();
+      iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(newInstructions, options);
+      iterator.next();
     }
 
     bootstrapArgs.set(
