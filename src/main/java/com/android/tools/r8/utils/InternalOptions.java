@@ -2416,7 +2416,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
             "com.android.tools.r8.enableBranchDiamondInverter", true);
     public boolean enable2AddrHintsForLogicalBinop =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
-            "com.android.tools.r8.enable2AddrHintsForLogicalBinop", true);
+            "com.android.tools.r8.enable2AddrHintsForLogicalBinop", false);
     public boolean enableHorizontalClassMergingWithDifferentFields =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableHorizontalClassMergingWithDifferentFields", true);

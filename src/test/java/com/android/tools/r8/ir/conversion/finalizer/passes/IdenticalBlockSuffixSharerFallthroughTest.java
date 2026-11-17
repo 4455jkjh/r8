@@ -59,7 +59,7 @@ public class IdenticalBlockSuffixSharerFallthroughTest extends TestBase {
       if (a == 0) {
         r = b * 3 + 7;
       } else if (a == 1) {
-        b = b ^ 5;
+        b = b + 3;
         r = b * 3 + 7;
       } else {
         r = b;
