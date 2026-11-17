@@ -80,8 +80,9 @@ public class StringConcatFactoryArtSpecialCharactersTest extends StringConcatFac
         .inspect(inspector -> checkInvokeDynamic(inspector, true, "Special: \1\1\2\1\1\2"))
         .run(parameters.getRuntime(), MAIN)
         // TODO(b/576559667): This should work.
+        .assertFailureWithErrorThatThrows(BootstrapMethodError.class)
         .assertFailureWithErrorThatMatches(
-            containsString("StringConcatException: Unsupported extra arguments"));
+            containsString("StringConcatException: Missing constant argument"));
   }
 
   @Test
@@ -102,8 +103,9 @@ public class StringConcatFactoryArtSpecialCharactersTest extends StringConcatFac
         .inspect(inspector -> checkInvokeDynamic(inspector, true, "Special: \1\1\2\1\1\2"))
         .run(parameters.getRuntime(), MAIN)
         // TODO(b/576559667): This should work (both on CF and ART).
+        .assertFailureWithErrorThatThrows(BootstrapMethodError.class)
         .assertFailureWithErrorThatMatchesIf(
             parameters.isDexRuntime(),
-            containsString("StringConcatException: Unsupported extra arguments"));
+            containsString("StringConcatException: Missing constant argument"));
   }
 }

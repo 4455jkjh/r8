@@ -187,15 +187,17 @@ fi
 if [ -f $DEST/product/$ANDROID_PRODUCT/system/framework/boot.vdex ]; then
   for VDEXFILE in $DEST/product/$ANDROID_PRODUCT/system/framework/*.vdex; do
     VDEXNAME=$(basename ${VDEXFILE});
-    for ARCH in arm64; do
-      rm $DEST/product/$ANDROID_PRODUCT/system/framework/$ARCH/${VDEXNAME};
-      # This relative link command will create a symbolic link of the form
-      # ../${VDEXNAME} for each architecture.
-      # ln -r -s $DEST/product/$ANDROID_PRODUCT/system/framework/${VDEXNAME} $DEST/product/$ANDROID_PRODUCT/system/framework/$ARCH/${VDEXNAME};
-      # The Cloud Storage dependency tool (download_from_google_storage.py) does
-      # not allow synlinks at all, so instad of the ln in the comment above just
-      # copy the ${VDEXNAME} files.
-      cp $DEST/product/$ANDROID_PRODUCT/system/framework/${VDEXNAME} $DEST/product/$ANDROID_PRODUCT/system/framework/$ARCH/${VDEXNAME};
+    for ARCH in x86 x86_64 arm64; do
+      if [ -e $DEST/product/$ANDROID_PRODUCT/system/framework/$ARCH/${VDEXNAME} ]; then
+        rm $DEST/product/$ANDROID_PRODUCT/system/framework/$ARCH/${VDEXNAME};
+        # This relative link command will create a symbolic link of the form
+        # ../${VDEXNAME} for each architecture.
+        # ln -r -s $DEST/product/$ANDROID_PRODUCT/system/framework/${VDEXNAME} $DEST/product/$ANDROID_PRODUCT/system/framework/$ARCH/${VDEXNAME};
+        # The Cloud Storage dependency tool (download_from_google_storage.py) does
+        # not allow synlinks at all, so instad of the ln in the comment above just
+        # copy the ${VDEXNAME} files.
+        cp $DEST/product/$ANDROID_PRODUCT/system/framework/${VDEXNAME} $DEST/product/$ANDROID_PRODUCT/system/framework/$ARCH/${VDEXNAME};
+      fi
     done
   done
 fi

@@ -2322,6 +2322,7 @@ public class ToolHelper {
   // Checked in VMs for which dex2oat should work specified in decreasing order.
   private static final List<DexVm> SUPPORTED_DEX2OAT_VMS =
       ImmutableList.of(
+          DexVm.ART_MAIN_HOST,
           DexVm.ART_17_2_0_HOST,
           DexVm.ART_17_1_0_HOST,
           DexVm.ART_17_0_0_HOST,
@@ -2398,7 +2399,8 @@ public class ToolHelper {
       dex2oatDir = TestDeps.getDex2Oat36_0Dir();
     } else if (vm.version == DexVm.Version.V17_0_0
         || vm.version == DexVm.Version.V17_1_0
-        || vm.version == DexVm.Version.V17_2_0) {
+        || vm.version == DexVm.Version.V17_2_0
+        || vm.version == DexVm.Version.MAIN) {
       dex2oatDir = TestDeps.getDex2OatHeadDir();
     } else {
       throw new Unreachable();
