@@ -27,6 +27,7 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MoreCollectors;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -68,7 +69,8 @@ public class AndroidResourceTestingUtils {
     XML,
     ID,
     FRACTION,
-    COLOR;
+    COLOR,
+    RAW;
 
     public static RClassType fromClass(Class clazz) {
       String type = rClassWithoutNamespaceAndOuter(clazz).substring(2);
@@ -377,6 +379,11 @@ public class AndroidResourceTestingUtils {
     public Collection<String> entries(String type) {
       return testResourceTable.entriesForType(type);
     }
+
+    public String getSingleFileValue(String type, String name) {
+      return Iterables.getOnlyElement(testResourceTable.valueMapping.get(type).mapping.get(name))
+          .getValue();
+    }
   }
 
   public static class AndroidTestResourceBuilder {
@@ -389,6 +396,7 @@ public class AndroidResourceTestingUtils {
     private final Map<String, Integer> styleables = new TreeMap<>();
     private final Map<String, byte[]> drawables = new TreeMap<>();
     private final Map<String, String> xmlFiles = new TreeMap<>();
+    private final Map<String, String> colorXmlFiles = new TreeMap<>();
     // Used for xml files that we hard code to -v24
     private final Map<String, String> apiSpecificXmlFiles = new TreeMap<>();
     private final Map<String, String> rawXmlFiles = new TreeMap<>();
@@ -515,6 +523,13 @@ public class AndroidResourceTestingUtils {
       return this;
     }
 
+    // Replaces the default value of a color added by addRClassInitializeWithDefaultValues().
+    public AndroidTestResourceBuilder addColorXml(String name, String content) {
+      colorValues.remove(name);
+      colorXmlFiles.put(name + ".xml", content);
+      return this;
+    }
+
     public AndroidTestResourceBuilder addApiSpecificXml(String name, String content) {
       apiSpecificXmlFiles.put(name, content);
       return this;
@@ -556,6 +571,10 @@ public class AndroidResourceTestingUtils {
     }
 
     AndroidTestResourceBuilder addDrawable(String name, byte[] value) {
+      int dotIndex = name.indexOf('.');
+      if (dotIndex >= 0) {
+        drawables.remove(name.substring(0, dotIndex) + ".png");
+      }
       drawables.put(name, value);
       return this;
     }
@@ -607,6 +626,13 @@ public class AndroidResourceTestingUtils {
         File xmlFolder = temp.newFolder("res", "xml");
         for (Entry<String, String> entry : xmlFiles.entrySet()) {
           FileUtils.writeTextFile(xmlFolder.toPath().resolve(entry.getKey()), entry.getValue());
+        }
+      }
+
+      if (colorXmlFiles.size() > 0) {
+        File colorFolder = temp.newFolder("res", "color");
+        for (Entry<String, String> entry : colorXmlFiles.entrySet()) {
+          FileUtils.writeTextFile(colorFolder.toPath().resolve(entry.getKey()), entry.getValue());
         }
       }
 

@@ -18,6 +18,7 @@ package com.android.tools.r8.resourceshrinker;
 
 import com.android.aapt.Resources;
 import com.android.aapt.Resources.Entry;
+import com.android.aapt.Resources.Item;
 import com.android.aapt.Resources.Package;
 import com.android.aapt.Resources.ResourceTable;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -146,5 +147,35 @@ public final class ResourceTableUtil {
     ResourceTable table = ResourceTable.parseFrom(resourceTableBytes);
     ResourceTable shrunkenTable = nullOutEntriesWithIds(table, ids, false);
     return shrunkenTable.toByteArray();
+  }
+
+  public static ResourceTable rewriteFilePaths(
+      ResourceTable resourceTable, Map<String, String> replacements) {
+    if (replacements.isEmpty()) {
+      return resourceTable;
+    }
+    ResourceTable.Builder tableBuilder = resourceTable.toBuilder();
+    for (Package.Builder packageBuilder : tableBuilder.getPackageBuilderList()) {
+      for (Resources.Type.Builder typeBuilder : packageBuilder.getTypeBuilderList()) {
+        for (Entry.Builder entryBuilder : typeBuilder.getEntryBuilderList()) {
+          for (int i = 0; i < entryBuilder.getConfigValueCount(); i++) {
+            Item item = entryBuilder.getConfigValue(i).getValue().getItem();
+            if (!item.hasFile()) {
+              continue;
+            }
+            String replacement = replacements.get(item.getFile().getPath());
+            if (replacement != null) {
+              entryBuilder
+                  .getConfigValueBuilder(i)
+                  .getValueBuilder()
+                  .getItemBuilder()
+                  .getFileBuilder()
+                  .setPath(replacement);
+            }
+          }
+        }
+      }
+    }
+    return tableBuilder.build();
   }
 }

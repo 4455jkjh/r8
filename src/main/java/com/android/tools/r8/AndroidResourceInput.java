@@ -34,10 +34,27 @@ public interface AndroidResourceInput extends Resource {
     UNKNOWN
   }
 
+  @KeepForApi
+  enum Compression {
+    UNKNOWN,
+    COMPRESSED,
+    UNCOMPRESSED
+  }
+
   // The path, within the app, of the resource.
   ResourcePath getPath();
 
   Kind getKind();
+
+  /** Get the uncompressed size in bytes of the resource, or -1 if unknown. */
+  default long getByteSize() throws ResourceException {
+    return -1;
+  }
+
+  /** Get the compression of the resource, or {@link Compression#UNKNOWN} if unknown. */
+  default Compression getCompression() throws ResourceException {
+    return Compression.UNKNOWN;
+  }
 
   InputStream getByteStream() throws ResourceException;
 }

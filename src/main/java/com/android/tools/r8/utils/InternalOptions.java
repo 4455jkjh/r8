@@ -907,6 +907,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.enableResourceGetIdentifierTracing", true);
 
+  // Under optimized resource shrinking, collapse identical res/ files and rewrite resource table
+  // file references to point to a single canonical file. Keep disabled until an aapt2 release
+  // happens that works with duplicate paths.
+  public boolean enableResourceFileDeduplication =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enableResourceFileDeduplication", false);
+
   // Flag to turn on/offLoad/store optimization in the Cf back-end.
   public boolean enableLoadStoreOptimization = true;
   // Flag to turn on/off desugaring in D8/R8.

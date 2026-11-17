@@ -6,6 +6,7 @@ package com.android.tools.r8.resourceshrinker;
 import static com.android.SdkConstants.ANDROID_PKG;
 import static com.android.SdkConstants.PREFIX_RESOURCE_REF;
 import static com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker.getUtfReader;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.aapt.Resources;
 import com.android.aapt.Resources.ConfigValue;
@@ -24,23 +25,32 @@ import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
+import com.android.tools.r8.AndroidResourceInput;
+import com.android.tools.r8.AndroidResourceInput.Compression;
+import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
 import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorder;
 import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -68,7 +79,7 @@ public class ResourceShrinkerState<T> {
 
   private final Function<Exception, RuntimeException> errorHandler;
   private final R8ResourceShrinkerModel r8ResourceShrinkerModel;
-  private final Map<String, Supplier<InputStream>> xmlFileProviders = new HashMap<>();
+  private final Map<String, AndroidResourceInput> xmlFileProviders = new HashMap<>();
   private final Map<String, byte[]> changedXmlFiles = new HashMap<>();
   private final Set<String> duplicatedResFolderEntries = new HashSet<>();
   private final List<Supplier<InputStream>> keepRuleFileProviders = new ArrayList<>();
@@ -87,12 +98,13 @@ public class ResourceShrinkerState<T> {
 
   private final List<ManifestLocationAndProvider> manifestProviders = new ArrayList<>();
   private Set<T> featureSplitsWithoutCode = Collections.emptySet();
-  private final Map<String, Supplier<InputStream>> resfileProviders = new HashMap<>();
-  private final Map<T, ResourceTable> resourceTables = new HashMap<>();
+  private final Map<String, AndroidResourceInput> resfileProviders = new HashMap<>();
+  private final Map<T, ResourceTable> resourceTables = new LinkedHashMap<>();
   private final ShrinkerDebugReporter shrinkerDebugReporter;
   private final boolean enableXmlInlining;
   private final boolean enableManifestPruning;
   private final boolean enableResourceIdPruning;
+  private final boolean enableResourceFileDeduplication;
 
   private Map<Integer, Set<String>> resourceIdToXmlFiles;
   private final IntSet seenAndroidIds = new IntOpenHashSet();
@@ -133,13 +145,15 @@ public class ResourceShrinkerState<T> {
       ShrinkerDebugReporter shrinkerDebugReporter,
       boolean enableXmlInlining,
       boolean enableManifestPruning,
-      boolean enableResourceIdPruning) {
+      boolean enableResourceIdPruning,
+      boolean enableResourceFileDeduplication) {
     r8ResourceShrinkerModel = new R8ResourceShrinkerModel(shrinkerDebugReporter, true);
     this.shrinkerDebugReporter = shrinkerDebugReporter;
     this.errorHandler = errorHandler;
     this.enableXmlInlining = enableXmlInlining;
     this.enableManifestPruning = enableManifestPruning;
     this.enableResourceIdPruning = enableResourceIdPruning;
+    this.enableResourceFileDeduplication = enableResourceFileDeduplication;
   }
 
   public void trace(int id, String reachableFrom, ResourceShrinkerCallback callback) {
@@ -329,11 +343,12 @@ public class ResourceShrinkerState<T> {
         new ManifestLocationAndProvider(manifestProvider, location, featureSplit));
   }
 
-  public void addXmlFileProvider(Supplier<InputStream> inputStreamSupplier, String location) {
+  public void addXmlFileProvider(AndroidResourceInput resource) {
+    String location = resource.getPath().location();
     if (this.xmlFileProviders.containsKey(location)) {
       duplicatedResFolderEntries.add(location);
     } else {
-      this.xmlFileProviders.put(location, inputStreamSupplier);
+      this.xmlFileProviders.put(location, resource);
     }
   }
 
@@ -341,11 +356,12 @@ public class ResourceShrinkerState<T> {
     this.keepRuleFileProviders.add(inputStreamSupplier);
   }
 
-  public void addResFileProvider(Supplier<InputStream> inputStreamSupplier, String location) {
+  public void addResFileProvider(AndroidResourceInput resource) {
+    String location = resource.getPath().location();
     if (this.resfileProviders.containsKey(location)) {
       duplicatedResFolderEntries.add(location);
     }
-    this.resfileProviders.put(location, inputStreamSupplier);
+    this.resfileProviders.put(location, resource);
   }
 
   public void addResourceTable(InputStream inputStream, T featureSplit) {
@@ -359,34 +375,27 @@ public class ResourceShrinkerState<T> {
 
   private byte[] getXmlOrResFileBytes(String path) {
     assert !path.startsWith("res/");
-    String pathWithRes = "res/" + path;
+    return getFileBytes("res/" + path);
+  }
 
-    if (xmlFileProviders.containsKey(pathWithRes)) {
-      return getXmlBytes(pathWithRes);
+  private AndroidResourceInput getFileResource(String pathWithRes) {
+    AndroidResourceInput resource = xmlFileProviders.get(pathWithRes);
+    return resource != null ? resource : resfileProviders.get(pathWithRes);
+  }
+
+  private byte[] getFileBytes(String pathWithRes) {
+    byte[] changedBytes = changedXmlFiles.get(pathWithRes);
+    if (changedBytes != null) {
+      return changedBytes;
     }
-    Supplier<InputStream> inputStreamSupplier = resfileProviders.get(pathWithRes);
-    if (inputStreamSupplier == null) {
+    AndroidResourceInput resource = getFileResource(pathWithRes);
+    if (resource == null) {
       // Ill formed resource table with file references inside res/ that does not exist.
       return null;
     }
-    try {
-      return inputStreamSupplier.get().readAllBytes();
-    } catch (IOException ex) {
-      throw errorHandler.apply(ex);
-    }
-  }
-
-  private byte[] getXmlBytes(String pathWithRes) {
-    if (changedXmlFiles.containsKey(pathWithRes)) {
-      return changedXmlFiles.get(pathWithRes);
-    }
-    Supplier<InputStream> inputStreamSupplier = xmlFileProviders.get(pathWithRes);
-    if (inputStreamSupplier == null) {
-      return null;
-    }
-    try {
-      return inputStreamSupplier.get().readAllBytes();
-    } catch (IOException ex) {
+    try (InputStream is = resource.getByteStream()) {
+      return is.readAllBytes();
+    } catch (IOException | ResourceException ex) {
       throw errorHandler.apply(ex);
     }
   }
@@ -403,7 +412,7 @@ public class ResourceShrinkerState<T> {
     updateModelWithKeepXmlReferences();
     ResourceStore resourceStore = r8ResourceShrinkerModel.getResourceStore();
     resourceStore.processToolsAttributes();
-    ImmutableSet<String> resEntriesToKeep = getResEntriesToKeep(resourceStore);
+    Set<String> resEntriesToKeep = getResEntriesToKeep(resourceStore);
     List<Resource> resourcesToRemove = getResourcesToRemove();
     List<Integer> resourceIdsToRemove = getResourceIdsToRemove();
     if (enableResourceIdPruning) {
@@ -417,10 +426,12 @@ public class ResourceShrinkerState<T> {
     Map<T, byte[]> shrunkenTables = new IdentityHashMap<>();
     resourceTables.forEach(
         (featureSplit, resourceTable) -> {
-          shrunkenTables.put(
-              featureSplit,
-              ResourceTableUtil.nullOutEntriesWithIds(resourceTable, resourceIdsToRemove, true)
-                  .toByteArray());
+          ResourceTable shrunkenTable =
+              ResourceTableUtil.nullOutEntriesWithIds(resourceTable, resourceIdsToRemove, true);
+          if (enableResourceFileDeduplication) {
+            shrunkenTable = deduplicateResFiles(shrunkenTable, resEntriesToKeep);
+          }
+          shrunkenTables.put(featureSplit, shrunkenTable.toByteArray());
         });
     if (shrinkerDebugReporter.isDebugEnabled()) {
       List<Map.Entry<Resource, String>> sortedReachability =
@@ -465,23 +476,26 @@ public class ResourceShrinkerState<T> {
         .collect(Collectors.toList());
   }
 
-  private ImmutableSet<String> getResEntriesToKeep(ResourceStore resourceStore) {
-    ImmutableSet.Builder<String> resEntriesToKeep = new ImmutableSet.Builder<>();
+  private Set<String> getResEntriesToKeep(ResourceStore resourceStore) {
+    Set<String> resEntriesToKeep = new HashSet<>();
     for (String path : Iterables.concat(xmlFileProviders.keySet(), resfileProviders.keySet())) {
       if (ResourceStoreUtils.isJarPathReachable(resourceStore, path)) {
         resEntriesToKeep.add(path);
       }
     }
-    return resEntriesToKeep.build();
+    return resEntriesToKeep;
   }
 
   private void traceXmlForResourceId(int id, ResourceShrinkerCallback callback) {
     Set<String> xmlFiles = getResourceIdToXmlFiles().get(id);
     if (xmlFiles != null) {
       for (String xmlFile : xmlFiles) {
-        InputStream inputStream = xmlFileProviders.get(xmlFile).get();
-        Resource resource = r8ResourceShrinkerModel.getResourceStore().getResource(id);
-        traceXml(xmlFile, inputStream, inlinedIds -> pruneModel(resource, inlinedIds), callback);
+        try (InputStream inputStream = xmlFileProviders.get(xmlFile).getByteStream()) {
+          Resource resource = r8ResourceShrinkerModel.getResourceStore().getResource(id);
+          traceXml(xmlFile, inputStream, inlinedIds -> pruneModel(resource, inlinedIds), callback);
+        } catch (IOException | ResourceException ex) {
+          throw errorHandler.apply(ex);
+        }
         if (duplicatedResFolderEntries.contains(xmlFile)) {
           traceDuplicatedXmlFileIds(id, xmlFile, callback);
         }
@@ -971,6 +985,144 @@ public class ResourceShrinkerState<T> {
           || prim.hasColorArgb4Value()
           || prim.hasColorArgb8Value();
     }
+  }
+
+  private static class FileRef {
+    private final ResourceType resourceType;
+    private final Compression compression;
+    private final ConfigValue configValue;
+
+    private FileRef(ResourceType resourceType, Compression compression, ConfigValue configValue) {
+      this.resourceType = resourceType;
+      this.compression = compression;
+      this.configValue = configValue;
+    }
+
+    private String getPath() {
+      return configValue.getValue().getItem().getFile().getPath();
+    }
+
+    /**
+     * Returns a key such that files with identical contents and keys can be replaced by a single
+     * file. Includes resource type and config density (since the runtime caches loaded resources by
+     * file path), plus file type, archive compression, and extension.
+     */
+    private String getDeduplicationKey() {
+      FileReference file = configValue.getValue().getItem().getFile();
+      String path = file.getPath();
+      int dotIndex = path.indexOf('.', path.lastIndexOf('/') + 1);
+      String extension = dotIndex >= 0 ? path.substring(dotIndex + 1) : "";
+      return resourceType.getName()
+          + ":"
+          + configValue.getConfig().getDensity()
+          + ":"
+          + file.getType()
+          + ":"
+          + compression
+          + ":"
+          + extension;
+    }
+  }
+
+  // Points file references of the table that share contents with another kept file of the table
+  // to a single canonical file, and removes the deduplicated files from resEntriesToKeep.
+  //
+  // Deduplication proceeds in three stages to avoid unnecessary string allocations and hashing:
+  //   1. Group kept, single-split non-raw file references by byte length; skip unique-length files.
+  //   2. For colliding lengths, compute each file's compatibility key on demand (excluding files
+  //      referenced with conflicting keys, e.g. across densities or resource types) and group by
+  //      key; skip unique keys.
+  //   3. For files sharing both length and key, hash contents to pick a deterministic canonical
+  //      path and drop duplicates from resEntriesToKeep.
+  private ResourceTable deduplicateResFiles(
+      ResourceTable resourceTable, Set<String> resEntriesToKeep) {
+    // Stage 1: Bucket candidate FileRefs by byte length.
+    Int2ObjectMap<List<FileRef>> refsByLength = new Int2ObjectLinkedOpenHashMap<>();
+    for (Package resourcePackage : resourceTable.getPackageList()) {
+      for (Resources.Type protoType : resourcePackage.getTypeList()) {
+        ResourceType resourceType = ResourceType.fromClassName(protoType.getName());
+        // Do not deduplicate raw resources (e.g. accessed via openRawResourceFd or by URI).
+        if (resourceType == null || resourceType == ResourceType.RAW) {
+          continue;
+        }
+        for (Entry resourceEntry : protoType.getEntryList()) {
+          for (ConfigValue configValue : resourceEntry.getConfigValueList()) {
+            Item item = configValue.getValue().getItem();
+            if (!item.hasFile()) {
+              continue;
+            }
+            String path = item.getFile().getPath();
+            // Files present in multiple splits may still be referenced from another split's table.
+            if (!resEntriesToKeep.contains(path) || duplicatedResFolderEntries.contains(path)) {
+              continue;
+            }
+            AndroidResourceInput resource = getFileResource(path);
+            try {
+              Compression compression = resource.getCompression();
+              if (compression == Compression.UNKNOWN) {
+                continue;
+              }
+              byte[] changedBytes = changedXmlFiles.get(path);
+              long byteSize = changedBytes != null ? changedBytes.length : resource.getByteSize();
+              if (byteSize < 0 || byteSize > Integer.MAX_VALUE) {
+                continue;
+              }
+              refsByLength
+                  .computeIfAbsent(
+                      (int) byteSize, (IntFunction<List<FileRef>>) unused -> new ArrayList<>())
+                  .add(new FileRef(resourceType, compression, configValue));
+            } catch (ResourceException ex) {
+              throw errorHandler.apply(ex);
+            }
+          }
+        }
+      }
+    }
+    Map<String, String> replacements = new HashMap<>();
+    for (List<FileRef> refsWithSameLength : refsByLength.values()) {
+      if (refsWithSameLength.size() == 1) {
+        continue;
+      }
+      // Stage 2: Compute deduplication keys on demand for length collisions. A path referenced by
+      // multiple entries with different keys (e.g. different densities) cannot safely share a
+      // single rewritten path; mark it with a sticky "" sentinel (valid keys are never empty).
+      Map<String, String> keyByPath = new LinkedHashMap<>();
+      for (FileRef ref : refsWithSameLength) {
+        keyByPath.merge(
+            ref.getPath(),
+            ref.getDeduplicationKey(),
+            (existing, next) -> existing.equals(next) ? existing : "");
+      }
+      Map<String, List<String>> pathsByKey = new LinkedHashMap<>();
+      keyByPath.forEach(
+          (path, key) -> {
+            if (!key.isEmpty()) {
+              pathsByKey.computeIfAbsent(key, ignoreKey(ArrayList::new)).add(path);
+            }
+          });
+      // Stage 3: Hash only buckets where 2+ non-conflicting files share both length and key.
+      for (List<String> paths : pathsByKey.values()) {
+        if (paths.size() == 1) {
+          continue;
+        }
+        // Visit shorter paths first (then lexicographically) for a deterministic canonical choice.
+        paths.sort(
+            Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder()));
+        Map<HashCode, String> canonicalPathByHash = new HashMap<>();
+        for (String path : paths) {
+          byte[] bytes = getFileBytes(path);
+          HashCode hash = Hashing.murmur3_128().hashBytes(bytes);
+          String canonicalPath = canonicalPathByHash.putIfAbsent(hash, path);
+          if (canonicalPath != null && Arrays.equals(bytes, getFileBytes(canonicalPath))) {
+            replacements.put(path, canonicalPath);
+            resEntriesToKeep.remove(path);
+            shrinkerDebugReporter.debug(
+                () -> "Deduplicated resource file " + path + " -> " + canonicalPath);
+          }
+        }
+      }
+    }
+    return ResourceTableUtil.rewriteFilePaths(resourceTable, replacements);
   }
 
   public static class ShrinkerResult<T> {

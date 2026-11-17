@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import com.android.tools.r8.AndroidResourceInput.Compression;
 import com.android.tools.r8.AndroidResourceInput.Kind;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;
@@ -68,11 +69,17 @@ public class ArchiveProtoAndroidResourceProvider implements AndroidResourceProvi
         ZipEntry entry = entries.nextElement();
         String name = entry.getName();
         Kind kind = getKindFromName(name);
+        int method = entry.getMethod();
+        Compression compression =
+            method == ZipEntry.STORED
+                ? Compression.UNCOMPRESSED
+                : method == ZipEntry.DEFLATED ? Compression.COMPRESSED : Compression.UNKNOWN;
         ByteAndroidResourceInput resource =
             new ByteAndroidResourceInput(
                 name,
                 kind,
                 ByteStreams.toByteArray(zipFile.getInputStream(entry)),
+                compression,
                 new ArchiveEntryOrigin(name, origin));
         resources.add(resource);
         // We explicitly add any res/raw folder xml file also as a keep rule file.
@@ -82,6 +89,7 @@ public class ArchiveProtoAndroidResourceProvider implements AndroidResourceProvi
                   name,
                   Kind.KEEP_RULE_FILE,
                   ByteStreams.toByteArray(zipFile.getInputStream(entry)),
+                  compression,
                   new ArchiveEntryOrigin(name, origin));
           resources.add(keepResource);
         }
@@ -113,12 +121,15 @@ public class ArchiveProtoAndroidResourceProvider implements AndroidResourceProvi
     private final String name;
     private final Kind kind;
     private final byte[] bytes;
+    private final Compression compression;
     private final Origin origin;
 
-    ByteAndroidResourceInput(String name, Kind kind, byte[] bytes, Origin origin) {
+    ByteAndroidResourceInput(
+        String name, Kind kind, byte[] bytes, Compression compression, Origin origin) {
       this.name = name;
       this.kind = kind;
       this.bytes = bytes;
+      this.compression = compression;
       this.origin = origin;
     }
 
@@ -130,6 +141,16 @@ public class ArchiveProtoAndroidResourceProvider implements AndroidResourceProvi
     @Override
     public Kind getKind() {
       return kind;
+    }
+
+    @Override
+    public long getByteSize() {
+      return bytes.length;
+    }
+
+    @Override
+    public Compression getCompression() {
+      return compression;
     }
 
     @Override

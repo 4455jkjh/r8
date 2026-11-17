@@ -23,12 +23,19 @@ public class ResourceShrinkerUtils {
     InternalOptions options = appView.options();
     ResourceShrinkerState<FeatureSplit> state =
         new ResourceShrinkerState<>(
-            exception -> appView.reporter().fatalError(new ExceptionDiagnostic(exception)),
+            exception ->
+                appView
+                    .reporter()
+                    .fatalError(
+                        exception instanceof ResourceException
+                            ? new ExceptionDiagnostic((ResourceException) exception)
+                            : new ExceptionDiagnostic(exception)),
             shrinkerDebugReporterFromStringConsumer(
                 options.resourceShrinkerConfiguration.getDebugConsumer(), appView.reporter()),
             options.enableXmlInlining,
             options.enableManifestPruning,
-            options.enableResourceIdPruning);
+            options.enableResourceIdPruning,
+            options.enableResourceFileDeduplication);
     if (options.isOptimizedResourceShrinking()) {
       try {
         addResources(appView, state, options.androidResourceProvider, FeatureSplit.BASE);
@@ -67,13 +74,9 @@ public class ResourceShrinkerUtils {
           break;
         case XML_FILE:
           if (androidResource.getPath().location().startsWith("res/raw/")) {
-            state.addResFileProvider(
-                () -> wrapThrowingInputStreamResource(appView, androidResource),
-                androidResource.getPath().location());
+            state.addResFileProvider(androidResource);
           } else {
-            state.addXmlFileProvider(
-                () -> wrapThrowingInputStreamResource(appView, androidResource),
-                androidResource.getPath().location());
+            state.addXmlFileProvider(androidResource);
           }
           break;
         case KEEP_RULE_FILE:
@@ -81,9 +84,7 @@ public class ResourceShrinkerUtils {
               () -> wrapThrowingInputStreamResource(appView, androidResource));
           break;
         case RES_FOLDER_FILE:
-          state.addResFileProvider(
-              () -> wrapThrowingInputStreamResource(appView, androidResource),
-              androidResource.getPath().location());
+          state.addResFileProvider(androidResource);
           break;
         case UNKNOWN:
           break;
