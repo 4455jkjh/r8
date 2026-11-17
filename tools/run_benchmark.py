@@ -131,7 +131,8 @@ def parse_options(argv):
 
 
 def is_internal_benchmark(benchmark):
-    return any(name in benchmark for name in ('AGSA', 'SystemUI', 'YouTube'))
+    return any(name in benchmark
+               for name in ('AGSA', 'ChromeInternal', 'SystemUI', 'YouTube'))
 
 
 def build_gradle_args(options, temp):

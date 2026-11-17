@@ -229,6 +229,10 @@ INTERNAL_SLOW_BENCHMARKS = {
         'targets': ['r8-full'],
         'enable_perf_size': True
     },
+    'ChromeInternalApp': {
+        'targets': ['r8-full'],
+        'enable_perf_size': True
+    },
     'YouTubeApp': {
         'targets': ['r8-full'],
         'enable_perf_size': True

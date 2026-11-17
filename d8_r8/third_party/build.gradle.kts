@@ -188,6 +188,8 @@ registerTestDep("chromeBenchmark", ThirdPartyDeps.chromeBenchmark, "CHROME_BENCH
 
 registerTestDep("chromeHeadless", ThirdPartyDeps.chromeHeadless, "CHROME_HEADLESS")
 
+registerTestDep("chromeInternal", ThirdPartyDeps.chromeInternal, "CHROME_INTERNAL")
+
 registerTestDep("clank", ThirdPartyDeps.clank, "CLANK")
 
 registerTestDep("compilerApi", ThirdPartyDeps.compilerApi, "COMPILER_API")

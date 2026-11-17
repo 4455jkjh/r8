@@ -409,6 +409,13 @@ public object ThirdPartyDeps {
       Paths.get("third_party", "opensource-apps", "chrome").toFile(),
     )
   public val chromeHeadless: ThirdPartyDependency = getThirdPartyChromeHeadless()
+  public val chromeInternal: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "chrome-internal",
+      Paths.get("third_party", "closedsource-apps", "chrome", "20261116-v160.0.8166.0").toFile(),
+      testOnly = true,
+      type = DependencyType.X20,
+    )
   public val compilerApi: ThirdPartyDependency =
     ThirdPartyDependency(
       "compiler-api",

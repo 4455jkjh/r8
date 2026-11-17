@@ -113,6 +113,7 @@ public class TestDeps {
     dependencies.put("CHROME", null);
     dependencies.put("CHROME_BENCHMARK", null);
     dependencies.put("CHROME_HEADLESS", null);
+    dependencies.put("CHROME_INTERNAL", null);
     dependencies.put("CLANK", null);
     dependencies.put("COMPILER_API", null);
     dependencies.put("COMPOSE_EXAMPLES_CHANGED_BITWISE_VALUE_PROPAGATION", null);
@@ -526,6 +527,10 @@ public class TestDeps {
 
   public static Path getChromeHeadlessDir() {
     return getDependency("CHROME_HEADLESS");
+  }
+
+  public static Path getChromeInternalDir() {
+    return getDependency("CHROME_INTERNAL");
   }
 
   public static Path getClankDir() {

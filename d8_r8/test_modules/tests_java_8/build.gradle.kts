@@ -68,6 +68,7 @@ dependencies {
   runtimeOnlyData(project(":third_party", "bundletool"))
   runtimeOnlyData(project(":third_party", "chrome"))
   runtimeOnlyData(project(":third_party", "chromeBenchmark"))
+  runtimeOnlyData(project(":third_party", "chromeInternal"))
   runtimeOnlyData(project(":third_party", "clank"))
   runtimeOnlyData(project(":third_party", "compilerApi"))
   runtimeOnlyData(project(":third_party", "composeExamplesChangedBitwiseValuePropagation"))

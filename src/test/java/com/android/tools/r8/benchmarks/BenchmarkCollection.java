@@ -14,6 +14,7 @@ import com.android.tools.r8.benchmarks.desugaredlib.L8Benchmark;
 import com.android.tools.r8.benchmarks.helloworld.HelloWorldBenchmark;
 import com.android.tools.r8.benchmarks.retrace.RetraceStackTraceBenchmark;
 import com.android.tools.r8.internal.benchmarks.appdumps.AGSABenchmarks;
+import com.android.tools.r8.internal.benchmarks.appdumps.ChromeInternalBenchmarks;
 import com.android.tools.r8.internal.benchmarks.appdumps.SystemUIBenchmarks;
 import com.android.tools.r8.internal.benchmarks.appdumps.YouTubeBenchmarks;
 import java.io.IOException;
@@ -75,6 +76,7 @@ public class BenchmarkCollection {
         ComposeSamplesBenchmarks.configs(),
         OpenSourceBenchmarks.configs(),
         ChromeBenchmarks.configs(),
+        ChromeInternalBenchmarks.configs(),
         SystemUIBenchmarks.configs(),
         YouTubeBenchmarks.configs());
   }
