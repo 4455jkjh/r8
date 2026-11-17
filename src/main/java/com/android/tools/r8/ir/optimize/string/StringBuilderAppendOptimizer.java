@@ -109,7 +109,13 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected CodeRewriterResult rewriteCode(IRCode code) {
+    if (!mayHaveStringBuilder(code)) {
+      return CodeRewriterResult.NO_CHANGE;
+    }
     Map<Value, StringBuilderNode> stringBuilderGraphs = computeStringBuilderGraphs(code);
+    if (stringBuilderGraphs.isEmpty()) {
+      return CodeRewriterResult.NO_CHANGE;
+    }
     Map<Instruction, StringBuilderAction> actions = optimizeOnGraphs(code, stringBuilderGraphs);
     if (actions.isEmpty()) {
       return CodeRewriterResult.NO_CHANGE;
@@ -124,6 +130,24 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
     code.removeAllDeadAndTrivialPhis();
     code.removeRedundantBlocks();
     return CodeRewriterResult.HAS_CHANGED;
+  }
+
+  private boolean mayHaveStringBuilder(IRCode code) {
+    if (!code.metadata().mayHaveInvokeMethodWithReceiver()) {
+      return false;
+    }
+    for (BasicBlock block : code.blocks) {
+      for (Instruction instruction = block.entry();
+          instruction != null;
+          instruction = instruction.getNext()) {
+        if (instruction.isInvokeMethodWithReceiver()
+            && oracle.isStringBuilderType(
+                instruction.asInvokeMethodWithReceiver().getInvokedMethod().getHolderType())) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private void processActions(
