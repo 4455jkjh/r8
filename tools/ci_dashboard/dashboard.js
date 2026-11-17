@@ -1116,22 +1116,22 @@
         const b = (builderMap[col.builder] || []).find(
           (x) => x.status !== "CANCELED" && buildShaOf(x) === stripSha,
         );
-        col.stripKind = !b
-          ? "none"
-          : b.status === "SCHEDULED" || b.status === "STARTED"
-            ? "running"
-            : statusToCellKind(b.status);
+        const cellKind = b ? statusToCellKind(b.status) : "none";
+        col.stripKind = cellKind === "empty" ? "none" : cellKind;
         col.stripBuildUrl = b
           ? b.buildUrl || `${MILO_BUILD_BASE}${encodeURIComponent(b.id)}`
           : col.builderUrl;
       }
-      // A branch whose newest built commit still has builds pending is
-      // RUNNING, rather than showing the previous commit's results.
-      const brPending = brColumns.filter((c) => c.stripKind === "running");
+      // A branch whose newest built commit still has builds pending shows
+      // RUNNING or SCHEDULED, rather than the previous commit's results.
+      const brRunning = brColumns.filter((c) => c.stripKind === "running");
+      const brScheduled = brColumns.filter((c) => c.stripKind === "scheduled");
       const brKind =
-        brPending.length > 0
+        brRunning.length > 0
           ? "running"
-          : worstKind(brColumns.map((i) => i.kind));
+          : brScheduled.length > 0
+            ? "scheduled"
+            : worstKind(brColumns.map((i) => i.kind));
       const brFailing = brColumns.filter(
         (i) => i.kind === "red" || i.kind === "infra",
       );
@@ -1167,7 +1167,8 @@
         redCount: brRed.length,
         infraCount: brInfra.length,
         buildingCount: brBuilding.length,
-        pendingCount: brPending.length,
+        runningCount: brRunning.length,
+        scheduledCount: brScheduled.length,
         failingItems: brFailing,
         columns: brColumns,
         commits: visBrCommits,
@@ -1814,17 +1815,31 @@
         const tagText =
           br.kind === "running"
             ? "RUNNING"
-            : br.kind === "red"
-              ? br.infraCount > 0
-                ? `${br.redCount}F · ${br.infraCount}I`
-                : `${br.redCount} FAIL`
-              : br.kind === "infra"
-                ? `${br.infraCount} INFRA`
-                : "ALL OK";
+            : br.kind === "scheduled"
+              ? "SCHEDULED"
+              : br.kind === "red"
+                ? br.infraCount > 0
+                  ? `${br.redCount}F · ${br.infraCount}I`
+                  : `${br.redCount} FAIL`
+                : br.kind === "infra"
+                  ? `${br.infraCount} INFRA`
+                  : "ALL OK";
 
+        const shortStripSha = (br.stripSha || "").slice(0, 8);
         let failSummaryHtml = "";
         if (br.kind === "running") {
-          failSummaryHtml = `<div class="branch-fail-names is-running">⟳ ${br.pendingCount} of ${br.totalCount} running on ${escapeHtml((br.stripSha || "").slice(0, 8))}</div>`;
+          const runText =
+            br.scheduledCount > 0
+              ? `⟳ ${br.runningCount} running · ${br.scheduledCount} scheduled`
+              : `⟳ ${br.runningCount} of ${br.totalCount} running on ${shortStripSha}`;
+          const runTitle =
+            br.scheduledCount > 0
+              ? `${br.runningCount} of ${br.totalCount} running, ${br.scheduledCount} scheduled on ${shortStripSha}`
+              : runText;
+          failSummaryHtml = `<div class="branch-fail-names is-running" title="${escapeHtml(runTitle)}">${escapeHtml(runText)}</div>`;
+        } else if (br.kind === "scheduled") {
+          const schedText = `◷ ${br.scheduledCount} of ${br.totalCount} scheduled on ${shortStripSha}`;
+          failSummaryHtml = `<div class="branch-fail-names is-scheduled" title="${escapeHtml(schedText)}">${escapeHtml(schedText)}</div>`;
         } else if (br.failingItems.length > 0) {
           const shown = br.failingItems.slice(0, 2).map((i) => i.label);
           const extra = br.failingItems.length - shown.length;
