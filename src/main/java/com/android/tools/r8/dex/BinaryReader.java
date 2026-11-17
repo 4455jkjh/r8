@@ -5,9 +5,11 @@
 package com.android.tools.r8.dex;
 
 import com.android.tools.r8.ProgramResource;
+import com.android.tools.r8.ProgramResource.ByteResource;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.LebUtils;
+import com.android.tools.r8.utils.OneShotByteResource;
 import com.android.tools.r8.utils.internal.StreamUtils;
 import java.io.IOException;
 import java.util.Arrays;
@@ -18,7 +20,15 @@ public abstract class BinaryReader {
   protected final CompatByteBuffer buffer;
 
   protected BinaryReader(ProgramResource resource) throws ResourceException, IOException {
-    this(resource.getOrigin(), StreamUtils.streamToByteArrayClose(resource.getByteStream()));
+    this(resource.getOrigin(), extractBytes(resource));
+  }
+
+  private static byte[] extractBytes(ProgramResource resource)
+      throws ResourceException, IOException {
+    if (resource instanceof OneShotByteResource || resource instanceof ByteResource) {
+      return resource.getBytes();
+    }
+    return StreamUtils.streamToByteArrayClose(resource.getByteStream());
   }
 
   protected BinaryReader(Origin origin, byte[] bytes) {
