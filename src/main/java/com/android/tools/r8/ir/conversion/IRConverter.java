@@ -60,6 +60,7 @@ import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.conversion.passes.TrivialCheckCastAndInstanceOfRemover;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
+import com.android.tools.r8.ir.conversion.passes.UnusedComposableArgumentSimplifier;
 import com.android.tools.r8.ir.conversion.passes.intlongarithmetic.IntLongArithmeticRewriter;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollectionSupplier;
 import com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchIRRewriter;
@@ -306,7 +307,9 @@ public class IRConverter {
     }
     passes.add(new SimplifyDebugLocal(appView));
     passes.add(new AtomicUpdaterInitializationRemover(appView));
-    passes.add(new AssertionsRewriter(appView));
+    if (AssertionsRewriter.isEnabled(options)) {
+      passes.add(new AssertionsRewriter(appView));
+    }
     return CodeRewriterPassCollection.create(passes);
   }
 
@@ -837,6 +840,10 @@ public class IRConverter {
 
     new ParentConstructorHoistingCodeRewriter(appView)
         .run(code, methodProcessor, methodProcessingContext, timing);
+    if (appView.hasClassHierarchy()) {
+      new UnusedComposableArgumentSimplifier(appView.withClassHierarchy())
+          .run(code, methodProcessor, methodProcessingContext, timing);
+    }
 
     BytecodeMetadataProvider.Builder bytecodeMetadataProviderBuilder =
         BytecodeMetadataProvider.builder();

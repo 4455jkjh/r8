@@ -87,6 +87,7 @@ import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstance
 import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldMappingData;
 import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldOrdinalData;
 import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldUnknownData;
+import com.android.tools.r8.ir.optimize.enums.EnumUnboxingCandidateInfoCollection.EnumUnboxingCandidateInfo;
 import com.android.tools.r8.ir.optimize.enums.classification.CheckNotNullEnumUnboxerMethodClassification;
 import com.android.tools.r8.ir.optimize.enums.classification.EnumUnboxerMethodClassification;
 import com.android.tools.r8.ir.optimize.enums.eligibility.Reason;
@@ -612,6 +613,29 @@ public class EnumUnboxer implements ReprocessingOptimization {
         enumClass, factory.enumMembers.nameField);
   }
 
+  private void addRequiredToStringData(DexProgramClass enumClass) {
+    DexField protoValueField = getProtoEnumLiteValueField(enumClass);
+    if (protoValueField != null) {
+      enumUnboxingCandidatesInfo.addRequiredEnumInstanceFieldData(enumClass, protoValueField);
+    } else {
+      addRequiredNameData(enumClass);
+    }
+  }
+
+  private DexField getProtoEnumLiteValueField(DexProgramClass enumClass) {
+    if (!appView.options().protoShrinking().isProtoEnumOptimizationEnabled()) {
+      return null;
+    }
+    DexField protoValueField =
+        appView
+            .protoShrinker()
+            .enumLiteProtoShrinker
+            .getProtoEnumLiteValueField(enumClass.getType());
+    return protoValueField != null
+        ? appView.graphLens().getRenamedFieldSignature(protoValueField)
+        : null;
+  }
+
   private boolean isUnboxableNameMethod(DexMethod method) {
     ClassMethods classMethods = factory.classMethods;
     return method.isIdenticalTo(classMethods.getName)
@@ -941,7 +965,8 @@ public class EnumUnboxer implements ReprocessingOptimization {
   private EnumData buildData(DexProgramClass enumClass, Set<DexField> instanceFields) {
     if (!enumClass.hasStaticFields()) {
       if (instanceFields.isEmpty()) {
-        return new EnumData(ImmutableMap.of(), null, ImmutableMap.of(), ImmutableSet.of(), -1);
+        return new EnumData(
+            ImmutableMap.of(), null, ImmutableMap.of(), ImmutableSet.of(), -1, null);
       }
       return null;
     }
@@ -1093,12 +1118,16 @@ public class EnumUnboxer implements ReprocessingOptimization {
       return null;
     }
 
+    DexField protoValueField = getProtoEnumLiteValueField(enumClass);
     return new EnumData(
         instanceFieldsData,
         isEnumWithSubtypes ? valueTypes : Int2ReferenceMaps.emptyMap(),
         unboxedValues.build(),
         valuesField.build(),
-        valuesContents == null ? EnumData.INVALID_VALUES_SIZE : valuesContents.getEnumValuesSize());
+        valuesContents == null ? EnumData.INVALID_VALUES_SIZE : valuesContents.getEnumValuesSize(),
+        protoValueField != null && instanceFieldsData.containsKey(protoValueField)
+            ? protoValueField
+            : null);
   }
 
   private ImmutableMap<DexField, EnumInstanceFieldKnownData> computeRequiredEnumInstanceFieldsData(
@@ -1581,10 +1610,13 @@ public class EnumUnboxer implements ReprocessingOptimization {
         return comparableAsUnboxedValues(invoke);
       } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.equals)) {
         return comparableAsUnboxedValues(invoke);
-      } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.nameMethod)
-          || singleTargetReference.isIdenticalTo(factory.enumMembers.toString)) {
+      } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.nameMethod)) {
         assert invoke.asInvokeMethodWithReceiver().getReceiver() == enumValue;
         addRequiredNameData(enumClass);
+        return Reason.ELIGIBLE;
+      } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.toString)) {
+        assert invoke.asInvokeMethodWithReceiver().getReceiver() == enumValue;
+        addRequiredToStringData(enumClass);
         return Reason.ELIGIBLE;
       } else if (singleTargetReference.isIdenticalTo(factory.enumMembers.ordinalMethod)) {
         return Reason.ELIGIBLE;
@@ -1628,7 +1660,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
       }
       if (singleTargetReference.isIdenticalTo(factory.objectMembers.toString)) {
         assert invoke.asInvokeMethodWithReceiver().getReceiver() == enumValue;
-        addRequiredNameData(enumClass);
+        addRequiredToStringData(enumClass);
         return Reason.ELIGIBLE;
       }
       if (singleTargetReference.isIdenticalTo(factory.objectMembers.hashCode)) {
@@ -1650,8 +1682,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
         return Reason.ELIGIBLE;
       }
       if (singleTargetReference.isIdenticalTo(factory.objectsMethods.toStringWithObject)) {
-        addRequiredNameData(enumClass);
-        return Reason.ELIGIBLE;
+        return analyzeStringConversion(invoke, enumClass, enumValue, singleTargetReference);
       }
       if (singleTargetReference.isIdenticalTo(factory.objectsMethods.equals)) {
         return comparableAsUnboxedValues(invoke);
@@ -1662,8 +1693,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
     // Calls to java.lang.String.
     if (targetHolder.getType().isIdenticalTo(factory.stringType)) {
       if (singleTargetReference.isIdenticalTo(factory.stringMembers.valueOfObject)) {
-        addRequiredNameData(enumClass);
-        return Reason.ELIGIBLE;
+        return analyzeStringConversion(invoke, enumClass, enumValue, singleTargetReference);
       }
       return new UnsupportedLibraryInvokeReason(singleTargetReference);
     }
@@ -1673,8 +1703,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
         || targetHolder.getType().isIdenticalTo(factory.stringBufferType)) {
       if (singleTargetReference.isIdenticalTo(factory.stringBuilderMethods.appendObject)
           || singleTargetReference.isIdenticalTo(factory.stringBufferMethods.appendObject)) {
-        addRequiredNameData(enumClass);
-        return Reason.ELIGIBLE;
+        return analyzeStringConversion(invoke, enumClass, enumValue, singleTargetReference);
       }
       return new UnsupportedLibraryInvokeReason(singleTargetReference);
     }
@@ -1704,6 +1733,39 @@ public class EnumUnboxer implements ReprocessingOptimization {
 
     // Unsupported holder.
     return new UnsupportedLibraryInvokeReason(singleTargetReference);
+  }
+
+  private Reason analyzeStringConversion(
+      InvokeMethod invoke,
+      DexProgramClass enumClass,
+      Value enumValue,
+      DexMethod singleTargetReference) {
+    EnumUnboxingCandidateInfo info = enumUnboxingCandidatesInfo.getCandidateInfo(enumClass);
+    assert info != null;
+    boolean hasDefaultToString =
+        enumClass.lookupVirtualMethod(factory.objectMembers.toString) == null;
+    boolean subEnumsHaveDefaultToString =
+        Iterables.all(
+            info.getSubclasses(),
+            subclass -> subclass.lookupVirtualMethod(factory.objectMembers.toString) == null);
+    if (hasDefaultToString && subEnumsHaveDefaultToString) {
+      addRequiredToStringData(enumClass);
+      return Reason.ELIGIBLE;
+    }
+    if (enumValue.isMaybeNull()) {
+      return new UnsupportedLibraryInvokeReason(singleTargetReference);
+    }
+    if (invoke.isInvokeMethodWithReceiver()) {
+      assert singleTargetReference.isIdenticalTo(factory.stringBuilderMethods.appendObject)
+          || singleTargetReference.isIdenticalTo(factory.stringBufferMethods.appendObject);
+      if (invoke.asInvokeMethodWithReceiver().getReceiver().isMaybeNull()) {
+        return new UnsupportedLibraryInvokeReason(singleTargetReference);
+      }
+    }
+    if (hasDefaultToString) {
+      addRequiredNameData(enumClass);
+    }
+    return Reason.ELIGIBLE;
   }
 
   // Return is used for valueOf methods.

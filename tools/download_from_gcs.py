@@ -5,8 +5,8 @@
 
 # Script for downloading from Google Cloud Storage (gs://r8-deps).
 
+import argparse
 import http.client
-import optparse
 import sys
 import time
 import urllib.request
@@ -15,8 +15,11 @@ import utils
 DOWNLOAD_ATTEMPTS = 5
 
 
-def parse_options():
-    return optparse.OptionParser().parse_args()
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser(
+        description='Download a dependency from Google Cloud Storage.')
+    parser.add_argument('sha1_file', help='Path to the .tar.gz.sha1 file.')
+    return parser.parse_args(argv)
 
 
 def download(sha1, dest):
@@ -35,11 +38,10 @@ def download(sha1, dest):
             time.sleep(delay)
 
 
-def Main():
-    (options, args) = parse_options()
-    assert len(args) == 1
-    utils.ensure_sha1_archive(args[0], download)
+def main():
+    options = parse_options()
+    utils.ensure_sha1_archive(options.sha1_file, download)
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

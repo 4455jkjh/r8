@@ -162,21 +162,21 @@ def run_device_dex2oat(options):
     device_dexfile = '/data/local/tmp/' + os.path.basename(dexfile)
     device_oatfile = '/data/local/tmp/unused.oat'
     cmd = adb_cmd(serial, 'shell', 'rm', '-f', device_dexfile, device_oatfile)
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_call(cmd)
     cmd = adb_cmd(serial, 'push', dexfile, device_dexfile)
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_call(cmd)
     cmd = adb_cmd(serial, 'logcat', '-c')
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_call(cmd)
     cmd = adb_cmd(serial, 'shell', 'dex2oat', '--dex-file=' + device_dexfile,
                   '--oat-file=/data/local/tmp/unused.oat')
     append_dex2oat_verbose_flags(options, cmd)
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_call(cmd)
     cmd = adb_cmd(serial, 'logcat', '-d', '-s', 'dex2oat', 'dex2oat_original')
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_call(cmd)
 
     return 0
@@ -208,7 +208,7 @@ def dex2oat_from_host_art(options, dexfile, oatfile=None, version=None):
         if version in BOOT_IMAGE:
             cmd += ['--boot-image=' + BOOT_IMAGE[version]]
         env = {"LD_LIBRARY_PATH": os.path.join(base, 'lib')}
-        utils.PrintCmd(cmd)
+        utils.print_cmd(cmd)
         with utils.ChangedWorkingDirectory(base):
             subprocess.check_call(cmd, env=env)
 
@@ -260,7 +260,7 @@ def dex2oat(options, dexfile, oatfile=None, version=None):
         if options.dump_cfg:
             cmd.append('--dump-cfg=' + options.dump_cfg)
         append_dex2oat_verbose_flags(options, cmd)
-        utils.PrintCmd(cmd)
+        utils.print_cmd(cmd)
         subprocess.check_call(cmd)
 
 

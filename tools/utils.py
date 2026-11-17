@@ -60,7 +60,7 @@ GRADLE_TASK_THREADING_MODULE_SINGLE_THREADED = ':dist:threadingModuleSingleThrea
 GRADLE_TASK_SOURCE_JAR = ':test:packageSources'
 GRADLE_TASK_SWISS_ARMY_KNIFE = ':swissarmyknife:jar'
 GRADLE_TASK_KEEPANNOTOOLS = ':dist:keepAnnoToolsWithRelocatedDeps'
-GRADLE_TASK_KEEPANNOTOOLSLIB = 'test:keepAnnoToolsLib'
+GRADLE_TASK_KEEPANNOTOOLSLIB = ':dist:keepAnnoToolsLib'
 GRADLE_TASK_TEST = ':test:test'
 GRADLE_TASK_TEST_DEPS_JAR = ':test:packageTestDeps'
 GRADLE_TASK_TEST_BASE_JAR = ':test:relocateTestBaseForR8LibWithRelocatedDeps'
@@ -171,20 +171,12 @@ def archive_file(name, gs_dir, src_file):
     upload_file_to_cloud_storage(src_file, gs_file)
 
 
-def archive_value(name, gs_dir, value):
-    with TempDir() as temp:
-        temparchive = os.path.join(temp, name)
-        with open(temparchive, 'w') as f:
-            f.write(str(value))
-        archive_file(name, gs_dir, temparchive)
-
-
-def find_cloud_storage_file_from_options(name, options, orElse=None):
+def find_cloud_storage_file_from_options(name, options, or_else=None):
     # Import archive on-demand since archive depends on utils.
     from archive import get_upload_destination
     hash_or_version = find_hash_or_version_from_options(options)
     if not hash_or_version:
-        return orElse
+        return or_else
     is_hash = options.commit_hash is not None
     download_path = get_upload_destination(hash_or_version, name, is_hash)
     if file_exists_on_cloud_storage(download_path):
@@ -217,50 +209,41 @@ def find_hash_or_version_from_tag(tag_or_hash):
     return None
 
 
-def getAndroidHome():
+def get_android_home():
     return os.environ.get(ANDROID_HOME_ENVIROMENT_NAME,
                           os.path.join(USER_HOME, 'Android', 'Sdk'))
 
 
-def getAndroidBuildTools():
+def get_android_build_tools():
     if ANDROID_TOOLS_VERSION_ENVIRONMENT_NAME in os.environ:
         version = os.environ.get(ANDROID_TOOLS_VERSION_ENVIRONMENT_NAME)
-        build_tools_dir = os.path.join(getAndroidHome(), 'build-tools', version)
+        build_tools_dir = os.path.join(get_android_home(), 'build-tools',
+                                       version)
         assert os.path.exists(build_tools_dir)
         return build_tools_dir
     else:
         versions = ['35.0.1', '34.0.0', '33.0.1', '32.0.0']
         for version in versions:
-            build_tools_dir = os.path.join(getAndroidHome(), 'build-tools',
+            build_tools_dir = os.path.join(get_android_home(), 'build-tools',
                                            version)
             if os.path.exists(build_tools_dir):
                 return build_tools_dir
     raise Exception('Unable to find Android build-tools')
 
 
-def is_python3():
-    return sys.version_info.major == 3
-
-
-def Print(s, quiet=False):
-    if quiet:
-        return
-    print(s)
-
-
-def Warn(message):
+def warn(message):
     CRED = '\033[91m'
     CEND = '\033[0m'
     print(CRED + message + CEND)
 
 
-def PrintCmd(cmd, env=None, quiet=False, worker_id=None):
+def print_cmd(cmd, env=None, quiet=False, worker_id=None):
     if quiet:
         return
     if type(cmd) is list:
         cmd = ' '.join(cmd)
     if env:
-        env = ' '.join(['{}=\"{}\"'.format(x, y) for x, y in env.iteritems()])
+        env = ' '.join(['{}=\"{}\"'.format(x, y) for x, y in env.items()])
         print_thread('Running: {} {}'.format(env, cmd), worker_id)
     else:
         print_thread('Running: {}'.format(cmd), worker_id)
@@ -268,7 +251,7 @@ def PrintCmd(cmd, env=None, quiet=False, worker_id=None):
     sys.stdout.flush()
 
 
-class ProgressLogger(object):
+class ProgressLogger:
     CLEAR_LINE = '\033[K'
     UP = '\033[F'
 
@@ -295,13 +278,13 @@ class ProgressLogger(object):
             sys.stdout.write(ProgressLogger.UP)
 
 
-def RunCmd(cmd,
-           env_vars=None,
-           quiet=False,
-           fail=True,
-           logging=True,
-           shell=False):
-    PrintCmd(cmd, env=env_vars, quiet=quiet)
+def run_cmd(cmd,
+            env_vars=None,
+            quiet=False,
+            fail=True,
+            logging=True,
+            shell=False):
+    print_cmd(cmd, env=env_vars, quiet=quiet)
     env = os.environ.copy()
     if env_vars:
         env.update(env_vars)
@@ -335,7 +318,7 @@ def RunCmd(cmd,
             exit_code = process.poll()
             if exit_code or failed:
                 for line in stdout:
-                    Warn(line)
+                    warn(line)
                 if fail:
                     raise subprocess.CalledProcessError(
                         exit_code or -1, cmd, output='\n'.join(stdout))
@@ -355,7 +338,7 @@ def stop_gradle():
         return
 
     try:
-        java_home = jdk.GetDefaultJdkHome()
+        java_home = jdk.get_default_jdk_home()
     except Exception as _:
         # No Gradle daemon is running if the JDK home can't be found.
         return
@@ -377,11 +360,11 @@ def stop_gradle():
         env['GRADLE_OPTS'] = '-Xmx1g'
 
         cmd = [gradle, '--stop']
-        PrintCmd(cmd)
+        print_cmd(cmd)
         subprocess.call(cmd, env=env)
         GRADLE_STOPPED = True
     except Exception as e:
-        Warn(f"Warning: Failed to stop gradle daemon: {e}")
+        warn(f"Warning: Failed to stop gradle daemon: {e}")
         GRADLE_STOPPED = True
 
 
@@ -410,7 +393,7 @@ def run_download(sha1, output_dir, success_file, internal, quiet=False):
     cmd = [sys.executable, download_script, sha1]
 
     if not quiet:
-        PrintCmd(cmd)
+        print_cmd(cmd)
         subprocess.check_call(cmd)
     else:
         subprocess.check_call(cmd, stdout=subprocess.DEVNULL)
@@ -516,7 +499,7 @@ def try_link_download_from_main_repo(path, worktree_root=None):
             pass
         return True
     except Exception as e:
-        Warn(
+        warn(
             f'Warning: Failed to link dependency from main repo {main_output_dir}: {e}'
         )
         return False
@@ -538,7 +521,7 @@ def ensure_worktree_deps(quiet=False, worktree_root=None):
             if try_link_download_from_main_repo(path, worktree_root=wt_root):
                 linked_deps += 1
     except Exception as e:
-        Warn(f'Warning: Failed to scan worktree dependencies: {e}')
+        warn(f'Warning: Failed to scan worktree dependencies: {e}')
 
     if linked_deps > 0 and not quiet:
         print(
@@ -611,7 +594,7 @@ def ensure_worktree_intellij_config(worktree_root=None):
             elif not os.path.exists(dst):
                 shutil.copy2(src, dst)
     except Exception as e:
-        Warn(
+        warn(
             f'Warning: Failed to configure IntelliJ settings for worktree: {e}')
 
 
@@ -650,7 +633,7 @@ def seed_gradle_user_home(gradle_user_home, worktree_root=None):
                           ignore=ignore_locks_and_mutable)
                 seeded_any = True
             except Exception as e:
-                Warn(
+                warn(
                     f'Warning: Failed to seed worktree Gradle caches from {src_caches}: {e}'
                 )
 
@@ -681,10 +664,6 @@ def ensure_google_download(path, quiet=False):
     ensure_download(path, False, quiet=quiet)
 
 
-def ensure_x20_download(path, quiet=False):
-    ensure_download(path, True, quiet=quiet)
-
-
 def get_nth_sha1_from_revision(n, revision):
     result = subprocess.check_output([
         'git', 'log', '--first-parent', revision, f'--skip={n}',
@@ -706,26 +685,26 @@ def get_sha1(filename):
 
 def get_sha1_from_revision(revision):
     cmd = ['git', 'rev-parse', revision]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     with ChangedWorkingDirectory(REPO_ROOT):
         return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
-def get_HEAD_branch():
+def get_head_branch():
     result = subprocess.check_output(
         ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8')
     return result.strip()
 
 
-def get_HEAD_commit():
-    return historic_run.git_commit_from_hash(get_HEAD_sha1())
+def get_head_commit():
+    return historic_run.git_commit_from_hash(get_head_sha1())
 
 
-def get_HEAD_sha1():
+def get_head_sha1():
     return get_sha1_from_revision('HEAD')
 
 
-def get_HEAD_diff_stat():
+def get_head_diff_stat():
     return subprocess.check_output(['git', 'diff', '--stat']).decode('utf-8')
 
 
@@ -757,6 +736,8 @@ def upload_file_to_cloud_storage(source, destination, header=None):
         if header:
             if header.lower().startswith('cache-control:'):
                 cmd.append('--cache-control=' + header.split(':', 1)[1].strip())
+            elif header.lower().startswith('content-type:'):
+                cmd.append('--content-type=' + header.split(':', 1)[1].strip())
             else:
                 cmd.extend(['--custom-metadata=' + header.replace(':', '=')])
         cmd.extend([source, destination])
@@ -765,7 +746,7 @@ def upload_file_to_cloud_storage(source, destination, header=None):
         if header:
             cmd.extend(['-h', header])
         cmd.extend(['cp', source, destination])
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -797,7 +778,7 @@ def upload_directory_to_cloud_storage(source, destination, parallel=True):
             cmd += ['-m']
         cmd += ['cp', '-R']
         cmd += [source, destination_parent + '/']
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -813,16 +794,7 @@ def rsync_directory_to_cloud_storage(source, destination, parallel=True):
             cmd += ['-m']
         cmd += ['rsync', '-R']
         cmd += [source, destination]
-    PrintCmd(cmd)
-    subprocess.check_call(cmd)
-
-
-def delete_file_from_cloud_storage(destination):
-    if use_gcloud():
-        cmd = [get_gcloud(), 'storage', 'rm', destination]
-    else:
-        cmd = [get_gsutil(), 'rm', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -831,23 +803,8 @@ def ls_files_on_cloud_storage(destination):
         cmd = [get_gcloud(), 'storage', 'ls', destination]
     else:
         cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     return subprocess.check_output(cmd).decode('utf-8')
-
-
-def cat_file_on_cloud_storage(destination, ignore_errors=False):
-    if use_gcloud():
-        cmd = [get_gcloud(), 'storage', 'cat', destination]
-    else:
-        cmd = [get_gsutil(), 'cat', destination]
-    PrintCmd(cmd)
-    try:
-        return subprocess.check_output(cmd).decode('utf-8').strip()
-    except subprocess.CalledProcessError as e:
-        if ignore_errors:
-            return ''
-        else:
-            raise e
 
 
 def file_exists_on_cloud_storage(destination):
@@ -855,7 +812,7 @@ def file_exists_on_cloud_storage(destination):
         cmd = [get_gcloud(), 'storage', 'ls', destination]
     else:
         cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     return subprocess.call(cmd) == 0
 
 
@@ -882,7 +839,7 @@ def download_file_from_cloud_storage(source,
         if flags:
             cmd.extend(flags)
         cmd.extend([source, destination])
-    PrintCmd(cmd, quiet=not printcmd)
+    print_cmd(cmd, quiet=not printcmd)
     subprocess.check_call(cmd)
 
 
@@ -951,12 +908,12 @@ def cloud_storage_exists(destination):
         cmd = [get_gcloud(), 'storage', 'ls', destination]
     else:
         cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     exit_code = subprocess.call(cmd)
     return exit_code == 0
 
 
-class TempDir(object):
+class TempDir:
 
     def __init__(self, prefix='r8-tmp-', delete=True):
         self._temp_dir = None
@@ -972,7 +929,7 @@ class TempDir(object):
             shutil.rmtree(self._temp_dir, ignore_errors=True)
 
 
-class ChangedWorkingDirectory(object):
+class ChangedWorkingDirectory:
 
     def __init__(self, working_directory, quiet=False):
         self._quiet = quiet
@@ -988,51 +945,6 @@ class ChangedWorkingDirectory(object):
         if not self._quiet:
             print('Enter directory:', self._old_cwd)
         os.chdir(self._old_cwd)
-
-
-# Reading Android CTS test_result.xml
-
-
-class CtsModule(object):
-
-    def __init__(self, module_name):
-        self.name = module_name
-
-
-class CtsTestCase(object):
-
-    def __init__(self, test_case_name):
-        self.name = test_case_name
-
-
-class CtsTest(object):
-
-    def __init__(self, test_name, outcome):
-        self.name = test_name
-        self.outcome = outcome
-
-
-# Generator yielding CtsModule, CtsTestCase or CtsTest from
-# reading through a CTS test_result.xml file.
-def read_cts_test_result(file_xml):
-    re_module = re.compile('<Module name="([^"]*)"')
-    re_test_case = re.compile('<TestCase name="([^"]*)"')
-    re_test = re.compile('<Test result="(pass|fail)" name="([^"]*)"')
-    with open(file_xml) as f:
-        for line in f:
-            m = re_module.search(line)
-            if m:
-                yield CtsModule(m.groups()[0])
-                continue
-            m = re_test_case.search(line)
-            if m:
-                yield CtsTestCase(m.groups()[0])
-                continue
-            m = re_test.search(line)
-            if m:
-                outcome = m.groups()[0]
-                assert outcome in ['fail', 'pass']
-                yield CtsTest(m.groups()[1], outcome == 'pass')
 
 
 def grep_memoryuse(logfile):
@@ -1060,14 +972,14 @@ def grep_memoryuse(logfile):
 
 
 # Return a dictionary: {segment_name -> segments_size}
-def getDexSegmentSizes(dex_files):
+def get_dex_segment_sizes(dex_files):
     assert len(dex_files) > 0
     cmd = [
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-jar', R8_JAR,
+        jdk.get_java_executable(jdk.get_default_jdk_home()), '-jar', R8_JAR,
         'dexsegments'
     ]
     cmd.extend(dex_files)
-    PrintCmd(cmd)
+    print_cmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
 
     matches = DEX_SEGMENTS_RESULT_PATTERN.findall(output)
@@ -1085,19 +997,19 @@ def getDexSegmentSizes(dex_files):
 
 
 # Return a dictionary: {segment_name -> segments_size}
-def getCfSegmentSizes(cfFile):
+def get_cf_segment_sizes(cf_file):
     cmd = [
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', CF_SEGMENTS_TOOL,
-        'com.android.tools.r8.cf_segments.MeasureLib', cfFile
+        jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
+        CF_SEGMENTS_TOOL, 'com.android.tools.r8.cf_segments.MeasureLib', cf_file
     ]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
 
     matches = DEX_SEGMENTS_RESULT_PATTERN.findall(output)
 
     if matches is None or len(matches) == 0:
         raise Exception('CfSegments failed to return any output for' \
-                        ' the file: ' + cfFile)
+                        ' the file: ' + cf_file)
 
     result = {}
 
@@ -1113,19 +1025,19 @@ def get_maven_path(artifact, version):
 
 def print_cfsegments(prefix, cf_files):
     for cf_file in cf_files:
-        for segment_name, size in getCfSegmentSizes(cf_file).items():
+        for segment_name, size in get_cf_segment_sizes(cf_file).items():
             print('{}-{}(CodeSize): {}'.format(prefix, segment_name, size))
 
 
 def print_dexsegments(prefix, dex_files, worker_id=None):
-    for segment_name, size in getDexSegmentSizes(dex_files).items():
+    for segment_name, size in get_dex_segment_sizes(dex_files).items():
         print_thread('{}-{}(CodeSize): {}'.format(prefix, segment_name, size),
                      worker_id)
 
 
 # Ensure that we are not benchmarking with a google jvm.
 def check_java_version():
-    cmd = [jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-version']
+    cmd = [jdk.get_java_executable(jdk.get_default_jdk_home()), '-version']
     output = subprocess.check_output(cmd,
                                      stderr=subprocess.STDOUT).decode('utf-8')
     m = re.search('openjdk version "([^"]*)"', output)
@@ -1159,10 +1071,6 @@ def get_android_jar(api_level_major, api_level_minor):
 
 def is_bot():
     return 'SWARMING_BOT_ID' in os.environ or 'KOKORO_BUILD_ID' in os.environ
-
-
-def uncompressed_size(path):
-    return sum(z.file_size for z in zipfile.ZipFile(path).infolist())
 
 
 def desugar_configuration_name_and_version(configuration, is_for_maven):
@@ -1208,7 +1116,7 @@ def desugar_configuration_name_and_version(configuration, is_for_maven):
         # understand errors.
         check_basic_semver_version(version,
                                    'in ' + configuration,
-                                   allowPrerelease=False)
+                                   allow_prerelease=False)
         return (name, version)
 
 
@@ -1253,19 +1161,19 @@ class SemanticVersion:
 
 
 # Check that the passed string is formatted as a basic semver version (x.y.z or x.y.z-prerelease
-# depending on the value of allowPrerelease).
+# depending on the value of allow_prerelease).
 # See https://semver.org/. The regexp parts used are not all complient with what is suggested
 # on https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
 def check_basic_semver_version(version,
                                error_context='',
                                components=3,
-                               allowPrerelease=False):
+                               allow_prerelease=False):
     regexp = '^'
     for x in range(components):
         regexp += '([0-9]+)'
         if x < components - 1:
             regexp += '\\.'
-    if allowPrerelease:
+    if allow_prerelease:
         # This part is from
         # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
         regexp += r'(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?'
@@ -1278,10 +1186,10 @@ def check_basic_semver_version(version,
     if components == 2:
         return SemanticVersion(int(match.group(1)), int(match.group(2)), None,
                                None)
-    elif components == 3 and not allowPrerelease:
+    elif components == 3 and not allow_prerelease:
         return SemanticVersion(int(match.group(1)), int(match.group(2)),
                                int(match.group(3)), None)
-    elif components == 3 and allowPrerelease:
+    elif components == 3 and allow_prerelease:
         return SemanticVersion(int(match.group(1)), int(match.group(2)),
                                int(match.group(3)), match.group('prerelease'))
     else:

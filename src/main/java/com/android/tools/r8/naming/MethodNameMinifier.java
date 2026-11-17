@@ -227,8 +227,20 @@ class MethodNameMinifier {
                         clazz.classMethods(),
                         Comparator.comparing(DexClassAndMember::getReference),
                         clazz.getMethodCollection().size());
+                List<DexClassAndMethod> unreservedMethods =
+                    new ArrayList<>(allMethodsSorted.size());
                 for (DexClassAndMethod method : allMethodsSorted) {
-                  assignNameToMethod(method, namingState);
+                  if (!method.getDefinition().isInitializer()) {
+                    DexString reservedName = strategy.getReservedName(method);
+                    if (reservedName != null) {
+                      assignNameToMethod(method, namingState, reservedName);
+                    } else {
+                      unreservedMethods.add(method);
+                    }
+                  }
+                }
+                for (DexClassAndMethod method : unreservedMethods) {
+                  assignNameToMethod(method, namingState, null);
                 }
               }
             });
@@ -250,14 +262,13 @@ class MethodNameMinifier {
     }
   }
 
-  private void assignNameToMethod(DexClassAndMethod method, MethodNamingState<?> state) {
-    if (method.getDefinition().isInitializer()) {
-      return;
-    }
+  private void assignNameToMethod(
+      DexClassAndMethod method, MethodNamingState<?> state, DexString reservedName) {
+    assert !method.getDefinition().isInitializer();
     // The strategy may have an explicit naming for this member which we query first. It may be that
     // the strategy will return the identity name, for which we have to look into a previous
     // renaming tracked by the state.
-    DexString newName = strategy.getReservedName(method);
+    DexString newName = reservedName;
     if (newName == null || newName.isIdenticalTo(method.getName())) {
       newName = state.newOrReservedNameFor(method);
     }

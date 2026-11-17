@@ -19,7 +19,6 @@ public class InvokeDynamicDexInstructionSubject extends DexInstructionSubject
   public DexCallSite getCallSite() {
     return instruction.getCallSite();
   }
-  ;
 
   @Override
   public InvokeDynamicInstructionSubject asInvokeDynamic() {

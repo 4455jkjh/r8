@@ -120,12 +120,13 @@ final class KeepRuleDiff {
   private final List<RenderedRule> additionalRules;
   private final boolean addNestingAttributes;
   private final boolean addSignatureAttribute;
+  private final boolean addAnnotationAttributes;
   private final String proposedRules;
 
   private KeepRuleDiff(ParsedLogs logs, KeepRuleSet ruleSet, String ruleFiles) {
     this.logs = logs;
     this.requirements = KeepRequirements.analyze(logs.getEvents(), logs::threw);
-    KeepRuleMatcher matcher = new KeepRuleMatcher(ruleSet, requirements);
+    KeepRuleMatcher matcher = new KeepRuleMatcher(ruleSet, requirements, true);
     List<KeepRequirement> all = requirements.getRequirements();
     for (KeepRequirement requirement : all) {
       coverages.add(matcher.cover(requirement));
@@ -152,6 +153,9 @@ final class KeepRuleDiff {
         !requirements.getNestingAttributeEvents().isEmpty() && !ruleSet.keepsNestingAttributes();
     addSignatureAttribute =
         !requirements.getSignatureAttributeEvents().isEmpty() && !ruleSet.keepsSignatureAttribute();
+    addAnnotationAttributes =
+        !requirements.getAnnotationAttributeEvents().isEmpty()
+            && !ruleSet.keepsAnnotationAttributes();
     proposedRules = renderProposedRules(ruleFiles);
   }
 
@@ -188,7 +192,8 @@ final class KeepRuleDiff {
     for (RuleMatch match : covered) {
       coveredRequirements.add(match.requirement);
     }
-    if (rule.get().isProguardIfRule()) {
+    if (rule.get().isProguardIfRule()
+        && !KeepRuleMatcher.isBroadWildcardIfRule(rule.get().asProguardIfRule())) {
       return new RuleResult(
           rule,
           Verdict.CONDITIONAL,
@@ -196,7 +201,10 @@ final class KeepRuleDiff {
           coveredRequirements,
           Collections.emptyList());
     }
-    ProguardKeepRule keepRule = rule.get().asProguardKeepRule();
+    ProguardKeepRule keepRule =
+        rule.get().isProguardIfRule()
+            ? rule.get().asProguardIfRule().getSubsequentRule()
+            : rule.get().asProguardKeepRule();
     String selection = KeepRuleMatcher.getSelectionNotInLog(keepRule);
     if (selection != null) {
       return new RuleResult(
@@ -488,6 +496,11 @@ final class KeepRuleDiff {
       builder.append('\n');
       builder.append("# Added: needed for getGenericSuperclass() and getGenericInterfaces()\n");
       builder.append(KeepRuleWriter.SIGNATURE_ATTRIBUTE_RULE).append('\n');
+    }
+    if (addAnnotationAttributes) {
+      builder.append('\n');
+      builder.append("# Added: needed for runtime annotation inspection\n");
+      builder.append(KeepRuleWriter.ANNOTATION_ATTRIBUTES_RULE).append('\n');
     }
     return builder.toString();
   }

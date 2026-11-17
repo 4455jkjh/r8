@@ -1,7 +1,7 @@
 [versions]
 androidxAnnotation = "1.10.0"
 androidxCollection = "1.6.0"
-androidxTracing = "2.0.3"
+androidxTracing = "2.0.5"
 # When updating update tools/asmifier.py and Toolhelper as well.
 asm = "9.10.1"
 ddmLib = "32.2.0"
@@ -89,6 +89,7 @@ smaliUtil = { module = "com.android.tools.smali:smali-util", version.ref = "smal
 spdxGradlePlugin = { module = "org.spdx:spdx-gradle-plugin", version.ref = "spdxGradlePlugin" }
 testng = { module = "org.testng:testng", version.ref = "testng" }
 toolsAapt2Proto = { module = "com.android.tools.build:aapt2-proto", version.ref = "toolsAapt2" }
+toolsAnnotations = { module = "com.android.tools:annotations", version.ref = "tools" }
 toolsLayoutlibApi = { module = "com.android.tools.layoutlib:layoutlib-api", version.ref = "tools" }
 toolsCommon = { module = "com.android.tools:common", version.ref = "tools" }
 toolsSdkCommon = { module = "com.android.tools:sdk-common", version.ref = "tools" }
@@ -111,9 +112,5 @@ compilerDeps = ["androidxCollection",
     "protobuf",
     "protobufUtil",
     "toolsAapt2Proto",
+    "toolsAnnotations",
     "zipflinger"]
-# Compiler dependencies that are included without their transitive dependencies, since these are
-# not used by R8.
-nonTransitiveDeps = ["toolsCommon",
-    "toolsLayoutlibApi",
-    "toolsSdkCommon"]

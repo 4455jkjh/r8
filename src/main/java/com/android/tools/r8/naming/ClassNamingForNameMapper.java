@@ -349,8 +349,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
   private final List<MappingInformation> additionalMappingInfo;
 
   // Populated by prepareWrite to avoid calculating multiple times.
-  private Collection<MemberNaming> fieldsSorted = null;
-  private List<MappedRange> mappedRangesSorted = null;
+  private String serializedContent = null;
 
   private ClassNamingForNameMapper(
       String renamedName,
@@ -513,46 +512,49 @@ public class ClassNamingForNameMapper implements ClassNaming {
     return methodMembers.values();
   }
 
-  void prepareWrite() {
-    fieldsSorted = CollectionUtils.sort(fieldMembers.values());
+  String prepareWrite() {
+    if (serializedContent != null) {
+      return serializedContent;
+    }
+    Collection<MemberNaming> fieldsSorted = CollectionUtils.sort(fieldMembers.values());
 
     // Sort MappedRanges by sequence number to restore construction order (original Proguard-map
     // input).
-    mappedRangesSorted = new ArrayList<>();
+    List<MappedRange> mappedRangesSorted = new ArrayList<>();
     for (MappedRangesOfName ranges : mappedRangesByRenamedName.values()) {
       mappedRangesSorted.addAll(ranges.mappedRanges);
     }
     mappedRangesSorted.sort(Comparator.comparingInt(range -> range.sequenceNumber));
-  }
 
-  void write(ChainableStringConsumer consumer) {
-    if (fieldsSorted == null) {
-      prepareWrite();
-    }
-    assert fieldsSorted != null;
-    assert mappedRangesSorted != null;
-
-    consumer.accept(originalName).accept(" -> ").accept(renamedName).accept(":\n");
+    StringBuilder builder = new StringBuilder();
+    builder.append(originalName).append(" -> ").append(renamedName).append(":\n");
 
     String spacing = "    ";
 
     // Print all additional mapping information.
-    additionalMappingInfo.forEach(info -> consumer.accept("# " + info.serialize()).accept("\n"));
+    additionalMappingInfo.forEach(
+        info -> builder.append("# ").append(info.serialize()).append("\n"));
 
     // Print field member namings.
     for (MemberNaming fieldMember : fieldsSorted) {
-      consumer.accept(spacing).accept(fieldMember.toString()).accept("\n");
+      builder.append(spacing).append(fieldMember.toString()).append("\n");
       for (MappingInformation info : fieldMember.getAdditionalMappingInformation()) {
-        consumer.accept(spacing + "  # ").accept(info.serialize()).accept("\n");
+        builder.append(spacing).append("  # ").append(info.serialize()).append("\n");
       }
     }
 
     for (MappedRange range : mappedRangesSorted) {
-      consumer.accept(spacing).accept(range.toString()).accept("\n");
+      builder.append(spacing).append(range.toString()).append("\n");
       for (MappingInformation info : range.getAdditionalMappingInformation()) {
-        consumer.accept(spacing + "  # ").accept(info.serialize()).accept("\n");
+        builder.append(spacing).append("  # ").append(info.serialize()).append("\n");
       }
     }
+    serializedContent = builder.toString();
+    return serializedContent;
+  }
+
+  void write(ChainableStringConsumer consumer) {
+    consumer.accept(prepareWrite());
   }
 
   @Override
@@ -561,9 +563,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
   }
 
   public String toProguardMapSource() {
-    StringBuilder builder = new StringBuilder();
-    write(ChainableStringConsumer.wrap(builder::append));
-    return builder.toString();
+    return prepareWrite();
   }
 
   @Override

@@ -22,7 +22,10 @@ public class ClassOperation extends ReflectiveEvent {
     super(eventType, stack);
     type = toType(args[0], factory);
     argumentType =
-        args.length > 1 && args[1] != null && !args[1].equals("null")
+        eventType != ReflectiveEventType.ENUM_VALUE_OF
+                && args.length > 1
+                && args[1] != null
+                && !args[1].equals("null")
             ? toType(args[1], factory)
             : null;
   }

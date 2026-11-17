@@ -61,18 +61,11 @@ def parse_options():
 
 def get_java_env(env):
     java_env = dict(env if env else os.environ,
-                    JAVA_HOME=jdk.GetDefaultJdkHome())
+                    JAVA_HOME=jdk.get_default_jdk_home())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
-        jdk.GetDefaultJdkHome(), 'bin')
+        jdk.get_default_jdk_home(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
     return java_env
-
-
-def print_cmd(s):
-    if type(s) is list:
-        s = ' '.join(s)
-    print('Running: %s' % s)
-    sys.stdout.flush()
 
 
 def ensure_gradle():
@@ -90,7 +83,7 @@ def ensure_gradle_repositories():
 def ensure_jdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
     # all beforehand.
-    for root in jdk.GetAllJdkDirs():
+    for root in jdk.get_all_jdk_dirs():
         utils.ensure_google_download(root)
 
 
@@ -131,7 +124,7 @@ def run_gradle_in(gradle_cmd,
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
         if not quiet:
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
         return_value = subprocess.call(cmd, env=get_java_env(env))
         utils.GRADLE_STOPPED = False
         if throw_on_failure and return_value != 0:

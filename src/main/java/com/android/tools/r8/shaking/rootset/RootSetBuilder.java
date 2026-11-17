@@ -639,6 +639,7 @@ public class RootSetBuilder {
       TaskCollection<?> tasks = new TaskCollection<>(options, executorService);
       // Mark all the things explicitly listed in keep rules.
       if (rules != null) {
+        rules.forEach(rule -> rule.simplifyClassNames(application));
         RootSetBuilderAnnotationIndex annotationIndex =
             RootSetBuilderAnnotationIndex.createForRootSetBuilder(
                 appView, rules, executorService, timing);

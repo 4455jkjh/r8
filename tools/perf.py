@@ -6,6 +6,7 @@
 import argparse
 import compiledump
 import datetime
+import git_utils
 import hashlib
 import historic_run
 import json
@@ -293,7 +294,7 @@ ALL_BENCHMARKS.update(LOCAL_BENCHMARKS)
 ALL_BENCHMARKS.update(BUILD_BENCHMARKS)
 BUCKET = "r8-perf-results"
 # Prefix of the weekly bundles that the perf page loads directly from the
-# bucket, see GetWeeklyBundleLocation().
+# bucket, see get_weekly_bundle_location().
 WEEKLY_PREFIX = 'weekly'
 SAMPLE_BENCHMARK_RESULT_JSON = {
     'benchmark_name': '<benchmark_name>',
@@ -302,6 +303,17 @@ SAMPLE_BENCHMARK_RESULT_JSON = {
         'runtime': 0
     }]
 }
+# Directories whose changes are ignored when deciding whether to run benchmarks
+# on bots. Every entry must end with '/' because is_benchmark_ignored_path uses
+# str.startswith().
+BENCHMARK_IGNORED_DIRS = (
+    'd8_r8/test/',
+    'd8_r8/test_modules/',
+    'infra/',
+    'src/test/',
+    'tools/',
+)
+assert all(d.endswith('/') for d in BENCHMARK_IGNORED_DIRS)
 
 
 # Result structure on cloud storage
@@ -309,7 +321,7 @@ SAMPLE_BENCHMARK_RESULT_JSON = {
 #                                                   meta
 # where results simply contains the result lines and
 # meta contains information about the execution (machine)
-def ParseOptions():
+def parse_options(argv=None):
     result = argparse.ArgumentParser()
     result.add_argument('--benchmark',
                         help='Specific benchmark(s) to measure.',
@@ -343,6 +355,12 @@ def ParseOptions():
                         help='Run release benchmarks.',
                         action='store_true',
                         default=bool(os.environ.get('R8_BOT_RELEASE')))
+    result.add_argument(
+        '--skip-if-no-relevant-changes',
+        help='Skip if commit touches no benchmark-relevant files '
+        '(default on bots).',
+        action='store_true',
+        default=utils.is_bot())
     result.add_argument('--skip-if-output-exists',
                         help='Skip if output exists.',
                         action='store_true',
@@ -360,7 +378,7 @@ def ParseOptions():
                         help='Use R8 hash for the run (default local build)')
     result.add_argument('--version-jar',
                         help='The r8lib.jar for the given version.')
-    options, args = result.parse_known_args()
+    options, args = result.parse_known_args(argv)
     if options.benchmark:
         options.benchmarks = options.benchmark
     elif options.internal:
@@ -379,7 +397,7 @@ def ParseOptions():
     return options, args
 
 
-def GetRunCmd(benchmark, target, variant, options, args, r8jar=None):
+def get_run_cmd(benchmark, target, variant, options, args, r8jar=None):
     base_cmd = [
         'tools/run_benchmark.py', '--benchmark', benchmark, '--target', target
     ]
@@ -395,21 +413,21 @@ def GetRunCmd(benchmark, target, variant, options, args, r8jar=None):
     return base_cmd + args
 
 
-def MergeBenchmarkResultJsonFiles(benchmark_result_json_files):
+def merge_benchmark_result_json_files(benchmark_result_json_files):
     merged_benchmark_result_json = None
     for benchmark_result_json_file in benchmark_result_json_files:
-        benchmark_result_json = ParseBenchmarkResultJsonFile(
+        benchmark_result_json = parse_benchmark_result_json_file(
             benchmark_result_json_file)
         if merged_benchmark_result_json is None:
             merged_benchmark_result_json = benchmark_result_json
         else:
-            MergeBenchmarkResultJsonFile(merged_benchmark_result_json,
-                                         benchmark_result_json)
+            merge_benchmark_result_json_file(merged_benchmark_result_json,
+                                             benchmark_result_json)
     return merged_benchmark_result_json
 
 
-def MergeBenchmarkResultJsonFile(merged_benchmark_result_json,
-                                 benchmark_result_json):
+def merge_benchmark_result_json_file(merged_benchmark_result_json,
+                                     benchmark_result_json):
     assert benchmark_result_json.keys() == SAMPLE_BENCHMARK_RESULT_JSON.keys()
     assert merged_benchmark_result_json[
         'benchmark_name'] == benchmark_result_json['benchmark_name']
@@ -417,18 +435,18 @@ def MergeBenchmarkResultJsonFile(merged_benchmark_result_json,
         benchmark_result_json['results'])
 
 
-def ParseBenchmarkResultJsonFile(result_json_file):
+def parse_benchmark_result_json_file(result_json_file):
     with open(result_json_file, 'r') as f:
         lines = f.readlines()
         return json.loads(''.join(lines))
 
 
-def GetArtifactLocation(benchmark,
-                        target,
-                        version,
-                        filename,
-                        branch=None,
-                        is_try=False):
+def get_artifact_location(benchmark,
+                          target,
+                          version,
+                          filename,
+                          branch=None,
+                          is_try=False):
     if version:
         if is_try:
             assert branch is None, (
@@ -440,7 +458,7 @@ def GetArtifactLocation(benchmark,
             return f'branches/{branch}/{benchmark}/{target}/{version}/{filename}'
         return f'{benchmark}/{target}/{version}/{filename}'
     else:
-        commit = utils.get_HEAD_commit()
+        commit = utils.get_head_commit()
         branch = commit.branch()
         if is_try:
             assert branch is None, (
@@ -453,29 +471,29 @@ def GetArtifactLocation(benchmark,
         return f'{benchmark}/{target}/{commit.hash()}/{filename}'
 
 
-def GetGSLocation(filename, bucket=BUCKET):
+def get_gs_location(filename, bucket=BUCKET):
     return f'gs://{bucket}/{filename}'
 
 
-def ArchiveBenchmarkResult(benchmark, target, benchmark_result_json_files,
-                           options, temp):
+def archive_benchmark_result(benchmark, target, benchmark_result_json_files,
+                             options, temp):
     result_file = os.path.join(temp, 'result_file')
-    merged_result_json = MergeBenchmarkResultJsonFiles(
+    merged_result_json = merge_benchmark_result_json_files(
         benchmark_result_json_files)
     with open(result_file, 'w') as f:
         json.dump(merged_result_json, f)
-    ArchiveOutputFile(result_file,
-                      GetArtifactLocation(benchmark,
-                                          target,
-                                          options.version,
-                                          'result.json',
-                                          is_try=options.is_try),
-                      outdir=options.outdir)
+    archive_output_file(result_file,
+                        get_artifact_location(benchmark,
+                                              target,
+                                              options.version,
+                                              'result.json',
+                                              is_try=options.is_try),
+                        outdir=options.outdir)
     return merged_result_json
 
 
 # Returns the ISO week of the given timestamp as WwwYyy, e.g. W43Y26.
-def GetIsoWeekFolder(timestamp):
+def get_iso_week_folder(timestamp):
     year, week, _ = datetime.datetime.fromtimestamp(
         timestamp, tz=datetime.timezone.utc).isocalendar()
     return f'W{week:02d}Y{year % 100:02d}'
@@ -483,7 +501,7 @@ def GetIsoWeekFolder(timestamp):
 
 # Returns a name for this perf.py run that is unique per build, target, and set
 # of benchmarks, since a build can run perf.py more than once.
-def GetWeeklyBundleRunName(benchmarks, target=None):
+def get_weekly_bundle_run_name(benchmarks, target=None):
     run_id = (os.environ.get('SWARMING_TASK_ID') or
               os.environ.get('KOKORO_BUILD_ID') or f'local-{int(time.time())}')
     key = f"{target or ''}:{','.join(sorted(set(benchmarks)))}"
@@ -498,29 +516,27 @@ def GetWeeklyBundleRunName(benchmarks, target=None):
 #   weekly/TARGET/WwwYyy/try/HASH/RUN.json for try commits, in the ISO week of
 #       their merge base with main,
 #   weekly/TARGET/releases/BRANCH/HASH/RUN.json for release branch commits.
-def GetWeeklyBundleLocation(commit, target, run_name, is_try):
+def get_weekly_bundle_location(commit, target, run_name, is_try):
     if is_try:
-        merge_base = subprocess.check_output(
-            ['git', 'merge-base',
-             commit.parent_hash(), 'origin/main']).decode('utf-8').strip()
+        merge_base = git_utils.get_merge_base_with_main(commit.parent_hash())
         parent = historic_run.git_commit_from_hash(merge_base)
-        week = GetIsoWeekFolder(parent.committer_timestamp())
+        week = get_iso_week_folder(parent.committer_timestamp())
         return (f'{WEEKLY_PREFIX}/{target}/{week}/try/{commit.hash()}/'
                 f'{run_name}.json', merge_base)
     branch = commit.branch()
     if branch and branch != 'main':
         return (f'{WEEKLY_PREFIX}/{target}/releases/{branch}/{commit.hash()}/'
                 f'{run_name}.json', None)
-    week = GetIsoWeekFolder(commit.committer_timestamp())
+    week = get_iso_week_folder(commit.committer_timestamp())
     return (f'{WEEKLY_PREFIX}/{target}/{week}/{commit.hash()}/{run_name}.json',
             None)
 
 
-def ArchiveWeeklyBundle(benchmark_results,
-                        temp,
-                        version=None,
-                        is_try=False,
-                        outdir=None):
+def archive_weekly_bundle(benchmark_results,
+                          temp,
+                          version=None,
+                          is_try=False,
+                          outdir=None):
     if version:
         if not compiledump.is_hash(version):
             return
@@ -528,7 +544,7 @@ def ArchiveWeeklyBundle(benchmark_results,
         if commit is None:
             return
     else:
-        commit = utils.get_HEAD_commit()
+        commit = utils.get_head_commit()
     base_commit_info = {
         'author': commit.author_name(),
         'hash': commit.hash(),
@@ -542,10 +558,10 @@ def ArchiveWeeklyBundle(benchmark_results,
     for target, target_benchmarks in benchmark_results.items():
         if not target_benchmarks:
             continue
-        run_name = GetWeeklyBundleRunName(target_benchmarks.keys(),
-                                          target=target)
-        location, parent_hash = GetWeeklyBundleLocation(commit, target,
-                                                        run_name, is_try)
+        run_name = get_weekly_bundle_run_name(target_benchmarks.keys(),
+                                              target=target)
+        location, parent_hash = get_weekly_bundle_location(
+            commit, target, run_name, is_try)
         commit_info = dict(base_commit_info)
         if parent_hash:
             commit_info['parent_hash'] = parent_hash
@@ -562,18 +578,54 @@ def ArchiveWeeklyBundle(benchmark_results,
         bundle_file = os.path.join(temp, f'weekly_bundle_{target}.json')
         with open(bundle_file, 'w') as f:
             json.dump(bundle, f)
-        ArchiveOutputFile(bundle_file, location, outdir=outdir)
+        archive_output_file(bundle_file, location, outdir=outdir)
 
 
-def ArchiveOutputFile(file, dest, bucket=BUCKET, header=None, outdir=None):
+def archive_output_file(file, dest, bucket=BUCKET, header=None, outdir=None):
     if outdir:
         dest_in_outdir = os.path.join(outdir, dest)
         os.makedirs(os.path.dirname(dest_in_outdir), exist_ok=True)
         shutil.copyfile(file, dest_in_outdir)
     else:
         utils.upload_file_to_cloud_storage(file,
-                                           GetGSLocation(dest, bucket=bucket),
+                                           get_gs_location(dest, bucket=bucket),
                                            header=header)
+
+
+def is_benchmark_ignored_path(path):
+    return path.startswith(BENCHMARK_IGNORED_DIRS)
+
+
+# Returns True when skipping is enabled and the target commit only touches paths
+# inside BENCHMARK_IGNORED_DIRS. Fails open (returns False) when using
+# --version-jar or if git lookup fails.
+def should_skip_commit(options):
+    if not options.skip_if_no_relevant_changes or options.version_jar:
+        return False
+    if options.version:
+        if not compiledump.is_hash(options.version):
+            return False
+        commit = historic_run.git_commit_from_hash(options.version)
+        if commit is None:
+            return False
+        commit_hash = commit.hash()
+    else:
+        commit_hash = utils.get_head_sha1()
+    try:
+        changed_files = git_utils.get_changed_files(commit_hash,
+                                                    is_try=options.is_try)
+    except subprocess.CalledProcessError as e:
+        detail = e.stderr.strip() if e.stderr else str(e)
+        print(
+            f'Warning: failed to determine changed files for {commit_hash}: '
+            f'{detail}',
+            file=sys.stderr)
+        return False
+    if any(not is_benchmark_ignored_path(path) for path in changed_files):
+        return False
+    print(f'Skipping benchmark run: commit {commit_hash} touches no '
+          'benchmark-relevant files.')
+    return True
 
 
 # Usage with historic_run.py:
@@ -582,8 +634,10 @@ def ArchiveOutputFile(file, dest, bucket=BUCKET, header=None, outdir=None):
 #     --timeout -1
 #     --top 3373fd18453835bf49bff9f02523a507a2ebf317
 #     --bottom 7486f01e0622cb5935b77a92b59ddf1ca8dbd2e2
-def main():
-    options, args = ParseOptions()
+def main(argv=None):
+    options, args = parse_options(argv)
+    if should_skip_commit(options):
+        return 0
     any_failed = False
     # Results of this run by target and benchmark, for the weekly bundle.
     weekly_bundle_results = {}
@@ -609,12 +663,12 @@ def main():
                     assert len(sub_benchmarks_for_target) == 0, 'Unimplemented'
                     if options.outdir:
                         raise NotImplementedError
-                    output = GetGSLocation(
-                        GetArtifactLocation(benchmark,
-                                            target,
-                                            options.version,
-                                            'result.json',
-                                            is_try=options.is_try))
+                    output = get_gs_location(
+                        get_artifact_location(benchmark,
+                                              target,
+                                              options.version,
+                                              'result.json',
+                                              is_try=options.is_try))
                     if utils.cloud_storage_exists(output):
                         print(f'Skipping run, {output} already exists.')
                         continue
@@ -633,9 +687,10 @@ def main():
 
                 failed = False
                 for i in range(options.iterations):
-                    utils.Print(
-                        f'Benchmarking {benchmark} ({i+1}/{options.iterations})',
-                        quiet=options.quiet)
+                    if not options.quiet:
+                        print(
+                            f'Benchmarking {benchmark} ({i+1}/{options.iterations})'
+                        )
                     if sub_benchmarks_for_target:
                         benchmark_result_file = os.path.join(
                             temp_benchmark_target, f'result_{i}')
@@ -643,7 +698,7 @@ def main():
                     else:
                         benchmark_result_file = os.path.join(
                             temp_benchmark_target, f'result_file_{i}')
-                    iteration_cmd = GetRunCmd(
+                    iteration_cmd = get_run_cmd(
                         benchmark_to_run, target, variant, options, [
                             '--iterations',
                             str(options.iterations_inner), '--output',
@@ -675,12 +730,13 @@ def main():
                 if sub_benchmarks_for_target:
                     for sub_benchmark in sub_benchmarks_for_target:
                         target_results[
-                            benchmark + sub_benchmark] = ArchiveBenchmarkResult(
+                            benchmark +
+                            sub_benchmark] = archive_benchmark_result(
                                 benchmark + sub_benchmark, target,
                                 benchmark_result_json_files[sub_benchmark],
                                 options, temp)
                 else:
-                    target_results[benchmark] = ArchiveBenchmarkResult(
+                    target_results[benchmark] = archive_benchmark_result(
                         benchmark, target, benchmark_result_json_files, options,
                         temp)
 
@@ -691,24 +747,24 @@ def main():
                         f.write("Produced by: " +
                                 (os.environ.get('SWARMING_BOT_ID') or
                                  os.environ.get('KOKORO_BUILD_ID')))
-                    ArchiveOutputFile(meta_file,
-                                      GetArtifactLocation(
-                                          benchmark,
-                                          target,
-                                          options.version,
-                                          'meta',
-                                          is_try=options.is_try),
-                                      outdir=options.outdir)
+                    archive_output_file(meta_file,
+                                        get_artifact_location(
+                                            benchmark,
+                                            target,
+                                            options.version,
+                                            'meta',
+                                            is_try=options.is_try),
+                                        outdir=options.outdir)
 
         # The weekly bundles are a new pipeline that runs next to the existing
         # one, so failing to write them must not fail the run.
         if weekly_bundle_results:
             try:
-                ArchiveWeeklyBundle(weekly_bundle_results,
-                                    temp,
-                                    version=options.version,
-                                    is_try=options.is_try,
-                                    outdir=options.outdir)
+                archive_weekly_bundle(weekly_bundle_results,
+                                      temp,
+                                      version=options.version,
+                                      is_try=options.is_try,
+                                      outdir=options.outdir)
             except Exception as e:
                 print(f'Warning: failed to write weekly bundle: {e}',
                       file=sys.stderr)

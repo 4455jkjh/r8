@@ -28,40 +28,27 @@ VERSIONS = {
 VERSIONS[DEFAULT_ALIAS] = VERSIONS[DEFAULT]
 
 
-# Get versions sorted (nice for argument lists)
-def getVersions():
-    versions = list(VERSIONS.keys())
-    versions.sort()
-    return versions
-
-
-def isValidVersion(version):
+def is_valid_version(version):
     return version in VERSIONS
 
 
-def getValidatedVersion(version):
-    if not isValidVersion(version):
+def get_validated_version(version):
+    if not is_valid_version(version):
         raise ValueError("Invalid PG version: '%s'" % version)
     return version
 
 
-def getJar(version=DEFAULT):
-    return VERSIONS[getValidatedVersion(version)]
+def get_jar(version=DEFAULT):
+    return VERSIONS[get_validated_version(version)]
 
 
-def getRetraceJar(version=DEFAULT):
-    if version == 'pg_internal':
-        raise ValueError("No retrace in internal distribution")
-    return getJar().replace('proguard.jar', 'retrace.jar')
-
-
-def getCmd(args, version=DEFAULT, jvmArgs=None):
+def get_cmd(args, version=DEFAULT, jvm_args=None):
     cmd = []
-    if jvmArgs:
-        cmd.extend(jvmArgs)
+    if jvm_args:
+        cmd.extend(jvm_args)
     cmd.extend([
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-jar',
-        getJar(version)
+        jdk.get_java_executable(jdk.get_default_jdk_home()), '-jar',
+        get_jar(version)
     ])
     cmd.extend(args)
     return cmd
@@ -75,14 +62,14 @@ def run(args,
     cmd = []
     if track_memory_file:
         cmd.extend(['tools/track_memory.sh', track_memory_file])
-    cmd.extend(getCmd(args, version))
-    utils.PrintCmd(cmd)
+    cmd.extend(get_cmd(args, version))
+    utils.print_cmd(cmd)
     subprocess.call(cmd, stdout=stdout, stderr=stderr)
 
 
-def Main():
+def main():
     run(sys.argv[1:])
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

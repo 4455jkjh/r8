@@ -7,10 +7,7 @@ import static androidx.tracing.Tasks_desktopKt.currentTaskId;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import androidx.tracing.CounterTrack;
-import androidx.tracing.EventMetadataCloseable;
 import androidx.tracing.ProcessTrack;
-import androidx.tracing.PropagationUnsupportedToken;
-import androidx.tracing.ThreadTrack;
 import androidx.tracing.TraceContext;
 import androidx.tracing.wire.TraceDriver;
 import androidx.tracing.wire.TraceSink;
@@ -24,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import kotlinx.coroutines.Dispatchers;
@@ -33,28 +31,36 @@ import okio.Okio;
 public class PerfettoTiming extends TimingImplBase {
   // The API now allows you to specify the category and in the future let you conditionally turn on
   // categories.
-  private static final String TRACE_CATEGORY = "R8";
+  static final String TRACE_CATEGORY = "R8";
 
   private final TraceDriver traceDriver;
   private final ProcessTrack processTrack;
-  private final ThreadTrack threadTrack;
-  private final int mainThreadId;
-  private int depth = 0;
+  private final long mainThreadId;
+  final long minDurationNanos;
+  final String batchTitle;
+  private final ConcurrentHashMap<Long, PerfettoThreadStack> threadStacks =
+      new ConcurrentHashMap<>();
   private CounterTrack memoryTrack;
   private Future<Void> memoryTracker;
   private volatile boolean memoryTrackerActive = true;
   private CounterTrack uncommittedDexItemsTrack;
 
-  private final Set<Integer> tracedWorkerThreadIds = ConcurrentHashMap.newKeySet();
+  private final Set<Long> tracedWorkerThreadIds = ConcurrentHashMap.newKeySet();
 
   public PerfettoTiming(String title, InternalOptions options, ExecutorService executorService) {
+    int minDurationMs = options.getPerfettoTraceMinValueMs();
+    this.minDurationNanos = TimeUnit.MILLISECONDS.toNanos(minDurationMs);
+    this.batchTitle = "slices < " + minDurationMs + "ms";
     int sequenceId = 1;
     TraceSink sink;
     if (options.perfettoTraceDumpFile != null) {
       BufferedSink bufferedSink;
       try {
         File file = new File(options.perfettoTraceDumpFile);
-        bufferedSink = Okio.buffer(Okio.appendingSink(file));
+        if (file.getParentFile() != null) {
+          file.getParentFile().mkdirs();
+        }
+        bufferedSink = Okio.buffer(Okio.sink(file));
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
@@ -67,8 +73,19 @@ public class PerfettoTiming extends TimingImplBase {
     traceDriver = new TraceDriver(sink);
     TraceContext traceContext = traceDriver.getContext();
     processTrack = traceContext.getProcess();
-    mainThreadId = (int) Thread.currentThread().getId();
-    threadTrack = processTrack.getOrCreateThreadTrack(mainThreadId, currentTaskId(), "Main thread");
+    mainThreadId = Thread.currentThread().getId();
+    // ProcessTrack.<init> pre-creates a ThreadTrack for the current thread using
+    // Thread.currentThread().getName(). Remove it so the track is created with the name
+    // "Main thread" instead.
+    processTrack.getThreads().remove(mainThreadId);
+    processTrack.l1ThreadTrack = null;
+    stack =
+        new PerfettoThreadStack(
+            this,
+            mainThreadId,
+            true,
+            () ->
+                processTrack.getOrCreateThreadTrack(mainThreadId, currentTaskId(), "Main thread"));
     begin(title);
     // Memory tracking requires an executor service.
     if (executorService != null) {
@@ -95,26 +112,23 @@ public class PerfettoTiming extends TimingImplBase {
     }
   }
 
+  long readClock() {
+    return System.nanoTime();
+  }
+
   @Override
   public Timing createThreadTiming(String title, InternalOptions options) {
-    return internalCreateThreadTiming(options).begin(title);
+    return createThreadTiming(title, Function.identity(), options);
   }
 
   @Override
   public <T> Timing createThreadTiming(
       T context, Function<T, String> titleSupplier, InternalOptions options) {
-    return internalCreateThreadTiming(options).begin(context, titleSupplier);
-  }
-
-  @Override
-  public Timing createThreadTiming(
-      int value, IntFunction<String> titleSupplier, InternalOptions options) {
-    return internalCreateThreadTiming(options).begin(value, titleSupplier);
-  }
-
-  private Timing internalCreateThreadTiming(InternalOptions options) {
-    int threadId = (int) Thread.currentThread().getId();
-    if (options.perfettoTraceThreads >= 0 && threadId != mainThreadId) {
+    long threadId = Thread.currentThread().getId();
+    if (threadId == mainThreadId) {
+      return begin(context, titleSupplier);
+    }
+    if (options.perfettoTraceThreads >= 0) {
       // Check if tracing should be enabled for the current thread.
       if (tracedWorkerThreadIds.size() < options.perfettoTraceThreads) {
         synchronized (tracedWorkerThreadIds) {
@@ -127,49 +141,38 @@ public class PerfettoTiming extends TimingImplBase {
         return Timing.empty();
       }
     }
-    ThreadTrack newThreadTrack =
-        processTrack.getOrCreateThreadTrack(threadId, currentTaskId(), "Worker");
-    return new PerfettoThreadTiming(this, newThreadTrack);
+    PerfettoThreadStack threadStack =
+        threadStacks.computeIfAbsent(
+            threadId,
+            id -> {
+              // Capture the task id here since the track may be created when closing the trace.
+              long taskId = currentTaskId();
+              return new PerfettoThreadStack(
+                  this, id, false, () -> processTrack.getOrCreateThreadTrack(id, taskId, "Worker"));
+            });
+    assert threadStack.depth() == 0 : threadStack.depth();
+    return new PerfettoThreadTiming(threadStack).begin(context, titleSupplier);
   }
 
   @Override
-  public Timing begin(String title) {
-    assert threadTrack.getId() == Thread.currentThread().getId();
-    // Actually dispatch events to trace sink after adding any additional event metadata if needed.
-    // You can do so by using: eventMetadataCloseable.metadata.add* APIs.
-    // R8 is using the low level track APIs (and Java) which is why the API looks the way it does.
-    EventMetadataCloseable eventMetadataCloseable =
-        threadTrack.beginSection$tracing(
-            TRACE_CATEGORY, title, PropagationUnsupportedToken.INSTANCE);
-    eventMetadataCloseable.metadata.dispatchToTraceSink();
-    depth++;
-    return this;
-  }
-
-  @Override
-  public Timing end() {
-    assert threadTrack.getId() == Thread.currentThread().getId();
-    threadTrack.endSection();
-    depth--;
-    return this;
-  }
-
-  @Override
-  public TimingMerger beginMerger(String title, int numberOfThreads) {
-    return EmptyTimingMerger.get();
+  public Timing createThreadTiming(
+      int value, IntFunction<String> titleSupplier, InternalOptions options) {
+    return createThreadTiming(titleSupplier.apply(value), options);
   }
 
   @Override
   public void report() {
     end();
-    assert depth == 0 : depth;
+    assert stack.depth() == 0 : stack.depth();
     awaitMemoryTracker();
+    // All thread timings have finished at this point, so emit their pending root-level batches.
+    threadStacks.values().forEach(PerfettoThreadStack::flushPendingRootBatch);
     traceDriver.close();
   }
 
   @Override
   public Timing endAll() {
-    while (depth > 1) {
+    while (stack.depth() > 1) {
       end();
     }
     return this;

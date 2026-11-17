@@ -108,6 +108,10 @@ public class EnumUnboxingCandidateInfoCollection {
     return info.enumClass;
   }
 
+  public EnumUnboxingCandidateInfo getCandidateInfo(DexProgramClass enumClass) {
+    return enumTypeToInfo.get(enumClass.getType());
+  }
+
   public LongLivedProgramMethodSetBuilder<ProgramMethodSet> allMethodDependencies() {
     Iterator<EnumUnboxingCandidateInfo> candidateInfoIterator = enumTypeToInfo.values().iterator();
     assert candidateInfoIterator.hasNext();

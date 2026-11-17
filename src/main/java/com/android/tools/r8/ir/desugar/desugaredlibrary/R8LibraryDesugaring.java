@@ -143,9 +143,7 @@ public class R8LibraryDesugaring {
                   method -> method.hasCode() && method.getCode().isLirCode(),
                   method -> {
                     Timing threadTiming =
-                        timing
-                            .createThreadTiming(method, ProgramMethod::toSourceString, options)
-                            .begin("Desugar");
+                        timing.createThreadTiming(method, options).begin("Desugar");
                     MethodProcessingContext methodProcessingContext =
                         processorContext.createMethodProcessingContext(method);
                     R8LibraryDesugaringGraphLens libraryDesugaringGraphLens =
@@ -166,7 +164,8 @@ public class R8LibraryDesugaring {
                         libraryDesugaringGraphLens,
                         emptyRewriterUtils,
                         threadTiming);
-                    threadTimings.add(threadTiming.end().end());
+                    threadTiming.endAll().notifyThreadTimingFinished();
+                    threadTimings.add(threadTiming);
                   });
               return threadTimings;
             },

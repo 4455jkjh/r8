@@ -522,6 +522,11 @@ registerTestDep("youtube2140", ThirdPartyDeps.youtube2140, "YOUTUBE_21_40")
 
 registerTestDep("youtube2140D8Merge", ThirdPartyDeps.youtube2140D8Merge, "YOUTUBE_21_40_D8_MERGE")
 
+configurations.consumable("examplesClasses") {
+  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.examples.packageName}")
+  outgoing.artifact(task.flatMap { it.outputDir.dir("classes") })
+}
+
 configurations.consumable("jasminJar") {
   val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jasmin.packageName}")
   outgoing.artifact(task.flatMap { it.outputDir.file("jasmin-2.4.jar") })
@@ -542,18 +547,14 @@ configurations.consumable("jdwpTestsJar") {
   outgoing.artifact(task.flatMap { it.outputDir.file("apache-harmony-jdwp-tests-host.jar") })
 }
 
+configurations.consumable("jdk25Home") {
+  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdk25.packageName}")
+  val isMac = DefaultNativePlatform.getCurrentOperatingSystem().isMacOsX
+  outgoing.artifact(task.flatMap { if (isMac) it.outputDir.dir("Contents/Home") else it.outputDir })
+}
+
 tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
-configurations.consumable("sharedDepsFiles") {
-  publicTasks.forEach { taskProvider -> outgoing.artifact(taskProvider.flatMap { it.outputDir }) }
-}
-
 tasks.register("downloadTestDeps") { dependsOn(publicTestTasks) }
-
-configurations.consumable("sharedTestDepsFiles") {
-  publicTestTasks.forEach { taskProvider ->
-    outgoing.artifact(taskProvider.flatMap { it.outputDir })
-  }
-}
 
 tasks.register("downloadTestDepsInternal") { dependsOn(internalTestTasks) }

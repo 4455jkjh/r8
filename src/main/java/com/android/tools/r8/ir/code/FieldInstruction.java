@@ -26,7 +26,6 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.analysis.value.SingleFieldValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import java.util.Collections;
 import java.util.List;
 
 public abstract class FieldInstruction extends Instruction {
@@ -34,7 +33,9 @@ public abstract class FieldInstruction extends Instruction {
   private final DexField field;
 
   protected FieldInstruction(DexField field, Value dest, Value value) {
-    this(field, dest, Collections.singletonList(value));
+    super(dest, value);
+    assert field != null;
+    this.field = field;
   }
 
   protected FieldInstruction(DexField field, Value dest, List<Value> inValues) {

@@ -12,7 +12,7 @@ try:
     def notify(message):
         try:
             Notify.Notification.new('R8 build tools', message).show()
-        except:
+        except Exception:
             return
 
 except (ImportError, ValueError):

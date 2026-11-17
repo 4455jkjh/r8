@@ -211,6 +211,19 @@ public abstract class ReflectiveEvent {
       case CLASS_GET_METHOD:
       case CLASS_GET_FIELD:
       case CLASS_GET_CONSTRUCTOR:
+      case FIELD_GET_ANNOTATION:
+      case FIELD_GET_ANNOTATIONS:
+      case FIELD_IS_ANNOTATION_PRESENT:
+      case FIELD_GET_GENERIC_TYPE:
+      case METHOD_GET_ANNOTATION:
+      case METHOD_GET_ANNOTATIONS:
+      case METHOD_IS_ANNOTATION_PRESENT:
+      case METHOD_GET_GENERIC_PARAMETER_TYPES:
+      case METHOD_GET_GENERIC_RETURN_TYPE:
+      case METHOD_GET_GENERIC_EXCEPTION_TYPES:
+      case CONSTRUCTOR_GET_ANNOTATION:
+      case CONSTRUCTOR_GET_ANNOTATIONS:
+      case CONSTRUCTOR_IS_ANNOTATION_PRESENT:
         return new ClassGetMember(eventType, stack, args, factory);
       case CLASS_GET_DECLARED_METHODS:
       case CLASS_GET_DECLARED_FIELDS:
@@ -230,6 +243,16 @@ public abstract class ReflectiveEvent {
       case CLASS_AS_SUBCLASS:
       case CLASS_IS_INSTANCE:
       case CLASS_CAST:
+      case CLASS_GET_ANNOTATION:
+      case CLASS_GET_ANNOTATIONS:
+      case CLASS_IS_ANNOTATION_PRESENT:
+      case CLASS_GET_DECLARED_CLASSES:
+      case CLASS_GET_CLASSES:
+      case CLASS_GET_DECLARING_CLASS:
+      case CLASS_GET_ENCLOSING_CLASS:
+      case ENUM_VALUE_OF:
+      case CLASS_GET_ENUM_CONSTANTS:
+      case UNSAFE_ALLOCATE_INSTANCE:
         return new ClassOperation(eventType, stack, args, factory);
       case CLASS_FLAG:
         return new ClassFlagEvent(eventType, stack, args, factory);

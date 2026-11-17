@@ -57,6 +57,8 @@ public class ProtoReferences {
   public final DexString getNumberMethodName;
 
   public final DexString protobufPackageDescriptorPrefix;
+  public final DexString enumLiteToStringNumberPrefix;
+  public final DexString enumLiteToStringNamePrefix;
 
   public final DexProto dynamicMethodProto;
   public final DexProto findLiteExtensionByNumberProto;
@@ -108,6 +110,8 @@ public class ProtoReferences {
 
     // Other names.
     protobufPackageDescriptorPrefix = factory.createString("Lcom/google/protobuf/");
+    enumLiteToStringNumberPrefix = factory.createString(" number=");
+    enumLiteToStringNamePrefix = factory.createString(" name=");
 
     // Protos.
     dynamicMethodProto =

@@ -21,18 +21,12 @@ java {
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val distSwissArmyKnife = project(":swissarmyknife").tasks.getByName("jar")
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
 
 val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles =
   configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
 
-dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
-}
+dependencies { distDepsFilesScope(project(":dist", "filteredDepsJarConfig")) }
 
 val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig =
@@ -46,14 +40,6 @@ dependencies {
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
-}
-
-fun testDependencies(): FileCollection {
-  return sourceSets.test.get().compileClasspath.filter {
-    "$it".contains("third_party") &&
-      !"$it".contains("errorprone") &&
-      !"$it".contains("third_party/gradle")
-  }
 }
 
 tasks {
@@ -92,15 +78,6 @@ tasks {
     // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
     archiveFileName.set("not_named_tests_bootstrap.jar")
   }
-
-  register<Jar>("assembleDepsJar") {
-    dependsOn(sharedDepsConfig)
-    from(testDependencies().map(::zipTree))
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archiveFileName.set("deps.jar")
-  }
 }
 
 configurations.consumable("testJar") { outgoing.artifact(tasks.named("assembleTestJar")) }
-
-configurations.consumable("depsJar") { outgoing.artifact(tasks.named("assembleDepsJar")) }

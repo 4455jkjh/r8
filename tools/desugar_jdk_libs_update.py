@@ -24,7 +24,7 @@ def sed(pattern, replace, path):
             sources.write(re.sub(pattern, replace, line))
 
 
-def GetGitHash(checkout_dir):
+def get_git_hash(checkout_dir):
     return subprocess.check_output(
         ['git', '-C', checkout_dir, 'rev-parse',
          'HEAD']).decode('utf-8').strip()
@@ -32,7 +32,7 @@ def GetGitHash(checkout_dir):
 
 def run(args):
     with utils.TempDir() as tmp_dir:
-        use_existing_checkout = args.desugar_jdk_libs_checkout != None
+        use_existing_checkout = args.desugar_jdk_libs_checkout is not None
         checkout_dir = (args.desugar_jdk_libs_checkout if use_existing_checkout
                         else join(tmp_dir, 'desugar_jdk_libs'))
         if (not use_existing_checkout):
@@ -79,8 +79,9 @@ def run(args):
             shutil.copyfile(join(tmp_dir, f), join(dest_dir, f))
         desugar_jdk_libs_hash = os.path.join(dest_dir, 'desugar_jdk_libs_hash')
         with open(desugar_jdk_libs_hash, 'w') as desugar_jdk_libs_hash_writer:
-            desugar_jdk_libs_hash_writer.write(GetGitHash(checkout_dir))
-        sed('^Version: [0-9a-f]{40}$', 'Version: %s' % GetGitHash(checkout_dir),
+            desugar_jdk_libs_hash_writer.write(get_git_hash(checkout_dir))
+        sed('^Version: [0-9a-f]{40}$',
+            'Version: %s' % get_git_hash(checkout_dir),
             join(dest_dir, 'README.google'))
         sed('^Date: .*$', 'Date: %s' % datetime.today().strftime('%Y-%m-%d'),
             join(dest_dir, 'README.google'))

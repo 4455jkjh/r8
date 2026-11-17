@@ -209,6 +209,9 @@ def parse_options(argv):
     group.add_argument('--desugar-configuration-jdk11-nio',
                        action='store_true',
                        help='Build desugar library configuration (JDK-11 nio)')
+    group.add_argument('--keepanno-tools',
+                       action='store_true',
+                       help='Build the keepanno-tools maven zip')
     group.add_argument('--r8-assistant',
                        action='store_true',
                        help='Build the r8-assistant maven zip')
@@ -237,7 +240,7 @@ def determine_r8_assistant_version():
                 result = result[:result.find('"')]
                 utils.check_basic_semver_version(result,
                                                  'in ' + version_file,
-                                                 allowPrerelease=True)
+                                                 allow_prerelease=True)
                 return result
     raise Exception('Unable to determine R8 Assistant version.')
 
@@ -247,7 +250,8 @@ def determine_keepanno_tools_version():
     if version == 'main':
         return version
     else:
-        semver = utils.check_basic_semver_version(version, allowPrerelease=True)
+        semver = utils.check_basic_semver_version(version,
+                                                  allow_prerelease=True)
         if semver.prerelease == 'dev':
             return str(
                 utils.SemanticVersion(semver.major, semver.minor, 0,
@@ -299,7 +303,7 @@ def generate_library_licenses():
             # to collected licenses if either name or url has not been recorded yet,
             # as some licenses with slightly different names point to the same url.
             if name and url:
-                if (not name in licenses) or (not url in license_urls):
+                if name not in licenses or url not in license_urls:
                     licenses.append(name)
                     license_urls.append(url)
                 name = None
@@ -478,12 +482,13 @@ def generate_jar_with_desugar_configuration(configuration, implementation,
         lint_dir = join(configuration_dir, 'lint')
         makedirs(lint_dir)
         cmd = [
-            jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', utils.R8_JAR,
+            jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
+            utils.R8_JAR,
             'com.android.tools.r8.ir.desugar.desugaredlibrary.lint.GenerateDesugaredLibraryLintFiles',
             configuration, implementation, lint_dir,
             utils.get_android_jar(34, 0)
         ]
-        utils.PrintCmd(cmd)
+        utils.print_cmd(cmd)
         subprocess.check_call(cmd)
 
         # Add LICENSE file.
@@ -496,7 +501,8 @@ def generate_jar_with_desugar_configuration(configuration, implementation,
 def convert_desugar_configuration(configuration, conversions, implementation,
                                   machine_configuration):
     cmd = [
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', utils.R8_JAR,
+        jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
+        utils.R8_JAR,
         'com.android.tools.r8.ir.desugar.desugaredlibrary.specificationconversion.DesugaredLibraryConverter',
         configuration, implementation, conversions,
         utils.get_android_jar(33, 0), machine_configuration
@@ -533,7 +539,7 @@ def generate_desugar_configuration_maven_zip(out, configuration, implementation,
 
 def main(argv):
     options = parse_options(argv)
-    if options.out == None:
+    if options.out is None:
         raise Exception('Need to supply output zip with --out.')
     if options.desugar_configuration or options.desugar_configuration_jdk8:
         generate_desugar_configuration_maven_zip(
@@ -560,11 +566,12 @@ def main(argv):
             options.out, utils.DESUGAR_CONFIGURATION_JDK11_NIO,
             utils.DESUGAR_IMPLEMENTATION_JDK11,
             utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP)
+    elif options.keepanno_tools:
+        generate_keepanno_tools_maven_zip(options.out)
     elif options.r8_assistant:
         generate_r8_assistant_maven_zip(options.out)
     else:
         generate_r8_maven_zip(options.out)
-        generate_keepanno_maven_zip(options.out)
 
 
 if __name__ == "__main__":

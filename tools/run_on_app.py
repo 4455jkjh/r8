@@ -3,18 +3,21 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from __future__ import print_function
+from datetime import datetime, timezone
 from glob import glob
 import argparse
 import copy
 import os
 import sys
+import threading
 import time
+import xml.etree.ElementTree as ET
 
 import archive
 import gradle
 import nest_data
-from sanitize_libraries import SanitizeLibraries, SanitizeLibrariesInPgconf
+import perfetto_utils
+from sanitize_libraries import sanitize_libraries, sanitize_libraries_in_pgconf
 import thread_utils
 from thread_utils import print_thread
 import toolhelper
@@ -32,7 +35,7 @@ OOM_EXIT_CODE = 42
 TIMEOUT_KILL_CODE = -9
 
 
-def ParseOptions(argv):
+def parse_options(argv):
     result = argparse.ArgumentParser()
     result.add_argument('--compiler',
                         help='The compiler to use',
@@ -173,6 +176,16 @@ def ParseOptions(argv):
                         help='Disable compiler logging',
                         default=False,
                         action='store_true')
+    result.add_argument('--trace-lite',
+                        '--trace_lite',
+                        help='Enable lite Perfetto tracing (>= 2ms slices).',
+                        default=False,
+                        action='store_true')
+    result.add_argument('--upload-traces',
+                        '--upload_traces',
+                        help='Upload Perfetto traces to GCS.',
+                        default=False,
+                        action='store_true')
     result.add_argument('--workers',
                         help='Number of workers to use',
                         default=1,
@@ -190,7 +203,7 @@ def ParseOptions(argv):
 # want to write these files in the locations specified.
 # Instead generate an auxiliary Proguard configuration placing these
 # output files together with the dex output.
-def GenerateAdditionalProguardConfiguration(temp, outdir):
+def generate_additional_proguard_configuration(temp, outdir):
     name = "output.config"
     with open(os.path.join(temp, name), 'w') as f:
         f.write('-printmapping ' + os.path.join(outdir, 'proguard.map') + "\n")
@@ -249,7 +262,7 @@ def run_all(options, args):
         jobs,
         number_of_workers=options.workers,
         stop_on_first_failure=not options.no_fail_fast)
-    exit(exit_code)
+    return exit_code
 
 
 def create_job(compiler, compiler_build, name, options, type, version):
@@ -351,8 +364,98 @@ def track_time_in_memory(options, args):
     return 0
 
 
+class _TraceRecorder(object):
+
+    def __init__(self, gcs_prefix):
+        self.gcs_prefix = gcs_prefix
+        self._lock = threading.Lock()
+        self.entries = []
+
+    def record(self, app, slug, elapsed_sec, passed, failure_message,
+               perfetto_url):
+        with self._lock:
+            self.entries.append({
+                'app': app,
+                'slug': slug,
+                'time': elapsed_sec,
+                'passed': passed,
+                'failure_message': failure_message,
+                'perfetto_url': perfetto_url,
+            })
+
+
+def _get_kokoro_gcs_prefix():
+    job_name = os.environ.get('KOKORO_JOB_NAME', '').lower()
+    build_id = (os.environ.get('KOKORO_BUILD_ID') or
+                datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ'))
+    if 'presubmit' in job_name:
+        return f'kokoro/presubmit/{build_id}'
+    if 'release' in job_name:
+        return f'kokoro/release/{build_id}'
+    return f'kokoro/ci/{build_id}'
+
+
+def _write_junit_xml(entries):
+    if not entries:
+        return
+    try:
+        sorted_entries = sorted(entries, key=lambda e: e['slug'])
+        failures = sum(0 if e['passed'] else 1 for e in sorted_entries)
+        total_time = sum(e['time'] for e in sorted_entries)
+        suite = ET.Element(
+            'testsuite', {
+                'name': 'run_on_app',
+                'tests': str(len(sorted_entries)),
+                'failures': str(failures),
+                'errors': '0',
+                'time': f'{total_time:.3f}',
+            })
+        for entry in sorted_entries:
+            case = ET.SubElement(
+                suite, 'testcase', {
+                    'classname': f"run_on_app.{entry['app']}",
+                    'name': entry['slug'],
+                    'time': f"{entry['time']:.3f}",
+                })
+            if entry.get('perfetto_url'):
+                props = ET.SubElement(case, 'properties')
+                ET.SubElement(props, 'property', {
+                    'name': 'perfetto_trace',
+                    'value': entry['perfetto_url'],
+                })
+            if not entry['passed']:
+                ET.SubElement(
+                    case, 'failure', {
+                        'message':
+                            entry.get('failure_message')
+                            or 'Compilation failed',
+                    })
+        out_dir = os.path.join(utils.BUILD, 'test-results', 'run_on_app')
+        os.makedirs(out_dir, exist_ok=True)
+        out_file = os.path.join(out_dir, 'TEST-run_on_app.xml')
+        ET.ElementTree(suite).write(out_file,
+                                    encoding='utf-8',
+                                    xml_declaration=True)
+    except Exception as e:
+        print(f'WARNING: Failed to write JUnit XML for Perfetto traces: {e}',
+              flush=True)
+
+
+def _print_perfetto_summary(entries):
+    traced = [
+        e for e in sorted(entries, key=lambda e: e['slug'])
+        if e.get('perfetto_url')
+    ]
+    if not traced:
+        return
+    print('', flush=True)
+    print('Perfetto traces:', flush=True)
+    for entry in traced:
+        print(f"  {entry['slug']}: {entry['perfetto_url']}", flush=True)
+
+
 def main(argv):
-    (options, args) = ParseOptions(argv)
+    (options, args) = parse_options(argv)
     if options.expect_oom and not options.max_memory:
         raise Exception(
             'You should only use --expect-oom if also specifying --max-memory')
@@ -362,15 +465,30 @@ def main(argv):
     if options.find_min_xmx and options.track_time_in_memory:
         raise Exception(
             'You cannot both find the min xmx and track time at the same time')
-    if options.run_all:
-        return run_all(options, args)
     if options.find_min_xmx:
         return find_min_xmx(options, args)
     if options.track_time_in_memory:
         return track_time_in_memory(options, args)
-    exit_code = run_with_options(options, args, quiet=options.quiet)
-    if options.expect_oom:
-        exit_code = 0 if exit_code == OOM_EXIT_CODE else 1
+    trace_recorder = (_TraceRecorder(_get_kokoro_gcs_prefix()) if
+                      (options.trace_lite or options.upload_traces) else None)
+    options._trace_recorder = trace_recorder
+    if options.run_all:
+        exit_code = run_all(options, args)
+    else:
+        exit_code = run_with_options(options, args, quiet=options.quiet)
+        if options.expect_oom:
+            exit_code = 0 if exit_code == OOM_EXIT_CODE else 1
+            if trace_recorder and trace_recorder.entries:
+                trace_recorder.entries[-1]['passed'] = (exit_code == 0)
+                if exit_code == 0:
+                    trace_recorder.entries[-1]['failure_message'] = None
+                elif not trace_recorder.entries[-1]['failure_message']:
+                    trace_recorder.entries[-1][
+                        'failure_message'] = 'Expected OOM did not occur'
+    if trace_recorder:
+        if options.upload_traces:
+            _write_junit_xml(trace_recorder.entries)
+        _print_perfetto_summary(trace_recorder.entries)
     return exit_code
 
 
@@ -457,7 +575,7 @@ def run_with_options(options,
         raise Exception("You need to specify '--compiler-build={}'".format(
             '|'.join(COMPILER_BUILDS)))
 
-    if not version_id in data.VERSIONS.keys():
+    if version_id not in data.VERSIONS.keys():
         print('No version {} for application {}'.format(version_id,
                                                         options.app))
         print('Valid versions are {}'.format(data.VERSIONS.keys()))
@@ -490,9 +608,9 @@ def run_with_options(options,
             if has_injars_and_libraryjars(values['pgconf']):
                 sanitized_pgconf_path = os.path.join(os.path.abspath(outdir),
                                                      'sanitized.config')
-                SanitizeLibrariesInPgconf(sanitized_lib_path,
-                                          sanitized_pgconf_path,
-                                          values['pgconf'])
+                sanitize_libraries_in_pgconf(sanitized_lib_path,
+                                             sanitized_pgconf_path,
+                                             values['pgconf'])
                 libraries = [sanitized_lib_path]
                 args.extend(['--pg-conf', sanitized_pgconf_path])
                 inputs = []
@@ -503,8 +621,8 @@ def run_with_options(options,
                     args.extend(['--pg-conf', pgconf])
                 if 'sanitize_libraries' in values and values[
                         'sanitize_libraries']:
-                    SanitizeLibraries(sanitized_lib_path, values['libraries'],
-                                      values['inputs'])
+                    sanitize_libraries(sanitized_lib_path, values['libraries'],
+                                       values['inputs'])
                     libraries = [sanitized_lib_path]
             app_provided_pg_conf = True
             if 'pgconf_extra' in values:
@@ -582,6 +700,11 @@ def run_with_options(options,
         with open(options.dump_args_file, 'w') as args_file:
             args_file.writelines([arg + os.linesep for arg in args])
     else:
+        slug = f'{options.app}_{version_id}_{type}_{options.compiler}'
+        enable_trace = bool(
+            getattr(options, 'trace_lite', False) or
+            getattr(options, 'upload_traces', False))
+        trace_recorder = getattr(options, '_trace_recorder', None)
         with utils.TempDir() as temp:
             if options.print_memoryuse and not options.track_memory_to_file:
                 options.track_memory_to_file = os.path.join(
@@ -594,7 +717,7 @@ def run_with_options(options,
                 else:
                     pg_outdir = outdir
                 if not options.no_extra_pgconf:
-                    additional_pg_conf = GenerateAdditionalProguardConfiguration(
+                    additional_pg_conf = generate_additional_proguard_configuration(
                         temp, os.path.abspath(pg_outdir))
                     args.extend(['--pg-conf', additional_pg_conf])
             stdout_path = os.path.join(temp, 'stdout')
@@ -619,23 +742,72 @@ def run_with_options(options,
                             else utils.GRADLE_TASK_R8
                         ])
                     t0 = time.time()
-                    exit_code = toolhelper.run(
-                        tool,
-                        args,
-                        build=False,
-                        disable_assertions=options.disable_assertions,
-                        profile=options.profile,
-                        track_memory_file=options.track_memory_to_file,
-                        extra_args=extra_args,
-                        stdout=stdout if worker_id is None else stdout_workers,
-                        stderr=stderr,
-                        timeout=options.timeout,
-                        quiet=quiet,
-                        cmd_prefix=['taskset', '-c', options.cpu_list]
-                        if options.cpu_list else [],
-                        jar=jar,
-                        main=main,
-                        worker_id=worker_id)
+
+                    def run_tool(trace_file):
+                        run_extra_args = extra_args
+                        if trace_file:
+                            run_extra_args = extra_args + [
+                                f'-Dcom.android.tools.r8.dumptracetofile={trace_file}',
+                                '-Dcom.android.tools.r8.trace.lite',
+                            ]
+                        return toolhelper.run(
+                            tool,
+                            args,
+                            build=False,
+                            disable_assertions=options.disable_assertions,
+                            profile=options.profile,
+                            track_memory_file=options.track_memory_to_file,
+                            extra_args=run_extra_args,
+                            stdout=stdout
+                            if worker_id is None else stdout_workers,
+                            stderr=stderr,
+                            timeout=options.timeout,
+                            quiet=quiet,
+                            cmd_prefix=['taskset', '-c', options.cpu_list]
+                            if options.cpu_list else [],
+                            jar=jar,
+                            main=main,
+                            worker_id=worker_id)
+
+                    trace_out_dir = (os.path.dirname(os.path.abspath(outdir))
+                                     if outdir.endswith('.zip') or
+                                     outdir.endswith('.jar') else outdir)
+                    exit_code, perfetto_url = (
+                        perfetto_utils.run_with_perfetto_trace(
+                            run_tool,
+                            enable_trace,
+                            getattr(options, 'upload_traces', False),
+                            temp,
+                            slug,
+                            f'{options.app} {version_id} ({type}, {options.compiler})',
+                            gcs_prefix=(trace_recorder.gcs_prefix
+                                        if trace_recorder else
+                                        _get_kokoro_gcs_prefix()),
+                            local_trace_path=os.path.join(
+                                trace_out_dir, f'{slug}.perfetto-trace'),
+                            warn_fn=lambda msg: print_thread(
+                                f'WARNING: {msg}', worker_id)))
+                    elapsed_sec = time.time() - t0
+                    if perfetto_url:
+                        print_thread(f'  perfetto: {perfetto_url}', worker_id)
+            if trace_recorder is not None:
+                failure_msg = None
+                if exit_code != 0:
+                    is_oom = False
+                    if os.path.isfile(stderr_path):
+                        with open(stderr_path) as err_f:
+                            is_oom = ('java.lang.OutOfMemoryError'
+                                      in err_f.read())
+                    if is_oom:
+                        failure_msg = (
+                            f'OutOfMemoryError (exit code {exit_code})')
+                    elif exit_code == TIMEOUT_KILL_CODE:
+                        failure_msg = f'Timed out (exit code {exit_code})'
+                    else:
+                        failure_msg = (
+                            f'Compilation failed with exit code {exit_code}')
+                trace_recorder.record(options.app, slug, elapsed_sec,
+                                      exit_code == 0, failure_msg, perfetto_url)
             if worker_id is not None:
                 with open(stdout_path) as stdout:
                     stdout_text = stdout.read()

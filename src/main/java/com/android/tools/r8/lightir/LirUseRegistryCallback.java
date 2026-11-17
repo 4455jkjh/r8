@@ -43,6 +43,12 @@ public class LirUseRegistryCallback<EV> extends LirParsedInstructionCallback<EV>
   }
 
   @Override
+  protected boolean needsValueOperandLists() {
+    // None of the registry callbacks inspect SSA operand lists.
+    return false;
+  }
+
+  @Override
   public void onInstruction() {
     // TODO(b/225838009): Consider defining an abstract base class for the parsed exception so that
     //  missing a callback is a compile-time error.

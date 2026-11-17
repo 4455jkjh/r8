@@ -11,22 +11,26 @@ import com.android.tools.r8.errors.InternalCompilerError;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
+import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.profile.startup.distribution.MultiStartupDexDistributor;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.threads.BucketProcessor;
 import com.android.tools.r8.utils.timing.Timing;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Predicate;
 
 /**
  * Distributes the given classes over the files in package order.
@@ -40,90 +44,69 @@ import java.util.function.Predicate;
  */
 public class PackageSplitPopulator {
 
-  static class PackageSplitClassPartioning {
-
-    // The set of startup classes, sorted by original names so that classes in the same package
-    // are adjacent. This is empty if no startup configuration is given.
-    private final List<DexProgramClass> startupClasses;
-
-    // The remaining set of classes that must be written, sorted by original names so that classes
-    // in the same package are adjacent.
-    private final List<DexProgramClass> nonStartupClasses;
-
-    private PackageSplitClassPartioning(
-        List<DexProgramClass> startupClasses, List<DexProgramClass> nonStartupClasses) {
-      this.startupClasses = startupClasses;
-      this.nonStartupClasses = nonStartupClasses;
+  private static int comparePackageAndClassName(
+      String originalA, int indexA, String originalB, int indexB) {
+    if (indexA == indexB) {
+      return originalA.compareTo(originalB);
     }
-
-    public static PackageSplitClassPartioning create(
-        Collection<DexProgramClass> classes,
-        Map<DexProgramClass, String> originalNames,
-        StartupProfile startupProfile) {
-      return create(
-          classes,
-          getClassesByPackageComparator(originalNames),
-          getStartupClassPredicate(startupProfile));
-    }
-
-    private static PackageSplitClassPartioning create(
-        Collection<DexProgramClass> classes,
-        Comparator<DexProgramClass> comparator,
-        Predicate<DexProgramClass> startupClassPredicate) {
-      List<DexProgramClass> startupClasses = new ArrayList<>();
-      List<DexProgramClass> nonStartupClasses = new ArrayList<>(classes.size());
-      for (DexProgramClass clazz : classes) {
-        if (startupClassPredicate.test(clazz)) {
-          startupClasses.add(clazz);
-        } else {
-          nonStartupClasses.add(clazz);
-        }
+    int minPrefix = Math.min(indexA, indexB);
+    for (int i = 0; i < minPrefix; i++) {
+      char ca = originalA.charAt(i);
+      char cb = originalB.charAt(i);
+      if (ca != cb) {
+        return ca - cb;
       }
-      startupClasses.sort(comparator);
-      nonStartupClasses.sort(comparator);
-      return new PackageSplitClassPartioning(startupClasses, nonStartupClasses);
+    }
+    return indexA - indexB;
+  }
+
+  private static final class ClassDistributionEntry implements Comparable<ClassDistributionEntry> {
+    final DexProgramClass clazz;
+    final String originalName;
+    final int packageEndIndex;
+    private PrecollectedClassItems precollected;
+
+    ClassDistributionEntry(
+        DexProgramClass clazz, String originalName, PrecollectedClassItems precollected) {
+      this.clazz = clazz;
+      this.originalName = originalName;
+      this.packageEndIndex = originalName.lastIndexOf('.');
+      this.precollected = precollected;
     }
 
-    private static Comparator<DexProgramClass> getClassesByPackageComparator(
-        Map<DexProgramClass, String> originalNames) {
-      return (a, b) -> {
-        String originalA = originalNames.get(a);
-        String originalB = originalNames.get(b);
-        int indexA = originalA.lastIndexOf('.');
-        int indexB = originalB.lastIndexOf('.');
-        if (indexA == -1 && indexB == -1) {
-          // Empty package, compare the class names.
-          return originalA.compareTo(originalB);
-        }
-        if (indexA == -1) {
-          // Empty package name comes first.
-          return -1;
-        }
-        if (indexB == -1) {
-          // Empty package name comes first.
-          return 1;
-        }
-        String prefixA = originalA.substring(0, indexA);
-        String prefixB = originalB.substring(0, indexB);
-        int result = prefixA.compareTo(prefixB);
-        if (result != 0) {
-          return result;
-        }
-        return originalA.compareTo(originalB);
-      };
+    PrecollectedClassItems getPrecollected() {
+      return precollected;
     }
 
-    private static Predicate<DexProgramClass> getStartupClassPredicate(
-        StartupProfile startupProfile) {
-      return clazz -> startupProfile.isStartupClass(clazz.getType());
+    void clearPrecollected() {
+      precollected = null;
     }
 
-    public List<DexProgramClass> getStartupClasses() {
-      return startupClasses;
+    @Override
+    public int compareTo(ClassDistributionEntry other) {
+      return comparePackageAndClassName(
+          originalName, packageEndIndex, other.originalName, other.packageEndIndex);
+    }
+  }
+
+  private static final class PartitionedEntries {
+    private static final PartitionedEntries EMPTY =
+        new PartitionedEntries(Collections.emptyList(), Collections.emptyList());
+
+    final List<ClassDistributionEntry> startupEntries;
+    final List<ClassDistributionEntry> nonStartupEntries;
+
+    PartitionedEntries(
+        List<ClassDistributionEntry> startupEntries,
+        List<ClassDistributionEntry> nonStartupEntries) {
+      this.startupEntries = startupEntries;
+      this.nonStartupEntries = nonStartupEntries;
     }
 
-    public List<DexProgramClass> getNonStartupClasses() {
-      return nonStartupClasses;
+    static PartitionedEntries merge(PartitionedEntries left, PartitionedEntries right) {
+      return new PartitionedEntries(
+          mergeSortedLists(left.startupEntries, right.startupEntries),
+          mergeSortedLists(left.nonStartupEntries, right.nonStartupEntries));
     }
   }
 
@@ -142,8 +125,7 @@ public class PackageSplitPopulator {
   private static final int MIN_FILL_FACTOR = 5;
 
   private final AppView<?> appView;
-  private final PackageSplitClassPartioning classPartioning;
-  private final Map<DexProgramClass, String> originalNames;
+  private final Collection<DexProgramClass> inputClasses;
   private final DexItemFactory dexItemFactory;
   private final InternalOptions options;
   private final VirtualFileCycler cycler;
@@ -154,54 +136,134 @@ public class PackageSplitPopulator {
       List<VirtualFile> filesForDistribution,
       AppView<?> appView,
       Collection<DexProgramClass> classes,
-      Map<DexProgramClass, String> originalNames,
       StartupProfile startupProfile,
       IntBox nextFileId) {
     this.appView = appView;
-    this.classPartioning =
-        PackageSplitClassPartioning.create(classes, originalNames, startupProfile);
-    this.originalNames = originalNames;
+    this.inputClasses = classes;
     this.dexItemFactory = appView.dexItemFactory();
     this.options = appView.options();
     this.cycler = new VirtualFileCycler(files, filesForDistribution, appView, nextFileId);
     this.startupProfile = startupProfile;
   }
 
-  static boolean coveredByPrefix(String originalName, String currentPrefix) {
+  private static boolean coveredByPrefix(
+      String originalName, String currentPrefix, int packageEndIndex) {
     if (currentPrefix == null) {
       return false;
     }
+    int prefixLen = currentPrefix.length();
     if (currentPrefix.endsWith(".*")) {
-      return originalName.startsWith(currentPrefix.substring(0, currentPrefix.length() - 2));
-    } else {
-      return originalName.startsWith(currentPrefix)
-          && originalName.lastIndexOf('.') == currentPrefix.length();
+      return originalName.regionMatches(0, currentPrefix, 0, prefixLen - 2);
     }
+    return packageEndIndex == prefixLen && originalName.startsWith(currentPrefix);
   }
 
-  private String getOriginalName(DexProgramClass clazz) {
-    return originalNames.get(clazz);
+  private static String computeOriginalName(
+      DexProgramClass clazz, GraphLens graphLens, ClassNameMapper proguardMap) {
+    DexType originalType = graphLens.getOriginalType(clazz.getType());
+    return DescriptorUtils.descriptorToJavaType(originalType.toDescriptorString(), proguardMap);
   }
 
   public void run(ExecutorService executorService, Timing timing) throws ExecutionException {
-    addStartupClasses();
-    distributeClasses(classPartioning.getNonStartupClasses());
+    PartitionedEntries partitioned = buildEntriesInParallel(executorService);
+    distributeStartupClasses(partitioned.startupEntries);
+    distributeNonStartupClasses(partitioned.nonStartupEntries);
     DexDistributionRefinement.run(appView, cycler, executorService, timing);
   }
 
-  private void addStartupClasses() {
-    List<DexProgramClass> startupClasses = classPartioning.getStartupClasses();
-    if (startupClasses.isEmpty()) {
+  private PartitionedEntries buildEntriesInParallel(ExecutorService executorService)
+      throws ExecutionException {
+    boolean precollect = PrecollectedClassItems.canPrecollect(appView);
+    LensCodeRewriterUtils rewriter = precollect ? new LensCodeRewriterUtils(appView, true) : null;
+    return new BucketProcessor<DexProgramClass, PartitionedEntries>() {
+      @Override
+      protected PartitionedEntries emptyResult() {
+        return PartitionedEntries.EMPTY;
+      }
+
+      @Override
+      protected PartitionedEntries processBucket(List<DexProgramClass> bucket) {
+        return buildAndSortBucket(bucket, precollect, rewriter);
+      }
+
+      @Override
+      protected PartitionedEntries merge(PartitionedEntries left, PartitionedEntries right) {
+        return PartitionedEntries.merge(left, right);
+      }
+    }.process(inputClasses, options, executorService);
+  }
+
+  private PartitionedEntries buildAndSortBucket(
+      List<DexProgramClass> bucket, boolean precollect, LensCodeRewriterUtils rewriter) {
+    PrecollectedClassItems.WorkerCollector collector =
+        precollect ? new PrecollectedClassItems.WorkerCollector(appView, rewriter) : null;
+    boolean hasStartupProfile = startupProfile != null && !startupProfile.isEmpty();
+    GraphLens graphLens = appView.graphLens();
+    ClassNameMapper proguardMap = appView.appInfo().app().getProguardMap();
+    List<ClassDistributionEntry> nonStartup = new ArrayList<>(bucket.size());
+    List<ClassDistributionEntry> startup = new ArrayList<>();
+    for (DexProgramClass clazz : bucket) {
+      String originalName = computeOriginalName(clazz, graphLens, proguardMap);
+      PrecollectedClassItems precollected = collector != null ? collector.collect(clazz) : null;
+      ClassDistributionEntry entry = new ClassDistributionEntry(clazz, originalName, precollected);
+      if (hasStartupProfile && startupProfile.isStartupClass(clazz.getType())) {
+        startup.add(entry);
+      } else {
+        nonStartup.add(entry);
+      }
+    }
+    startup.sort(null);
+    nonStartup.sort(null);
+    return new PartitionedEntries(startup, nonStartup);
+  }
+
+  private static List<ClassDistributionEntry> mergeSortedLists(
+      List<ClassDistributionEntry> left, List<ClassDistributionEntry> right) {
+    if (left.isEmpty()) {
+      return right;
+    }
+    if (right.isEmpty()) {
+      return left;
+    }
+    int leftSize = left.size();
+    int rightSize = right.size();
+    List<ClassDistributionEntry> merged = new ArrayList<>(leftSize + rightSize);
+    int i = 0;
+    int j = 0;
+    while (i < leftSize && j < rightSize) {
+      ClassDistributionEntry a = left.get(i);
+      ClassDistributionEntry b = right.get(j);
+      if (a.compareTo(b) <= 0) {
+        merged.add(a);
+        i++;
+      } else {
+        merged.add(b);
+        j++;
+      }
+    }
+    while (i < leftSize) {
+      merged.add(left.get(i++));
+    }
+    while (j < rightSize) {
+      merged.add(right.get(j++));
+    }
+    return merged;
+  }
+
+  private void distributeStartupClasses(List<ClassDistributionEntry> startupEntries) {
+    if (startupEntries.isEmpty()) {
       return;
     }
 
     assert options.getStartupOptions().hasStartupProfileProviders();
 
+    List<DexProgramClass> startupClasses = ListUtils.map(startupEntries, e -> e.clazz);
+
     // In practice, all startup classes should fit in a single dex file, so optimistically try to
     // commit the startup classes using a single transaction.
     VirtualFile virtualFile = cycler.next();
-    for (DexProgramClass startupClass : classPartioning.getStartupClasses()) {
-      virtualFile.addClass(startupClass);
+    for (ClassDistributionEntry entry : startupEntries) {
+      virtualFile.addClass(entry.clazz, entry.getPrecollected());
     }
 
     boolean isSingleStartupDexFile = hasSpaceForTransaction(virtualFile, options);
@@ -214,17 +276,18 @@ public class PackageSplitPopulator {
       // If the above failed, then apply the selected multi startup dex distribution strategy.
       MultiStartupDexDistributor distributor =
           MultiStartupDexDistributor.get(options, startupProfile);
-      distributor.distribute(
-          appView, classPartioning.getStartupClasses(), this, virtualFile, cycler);
+      distributor.distribute(appView, startupClasses, virtualFile, cycler);
       cycler.getFilesForDistribution().forEach(vf -> vf.setStartupProfile(startupProfile));
 
       options.reporter.warning(
           createStartupClassesOverflowDiagnostic(cycler.getFilesForDistribution().size()));
     }
+    for (ClassDistributionEntry entry : startupEntries) {
+      entry.clearPrecollected();
+    }
 
     options.reporter.info(
-        createStartupClassesNonStartupFractionDiagnostic(
-            classPartioning.getStartupClasses(), startupProfile));
+        createStartupClassesNonStartupFractionDiagnostic(startupClasses, startupProfile));
 
     if (options.getStartupOptions().isMinimalStartupDexEnabled()) {
       // Minimal startup dex only applies to the case where there is a single startup DEX file.
@@ -241,25 +304,27 @@ public class PackageSplitPopulator {
     }
   }
 
-  public void distributeClasses(List<DexProgramClass> classes) {
-    List<DexProgramClass> nonPackageClasses = addPackageClasses(classes);
-    addNonPackageClasses(cycler, nonPackageClasses);
+  private void distributeNonStartupClasses(List<ClassDistributionEntry> entries) {
+    List<ClassDistributionEntry> nonPackageEntries = addPackageEntries(entries);
+    addNonPackageEntries(cycler, nonPackageEntries);
   }
 
   @SuppressWarnings("ReferenceEquality")
-  private List<DexProgramClass> addPackageClasses(List<DexProgramClass> classes) {
+  private List<ClassDistributionEntry> addPackageEntries(List<ClassDistributionEntry> entries) {
     int prefixLength = MINIMUM_PREFIX_LENGTH;
     int transactionStartIndex = 0;
     String currentPrefix = null;
     Object2IntMap<String> packageAssignments = new Object2IntOpenHashMap<>();
     VirtualFile current = cycler.ensureFile().next();
-    List<DexProgramClass> nonPackageClasses = new ArrayList<>();
-    for (int classIndex = 0; classIndex < classes.size(); classIndex++) {
-      DexProgramClass clazz = classes.get(classIndex);
-      String originalName = getOriginalName(clazz);
-      if (!coveredByPrefix(originalName, currentPrefix)) {
+    List<ClassDistributionEntry> uncommittedEntriesInFile = new ArrayList<>();
+    List<ClassDistributionEntry> nonPackageEntries = new ArrayList<>();
+    for (int classIndex = 0; classIndex < entries.size(); classIndex++) {
+      ClassDistributionEntry entry = entries.get(classIndex);
+      DexProgramClass clazz = entry.clazz;
+      String originalName = entry.originalName;
+      if (!coveredByPrefix(originalName, currentPrefix, entry.packageEndIndex)) {
         if (currentPrefix != null) {
-          current.commitTransaction();
+          commitAndClearPrecollected(current, uncommittedEntriesInFile);
           assert verifyPackageToVirtualFileAssignment(packageAssignments, currentPrefix, current);
           // Reset the cycler to again iterate over all files, starting with the current one.
           cycler.restart();
@@ -291,12 +356,13 @@ public class PackageSplitPopulator {
         assert clazz.superType != null;
         // We don't have a package, add this to a list of classes that we will add last.
         assert current.getTransaction().isEmpty();
-        nonPackageClasses.add(clazz);
+        nonPackageEntries.add(entry);
         continue;
       }
 
       assert clazz.superType != null || clazz.type == dexItemFactory.objectType;
-      current.addClass(clazz);
+      current.addClass(clazz, entry.getPrecollected());
+      uncommittedEntriesInFile.add(entry);
 
       if (hasSpaceForTransaction(current, options)) {
         continue;
@@ -306,6 +372,7 @@ public class PackageSplitPopulator {
       int numberOfClassesInVirtualFileWithTransaction = current.getNumberOfClasses();
 
       current.abortTransaction();
+      uncommittedEntriesInFile.clear();
 
       // We allow for a final rollback that has at most 20% of classes in it.
       // This is a somewhat random number that was empirically chosen.
@@ -326,7 +393,7 @@ public class PackageSplitPopulator {
         // one dex file. This is currently the case for Strings in jumbo tests, see b/33227518.
         if (current.isEmpty()) {
           for (int j = transactionStartIndex; j <= classIndex; j++) {
-            nonPackageClasses.add(classes.get(j));
+            nonPackageEntries.add(entries.get(j));
           }
           transactionStartIndex = classIndex + 1;
         }
@@ -341,11 +408,20 @@ public class PackageSplitPopulator {
       prefixLength = MINIMUM_PREFIX_LENGTH;
     }
 
-    current.commitTransaction();
+    commitAndClearPrecollected(current, uncommittedEntriesInFile);
     assert currentPrefix == null
         || verifyPackageToVirtualFileAssignment(packageAssignments, currentPrefix, current);
 
-    return nonPackageClasses;
+    return nonPackageEntries;
+  }
+
+  private static void commitAndClearPrecollected(
+      VirtualFile file, List<ClassDistributionEntry> uncommittedEntries) {
+    file.commitTransaction();
+    for (ClassDistributionEntry committed : uncommittedEntries) {
+      committed.clearPrecollected();
+    }
+    uncommittedEntries.clear();
   }
 
   private static String extractPrefixToken(int prefixLength, String className, boolean addStar) {
@@ -395,19 +471,20 @@ public class PackageSplitPopulator {
     return current.isFull(maxEntries, maxFieldEntries, maxTypeEntries);
   }
 
-  private void addNonPackageClasses(
-      VirtualFileCycler cycler, List<DexProgramClass> nonPackageClasses) {
-    if (nonPackageClasses.isEmpty()) {
+  private void addNonPackageEntries(
+      VirtualFileCycler cycler, List<ClassDistributionEntry> nonPackageEntries) {
+    if (nonPackageEntries.isEmpty()) {
       return;
     }
     cycler.restart();
     VirtualFile current = getVirtualFile(cycler);
-    for (DexProgramClass clazz : nonPackageClasses) {
+    for (ClassDistributionEntry entry : nonPackageEntries) {
+      DexProgramClass clazz = entry.clazz;
       if (isFullEnough(current, options)) {
         current = getVirtualFile(cycler);
       }
       boolean wasEmpty = current.isEmpty();
-      current.addClass(clazz);
+      current.addClass(clazz, entry.getPrecollected());
       while (isFullEnough(current, options)) {
         if (wasEmpty) {
           if (current.isFull()) {
@@ -419,9 +496,10 @@ public class PackageSplitPopulator {
         current.abortTransaction();
         current = getVirtualFile(cycler);
         wasEmpty = current.isEmpty();
-        current.addClass(clazz);
+        current.addClass(clazz, entry.getPrecollected());
       }
       current.commitTransaction();
+      entry.clearPrecollected();
     }
   }
 

@@ -27,7 +27,7 @@ def parse_options():
     return result.parse_args()
 
 
-def Main():
+def main():
     options = parse_options()
     utils.check_gcert()
     gfile = ('/bigstore/r8-releases/smali/%s/smali-maven-release-%s.zip' %
@@ -53,4 +53,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

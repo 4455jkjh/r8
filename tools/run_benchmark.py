@@ -58,6 +58,20 @@ def parse_options(argv):
     result.add_argument('--dump-trace-to-directory',
                         '--dump_trace_to_directory',
                         help='Dump perfetto trace to the given directory')
+    result.add_argument('--dump-trace-to-file',
+                        '--dump_trace_to_file',
+                        help='Dump perfetto trace to the given file')
+    result.add_argument('--trace-lite',
+                        '--trace_lite',
+                        help='Enable lite perfetto tracing mode',
+                        default=False,
+                        action='store_true')
+    result.add_argument(
+        '--trace-min-value-ms',
+        '--trace_min_value_ms',
+        help='Minimum slice duration in ms to record in perfetto trace',
+        type=int,
+        default=None)
     result.add_argument('--nolib',
                         '--no-lib',
                         '--no-r8lib',
@@ -141,13 +155,14 @@ def build_gradle_args(options, temp):
     if not is_internal_benchmark(options.benchmark):
         gradle_args.append('-Pno_internal')
 
-    for flag in ('enable_assertions', 'debug_agent', 'verbose'):
+    for flag in ('enable_assertions', 'debug_agent', 'trace_lite', 'verbose'):
         if getattr(options, flag):
             gradle_args.append(f'-P{flag}')
 
     for prop, val in (('benchmark_iterations', options.iterations),
                       ('warmup', options.warmup), ('heap_size',
-                                                   options.heap_size)):
+                                                   options.heap_size),
+                      ('trace_min_value_ms', options.trace_min_value_ms)):
         if val is not None:
             gradle_args.append(f'-P{prop}={val}')
 
@@ -155,7 +170,7 @@ def build_gradle_args(options, temp):
                      'dump_gc_log_to_file', 'dump_heap_to_directory',
                      'dump_keep_radius_to_directory',
                      'dump_keep_radius_html_to_directory',
-                     'dump_trace_to_directory'):
+                     'dump_trace_to_directory', 'dump_trace_to_file'):
         val = getattr(options, path_opt)
         if val:
             gradle_args.append(f'-P{path_opt}={os.path.abspath(val)}')

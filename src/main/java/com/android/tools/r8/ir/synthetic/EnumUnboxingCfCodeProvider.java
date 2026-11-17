@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir.synthetic;
 
+import com.android.tools.r8.cf.code.CfArithmeticBinop;
 import com.android.tools.r8.cf.code.CfConstNull;
 import com.android.tools.r8.cf.code.CfConstNumber;
 import com.android.tools.r8.cf.code.CfConstString;
@@ -31,8 +32,10 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.IfType;
+import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap.EnumData;
+import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldKnownData;
 import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldMappingData;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.BooleanUtils;
@@ -61,10 +64,19 @@ public abstract class EnumUnboxingCfCodeProvider extends SyntheticCfCodeProvider
       assert returnType == appView.dexItemFactory().stringType;
       instructions.add(new CfConstString(value.asSingleStringValue().getDexString()));
     } else if (value.isSingleNumberValue()) {
-      assert returnType.isPrimitiveType();
-      instructions.add(
-          new CfConstNumber(
-              value.asSingleNumberValue().getValue(), ValueType.fromDexType(returnType)));
+      if (returnType.isIdenticalTo(appView.dexItemFactory().stringType)) {
+        instructions.add(new CfConstNumber(value.asSingleNumberValue().getValue(), ValueType.INT));
+        instructions.add(
+            new CfInvoke(
+                Opcodes.INVOKESTATIC,
+                appView.dexItemFactory().integerMembers.staticToString,
+                false));
+      } else {
+        assert returnType.isPrimitiveType();
+        instructions.add(
+            new CfConstNumber(
+                value.asSingleNumberValue().getValue(), ValueType.fromDexType(returnType)));
+      }
     } else {
       throw new Unreachable("Unsupported value: " + value);
     }
@@ -173,12 +185,12 @@ public abstract class EnumUnboxingCfCodeProvider extends SyntheticCfCodeProvider
   public static class EnumUnboxingInstanceFieldCfCodeProvider extends EnumUnboxingCfCodeProvider {
 
     private final DexType returnType;
-    private final EnumInstanceFieldMappingData fieldDataMap;
+    private final EnumInstanceFieldKnownData fieldData;
     private final AbstractValue nullValue;
 
     public EnumUnboxingInstanceFieldCfCodeProvider(
         AppView<?> appView, DexType holder, EnumData data, DexField field) {
-      this(appView, holder, data, field, null);
+      this(appView, holder, data, field, field.getType(), null);
     }
 
     public EnumUnboxingInstanceFieldCfCodeProvider(
@@ -186,10 +198,11 @@ public abstract class EnumUnboxingCfCodeProvider extends SyntheticCfCodeProvider
         DexType holder,
         EnumData data,
         DexField field,
+        DexType returnType,
         AbstractValue nullValue) {
       super(appView, holder);
-      this.returnType = field.getType();
-      this.fieldDataMap = data.getInstanceFieldData(field).asEnumFieldMappingData();
+      this.returnType = returnType;
+      this.fieldData = data.getInstanceFieldData(field);
       this.nullValue = nullValue;
     }
 
@@ -207,10 +220,27 @@ public abstract class EnumUnboxingCfCodeProvider extends SyntheticCfCodeProvider
       List<CfInstruction> instructions = new ArrayList<>();
       CfFrame.Builder frameBuilder =
           CfFrame.builder().appendLocal(FrameType.initialized(factory.intType));
+      if (fieldData.isOrdinal()) {
+        assert returnType.isIdenticalTo(factory.stringType);
+        assert nullValue != null;
+        CfLabel nonZero = new CfLabel();
+        instructions.add(new CfLoad(ValueType.INT, 0));
+        instructions.add(new CfIf(IfType.NE, ValueType.INT, nonZero));
+        addReturnValue(instructions, nullValue);
+        instructions.add(nonZero);
+        instructions.add(frameBuilder.build());
+        instructions.add(new CfLoad(ValueType.INT, 0));
+        instructions.add(new CfConstNumber(1, ValueType.INT));
+        instructions.add(new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT));
+        instructions.add(
+            new CfInvoke(Opcodes.INVOKESTATIC, factory.integerMembers.staticToString, false));
+        instructions.add(new CfReturn(ValueType.OBJECT));
+        return standardCfCodeFromInstructions(instructions);
+      }
       addCfSwitch(
           instructions,
           this::addReturnValue,
-          fieldDataMap.getMapping(),
+          fieldData.asEnumFieldMappingData().getMapping(),
           nullValue,
           frameBuilder,
           nullValue == null);

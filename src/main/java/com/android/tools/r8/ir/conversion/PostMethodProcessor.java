@@ -242,7 +242,7 @@ public class PostMethodProcessor extends MethodProcessorWithWave {
                   Timing time =
                       consumer.apply(
                           method, processorContext.createMethodProcessingContext(method));
-                  time.end();
+                  time.end().notifyThreadTimingFinished();
                   return time;
                 },
                 threadingModule,

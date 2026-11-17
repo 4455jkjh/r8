@@ -21,7 +21,7 @@ def main():
 
     # Resolve absolute paths
     try:
-        jdk17_home = jdk.GetJdk17Home()
+        jdk17_home = jdk.get_jdk17_home()
     except Exception as e:
         print('Error resolving JDK 17 home: %s' % e)
         # Fallback to manual resolution

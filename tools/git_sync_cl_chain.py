@@ -23,7 +23,7 @@
 #   $ git checkout feature_prereq_c; git pull; git cl upload -m <message>
 #   $ git checkout feature_final;    git pull; git cl upload -m <message>
 
-import optparse
+import argparse
 import sys
 
 import defines
@@ -32,7 +32,7 @@ import utils
 REPO_ROOT = defines.REPO_ROOT
 
 
-class Repo(object):
+class Repo:
 
     def __init__(self, name, is_current, upstream):
         self.name = name
@@ -40,66 +40,65 @@ class Repo(object):
         self.upstream = upstream
 
 
-def ParseOptions(argv):
-    result = optparse.OptionParser()
-    result.add_option('--bypass-hooks',
-                      help='Bypass presubmit hooks',
-                      action='store_true')
-    result.add_option(
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--bypass-hooks',
+                        help='Bypass presubmit hooks',
+                        action='store_true')
+    parser.add_argument(
         '--dry-run',
         help='Send the top patchset to do a CQ dry run right after upload',
         action='store_true')
-    result.add_option(
+    parser.add_argument(
         '--dry-run-all',
         help='Send all patchset(s) to do a CQ dry run right after upload',
         action='store_true')
-    result.add_option('--delete',
-                      '-d',
-                      help='Delete closed branches',
-                      choices=['y', 'n', 'ask'],
-                      default='ask')
-    result.add_option('--from_branch',
-                      '-f',
-                      help='Uppermost upstream to sync from',
-                      default='main')
-    result.add_option(
+    parser.add_argument('--delete',
+                        '-d',
+                        help='Delete closed branches',
+                        choices=['y', 'n', 'ask'],
+                        default='ask')
+    parser.add_argument('--from_branch',
+                        '-f',
+                        help='Uppermost upstream to sync from',
+                        default='main')
+    parser.add_argument(
         '--leave_upstream',
         '--leave-upstream',
         help='To not update the upstream of the first open branch',
         action='store_true')
-    result.add_option('--message',
-                      '-m',
-                      help='Message for patchset',
-                      default='Sync')
-    result.add_option('--rebase',
-                      help='To use `git pull --rebase` instead of `git pull`',
-                      action='store_true')
-    result.add_option('--no_upload',
-                      '--no-upload',
-                      help='Disable uploading to Gerrit',
-                      action='store_true')
-    result.add_option('--skip_main',
-                      '--skip-main',
-                      help='Disable syncing for main',
-                      action='store_true')
-    (options, args) = result.parse_args(argv)
+    parser.add_argument('--message',
+                        '-m',
+                        help='Message for patchset',
+                        default='Sync')
+    parser.add_argument('--rebase',
+                        help='To use `git pull --rebase` instead of `git pull`',
+                        action='store_true')
+    parser.add_argument('--no_upload',
+                        '--no-upload',
+                        help='Disable uploading to Gerrit',
+                        action='store_true')
+    parser.add_argument('--skip_main',
+                        '--skip-main',
+                        help='Disable syncing for main',
+                        action='store_true')
+    options = parser.parse_args(argv)
     options.upload = not options.no_upload
     assert options.delete != 'y' or not options.leave_upstream, (
         'Inconsistent options: cannot leave the upstream of the first open ' +
         'branch (--leave_upstream) and delete the closed branches at the same '
         + 'time (--delete).')
     assert options.message, 'A message for the patchset is required.'
-    assert len(args) == 0
     return options
 
 
-def main(argv):
-    options = ParseOptions(argv)
+def main(argv=None):
+    options = parse_options(argv)
     utils.check_gcert()
     with utils.ChangedWorkingDirectory(REPO_ROOT, quiet=True):
         branches = [
             parse(line)
-            for line in utils.RunCmd(['git', 'branch', '-vv'], quiet=True)
+            for line in utils.run_cmd(['git', 'branch', '-vv'], quiet=True)
         ]
 
         current_branch = None
@@ -125,10 +124,10 @@ def main(argv):
         has_seen_local_branch = False  # A branch that is not uploaded.
         has_seen_open_branch = False  # A branch that is not closed.
         while len(stack) > 0:
-            top_of_stack = len(stack) == 0
             branch = stack.pop()
+            top_of_stack = len(stack) == 0
 
-            utils.RunCmd(['git', 'checkout', branch.name], quiet=True)
+            utils.run_cmd(['git', 'checkout', branch.name], quiet=True)
 
             status = get_status_for_current_branch(branch)
             print('Syncing %s (status: %s)' % (branch.name, status))
@@ -169,19 +168,19 @@ def main(argv):
                     if (options.dry_run and
                             top_of_stack) or options.dry_run_all:
                         upload_cmd.append('--dry-run')
-                    utils.RunCmd(upload_cmd, quiet=True)
+                    utils.run_cmd(upload_cmd, quiet=True)
 
         if get_delete_branches_option(closed_branches, options):
             delete_branches(closed_branches)
 
-        utils.RunCmd(['git', 'cl', 'issue'])
+        utils.run_cmd(['git', 'cl', 'issue'])
 
 
 def delete_branches(branches):
     assert len(branches) > 0
     cmd = ['git', 'branch', '-D']
     cmd.extend(branches)
-    utils.RunCmd(cmd, quiet=True)
+    utils.run_cmd(cmd, quiet=True)
 
 
 def get_branch_with_name(name, branches):
@@ -209,8 +208,8 @@ def get_delete_branches_option(closed_branches, options):
 def get_status_for_current_branch(current_branch):
     if current_branch.name == 'main':
         return 'main'
-    return utils.RunCmd(['git', 'cl', 'status', '--field', 'status'],
-                        quiet=True)[0].strip()
+    return utils.run_cmd(['git', 'cl', 'status', '--field', 'status'],
+                         quiet=True)[0].strip()
 
 
 def is_root_branch(branch, options):
@@ -221,11 +220,11 @@ def pull_for_current_branch(branch, options):
     if branch.name == 'main' and options.skip_main:
         return
     rebase_args = ['--rebase'] if options.rebase else []
-    utils.RunCmd(['git', 'pull'] + rebase_args, quiet=True)
+    utils.run_cmd(['git', 'pull'] + rebase_args, quiet=True)
 
 
 def set_upstream_for_current_branch_to_main():
-    utils.RunCmd(['git', 'cl', 'upstream', 'main'], quiet=True)
+    utils.run_cmd(['git', 'cl', 'upstream', 'main'], quiet=True)
 
 
 # Parses a line from the output of `git branch -vv`.
@@ -265,4 +264,4 @@ def parse(line):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

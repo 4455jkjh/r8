@@ -232,6 +232,13 @@ public class EnumValueOptimizer extends CodeRewriterPass<AppInfoWithLiveness> {
         && singleTarget.getReference() != dexItemFactory.enumMembers.toString) {
       return false;
     }
+    if (options.protoShrinking().isProtoEnumOptimizationEnabled()
+        && appView
+            .protoShrinker()
+            .enumLiteProtoShrinker
+            .hasProtoEnumLiteValueField(enumFieldType.getClassType())) {
+      return false;
+    }
 
     replaceByName(code, affectedValues, iterator, nameValue);
     return true;

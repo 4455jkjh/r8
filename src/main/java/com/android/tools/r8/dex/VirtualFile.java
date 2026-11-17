@@ -7,6 +7,7 @@ import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.distribution.IndexedItemTransaction;
+import com.android.tools.r8.dex.distribution.PrecollectedClassItems;
 import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCallSite;
@@ -225,7 +226,11 @@ public class VirtualFile {
   }
 
   public void addClass(DexProgramClass clazz) {
-    transaction.addClassAndDependencies(clazz);
+    addClass(clazz, null);
+  }
+
+  public void addClass(DexProgramClass clazz, PrecollectedClassItems precollected) {
+    transaction.addClassAndDependencies(clazz, precollected);
   }
 
   public static int getMaxNumberOfFields(InternalOptions options) {

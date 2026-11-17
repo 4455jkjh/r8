@@ -50,7 +50,7 @@ def set_rlimit_to_max():
     resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
 
 
-def Main():
+def main():
     options = parse_options()
     if not utils.is_bot() and not options.dry_run:
         raise Exception('You are not a bot, don\'t archive builds. ' +
@@ -100,13 +100,14 @@ def Main():
                     raise Exception('Checkout %s has %s' %
                                     (options.checkout, message))
                 else:
-                    raise Exception('Tag % has %s' % (options.version, message))
+                    raise Exception('Tag %s has %s' %
+                                    (options.version, message))
 
             print('Building version: %s' % version)
 
             # Run tests with JDK-21.
             custom_env = os.environ.copy()
-            custom_env["JAVA_HOME"] = jdk.GetJdk21Home()
+            custom_env["JAVA_HOME"] = jdk.get_jdk21_home()
             subprocess.check_call([
                 './gradlew',
                 'test',
@@ -115,7 +116,7 @@ def Main():
             # Build release to local Maven repository compiling with JDK-11.
             m2 = os.path.join(temp, 'm2')
             os.mkdir(m2)
-            custom_env["JAVA_HOME"] = jdk.GetJdk11Home()
+            custom_env["JAVA_HOME"] = jdk.get_jdk11_home()
             subprocess.check_call([
                 './gradlew',
                 '-Dmaven.repo.local=%s' % m2,
@@ -202,4 +203,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

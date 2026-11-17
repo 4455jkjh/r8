@@ -5,19 +5,23 @@
 
 import argparse
 import hashlib
+import html
+import json
 import os
 import shutil
 import sys
 import time
+import urllib.request
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 
 import adb
 import apk_masseur
-import as_utils
 import compiledump
 import gradle
 import jdk
+import luci_utils
+import perfetto_utils
 import thread_utils
 from thread_utils import print_thread
 import update_prebuilds_in_android
@@ -515,7 +519,8 @@ def build_app_and_run_with_shrinker(app, options, temp_dir, app_dir, shrinker,
             (app_jar, mapping, new_recomp_jar) = \
               build_app_with_shrinker(
                 app, options, temp_dir, app_dir, shrinker, compilation_step,
-                compilation_steps, recomp_jar, worker_id=worker_id)
+                compilation_steps, recomp_jar, worker_id=worker_id,
+                step_result=result)
             end = time.time()
             dex_size = compute_size_of_dex_files_in_package(app_jar)
             result['build_status'] = 'success'
@@ -598,6 +603,92 @@ def build_app_and_run_with_shrinker(app, options, temp_dir, app_dir, shrinker,
         if result.get('recompilation_status') != 'success':
             break
 
+    if results and results[0].get('perfetto_url'):
+        shrinker_passed = (status == 'success' and all(
+            r.get('build_status') == 'success' and r.get('recompilation_status')
+            != 'failed' and r.get('monkey_status', 'success') == 'success'
+            for r in results))
+        _report_to_result_sink(getattr(options, 'result_sink_info',
+                                       None), app.name, shrinker,
+                               shrinker_passed, results[0].get('perfetto_url'))
+
+
+def _get_luci_gcs_run_prefix():
+    commit_sha = utils.get_head_sha1()
+    branch = None
+    try:
+        with utils.ChangedWorkingDirectory(utils.REPO_ROOT, quiet=True):
+            commit = utils.get_head_commit()
+            if commit:
+                branch = commit.branch()
+    except Exception:
+        pass
+    if os.environ.get('R8_BOT_RELEASE') and (not branch or branch == 'main'):
+        branch = 'release'
+    try:
+        inv = luci_utils.get_luci_invocation_id()
+        build_id = (inv[len('invocations/'):]
+                    if inv.startswith('invocations/') else inv)
+    except Exception:
+        build_id = (os.environ.get('SWARMING_TASK_ID') or
+                    datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ'))
+    if branch and branch != 'main':
+        return f'luci/branches/{branch}/{commit_sha}/{build_id}'
+    return f'luci/main/{commit_sha}/{build_id}'
+
+
+def _get_result_sink_info():
+    luci_context_path = os.environ.get('LUCI_CONTEXT')
+    if not luci_context_path:
+        return None
+    try:
+        with open(luci_context_path, 'r', encoding='utf-8') as f:
+            luci_context = json.load(f)
+        sink = luci_context.get('result_sink')
+        if sink and sink.get('address') and sink.get('auth_token'):
+            return (sink['address'], sink['auth_token'])
+    except Exception as e:
+        warn('Failed to read LUCI_CONTEXT result_sink: {}'.format(e))
+    return None
+
+
+def _report_to_result_sink(result_sink_info, app_name, shrinker, passed, url):
+    if not result_sink_info or not url:
+        return
+    (address, auth_token) = result_sink_info
+    summary_html = (
+        f'<p><a href="{html.escape(url, quote=True)}">'
+        f'Open in Perfetto ({html.escape(app_name)} / {html.escape(shrinker)})'
+        f'</a></p>')
+    payload = {
+        'testResults': [{
+            'testId': f'app_dump/{app_name}/{shrinker}',
+            'testIdStructured': {
+                'coarseName': 'app_dump',
+                'fineName': app_name,
+                'caseNameComponents': [shrinker],
+            },
+            'expected': passed,
+            'status': 'PASS' if passed else 'FAIL',
+            'summaryHtml': summary_html,
+        }]
+    }
+    try:
+        req = urllib.request.Request(
+            f'http://{address}/prpc/luci.resultsink.v1.Sink/ReportTestResults',
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                'Authorization': f'ResultSink {auth_token}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            method='POST')
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp.read()
+    except Exception as e:
+        warn('Failed to report Perfetto trace to ResultSink for {} ({}): {}'.
+             format(app_name, shrinker, e))
+
 
 def get_jdk_home(options, app):
     if options.golem:
@@ -605,16 +696,23 @@ def get_jdk_home(options, app):
     return None
 
 
-def build_app_with_shrinker(app, options, temp_dir, app_dir, shrinker,
-                            compilation_step_index, compilation_steps,
-                            prev_recomp_jar, worker_id):
+def build_app_with_shrinker(app,
+                            options,
+                            temp_dir,
+                            app_dir,
+                            shrinker,
+                            compilation_step_index,
+                            compilation_steps,
+                            prev_recomp_jar,
+                            worker_id,
+                            step_result=None):
 
     def config_files_consumer(files):
         for file in files:
             compiledump.clean_config(file, options)
             remove_print_lines(file)
 
-    properties = app.compiler_properties
+    properties = list(app.compiler_properties)
     if options.dump_input_to_directory:
         properties.append('-Dcom.android.tools.r8.dumpinputtodirectory=%s' %
                           options.dump_input_to_directory)
@@ -643,10 +741,37 @@ def build_app_with_shrinker(app, options, temp_dir, app_dir, shrinker,
     recomp_jar = None
     jdkhome = get_jdk_home(options, app)
     with utils.TempDir() as compile_temp_dir:
-        compile_result = compiledump.run1(compile_temp_dir,
-                                          args, [],
-                                          jdkhome,
-                                          worker_id=worker_id)
+        enable_trace = (compilation_step_index == 0 and
+                        (options.trace_lite or options.upload_traces))
+
+        def run_compile(trace_file):
+            args['dump_trace_to_file'] = trace_file
+            args['trace_lite'] = bool(trace_file)
+            result = compiledump.run1(compile_temp_dir,
+                                      args, [],
+                                      jdkhome,
+                                      worker_id=worker_id)
+            args['dump_trace_to_file'] = None
+            args['trace_lite'] = False
+            return result
+
+        gcs_run_prefix = getattr(options, 'gcs_run_prefix', None)
+        local_trace_path = os.path.join(
+            temp_dir, '{}_{}_{}.perfetto-trace'.format(app.name, shrinker,
+                                                       compilation_step_index))
+        compile_result, perfetto_url = perfetto_utils.run_with_perfetto_trace(
+            run_compile,
+            enable_trace,
+            options.upload_traces,
+            compile_temp_dir,
+            shrinker,
+            f'{app.name} ({shrinker})',
+            gcs_prefix=(f'{gcs_run_prefix}/{app.name}'
+                        if gcs_run_prefix else None),
+            local_trace_path=local_trace_path if options.trace_lite else None,
+            warn_fn=warn)
+        if perfetto_url and step_result is not None:
+            step_result['perfetto_url'] = perfetto_url
         out_jar = os.path.join(compile_temp_dir, "out.jar")
         out_mapping = os.path.join(compile_temp_dir, "out.jar.map")
 
@@ -813,6 +938,10 @@ def log_comparison_results_for_app(app, result_per_shrinker, options,
                 success(msg) if dex_size < proguard_dex_size else warn(msg)
             else:
                 print_thread(msg, worker_id)
+            if result.get('perfetto_url'):
+                print_thread(
+                    '    perfetto: {}'.format(result.get('perfetto_url')),
+                    worker_id)
 
             if options.monkey:
                 monkey_status = result.get('monkey_status')
@@ -976,6 +1105,16 @@ def parse_options(argv):
     result.add_argument('--temp',
                         help='A directory to use for temporaries and outputs.',
                         default=None)
+    result.add_argument('--trace-lite',
+                        '--trace_lite',
+                        help='Enable lite Perfetto tracing (>= 2ms slices).',
+                        default=False,
+                        action='store_true')
+    result.add_argument('--upload-traces',
+                        '--upload_traces',
+                        help='Upload Perfetto traces to GCS.',
+                        default=False,
+                        action='store_true')
     result.add_argument('--version',
                         default='main',
                         help='The version of R8 to use (e.g., 1.4.51)')
@@ -1050,7 +1189,7 @@ def print_golem_config(options):
     print_indented('final targetsCompat = ["R8"];', 2)
     print_indented('final targetsFull = ["R8-full-minify-optimize-shrink"];', 2)
     # Avoid calculating this for every app
-    add_golem_resource(2, jdk.GetJdk21Home(), 'openjdk')
+    add_golem_resource(2, jdk.get_jdk21_home(), 'openjdk')
     for app in options.apps:
         if app.folder and not app.internal:
             indentation = 2
@@ -1061,7 +1200,7 @@ def print_golem_config(options):
             print_indented(
                 'StandardBenchmark(name, [Metric.RunTimeRaw, Metric.CodeSize]);',
                 indentation + 4)
-            if app.golem_duration != None:
+            if app.golem_duration is not None:
                 print_indented(
                     'final timeout = const Duration(seconds: %s);' %
                     app.golem_duration, indentation)
@@ -1131,12 +1270,28 @@ def add_golem_resource(indentation, path, name, sha256=None):
     print_indented('extract: "gz");', indentation + 4)
 
 
+def move_file(src, dst, quiet=False):
+    assert os.path.isfile(src), 'Expected a file to be present at ' + src
+    if not quiet:
+        print('Moving `{}` to `{}`'.format(src, dst))
+    dst_parent = os.path.dirname(dst)
+    if dst_parent:
+        os.makedirs(dst_parent, exist_ok=True)
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
+    elif os.path.isfile(dst):
+        os.remove(dst)
+    shutil.move(src, dst)
+
+
 def main(argv):
     (options, args) = parse_options(argv)
 
     if options.bot:
         options.no_logging = True
         options.shrinker = ['r8', 'r8-full']
+        options.trace_lite = True
+        options.upload_traces = True
         print(options.shrinker)
 
     if options.golem:
@@ -1150,6 +1305,15 @@ def main(argv):
         print_golem_config(options)
         return 0
 
+    options.gcs_run_prefix = None
+    options.result_sink_info = None
+    if options.upload_traces:
+        try:
+            options.gcs_run_prefix = _get_luci_gcs_run_prefix()
+        except Exception as e:
+            warn('Failed to determine GCS trace prefix: {}'.format(e))
+        options.result_sink_info = _get_result_sink_info()
+
     with utils.TempDir() as temp_dir:
         if options.temp:
             temp_dir = options.temp
@@ -1160,18 +1324,18 @@ def main(argv):
             target = 'r8-{}.jar'.format(options.hash)
             update_prebuilds_in_android.download_hash(
                 temp_dir, 'com/android/tools/r8/' + options.hash, target)
-            as_utils.MoveFile(os.path.join(temp_dir, target),
-                              os.path.join(temp_dir, 'r8lib.jar'),
-                              quiet=options.quiet)
+            move_file(os.path.join(temp_dir, target),
+                      os.path.join(temp_dir, 'r8lib.jar'),
+                      quiet=options.quiet)
         elif version_is_built_jar(options.version):
             # Download r8-<version>.jar from
             # https://storage.googleapis.com/r8-releases/raw/.
             target = 'r8-{}.jar'.format(options.version)
             update_prebuilds_in_android.download_version(
                 temp_dir, 'com/android/tools/r8/' + options.version, target)
-            as_utils.MoveFile(os.path.join(temp_dir, target),
-                              os.path.join(temp_dir, 'r8lib.jar'),
-                              quiet=options.quiet)
+            move_file(os.path.join(temp_dir, target),
+                      os.path.join(temp_dir, 'r8lib.jar'),
+                      quiet=options.quiet)
         elif options.version == 'main':
             if not options.no_build:
                 gradle.run_gradle([utils.GRADLE_TASK_R8, '-Pno_internal'])

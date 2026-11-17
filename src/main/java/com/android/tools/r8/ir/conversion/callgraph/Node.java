@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.conversion.callgraph;
 
 import com.android.tools.r8.graph.ProgramMethod;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -108,29 +109,41 @@ public class Node extends NodeBase<Node> implements Comparable<Node>, CycleElimi
     assert !hasCaller(reader);
   }
 
-  public void cleanCalleesAndWritersForRemoval() {
+  public void cleanCalleesAndWritersForRemoval(List<Node> newRoots) {
     assert callers.isEmpty();
     assert readers.isEmpty();
     for (Node callee : callees) {
       boolean changed = callee.callers.remove(this);
       assert changed;
+      if (callee.isRoot()) {
+        newRoots.add(callee);
+      }
     }
     for (Node writer : writers) {
       boolean changed = writer.readers.remove(this);
       assert changed;
+      if (writer.isRoot()) {
+        newRoots.add(writer);
+      }
     }
   }
 
-  public void cleanCallersAndReadersForRemoval() {
+  public void cleanCallersAndReadersForRemoval(List<Node> newLeaves) {
     assert callees.isEmpty();
     assert writers.isEmpty();
     for (Node caller : callers) {
       boolean changed = caller.callees.remove(this);
       assert changed;
+      if (caller.isLeaf()) {
+        newLeaves.add(caller);
+      }
     }
     for (Node reader : readers) {
       boolean changed = reader.writers.remove(this);
       assert changed;
+      if (reader.isLeaf()) {
+        newLeaves.add(reader);
+      }
     }
   }
 

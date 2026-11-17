@@ -157,6 +157,14 @@ public class Lir2IRConverter {
     // Some instructions have bottom types (e.g., phis). Compute their actual types by widening.
     new TypeAnalysis(appView, irCode).widening();
 
+    removeRedundantAssumeInstructions(appView, irCode);
+    return irCode;
+  }
+
+  private static void removeRedundantAssumeInstructions(AppView<?> appView, IRCode irCode) {
+    if (!irCode.metadata().mayHaveAssume()) {
+      return;
+    }
     // Remove redundant Assume instructions for non-null phis. This may be needed since during
     // type narrowing we don't unset the type of phis. When rebuilding the phi types as part of IR
     // building we may get more precise type information for phis.
@@ -181,8 +189,6 @@ public class Lir2IRConverter {
       }
     }
     affectedValues.propagate(appView, irCode);
-
-    return irCode;
   }
 
   /**

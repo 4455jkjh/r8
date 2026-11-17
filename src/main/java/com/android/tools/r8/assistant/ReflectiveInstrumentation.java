@@ -105,7 +105,9 @@ public class ReflectiveInstrumentation {
                   blockIterator.next().listIterator();
               while (instructionIterator.hasNext()) {
                 Instruction instruction = instructionIterator.next();
-                if (!instruction.isInvokeVirtual() && !instruction.isInvokeStatic()) {
+                if (!instruction.isInvokeVirtual()
+                    && !instruction.isInvokeStatic()
+                    && !instruction.isInvokeInterface()) {
                   continue;
                 }
                 InvokeMethod invoke = instruction.asInvokeMethod();

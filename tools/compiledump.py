@@ -48,6 +48,20 @@ def make_parser():
     parser.add_argument('--dump-trace-to-directory',
                         '--dump_trace_to_directory',
                         help='Dump perfetto trace to the given directory')
+    parser.add_argument('--dump-trace-to-file',
+                        '--dump_trace_to_file',
+                        help='Dump perfetto trace to the given file')
+    parser.add_argument('--trace-lite',
+                        '--trace_lite',
+                        help='Enable lite perfetto tracing mode',
+                        default=False,
+                        action='store_true')
+    parser.add_argument(
+        '--trace-min-value-ms',
+        '--trace_min_value_ms',
+        help='Minimum slice duration in ms to record in perfetto trace',
+        type=int,
+        default=None)
     parser.add_argument('--jdk', help='JDK to use', choices=jdk.ALL_JDKS)
     parser.add_argument('--minify',
                         help='Force enable/disable minification'
@@ -195,7 +209,7 @@ def error(msg):
     sys.exit(1)
 
 
-class Dump(object):
+class Dump:
 
     def __init__(self, directory):
         self.directory = directory
@@ -343,7 +357,7 @@ def determine_compiler(args, build_properties):
     if not compiler and 'tool' in build_properties:
         compiler = build_properties.get('tool').lower()
         if compiler == 'r8':
-            if not 'force-proguard-compatibility' in build_properties:
+            if 'force-proguard-compatibility' not in build_properties:
                 error(
                     "Unable to determine R8 compiler variant from build.properties."
                     " No value for 'force-proguard-compatibility'.")
@@ -494,8 +508,12 @@ def determine_properties(build_properties):
         # system-property-com.android.tools.r8.XXX=<value>
         if key.startswith('system-property-'):
             name = key[len('system-property-'):]
-            if name.endswith('dumpinputtofile') or name.endswith(
-                    'dumpinputtodirectory'):
+            if (name.endswith('dumpinputtofile') or
+                    name.endswith('dumpinputtodirectory') or
+                    name.endswith('dumptracetofile') or
+                    name.endswith('dumptracetodirectory') or
+                    name.endswith('trace.lite') or
+                    name.endswith('trace.minvalue_ms')):
                 continue
             if len(value) == 0:
                 args.append('-D' + name)
@@ -572,14 +590,14 @@ def compile_reflective_helper(temp, jdkhome, no_build=False):
         utils.REPO_ROOT, 'src/main/java/com/android/tools/r8/utils/compiledump')
 
     cmd = [
-        jdk.GetJavacExecutable(jdkhome),
+        jdk.get_javac_executable(jdkhome),
         '-d',
         temp,
         '-cp',
         utils.BUILD_JAVA_MAIN_CLASSPATH,
     ]
     cmd.extend(os.path.join(base_path, f) for f in os.listdir(base_path))
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_output(cmd)
 
 
@@ -597,7 +615,7 @@ def compile_wrapper_with_javac(dist, temp, jdkhome, path):
         utils.REPO_ROOT,
         'src/main/java/com/android/tools/r8/utils/CompileDumpBase.java')
     cmd = [
-        jdk.GetJavacExecutable(jdkhome),
+        jdk.get_javac_executable(jdkhome),
         path,
         base_path,
         '-d',
@@ -605,7 +623,7 @@ def compile_wrapper_with_javac(dist, temp, jdkhome, path):
         '-cp',
         os.pathsep.join((dist, temp)),
     ]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_output(cmd)
 
 
@@ -615,9 +633,9 @@ def is_hash(version):
 
 def run1(out, args, otherargs, jdkhome=None, worker_id=None):
     if jdkhome is None:
-        # TODO(b/510836155): Should use GetDefaultJdkHome but it breaks.
-        jdkhome = jdk.GetJdk11Home()
-    compilation_jdkhome = jdk.GetCompilationJdkHome()
+        # TODO(b/510836155): Should use get_default_jdk_home but it breaks.
+        jdkhome = jdk.get_jdk11_home()
+    compilation_jdkhome = jdk.get_compilation_jdk_home()
     jvmargs = []
     compilerargs = []
     for arg in otherargs:
@@ -653,7 +671,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             version, args, temp)
         if ':' not in jar and not os.path.exists(jar):
             error("Distribution does not exist: " + jar)
-        cmd = [jdk.GetJavaExecutable(jdkhome)]
+        cmd = [jdk.get_java_executable(jdkhome)]
         cmd.extend(jvmargs)
         if args.debug_agent:
             if not args.nolib:
@@ -676,6 +694,15 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         if args.dump_trace_to_directory is not None:
             cmd.append('-Dcom.android.tools.r8.dumptracetodirectory=' +
                        args.dump_trace_to_directory)
+        if args.dump_trace_to_file is not None:
+            cmd.append('-Dcom.android.tools.r8.dumptracetofile=' +
+                       args.dump_trace_to_file)
+        if args.trace_lite:
+            cmd.append('-Dcom.android.tools.r8.trace.lite')
+        if args.trace_min_value_ms is not None:
+            cmd.append(
+                f'-Dcom.android.tools.r8.trace.minvalue_ms={args.trace_min_value_ms}'
+            )
         if args.r8_flags:
             cmd.extend(args.r8_flags.split(' '))
         if 'properties' in args:
@@ -805,7 +832,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         if args.threads:
             cmd.extend(['--threads', args.threads])
         cmd.extend(compilerargs)
-        utils.PrintCmd(cmd, worker_id=worker_id)
+        utils.print_cmd(cmd, worker_id=worker_id)
         try:
             start = time.time()
             output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
@@ -908,7 +935,7 @@ def summarize_jar(jar):
 
 def run(args, otherargs):
     gradle.ensure_jdk()
-    jdkhome = jdk.GetJdkRoot(args.jdk) if args.jdk else None
+    jdkhome = jdk.get_jdk_home(args.jdk) if args.jdk else None
     if args.summary:
         summarize_dump_files(otherargs)
     elif args.loop:

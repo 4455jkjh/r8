@@ -345,6 +345,15 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return uniqueUsers().size() == 1;
   }
 
+  @SuppressWarnings("ReferenceEquality")
+  public boolean hasSingleUniqueUser(Instruction instruction) {
+    return hasSingleUniqueUser() && singleUniqueUser() == instruction;
+  }
+
+  public boolean hasSingleUniqueUser(Predicate<Instruction> predicate) {
+    return hasSingleUniqueUser() && predicate.test(singleUniqueUser());
+  }
+
   public boolean hasSingleUniqueUserAndNoOtherUsers() {
     return hasSingleUniqueUser() && !hasPhiUsers() && !hasDebugUsers();
   }

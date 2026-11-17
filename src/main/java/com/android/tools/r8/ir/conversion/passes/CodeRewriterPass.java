@@ -44,12 +44,15 @@ public abstract class CodeRewriterPass<T extends AppInfo> {
       MethodProcessor methodProcessor,
       MethodProcessingContext methodProcessingContext,
       Timing timing) {
-    return timing.time(getRewriterId(), () -> run(code, methodProcessor, methodProcessingContext));
+    try (Timing t0 = timing.begin(getRewriterId())) {
+      return run(code, methodProcessor, methodProcessingContext);
+    }
   }
 
   @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   public final CodeRewriterResult run(IRCode code, Timing timing) {
-    return timing.time(getRewriterId(), () -> run(code, null, null));
+    return run(code, null, null, timing);
   }
 
   private CodeRewriterResult run(

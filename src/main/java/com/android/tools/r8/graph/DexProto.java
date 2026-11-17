@@ -32,6 +32,7 @@ public class DexProto extends IndexedDexItem
     return !isIdenticalTo(other);
   }
 
+  public static final DexProto[] EMPTY_ARRAY = {};
   public static final DexProto SENTINEL = new DexProto(null, null);
 
   public final DexType returnType;

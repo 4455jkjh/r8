@@ -128,6 +128,9 @@ public class RewrittenPrototypeDescriptionMethodOptimizationInfoFixer
    */
   @Override
   public int fixupReturnedArgumentIndex(int returnedArgumentIndex) {
+    if (prototypeChanges.hasBeenChangedToReturnVoid()) {
+      return -1;
+    }
     if (getArgumentInfoCollection().isEmpty() || returnedArgumentIndex < 0) {
       return returnedArgumentIndex;
     }

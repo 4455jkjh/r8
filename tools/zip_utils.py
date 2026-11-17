@@ -42,7 +42,7 @@ def remove_files_from_zip(files, zip_file_path):
                                  zip_in.compression) as zip_out:
                 for item in zip_in.infolist():
                     buffer = zip_in.read(item.filename)
-                    if not item.filename in files:
+                    if item.filename not in files:
                         zip_out.writestr(item, buffer)
                     else:
                         print("Removing " + item.filename)

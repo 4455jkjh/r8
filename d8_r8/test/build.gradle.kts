@@ -50,14 +50,12 @@ val keepAnnoAndroidXAnnotationsJarConfig =
   configurations.resolvable("keepAnnoAndroidXAnnotationsJarConfig") {
     extendsFrom(keepAnnoAndroidXAnnotationsJarScope.get())
   }
-val keepAnnoDepsJarOnlyAsmScope = configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
-val keepAnnoDepsJarOnlyAsmConfig =
-  configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
-    extendsFrom(keepAnnoDepsJarOnlyAsmScope.get())
-  }
 val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig =
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
+val jdk25HomeScope = configurations.dependencyScope("jdk25HomeScope")
+val jdk25HomeConfig =
+  configurations.resolvable("jdk25HomeConfig") { extendsFrom(jdk25HomeScope.get()) }
 
 val coverageClassesScope = configurations.dependencyScope("coverageClassesScope")
 val coverageClassesConfig =
@@ -71,21 +69,11 @@ val coverageExecScope = configurations.dependencyScope("coverageExecScope")
 val coverageExecConfig =
   configurations.resolvable("coverageExecConfig") { extendsFrom(coverageExecScope.get()) }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
-val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig =
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
-
 dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
-  keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
+  jdk25HomeScope(project(":third_party", "jdk25Home"))
   coverageClassesScope(project(":assistant", "assistantClasses"))
   coverageClassesScope(project(":keepanno", "keepannoClasses"))
   coverageClassesScope(project(":keepradius", "keepradiusClasses"))
@@ -109,7 +97,6 @@ dependencies {
   testJarsScope(project(":tests_java_25", "testJar"))
   testJarsScope(project(":tests_bootstrap", "testJar"))
   testbaseTestJarsScope(project(":testbase", "testJar"))
-  testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   runtimeOnlyData(project(":tests_java_8", "runtimeOnlyDataElements"))
@@ -129,12 +116,6 @@ val processKeepRulesLibWithRelocatedDepsTask =
 val r8AssistantLibTask = project(":dist").tasks.named<CreateR8LibraryTask>("r8AssistantLib")
 val r8WithRelocatedDepsTask =
   project(":dist").tasks.named<SwissArmyKnifeTask>("r8WithRelocatedDeps")
-val keepAnnoToolsWithRelocatedDepsTask =
-  project(":dist").tasks.named<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps")
-
-interface InjectedArcOps {
-  @get:Inject val arcOps: ArchiveOperations
-}
 
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
@@ -151,8 +132,7 @@ tasks {
 
   val packageTests =
     register<Jar>("packageTests") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(testJars))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8tests.jar")
@@ -160,13 +140,8 @@ tasks {
 
   val packageTestDeps =
     register<Jar>("packageTestDeps") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testDepsJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
-      from(
-        keepAnnoAndroidXAnnotationsJarConfig
-          .flatMap { it.elements }
-          .map { it.map { injected.arcOps.zipTree(it) } }
-      )
+      from(zipTrees(testDepsJars))
+      from(zipTrees(keepAnnoAndroidXAnnotationsJarConfig))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -175,8 +150,7 @@ tasks {
 
   val packageTestBase =
     register<Jar>("packageTestBase") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(testbaseTestJars.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(testbaseTestJars))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8test_base.jar")
@@ -223,11 +197,7 @@ tasks {
   ) {
     swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     compiler = "tracereferences"
-    libs.from(
-      getJavaHome(Jdk.JDK_25),
-      packageTestDeps.flatMap { it.archiveFile },
-      mainDepsJarFilesConfig,
-    )
+    libs.from(jdk25HomeConfig, packageTestDeps.flatMap { it.archiveFile }, mainDepsJarFilesConfig)
     targetJarProviders.forEach { targets.from(it) }
     testJarProviders.forEach { sources.from(it) }
     outputFile = layout.buildDirectory.file("libs/$artifactName")
@@ -307,16 +277,6 @@ tasks {
       )
     }
 
-  register<CreateR8LibraryTask>("keepAnnoToolsLib") {
-    r8compilerClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
-    inputJar = keepAnnoToolsWithRelocatedDepsTask.flatMap { it.outputFile }
-    pgConfigs.from(File(rootDir, "src/keepanno/keep.txt"))
-    inputClasspath.from(keepAnnoDepsJarOnlyAsmConfig)
-    enableKeepAnnotations = true
-
-    setOutputJarFile(File(rootDir, "build/libs/keepanno-toolslib.jar"))
-  }
-
   abstract class GenerateKeepRulesForR8LibTask : DefaultTask() {
     @get:InputFile abstract val r8LibJarMap: RegularFileProperty
     @get:OutputFile abstract val keepRules: RegularFileProperty
@@ -358,7 +318,7 @@ tasks {
   ) {
     swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     compiler = "r8"
-    libs.from(getJavaHome(Jdk.JDK_25))
+    libs.from(jdk25HomeConfig)
     classpath.from(r8JarProvider, packageTestDeps)
     if (addTestBaseClasspath) {
       classpath.from(packageTestBaseExcludeKeep)
@@ -570,8 +530,6 @@ tasks {
         unzipRewrittenTests,
         unzipTests,
         unzipTestBase,
-        sharedDepsConfig,
-        sharedTestDepsConfig,
       )
       val r8LibJar = r8Lib.flatMap { it.outputJar }
       val r8LibPartitionMapFile = r8Lib.flatMap { it.outputPartitionMap }
@@ -709,8 +667,6 @@ tasks {
 
   test {
     if (!project.hasProperty("use_prebuilt_lib")) {
-      dependsOn(sharedDepsConfig)
-      dependsOn(sharedTestDepsConfig)
       // Build processkeepruleslib.jar when running with --only_internal.
       if (project.hasProperty("only_internal")) {
         dependsOn(processKeepRulesLibWithRelocatedDepsTask)
@@ -737,7 +693,6 @@ tasks {
     useCustomR8Jar: Boolean = false,
   ) {
     register<RunBenchmarkTask>(baseName) {
-      dependsOn(sharedDepsConfig)
       configureCommon(project)
       testDataLocation.set(layout.dir(unzipTests.map { it.destinationDir }))
       testBaseDataLocation.set(layout.dir(unzipTestBase.map { it.destinationDir }))
@@ -749,7 +704,6 @@ tasks {
     }
 
     register<RunBenchmarkTask>("${baseName}Prebuilt") {
-      dependsOn(sharedDepsConfig)
       configureCommon(project)
       testDataLocation.set(unzipTests.get().destinationDir)
       testBaseDataLocation.set(unzipTestBase.get().destinationDir)

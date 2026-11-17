@@ -52,7 +52,7 @@ def run_monkey(app_id, device_id, apk, monkey_events, quiet, enable_logging):
     ], device_id)
 
     try:
-        stdout = utils.RunCmd(cmd, quiet=quiet, logging=enable_logging)
+        stdout = utils.run_cmd(cmd, quiet=quiet, logging=enable_logging)
         succeeded = ('Events injected: {}'.format(monkey_events) in stdout)
     except subprocess.CalledProcessError:
         succeeded = False
@@ -87,7 +87,7 @@ def run_instrumented(app_id,
     ], device_id)
 
     try:
-        stdout = utils.RunCmd(cmd, quiet=quiet, logging=enable_logging)
+        stdout = utils.run_cmd(cmd, quiet=quiet, logging=enable_logging)
         # The runner will print OK (X tests) if completed successfully
         succeeded = any("OK (" in s for s in stdout)
     except subprocess.CalledProcessError:

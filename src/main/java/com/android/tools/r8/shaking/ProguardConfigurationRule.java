@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DirectMappedDexApplication;
 import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
@@ -22,6 +23,7 @@ import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.shaking.rootset.RootSetBuilderAnnotationIndex;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Iterables;
@@ -75,6 +77,26 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
     }
     assert trivialAllClassMatch.isTrue() == computeIsTrivialAllClassMatch();
     return trivialAllClassMatch.isTrue();
+  }
+
+  /**
+   * Rewrites {@link #getClassNames()} to a single match-all entry when negated names do not exist
+   * in {@code app} (e.g., {@code !a.B,**} when there is no class {@code a.B}).
+   *
+   * <p>This is limited to rules that are evaluated on all program, classpath, and library classes
+   * and have no back references. Keep rules are excluded because the matched class is also the
+   * precondition for keeping the matched members of its superclasses.
+   */
+  public void simplifyClassNames(DirectMappedDexApplication app) {
+    if (isApplicableToClasspathClasses()
+        && isApplicableToLibraryClasses()
+        && !hasBackReferences()) {
+      ProguardClassNameList simplified = getClassNames().simplify(app);
+      if (ObjectUtils.notIdentical(simplified, getClassNames())) {
+        setClassNames(simplified);
+        trivialAllClassMatch = OptionalBool.unknown();
+      }
+    }
   }
 
   public boolean isTrivialAllClassMatchWithNoMembersRules() {

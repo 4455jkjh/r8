@@ -46,13 +46,7 @@ val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResources =
   configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
 dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
@@ -62,9 +56,9 @@ dependencies {
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":keepradius", "keepradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
-  implementation(project(":libanalyzer", "libanalyzer-compile-java"))
+  implementation(project(":libanalyzer", "libanalyzerJar"))
   implementation(project(":main", "mainClassesOutput"))
-  implementation(project(":main", "mainResources"))
+  runtimeOnly(project(":main", "mainResources"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "agsa"))
@@ -152,14 +146,6 @@ dependencies {
   implementation(libs.playwright)
 }
 
-fun testDependencies(): FileCollection {
-  return sourceSets.test.get().compileClasspath.filter {
-    "$it".contains("third_party") &&
-      !"$it".contains("errorprone") &&
-      !"$it".contains("third_party/gradle")
-  }
-}
-
 tasks {
   val createArtTests =
     register<CreateArtTestsTask>("createArtTests") {
@@ -170,14 +156,8 @@ tasks {
       outputDir = layout.buildDirectory.dir("generated/test/java")
     }
   java.sourceSets.test.configure { java.srcDir(createArtTests) }
-  "compileTestJava" {
-    dependsOn(sharedDepsConfig)
-    dependsOn(":testbase:compileJava")
-  }
-  withType<JavaCompile> {
-    dependsOn(sharedDepsConfig)
-    dependsOn(":testbase:compileJava")
-  }
+  "compileTestJava" { dependsOn(":testbase:compileJava") }
+  withType<JavaCompile> { dependsOn(":testbase:compileJava") }
 
   withType<JavaExec> {
     if (name.endsWith("main()")) {
@@ -242,7 +222,6 @@ fun Test.setupTestTask() {
       .split(File.pathSeparator)[0],
   )
   dependsOn(distDepsFiles)
-  dependsOn(sharedDepsConfig)
   dependsOn(project(":dist").tasks.named("r8AssistantLib"))
   systemProperty(
     "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
@@ -288,22 +267,14 @@ subprojects {
     toolchain { languageVersion = JavaLanguageVersion.of(11) }
   }
 
-  val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-  val sharedDepsConfig =
-    configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
   dependencies {
-    add(sharedDepsScope.name, project(":third_party", "sharedDepsFiles"))
-
     add("implementation", project(":main", "mainClassesOutput"))
-    add("implementation", project(":main", "mainResources"))
+    add("runtimeOnly", project(":main", "mainResources"))
     add("implementation", project(":keepanno", "keepannoClasses"))
     add("implementation", project(":testbase"))
     add("implementation", project(":testbase", "depsJar"))
     runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   }
-
-  tasks.withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
   tasks.withType<Test> { setupTestTask() }
 

@@ -16,6 +16,7 @@ public class ClassGetMember extends ReflectiveEvent {
 
   private final DexMember<?, ?> member;
   private final boolean hasMemberType;
+  private final DexType annotationType;
 
   protected ClassGetMember(
       ReflectiveEventType eventType, String[] stack, String[] args, DexItemFactory factory) {
@@ -25,16 +26,37 @@ public class ClassGetMember extends ReflectiveEvent {
     DexType holder = toType(args[1], factory);
     String name = args[2];
     if (eventType == ReflectiveEventType.CLASS_GET_FIELD
-        || eventType == ReflectiveEventType.CLASS_GET_DECLARED_FIELD) {
+        || eventType == ReflectiveEventType.CLASS_GET_DECLARED_FIELD
+        || eventType == ReflectiveEventType.FIELD_GET_ANNOTATION
+        || eventType == ReflectiveEventType.FIELD_GET_ANNOTATIONS
+        || eventType == ReflectiveEventType.FIELD_IS_ANNOTATION_PRESENT
+        || eventType == ReflectiveEventType.FIELD_GET_GENERIC_TYPE) {
       member = factory.createField(holder, type, name);
+      annotationType =
+          (eventType == ReflectiveEventType.FIELD_GET_ANNOTATION
+                      || eventType == ReflectiveEventType.FIELD_IS_ANNOTATION_PRESENT)
+                  && args.length > 3
+                  && args[3] != null
+                  && !args[3].equals("null")
+              ? toType(args[3], factory)
+              : null;
       return;
     }
-    assert eventType == ReflectiveEventType.CLASS_GET_METHOD
-        || eventType == ReflectiveEventType.CLASS_GET_DECLARED_METHOD
-        || eventType == ReflectiveEventType.CLASS_GET_CONSTRUCTOR
-        || eventType == ReflectiveEventType.CLASS_GET_DECLARED_CONSTRUCTOR;
-    DexType[] typeArgs = new DexType[args.length - 3];
-    for (int i = 3; i < args.length; i++) {
+    boolean hasTrailingAnnotationArg =
+        eventType == ReflectiveEventType.METHOD_GET_ANNOTATION
+            || eventType == ReflectiveEventType.METHOD_IS_ANNOTATION_PRESENT
+            || eventType == ReflectiveEventType.CONSTRUCTOR_GET_ANNOTATION
+            || eventType == ReflectiveEventType.CONSTRUCTOR_IS_ANNOTATION_PRESENT;
+    int paramEnd = hasTrailingAnnotationArg ? Math.max(3, args.length - 1) : args.length;
+    annotationType =
+        hasTrailingAnnotationArg
+                && args.length > 3
+                && args[args.length - 1] != null
+                && !args[args.length - 1].equals("null")
+            ? toType(args[args.length - 1], factory)
+            : null;
+    DexType[] typeArgs = new DexType[paramEnd - 3];
+    for (int i = 3; i < paramEnd; i++) {
       typeArgs[i - 3] = toType(args[i], factory);
     }
     member = factory.createMethod(holder, factory.createProto(type, typeArgs), name);
@@ -42,6 +64,10 @@ public class ClassGetMember extends ReflectiveEvent {
 
   public DexMember<?, ?> getMember() {
     return member;
+  }
+
+  public DexType getAnnotationType() {
+    return annotationType;
   }
 
   // False if the field type or return type was not logged, which is the case for field and method

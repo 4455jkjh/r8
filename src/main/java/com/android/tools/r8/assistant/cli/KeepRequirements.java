@@ -66,6 +66,7 @@ final class KeepRequirements {
   private final List<ReflectiveEvent> probes = new ArrayList<>();
   private final List<ReflectiveEvent> nestingAttributeEvents = new ArrayList<>();
   private final List<ReflectiveEvent> signatureAttributeEvents = new ArrayList<>();
+  private final List<ReflectiveEvent> annotationAttributeEvents = new ArrayList<>();
   private final Map<String, Map<String, Boolean>> classFlags = new HashMap<>();
   private final Map<String, Set<String>> supertypes = new HashMap<>();
   private final Map<String, Set<String>> knownSupertypes = new HashMap<>();
@@ -91,6 +92,25 @@ final class KeepRequirements {
         result.add(requirement);
       }
     }
+    // If a constructor lookup threw on a class whose fields or methods were still accessed
+    // reflectively (e.g. Unsafe.allocateInstance fallback in Gson/Moshi), keep the class header
+    // so R8 full mode does not make the class abstract.
+    threwEvents.forEach(
+        (event, eventRequirements) -> {
+          ReflectiveEventType type = event.getEventType();
+          if (type == ReflectiveEventType.CLASS_GET_DECLARED_CONSTRUCTOR
+              || type == ReflectiveEventType.CLASS_GET_CONSTRUCTOR) {
+            String target = TypeNames.getClassName(ReflectiveEvents.getTargetName(event));
+            List<KeepRequirement> existing = result.requirementsByClass.get(target);
+            if (isUserClass(target) && existing != null && !existing.isEmpty()) {
+              KeepRequirement classReq = KeepRequirement.forClass(target, false);
+              for (ReflectiveEvent justifying : existing.get(0).getEvents()) {
+                classReq.addEvent(justifying);
+              }
+              result.add(classReq);
+            }
+          }
+        });
     // A request that threw is only an optional probe if nothing else requires its target.
     threwEvents.forEach(
         (event, eventRequirements) -> {
@@ -152,12 +172,17 @@ final class KeepRequirements {
       case CLASS_CAST:
       case CLASS_FLAG:
       case CLASS_FOR_NAME:
+      case CLASS_GET_CLASSES:
       case CLASS_GET_COMPONENT_TYPE:
+      case CLASS_GET_DECLARED_CLASSES:
+      case CLASS_GET_DECLARING_CLASS:
+      case CLASS_GET_ENCLOSING_CLASS:
       case CLASS_GET_PACKAGE:
       case CLASS_GET_SUPERCLASS:
       case CLASS_IS_ASSIGNABLE_FROM:
       case CLASS_IS_INSTANCE:
       case CLASS_LOADER_LOAD_CLASS:
+      case UNSAFE_ALLOCATE_INSTANCE:
         for (String className : ReflectiveEvents.getClassNames(event)) {
           addClass(result, TypeNames.getClassName(className), false, event);
         }
@@ -180,8 +205,14 @@ final class KeepRequirements {
         addMember(result, target, member, isPublic, false, event);
         break;
       case CLASS_GET_DECLARED_FIELD:
-      case CLASS_GET_DECLARED_METHOD:
       case CLASS_GET_FIELD:
+        addMember(result, target, member, isPublic, false, event);
+        if (member != null && target != null && target.equals(member.getType())) {
+          addClass(result, target, false, event);
+          addAllMembers(result, Kind.ALL_FIELDS, target, event);
+        }
+        break;
+      case CLASS_GET_DECLARED_METHOD:
       case CLASS_GET_METHOD:
         addMember(result, target, member, isPublic, false, event);
         break;
@@ -204,6 +235,19 @@ final class KeepRequirements {
       case SERVICE_LOADER_LOAD:
         addClass(result, target, false, event);
         addAllMembers(result, Kind.ALL_METHODS, target, event);
+        for (String className : ReflectiveEvents.getResultClassNames(event)) {
+          String provider = TypeNames.getClassName(className);
+          if (isUserClass(provider) && !provider.equals(target)) {
+            addClass(result, provider, false, event);
+            addMember(
+                result,
+                provider,
+                MemberSignature.constructor(Collections.emptyList()),
+                false,
+                false,
+                event);
+          }
+        }
         break;
       case PROXY_NEW_PROXY_INSTANCE:
         for (String className : ReflectiveEvents.getClassNames(event)) {
@@ -219,8 +263,130 @@ final class KeepRequirements {
       case CLASS_GET_GENERIC_SUPERCLASS:
         addGenericSignatures(result, target, event);
         break;
+      case FIELD_GET_GENERIC_TYPE:
+      case METHOD_GET_GENERIC_EXCEPTION_TYPES:
+      case METHOD_GET_GENERIC_PARAMETER_TYPES:
+      case METHOD_GET_GENERIC_RETURN_TYPE:
+        addMember(result, target, member, false, false, event);
+        for (String rawType : ReflectiveEvents.getParameterizedResultTypes(event)) {
+          if (isUserClass(rawType)) {
+            KeepRequirement genericSupertype = KeepRequirement.forGenericSupertype(rawType);
+            genericSupertype.addEvent(event);
+            result.add(genericSupertype);
+          }
+        }
+        break;
+      case CLASS_GET_ENUM_CONSTANTS:
+      case ENUM_VALUE_OF:
+        addClass(result, target, false, event);
+        addAllMembers(result, Kind.ALL_FIELDS, target, event);
+        if (isUserClass(target)) {
+          addMember(
+              result,
+              target,
+              MemberSignature.method(target + "[]", "values", Collections.emptyList()),
+              true,
+              false,
+              event);
+          addMember(
+              result,
+              target,
+              MemberSignature.method(
+                  target, "valueOf", Collections.singletonList("java.lang.String")),
+              true,
+              false,
+              event);
+        }
+        break;
+      case CLASS_GET_ANNOTATION:
+      case CLASS_GET_ANNOTATIONS:
+      case CLASS_IS_ANNOTATION_PRESENT:
+      case CONSTRUCTOR_GET_ANNOTATION:
+      case CONSTRUCTOR_GET_ANNOTATIONS:
+      case CONSTRUCTOR_IS_ANNOTATION_PRESENT:
+      case FIELD_GET_ANNOTATION:
+      case FIELD_GET_ANNOTATIONS:
+      case FIELD_IS_ANNOTATION_PRESENT:
+      case METHOD_GET_ANNOTATION:
+      case METHOD_GET_ANNOTATIONS:
+      case METHOD_IS_ANNOTATION_PRESENT:
+        addAnnotationRequirements(result, target, member, event);
+        break;
     }
     return result;
+  }
+
+  private static boolean isAnnotationEvent(ReflectiveEvent event) {
+    switch (event.getEventType()) {
+      case CLASS_GET_ANNOTATION:
+      case CLASS_GET_ANNOTATIONS:
+      case CLASS_IS_ANNOTATION_PRESENT:
+      case CONSTRUCTOR_GET_ANNOTATION:
+      case CONSTRUCTOR_GET_ANNOTATIONS:
+      case CONSTRUCTOR_IS_ANNOTATION_PRESENT:
+      case FIELD_GET_ANNOTATION:
+      case FIELD_GET_ANNOTATIONS:
+      case FIELD_IS_ANNOTATION_PRESENT:
+      case METHOD_GET_ANNOTATION:
+      case METHOD_GET_ANNOTATIONS:
+      case METHOD_IS_ANNOTATION_PRESENT:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private static boolean hasAnnotationResult(ReflectiveEvent event) {
+    if (event.getResults().isEmpty()) {
+      return true;
+    }
+    switch (event.getEventType()) {
+      case CLASS_IS_ANNOTATION_PRESENT:
+      case CONSTRUCTOR_IS_ANNOTATION_PRESENT:
+      case FIELD_IS_ANNOTATION_PRESENT:
+      case METHOD_IS_ANNOTATION_PRESENT:
+        return event.getResults().contains(true) || event.getResults().contains("true");
+      default:
+        return !ReflectiveEvents.getAnnotationResultStrings(event).isEmpty();
+    }
+  }
+
+  private static void addAnnotationRequirements(
+      List<KeepRequirement> result, String target, MemberSignature member, ReflectiveEvent event) {
+    if (!hasAnnotationResult(event)) {
+      return;
+    }
+    addClass(result, target, false, event);
+    if (member != null) {
+      addMember(result, target, member, false, false, event);
+    }
+    String requestedAnnotation = ReflectiveEvents.getRequestedAnnotationType(event);
+    if (requestedAnnotation != null) {
+      String annoClass = TypeNames.getClassName(requestedAnnotation);
+      addClass(result, annoClass, false, event);
+      addAllMembers(result, Kind.ALL_METHODS, annoClass, event);
+    }
+    for (String entry : ReflectiveEvents.getAnnotationResultStrings(event)) {
+      if (entry.startsWith("class:")) {
+        String refClass = TypeNames.getClassName(entry.substring("class:".length()));
+        addClass(result, refClass, false, event);
+        addMember(
+            result,
+            refClass,
+            MemberSignature.constructor(Collections.emptyList()),
+            false,
+            false,
+            event);
+      } else if (entry.startsWith("interface:")) {
+        String refInterface = TypeNames.getClassName(entry.substring("interface:".length()));
+        addClass(result, refInterface, true, event);
+        addAllMembers(result, Kind.ALL_METHODS, refInterface, event);
+      } else {
+        String annoClass = TypeNames.getClassName(entry);
+        addClass(result, annoClass, false, event);
+        addAllMembers(result, Kind.ALL_METHODS, annoClass, event);
+      }
+    }
   }
 
   /**
@@ -359,10 +525,19 @@ final class KeepRequirements {
         }
       }
     }
-    if (TypeNames.isNestedClassName(target)
-        && ((event.isClassGetName()
-                && ("SIMPLE_NAME".equals(qualifier) || "CANONICAL_NAME".equals(qualifier)))
-            || (isFlag && NESTING_FLAGS.contains(qualifier)))) {
+    ReflectiveEventType type = event.getEventType();
+    if (type == ReflectiveEventType.ENUM_VALUE_OF
+        || type == ReflectiveEventType.CLASS_GET_ENUM_CONSTANTS) {
+      classFlags.computeIfAbsent(target, k -> new HashMap<>()).put("ENUM", true);
+    }
+    if ((TypeNames.isNestedClassName(target)
+            && ((event.isClassGetName()
+                    && ("SIMPLE_NAME".equals(qualifier) || "CANONICAL_NAME".equals(qualifier)))
+                || (isFlag && NESTING_FLAGS.contains(qualifier))))
+        || type == ReflectiveEventType.CLASS_GET_DECLARED_CLASSES
+        || type == ReflectiveEventType.CLASS_GET_CLASSES
+        || type == ReflectiveEventType.CLASS_GET_DECLARING_CLASS
+        || type == ReflectiveEventType.CLASS_GET_ENCLOSING_CLASS) {
       nestingAttributeEvents.add(event);
     }
     if (ReflectiveEvents.isSupertypeLookup(event)) {
@@ -373,8 +548,16 @@ final class KeepRequirements {
         }
       }
     }
-    if (event.isClassGetGenericSupertypes() && ReflectiveEvents.hasParameterizedResult(event)) {
+    if ((event.isClassGetGenericSupertypes()
+            || type == ReflectiveEventType.FIELD_GET_GENERIC_TYPE
+            || type == ReflectiveEventType.METHOD_GET_GENERIC_PARAMETER_TYPES
+            || type == ReflectiveEventType.METHOD_GET_GENERIC_RETURN_TYPE
+            || type == ReflectiveEventType.METHOD_GET_GENERIC_EXCEPTION_TYPES)
+        && ReflectiveEvents.hasParameterizedResult(event)) {
       signatureAttributeEvents.add(event);
+    }
+    if (isAnnotationEvent(event) && hasAnnotationResult(event)) {
+      annotationAttributeEvents.add(event);
     }
   }
 
@@ -404,6 +587,11 @@ final class KeepRequirements {
    */
   List<ReflectiveEvent> getSignatureAttributeEvents() {
     return signatureAttributeEvents;
+  }
+
+  /** Events that depend on runtime annotation attributes. */
+  List<ReflectiveEvent> getAnnotationAttributeEvents() {
+    return annotationAttributeEvents;
   }
 
   /** All user classes seen in the log, including the classes in stack frames. */

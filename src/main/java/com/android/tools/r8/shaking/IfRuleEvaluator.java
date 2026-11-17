@@ -228,6 +228,9 @@ public class IfRuleEvaluator {
    * @param target The target class that can be different when we have vertically merged classes.
    */
   private void registerClassCapture(ProguardIfRule memberRule, DexClass source, DexClass target) {
+    AnnotationMatchResult annotationMatchResult =
+        RootSetBuilder.satisfyAnnotation(memberRule, source);
+    assert annotationMatchResult != null;
     boolean classNameResult = memberRule.getClassNames().matches(source.type);
     assert classNameResult;
     if (memberRule.hasInheritanceClassName()) {

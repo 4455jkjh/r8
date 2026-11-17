@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.structural;
 
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.structural.StructuralItem.CompareToAccept;
@@ -54,12 +55,38 @@ public class CompareToVisitorWithSyntheticEquivalence extends CompareToVisitorBa
   }
 
   @Override
+  public int visitDexField(DexField field1, DexField field2) {
+    if (field1.isIdenticalTo(field2)) {
+      return 0;
+    }
+    // Compare fields directly rather than via getStructuralMapping() to avoid allocating an
+    // ItemSpecification on this hot path.
+    int order = visitDexType(field1.getHolderType(), field2.getHolderType());
+    if (order == 0) {
+      order = visitDexString(field1.getName(), field2.getName());
+    }
+    if (order == 0) {
+      order = visitDexType(field1.getType(), field2.getType());
+    }
+    return debug(order);
+  }
+
+  @Override
   public int visitDexMethod(DexMethod method1, DexMethod method2) {
     if (method1.isIdenticalTo(method2)) {
       return 0;
     }
     DexMethod repr1 = methodRepresentatives.getRepresentative(method1);
     DexMethod repr2 = methodRepresentatives.getRepresentative(method2);
-    return debug(visit(repr1, repr2, repr1.getStructuralMapping()));
+    // Compare fields directly rather than via getStructuralMapping() to avoid allocating an
+    // ItemSpecification on this hot path.
+    int order = visitDexType(repr1.getHolderType(), repr2.getHolderType());
+    if (order == 0) {
+      order = visitDexString(repr1.getName(), repr2.getName());
+    }
+    if (order == 0) {
+      order = repr1.getProto().acceptCompareTo(repr2.getProto(), this);
+    }
+    return debug(order);
   }
 }

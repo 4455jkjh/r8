@@ -13,4 +13,11 @@ tasks {
   register("r8") { dependsOn(":dist:r8WithRelocatedDeps") }
   register("swissArmyKnife") { dependsOn(":swissarmyknife:jar") }
   register("r8lib") { dependsOn(":test:assembleR8LibWithRelocatedDeps") }
+  register("downloadAllThirdparty") {
+    dependsOn(
+      ":third_party:downloadDeps",
+      ":third_party:downloadTestDeps",
+      ":third_party:downloadTestDepsInternal",
+    )
+  }
 }

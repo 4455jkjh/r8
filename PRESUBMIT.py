@@ -35,7 +35,7 @@ def get_version():
     return utils.check_basic_semver_version(label,
                                             'in Version.java',
                                             components=3,
-                                            allowPrerelease=True)
+                                            allow_prerelease=True)
 
 
 def is_release_before(major, minor, patch, version=None):
@@ -84,7 +84,7 @@ def ensure_default_jdk():
             line = line.strip()
             if line.startswith('toolchainVersion='):
                 version = line.split('=', 1)[1].strip()
-                jdk_dir = jdk.GetOSJavaHome(
+                jdk_dir = jdk.get_os_java_home(
                     os.path.join(jdk.JDK_DIRS, f'jdk-{version}'))
                 if os.path.exists(jdk_dir + '.tar.gz.sha1'):
                     utils.ensure_google_download(jdk_dir)
@@ -180,23 +180,28 @@ def check_for_added_headful(input_api, output_api):
     return results
 
 
-def check_for_added_without_collapsed_dex_runtimes(input_api, output_api):
-    matches = [
-        (file, line_nr, line)
-        for (file, line_nr, line) in input_api.RightHandSideLines()
-        if is_test_file(file) and '.withoutCollapsedDexRuntimes()' in line
-    ]
-    if not matches:
-        return []
+def check_for_added_without_collapsed_runtimes(input_api, output_api):
     version = get_version()
-    if not is_release_before(9, 6, -1, version):
+    if version is None:
         return []
-    return [
-        output_api.PresubmitError(
-            'Test call to withoutCollapsedDexRuntimes is not allowed before branch 9.6 (current version %s)\n%s:%s %s'
-            % (version, file.LocalPath(), line_nr, line))
-        for (file, line_nr, line) in matches
-    ]
+    checks = [(method, major, minor) for method, major, minor in (
+        ('withoutCollapsedDexRuntimes', 9, 2),
+        ('withoutCollapsedCfRuntimes', 9, 6),
+    ) if is_release_before(major, minor, -1, version)]
+    if not checks:
+        return []
+    results = []
+    for (file, line_nr, line) in input_api.RightHandSideLines():
+        if not is_test_file(file):
+            continue
+        for method, major, minor in checks:
+            if f'.{method}()' in line:
+                results.append(
+                    output_api.PresubmitError(
+                        'Test call to %s is not allowed before branch %d.%d (current version %s)\n%s:%s %s'
+                        % (method, major, minor, version, file.LocalPath(),
+                           line_nr, line)))
+    return results
 
 
 def parse_bool_option(name, val):
@@ -304,6 +309,9 @@ def check_lucicfg(input_api, output_api):
 
 
 def get_upstream_branch(input_api):
+    upstream = input_api.change.UpstreamBranch()
+    if upstream:
+        return upstream.replace('refs/heads/', '')
     try:
         branch = check_output(['git', 'cl', 'upstream'],
                               stderr=DEVNULL).decode('utf-8').strip()
@@ -311,9 +319,6 @@ def get_upstream_branch(input_api):
             return branch.replace('refs/heads/', '')
     except CalledProcessError:
         pass
-    upstream = input_api.change.UpstreamBranch()
-    if upstream:
-        return upstream.replace('refs/heads/', '')
     raise Exception('Unable to determine upstream branch')
 
 
@@ -331,7 +336,7 @@ def check_change(input_api, output_api):
     results.extend(check_for_added_partial_debug(input_api, output_api))
     results.extend(check_for_added_headful(input_api, output_api))
     results.extend(
-        check_for_added_without_collapsed_dex_runtimes(input_api, output_api))
+        check_for_added_without_collapsed_runtimes(input_api, output_api))
     results.extend(check_for_copyright(input_api, output_api))
     results.extend(check_lucicfg(input_api, output_api))
     return results

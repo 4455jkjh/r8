@@ -45,6 +45,11 @@ public class KeepAllReflectiveIdentificationEventConsumer
   }
 
   @Override
+  public void onJavaLangClassIsInstance(DexProgramClass clazz, ProgramMethod context) {
+    keep(clazz, context);
+  }
+
+  @Override
   public void onJavaLangClassNewInstance(DexProgramClass clazz, ProgramMethod context) {
     ProgramMethod defaultInitializer = clazz.getProgramDefaultInitializer();
     if (defaultInitializer != null) {
@@ -99,6 +104,12 @@ public class KeepAllReflectiveIdentificationEventConsumer
         keep(defaultInitializer, context);
       }
     }
+  }
+
+  @Override
+  public void onKotlinCollectionsArraysKtFilterIsInstance(
+      DexProgramClass clazz, ProgramMethod context) {
+    keep(clazz, context);
   }
 
   @Override

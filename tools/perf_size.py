@@ -311,7 +311,7 @@ def run_single_compiledump(dump_name, compiler, r8_jar, version_label, temp_dir,
         worker_id)
     ret = compiledump.run1(dump_temp,
                            args, [],
-                           jdkhome=jdk.GetDefaultJdkHome(),
+                           jdkhome=jdk.get_default_jdk_home(),
                            worker_id=worker_id)
     out_jar = os.path.join(dump_temp, 'out.jar')
     if ret != 0 or not os.path.isfile(out_jar):
@@ -434,14 +434,14 @@ def compute_commit_baseline(commit_hash, temp_dir, options):
     orig_ref = git_utils.get_head_ref()
     try:
         print(f'Checking out {commit_hash[:8]} to compute baseline...')
-        git_utils.GitCheckout(commit_hash, utils.REPO_ROOT)
+        git_utils.git_checkout(commit_hash, utils.REPO_ROOT)
         gradle.run_gradle(get_gradle_args([utils.GRADLE_TASK_R8], options))
         base_jar = tag_local_r8_jar(utils.R8_JAR,
                                     commit_hash,
                                     temp_dir,
                                     label='base')
     finally:
-        git_utils.GitCheckout(orig_ref, utils.REPO_ROOT)
+        git_utils.git_checkout(orig_ref, utils.REPO_ROOT)
     return run_suite(base_jar, commit_hash, temp_dir, options)
 
 
@@ -721,7 +721,7 @@ def generate_markdown_summary(base_hash,
 def main(argv=None):
     options, _ = parse_options(argv)
 
-    head_hash = utils.get_HEAD_sha1()
+    head_hash = utils.get_head_sha1()
     with utils.TempDir() as temp_dir:
         ensure_r8_jar(options)
         tagged_r8_jar = tag_local_r8_jar(utils.R8_JAR,

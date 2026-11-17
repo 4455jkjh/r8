@@ -52,7 +52,7 @@ def main(argv):
         )
         return 1
 
-    java = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
+    java = jdk.get_java_executable(jdk.get_default_jdk_home())
     classpath = [utils.TOOLS_JAR, utils.R8_JAR]
 
     cmd = [

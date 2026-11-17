@@ -86,6 +86,7 @@ import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.mappinginformation.MergedClassesInformation;
 import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
+import com.android.tools.r8.optimize.compose.ComposeOptions;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInlinerOptions;
 import com.android.tools.r8.origin.Origin;
@@ -424,6 +425,20 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public String perfettoTraceDumpFile = System.getProperty("com.android.tools.r8.dumptracetofile");
   public final int perfettoTraceThreads =
       SystemPropertyUtils.parseSystemPropertyOrDefault("com.android.tools.r8.trace.threads", -1);
+  public boolean perfettoTraceLite =
+      SystemPropertyUtils.parseSystemPropertyOrDefault("com.android.tools.r8.trace.lite", false);
+  // A negative value means unset, see getPerfettoTraceMinValueMs().
+  public int perfettoTraceMinValueMs =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.trace.minvalue_ms", -1);
+
+  public int getPerfettoTraceMinValueMs() {
+    if (perfettoTraceMinValueMs >= 0) {
+      return perfettoTraceMinValueMs;
+    }
+    return perfettoTraceLite ? 2 : 0;
+  }
+
   public boolean printMemory = System.getProperty("com.android.tools.r8.printmemory") != null;
 
   public void dumpHeap(String name) {
@@ -1196,6 +1211,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       new CallSiteOptimizationOptions();
   private final CfCodeAnalysisOptions cfCodeAnalysisOptions = new CfCodeAnalysisOptions();
   private final ClassInlinerOptions classInlinerOptions = new ClassInlinerOptions();
+  private final ComposeOptions composeOptions = new ComposeOptions(this);
   private final InlinerOptions inlinerOptions = new InlinerOptions(this);
   private final SingleCallerInlinerOptions singleCallerInlinerOptions =
       new SingleCallerInlinerOptions(this);
@@ -1330,6 +1346,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public CfCodeAnalysisOptions getCfCodeAnalysisOptions() {
     return cfCodeAnalysisOptions;
+  }
+
+  public ComposeOptions getComposeOptions() {
+    return composeOptions;
   }
 
   public RedundantBridgeRemovalOptions getRedundantBridgeRemovalOptions() {
@@ -2287,6 +2307,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // See b/174530756 for more details.
     public boolean enableProtoEnumSwitchMapShrinking = true;
     public boolean enableLargeProtoEnumRewriting = false;
+    // Removes the protoc generated debug toString() from EnumLite enums and makes the enum unboxer
+    // implement toString() on these enums using the int value field instead of the constant name.
+    public boolean enableProtoEnumOptimization =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableProtoEnumOptimization", false);
 
     public void disable() {
       enableGeneratedExtensionRegistryShrinking = false;
@@ -2294,6 +2319,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       enableGeneratedMessageLiteBuilderShrinking = false;
       traverseOneOfAndRepeatedProtoFields = false;
       enableEnumLiteProtoShrinking = false;
+      enableProtoEnumOptimization = false;
     }
 
     public boolean enableRemoveProtoEnumSwitchMap() {
@@ -2310,6 +2336,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     @SuppressWarnings("ReferenceEquality")
     public boolean isEnumLiteProtoShrinkingEnabled() {
       return enableEnumLiteProtoShrinking;
+    }
+
+    public boolean isProtoEnumOptimizationEnabled() {
+      return isEnumLiteProtoShrinkingEnabled() && enableProtoEnumOptimization;
     }
 
     public boolean isLargeProtoEnumRewritingEnabled() {
@@ -2386,6 +2416,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enablePhiLiveIntervalsCoalescing =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enablePhiLiveIntervalsCoalescing", true);
+    public boolean enableMoveCoalescing =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableMoveCoalescing", true);
 
     public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
       if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {

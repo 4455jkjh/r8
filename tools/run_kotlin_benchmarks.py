@@ -5,7 +5,7 @@
 
 # Script for running kotlin based benchmarks
 
-import optparse
+import argparse
 import os
 import subprocess
 import sys
@@ -34,19 +34,19 @@ DEVICE_TEMP = '/data/local/temp/bench'
 
 
 def parse_options():
-    result = optparse.OptionParser()
-    result.add_option('--api',
-                      help='Android api level',
-                      default='26',
-                      choices=['21', '22', '23', '24', '25', '26'])
-    result.add_option('--benchmark',
-                      help='The benchmark to run',
-                      default='rgx',
-                      choices=['rgx', 'deltablue', 'sta', 'empty'])
-    result.add_option('--use-device',
-                      help='Run the benchmark on an attaced device',
-                      default=False,
-                      action='store_true')
+    result = argparse.ArgumentParser()
+    result.add_argument('--api',
+                        help='Android api level',
+                        default='26',
+                        choices=['21', '22', '23', '24', '25', '26'])
+    result.add_argument('--benchmark',
+                        help='The benchmark to run',
+                        default='rgx',
+                        choices=['rgx', 'deltablue', 'sta', 'empty'])
+    result.add_argument('--use-device',
+                        help='Run the benchmark on an attaced device',
+                        default=False,
+                        action='store_true')
     return result.parse_args()
 
 
@@ -57,23 +57,24 @@ def get_jar_for_benchmark(benchmark):
 
 def run_art(dex):
     command = ['bash', ART, '-cp', dex, BENCHMARK_MAIN_CLASS]
-    utils.PrintCmd(command)
-    benchmark_output = subprocess.check_output(command)
+    utils.print_cmd(command)
+    benchmark_output = subprocess.check_output(command, text=True)
     return get_result(benchmark_output)
 
 
 def adb(args):
     command = ['adb'] + args
-    utils.PrintCmd(command)
-    return subprocess.check_output(['adb'] + args)
+    utils.print_cmd(command)
+    return subprocess.check_output(['adb'] + args, text=True)
 
 
 def get_result(output):
     # There is a lot of debug output, with the actual results being in the line with:
     # RESULTS,KtBench,KtBench,15719
     # structure.
-    for result in [s for s in output.splitlines() if s.startswith('RESULTS')]:
-        return s.split('RESULTS,KtBench,KtBench,')[1]
+    for line in output.splitlines():
+        if line.startswith('RESULTS'):
+            return line.split('RESULTS,KtBench,KtBench,')[1]
 
 
 def run_art_device(dex):
@@ -85,8 +86,11 @@ def run_art_device(dex):
     return get_result(benchmark_output)
 
 
-def Main():
-    (options, args) = parse_options()
+def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
+    options = parse_options()
     with utils.TempDir() as temp:
         dex_path = os.path.join(temp, "classes.jar")
         proguard_conf = os.path.join(temp, 'proguard.conf')
@@ -113,4 +117,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

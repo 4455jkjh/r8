@@ -42,8 +42,14 @@ public class BenchmarkProcessRunner(
     val jvmArgs = buildList {
       add("-Xms$heap")
       add("-Xmx$heap")
+      // Fault in and zero all heap pages at JVM startup to avoid OS page-fault
+      // overhead during warmup and early benchmark iterations.
+      add("-XX:+AlwaysPreTouch")
       add("-XX:+TieredCompilation")
       add("-XX:TieredStopAtLevel=4")
+      // Prevent GC-driven code cache flushing (JDK-8290025) from unloading
+      // compiled methods during inter-iteration System.gc() calls.
+      add("-XX:-UseCodeCacheFlushing")
       add("-DBENCHMARK_IGNORE_CODE_SIZE_DIFFERENCES")
       add("-DBUILD_PROP_KEEPANNO_RUNTIME_PATH=$keepAnnoRuntimePath")
       add("-DREPO_ROOT=${repoRoot.absolutePath}")

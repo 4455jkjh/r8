@@ -93,6 +93,11 @@ public class EnqueuerReflectiveIdentificationEventConsumer
   }
 
   @Override
+  public void onJavaLangClassIsInstance(DexProgramClass clazz, ProgramMethod context) {
+    internalOnJavaLangClassIsInstance(clazz, context);
+  }
+
+  @Override
   public void onJavaLangClassNewInstance(DexProgramClass clazz, ProgramMethod context) {
     ProgramMethod defaultInitializer = clazz.getProgramDefaultInitializer();
     if (defaultInitializer != null) {
@@ -234,6 +239,21 @@ public class EnqueuerReflectiveIdentificationEventConsumer
             defaultInitializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
       }
     }
+  }
+
+  @Override
+  public void onKotlinCollectionsArraysKtFilterIsInstance(
+      DexProgramClass clazz, ProgramMethod context) {
+    internalOnJavaLangClassIsInstance(clazz, context);
+  }
+
+  private void internalOnJavaLangClassIsInstance(DexProgramClass clazz, ProgramMethod context) {
+    enqueuer.applyMinimumKeepInfoWhenLive(
+        clazz,
+        KeepClassInfo.newEmptyJoiner()
+            .disallowHorizontalClassMerging()
+            .disallowVerticalClassMerging());
+    enqueuer.traceInstanceOf(clazz.getType(), context);
   }
 
   @Override

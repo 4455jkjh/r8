@@ -52,7 +52,7 @@ class WorkerThread(Thread):
                     if self.stop_on_first_failure:
                         self.clear_jobs(self.jobs, self.jobs_lock)
                         break
-            except:
+            except Exception:
                 print_thread("Job %s crashed" % job_id, self.worker_id)
                 print_thread(traceback.format_exc(), self.worker_id)
                 self.success = False
@@ -106,7 +106,7 @@ def run_in_sequence(jobs, stop_on_first_failure):
                 combined_exit_code = exit_code
                 if stop_on_first_failure:
                     break
-        except:
+        except Exception:
             print(traceback.format_exc())
             combined_exit_code = 1
             if stop_on_first_failure:
@@ -116,7 +116,10 @@ def run_in_sequence(jobs, stop_on_first_failure):
 
 def print_thread(msg, worker_id):
     if worker_id is None:
-        print(msg)
+        print(msg, flush=True)
     else:
-        for line in msg.splitlines():
-            print('WORKER %s: %s' % (worker_id, line))
+        lines = [
+            'WORKER %s: %s' % (worker_id, line) for line in msg.splitlines()
+        ]
+        if lines:
+            print('\n'.join(lines), flush=True)

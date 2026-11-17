@@ -21,6 +21,8 @@ import org.objectweb.asm.Opcodes;
 public class DexMethodHandle extends IndexedDexItem
     implements NamingLensComparable<DexMethodHandle>, LirConstant {
 
+  public static final DexMethodHandle[] EMPTY_ARRAY = {};
+
   @Override
   public LirConstantOrder getLirConstantOrder() {
     return LirConstantOrder.METHOD_HANDLE;

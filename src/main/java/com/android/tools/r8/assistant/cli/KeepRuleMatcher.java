@@ -187,6 +187,7 @@ final class KeepRuleMatcher {
 
   private final KeepRuleSet rules;
   private final KeepRequirements facts;
+  private final boolean allowNarrowingAnnotatedRules;
   private final Map<ProguardIfRule, Optional<String>> firstPreconditionClass =
       new IdentityHashMap<>();
   private final Map<ProguardIfRule, ClassNameIndex<String>> preconditionClasses =
@@ -194,8 +195,13 @@ final class KeepRuleMatcher {
   private final Map<KeepRequirement, List<KeepRequirement>> resultMembers = new IdentityHashMap<>();
 
   KeepRuleMatcher(KeepRuleSet rules, KeepRequirements facts) {
+    this(rules, facts, false);
+  }
+
+  KeepRuleMatcher(KeepRuleSet rules, KeepRequirements facts, boolean allowNarrowingAnnotatedRules) {
     this.rules = rules;
     this.facts = facts;
+    this.allowNarrowingAnnotatedRules = allowNarrowingAnnotatedRules;
   }
 
   /** Computes the coverage of a requirement by all rules. */
@@ -329,10 +335,19 @@ final class KeepRuleMatcher {
       // subsequent rule refer to the matched candidate.
       RuleCoverage subsequentCoverage = checkApplicableKeepRule(requirement, subsequentRule, rule);
       if (subsequentCoverage.getCoverage() != Coverage.NONE) {
+        if (isBroadWildcardIfRule(ifRule)) {
+          return subsequentCoverage;
+        }
         return conditional(subsequentCoverage, getPreconditionReason(ifRule, candidate));
       }
     }
     return new RuleCoverage(rule, Coverage.NONE, null);
+  }
+
+  static boolean isBroadWildcardIfRule(ProguardIfRule ifRule) {
+    ProguardKeepRule subsequentRule = ifRule.getSubsequentRule();
+    return subsequentRule.getClassNames().toString().contains("**")
+        && !subsequentRule.getMemberRules().isEmpty();
   }
 
   private static String getPreconditionReason(ProguardIfRule ifRule, String candidate) {
@@ -440,12 +455,13 @@ final class KeepRuleMatcher {
     List<String> undecided = new ArrayList<>();
     Match classTypeMatch = matchClassType(keepRule, className);
     addReason(classTypeMatch, undecided);
+    if (keepRule.hasClassAnnotations()
+        && (!allowNarrowingAnnotatedRules || keepRule.getMemberRules().isEmpty())) {
+      undecided.add("class annotations are not in the log");
+    }
     if (!keepRule.getClassAccessFlags().isDefaultFlags()
         || !keepRule.getNegatedClassAccessFlags().isDefaultFlags()) {
       undecided.add("class modifiers are not in the log");
-    }
-    if (!keepRule.getClassAnnotations().isEmpty()) {
-      undecided.add("class annotations are not in the log");
     }
     if (keepRule.hasInheritanceClassName()) {
       Match inheritanceMatch = matchInheritance(keepRule, className);
@@ -1000,26 +1016,26 @@ final class KeepRuleMatcher {
     if (keepRule.getType() == ProguardKeepRuleType.KEEP_CLASSES_WITH_MEMBERS) {
       reasons.add("selects classes by their members");
     }
+    if (keepRule.hasClassAnnotations() && keepRule.getMemberRules().isEmpty()) {
+      reasons.add("selects classes by annotation");
+    }
     if (!keepRule.getClassAccessFlags().isDefaultFlags()
         || !keepRule.getNegatedClassAccessFlags().isDefaultFlags()) {
       reasons.add("selects classes by modifiers");
-    }
-    if (!keepRule.getClassAnnotations().isEmpty()) {
-      reasons.add("selects classes by annotations");
     }
     if (keepRule.hasInheritanceClassName()) {
       reasons.add("selects classes by their super types");
     }
     boolean memberAnnotations = false;
-    boolean nativeMethods = false;
+    boolean allNativeMethods = !keepRule.getMemberRules().isEmpty();
     for (ProguardMemberRule memberRule : keepRule.getMemberRules()) {
       memberAnnotations |= !memberRule.getAnnotations().isEmpty();
-      nativeMethods |= memberRule.getAccessFlags().isNative();
+      allNativeMethods &= memberRule.getAccessFlags().isNative();
     }
     if (memberAnnotations) {
       reasons.add("selects members by annotations");
     }
-    if (nativeMethods) {
+    if (allNativeMethods) {
       reasons.add("keeps native methods, which are called from JNI");
     }
     return reasons.isEmpty() ? null : String.join(", ", reasons);

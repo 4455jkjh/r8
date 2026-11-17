@@ -3,11 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.naming.applymapping;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -70,39 +67,28 @@ public class ApplyMappingSiblingReservationCollisionTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    // TODO(b/576060575): Should not rename both A.isCanModifyPost() and A.isQA() to S().
-    AssertionError e =
-        assertThrows(
-            AssertionError.class,
-            () ->
-                testForR8(parameters.getBackend())
-                    .addInnerClasses(getClass())
-                    .addKeepMainRule(A.class)
-                    .addKeepClassAndMembersRulesWithAllowObfuscation(Base.class, A.class, B.class)
-                    .addDontOptimize()
-                    .addApplyMapping(
-                        StringUtils.lines(
-                            A.class.getTypeName() + " -> " + A.class.getTypeName() + ":",
-                            "    boolean isCanModifyPost() -> S",
-                            B.class.getTypeName() + " -> " + B.class.getTypeName() + ":",
-                            "    boolean isQA() -> S"))
-                    .setMinApi(parameters)
-                    .run(parameters.getRuntime(), A.class)
-                    .inspect(
-                        inspector -> {
-                          ClassSubject classA = inspector.clazz(A.class);
-                          MethodSubject isCanModifyPost =
-                              classA.uniqueMethodWithOriginalName("isCanModifyPost");
-                          MethodSubject isQA = classA.uniqueMethodWithOriginalName("isQA");
-                          assertEquals("S", isCanModifyPost.getFinalName());
-                          assertNotEquals("S", isQA.getFinalName());
-                        })
-                    .assertSuccessWithOutputLines("true", "false", "true"));
-    assertThat(
-        e.getMessage(),
-        containsString(
-            parameters.isCfRuntime()
-                ? "Duplicate method name \"S\" with signature \"()Z\""
-                : "Out-of-order method ids"));
+    testForR8(parameters.getBackend())
+        .addInnerClasses(getClass())
+        .addKeepMainRule(A.class)
+        .addKeepClassAndMembersRulesWithAllowObfuscation(Base.class, A.class, B.class)
+        .addDontOptimize()
+        .addApplyMapping(
+            StringUtils.lines(
+                A.class.getTypeName() + " -> " + A.class.getTypeName() + ":",
+                "    boolean isCanModifyPost() -> S",
+                B.class.getTypeName() + " -> " + B.class.getTypeName() + ":",
+                "    boolean isQA() -> S"))
+        .setMinApi(parameters)
+        .run(parameters.getRuntime(), A.class)
+        .inspect(
+            inspector -> {
+              ClassSubject classA = inspector.clazz(A.class);
+              MethodSubject isCanModifyPost =
+                  classA.uniqueMethodWithOriginalName("isCanModifyPost");
+              MethodSubject isQA = classA.uniqueMethodWithOriginalName("isQA");
+              assertEquals("S", isCanModifyPost.getFinalName());
+              assertNotEquals("S", isQA.getFinalName());
+            })
+        .assertSuccessWithOutputLines("true", "false", "true");
   }
 }

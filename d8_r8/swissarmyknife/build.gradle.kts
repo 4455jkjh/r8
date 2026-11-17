@@ -2,16 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import org.gradle.kotlin.dsl.newInstance
-
 plugins {
   id("org.jetbrains.kotlin.jvm")
   id("r8-conventions")
   id("dependencies-plugin")
-}
-
-interface InjectedArcOps {
-  @get:Inject val arcOps: ArchiveOperations
 }
 
 val bundleScope = configurations.dependencyScope("bundleScope")
@@ -19,34 +13,29 @@ val bundleConfig = configurations.resolvable("bundleConfig") { extendsFrom(bundl
 
 dependencies {
   bundleScope(project(":assistant", "assistantJar"))
-  bundleScope(project(":keepradius", "keepradiusWithoutProtoJar"))
+  bundleScope(project(":keepradius", "keepradiusJar"))
   bundleScope(project(":keepanno", "keepannoJar"))
-  bundleScope(project(":libanalyzer", "libanalyzer-jar"))
+  bundleScope(project(":libanalyzer", "libanalyzerJar"))
   bundleScope(project(":main", "mainJar"))
 }
 
 tasks {
   named<Jar>("jar") {
-    val injected = project.objects.newInstance<InjectedArcOps>()
-    from(
-      bundleConfig
-        .flatMap { it.elements }
-        .map {
-          it.map {
-            injected.arcOps.zipTree(it).matching {
-              exclude("com/android/tools/r8/threading/providers/**")
-              exclude("META-INF/*.kotlin_module")
-              exclude("**/*.kotlin_metadata")
-              exclude("keepradius.proto")
-              exclude("keepspec.proto")
-              exclude("LICENSE")
-              exclude("androidx/")
-              exclude("androidx/annotation/")
-              exclude("androidx/annotation/keep/**")
-            }
-          }
-        }
-    )
+    from(zipTrees(bundleConfig)) {
+      exclude("com/android/tools/r8/threading/providers/**")
+      exclude("com/android/tools/r8/keepradius/proto/**")
+      exclude("com/android/tools/r8/libanalyzer/proto/**")
+      exclude("META-INF/*.kotlin_module")
+      exclude("**/*.kotlin_metadata")
+      exclude("keepradius.proto")
+      exclude("keepradiussummary.proto")
+      exclude("keepspec.proto")
+      exclude("libraryanalyzerresult.proto")
+      exclude("LICENSE")
+      exclude("androidx/")
+      exclude("androidx/annotation/")
+      exclude("androidx/annotation/keep/**")
+    }
     from(File(getRootDir(), "LICENSE"))
     entryCompression = ZipEntryCompression.STORED
     manifest { attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife" }
@@ -54,3 +43,5 @@ tasks {
     archiveFileName.set("r8-full-exclude-deps.jar")
   }
 }
+
+configurations.consumable("swissArmyKnifeJar") { outgoing.artifact(tasks.named("jar")) }

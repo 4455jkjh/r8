@@ -247,12 +247,11 @@ public class LirConverter {
               clazz.forEachProgramMethodMatching(
                   DexEncodedMethod::hasCode,
                   m -> {
-                    Timing threadTiming =
-                        timing.createThreadTiming(
-                            m, ProgramMethod::toSourceString, appView.options());
+                    Timing threadTiming = timing.createThreadTiming(m, appView.options());
                     finalizeLirMethodToOutputFormat(
                         m, deadCodeRemover, appView, codeRewriterPassCollection, threadTiming);
-                    threadTimings.add(threadTiming.end());
+                    threadTiming.end().notifyThreadTimingFinished();
+                    threadTimings.add(threadTiming);
                   });
               return threadTimings;
             },

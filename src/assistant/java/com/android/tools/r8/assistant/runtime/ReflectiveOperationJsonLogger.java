@@ -9,15 +9,22 @@ import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_A
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_CAST;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_FLAG;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_FOR_NAME;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_ANNOTATION;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_ANNOTATIONS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_CLASSES;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_COMPONENT_TYPE;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_CONSTRUCTOR;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_CONSTRUCTORS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_CLASSES;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_CONSTRUCTOR;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_CONSTRUCTORS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_FIELD;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_FIELDS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_METHOD;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARED_METHODS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_DECLARING_CLASS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_ENCLOSING_CLASS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_ENUM_CONSTANTS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_FIELD;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_FIELDS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_GENERIC_INTERFACES;
@@ -27,19 +34,36 @@ import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_G
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_NAME;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_PACKAGE;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_GET_SUPERCLASS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_IS_ANNOTATION_PRESENT;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_IS_ASSIGNABLE_FROM;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_IS_INSTANCE;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_LOADER_LOAD_CLASS;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CLASS_NEW_INSTANCE;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CONSTRUCTOR_GET_ANNOTATION;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CONSTRUCTOR_GET_ANNOTATIONS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.CONSTRUCTOR_IS_ANNOTATION_PRESENT;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.ENUM_VALUE_OF;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.FIELD_GET_ANNOTATION;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.FIELD_GET_ANNOTATIONS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.FIELD_GET_GENERIC_TYPE;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.FIELD_IS_ANNOTATION_PRESENT;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.METHOD_GET_ANNOTATION;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.METHOD_GET_ANNOTATIONS;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.METHOD_GET_GENERIC_EXCEPTION_TYPES;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.METHOD_GET_GENERIC_PARAMETER_TYPES;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.METHOD_GET_GENERIC_RETURN_TYPE;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.METHOD_IS_ANNOTATION_PRESENT;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.PROXY_NEW_PROXY_INSTANCE;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.RESOURCE_BUNDLE_GET_BUNDLE;
 import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.SERVICE_LOADER_LOAD;
+import static com.android.tools.r8.assistant.runtime.ReflectiveEventType.UNSAFE_ALLOCATE_INSTANCE;
 
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -47,11 +71,14 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 // This logs the information in JSON-like format,
@@ -180,8 +207,37 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
     return methodStrings;
   }
 
+  private String[] methodWithAnnotationToString(Method method, Class<?> annotationClass) {
+    Class<?>[] parameters = method.getParameterTypes();
+    int parametersLength = parameters == null ? 0 : parameters.length;
+    String[] methodStrings = new String[parametersLength + 4];
+    methodStrings[0] = printMemberType(method.getReturnType());
+    methodStrings[1] = printClass(method.getDeclaringClass());
+    methodStrings[2] = method.getName();
+    for (int i = 0; i < parametersLength; i++) {
+      methodStrings[i + 3] = printClass(parameters[i]);
+    }
+    methodStrings[parametersLength + 3] = printClass(annotationClass);
+    return methodStrings;
+  }
+
   private String[] constructorToString(Class<?> holder, Class<?>... parameters) {
     return methodToString(Void.TYPE, holder, "<init>", parameters);
+  }
+
+  private String[] constructorWithAnnotationToString(
+      Constructor<?> constructor, Class<?> annotationClass) {
+    Class<?>[] parameters = constructor.getParameterTypes();
+    int parametersLength = parameters == null ? 0 : parameters.length;
+    String[] methodStrings = new String[parametersLength + 4];
+    methodStrings[0] = printMemberType(Void.TYPE);
+    methodStrings[1] = printClass(constructor.getDeclaringClass());
+    methodStrings[2] = "<init>";
+    for (int i = 0; i < parametersLength; i++) {
+      methodStrings[i + 3] = printClass(parameters[i]);
+    }
+    methodStrings[parametersLength + 3] = printClass(annotationClass);
+    return methodStrings;
   }
 
   private String printClass(Class<?> clazz) {
@@ -245,13 +301,21 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
     return name.startsWith("java.") || name.startsWith("javax.") || name.startsWith("android.");
   }
 
-  private boolean isLibraryClass(String name) {
-    return name.startsWith("java.")
-        || name.startsWith("javax.")
-        || name.startsWith("android.")
-        || name.startsWith("androidx.")
-        || name.startsWith("kotlin.")
-        || name.startsWith("kotlinx.");
+  private String libraryGroup(String name) {
+    if (name == null) {
+      return null;
+    }
+    if (name.startsWith("androidx.")) {
+      int nextDot = name.indexOf('.', "androidx.".length());
+      return nextDot > 0 ? name.substring(0, nextDot) : "androidx";
+    }
+    if (name.startsWith("kotlin.") || name.startsWith("kotlinx.")) {
+      return "kotlin";
+    }
+    if (name.startsWith("java.") || name.startsWith("javax.") || name.startsWith("android.")) {
+      return "platform";
+    }
+    return null;
   }
 
   private boolean isIgnoredCaller(Stack stack, Class<?> target) {
@@ -263,17 +327,23 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
   }
 
   // Reflection from library code, such as androidx or kotlinx code in the app, is only ignored if
-  // the target is a library class too. Library code that reflects on app classes, such as
-  // FragmentFactory or kotlinx.serialization on app classes, is logged.
+  // the target is in the same library group. Cross-library reflection (such as androidx.room
+  // instantiating androidx.work.impl.WorkDatabase_Impl) or library reflection on app classes is
+  // logged.
   private boolean isIgnoredCaller(Stack stack, String target) {
-    if ((target != null && !isLibraryClass(target))
+    if (target == null
         || stack == null
         || stack.getStackTraceElements() == null
         || stack.getStackTraceElements().length == 0) {
       return false;
     }
+    String targetGroup = libraryGroup(target);
+    if (targetGroup == null) {
+      return false;
+    }
     String name = stack.getStackTraceElements()[0].getClassName();
-    return name != null && isLibraryClass(name);
+    String callerGroup = libraryGroup(name);
+    return callerGroup != null && callerGroup.equals(targetGroup);
   }
 
   private synchronized int output(ReflectiveEventType event, Stack stack, String... args) {
@@ -668,6 +738,254 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
   }
 
   @Override
+  public int onClassGetAnnotation(Stack stack, Class<?> clazz, Class<?> annotationClass) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_ANNOTATION, stack, printClass(clazz), printClass(annotationClass));
+  }
+
+  @Override
+  public int onClassGetAnnotations(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_ANNOTATIONS, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onClassIsAnnotationPresent(Stack stack, Class<?> clazz, Class<?> annotationClass) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(
+        CLASS_IS_ANNOTATION_PRESENT, stack, printClass(clazz), printClass(annotationClass));
+  }
+
+  @Override
+  public int onFieldGetAnnotation(Stack stack, Field field, Class<?> annotationClass) {
+    if (field == null || isIgnored(stack, field.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        FIELD_GET_ANNOTATION,
+        stack,
+        printMemberType(field.getType()),
+        printClass(field.getDeclaringClass()),
+        field.getName(),
+        printClass(annotationClass));
+  }
+
+  @Override
+  public int onFieldGetAnnotations(Stack stack, Field field) {
+    if (field == null || isIgnored(stack, field.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        FIELD_GET_ANNOTATIONS,
+        stack,
+        printMemberType(field.getType()),
+        printClass(field.getDeclaringClass()),
+        field.getName());
+  }
+
+  @Override
+  public int onFieldIsAnnotationPresent(Stack stack, Field field, Class<?> annotationClass) {
+    if (field == null || isIgnored(stack, field.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        FIELD_IS_ANNOTATION_PRESENT,
+        stack,
+        printMemberType(field.getType()),
+        printClass(field.getDeclaringClass()),
+        field.getName(),
+        printClass(annotationClass));
+  }
+
+  @Override
+  public int onMethodGetAnnotation(Stack stack, Method method, Class<?> annotationClass) {
+    if (method == null || isIgnored(stack, method.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        METHOD_GET_ANNOTATION, stack, methodWithAnnotationToString(method, annotationClass));
+  }
+
+  @Override
+  public int onMethodGetAnnotations(Stack stack, Method method) {
+    if (method == null || isIgnored(stack, method.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        METHOD_GET_ANNOTATIONS,
+        stack,
+        methodToString(
+            method.getReturnType(),
+            method.getDeclaringClass(),
+            method.getName(),
+            method.getParameterTypes()));
+  }
+
+  @Override
+  public int onMethodIsAnnotationPresent(Stack stack, Method method, Class<?> annotationClass) {
+    if (method == null || isIgnored(stack, method.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        METHOD_IS_ANNOTATION_PRESENT, stack, methodWithAnnotationToString(method, annotationClass));
+  }
+
+  @Override
+  public int onConstructorGetAnnotation(
+      Stack stack, Constructor<?> constructor, Class<?> annotationClass) {
+    if (constructor == null || isIgnored(stack, constructor.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        CONSTRUCTOR_GET_ANNOTATION,
+        stack,
+        constructorWithAnnotationToString(constructor, annotationClass));
+  }
+
+  @Override
+  public int onConstructorGetAnnotations(Stack stack, Constructor<?> constructor) {
+    if (constructor == null || isIgnored(stack, constructor.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        CONSTRUCTOR_GET_ANNOTATIONS,
+        stack,
+        constructorToString(constructor.getDeclaringClass(), constructor.getParameterTypes()));
+  }
+
+  @Override
+  public int onConstructorIsAnnotationPresent(
+      Stack stack, Constructor<?> constructor, Class<?> annotationClass) {
+    if (constructor == null || isIgnored(stack, constructor.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        CONSTRUCTOR_IS_ANNOTATION_PRESENT,
+        stack,
+        constructorWithAnnotationToString(constructor, annotationClass));
+  }
+
+  @Override
+  public int onMethodGetGenericParameterTypes(Stack stack, Method method) {
+    if (method == null || isIgnored(stack, method.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        METHOD_GET_GENERIC_PARAMETER_TYPES,
+        stack,
+        methodToString(
+            method.getReturnType(),
+            method.getDeclaringClass(),
+            method.getName(),
+            method.getParameterTypes()));
+  }
+
+  @Override
+  public int onMethodGetGenericReturnType(Stack stack, Method method) {
+    if (method == null || isIgnored(stack, method.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        METHOD_GET_GENERIC_RETURN_TYPE,
+        stack,
+        methodToString(
+            method.getReturnType(),
+            method.getDeclaringClass(),
+            method.getName(),
+            method.getParameterTypes()));
+  }
+
+  @Override
+  public int onMethodGetGenericExceptionTypes(Stack stack, Method method) {
+    if (method == null || isIgnored(stack, method.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        METHOD_GET_GENERIC_EXCEPTION_TYPES,
+        stack,
+        methodToString(
+            method.getReturnType(),
+            method.getDeclaringClass(),
+            method.getName(),
+            method.getParameterTypes()));
+  }
+
+  @Override
+  public int onFieldGetGenericType(Stack stack, Field field) {
+    if (field == null || isIgnored(stack, field.getDeclaringClass())) {
+      return NO_ID;
+    }
+    return output(
+        FIELD_GET_GENERIC_TYPE,
+        stack,
+        printMemberType(field.getType()),
+        printClass(field.getDeclaringClass()),
+        field.getName());
+  }
+
+  @Override
+  public int onClassGetDeclaredClasses(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_DECLARED_CLASSES, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onClassGetClasses(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_CLASSES, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onClassGetDeclaringClass(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_DECLARING_CLASS, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onClassGetEnclosingClass(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_ENCLOSING_CLASS, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onEnumValueOf(Stack stack, Class<?> enumType, String name) {
+    if (isIgnored(stack, enumType)) {
+      return NO_ID;
+    }
+    return output(ENUM_VALUE_OF, stack, printClass(enumType), name);
+  }
+
+  @Override
+  public int onClassGetEnumConstants(Stack stack, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(CLASS_GET_ENUM_CONSTANTS, stack, printClass(clazz));
+  }
+
+  @Override
+  public int onUnsafeAllocateInstance(Stack stack, Object unsafe, Class<?> clazz) {
+    if (isIgnored(stack, clazz)) {
+      return NO_ID;
+    }
+    return output(UNSAFE_ALLOCATE_INSTANCE, stack, printClass(clazz));
+  }
+
+  @Override
   public void onReflectiveOperationReturned(int id, Object result) {
     if (id == NO_ID || output == null) {
       return;
@@ -712,6 +1030,58 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
       appendJsonString(builder, (String) result);
     } else if (result instanceof Class) {
       appendJsonString(builder, printType((Class<?>) result));
+    } else if (result instanceof Enum<?>) {
+      appendJsonString(builder, ((Enum<?>) result).name());
+    } else if (result instanceof Enum<?>[]) {
+      Enum<?>[] enums = (Enum<?>[]) result;
+      builder.append("[");
+      for (int i = 0; i < enums.length; i++) {
+        if (i > 0) {
+          builder.append(", ");
+        }
+        appendJsonString(builder, enums[i] == null ? null : enums[i].name());
+      }
+      builder.append("]");
+    } else if (result instanceof Annotation) {
+      List<String> items = new ArrayList<>();
+      collectAnnotationStrings((Annotation) result, items);
+      if (items.size() == 1) {
+        appendJsonString(builder, items.get(0));
+      } else {
+        appendStringList(builder, items);
+      }
+    } else if (result instanceof Annotation[]) {
+      List<String> items = new ArrayList<>();
+      for (Annotation annotation : (Annotation[]) result) {
+        collectAnnotationStrings(annotation, items);
+      }
+      appendStringList(builder, items);
+    } else if (result instanceof Annotation[][]) {
+      List<String> items = new ArrayList<>();
+      for (Annotation[] row : (Annotation[][]) result) {
+        if (row != null) {
+          for (Annotation annotation : row) {
+            collectAnnotationStrings(annotation, items);
+          }
+        }
+      }
+      appendStringList(builder, items);
+    } else if (result instanceof ServiceLoader<?>) {
+      List<String> providers = new ArrayList<>();
+      try {
+        for (Object provider : (ServiceLoader<?>) result) {
+          if (provider != null) {
+            providers.add(printType(provider.getClass()));
+          }
+        }
+      } catch (Throwable t) {
+        // Ignore provider instantiation errors during logging.
+      }
+      if (providers.isEmpty()) {
+        appendJsonString(builder, printType(result.getClass()));
+      } else {
+        appendStringList(builder, providers);
+      }
     } else if (result instanceof Member) {
       appendJsonString(builder, printMember((Member) result));
     } else if (result instanceof Member[]) {
@@ -744,6 +1114,63 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
       appendJsonString(builder, printParameterizedType((ParameterizedType) result));
     } else {
       appendJsonString(builder, printType(result.getClass()));
+    }
+  }
+
+  private void appendStringList(StringBuilder builder, List<String> items) {
+    builder.append("[");
+    for (int i = 0; i < items.size(); i++) {
+      if (i > 0) {
+        builder.append(", ");
+      }
+      appendJsonString(builder, items.get(i));
+    }
+    builder.append("]");
+  }
+
+  private void collectAnnotationStrings(Annotation annotation, List<String> items) {
+    if (annotation == null) {
+      return;
+    }
+    Class<? extends Annotation> annotationType = annotation.annotationType();
+    if (annotationType == null) {
+      return;
+    }
+    items.add(printType(annotationType));
+    try {
+      for (Method m : annotationType.getDeclaredMethods()) {
+        Class<?> returnType = m.getReturnType();
+        if (returnType == Class.class) {
+          m.setAccessible(true);
+          collectAnnotationClassValue((Class<?>) m.invoke(annotation), items);
+        } else if (returnType == Class[].class) {
+          m.setAccessible(true);
+          Class<?>[] classes = (Class<?>[]) m.invoke(annotation);
+          if (classes != null) {
+            for (Class<?> c : classes) {
+              collectAnnotationClassValue(c, items);
+            }
+          }
+        }
+      }
+    } catch (Throwable t) {
+      // Ignore errors inspecting annotation elements.
+    }
+  }
+
+  private void collectAnnotationClassValue(Class<?> clazz, List<String> items) {
+    if (clazz == null || isIgnoredClass(clazz)) {
+      return;
+    }
+    items.add("class:" + printType(clazz));
+    Class<?> curr = clazz;
+    while (curr != null && curr != Object.class) {
+      for (Class<?> iface : curr.getInterfaces()) {
+        if (!isIgnoredClass(iface)) {
+          items.add("interface:" + printType(iface));
+        }
+      }
+      curr = curr.getSuperclass();
     }
   }
 

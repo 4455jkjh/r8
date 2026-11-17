@@ -3,75 +3,37 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.timing;
 
-import androidx.tracing.EventMetadataCloseable;
-import androidx.tracing.PropagationUnsupportedToken;
-import androidx.tracing.ThreadTrack;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
 class PerfettoThreadTiming extends TimingImplBase {
-  // The API now allows you to specify the category and in the future let you conditionally turn on
-  // categories.
-  private static final String TRACE_CATEGORY = "R8";
-  private final PerfettoTiming parent;
-  private final ThreadTrack threadTrack;
 
-  private int depth = 0;
-
-  PerfettoThreadTiming(PerfettoTiming parent, ThreadTrack threadTrack) {
-    this.parent = parent;
-    this.threadTrack = threadTrack;
+  PerfettoThreadTiming(PerfettoThreadStack stack) {
+    this.stack = stack;
   }
 
   @Override
   public Timing createThreadTiming(String title, InternalOptions options) {
-    return parent.createThreadTiming(title, options);
+    throw new Unreachable();
   }
 
   @Override
   public <T> Timing createThreadTiming(
       T context, Function<T, String> titleSupplier, InternalOptions options) {
-    return parent.createThreadTiming(context, titleSupplier, options);
+    throw new Unreachable();
   }
 
   @Override
   public Timing createThreadTiming(
       int value, IntFunction<String> titleSupplier, InternalOptions options) {
-    return parent.createThreadTiming(value, titleSupplier, options);
+    throw new Unreachable();
   }
 
   @Override
   public void notifyThreadTimingFinished() {
-    assert depth == 0;
-  }
-
-  @Override
-  public Timing begin(String title) {
-    assert threadTrack.getId() == Thread.currentThread().getId();
-    // Actually dispatch events to trace sink after adding any additional event metadata if needed.
-    // You can do so by using: eventMetadataCloseable.metadata.add* APIs.
-    // R8 is using the low level track APIs (and Java) which is why the API looks the way it does.
-    EventMetadataCloseable eventMetadataCloseable =
-        threadTrack.beginSection$tracing(
-            TRACE_CATEGORY, title, PropagationUnsupportedToken.INSTANCE);
-    eventMetadataCloseable.metadata.dispatchToTraceSink();
-    depth++;
-    return this;
-  }
-
-  @Override
-  public Timing end() {
-    assert threadTrack.getId() == Thread.currentThread().getId();
-    threadTrack.endSection();
-    depth--;
-    return this;
-  }
-
-  @Override
-  public TimingMerger beginMerger(String title, int numberOfThreads) {
-    return EmptyTimingMerger.get();
+    assert stack.depth() == 0 : stack.depth();
   }
 
   @Override
@@ -81,6 +43,9 @@ class PerfettoThreadTiming extends TimingImplBase {
 
   @Override
   public Timing endAll() {
-    throw new Unreachable();
+    while (stack.depth() > 0) {
+      end();
+    }
+    return this;
   }
 }

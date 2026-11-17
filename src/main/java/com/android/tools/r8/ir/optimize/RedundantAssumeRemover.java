@@ -11,7 +11,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.Value;
-import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -32,7 +32,8 @@ public class RedundantAssumeRemover {
   private final AppView<?> appView;
   private final IRCode code;
 
-  private final Set<Instruction> affectedAssumeInstructions = Sets.newIdentityHashSet();
+  // Lazily allocated, since most type analyses never encounter an Assume instruction.
+  private Set<Instruction> affectedAssumeInstructions = null;
 
   public RedundantAssumeRemover(AppView<?> appView, IRCode code) {
     this.appView = appView;
@@ -40,11 +41,16 @@ public class RedundantAssumeRemover {
   }
 
   public void addAffectedAssumeInstruction(Instruction assumeInstruction) {
+    if (affectedAssumeInstructions == null) {
+      // Methods with affected Assume instructions typically only have a few (1-4), so size for 4
+      // instead of the default 16-entry backing array.
+      affectedAssumeInstructions = new ReferenceOpenHashSet<>(4);
+    }
     affectedAssumeInstructions.add(assumeInstruction);
   }
 
   public boolean hasAffectedAssumeInstructions() {
-    return !affectedAssumeInstructions.isEmpty();
+    return affectedAssumeInstructions != null && !affectedAssumeInstructions.isEmpty();
   }
 
   private boolean removeAssumeInstructionIfRedundant(
@@ -120,7 +126,7 @@ public class RedundantAssumeRemover {
 
   public boolean removeRedundantAssumeInstructions(
       Set<Value> newAffectedValues, Consumer<Instruction> redundantAssumeConsumer) {
-    if (affectedAssumeInstructions.isEmpty()) {
+    if (!hasAffectedAssumeInstructions()) {
       return false;
     }
     boolean changed = false;

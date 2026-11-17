@@ -7,23 +7,23 @@ import utils
 import subprocess
 
 
-def GitClone(url, checkout_dir):
+def git_clone(url, checkout_dir):
     cmd = ['git', 'clone', url, checkout_dir]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     return subprocess.check_call(cmd)
 
 
-def GitCheckout(revision, checkout_dir):
+def git_checkout(revision, checkout_dir):
     with utils.ChangedWorkingDirectory(checkout_dir):
         cmd = ['git', 'checkout', revision]
-        utils.PrintCmd(cmd)
+        utils.print_cmd(cmd)
         return subprocess.check_call(cmd)
 
 
-def GetHeadRevision(checkout_dir, use_main=False):
+def get_head_revision(checkout_dir, use_main=False):
     revision_from = 'origin/main' if use_main else 'HEAD'
     cmd = ['git', 'rev-parse', revision_from]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     with utils.ChangedWorkingDirectory(checkout_dir):
         return subprocess.check_output(cmd).strip().decode('utf-8')
 
@@ -34,20 +34,20 @@ def _reviewer_arg(reviewer):
     return '--reviewer=' + reviewer
 
 
-def GitClAppendReviewers(cmd, reviewer, send_mail):
+def git_cl_append_reviewers(cmd, reviewer, send_mail):
     if reviewer:
         cmd.extend(map(_reviewer_arg, reviewer))
         if send_mail:
             cmd.append('--send-mail')
 
 
-def GitCommit(message):
+def git_commit(message):
     cmd = ['git', 'commit', '-a', '-m', message]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     return subprocess.check_call(cmd)
 
 
-def VersionCommitMessage(version, description=None, bugs=None):
+def version_commit_message(version, description=None, bugs=None):
     lines = ['Version %s' % version]
     if description:
         lines.append('')
@@ -62,9 +62,6 @@ def VersionCommitMessage(version, description=None, bugs=None):
     return '\n'.join(lines)
 
 
-version_commit_message = VersionCommitMessage
-
-
 def get_head_ref(checkout_dir=utils.REPO_ROOT):
     try:
         branch = subprocess.check_output(
@@ -76,7 +73,7 @@ def get_head_ref(checkout_dir=utils.REPO_ROOT):
             return branch
     except subprocess.CalledProcessError:
         pass
-    return GetHeadRevision(checkout_dir)
+    return get_head_revision(checkout_dir)
 
 
 def resolve_revision(revision, checkout_dir=utils.REPO_ROOT):
@@ -162,7 +159,7 @@ def get_candidate_main_commits(explicit_base_hash=None,
                                                 stderr=subprocess.PIPE,
                                                 text=True).strip()
         except subprocess.CalledProcessError:
-            start_ref = utils.get_HEAD_sha1()
+            start_ref = utils.get_head_sha1()
     try:
         log_cmd = [
             'git',
@@ -183,3 +180,57 @@ def get_candidate_main_commits(explicit_base_hash=None,
         return res or [start_ref]
     except subprocess.CalledProcessError:
         return [start_ref]
+
+
+def ensure_origin_main(checkout_dir=utils.REPO_ROOT,
+                       repo_source=utils.REPO_SOURCE):
+    if subprocess.call(
+        ['git', 'show-ref', '--verify', '--quiet', 'refs/remotes/origin/main'],
+            cwd=checkout_dir) != 0:
+        # Fetch from repo_source rather than 'origin', as Kokoro's GoB checkout
+        # uses an rpc:// origin URL without git-remote-rpc inside the build
+        # container and omits origin/main when rebase = false.
+        subprocess.run([
+            'git', 'fetch', '--no-tags', repo_source,
+            '+refs/heads/main:refs/remotes/origin/main'
+        ],
+                       cwd=checkout_dir,
+                       check=True,
+                       capture_output=True,
+                       text=True)
+
+
+def get_merge_base_with_main(revision,
+                             checkout_dir=utils.REPO_ROOT,
+                             repo_source=utils.REPO_SOURCE):
+    ensure_origin_main(checkout_dir=checkout_dir, repo_source=repo_source)
+    return subprocess.run(['git', 'merge-base', revision, 'origin/main'],
+                          cwd=checkout_dir,
+                          check=True,
+                          capture_output=True,
+                          text=True).stdout.strip()
+
+
+# Returns the repo-relative paths modified by commit_hash (or across the CL
+# chain since origin/main when is_try is True).
+def get_changed_files(commit_hash,
+                      is_try=False,
+                      checkout_dir=utils.REPO_ROOT,
+                      repo_source=utils.REPO_SOURCE):
+    if is_try:
+        base_hash = get_merge_base_with_main(f'{commit_hash}^1',
+                                             checkout_dir=checkout_dir,
+                                             repo_source=repo_source)
+    else:
+        base_hash = f'{commit_hash}^1'
+    # Pass -z to avoid core.quotePath escaping and --no-renames so moving a file
+    # still reports both the old and new paths.
+    output = subprocess.run([
+        'git', 'diff', '-z', '--no-renames', '--name-only', base_hash,
+        commit_hash
+    ],
+                            cwd=checkout_dir,
+                            check=True,
+                            capture_output=True,
+                            text=True).stdout
+    return [path for path in output.split('\0') if path]

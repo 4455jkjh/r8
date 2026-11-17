@@ -30,24 +30,38 @@ val r8Deps =
     isCanBeResolved = true
   }
 
-// Dependencies that are included without their transitive dependencies.
-val r8NonTransitiveDepsScope = configurations.dependencyScope("r8NonTransitiveDepsScope")
-val r8NonTransitiveDeps =
-  configurations.resolvable("r8NonTransitiveDeps") {
-    extendsFrom(r8NonTransitiveDepsScope.get())
-    isTransitive = false
-  }
-
 dependencies {
   r8Deps(libs.bundles.compilerDeps)
-  r8NonTransitiveDepsScope(libs.bundles.nonTransitiveDeps)
+  r8Deps(libs.toolsCommon) {
+    // R8's resource shrinker does not use JNA native platform helpers in tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+  }
+  r8Deps(libs.toolsLayoutlibApi) {
+    // R8 only uses layoutlib resource model types, not its kxml2 parser or JNA via tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+  }
+  r8Deps(libs.toolsSdkCommon) {
+    // R8's resource shrinker only uses a subset of sdk-common and never invokes Studio SDK
+    // management, ADB/ddmlib, kxml2, JAXB, BouncyCastle, analytics, JNA, or kotlin-reflect.
+    exclude(group = "com.android.tools", module = "sdklib")
+    exclude(group = "com.android.tools.analytics-library")
+    exclude(group = "com.android.tools.ddms", module = "ddmlib")
+    exclude(group = "javax.inject", module = "javax.inject")
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+    exclude(group = "org.bouncycastle")
+    exclude(group = "org.glassfish.jaxb", module = "jaxb-runtime")
+    exclude(group = "org.jetbrains.intellij.deps", module = "trove4j")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-reflect")
+  }
 }
 
 spdxSbom {
   targets {
     create("r8") {
       // The dependencies that are included in the dependencies jar.
-      configurations.set(listOf(r8Deps.name, r8NonTransitiveDeps.name))
+      configurations.set(listOf(r8Deps.name))
       scm {
         uri.set("https://r8.googlesource.com/r8/")
         if (project.hasProperty("spdxRevision")) {
@@ -74,25 +88,22 @@ spdxSbom {
   }
 }
 
-val keepRadiusProtoJarScope = configurations.dependencyScope("keepRadiusProtoJarScope")
-val keepRadiusProtoJarConfig =
-  configurations.resolvable("keepRadiusProtoJarConfig") {
-    extendsFrom(keepRadiusProtoJarScope.get())
-  }
+val protoJarSourcesScope = configurations.dependencyScope("protoJarSourcesScope")
+val protoJarSourcesConfig =
+  configurations.resolvable("protoJarSourcesConfig") { extendsFrom(protoJarSourcesScope.get()) }
 val keepAnnoDepsJarExceptAsmScope = configurations.dependencyScope("keepAnnoDepsJarExceptAsmScope")
 val keepAnnoDepsJarExceptAsmConfig =
   configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
     extendsFrom(keepAnnoDepsJarExceptAsmScope.get())
   }
+val keepAnnoDepsJarOnlyAsmScope = configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
+val keepAnnoDepsJarOnlyAsmConfig =
+  configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
+    extendsFrom(keepAnnoDepsJarOnlyAsmScope.get())
+  }
 val keepAnnoToolsJarScope = configurations.dependencyScope("keepAnnoToolsJarScope")
 val keepAnnoToolsJarConfig =
   configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope.get()) }
-
-val libanalyzerProtoJarScope = configurations.dependencyScope("libanalyzerProtoJarScope")
-val libanalyzerProtoJarConfig =
-  configurations.resolvable("libanalyzerProtoJarConfig") {
-    extendsFrom(libanalyzerProtoJarScope.get())
-  }
 
 val assistantJarScope = configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig =
@@ -104,33 +115,18 @@ val mainResourcesConfig =
   configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope.get()) }
 val swissArmyKnifeScope = configurations.dependencyScope("swissArmyKnifeScope")
 val swissArmyKnifeConfig =
-  configurations.resolvable("swissArmyKnifeConfig") {
-    extendsFrom(swissArmyKnifeScope.get())
-    isTransitive = false
-  }
+  configurations.resolvable("swissArmyKnifeConfig") { extendsFrom(swissArmyKnifeScope.get()) }
 
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
-  keepRadiusProtoJarScope(project(":keepradius", "keepradiusProtoJar"))
   keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
+  keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
   keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
-  libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
   mainResourcesScope(project(":main", "mainResources"))
-  swissArmyKnifeScope(project(":swissarmyknife"))
-}
-
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
-val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig =
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
-
-dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
+  protoJarSourcesScope(project(":keepradius", "keepradiusJar"))
+  protoJarSourcesScope(project(":libanalyzer", "libanalyzerJar"))
+  swissArmyKnifeScope(project(":swissarmyknife", "swissArmyKnifeJar"))
 }
 
 val depsJarFilesScope = configurations.dependencyScope("depsJarFilesScope")
@@ -188,17 +184,13 @@ fun relocateDepsExceptAsm(pkg: String): List<String> {
   )
 }
 
-interface InjectedArcOps {
-  @get:Inject val arcOps: ArchiveOperations
-}
-
 tasks {
   val filteredDepsJar =
     register<Jar>("filteredDepsJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       from(
         Callable {
-          (r8Deps.incoming.files + r8NonTransitiveDeps.get().incoming.files)
+          r8Deps.incoming.files
             .filter {
               val path = it.absolutePath
               path.contains("third_party") &&
@@ -265,10 +257,8 @@ tasks {
       libraryLicenses = File(getRootDir(), "library-licensing")
       // The artifacts that are included in the dependencies jar.
       dependencies =
-        r8Deps.incoming.artifacts.resolvedArtifacts.zip(
-          r8NonTransitiveDeps.flatMap { it.incoming.artifacts.resolvedArtifacts }
-        ) { artifacts, nonTransitiveArtifacts ->
-          (artifacts + nonTransitiveArtifacts).mapNotNull {
+        r8Deps.incoming.artifacts.resolvedArtifacts.map { artifacts ->
+          artifacts.mapNotNull {
             val compId = it.id.componentIdentifier
             if (compId is ModuleComponentIdentifier) {
               "${compId.group}:${compId.module}"
@@ -280,9 +270,7 @@ tasks {
 
   val threadingModuleBlockingJar =
     register<Zip>("threadingModuleBlockingJar") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      dependsOn(mainJarConfig)
-      from(mainJarConfig.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(mainJarConfig))
       include("com/android/tools/r8/threading/providers/blocking/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-blocking.jar")
@@ -290,9 +278,7 @@ tasks {
 
   val threadingModuleSingleThreadedJar =
     register<Zip>("threadingModuleSingleThreadedJar") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      dependsOn(mainJarConfig)
-      from(mainJarConfig.flatMap { it.elements }.map { it.map { injected.arcOps.zipTree(it) } })
+      from(zipTrees(mainJarConfig))
       include("com/android/tools/r8/threading/providers/singlethreaded/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-single-threaded.jar")
@@ -314,8 +300,7 @@ tasks {
   // Jar containing all 3p deps, plus R8 threading modules.
   val depsJar =
     register<Zip>("depsJar") {
-      dependsOn(depsJarFilesConfig)
-      from(Callable { depsJarFilesConfig.get().files.map(::zipTree) })
+      from(zipTrees(depsJarFilesConfig))
       from(consolidatedLicense)
       include("**/*.class")
       include("META-INF/services/kotlin.metadata.internal.extensions.MetadataExtensions")
@@ -335,17 +320,10 @@ tasks {
 
   val protoJar =
     register<Zip>("protoJar") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      dependsOn(keepRadiusProtoJarConfig, libanalyzerProtoJarConfig)
-      from(
-        keepRadiusProtoJarConfig
-          .flatMap { it.elements }
-          .map { it.map { injected.arcOps.zipTree(it) } }
-      )
-      from(
-        libanalyzerProtoJarConfig
-          .flatMap { it.elements }
-          .map { it.map { injected.arcOps.zipTree(it) } }
+      from(zipTrees(protoJarSourcesConfig))
+      include(
+        "com/android/tools/r8/keepradius/proto/**",
+        "com/android/tools/r8/libanalyzer/proto/**",
       )
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")
@@ -401,18 +379,29 @@ tasks {
     setOutputJarFile(File(rootDir, "build/libs/r8-assistantlib.jar"))
   }
 
-  register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
-    outputs.doNotCacheIf("Large standalone artifact (~8MB)") { true }
-    swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
-    compiler = "relocator"
-    inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
-    inputNoResFiles.from(keepAnnoToolsJarConfig)
-    val pkg = "com.android.tools.r8.keepanno"
-    extraArgs =
-      listOf("--map", "com.android.tools.r8.keepanno.**->${pkg}") +
-        relocateDepsExceptAsm(pkg) +
-        listOf("--map-diagnostics", "warning", "error")
-    outputFile = File(getRootDir(), "build/libs/keepanno-tools.jar")
+  val keepAnnoToolsWithRelocatedDeps =
+    register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
+      outputs.doNotCacheIf("Large standalone artifact (~8MB)") { true }
+      swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
+      compiler = "relocator"
+      inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
+      inputNoResFiles.from(keepAnnoToolsJarConfig)
+      val pkg = "com.android.tools.r8.keepanno"
+      extraArgs =
+        listOf("--map", "com.android.tools.r8.keepanno.**->${pkg}") +
+          relocateDepsExceptAsm(pkg) +
+          listOf("--map-diagnostics", "warning", "error")
+      outputFile = File(getRootDir(), "build/libs/keepanno-tools.jar")
+    }
+
+  register<CreateR8LibraryTask>("keepAnnoToolsLib") {
+    r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
+    inputJar = keepAnnoToolsWithRelocatedDeps.flatMap { it.outputFile }
+    pgConfigs.from(File(rootDir, "src/keepanno/keep.txt"))
+    inputClasspath.from(keepAnnoDepsJarOnlyAsmConfig)
+    enableKeepAnnotations = true
+
+    setOutputJarFile(File(rootDir, "build/libs/keepanno-toolslib.jar"))
   }
 
   register<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps") {

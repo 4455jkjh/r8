@@ -20,7 +20,6 @@
 # remember to update the x20 dependency afterwards if you want the numbers
 # tracked.
 
-from __future__ import print_function
 import argparse
 import minify_tool
 import os
@@ -54,7 +53,10 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def Main():
+def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     args = parse_arguments()
     utils.check_java_version()
     output_dir = args.output
@@ -83,4 +85,4 @@ def Main():
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

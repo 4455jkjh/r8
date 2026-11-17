@@ -202,7 +202,7 @@ public abstract class ProguardClassSpecification {
   private final ProguardAccessFlags negatedClassAccessFlags;
   private final boolean classTypeNegated;
   private final ProguardClassType classType;
-  private final ProguardClassNameList classNames;
+  private ProguardClassNameList classNames;
   private final List<ProguardTypeMatcher> inheritanceAnnotations;
   private final ProguardTypeMatcher inheritanceClassName;
   private final boolean inheritanceIsExtends;
@@ -315,6 +315,10 @@ public abstract class ProguardClassSpecification {
 
   public ProguardClassNameList getClassNames() {
     return classNames;
+  }
+
+  protected void setClassNames(ProguardClassNameList classNames) {
+    this.classNames = classNames;
   }
 
   public ProguardClassType getClassType() {

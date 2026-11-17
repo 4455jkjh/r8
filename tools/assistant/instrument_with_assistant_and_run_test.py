@@ -5,7 +5,6 @@
 
 import argparse
 import os
-import shutil
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,11 +23,11 @@ class AttrDict(dict):
 
 def instrument_dex(options, temp_dir, instrumented_dex):
     with utils.TempDir() as compiledump_temp_dir:
-        utils.RunCmd(
+        utils.run_cmd(
             ['unzip', options.apk, '*.dex', '-d', compiledump_temp_dir])
         with utils.ChangedWorkingDirectory(compiledump_temp_dir):
             dex_jar = os.path.join(compiledump_temp_dir, 'dex.jar')
-            utils.RunCmd('zip %s *.dex' % dex_jar, shell=True)
+            utils.run_cmd('zip %s *.dex' % dex_jar, shell=True)
         args_for_assistant = AttrDict(
             vars(
                 argparse.Namespace(
@@ -118,12 +117,12 @@ def check_reflective_operations(options, temp_dir):
         keep_info_dir = os.path.join(temp_dir, 'keepinfo')
         if os.path.exists(log_file) and os.path.exists(keep_info_dir):
             cmd = [
-                jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
+                jdk.get_java_executable(jdk.get_default_jdk_home()), '-cp',
                 utils.R8_JAR,
                 'com.android.tools.r8.assistant.postprocessing.CheckReflectiveOperations',
                 log_file, keep_info_dir
             ]
-            utils.RunCmd(cmd)
+            utils.run_cmd(cmd)
         else:
             raise Exception(
                 "Missing log file or keep info directory for reflective operations check."
@@ -153,7 +152,7 @@ def parse_options(argv):
     result.add_argument('--skip-compilations',
                         help='Skip compilations (default disabled)',
                         default=False,
-                        action='store_true'),
+                        action='store_true')
     result.add_argument('--json-output',
                         help='Use json for reflective use (default disabled)',
                         default=False,

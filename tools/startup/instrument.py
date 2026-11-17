@@ -13,8 +13,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import apk_masseur
 import apk_utils
-import extractmarker
-import toolhelper
 import utils
 import zip_utils
 
@@ -24,11 +22,12 @@ def parse_options(argv):
         description='Instrument the dex files of a given apk to print what is '
         'executed.')
     result.add_argument('--apk', help='Path to the .apk', required=True)
-    result.add_argument('--debug-agent',
-                        '--debug_agent',
-                        action='store_true',
-                        default=False,
-                        help='Enable Java debug agent on port 5005 and suspend compilation')
+    result.add_argument(
+        '--debug-agent',
+        '--debug_agent',
+        action='store_true',
+        default=False,
+        help='Enable Java debug agent on port 5005 and suspend compilation')
     result.add_argument('--dex-files',
                         action='append',
                         help='Name of dex files to instrument')

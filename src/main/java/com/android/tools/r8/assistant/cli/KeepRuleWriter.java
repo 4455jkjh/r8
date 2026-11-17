@@ -26,6 +26,10 @@ final class KeepRuleWriter {
   // Needed for getGenericSuperclass() and getGenericInterfaces().
   static final String SIGNATURE_ATTRIBUTE_RULE = "-keepattributes Signature";
 
+  // Needed for runtime annotation inspection.
+  static final String ANNOTATION_ATTRIBUTES_RULE =
+      "-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations";
+
   /** A rendered keep rule and the requirements it keeps. */
   static final class RenderedRule {
 
@@ -295,7 +299,8 @@ final class KeepRuleWriter {
       StringBuilder builder,
       KeepRequirements requirements,
       boolean keepNestingAttributes,
-      boolean keepSignatureAttribute) {
+      boolean keepSignatureAttribute,
+      boolean keepAnnotationAttributes) {
     int count = 0;
     if (keepNestingAttributes) {
       builder.append('\n');
@@ -318,6 +323,17 @@ final class KeepRuleWriter {
         builder.append(line).append('\n');
       }
       builder.append(SIGNATURE_ATTRIBUTE_RULE).append('\n');
+      count++;
+    }
+    if (keepAnnotationAttributes) {
+      builder.append('\n');
+      builder.append("# Needed for runtime annotation inspection:\n");
+      for (String line :
+          describeEvents(
+              requirements.getAnnotationAttributeEvents(), MAX_EVENTS_IN_COMMENT, "# ")) {
+        builder.append(line).append('\n');
+      }
+      builder.append(ANNOTATION_ATTRIBUTES_RULE).append('\n');
       count++;
     }
     return count;

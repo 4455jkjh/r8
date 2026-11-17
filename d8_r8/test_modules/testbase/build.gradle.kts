@@ -26,17 +26,13 @@ val keepAnnoJarConfig =
 val distDepsJarScope = configurations.dependencyScope("distDepsJarScope")
 val distDepsJarConfig =
   configurations.resolvable("distDepsJarConfig") { extendsFrom(distDepsJarScope.get()) }
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
-
-val sharedTestDepsScope = configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig =
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope.get()) }
+val thirdPartyDepsJarsScope = configurations.dependencyScope("thirdPartyDepsJarsScope")
+val thirdPartyDepsJarsConfig =
+  configurations.resolvable("thirdPartyDepsJarsConfig") {
+    extendsFrom(thirdPartyDepsJarsScope.get())
+  }
 
 dependencies {
-  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
   // Declare local runtime dependencies.
   runtimeOnlyData(project(":third_party", "aapt2"))
   runtimeOnlyData(project(":third_party", "androidJar14"))
@@ -130,9 +126,9 @@ dependencies {
 dependencies {
   keepAnnoJarScope(project(":keepanno", "keepannoJar"))
   implementation(project(":keepanno", "keepannoJar"))
-  implementation(project(":libanalyzer", "libanalyzer-compile-java"))
+  implementation(project(":libanalyzer", "libanalyzerJar"))
   implementation(project(":main", "mainClassesOutput"))
-  implementation(project(":main", "mainResources"))
+  runtimeOnly(project(":main", "mainResources"))
   distDepsJarScope(project(":dist", "filteredDepsJarConfig"))
   implementation(project(":dist", "filteredDepsJarConfig"))
   implementation(libs.androidxCollection)
@@ -152,6 +148,8 @@ dependencies {
   implementation(libs.playwright)
   implementation(libs.protobufUtil)
   implementation(libs.ddmLib)
+  thirdPartyDepsJarsScope(project(":third_party", "jasminJar"))
+  thirdPartyDepsJarsScope(project(":third_party", "jdwpTestsJar"))
   implementation(project(":third_party", "jasminJar"))
   implementation(project(":third_party", "jdwpTestsJar"))
   implementation(libs.fastUtil)
@@ -163,17 +161,13 @@ dependencies {
 fun testDependencies(): FileCollection {
   return sourceSets.test.get().compileClasspath.filter {
     "$it".contains("third_party") &&
+      "$it".contains("dependencies") &&
       !"$it".contains("errorprone") &&
       !"$it".contains("third_party/gradle")
   }
 }
 
 tasks {
-  withType<JavaCompile> {
-    dependsOn(sharedDepsConfig)
-    dependsOn(sharedTestDepsConfig)
-  }
-
   withType<JavaExec> {
     if (name.endsWith("main()")) {
       // IntelliJ pass the main execution through a stream which is
@@ -192,13 +186,10 @@ tasks {
   }
 
   register<Jar>("assembleDepsJar") {
-    dependsOn(keepAnnoJarConfig)
-    dependsOn(distDepsJarConfig)
-    dependsOn(sharedDepsConfig)
-    dependsOn(sharedTestDepsConfig)
     from(Callable { testDependencies().map(::zipTree) })
-    from(keepAnnoJarConfig.map { it.map(::zipTree) })
-    from(distDepsJarConfig.map { it.map(::zipTree) })
+    from(zipTrees(keepAnnoJarConfig))
+    from(zipTrees(distDepsJarConfig))
+    from(zipTrees(thirdPartyDepsJarsConfig))
     exclude("com/android/tools/r8/keepanno/annotations/**")
     exclude("androidx/annotation/keep/**")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

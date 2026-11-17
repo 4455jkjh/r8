@@ -1793,11 +1793,11 @@ public class ToolHelper {
     long start = 0;
     CaptureGcResult startGcResult = null;
     if (benchmarkResults != null) {
+      // Try to run gc before starting the benchmark so that previous benchmark iterations do not
+      // inadvertently impact gc during the current iteration.
+      System.gc();
+      System.gc();
       if (benchmarkResults.isBenchmarkingGc()) {
-        // Try to run gc before starting the benchmark so that previous benchmark iterations do not
-        // inadvertently impact gc during the current iteration.
-        System.gc();
-        System.gc();
         startGcResult = CaptureGcResult.capture();
       }
       start = System.nanoTime();
@@ -1831,6 +1831,10 @@ public class ToolHelper {
       throws CompilationFailedException {
     long start = 0;
     if (benchmarkResults != null) {
+      // Try to run gc before starting the benchmark so that previous benchmark iterations do not
+      // inadvertently impact gc during the current iteration.
+      System.gc();
+      System.gc();
       start = System.nanoTime();
     }
     R8Command command = commandBuilder.build();

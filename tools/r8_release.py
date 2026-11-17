@@ -133,7 +133,7 @@ def prepare_release(args):
                 # Rewrite the version, commit and validate.
                 sed(old_version, version, R8_VERSION_FILE)
 
-                git_utils.GitCommit(git_utils.VersionCommitMessage(version))
+                git_utils.git_commit(git_utils.version_commit_message(version))
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash]).decode('utf-8')
@@ -142,8 +142,8 @@ def prepare_release(args):
                                              version)
 
                 cmd = ['git', 'cl', 'upload', '--no-squash', '--bypass-hooks']
-                git_utils.GitClAppendReviewers(cmd, args.reviewer,
-                                               args.send_mail)
+                git_utils.git_cl_append_reviewers(cmd, args.reviewer,
+                                                  args.send_mail)
 
                 maybe_check_call(args, cmd)
 
@@ -159,14 +159,7 @@ def prepare_release(args):
     return make_release
 
 
-version_commit_message = git_utils.VersionCommitMessage
-
-
-def maybe_tag(args, version):
-    maybe_check_call(args,
-                     ['git', 'tag', '-a', version, '-m',
-                      '"%s"' % version])
-    maybe_check_call(args, ['git', 'push', 'origin', 'refs/tags/%s' % version])
+version_commit_message = git_utils.version_commit_message
 
 
 def version_change_diff(diff, old_version, new_version):
@@ -193,7 +186,7 @@ def validate_version_change_diff(version_diff_output, old_version, new_version):
                        "Type '%s' to accept: " % accept_string)
         if answer != accept_string:
             print("You did not type '%s'" % accept_string)
-            print('Aborting dev release for %s' % version)
+            print('Aborting dev release for %s' % new_version)
             sys.exit(1)
 
 
@@ -203,15 +196,6 @@ def maybe_check_call(args, cmd):
     else:
         print(' '.join(cmd))
         return subprocess.check_call(cmd)
-
-
-def update_prebuilds(r8_checkout, version, checkout, keepanno=False):
-    path = os.path.join(r8_checkout, 'tools', 'update_prebuilds_in_android.py')
-    commit_arg = '--commit_hash=' if len(version) == 40 else '--version='
-    cmd = [path, '--targets=lib', '--maps', commit_arg + version, checkout]
-    if keepanno:
-        cmd.append("--keepanno")
-    subprocess.check_call(cmd)
 
 
 def prepare_maven(args):
@@ -229,7 +213,7 @@ def prepare_maven(args):
             release_id, "com.android.tools:r8:%s" % args.version[0],
             "r8lib.jar")
 
-        print
+        print()
         answer = input("Continue with publishing [y/N]:")
 
         if answer != 'y':
@@ -337,12 +321,12 @@ def prepare_studio(args):
                 sed(r'"com\.android\.tools:r8:[^"]+"',
                     f'"com.android.tools:r8:{version}"', artifacts_bzl)
             maven_fetch = os.path.join('bazel', 'maven', 'maven_fetch.sh')
-            utils.PrintCmd([maven_fetch])
+            utils.print_cmd([maven_fetch])
             subprocess.check_call([maven_fetch])
 
         with utils.ChangedWorkingDirectory(studio):
             cmd = ['tools/base/bazel/bazel', 'shutdown']
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(cmd)
 
         bugs = '\n'.join(map(lambda b: f'Bug: {b}',
@@ -430,7 +414,7 @@ Test: n/a"""
                            f'{options.studio_branch} --use-superproject '
                            '--partial-clone --clone-filter=blob:limit=10k && '
                            'repo sync -c -j16')
-                    utils.PrintCmd(cmd)
+                    utils.print_cmd(cmd)
                     subprocess.check_call(cmd, shell=True)
                 release_studio_in_checkout(temp, options)
                 if not options.yes:
@@ -445,10 +429,6 @@ Test: n/a"""
                             pass
 
     return release_studio
-
-
-def g4_cp(old, new, file):
-    subprocess.check_call('g4 cp {%s,%s}/%s' % (old, new, file), shell=True)
 
 
 def g4_open(file):
@@ -468,9 +448,9 @@ def g4_change(version, commit_info):
 
 
 def get_cl_id(c4_change_output):
-    startIndex = c4_change_output.find('Change ') + len('Change ')
-    endIndex = c4_change_output.find(' ', startIndex)
-    cl = c4_change_output[startIndex:endIndex]
+    start_index = c4_change_output.find('Change ') + len('Change ')
+    end_index = c4_change_output.find(' ', start_index)
+    cl = c4_change_output[start_index:end_index]
     assert cl.isdigit()
     return cl
 
@@ -704,10 +684,10 @@ def update_desugar_library_in_studio(args):
                 '--repo=https://maven.google.com com.android.tools:desugar_jdk_libs:%s'
                 % library_version
             ]
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(" ".join(cmd), shell=True)
             cmd = ['tools/base/bazel/bazel', 'shutdown']
-            utils.PrintCmd(cmd)
+            utils.print_cmd(cmd)
             subprocess.check_call(cmd)
 
         prebuilts_tools = os.path.join(args.studio, 'prebuilts', 'tools')
@@ -870,7 +850,7 @@ def extract_version_from_pom(pom_file):
 
 
 GMAVEN_PUBLISH_STAGE_RELEASE_ID_PATTERN = re.compile(
-    r'Release ID = ([0-9a-f\-]+)')
+    r'Release ID = ([0-9a-f-]+)')
 
 
 def gmaven_publisher_stage(args, gfiles):
@@ -894,7 +874,7 @@ def gmaven_publisher_stage(args, gfiles):
 
     matches = GMAVEN_PUBLISH_STAGE_RELEASE_ID_PATTERN.findall(
         output.decode("utf-8"))
-    if matches == None or len(matches) > 1:
+    if len(matches) != 1:
         print("Could not determine the release ID from the gmaven_publisher " +
               "output. Expected a line with 'Release ID = <release id>'.")
         print("Output was:")
@@ -1093,8 +1073,8 @@ def prepare_branch(args):
                 sed(version_prefix + old_version, version_prefix + full_version,
                     R8_VERSION_FILE)
 
-                git_utils.GitCommit(
-                    git_utils.VersionCommitMessage(full_version))
+                git_utils.git_commit(
+                    git_utils.version_commit_message(full_version))
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash])
@@ -1302,7 +1282,7 @@ def parse_options():
             print("ERROR: only one version supported for studio")
             sys.exit(1)
         semver = utils.check_basic_semver_version(args.version[0],
-                                                  allowPrerelease=True)
+                                                  allow_prerelease=True)
         if not semver.larger_than(utils.SemanticVersion(9, 5, 17, 'dev')):
             print("ERROR: Releasing to studio is only supported for R8 version "
                   "9.5.18-dev or higher")

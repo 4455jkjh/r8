@@ -224,7 +224,7 @@ def get_env_with_python_path():
 
 
 def get_java_format_base_command():
-    java_exec = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
+    java_exec = jdk.get_java_executable(jdk.get_default_jdk_home())
     return [
         java_exec,
         # Disable hsperfdata to prevent lock contention on /tmp/hsperfdata_<user> during parallel execution.
@@ -241,7 +241,7 @@ def get_java_format_base_command():
 
 
 def get_kotlin_format_base_command():
-    java_exec = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
+    java_exec = jdk.get_java_executable(jdk.get_default_jdk_home())
     # Disable hsperfdata to prevent lock contention on /tmp/hsperfdata_<user> during parallel execution.
     return [
         java_exec, '-XX:+PerfDisableSharedMem', '-jar', GOOGLE_KOTLIN_FORMAT_JAR

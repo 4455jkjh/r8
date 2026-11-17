@@ -14,20 +14,17 @@ val srcDir = getRoot().resolveAll("src", "main", "java")
 java {
   sourceSets {
     main {
-      resources.srcDirs(
-        getRoot().resolveAll("third_party", "api_database", "api_database"),
-        getRoot().resolveAll("src", "main", "resources"),
-      )
+      resources.srcDirs(getRoot().resolveAll("src", "main", "resources"))
       java { srcDir(srcDir) }
     }
   }
 }
 
-val sharedDepsScope = configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig =
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope.get()) }
+val bundledResourcesScope = configurations.dependencyScope("bundledResourcesScope")
+val bundledResourcesConfig =
+  configurations.resolvable("bundledResourcesConfig") { extendsFrom(bundledResourcesScope.get()) }
 
-dependencies { sharedDepsScope(project(":third_party", "sharedDepsFiles")) }
+dependencies { bundledResourcesScope(project(":third_party", "apiDatabase")) }
 
 val internalJarScope = configurations.dependencyScope("internalJarScope")
 val internalJarResolvable =
@@ -48,7 +45,29 @@ dependencies {
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":utils"))
   compileOnly(libs.bundles.compilerDeps)
-  compileOnly(libs.bundles.nonTransitiveDeps)
+  compileOnly(libs.toolsCommon) {
+    // R8's resource shrinker does not use JNA native platform helpers in tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+  }
+  compileOnly(libs.toolsLayoutlibApi) {
+    // R8 only uses layoutlib resource model types, not its kxml2 parser or JNA via tools:common.
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+  }
+  compileOnly(libs.toolsSdkCommon) {
+    // R8's resource shrinker only uses a subset of sdk-common and never invokes Studio SDK
+    // management, ADB/ddmlib, kxml2, JAXB, BouncyCastle, analytics, JNA, or kotlin-reflect.
+    exclude(group = "com.android.tools", module = "sdklib")
+    exclude(group = "com.android.tools.analytics-library")
+    exclude(group = "com.android.tools.ddms", module = "ddmlib")
+    exclude(group = "javax.inject", module = "javax.inject")
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+    exclude(group = "net.sf.kxml", module = "kxml2")
+    exclude(group = "org.bouncycastle")
+    exclude(group = "org.glassfish.jaxb", module = "jaxb-runtime")
+    exclude(group = "org.jetbrains.intellij.deps", module = "trove4j")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-reflect")
+  }
 }
 
 tasks {
@@ -60,13 +79,12 @@ tasks {
 }
 
 tasks.withType<JavaCompile> {
-  dependsOn(sharedDepsConfig)
   logger.info("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
 
-tasks.named("sourcesJar") { dependsOn(sharedDepsConfig) }
+tasks.named<Jar>("sourcesJar") { from(bundledResourcesConfig) }
 
-tasks.withType<ProcessResources> { dependsOn(sharedDepsConfig) }
+tasks.withType<ProcessResources> { from(bundledResourcesConfig) }
 
 // Contains both :main jar and :utils jar but not third party dependencies.
 configurations.consumable("mainJar") {
@@ -86,7 +104,6 @@ configurations.consumable("mainSources") {
   outgoing.artifact(srcDir)
 }
 
-// Contains partial class files of :main but not :utils nor third party dependencies.
 configurations.consumable("mainResources") {
   outgoing.artifact(tasks.named<ProcessResources>("processResources").map { it.destinationDir })
 }

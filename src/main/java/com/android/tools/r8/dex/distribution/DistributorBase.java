@@ -12,12 +12,8 @@ import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.lens.GraphLens;
-import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.shaking.MainDexInfo;
-import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.SetUtils;
@@ -25,7 +21,6 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 
 public abstract class DistributorBase extends Distributor {
   protected Set<DexProgramClass> classes;
-  protected Map<DexProgramClass, String> originalNames;
   protected final VirtualFile mainDexFile;
   protected final InternalOptions options;
 
@@ -53,23 +47,6 @@ public abstract class DistributorBase extends Distributor {
     assert virtualFiles.isEmpty();
     virtualFiles.add(mainDexFile);
     addMarkers(mainDexFile);
-
-    originalNames =
-        computeOriginalNameMapping(
-            classes, appView.graphLens(), appView.appInfo().app().getProguardMap());
-  }
-
-  private static Map<DexProgramClass, String> computeOriginalNameMapping(
-      Collection<DexProgramClass> classes, GraphLens graphLens, ClassNameMapper proguardMap) {
-    Map<DexProgramClass, String> originalNames = new IdentityHashMap<>(classes.size());
-    classes.forEach(
-        clazz -> {
-          DexType originalType = graphLens.getOriginalType(clazz.getType());
-          originalNames.put(
-              clazz,
-              DescriptorUtils.descriptorToJavaType(originalType.toDescriptorString(), proguardMap));
-        });
-    return originalNames;
   }
 
   protected void fillForMainDexList(Set<DexProgramClass> classes) {
@@ -139,7 +116,6 @@ public abstract class DistributorBase extends Distributor {
               filesForDistribution,
               appView,
               featureSplitSetEntry.getValue(),
-              originalNames,
               startupProfile,
               nextFileId)
           .run(executorService, timing);
