@@ -44,7 +44,6 @@ import com.android.tools.r8.utils.ValueUtils;
 import com.android.tools.r8.utils.ValueUtils.ArrayValues;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -605,33 +604,50 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
     return newInstruction;
   }
 
-  private StringConcat createStringConcat(
+  private Instruction createStringConcat(
       IRCode code,
       Instruction formatInstruction,
       SimpleStringFormatSpec parsedSpec,
       List<Value> elementValues) {
-    int numParts = parsedSpec.parts.size();
-    DexType[] argTypes = new DexType[numParts];
+    List<DexType> argTypes = new ArrayList<>();
     List<DexString> argConstants = new ArrayList<>();
     List<Value> argValues = new ArrayList<>();
-    Arrays.fill(argTypes, dexItemFactory.objectType);
 
-    for (int i = 0; i < numParts; ++i) {
-      SimpleStringFormatSpec.Part part = parsedSpec.parts.get(i);
+    for (SimpleStringFormatSpec.Part part : parsedSpec.parts) {
       DexString newArgConstant = null;
+      DexType newArgType = dexItemFactory.objectType;
       if (part.isLiteral()) {
         newArgConstant = dexItemFactory.createString(part.value);
       } else {
         Value paramValue = elementValues.get(part.placeholderIdx);
-        if (part.formatChar == 'b' && isArrayElementAlwaysNull(paramValue)) {
-          newArgConstant = dexItemFactory.falseString;
-        } else if (paramValue == null) {
-          newArgConstant = dexItemFactory.nullString;
+        if (isArrayElementAlwaysNull(paramValue)) {
+          newArgConstant =
+              part.formatChar == 'b' ? dexItemFactory.falseString : dexItemFactory.nullString;
         } else {
+          if (paramValue.getType().isStringType(dexItemFactory)) {
+            newArgType = dexItemFactory.stringType;
+          }
           argValues.add(paramValue);
         }
       }
-      argConstants.add(newArgConstant);
+      if (newArgConstant != null
+          && !argConstants.isEmpty()
+          && argConstants.get(argConstants.size() - 1) != null) {
+        int lastIdx = argConstants.size() - 1;
+        argConstants.set(
+            lastIdx, newArgConstant.prepend(argConstants.get(lastIdx), dexItemFactory));
+      } else {
+        argTypes.add(newArgType);
+        argConstants.add(newArgConstant);
+      }
+    }
+    if (argValues.isEmpty()) {
+      DexString value = argConstants.isEmpty() ? dexItemFactory.emptyString : argConstants.get(0);
+      return ConstString.builder()
+          .setValue(value)
+          .setPosition(formatInstruction)
+          .setFreshOutValue(appView, code)
+          .build();
     }
     // Need to create a new Value to mark it as non-null.
     Value newOutValue = null;
@@ -639,7 +655,8 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
       newOutValue =
           code.createValue(TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
     }
-    return StringConcat.createNormalized(appView, newOutValue, argTypes, argConstants, argValues);
+    return StringConcat.createNormalized(
+        appView, newOutValue, argTypes.toArray(DexType.EMPTY_ARRAY), argConstants, argValues);
   }
 
   private boolean isArrayElementAlwaysNull(Value value) {
