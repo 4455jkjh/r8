@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -548,7 +548,7 @@ public class R8CommandParser {
   private static class FeatureSplitConfigCollector {
 
     private final List<FeatureSplitConfig> resourceOnlySplits = new ArrayList<>();
-    private final Map<Path, FeatureSplitConfig> withCodeSplits = new HashMap<>();
+    private final Map<Path, FeatureSplitConfig> withCodeSplits = new LinkedHashMap<>();
 
     void addInputOutput(String input, String output) {
       PossibleDoublePath inputPaths = PossibleDoublePath.parse(input);

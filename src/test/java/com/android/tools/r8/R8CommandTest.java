@@ -41,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -176,6 +177,30 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
     assertEquals("R8 run failed: " + result.stderr, 0, result.exitCode);
     assertTrue(Files.exists(output));
     assertTrue(Files.exists(featureOutput));
+  }
+
+  @Test
+  public void featureSplitsKeepCommandLineOrder() throws Throwable {
+    Path working = temp.getRoot().toPath();
+    Path inputFeature = getJarWithB();
+    List<Path> featureOutputs = new ArrayList<>();
+    List<String> args = new ArrayList<>();
+    for (int i = 0; i < 20; i++) {
+      Path featureOutput = working.resolve("feature" + i + ".zip");
+      featureOutputs.add(featureOutput);
+      args.add("--feature");
+      args.add(inputFeature.toString());
+      args.add(featureOutput.toString());
+    }
+    R8Command command = parse(args.toArray(new String[0]));
+    List<Path> actualFeatureOutputs = new ArrayList<>();
+    for (FeatureSplit featureSplit :
+        command.getInternalOptions().getFeatureSplitConfiguration().getFeatureSplits()) {
+      actualFeatureOutputs.add(
+          ((InternalProgramOutputPathConsumer) featureSplit.getProgramConsumer())
+              .internalGetOutputPath());
+    }
+    assertEquals(featureOutputs, actualFeatureOutputs);
   }
 
   @Test
