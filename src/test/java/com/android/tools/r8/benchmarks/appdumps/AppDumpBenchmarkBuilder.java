@@ -405,6 +405,11 @@ public class AppDumpBenchmarkBuilder {
             .enableExperimentalKeepAnnotations();
   }
 
+  private static String getApiExtensionLibraries(CompilerDump dump) {
+    List<Path> libraries = dump.getApiExtensionLibraries();
+    return libraries.isEmpty() ? null : StringUtils.join(",", libraries);
+  }
+
   private static BenchmarkMethod runR8(
       AppDumpBenchmarkBuilder builder, ThrowableConsumer<? super R8FullTestBuilder> configuration) {
     return internalRunR8(builder, configuration);
@@ -435,6 +440,8 @@ public class AppDumpBenchmarkBuilder {
                           options -> {
                             options.apiModelingOptions().androidApiExtensionPackages =
                                 dumpProperties.getAndroidApiExtensionPackages();
+                            options.apiModelingOptions().androidApiExtensionLibraries =
+                                getApiExtensionLibraries(dump);
                             options
                                 .horizontalClassMergerOptions()
                                 .setEnableSameFilePolicy(dumpProperties.getEnableSameFilePolicy());
@@ -531,6 +538,8 @@ public class AppDumpBenchmarkBuilder {
                           options -> {
                             options.apiModelingOptions().androidApiExtensionPackages =
                                 dumpProperties.getAndroidApiExtensionPackages();
+                            options.apiModelingOptions().androidApiExtensionLibraries =
+                                getApiExtensionLibraries(dump);
                             options
                                 .horizontalClassMergerOptions()
                                 .setEnableSameFilePolicy(dumpProperties.getEnableSameFilePolicy());

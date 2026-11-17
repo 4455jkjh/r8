@@ -304,6 +304,14 @@ public class DumpOptions {
     return systemProperties.get("com.android.tools.r8.androidApiExtensionPackages");
   }
 
+  public boolean hasAndroidApiExtensionLibraries() {
+    return getAndroidApiExtensionLibraries() != null;
+  }
+
+  public String getAndroidApiExtensionLibraries() {
+    return systemProperties.get("com.android.tools.r8.androidApiExtensionLibraries");
+  }
+
   public Tool getTool() {
     return tool;
   }

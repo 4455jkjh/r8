@@ -4,6 +4,7 @@
 package com.android.tools.r8.dump;
 
 import static com.android.tools.r8.utils.AndroidApp.dumpApiDatabaseFileName;
+import static com.android.tools.r8.utils.AndroidApp.dumpApiExtensionLibraryFileNamePrefix;
 import static com.android.tools.r8.utils.AndroidApp.dumpR8ExcludeFileName;
 import static com.android.tools.r8.utils.AndroidApp.dumpR8IncludeFileName;
 
@@ -13,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -52,6 +54,17 @@ public class CompilerDump {
         consumer.accept(featureJar, null);
       }
       i++;
+    }
+  }
+
+  public List<Path> getApiExtensionLibraries() {
+    List<Path> result = new ArrayList<>();
+    for (int i = 1; ; i++) {
+      Path library = directory.resolve(dumpApiExtensionLibraryFileNamePrefix + i + ".jar");
+      if (!Files.exists(library)) {
+        return result;
+      }
+      result.add(library);
     }
   }
 

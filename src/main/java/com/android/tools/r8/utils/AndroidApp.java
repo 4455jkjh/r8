@@ -68,6 +68,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -113,6 +114,7 @@ public class AndroidApp {
   public static final String dumpR8IncludeFileName = "r8-include.txt";
   public static final String dumpR8ExcludeFileName = "r8-exclude.txt";
   public static final String dumpApiDatabaseFileName = "api-database.ser";
+  public static final String dumpApiExtensionLibraryFileNamePrefix = "api-extension-library-";
 
   private static Map<FeatureSplit, String> dumpFeatureSplitFileNames(
       FeatureSplitConfiguration featureSplitConfiguration, String postfix) {
@@ -600,6 +602,9 @@ public class AndroidApp {
         writeToZipStream(
             out, dumpApiDatabaseFileName, Files.readAllBytes(apiDatabasePath), ZipEntry.DEFLATED);
       }
+      if (dumpOptions.hasAndroidApiExtensionLibraries()) {
+        dumpApiExtensionLibraries(dumpOptions.getAndroidApiExtensionLibraries(), out);
+      }
       int nextDexIndex = 0;
       nextDexIndex =
           dumpProgramResources(
@@ -625,6 +630,19 @@ public class AndroidApp {
         dumpClassFileResources(
             dumpClasspathFileName, nextDexIndex, out, classpathResourceProviders);
     return nextDexIndex;
+  }
+
+  private static void dumpApiExtensionLibraries(String libraries, ZipOutputStream out)
+      throws IOException {
+    int libraryIndex = 1;
+    for (String library : StringUtils.split(libraries, ',')) {
+      writeToZipStream(
+          out,
+          dumpApiExtensionLibraryFileNamePrefix + libraryIndex + ".jar",
+          Files.readAllBytes(Paths.get(library)),
+          ZipEntry.DEFLATED);
+      libraryIndex++;
+    }
   }
 
   private void dumpArtProfileProviders(

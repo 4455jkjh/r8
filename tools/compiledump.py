@@ -17,6 +17,8 @@ import jdk
 import retrace
 import utils
 
+_API_EXTENSION_LIBS_PROPERTY = 'com.android.tools.r8.androidApiExtensionLibraries'
+
 
 def make_parser():
     parser = argparse.ArgumentParser(description='Compile a dump artifact.')
@@ -251,6 +253,15 @@ class Dump:
 
     def api_database_file(self):
         return self.if_exists('api-database.ser')
+
+    def api_extension_libraries(self):
+        libraries = []
+        while True:
+            library = self.if_exists('api-extension-library-%s.jar' %
+                                     (len(libraries) + 1))
+            if library is None:
+                return libraries
+            libraries.append(library)
 
     def proguard_input_map(self):
         return self.if_exists('proguard_input.map')
@@ -500,8 +511,12 @@ def determine_d8_proguard_map_output(args, build_properties):
     return build_properties.get('proguard-map-output') == 'true'
 
 
-def determine_properties(build_properties):
+def determine_properties(build_properties, dump):
     args = []
+    api_extension_libraries = dump.api_extension_libraries()
+    if api_extension_libraries:
+        args.append('-D' + _API_EXTENSION_LIBS_PROPERTY + '=' +
+                    ','.join(api_extension_libraries))
     for key, value in build_properties.items():
         # When writing dumps all system properties starting with com.android.tools.r8
         # are written to the build.properties file in the format
@@ -514,6 +529,13 @@ def determine_properties(build_properties):
                     name.endswith('dumptracetodirectory') or
                     name.endswith('trace.lite') or
                     name.endswith('trace.minvalue_ms')):
+                continue
+            if name == _API_EXTENSION_LIBS_PROPERTY:
+                # The paths refer to the original build environment. Use the
+                # libraries captured in the dump instead.
+                if not api_extension_libraries:
+                    print('WARNING: Dump does not contain the API extension '
+                          'libraries, ignoring: ' + value)
                 continue
             if len(value) == 0:
                 args.append('-D' + name)
@@ -707,7 +729,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.extend(args.r8_flags.split(' '))
         if 'properties' in args:
             cmd.extend(args.properties)
-        cmd.extend(determine_properties(build_properties))
+        cmd.extend(determine_properties(build_properties, dump))
         cmd.extend(args.java_opts)
         cmd.extend(['-cp', os.pathsep.join((temp, jar))])
         no_build = bool(getattr(args, 'no_build', False))
