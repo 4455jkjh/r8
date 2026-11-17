@@ -69,7 +69,12 @@ public class SameFilePolicy extends MultiClassSameReferencePolicy<Object> {
   private static class DefaultMergeKey extends MergeKey {
 
     DefaultMergeKey(DexProgramClass clazz) {
-      super(clazz.getType().toDescriptorString().replaceAll("^([^$]+)\\$.*", "$1"));
+      super(extractOuterClassPrefix(clazz.getType().toDescriptorString()));
+    }
+
+    private static String extractOuterClassPrefix(String descriptor) {
+      int index = descriptor.indexOf('$');
+      return index > 0 ? descriptor.substring(0, index) : descriptor;
     }
   }
 
