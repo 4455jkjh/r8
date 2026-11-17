@@ -172,6 +172,17 @@ public class StringConcatRemover extends CodeRewriterPass {
     return newInValues;
   }
 
+  private void appendConstantToRecipe(
+      DexString constant, StringBuilder recipe, List<DexValue> bootstrapArgs) {
+    String str = constant.toString();
+    if (str.indexOf('\u0001') != -1 || str.indexOf('\u0002') != -1) {
+      recipe.append('\u0002');
+      bootstrapArgs.add(new DexValue.DexValueString(constant));
+    } else {
+      recipe.append(str);
+    }
+  }
+
   private void replaceWithInvokeCustom(
       IRCode code,
       IRCodeInstructionListIterator iterator,
@@ -184,18 +195,21 @@ public class StringConcatRemover extends CodeRewriterPass {
     List<DexType> dynamicTypes = new ArrayList<>();
 
     StringBuilder recipe = new StringBuilder();
+    List<DexValue> bootstrapArgs = new ArrayList<>();
+    bootstrapArgs.add(null);
     int inValueIdx = 0;
     for (int i = 0; i < argTypes.length; i++) {
       DexString argConstant = argConstants.get(i);
       if (argConstant != null) {
-        recipe.append(argConstant.toString());
+        appendConstantToRecipe(argConstant, recipe, bootstrapArgs);
         continue;
       }
       Value value = inValues.get(inValueIdx++);
       Value aliasedValue = value.getAliasedValue();
       if (aliasedValue.isConstString()) {
         assert false : aliasedValue; // StringConcatOptimizer should have moved to argConstants.
-        recipe.append(aliasedValue.getDefinition().asConstString().getValue().toString());
+        appendConstantToRecipe(
+            aliasedValue.getDefinition().asConstString().getValue(), recipe, bootstrapArgs);
       } else {
         recipe.append('\u0001');
         dynamicValues.add(value);
@@ -204,8 +218,8 @@ public class StringConcatRemover extends CodeRewriterPass {
       }
     }
 
-    List<DexValue> bootstrapArgs =
-        List.of(new DexValue.DexValueString(dexItemFactory.createString(recipe.toString())));
+    bootstrapArgs.set(
+        0, new DexValue.DexValueString(dexItemFactory.createString(recipe.toString())));
     DexMethod bootstrapMethod = dexItemFactory.stringConcatFactoryMembers.makeConcatWithConstants;
 
     DexMethodHandle bootstrapMethodHandle =
