@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.profile.art.flagpropagation;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -13,10 +14,12 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexItemFactory.ObjectMembers;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.profile.art.ArtProfileMethodRule;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfoImpl.Builder;
 import com.android.tools.r8.profile.rewriting.ProfileAdditions.NestedMethodRuleAdditionsGraph;
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,5 +85,37 @@ public class CyclicFlagPropagationTest extends TestBase {
     for (DexMethod method : methods) {
       assertTrue(methodRuleBuilders.get(method).build().getMethodRuleInfo().isStartup());
     }
+  }
+
+  @Test
+  public void testDependentStartupClassRules() throws Exception {
+    NestedMethodRuleAdditionsGraph<ArtProfileMethodRule, ArtProfileMethodRule.Builder> graph =
+        new NestedMethodRuleAdditionsGraph<>();
+    DexItemFactory dexItemFactory = new DexItemFactory();
+    ObjectMembers objectMembers = dexItemFactory.objectMembers;
+
+    graph.recordMethodRuleInfoFlagsLargerThan(objectMembers.hashCode, objectMembers.equals);
+    graph.recordMethodRuleInfoFlagsLargerThan(objectMembers.finalize, objectMembers.hashCode);
+    graph.recordDependentStartupClassRule(dexItemFactory.objectType, objectMembers.finalize);
+
+    List<DexMethod> methods =
+        ImmutableList.of(objectMembers.equals, objectMembers.hashCode, objectMembers.finalize);
+    Map<DexMethod, ArtProfileMethodRule.Builder> methodRuleBuilders = new IdentityHashMap<>();
+    for (DexMethod method : methods) {
+      methodRuleBuilders.put(method, ArtProfileMethodRule.builder());
+    }
+
+    methodRuleBuilders
+        .get(objectMembers.equals)
+        .acceptMethodRuleInfoBuilder(builder -> builder.setIsHot().setIsPostStartup());
+    graph.propagateMethodRuleInfoFlags(methodRuleBuilders);
+    List<DexType> committedTypes = new ArrayList<>();
+    graph.commitDependentStartupClassRules(methodRuleBuilders, committedTypes::add);
+    assertTrue(committedTypes.isEmpty());
+
+    methodRuleBuilders.get(objectMembers.equals).acceptMethodRuleInfoBuilder(Builder::setIsStartup);
+    graph.propagateMethodRuleInfoFlags(methodRuleBuilders);
+    graph.commitDependentStartupClassRules(methodRuleBuilders, committedTypes::add);
+    assertEquals(ImmutableList.of(dexItemFactory.objectType), committedTypes);
   }
 }

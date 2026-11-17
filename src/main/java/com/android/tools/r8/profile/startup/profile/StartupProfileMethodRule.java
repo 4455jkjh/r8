@@ -52,6 +52,11 @@ public class StartupProfileMethodRule extends StartupProfileRule
   }
 
   @Override
+  public boolean isStartup() {
+    return true;
+  }
+
+  @Override
   @SuppressWarnings({"EqualsGetClass", "ReferenceEquality"})
   public boolean equals(Object o) {
     if (this == o) {
@@ -92,6 +97,11 @@ public class StartupProfileMethodRule extends StartupProfileRule
 
     @Override
     public boolean isGreaterThanOrEqualTo(Builder builder) {
+      return true;
+    }
+
+    @Override
+    public boolean isStartup() {
       return true;
     }
 

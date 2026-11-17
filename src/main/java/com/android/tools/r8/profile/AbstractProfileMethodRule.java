@@ -10,11 +10,15 @@ public interface AbstractProfileMethodRule extends AbstractProfileRule {
 
   DexMethod getReference();
 
+  boolean isStartup();
+
   interface Builder<
       MethodRule extends AbstractProfileMethodRule,
       MethodRuleBuilder extends Builder<MethodRule, MethodRuleBuilder>> {
 
     boolean isGreaterThanOrEqualTo(MethodRuleBuilder methodRuleBuilder);
+
+    boolean isStartup();
 
     MethodRuleBuilder join(MethodRule methodRule);
 

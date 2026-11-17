@@ -112,6 +112,10 @@ public class ArtProfileMethodRuleInfoImpl implements ArtProfileMethodRuleInfo {
       return flags == (flags | builder.flags);
     }
 
+    public boolean isStartup() {
+      return ArtProfileMethodRuleFlagsUtils.isStartup(flags);
+    }
+
     public Builder merge(ArtProfileMethodRuleInfo methodRuleInfo) {
       if (methodRuleInfo.isHot()) {
         setIsHot();

@@ -68,6 +68,11 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
   }
 
   @Override
+  public boolean isStartup() {
+    return info.isStartup();
+  }
+
+  @Override
   public void writeHumanReadableRuleString(OutputStreamWriter writer) throws IOException {
     info.writeHumanReadableFlags(writer);
     writer.write(method.toSmaliString());
@@ -123,6 +128,11 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
     @Override
     public boolean isGreaterThanOrEqualTo(Builder builder) {
       return methodRuleInfoBuilder.isGreaterThanOrEqualTo(builder.methodRuleInfoBuilder);
+    }
+
+    @Override
+    public boolean isStartup() {
+      return methodRuleInfoBuilder.isStartup();
     }
 
     @Override

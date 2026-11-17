@@ -37,7 +37,9 @@ public interface AbstractProfile<
     return transform(
         (classRule, builder) -> builder.addClassAndParentClasses(classRule.getReference(), appView),
         (methodRule, builder) -> {
-          builder.addClassAndParentClasses(methodRule.getReference().getHolderType(), appView);
+          if (methodRule.isStartup()) {
+            builder.addClassAndParentClasses(methodRule.getReference().getHolderType(), appView);
+          }
           builder.addMethodRule(methodRule);
         });
   }

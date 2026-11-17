@@ -120,7 +120,6 @@ public class ArtProfile
                     .build()));
   }
 
-  @SuppressWarnings("ReferenceEquality")
   public ArtProfile rewrittenWithLens(AppView<?> appView, EnumUnboxingLens lens) {
     return transform(
         (classRule, builder) -> {
@@ -133,15 +132,17 @@ public class ArtProfile
         },
         (methodRule, builder) -> {
           DexMethod newMethod = lens.getRenamedMethodSignature(methodRule.getMethod());
-          // When moving non-synthetic methods from an enum class to its enum utility class we also
-          // add a rule for the utility class.
-          if (newMethod.getHolderType() != methodRule.getMethod().getHolderType()) {
+          // When moving non-synthetic startup methods from an enum class to its enum utility class
+          // we also add a rule for the utility class.
+          if (newMethod.getHolderType().isNotIdenticalTo(methodRule.getMethod().getHolderType())) {
             assert appView
                 .getSyntheticItems()
                 .isSyntheticOfKind(
                     newMethod.getHolderType(), naming -> naming.ENUM_UNBOXING_LOCAL_UTILITY_CLASS);
-            builder.addClassRule(
-                ArtProfileClassRule.builder().setType(newMethod.getHolderType()).build());
+            if (methodRule.isStartup()) {
+              builder.addClassRule(
+                  ArtProfileClassRule.builder().setType(newMethod.getHolderType()).build());
+            }
           }
           builder.addMethodRule(
               ArtProfileMethodRule.builder()

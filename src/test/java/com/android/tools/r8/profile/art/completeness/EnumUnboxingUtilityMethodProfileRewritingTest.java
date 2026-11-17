@@ -10,6 +10,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfo;
+import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfoImpl;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
 import com.android.tools.r8.references.Reference;
@@ -38,30 +40,50 @@ public class EnumUnboxingUtilityMethodProfileRewritingTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
+    runTest(true);
+  }
+
+  @Test
+  public void testR8NonStartup() throws Exception {
+    runTest(false);
+  }
+
+  private void runTest(boolean isStartup) throws Exception {
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
-        .addArtProfileForRewriting(getArtProfile())
+        .addArtProfileForRewriting(getArtProfile(isStartup))
         .addEnumUnboxingInspector(inspector -> inspector.assertUnboxed(MyEnum.class))
         .addOptionsModification(InlinerOptions::disableInlining)
         .noHorizontalClassMergingOfSynthetics()
         .setMinApi(parameters)
         .compile()
-        .inspectResidualArtProfile(this::inspect)
+        .inspectResidualArtProfile(
+            (profileInspector, inspector) -> inspect(profileInspector, inspector, isStartup))
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Hello, world!");
   }
 
-  private ExternalArtProfile getArtProfile() throws Exception {
+  private ExternalArtProfile getArtProfile(boolean isStartup) throws Exception {
+    ArtProfileMethodRuleInfo methodRuleInfo =
+        ArtProfileMethodRuleInfoImpl.builder()
+            .setIsHot()
+            .setIsStartup(isStartup)
+            .setIsPostStartup()
+            .build();
     return ExternalArtProfile.builder()
-        .addMethodRule(MethodReferenceUtils.mainMethod(Main.class))
-        .addMethodRule(Reference.methodFromMethod(MyEnum.class.getDeclaredMethod("greet")))
-        .addMethodRule(Reference.methodFromMethod(MyEnum.class.getDeclaredMethod("other")))
-        .addMethodRule(Reference.methodFromMethod(MyEnum.class.getDeclaredMethod("values")))
+        .addMethodRule(MethodReferenceUtils.mainMethod(Main.class), methodRuleInfo)
+        .addMethodRule(
+            Reference.methodFromMethod(MyEnum.class.getDeclaredMethod("greet")), methodRuleInfo)
+        .addMethodRule(
+            Reference.methodFromMethod(MyEnum.class.getDeclaredMethod("other")), methodRuleInfo)
+        .addMethodRule(
+            Reference.methodFromMethod(MyEnum.class.getDeclaredMethod("values")), methodRuleInfo)
         .build();
   }
 
-  private void inspect(ArtProfileInspector profileInspector, CodeInspector inspector) {
+  private void inspect(
+      ArtProfileInspector profileInspector, CodeInspector inspector, boolean isStartup) {
     ClassSubject mainClassSubject = inspector.clazz(Main.class);
     assertThat(mainClassSubject, isPresent());
     assertThat(mainClassSubject.mainMethod(), isPresent());
@@ -98,10 +120,13 @@ public class EnumUnboxingUtilityMethodProfileRewritingTest extends TestBase {
     assertThat(sharedValuesMethodSubject, isPresent());
 
     profileInspector
-        .assertContainsClassRules(
-            mainClassSubject,
-            enumUnboxingLocalUtilityClassSubject,
-            enumUnboxingSharedUtilityClassSubject)
+        .applyIf(
+            isStartup,
+            i ->
+                i.assertContainsClassRules(
+                    mainClassSubject,
+                    enumUnboxingLocalUtilityClassSubject,
+                    enumUnboxingSharedUtilityClassSubject))
         .assertContainsMethodRules(
             mainClassSubject.mainMethod(),
             localGreetMethodSubject,

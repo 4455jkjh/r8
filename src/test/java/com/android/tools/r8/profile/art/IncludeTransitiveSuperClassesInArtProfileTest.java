@@ -11,9 +11,11 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,13 +34,12 @@ public class IncludeTransitiveSuperClassesInArtProfileTest extends TestBase {
   }
 
   @Test
-  public void test() throws Exception {
-    testForR8(parameters.getBackend())
+  public void testClassRule() throws Exception {
+    testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepAllClassesRuleWithAllowObfuscation()
         .addArtProfileForRewriting(
             ExternalArtProfile.builder().addClassRule(Reference.classFromClass(C.class)).build())
-        .setMinApi(parameters)
         .compile()
         .inspectResidualArtProfile(
             (profile, inspector) ->
@@ -53,10 +54,70 @@ public class IncludeTransitiveSuperClassesInArtProfileTest extends TestBase {
                     .assertContainsNoOtherRules());
   }
 
+  @Test
+  public void testStartupMethodRule() throws Exception {
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepAllClassesRuleWithAllowObfuscation()
+        .addArtProfileForRewriting(
+            ExternalArtProfile.builder()
+                .addMethodRule(
+                    Reference.methodFromMethod(C.class.getDeclaredMethod("m")),
+                    ArtProfileMethodRuleInfoImpl.builder().setIsStartup().build())
+                .build())
+        .compile()
+        .inspectResidualArtProfile(
+            (profile, inspector) ->
+                profile
+                    .assertContainsClassRules(
+                        getFinalReference(A.class, inspector),
+                        getFinalReference(B.class, inspector),
+                        getFinalReference(C.class, inspector),
+                        getFinalReference(I.class, inspector),
+                        getFinalReference(J.class, inspector),
+                        getFinalReference(K.class, inspector))
+                    .inspectMethodRule(
+                        getFinalMethodReference(C.class, "m", inspector),
+                        ruleInspector ->
+                            ruleInspector.assertIsStartup().assertNotHot().assertNotPostStartup())
+                    .assertContainsNoOtherRules());
+  }
+
+  @Test
+  public void testPostStartupMethodRule() throws Exception {
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepAllClassesRuleWithAllowObfuscation()
+        .addArtProfileForRewriting(
+            ExternalArtProfile.builder()
+                .addMethodRule(
+                    Reference.methodFromMethod(C.class.getDeclaredMethod("m")),
+                    ArtProfileMethodRuleInfoImpl.builder().setIsHot().setIsPostStartup().build())
+                .build())
+        .compile()
+        .inspectResidualArtProfile(
+            (profile, inspector) ->
+                profile
+                    .inspectMethodRule(
+                        getFinalMethodReference(C.class, "m", inspector),
+                        ruleInspector ->
+                            ruleInspector.assertIsHot().assertNotStartup().assertIsPostStartup())
+                    .assertContainsNoOtherRules());
+  }
+
   private static ClassReference getFinalReference(Class<?> clazz, CodeInspector inspector) {
     ClassSubject classSubject = inspector.clazz(clazz);
     assertThat(classSubject, isPresentAndRenamed());
     return classSubject.getFinalReference();
+  }
+
+  private static MethodReference getFinalMethodReference(
+      Class<?> clazz, String methodName, CodeInspector inspector) {
+    ClassSubject classSubject = inspector.clazz(clazz);
+    assertThat(classSubject, isPresentAndRenamed());
+    MethodSubject methodSubject = classSubject.uniqueMethodWithOriginalName(methodName);
+    assertThat(methodSubject, isPresentAndRenamed());
+    return methodSubject.getFinalReference();
   }
 
   interface I {}
@@ -69,5 +130,12 @@ public class IncludeTransitiveSuperClassesInArtProfileTest extends TestBase {
 
   static class B extends A {}
 
-  static class C extends B implements K {}
+  static class C extends B implements K {
+
+    static void m() {}
+  }
+
+  interface UnrelatedInterface {}
+
+  static class UnrelatedClass implements UnrelatedInterface {}
 }

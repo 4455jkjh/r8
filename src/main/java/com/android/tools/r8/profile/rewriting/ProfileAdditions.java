@@ -125,7 +125,16 @@ public abstract class ProfileAdditions<
 
             @Override
             public ProfileAdditionsBuilder addClassRule(DexType type) {
-              ProfileAdditions.this.addClassRule(type);
+              if (contextMethodRule.isStartup()) {
+                ProfileAdditions.this.addClassRule(type);
+              } else {
+                MethodRuleBuilder contextRuleBuilder = methodRuleAdditions.get(context);
+                if (contextRuleBuilder != null && contextRuleBuilder.isStartup()) {
+                  ProfileAdditions.this.addClassRule(type);
+                } else {
+                  nestedMethodRuleAdditionsGraph.recordDependentStartupClassRule(type, context);
+                }
+              }
               return this;
             }
 
@@ -147,7 +156,12 @@ public abstract class ProfileAdditions<
 
             @Override
             public ProfileAdditionsBuilder addClassRule(DexType type) {
-              ProfileAdditions.this.addClassRule(type);
+              MethodRuleBuilder contextRuleBuilder = methodRuleAdditions.get(context);
+              if (contextRuleBuilder.isStartup()) {
+                ProfileAdditions.this.addClassRule(type);
+              } else {
+                nestedMethodRuleAdditionsGraph.recordDependentStartupClassRule(type, context);
+              }
               return this;
             }
 
@@ -219,6 +233,8 @@ public abstract class ProfileAdditions<
     // disabled to allow cycles.
     assert nestedMethodRuleAdditionsGraph.verifyNoCycles();
     nestedMethodRuleAdditionsGraph.propagateMethodRuleInfoFlags(methodRuleAdditions);
+    nestedMethodRuleAdditionsGraph.commitDependentStartupClassRules(
+        methodRuleAdditions, this::addClassRule);
 
     // Add existing rules to new profile.
     ProfileBuilder profileBuilder = createProfileBuilder();
@@ -271,6 +287,7 @@ public abstract class ProfileAdditions<
   public Additions rewriteMethodReferences(Function<DexMethod, DexMethod> methodFn) {
     Additions rewrittenAdditions = create();
     assert methodRuleRemovals.isEmpty();
+    assert nestedMethodRuleAdditionsGraph.hasNoDependentStartupClassRules();
     rewrittenAdditions.classRuleAdditions.putAll(classRuleAdditions);
     methodRuleAdditions.forEach(
         (method, methodRuleBuilder) -> {
@@ -305,6 +322,30 @@ public abstract class ProfileAdditions<
 
     private final Map<DexMethod, Set<DexMethod>> successors = new ConcurrentHashMap<>();
     private final Map<DexMethod, Set<DexMethod>> predecessors = new ConcurrentHashMap<>();
+    private final Map<DexMethod, Set<DexType>> dependentStartupClassRules =
+        new ConcurrentHashMap<>();
+
+    public boolean hasNoDependentStartupClassRules() {
+      return dependentStartupClassRules.isEmpty();
+    }
+
+    public void recordDependentStartupClassRule(DexType dependentClassRule, DexMethod context) {
+      dependentStartupClassRules
+          .computeIfAbsent(context, ignoreKey(Sets::newConcurrentHashSet))
+          .add(dependentClassRule);
+    }
+
+    public void commitDependentStartupClassRules(
+        Map<DexMethod, MethodRuleBuilder> methodRuleAdditions,
+        Consumer<DexType> classRuleAdditionConsumer) {
+      dependentStartupClassRules.forEach(
+          (context, types) -> {
+            MethodRuleBuilder contextRuleBuilder = methodRuleAdditions.get(context);
+            if (contextRuleBuilder != null && contextRuleBuilder.isStartup()) {
+              types.forEach(classRuleAdditionConsumer);
+            }
+          });
+    }
 
     public void recordMethodRuleInfoFlagsLargerThan(DexMethod largerFlags, DexMethod smallerFlags) {
       predecessors
