@@ -28,13 +28,18 @@ public class ProgramClassCollection extends ClassMap<DexProgramClass> {
   public static ProgramClassCollection create(
       List<DexProgramClass> classes, InternalOptions options) {
     // We have all classes preloaded, but not necessarily without conflicts.
-    ConcurrentHashMap<DexType, Supplier<DexProgramClass>> map = new ConcurrentHashMap<>();
-    ProgramClassConflictResolver conflictResolver = createConflictResolver(options);
+    ConcurrentHashMap<DexType, Supplier<DexProgramClass>> map =
+        new ConcurrentHashMap<>(classes.size());
+    ProgramClassConflictResolver conflictResolver = null;
     for (DexProgramClass clazz : classes) {
-      map.merge(
-          clazz.getType(),
-          clazz,
-          (a, b) -> conflictResolver.resolveClassConflict(a.get(), b.get()));
+      Supplier<DexProgramClass> existing = map.putIfAbsent(clazz.getType(), clazz);
+      if (existing != null) {
+        if (conflictResolver == null) {
+          conflictResolver = createConflictResolver(options);
+        }
+        DexProgramClass merged = conflictResolver.resolveClassConflict(existing.get(), clazz);
+        map.put(clazz.getType(), merged);
+      }
     }
     return new ProgramClassCollection(map);
   }
@@ -49,13 +54,17 @@ public class ProgramClassCollection extends ClassMap<DexProgramClass> {
 
   public static Map<DexType, DexProgramClass> resolveConflicts(
       Collection<DexProgramClass> classes, InternalOptions options) {
-    Map<DexType, DexProgramClass> map = new IdentityHashMap<>();
-    ProgramClassConflictResolver conflictResolver = createConflictResolver(options);
+    Map<DexType, DexProgramClass> map = new IdentityHashMap<>(classes.size());
+    ProgramClassConflictResolver conflictResolver = null;
     for (DexProgramClass clazz : classes) {
-      map.merge(
-          clazz.getType(),
-          clazz,
-          (a, b) -> conflictResolver.resolveClassConflict(a.get(), b.get()));
+      DexProgramClass existing = map.putIfAbsent(clazz.getType(), clazz);
+      if (existing != null) {
+        if (conflictResolver == null) {
+          conflictResolver = createConflictResolver(options);
+        }
+        DexProgramClass merged = conflictResolver.resolveClassConflict(existing, clazz);
+        map.put(clazz.getType(), merged);
+      }
     }
     return map;
   }
