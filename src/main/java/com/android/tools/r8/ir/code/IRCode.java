@@ -1003,6 +1003,8 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
       } else if (instruction.isSub()) {
         assert metadata.mayHaveSub() && metadata.mayHaveArithmeticOrLogicalBinop()
             : "IR metadata should indicate that code has a sub";
+      } else if (instruction.isThrow()) {
+        assert metadata.mayHaveThrow() : "IR metadata should indicate that code has a throw";
       } else if (instruction.isUshr()) {
         assert metadata.mayHaveUshr() && metadata.mayHaveArithmeticOrLogicalBinop()
             : "IR metadata should indicate that code has an ushr";

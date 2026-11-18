@@ -330,6 +330,10 @@ public class IRMetadata implements StructuralItem<IRMetadata> {
     return result;
   }
 
+  public boolean mayHaveThrow() {
+    return get(Opcodes.THROW);
+  }
+
   public boolean mayHaveOutlineMarker() {
     return get(Opcodes.OUTLINE_MARKER);
   }
