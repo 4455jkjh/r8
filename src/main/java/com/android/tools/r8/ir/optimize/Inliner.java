@@ -92,7 +92,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -123,8 +122,6 @@ public class Inliner {
       Sets.newIdentityHashSet();
 
   private final AvailableApiExceptions availableApiExceptions;
-
-  private final AtomicBoolean waveDoneScheduled = new AtomicBoolean();
 
   public Inliner(AppView<AppInfoWithLiveness> appView) {
     this(appView, null);
@@ -1334,7 +1331,6 @@ public class Inliner {
       assert !action.shouldEnsureStoreStoreFenceCauses.isEmpty();
       assert methodProcessor.hasWaves();
       inlinedFinalFieldsInWave.addAll(action.shouldEnsureStoreStoreFenceCauses);
-      scheduleWaveDone();
     }
 
     if (methodProcessor.getCallSiteInformation().hasSingleCallSite(singleTarget, context)) {
@@ -1347,7 +1343,6 @@ public class Inliner {
       }
       if (!(methodProcessor instanceof OneTimeMethodProcessor)) {
         assert converter.isInWave();
-        scheduleWaveDone();
         singleCallerInlinedMethodsInWave
             .computeIfAbsent(
                 singleTarget.getHolder(), ignoreKey(ProgramMethodMap::createConcurrent))
@@ -1533,6 +1528,10 @@ public class Inliner {
     singleInlineCallers.add(method, appView.graphLens());
   }
 
+  public void disallowMultiCallerInlining(ProgramMethod method) {
+    multiCallerInliner.stopTrackingCallSitesForMethod(method);
+  }
+
   public void onMethodPruned(ProgramMethod method) {
     onMethodCodePruned(method);
     multiCallerInliner.onMethodPruned(method);
@@ -1542,13 +1541,21 @@ public class Inliner {
     singleInlineCallers.remove(method.getReference(), appView.graphLens());
   }
 
-  private void onWaveDone() {
+  public void onWaveDone() {
     unsetFinalFlagFromInlinedFinalFields();
     singleCallerInlinedMethodsInWave.forEach(
         (clazz, singleCallerInlinedMethodsForClass) -> {
           // Convert and remove virtual single caller inlined methods to abstract or throw null.
           singleCallerInlinedMethodsForClass.removeIf(
               (callee, caller) -> {
+                if (!callee.getOptimizationInfo().hasBeenInlinedIntoSingleCallSite()) {
+                  // The instanceof method specialization may have merged an override into this
+                  // method and deleted the override in the current wave. All calls to the override
+                  // are now calls to this method, so it can no longer be removed although it was
+                  // single caller inlined. The specialization signals this by unsetting the single
+                  // caller inlined flag.
+                  return true;
+                }
                 boolean convertToAbstractOrThrowNullMethod =
                     callee.getDefinition().belongsToVirtualPool()
                         && !callee.getAccessFlags().wasPrivate();
@@ -1581,18 +1588,11 @@ public class Inliner {
           }
         });
     singleCallerInlinedMethodsInWave.clear();
-    waveDoneScheduled.set(false);
   }
 
   public void unsetFinalFlagFromInlinedFinalFields() {
     inlinedFinalFieldsInWave.forEach(field -> field.getAccessFlags().demoteFromFinal());
     inlinedFinalFieldsInWave.clear();
-  }
-
-  protected void scheduleWaveDone() {
-    if (!waveDoneScheduled.getAndSet(true)) {
-      converter.addWaveDoneAction(this::onWaveDone);
-    }
   }
 
   public void onLastWaveDone(

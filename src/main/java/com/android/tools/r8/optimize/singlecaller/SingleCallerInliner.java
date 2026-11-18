@@ -298,11 +298,6 @@ public class SingleCallerInliner {
     }
 
     @Override
-    protected void scheduleWaveDone() {
-      // Intentionally empty.
-    }
-
-    @Override
     public DefaultInliningOracle createDefaultOracle(
         IRCode code,
         ProgramMethod method,

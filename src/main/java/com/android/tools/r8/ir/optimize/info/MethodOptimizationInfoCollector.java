@@ -229,9 +229,12 @@ public class MethodOptimizationInfoCollector {
             definition.getAbstractValue(appView, context, AbstractValueSupplier.shallow());
         if (abstractReturnValue.isNonTrivial()) {
           feedback.methodReturnsAbstractValue(method, appView, abstractReturnValue);
-          if (checkCastAndInstanceOfMethodSpecialization != null) {
+          // Specialization synthesizes CfCode scheduled on PrimaryMethodProcessor before class
+          // merging and transfers state in ArgumentPropagator while codeScanner is active.
+          if (checkCastAndInstanceOfMethodSpecialization != null
+              && methodProcessor.isPrimaryMethodProcessor()) {
             checkCastAndInstanceOfMethodSpecialization.addCandidateForOptimization(
-                context, abstractReturnValue, methodProcessor);
+                context, abstractReturnValue, methodProcessor.asPrimaryMethodProcessor());
           }
         } else if (returnValue.getType().isReferenceType()) {
           // TODO(b/204159267): Move this logic into Instruction#getAbstractValue in NewInstance.

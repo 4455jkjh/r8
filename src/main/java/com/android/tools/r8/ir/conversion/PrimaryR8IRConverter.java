@@ -263,6 +263,10 @@ public class PrimaryR8IRConverter extends IRConverter {
         onWaveDoneActions.forEach(Action::execute);
         onWaveDoneActions = null;
       }
+      // The inliner runs last since other wave done actions may revoke single caller inlining.
+      if (inliner != null) {
+        inliner.onWaveDone();
+      }
     }
   }
 

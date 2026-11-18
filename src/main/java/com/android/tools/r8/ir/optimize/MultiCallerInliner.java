@@ -172,7 +172,7 @@ public class MultiCallerInliner {
     }
   }
 
-  private void stopTrackingCallSitesForMethod(ProgramMethod method) {
+  void stopTrackingCallSitesForMethod(ProgramMethod method) {
     multiInlineCallEdges.put(method, Optional.empty());
   }
 

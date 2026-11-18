@@ -15,12 +15,11 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.IRConverter;
-import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.PrimaryMethodProcessor;
+import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.collections.SortedProgramMethodSet;
 
 /**
@@ -54,15 +53,13 @@ public class CheckCastAndInstanceOfMethodSpecialization {
   }
 
   public void addCandidateForOptimization(
-      ProgramMethod method, AbstractValue abstractReturnValue, MethodProcessor methodProcessor) {
-    if (!converter.isInWave()) {
-      return;
-    }
-    assert methodProcessor.isPrimaryMethodProcessor() || methodProcessor.isPostMethodProcessor();
+      ProgramMethod method,
+      AbstractValue abstractReturnValue,
+      PrimaryMethodProcessor methodProcessor) {
     if (isCandidateForInstanceOfOptimization(method, abstractReturnValue)) {
       synchronized (this) {
         if (candidatesForInstanceOfOptimization.isEmpty()) {
-          converter.addWaveDoneAction(() -> execute(methodProcessor.asPrimaryMethodProcessor()));
+          converter.addWaveDoneAction(() -> execute(methodProcessor));
         }
         candidatesForInstanceOfOptimization.add(method);
       }
@@ -77,12 +74,10 @@ public class CheckCastAndInstanceOfMethodSpecialization {
 
   public void execute(PrimaryMethodProcessor methodProcessor) {
     assert !candidatesForInstanceOfOptimization.isEmpty();
-    ProgramMethodSet processed = ProgramMethodSet.create();
     for (ProgramMethod method : candidatesForInstanceOfOptimization) {
-      if (!processed.contains(method)) {
-        processCandidateForInstanceOfOptimization(method, methodProcessor);
-      }
+      processCandidateForInstanceOfOptimization(method, methodProcessor);
     }
+    candidatesForInstanceOfOptimization.clear();
   }
 
   private void processCandidateForInstanceOfOptimization(
@@ -160,6 +155,10 @@ public class CheckCastAndInstanceOfMethodSpecialization {
     // For the same reason, we no longer have single or dual caller information for the parent
     // method.
     methodProcessor.getCallSiteInformation().unsetCallSiteInformation(parentMethod);
+    Inliner inliner = converter.getInliner();
+    if (inliner != null) {
+      inliner.disallowMultiCallerInlining(parentMethod);
+    }
 
     // Remove the method and notify other optimizations that the override has been removed to allow
     // the optimizations to fixup their state.
