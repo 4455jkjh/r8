@@ -68,19 +68,22 @@ public class ArchiveResourceProviderUtils {
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
       while (entries.hasMoreElements()) {
         ZipEntry entry = entries.nextElement();
-        try (InputStream stream = zipFile.getInputStream(entry)) {
-          String name = entry.getName();
-          Origin entryOrigin = new ArchiveEntryOrigin(name, origin);
-          if (ZipUtils.isDexFile(name)) {
-            if (predicate.test(name, Kind.DEX)) {
+        String name = entry.getName();
+        if (ZipUtils.isDexFile(name)) {
+          if (predicate.test(name, Kind.DEX)) {
+            Origin entryOrigin = new ArchiveEntryOrigin(name, origin);
+            try (InputStream stream = zipFile.getInputStream(entry)) {
               consumer.accept(
                   programResourceFactory.create(
                       entryOrigin, Kind.DEX, ByteStreams.toByteArray(stream), null));
               seenDex.set();
             }
-          } else if (ZipUtils.isClassFile(name)) {
-            if (predicate.test(name, Kind.CF)) {
-              String descriptor = DescriptorUtils.guessTypeDescriptor(name);
+          }
+        } else if (ZipUtils.isClassFile(name)) {
+          if (predicate.test(name, Kind.CF)) {
+            Origin entryOrigin = new ArchiveEntryOrigin(name, origin);
+            String descriptor = DescriptorUtils.guessTypeDescriptor(name);
+            try (InputStream stream = zipFile.getInputStream(entry)) {
               consumer.accept(
                   programResourceFactory.create(
                       entryOrigin,
