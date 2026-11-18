@@ -11,7 +11,7 @@ public final class R8AssistantVersion {
 
   // This field is accessed from release scripts using simple pattern matching.
   // Therefore, changing this field could break our release scripts.
-  public static final String LABEL = "1.0.0-alpha01";
+  public static final String LABEL = "1.0.0-alpha02";
 
   private R8AssistantVersion() {}
 
