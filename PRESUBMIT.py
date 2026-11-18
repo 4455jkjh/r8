@@ -8,8 +8,8 @@ import inspect
 import os
 import re
 import sys
-# Add both current path to allow us to package import utils and the tools
-# dir to allow transitive (for utils) dependencies to be loaded.
+# Add both current path to allow us to package import tools modules and the
+# tools dir to allow their transitive dependencies to be loaded.
 repo_root = os.path.dirname(inspect.getfile(lambda: None))
 tools_dir = os.path.join(repo_root, 'tools')
 if repo_root not in sys.path:
@@ -17,33 +17,7 @@ if repo_root not in sys.path:
 if tools_dir not in sys.path:
     sys.path.insert(0, tools_dir)
 
-from tools import utils
-
-VERSION_FILE = os.path.join(repo_root, 'src', 'main', 'java', 'com', 'android',
-                            'tools', 'r8', 'Version.java')
-
-
-def get_version():
-    with open(VERSION_FILE) as f:
-        content = f.read()
-    match = re.search(r'\bLABEL\s*=\s*"([^"]+)"', content)
-    if not match:
-        raise RuntimeError(f'Unable to find LABEL in {VERSION_FILE}')
-    label = match.group(1)
-    if label == 'main':
-        return None
-    return utils.check_basic_semver_version(label,
-                                            'in Version.java',
-                                            components=3,
-                                            allow_prerelease=True)
-
-
-def is_release_before(major, minor, patch, version=None):
-    if version is None:
-        version = get_version()
-    if version is None:
-        return False
-    return utils.SemanticVersion(major, minor, patch, None).larger_than(version)
+from tools import fmt_diff, jdk, utils
 
 
 def check_do_not_merge(input_api, output_api):
@@ -78,7 +52,6 @@ For existing CLs, add footer to CL description:
 
 
 def ensure_default_jdk():
-    from tools import jdk
     with open(jdk.GRADLE_DAEMON_JVM_PROPERTIES) as f:
         for line in f:
             line = line.strip()
@@ -92,10 +65,8 @@ def ensure_default_jdk():
 
 
 def check_formatting(input_api, output_api):
-    if is_skip_formatting_set(input_api) or is_release_before(9, 6, -1):
+    if is_skip_formatting_set(input_api):
         return []
-    # Imported locally to avoid crashing on older 9.0-9.5 branches.
-    from tools import fmt_diff
     ensure_default_jdk()
     files = [f.LocalPath() for f in input_api.AffectedFiles()]
     check_results = fmt_diff.check(files)
@@ -122,11 +93,9 @@ def check_deterministic_debugging_changed(input_api, output_api, branch):
     return []
 
 
-# File extension checks are kept local to avoid importing fmt_diff on older
-# 9.0-9.5 branches.
 def is_test_file(file):
     local_path = file.LocalPath()
-    return local_path.endswith('.java') and '/test/' in local_path
+    return fmt_diff.is_java_file(local_path) and '/test/' in local_path
 
 
 def check_for_added_disassemble(input_api, output_api):
@@ -154,7 +123,7 @@ def check_for_added_allow_xxxxxx_messages(input_api, output_api):
 def check_for_added_partial_debug(input_api, output_api):
     results = []
     for (file, line_nr, line) in input_api.RightHandSideLines():
-        if not file.LocalPath().endswith('.java'):
+        if not fmt_diff.is_java_file(file.LocalPath()):
             continue
         if '.enablePrintPartialCompilationPartitioning(' in line:
             results.append(
@@ -177,30 +146,6 @@ def check_for_added_headful(input_api, output_api):
                 output_api.PresubmitError(
                     'Test call to enableHeadful\n%s:%s %s' %
                     (file.LocalPath(), line_nr, line)))
-    return results
-
-
-def check_for_added_without_collapsed_runtimes(input_api, output_api):
-    version = get_version()
-    if version is None:
-        return []
-    checks = [(method, major, minor) for method, major, minor in (
-        ('withoutCollapsedDexRuntimes', 9, 2),
-        ('withoutCollapsedCfRuntimes', 9, 6),
-    ) if is_release_before(major, minor, -1, version)]
-    if not checks:
-        return []
-    results = []
-    for (file, line_nr, line) in input_api.RightHandSideLines():
-        if not is_test_file(file):
-            continue
-        for method, major, minor in checks:
-            if f'.{method}()' in line:
-                results.append(
-                    output_api.PresubmitError(
-                        'Test call to %s is not allowed before branch %d.%d (current version %s)\n%s:%s %s'
-                        % (method, major, minor, version, file.LocalPath(),
-                           line_nr, line)))
     return results
 
 
@@ -263,7 +208,7 @@ def check_copyright_in_contents(f,
                                 contents,
                                 output_api,
                                 allow_old_copyright=False):
-    prefix = '#' if (f.LocalPath().endswith('.py') or
+    prefix = '#' if (fmt_diff.is_python_file(f.LocalPath()) or
                      f.LocalPath().endswith('.sh')) else '//'
     pattern = re.escape(prefix) + r' Copyright \(c\) (\d+)'
     current_year = datetime.datetime.now().year
@@ -335,8 +280,6 @@ def check_change(input_api, output_api):
     results.extend(check_for_added_allow_xxxxxx_messages(input_api, output_api))
     results.extend(check_for_added_partial_debug(input_api, output_api))
     results.extend(check_for_added_headful(input_api, output_api))
-    results.extend(
-        check_for_added_without_collapsed_runtimes(input_api, output_api))
     results.extend(check_for_copyright(input_api, output_api))
     results.extend(check_lucicfg(input_api, output_api))
     return results
