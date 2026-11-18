@@ -5,6 +5,7 @@ package com.android.tools.r8.cf;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.ConstClass;
@@ -12,6 +13,7 @@ import com.android.tools.r8.ir.code.ConstInstruction;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.DexItemBasedConstString;
+import com.android.tools.r8.ir.code.Dup;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
@@ -22,8 +24,10 @@ import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StackValue;
 import com.android.tools.r8.ir.code.Store;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,7 +143,7 @@ public class LoadStoreHelper {
           instructionIterator = pred.listIterator(pred.getInstructions().size());
           Instruction exit = instructionIterator.previous();
           assert pred.exit() == exit;
-          movePhis(moves, exit.getPosition());
+          movePhis(moves, exit, allocator);
         }
         allocator.addToLiveAtEntrySet(block, block.getPhis());
       }
@@ -261,13 +265,24 @@ public class LoadStoreHelper {
     }
   }
 
-  private void movePhis(List<PhiMove> moves, Position position) {
+  private void movePhis(List<PhiMove> moves, Instruction exit, CfRegisterAllocator allocator) {
+    if (moves.isEmpty()) {
+      return;
+    }
     // TODO(zerny): Accounting for non-interfering phis would lower the max stack size.
+    Position position = exit.getPosition();
+    StackValue storedOperand = takeStoredOperandFromStack(moves, exit, allocator);
     int topOfStack = 0;
     List<StackValue> temps = new ArrayList<>(moves.size());
     for (PhiMove move : moves) {
-      StackValue tmp = createStackValue(move.phi, topOfStack++);
-      add(load(tmp, move.operand), position);
+      StackValue tmp;
+      if (topOfStack == 0 && storedOperand != null) {
+        tmp = storedOperand;
+      } else {
+        tmp = createStackValue(move.phi, topOfStack);
+        add(load(tmp, move.operand), position);
+      }
+      topOfStack++;
       temps.add(tmp);
       move.operand.removePhiUser(move.phi);
     }
@@ -278,6 +293,75 @@ public class LoadStoreHelper {
       add(new Store(out, tmp), position);
       move.phi.replaceUsers(out);
     }
+  }
+
+  // If the block ends with `Store v <- s; Goto` and v is moved to a phi, then moves v to the front
+  // of the (parallel) moves and returns a stack value holding v, which replaces the load of v.
+  // The store is removed if v is only used by this phi operand. Otherwise, it is rewritten to
+  // `Dup [s', s''] <- s; Store v <- s''` when that saves a byte and does not prevent an iinc.
+  @SuppressWarnings("ReferenceEquality")
+  private StackValue takeStoredOperandFromStack(
+      List<PhiMove> moves, Instruction exit, CfRegisterAllocator allocator) {
+    Instruction previous = exit.getPrev();
+    if (!exit.isGoto() || previous == null || !previous.isStore()) {
+      return null;
+    }
+    Store store = previous.asStore();
+    Value value = store.outValue();
+    StackValue src = (StackValue) store.src();
+    if (value.hasLocalInfo() || !store.getDebugValues().isEmpty() || src.getHeight() != 0) {
+      return null;
+    }
+    int index = ListUtils.firstIndexMatching(moves, move -> move.operand == value);
+    if (index < 0) {
+      return null;
+    }
+    if (value.numberOfAllUsers() == 1 && moves.get(index).phi.usesValueOneTime(value)) {
+      instructionIterator.previous();
+      // The store is removed while v still has its phi user, so detach the source manually.
+      src.removeUser(store);
+      instructionIterator.removeInstructionIgnoreOutValue();
+    } else if (allocator.getRegisterForValue(value) >= 4 && !isPotentialIinc(store, allocator)) {
+      // Slots 0..3 have 1-byte <t>store_<n> and <t>load_<n>, so store and load is as small as dup
+      // and store. Slots >= 4 need 2-byte <t>load <n>, so dup and store saves a byte.
+      StackValue bottom = src.duplicate(0);
+      StackValue top = src.duplicate(1);
+      instructionIterator.previous();
+      add(new Dup(bottom, top, src), store);
+      store.replaceValue(0, top);
+      instructionIterator.next();
+      src = bottom;
+    } else {
+      return null;
+    }
+    Collections.swap(moves, 0, index);
+    return src;
+  }
+
+  // Returns true if CfBuilder.rewriteIincPatterns() rewrites `Load v; ConstNumber c; Add; Store v`
+  // (or with the constant first) to `iinc v c`, which inserting a Dup before the store prevents.
+  @SuppressWarnings("ReferenceEquality")
+  private static boolean isPotentialIinc(Store store, CfRegisterAllocator allocator) {
+    Instruction add = store.getPrev();
+    Instruction second = add == null ? null : add.getPrev();
+    Instruction first = second == null ? null : second.getPrev();
+    if (first == null || !add.isAdd()) {
+      return false;
+    }
+    Load load = first.isLoad() ? first.asLoad() : second.asLoad();
+    ConstNumber constNumber = first.isLoad() ? second.asConstNumber() : first.asConstNumber();
+    if (load == null || constNumber == null || constNumber.getOutType() != TypeElement.getInt()) {
+      return false;
+    }
+    int increment = constNumber.getIntValue();
+    Position position = add.getPosition();
+    return Byte.MIN_VALUE <= increment
+        && increment <= Byte.MAX_VALUE
+        && allocator.getRegisterForValue(load.src())
+            == allocator.getRegisterForValue(store.outValue())
+        && position == load.getPosition()
+        && position == constNumber.getPosition()
+        && position == store.getPosition();
   }
 
   private Instruction load(StackValue stackValue, Value value) {

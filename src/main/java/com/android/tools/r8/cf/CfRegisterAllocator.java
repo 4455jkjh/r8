@@ -320,12 +320,26 @@ public class CfRegisterAllocator implements RegisterAllocator {
   }
 
   private void updateHints(LiveIntervals intervals) {
-    for (Phi phi : intervals.getValue().uniquePhiUsers()) {
-      if (!phi.isValueOnStack() && !phi.getLiveIntervals().hasHint()) {
-        phi.getLiveIntervals().setHint(intervals, unhandled);
-        for (Value value : phi.getOperands()) {
-          value.getLiveIntervals().setHint(intervals, unhandled);
-        }
+    Value value = intervals.getValue();
+    if (value.isPhi()) {
+      updateOperandHints(value.asPhi(), intervals);
+    }
+    for (Phi phi : value.uniquePhiUsers()) {
+      LiveIntervals phiIntervals = phi.getLiveIntervals();
+      if (!phi.isValueOnStack() && !phiIntervals.hasHint() && !phiIntervals.overlaps(intervals)) {
+        phiIntervals.setHint(intervals, unhandled);
+        updateOperandHints(phi, intervals);
+      }
+    }
+  }
+
+  // Hints the operands that can share a register with the phi, unless they already have a hint
+  // from an earlier allocated argument or phi.
+  private void updateOperandHints(Phi phi, LiveIntervals intervals) {
+    for (Value operand : phi.getOperands()) {
+      LiveIntervals operandIntervals = operand.getLiveIntervals();
+      if (!operandIntervals.hasHint() && !operandIntervals.overlaps(phi.getLiveIntervals())) {
+        operandIntervals.setHint(intervals, unhandled);
       }
     }
   }
