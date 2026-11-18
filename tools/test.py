@@ -21,6 +21,7 @@ import download_kotlin
 import gradle
 import jdk
 import notify
+import presubmit_coverage
 import testing_state
 import utils
 
@@ -117,6 +118,23 @@ def parse_options():
                         help='Enable code coverage with Jacoco.',
                         default=False,
                         action='store_true')
+    result.add_argument(
+        '--upload-zoss',
+        '--upload_zoss',
+        help='Collect selective JaCoCo coverage and upload to Zoss.',
+        default=False,
+        action='store_true')
+    result.add_argument('--change-id',
+                        '--change_id',
+                        type=int,
+                        help='Gerrit change number for Zoss coverage upload.')
+    result.add_argument('--patchset',
+                        type=int,
+                        help='Gerrit patchset number for Zoss coverage upload.')
+    result.add_argument('--uploader-id',
+                        '--uploader_id',
+                        default='',
+                        help='Build ID for Zoss coverage upload.')
     result.add_argument(
         '--test-dir',
         '--test_dir',
@@ -489,9 +507,17 @@ def test(options, args):
             'Inconsistent arguments: both --no-r8lib and --r8lib-no-deps specified.'
         )
         exit(1)
-    if options.with_code_coverage and not options.no_r8lib:
+    if (options.with_code_coverage or
+            options.upload_zoss) and not options.no_r8lib:
         print('Can not run code coverage on r8lib, please specify --no-r8lib.')
         exit(1)
+    if options.upload_zoss:
+        try:
+            if presubmit_coverage.prepare_jacoco_includes():
+                gradle_args.append('-Pjacoco_includes_file=' +
+                                   presubmit_coverage.COVERAGE_INCLUDES_FILE)
+        except Exception as e:
+            print(f'Diff coverage preparation skipped: {e}')
     if options.r8lib_no_deps:
         gradle_args.append('-Pr8lib_no_deps')
     elif not options.no_r8lib:
@@ -627,6 +653,16 @@ def test(options, args):
 
 
 def archive_and_return(return_code, options):
+    if (return_code == 0 and not options.compile_only and
+            options.upload_zoss and options.change_id and options.patchset):
+        try:
+            presubmit_coverage.upload_jacoco_report_to_zoss(
+                options.change_id,
+                options.patchset,
+                uploader_id=options.uploader_id,
+            )
+        except Exception as e:
+            print(f'Zoss coverage upload skipped: {e}')
     if options.command_cache_stats:
         stats_dir = os.path.join(options.command_cache_dir, 'stats')
         cache_hit = 0

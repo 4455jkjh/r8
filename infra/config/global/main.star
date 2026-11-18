@@ -607,7 +607,7 @@ r8_tester_with_default(
 
 r8_tester_with_default(
     "linux-dry-run",
-    ["--runtimes=dry-run", "--all_tests", "--command_cache_dir=.ccache"],
+    ["--runtimes=dry-run", "--all_tests", "--no-r8lib", "--upload-zoss", "--command_cache_dir=.ccache"],
     bucket = "try",
     priority = 24,
     trigger = False,

@@ -441,6 +441,33 @@ tasks {
     addAsInputAvailableViaSystemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar, usePrebuiltLib)
   }
 
+  fun verifyPrebuiltArtifacts(files: List<File>, dirs: List<File>) {
+    files
+      .firstOrNull { !it.exists() }
+      ?.let {
+        throw GradleException(
+          "Prebuilt artifact not found: ${it.absolutePath}. Ensure prepareTestArtifacts ran."
+        )
+      }
+    dirs
+      .firstOrNull { !it.exists() || it.listFiles().isNullOrEmpty() }
+      ?.let {
+        throw GradleException("Prebuilt unpacked directory missing or empty: ${it.absolutePath}.")
+      }
+  }
+
+  fun Test.setupCommonTestProperties() {
+    systemProperty(
+      "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
+    )
+    systemProperty("R8_DEPS", mainDepsJarFilesConfig.get().asPath)
+    systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
+    javaLauncher = getJavaLauncher(Jdk.JDK_25)
+    reports.junitXml.outputLocation.set(getRoot().resolveAll("build", "test-results", "test"))
+    reports.html.outputLocation.set(getRoot().resolveAll("build", "reports", "tests", "test"))
+  }
+
   fun Test.testR8Lib(
     r8Lib: TaskProvider<CreateR8LibraryTask>,
     unzipRewrittenTests: TaskProvider<Sync>,
@@ -476,8 +503,8 @@ tasks {
       val unpackedTestBaseDir = layout.buildDirectory.dir("unpacked/testbase").get().asFile
 
       doFirst {
-        val requiredFiles =
-          mutableListOf(
+        verifyPrebuiltArtifacts(
+          listOfNotNull(
             r8LibJarFile,
             packageTestDepsJar,
             rewrittenTestBaseJar,
@@ -485,25 +512,10 @@ tasks {
             processKeepRulesJar,
             r8AssistantJar,
             swissArmyKnifeJar,
-          )
-        if (!excludingDepsVariant) {
-          requiredFiles.add(r8LibNoDepsJarFile)
-        }
-        for (file in requiredFiles) {
-          if (!file.exists()) {
-            throw GradleException(
-              "Prebuilt artifact not found: ${file.absolutePath}. Ensure prepareTestArtifacts ran."
-            )
-          }
-        }
-        val requiredDirs = listOf(unpackedTestsDir, unpackedTestDir, unpackedTestBaseDir)
-        for (dir in requiredDirs) {
-          if (!dir.exists() || dir.listFiles().isNullOrEmpty()) {
-            throw GradleException(
-              "Prebuilt unpacked directory missing or empty: ${dir.absolutePath}."
-            )
-          }
-        }
+            if (!excludingDepsVariant) r8LibNoDepsJarFile else null,
+          ),
+          listOf(unpackedTestsDir, unpackedTestDir, unpackedTestBaseDir),
+        )
       }
 
       setupR8LibTestEnvironment(
@@ -550,17 +562,7 @@ tasks {
       )
     }
 
-    systemProperty(
-      "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
-    )
-    systemProperty("R8_DEPS", mainDepsJarFilesConfig.get().asPath)
-    systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
-
-    javaLauncher = getJavaLauncher(Jdk.JDK_25)
-
-    reports.junitXml.outputLocation.set(getRoot().resolveAll("build", "test-results", "test"))
-    reports.html.outputLocation.set(getRoot().resolveAll("build", "reports", "tests", "test"))
+    setupCommonTestProperties()
   }
 
   val testR8LibWithRelocatedDeps =
@@ -587,6 +589,9 @@ tasks {
         unzipTests,
         unzipTestBase,
         packageTestDeps,
+        packageTestBaseExcludeKeep,
+        mainDepsJarTask,
+        mainProtoJarTask,
         processKeepRulesLibWithRelocatedDepsTask,
         r8AssistantLibTask,
         swissArmyKnifeTask,
@@ -638,7 +643,116 @@ tasks {
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
   }
 
+  val customJacocoIncludes =
+    project
+      .findProperty("jacoco_includes_file")
+      ?.let { File(it.toString()) }
+      ?.takeIf { it.exists() }
+      ?.readLines()
+      ?.map { it.trim() }
+      ?.filter { it.isNotEmpty() }
+      ?.ifEmpty { null }
+  val customClassFilePatterns = customJacocoIncludes?.map { it.replace('.', '/') + ".class" }
+  val noR8LibJacocoExecFile = getRoot().resolveAll("build", "jacoco", "testNoR8Lib.exec")
+  val noR8LibJacocoXmlFile =
+    getRoot().resolveAll("build", "reports", "jacoco", "testNoR8Lib", "jacocoTestReport.xml")
+
   withType<Test> { extensions.configure<JacocoTaskExtension> { isEnabled = false } }
+
+  val jacocoReportNoR8Lib =
+    register<JacocoReport>("jacocoReportNoR8Lib") {
+      onlyIf { noR8LibJacocoExecFile.exists() }
+      executionData(noR8LibJacocoExecFile)
+      val root = getRoot()
+      val coveredModules =
+        listOf("assistant", "keepanno", "keepradius", "libanalyzer", "main", "utils")
+      sourceDirectories.setFrom(coveredModules.map { root.resolveAll("src", it, "java") })
+      val prebuiltClassDirs =
+        coveredModules
+          .flatMap { module ->
+            listOf("java", "kotlin").map { lang ->
+              root.resolveAll("d8_r8", module, "build", "classes", lang, "main")
+            }
+          }
+          .filter { it.exists() }
+      classDirectories.setFrom(
+        prebuiltClassDirs.map { dir ->
+          fileTree(dir) {
+            if (customClassFilePatterns != null) {
+              include(customClassFilePatterns)
+            }
+          }
+        }
+      )
+      reports {
+        xml.required.set(true)
+        xml.outputLocation.set(noR8LibJacocoXmlFile)
+        html.required.set(false)
+      }
+    }
+
+  val testNoR8Lib =
+    register<Test>("testNoR8Lib") {
+      val libsDir = getRoot().resolveAll("build", "libs")
+      val swissArmyKnifeJarFile = libsDir.resolve(swissArmyKnifeArtifactName)
+      val mainDepsJarFile =
+        project(":dist").layout.buildDirectory.file("distributions/deps.jar").get().asFile
+      val mainProtoJarFile = libsDir.resolve("proto.jar")
+      val packageTestDepsJar = libsDir.resolve(packageTestDepsArtifactName)
+      val testBaseNoKeepJar =
+        layout.buildDirectory.file("libs/r8test_base_no_keep.jar").get().asFile
+      val r8WithRelocatedDepsJar = libsDir.resolve(r8WithRelocatedDepsArtifactName)
+      val processKeepRulesJar = libsDir.resolve(processKeepRulesArtifactName)
+      val r8AssistantJar = libsDir.resolve(r8AssistantLibArtifactName)
+      val unpackedTestDir = layout.buildDirectory.dir("unpacked/test").get().asFile
+      val unpackedTestBaseDir = layout.buildDirectory.dir("unpacked/testbase").get().asFile
+
+      doFirst {
+        verifyPrebuiltArtifacts(
+          listOf(
+            swissArmyKnifeJarFile,
+            mainDepsJarFile,
+            mainProtoJarFile,
+            packageTestDepsJar,
+            testBaseNoKeepJar,
+            r8WithRelocatedDepsJar,
+            processKeepRulesJar,
+            r8AssistantJar,
+          ),
+          listOf(unpackedTestDir, unpackedTestBaseDir),
+        )
+      }
+
+      configure(isR8Lib = false, r8Jar = null, r8LibPartitionMapFile = null)
+      classpath =
+        files(
+          packageTestDepsJar,
+          swissArmyKnifeJarFile,
+          mainDepsJarFile,
+          mainProtoJarFile,
+          unpackedTestDir,
+          testBaseNoKeepJar,
+        )
+      testClassesDirs = files(unpackedTestDir)
+      systemProperty("TEST_DATA_LOCATION", unpackedTestDir.absolutePath)
+      systemProperty("TESTBASE_DATA_LOCATION", unpackedTestBaseDir.absolutePath)
+      systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar.absolutePath)
+      systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", processKeepRulesJar.absolutePath)
+      systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8WithRelocatedDepsJar.absolutePath)
+      systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJarFile.absolutePath)
+
+      setupCommonTestProperties()
+
+      if (customJacocoIncludes != null) {
+        doFirst { noR8LibJacocoExecFile.delete() }
+        extensions.configure<JacocoTaskExtension> {
+          isEnabled = true
+          includes = customJacocoIncludes
+          destinationFile = noR8LibJacocoExecFile
+        }
+        finalizedBy(jacocoReportNoR8Lib)
+      }
+    }
 
   named<JacocoReport>("jacocoTestReport") {
     dependsOn(coverageExecConfig)
@@ -677,6 +791,8 @@ tasks {
       dependsOn(testR8LibWithRelocatedDeps)
     } else if (project.hasProperty("r8lib_no_deps")) {
       dependsOn(testR8LibNoDeps)
+    } else if (project.hasProperty("use_prebuilt_lib")) {
+      dependsOn(testNoR8Lib)
     } else {
       dependsOn(":tests_java_8:testAll")
       dependsOn(":tests_java_11:test")
