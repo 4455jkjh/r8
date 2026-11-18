@@ -442,9 +442,8 @@ def g4_change(version, commit_info):
         message = f'DO NOT SUBMIT: {message}'
     if commit_info:
         message += f'\n\n{commit_info}'
-    message = message.replace("'", r"\'")
-    return subprocess.check_output(f"g4 change --desc $'{message}\n'",
-                                   shell=True).decode('utf-8')
+    return subprocess.check_output(['g4', 'change', '--desc',
+                                    f'{message}\n']).decode('utf-8')
 
 
 def get_cl_id(c4_change_output):
