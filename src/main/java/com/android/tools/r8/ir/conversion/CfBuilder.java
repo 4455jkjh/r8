@@ -50,6 +50,7 @@ import com.android.tools.r8.ir.code.StackValues;
 import com.android.tools.r8.ir.code.UninitializedThisLocalRead;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.Xor;
+import com.android.tools.r8.ir.conversion.finalizer.passes.BranchDiamondInverter;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
@@ -214,6 +215,13 @@ public class CfBuilder {
     timing.time("Rewrite Iinc patterns", this::rewriteIincPatterns);
 
     trivialGotosCollapser.run(code, registerAllocator, timing);
+    if (new BranchDiamondInverter(appView)
+        .run(code, registerAllocator, timing)
+        .hasChanged()
+        .isTrue()) {
+      // Redirecting an inverted If can expose a trivial-goto chain on its new true target.
+      trivialGotosCollapser.run(code, registerAllocator, timing);
+    }
     timing.begin("Remove redundant debug positions");
     DexBuilder.removeRedundantDebugPositions(appView, code);
     timing.end();
