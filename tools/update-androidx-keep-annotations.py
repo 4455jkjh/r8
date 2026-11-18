@@ -33,9 +33,8 @@ def main():
     source_dir = os.path.join(utils.REPO_ROOT, 'src', 'keepanno', 'java',
                               'androidx', 'annotation', 'keep')
     dest_dir = os.path.join(args.androidx, 'frameworks', 'support',
-                            'annotation', 'annotation-keep', 'src',
-                            'commonMain', 'kotlin', 'androidx', 'annotation',
-                            'keep')
+                            'annotation', 'keep', 'keep', 'src', 'commonMain',
+                            'kotlin', 'androidx', 'annotation', 'keep')
 
     for root, dir_names, filenames in os.walk(source_dir):
         if root != source_dir:
