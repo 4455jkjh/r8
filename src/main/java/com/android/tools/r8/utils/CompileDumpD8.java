@@ -55,7 +55,8 @@ public class CompileDumpD8 extends CompileDumpBase {
           "--desugared-lib",
           "--pg-map",
           "--pg-map-output",
-          "--api-database");
+          "--api-database",
+          "--api-extension-library");
 
   private static final List<String> VALID_OPTIONS_WITH_TWO_OPERANDS =
       Arrays.asList("--art-profile");
@@ -74,6 +75,7 @@ public class CompileDumpD8 extends CompileDumpBase {
     Path pgMap = null;
     Path pgOutputMap = null;
     Path apiDatabase = null;
+    List<Path> apiExtensionLibraries = new ArrayList<>();
     int minApiMajor = 1;
     int minApiMinor = 0;
     int threads = -1;
@@ -166,6 +168,11 @@ public class CompileDumpD8 extends CompileDumpBase {
               apiDatabase = Paths.get(operand);
               break;
             }
+          case "--api-extension-library":
+            {
+              apiExtensionLibraries.add(Paths.get(operand));
+              break;
+            }
           default:
             throw new IllegalArgumentException("Unimplemented option: " + option);
         }
@@ -215,6 +222,11 @@ public class CompileDumpD8 extends CompileDumpBase {
           () -> CompilerCommandDumpUtils.setApiDatabasePath(commandBuilder, finalApiDatabase),
           "API database not available.");
     }
+    addApiExtensionLibraries(
+        () ->
+            CompilerCommandDumpUtils.addApiExtensionLibraries(
+                commandBuilder, apiExtensionLibraries),
+        apiExtensionLibraries);
     if (desugaredLibJson != null) {
       commandBuilder.addDesugaredLibraryConfiguration(readAllBytesJava7(desugaredLibJson));
     }

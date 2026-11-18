@@ -20,8 +20,10 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -89,6 +91,7 @@ public class DumpOptions {
   private final Map<String, String> systemProperties;
   private final Optional<Boolean> hasProguardMapConsumer;
   private final Path apiDatabasePath;
+  private final List<Path> apiExtensionLibraries;
 
   // TraceReferences only.
   private final String traceReferencesConsumer;
@@ -125,7 +128,8 @@ public class DumpOptions {
       R8PartialCompilationConfiguration partialCompilationConfiguration,
       Optional<Boolean> optimizedResourceShrinking,
       Optional<Boolean> hasProguardMapConsumer,
-      Path apiDatabasePath) {
+      Path apiDatabasePath,
+      List<Path> apiExtensionLibraries) {
     this.backend = backend;
     this.tool = tool;
     this.compilationMode = compilationMode;
@@ -155,6 +159,7 @@ public class DumpOptions {
     this.partialCompilationConfiguration = partialCompilationConfiguration;
     this.hasProguardMapConsumer = hasProguardMapConsumer;
     this.apiDatabasePath = apiDatabasePath;
+    this.apiExtensionLibraries = apiExtensionLibraries;
   }
 
   public String getBuildPropertiesFileContent() {
@@ -304,12 +309,25 @@ public class DumpOptions {
     return systemProperties.get("com.android.tools.r8.androidApiExtensionPackages");
   }
 
-  public boolean hasAndroidApiExtensionLibraries() {
-    return getAndroidApiExtensionLibraries() != null;
+  public boolean hasApiExtensionLibraries() {
+    return !getApiExtensionLibraries().isEmpty();
   }
 
-  public String getAndroidApiExtensionLibraries() {
-    return systemProperties.get("com.android.tools.r8.androidApiExtensionLibraries");
+  /**
+   * Returns the Android API extension libraries specified through the system property followed by
+   * the libraries specified through the command line or builder API.
+   */
+  public List<Path> getApiExtensionLibraries() {
+    List<Path> libraries = new ArrayList<>();
+    String systemPropertyValue =
+        systemProperties.get("com.android.tools.r8.androidApiExtensionLibraries");
+    if (systemPropertyValue != null) {
+      for (String library : StringUtils.split(systemPropertyValue, ',')) {
+        libraries.add(Paths.get(library));
+      }
+    }
+    libraries.addAll(apiExtensionLibraries);
+    return libraries;
   }
 
   public Tool getTool() {
@@ -443,6 +461,7 @@ public class DumpOptions {
     private Optional<Boolean> optimizedResourceShrinking = Optional.empty();
     private Optional<Boolean> hasProgramMapConsumer = Optional.empty();
     private Path apiDatabasePath;
+    private List<Path> apiExtensionLibraries = Collections.emptyList();
 
     private boolean enableMissingLibraryApiModeling = false;
     private boolean isAndroidPlatformBuild = false;
@@ -652,11 +671,17 @@ public class DumpOptions {
           partialCompilationConfiguration,
           optimizedResourceShrinking,
           hasProgramMapConsumer,
-          apiDatabasePath);
+          apiDatabasePath,
+          apiExtensionLibraries);
     }
 
     public Builder setApiDatabasePath(Path apiDatabasePath) {
       this.apiDatabasePath = apiDatabasePath;
+      return this;
+    }
+
+    public Builder setApiExtensionLibraries(List<Path> apiExtensionLibraries) {
+      this.apiExtensionLibraries = apiExtensionLibraries;
       return this;
     }
 

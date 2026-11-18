@@ -106,6 +106,7 @@ public final class L8Command extends BaseCompilerCommand {
       CancelCompilationChecker cancelCompilationChecker,
       DexItemFactory factory,
       Path apiDatabasePath,
+      List<Path> apiExtensionLibraries,
       boolean enableVerboseSyntheticNames) {
     super(
         inputApp,
@@ -130,7 +131,8 @@ public final class L8Command extends BaseCompilerCommand {
         classConflictResolver,
         cancelCompilationChecker,
         enableVerboseSyntheticNames,
-        apiDatabasePath);
+        apiDatabasePath,
+        apiExtensionLibraries);
     this.d8Command = d8Command;
     this.r8Command = r8Command;
     this.desugaredLibrarySpecification = desugaredLibrarySpecification;
@@ -415,6 +417,7 @@ public final class L8Command extends BaseCompilerCommand {
                 .setDexClassChecksumFilter(getDexClassChecksumFilter())
                 .setProgramConsumer(getProgramConsumer())
                 .setApiDatabasePath(getApiDatabasePath())
+                .addApiExtensionLibraries(getApiExtensionLibraries())
                 .setEnableVerboseSyntheticNames(enableVerboseSyntheticNames);
         for (ArtProfileForRewriting artProfileForRewriting : getArtProfilesForRewriting()) {
           r8Builder.addArtProfileForRewriting(artProfileForRewriting);
@@ -456,6 +459,7 @@ public final class L8Command extends BaseCompilerCommand {
                 .setDexClassChecksumFilter(getDexClassChecksumFilter())
                 .setProgramConsumer(getProgramConsumer())
                 .setApiDatabasePath(getApiDatabasePath())
+                .addApiExtensionLibraries(getApiExtensionLibraries())
                 .setEnableRewritingOfArtProfilesIsNopCheck()
                 .setEnableVerboseSyntheticNames(enableVerboseSyntheticNames);
         for (ClassFileResourceProvider libraryResourceProvider :
@@ -491,6 +495,7 @@ public final class L8Command extends BaseCompilerCommand {
           getCancelCompilationChecker(),
           factory,
           getApiDatabasePath(),
+          getApiExtensionLibraries(),
           enableVerboseSyntheticNames);
     }
   }

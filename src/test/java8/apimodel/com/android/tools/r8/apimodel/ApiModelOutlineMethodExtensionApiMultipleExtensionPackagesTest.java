@@ -68,8 +68,9 @@ public class ApiModelOutlineMethodExtensionApiMultipleExtensionPackagesTest exte
         .addOptionsModification(
             options -> {
               if (useExtensionJar) {
-                options.apiModelingOptions().androidApiExtensionLibraries =
-                    extensionLibraryJar.toString();
+                options
+                    .apiModelingOptions()
+                    .addApiExtensionLibraries(ImmutableList.of(extensionLibraryJar));
               } else {
                 String typeName = ExtensionApiLibraryClass.class.getTypeName();
                 String anotherTypeName = AnotherExtensionApiLibraryClass.class.getTypeName();

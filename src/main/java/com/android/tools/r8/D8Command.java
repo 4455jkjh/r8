@@ -430,6 +430,31 @@ public final class D8Command extends BaseCompilerCommand {
       return self();
     }
 
+    /**
+     * Add Android API extension libraries.
+     *
+     * <p>Android API extension libraries are shared libraries or sidecars that are implemented by
+     * OEMs (such as androidx.window.extensions). The APIs in these libraries are modeled as not
+     * being available at any API level, which ensures that references to them are outlined when API
+     * outlining is enabled.
+     *
+     * <p>This only marks the classes in the given libraries as extension APIs. The libraries must
+     * also be provided as library inputs.
+     */
+    public Builder addApiExtensionLibraries(Path... libraries) {
+      return addApiExtensionLibraries(Arrays.asList(libraries));
+    }
+
+    /**
+     * Add Android API extension libraries.
+     *
+     * <p>See {@link #addApiExtensionLibraries(Path...)}.
+     */
+    @Override
+    public Builder addApiExtensionLibraries(Collection<Path> libraries) {
+      return super.addApiExtensionLibraries(libraries);
+    }
+
     /** Add proguard rules for automatic main-dex-list calculation. */
     public Builder addMainDexRules(List<String> lines, Origin origin) {
       String config = String.join(System.lineSeparator(), lines);
@@ -629,6 +654,7 @@ public final class D8Command extends BaseCompilerCommand {
           getClassConflictResolver(),
           getCancelCompilationChecker(),
           getApiDatabasePath(),
+          getApiExtensionLibraries(),
           factory);
     }
   }
@@ -733,6 +759,7 @@ public final class D8Command extends BaseCompilerCommand {
       ClassConflictResolver classConflictResolver,
       CancelCompilationChecker cancelCompilationChecker,
       Path apiDatabasePath,
+      List<Path> apiExtensionLibraries,
       DexItemFactory factory) {
     super(
         inputApp,
@@ -757,7 +784,8 @@ public final class D8Command extends BaseCompilerCommand {
         classConflictResolver,
         cancelCompilationChecker,
         enableVerboseSyntheticNames,
-        apiDatabasePath);
+        apiDatabasePath,
+        apiExtensionLibraries);
     this.intermediate = intermediate;
     this.reoptimizeDex = reoptimizeDex;
     this.globalSyntheticsConsumer = globalSyntheticsConsumer;
@@ -818,6 +846,7 @@ public final class D8Command extends BaseCompilerCommand {
     internal.enableMainDexListCheck = enableMainDexListCheck;
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));
     internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
+    internal.apiModelingOptions().addApiExtensionLibraries(getApiExtensionLibraries());
     internal.intermediate = intermediate;
     if (reoptimizeDex) { // Respect potential system property.
       internal.enableDexToDexCodeOptimizations = reoptimizeDex;

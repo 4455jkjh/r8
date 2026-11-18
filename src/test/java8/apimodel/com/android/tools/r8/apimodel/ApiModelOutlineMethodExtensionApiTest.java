@@ -19,7 +19,6 @@ import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryInterface;
 import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryInterfaceImpl;
 import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryInterfaceProvider;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
@@ -34,6 +33,12 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ApiModelOutlineMethodExtensionApiTest extends TestBase {
 
+  public enum ExtensionSpecification {
+    PACKAGES_OPTION,
+    JAR_OPTION,
+    JAR_BUILDER_API
+  }
+
   private static final String EXPECTED_OUTPUT =
       StringUtils.lines(
           "ExtensionApiLibraryClass::extensionApi",
@@ -43,12 +48,12 @@ public class ApiModelOutlineMethodExtensionApiTest extends TestBase {
   public TestParameters parameters;
 
   @Parameter(1)
-  public boolean useExtensionJar;
+  public ExtensionSpecification extensionSpecification;
 
-  @Parameters(name = "{0}, useExtensionJar = {1}")
+  @Parameters(name = "{0}, {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+        getTestParameters().withAllRuntimesAndApiLevels().build(), ExtensionSpecification.values());
   }
 
   private static final List<Class<?>> extensionLibraryClasses =
@@ -73,13 +78,23 @@ public class ApiModelOutlineMethodExtensionApiTest extends TestBase {
         .setMinApi(parameters)
         .addOptionsModification(
             options -> {
-              if (useExtensionJar) {
-                options.apiModelingOptions().androidApiExtensionLibraries =
-                    extensionLibraryJar.toString();
-              } else {
+              if (extensionSpecification == ExtensionSpecification.JAR_OPTION) {
+                options
+                    .apiModelingOptions()
+                    .addApiExtensionLibraries(ImmutableList.of(extensionLibraryJar));
+              } else if (extensionSpecification == ExtensionSpecification.PACKAGES_OPTION) {
                 String typeName = ExtensionApiLibraryClass.class.getTypeName();
                 options.apiModelingOptions().androidApiExtensionPackages =
                     typeName.substring(0, typeName.lastIndexOf('.'));
+              }
+            })
+        .applyIf(
+            extensionSpecification == ExtensionSpecification.JAR_BUILDER_API,
+            b -> {
+              if (b.isD8TestBuilder()) {
+                b.asD8TestBuilder().getBuilder().addApiExtensionLibraries(extensionLibraryJar);
+              } else {
+                b.asR8TestBuilder().getBuilder().addApiExtensionLibraries(extensionLibraryJar);
               }
             })
         // TODO(b/213552119): Remove when enabled by default.

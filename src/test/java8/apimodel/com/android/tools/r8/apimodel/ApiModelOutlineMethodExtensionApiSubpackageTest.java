@@ -7,7 +7,6 @@ package com.android.tools.r8.apimodel;
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.verifyThat;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
@@ -19,6 +18,7 @@ import com.android.tools.r8.apimodel.extension.subpackage.SubpackageExtensionApi
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.BeforeClass;
@@ -82,22 +82,16 @@ public class ApiModelOutlineMethodExtensionApiSubpackageTest extends TestBase {
         .addOptionsModification(
             options -> {
               if (useExtensionJar) {
-                StringBuilder androidApiExtensionLibraries = new StringBuilder();
+                ImmutableList.Builder<Path> apiExtensionLibraries = ImmutableList.builder();
                 if (packageIsExtension) {
-                  androidApiExtensionLibraries.append(extensionLibraryJar);
+                  apiExtensionLibraries.add(extensionLibraryJar);
                 }
                 if (subpackageIsExtension) {
-                  if (packageIsExtension) {
-                    androidApiExtensionLibraries.append(",");
-                  }
-                  androidApiExtensionLibraries.append(subPackagExtensionLibraryJar);
+                  apiExtensionLibraries.add(subPackagExtensionLibraryJar);
                 }
-                if (packageIsExtension || subpackageIsExtension) {
-                  options.apiModelingOptions().androidApiExtensionLibraries =
-                      androidApiExtensionLibraries.toString();
-                } else {
-                  assertTrue(androidApiExtensionLibraries.toString().isEmpty());
-                }
+                options
+                    .apiModelingOptions()
+                    .addApiExtensionLibraries(apiExtensionLibraries.build());
               } else {
                 StringBuilder androidApiExtensionPackages = new StringBuilder();
                 if (packageIsExtension) {

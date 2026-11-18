@@ -73,7 +73,8 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
           "--threads",
           "--startup-profile",
           "--android-resources-usage-log",
-          "--api-database");
+          "--api-database",
+          "--api-extension-library");
 
   private static final List<String> VALID_OPTIONS_WITH_TWO_OPERANDS =
       Arrays.asList("--art-profile", "--feature-jar", "--android-resources");
@@ -127,6 +128,7 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
     Path androidResourcesOutput = null;
     StringConsumer androidResourcesUsageLogConsumer = null;
     Path apiDatabase = null;
+    List<Path> apiExtensionLibraries = new ArrayList<>();
     int minApiMajor = 1;
     int minApiMinor = 0;
     int threads = -1;
@@ -258,6 +260,11 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
               apiDatabase = Paths.get(operand);
               break;
             }
+          case "--api-extension-library":
+            {
+              apiExtensionLibraries.add(Paths.get(operand));
+              break;
+            }
           default:
             throw new IllegalArgumentException("Unimplemented option: " + option);
         }
@@ -340,6 +347,11 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
           () -> CompilerCommandDumpUtils.setApiDatabasePath(commandBuilder, finalApiDatabase),
           "API database not available.");
     }
+    addApiExtensionLibraries(
+        () ->
+            CompilerCommandDumpUtils.addApiExtensionLibraries(
+                commandBuilder, apiExtensionLibraries),
+        apiExtensionLibraries);
     if (desugaredLibJson != null) {
       commandBuilder.addDesugaredLibraryConfiguration(readAllBytesJava7(desugaredLibJson));
     }

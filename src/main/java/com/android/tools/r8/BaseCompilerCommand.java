@@ -31,6 +31,7 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +75,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
   private final CancelCompilationChecker cancelCompilationChecker;
   final boolean enableVerboseSyntheticNames;
   private final Path apiDatabasePath;
+  private final List<Path> apiExtensionLibraries;
 
   BaseCompilerCommand(boolean printHelp, boolean printVersion) {
     super(printHelp, printVersion);
@@ -99,6 +101,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     cancelCompilationChecker = null;
     enableVerboseSyntheticNames = false;
     apiDatabasePath = null;
+    apiExtensionLibraries = Collections.emptyList();
   }
 
   BaseCompilerCommand(
@@ -124,7 +127,8 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       ClassConflictResolver classConflictResolver,
       CancelCompilationChecker cancelCompilationChecker,
       boolean enableVerboseSyntheticNames,
-      Path apiDatabasePath) {
+      Path apiDatabasePath,
+      List<Path> apiExtensionLibraries) {
     super(app);
     assert mode != null;
     this.mode = mode;
@@ -149,6 +153,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     this.cancelCompilationChecker = cancelCompilationChecker;
     this.enableVerboseSyntheticNames = enableVerboseSyntheticNames;
     this.apiDatabasePath = apiDatabasePath;
+    this.apiExtensionLibraries = ImmutableList.copyOf(apiExtensionLibraries);
   }
 
   /**
@@ -191,6 +196,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     if (getApiDatabasePath() != null) {
       builder.setApiDatabasePath(getApiDatabasePath());
     }
+    builder.setApiExtensionLibraries(getApiExtensionLibraries());
   }
 
   /**
@@ -280,6 +286,10 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     return apiDatabasePath;
   }
 
+  List<Path> getApiExtensionLibraries() {
+    return apiExtensionLibraries;
+  }
+
   DumpInputFlags getDumpInputFlags() {
     return dumpInputFlags;
   }
@@ -328,6 +338,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     private ClassConflictResolver classConflictResolver = null;
     private CancelCompilationChecker cancelCompilationChecker = null;
     private Path apiDatabasePath = null;
+    private final List<Path> apiExtensionLibraries = new ArrayList<>();
 
     abstract CompilationMode defaultCompilationMode();
 
@@ -832,6 +843,15 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     /** Get the API database path. The default database will be used if null. */
     public Path getApiDatabasePath() {
       return apiDatabasePath;
+    }
+
+    B addApiExtensionLibraries(Collection<Path> libraries) {
+      apiExtensionLibraries.addAll(libraries);
+      return self();
+    }
+
+    List<Path> getApiExtensionLibraries() {
+      return Collections.unmodifiableList(apiExtensionLibraries);
     }
 
     /**

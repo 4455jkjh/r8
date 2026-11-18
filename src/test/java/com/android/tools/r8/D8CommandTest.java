@@ -201,6 +201,12 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             "                          # ApiDatabaseGenerator (it is an unstable and not backwards"
                 + " compatible",
             "                          # format).",
+            "  --api-extension-library <file>",
+            "                          # Use <file> as an Android API extension library (an"
+                + " OEM-implemented shared",
+            "                          # library or sidecar). APIs in <file> are modeled as not"
+                + " being available at",
+            "                          # any API level. Can be repeated.",
             "  --pg-map <file>         # Use <file> as a mapping file for distribution.",
             "  --pg-map-output <file>  # Enable line optimization and output mapping to <file>.",
             "  --partition-map-output <file>",
@@ -944,6 +950,48 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     D8Command command = parse("--api-database", apiDatabase.toString());
     assertEquals(apiDatabase, command.getApiDatabasePath());
     assertEquals(apiDatabase, command.getInternalOptions().apiModelingOptions().apiDatabasePath);
+  }
+
+  @Test
+  public void apiExtensionLibraryFlagRepeated() throws Exception {
+    Path library1 = temp.newFile("extension1.jar").toPath();
+    Path library2 = temp.newFile("extension2.jar").toPath();
+    D8Command command =
+        parse(
+            "--api-extension-library",
+            library1.toString(),
+            "--api-extension-library",
+            library2.toString());
+    assertEquals(ImmutableList.of(library1, library2), command.getApiExtensionLibraries());
+    assertEquals(
+        ImmutableList.of(library1, library2),
+        command.getInternalOptions().apiModelingOptions().getApiExtensionLibraries());
+  }
+
+  @Test
+  public void apiExtensionLibrariesBuilderApi() throws Exception {
+    Path library1 = temp.newFile("extension1.jar").toPath();
+    Path library2 = temp.newFile("extension2.jar").toPath();
+    Path library3 = temp.newFile("extension3.jar").toPath();
+    D8Command command =
+        D8Command.builder()
+            .addApiExtensionLibraries(library1, library2)
+            .addApiExtensionLibraries(ImmutableList.of(library3))
+            .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+            .build();
+    assertEquals(
+        ImmutableList.of(library1, library2, library3), command.getApiExtensionLibraries());
+    assertEquals(
+        ImmutableList.of(library1, library2, library3),
+        command.getInternalOptions().apiModelingOptions().getApiExtensionLibraries());
+  }
+
+  @Test
+  public void apiExtensionLibrariesNotSet() throws Exception {
+    D8Command command = parse();
+    assertTrue(command.getApiExtensionLibraries().isEmpty());
+    assertTrue(
+        command.getInternalOptions().apiModelingOptions().getApiExtensionLibraries().isEmpty());
   }
 
   @Test

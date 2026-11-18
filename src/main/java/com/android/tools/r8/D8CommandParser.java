@@ -281,6 +281,13 @@ public class D8CommandParser {
               }
             })
         .option1(
+            "--api-extension-library",
+            "<file>",
+            "Use <file> as an Android API extension library (an OEM-implemented shared library"
+                + " or sidecar). APIs in <file> are modeled as not being available at any API"
+                + " level. Can be repeated.",
+            (state, arg) -> state.builder.addApiExtensionLibraries(Paths.get(arg)))
+        .option1(
             "--pg-map",
             "<file>",
             "Use <file> as a mapping file for distribution.",

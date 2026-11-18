@@ -68,7 +68,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -602,8 +601,8 @@ public class AndroidApp {
         writeToZipStream(
             out, dumpApiDatabaseFileName, Files.readAllBytes(apiDatabasePath), ZipEntry.DEFLATED);
       }
-      if (dumpOptions.hasAndroidApiExtensionLibraries()) {
-        dumpApiExtensionLibraries(dumpOptions.getAndroidApiExtensionLibraries(), out);
+      if (dumpOptions.hasApiExtensionLibraries()) {
+        dumpApiExtensionLibraries(dumpOptions.getApiExtensionLibraries(), out);
       }
       int nextDexIndex = 0;
       nextDexIndex =
@@ -632,14 +631,14 @@ public class AndroidApp {
     return nextDexIndex;
   }
 
-  private static void dumpApiExtensionLibraries(String libraries, ZipOutputStream out)
+  private static void dumpApiExtensionLibraries(List<Path> libraries, ZipOutputStream out)
       throws IOException {
     int libraryIndex = 1;
-    for (String library : StringUtils.split(libraries, ',')) {
+    for (Path library : libraries) {
       writeToZipStream(
           out,
           dumpApiExtensionLibraryFileNamePrefix + libraryIndex + ".jar",
-          Files.readAllBytes(Paths.get(library)),
+          Files.readAllBytes(library),
           ZipEntry.DEFLATED);
       libraryIndex++;
     }

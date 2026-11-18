@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * This is an experimental API for injecting reflective identification callbacks into dex code. This
@@ -44,7 +45,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
       UncheckedApiLevel minApiLevel,
       Reporter reporter,
       String reflectiveReceiverDescriptor,
-      Path apiDatabasePath) {
+      Path apiDatabasePath,
+      List<Path> apiExtensionLibraries) {
     super(
         app,
         mode,
@@ -68,7 +70,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
         null,
         null,
         false,
-        apiDatabasePath);
+        apiDatabasePath,
+        apiExtensionLibraries);
     this.reflectiveReceiverDescriptor = reflectiveReceiverDescriptor;
   }
 
@@ -89,7 +92,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
         new UncheckedApiLevel(minApiLevelMajor),
         reporter,
         reflectiveReceiverDescriptor,
-        apiDatabasePath);
+        apiDatabasePath,
+        Collections.emptyList());
   }
 
   public static Builder builder(DiagnosticsHandler reporter) {
@@ -106,6 +110,7 @@ public class R8AssistantCommand extends BaseCompilerCommand {
     InternalOptions options = new InternalOptions(factory, getReporter());
     options.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));
     options.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
+    options.apiModelingOptions().addApiExtensionLibraries(getApiExtensionLibraries());
     options.passthroughDexCode = true;
     options.enableMainDexListCheck = false;
     options.tool = Tool.R8Assistant;
@@ -183,7 +188,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
           getUncheckedMinApiLevel(),
           getReporter(),
           reflectiveReceiverDescriptor,
-          getApiDatabasePath());
+          getApiDatabasePath(),
+          getApiExtensionLibraries());
     }
 
     private void injectRuntime() {

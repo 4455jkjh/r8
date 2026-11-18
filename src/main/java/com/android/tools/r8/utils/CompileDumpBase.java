@@ -10,6 +10,7 @@ import com.android.tools.r8.utils.compiledump.CompilerCommandDumpUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -45,6 +46,25 @@ public class CompileDumpBase {
               ArtProfileDumpUtils.addArtProfileForRewriting(
                   inputOutput.getKey(), inputOutput.getValue(), builder),
           "Unable to setup art profile rewriting for " + inputOutput.getKey());
+    }
+  }
+
+  static void addApiExtensionLibraries(Runnable addToBuilder, List<Path> apiExtensionLibraries) {
+    if (apiExtensionLibraries.isEmpty()) {
+      return;
+    }
+    try {
+      addToBuilder.run();
+    } catch (NoClassDefFoundError | NoSuchMethodError e) {
+      // Older versions only support passing the libraries using a system property.
+      StringBuilder libraries = new StringBuilder();
+      for (Path library : apiExtensionLibraries) {
+        if (libraries.length() > 0) {
+          libraries.append(',');
+        }
+        libraries.append(library);
+      }
+      System.setProperty("com.android.tools.r8.androidApiExtensionLibraries", libraries.toString());
     }
   }
 

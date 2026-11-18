@@ -8,6 +8,7 @@ import com.android.tools.r8.BaseCompilerCommand;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.R8Command;
 import java.nio.file.Path;
+import java.util.List;
 
 // Simple boolean commands directly on compiler command builders
 public class CompilerCommandDumpUtils {
@@ -54,5 +55,13 @@ public class CompilerCommandDumpUtils {
 
   public static void setApiDatabasePath(D8Command.Builder builder, Path apiDatabasePath) {
     builder.setApiDatabasePath(apiDatabasePath);
+  }
+
+  public static void addApiExtensionLibraries(R8Command.Builder builder, List<Path> libraries) {
+    builder.addApiExtensionLibraries(libraries);
+  }
+
+  public static void addApiExtensionLibraries(D8Command.Builder builder, List<Path> libraries) {
+    builder.addApiExtensionLibraries(libraries);
   }
 }

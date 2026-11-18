@@ -16,9 +16,11 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -34,8 +36,9 @@ public class AndroidApiModelingOptions {
   // or sidecars). All APIs within these libraries are handled as having an API level
   // higher than any existing API level as these APIs might not exist on any device independent
   // of API level (the nature of an extension API).
-  public String androidApiExtensionLibraries =
-      System.getProperty("com.android.tools.r8.androidApiExtensionLibraries");
+  private List<Path> apiExtensionLibraries =
+      parseApiExtensionLibraries(
+          System.getProperty("com.android.tools.r8.androidApiExtensionLibraries"));
 
   // TODO(b/326252366): Remove support for list of extension packages in favour of only
   //  supporting passing extension libraries as JAR files.
@@ -75,24 +78,48 @@ public class AndroidApiModelingOptions {
     this.options = options;
   }
 
+  private static List<Path> parseApiExtensionLibraries(String libraries) {
+    if (libraries == null) {
+      return ImmutableList.of();
+    }
+    ImmutableList.Builder<Path> builder = ImmutableList.builder();
+    for (String library : StringUtils.split(libraries, ',')) {
+      if (!library.isEmpty()) {
+        builder.add(Paths.get(library));
+      }
+    }
+    return builder.build();
+  }
+
+  /**
+   * Add extension libraries after any libraries already specified (e.g., through the system
+   * property).
+   */
+  public void addApiExtensionLibraries(List<Path> libraries) {
+    if (!libraries.isEmpty()) {
+      apiExtensionLibraries =
+          ImmutableList.<Path>builder().addAll(apiExtensionLibraries).addAll(libraries).build();
+    }
+  }
+
+  public List<Path> getApiExtensionLibraries() {
+    return apiExtensionLibraries;
+  }
+
   public void forEachAndroidApiExtensionClassDescriptor(Consumer<String> consumer) {
     assert isApiModelingEnabled();
-    if (androidApiExtensionLibraries != null) {
-      StringUtils.split(androidApiExtensionLibraries, ',')
-          .forEach(
-              lib -> {
-                try {
-                  ZipUtils.iter(
-                      Paths.get(lib),
-                      (entry, input) -> {
-                        if (ZipUtils.isClassFile(entry.getName())) {
-                          consumer.accept(extractClassDescriptor(input));
-                        }
-                      });
-                } catch (Exception e) {
-                  throw new CompilationError("Failed to read extension library " + lib, e);
-                }
-              });
+    for (Path library : apiExtensionLibraries) {
+      try {
+        ZipUtils.iter(
+            library,
+            (entry, input) -> {
+              if (ZipUtils.isClassFile(entry.getName())) {
+                consumer.accept(extractClassDescriptor(input));
+              }
+            });
+      } catch (Exception e) {
+        throw new CompilationError("Failed to read extension library " + library, e);
+      }
     }
   }
 

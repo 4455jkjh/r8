@@ -514,9 +514,6 @@ def determine_d8_proguard_map_output(args, build_properties):
 def determine_properties(build_properties, dump):
     args = []
     api_extension_libraries = dump.api_extension_libraries()
-    if api_extension_libraries:
-        args.append('-D' + _API_EXTENSION_LIBS_PROPERTY + '=' +
-                    ','.join(api_extension_libraries))
     for key, value in build_properties.items():
         # When writing dumps all system properties starting with com.android.tools.r8
         # are written to the build.properties file in the format
@@ -531,8 +528,9 @@ def determine_properties(build_properties, dump):
                     name.endswith('trace.minvalue_ms')):
                 continue
             if name == _API_EXTENSION_LIBS_PROPERTY:
-                # The paths refer to the original build environment. Use the
-                # libraries captured in the dump instead.
+                # The paths refer to the original build environment. The
+                # libraries captured in the dump are passed using
+                # --api-extension-library instead.
                 if not api_extension_libraries:
                     print('WARNING: Dump does not contain the API extension '
                           'libraries, ignoring: ' + value)
@@ -798,9 +796,11 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.extend(['--desugared-lib', dump.desugared_library_json()])
         api_database = args.api_database if args.api_database else dump.api_database_file(
         )
-        if api_database and (is_d8_compiler(compiler) or
-                             is_r8_compiler(compiler)):
-            cmd.extend(['--api-database', api_database])
+        if is_d8_compiler(compiler) or is_r8_compiler(compiler):
+            if api_database:
+                cmd.extend(['--api-database', api_database])
+            for library in dump.api_extension_libraries():
+                cmd.extend(['--api-extension-library', library])
         if (is_r8_compiler(compiler) or compiler == 'l8') and config_files:
             if hasattr(args,
                        'config_files_consumer') and args.config_files_consumer:
