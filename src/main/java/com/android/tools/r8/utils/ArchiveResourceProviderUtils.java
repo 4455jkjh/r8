@@ -16,11 +16,13 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.io.ByteStreams;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -33,6 +35,10 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 public class ArchiveResourceProviderUtils {
+
+  // Conservative cap on pre-allocating a byte[] from a ZIP header's reported uncompressed size
+  // so corrupt headers do not trigger huge allocations; larger entries fall back to streaming.
+  private static final int MAX_PREALLOCATE_SIZE = 100_000_000;
 
   // Flag to disable the use of one-shot byte resources to support using R8 9.x with AGP 8.y.
   private static final boolean enableOneShotByteResource =
@@ -72,26 +78,22 @@ public class ArchiveResourceProviderUtils {
         if (ZipUtils.isDexFile(name)) {
           if (predicate.test(name, Kind.DEX)) {
             Origin entryOrigin = new ArchiveEntryOrigin(name, origin);
-            try (InputStream stream = zipFile.getInputStream(entry)) {
-              consumer.accept(
-                  programResourceFactory.create(
-                      entryOrigin, Kind.DEX, ByteStreams.toByteArray(stream), null));
-              seenDex.set();
-            }
+            consumer.accept(
+                programResourceFactory.create(
+                    entryOrigin, Kind.DEX, readZipEntryBytes(zipFile, entry), null));
+            seenDex.set();
           }
         } else if (ZipUtils.isClassFile(name)) {
           if (predicate.test(name, Kind.CF)) {
             Origin entryOrigin = new ArchiveEntryOrigin(name, origin);
             String descriptor = DescriptorUtils.guessTypeDescriptor(name);
-            try (InputStream stream = zipFile.getInputStream(entry)) {
-              consumer.accept(
-                  programResourceFactory.create(
-                      entryOrigin,
-                      Kind.CF,
-                      ByteStreams.toByteArray(stream),
-                      Collections.singleton(descriptor)));
-              seenCf.set();
-            }
+            consumer.accept(
+                programResourceFactory.create(
+                    entryOrigin,
+                    Kind.CF,
+                    readZipEntryBytes(zipFile, entry),
+                    Collections.singleton(descriptor)));
+            seenCf.set();
           }
         }
       }
@@ -104,6 +106,35 @@ public class ArchiveResourceProviderUtils {
       seenKinds.add(Kind.DEX);
     }
     return seenKinds;
+  }
+
+  private static byte[] readZipEntryBytes(ZipFile zipFile, ZipEntry entry) throws IOException {
+    try (InputStream stream = zipFile.getInputStream(entry)) {
+      long size = entry.getSize();
+      if (size < 0 || size > MAX_PREALLOCATE_SIZE) {
+        // Entry size is unknown (-1) or exceeds the pre-allocation cap (e.g., ZIP64 or bogus
+        // header).
+        return ByteStreams.toByteArray(stream);
+      }
+      byte[] bytes = new byte[(int) size];
+      // Use ByteStreams rather than Java 9+ InputStream.readNBytes/transferTo so R8 runs on ART.
+      int n = ByteStreams.read(stream, bytes, 0, bytes.length);
+      if (n < bytes.length) {
+        // Stream reached EOF early because the ZIP header over-reported the uncompressed size.
+        return Arrays.copyOf(bytes, n);
+      }
+      int next = stream.read();
+      if (next == -1) {
+        // Normal case: stream length matched entry.getSize() exactly.
+        return bytes;
+      }
+      // Stream has more data because the ZIP header under-reported the uncompressed size.
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      out.write(bytes);
+      out.write(next);
+      ByteStreams.copy(stream, out);
+      return out.toByteArray();
+    }
   }
 
   private static ProgramResource createProgramResource(
