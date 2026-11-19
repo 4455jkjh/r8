@@ -252,13 +252,15 @@ public class DefaultFieldValueJoiner {
   }
 
   private boolean hasFullyInlinedInstanceInitializers() {
-    return !classesWithSingleCallerInlinedInstanceInitializers.isEmpty()
+    return classesWithSingleCallerInlinedInstanceInitializers == null
+        || !classesWithSingleCallerInlinedInstanceInitializers.isEmpty()
         || (appView.getSmallMethodInlinerResult() != null
             && appView.getSmallMethodInlinerResult().hasFullyInlinedInstanceInitializers());
   }
 
   private boolean hasFullyInlinedInstanceInitializers(DexProgramClass clazz) {
-    return classesWithSingleCallerInlinedInstanceInitializers.contains(clazz)
+    return classesWithSingleCallerInlinedInstanceInitializers == null
+        || classesWithSingleCallerInlinedInstanceInitializers.contains(clazz)
         || (appView.getSmallMethodInlinerResult() != null
             && appView.getSmallMethodInlinerResult().hasFullyInlinedInstanceInitializers(clazz));
   }

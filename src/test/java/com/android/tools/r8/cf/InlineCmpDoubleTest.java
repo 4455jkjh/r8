@@ -5,6 +5,7 @@ package com.android.tools.r8.cf;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.KeepUnusedReturnValue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -43,6 +44,7 @@ public class InlineCmpDoubleTest extends TestBase {
         .addProgramClasses(TestClass.class)
         .addKeepMainRule(TestClass.class)
         .addOptionsModification(options -> options.inlinerOptions().enableInlining = enableInlining)
+        .enableConstantArgumentAnnotations()
         .enableKeepUnusedReturnValueAnnotations()
         .setMinApi(parameters)
         .compile()
@@ -68,6 +70,7 @@ public class InlineCmpDoubleTest extends TestBase {
       inlineMe(x + 41);
     }
 
+    @KeepConstantArguments
     @KeepUnusedReturnValue
     public static int inlineMe(int x) {
       // Side effect to ensure that the invocation is not removed simply because the method does not

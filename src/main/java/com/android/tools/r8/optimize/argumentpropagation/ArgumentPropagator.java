@@ -4,22 +4,27 @@
 
 package com.android.tools.r8.optimize.argumentpropagation;
 
+import static com.android.tools.r8.ir.optimize.info.OptimizationFeedback.getSimpleFeedback;
+import static com.android.tools.r8.optimize.argumentpropagation.unusedarguments.UnusedArgumentsAnalysis.computeUnusedArguments;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
+import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DirectMappedDexApplication;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.path.PathConstraintSupplier;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.IRCode;
-import com.android.tools.r8.ir.conversion.IRConverter;
-import com.android.tools.r8.ir.conversion.MethodProcessor;
-import com.android.tools.r8.ir.conversion.PostMethodProcessor;
-import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
+import com.android.tools.r8.ir.conversion.*;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
+import com.android.tools.r8.ir.optimize.info.OptimizationInfoRemover;
 import com.android.tools.r8.ir.optimize.outliner.ReprocessingOptimization;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateCollection;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowComparator;
@@ -34,6 +39,7 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +52,21 @@ import java.util.function.BiConsumer;
 /** Optimization that propagates information about arguments from call sites to method entries. */
 public class ArgumentPropagator implements ReprocessingOptimization {
 
+  private enum Mode {
+    INITIAL,
+    FINAL;
+
+    boolean isInitial() {
+      return this == INITIAL;
+    }
+
+    boolean isFinal() {
+      return this == FINAL;
+    }
+  }
+
   private final AppView<AppInfoWithLiveness> appView;
+  private final Mode mode;
 
   private Set<DexProgramClass> classesWithSingleCallerInlinedInstanceInitializers;
 
@@ -67,26 +87,74 @@ public class ArgumentPropagator implements ReprocessingOptimization {
    */
   private ArgumentPropagatorReprocessingCriteriaCollection reprocessingCriteriaCollection;
 
-  private ArgumentPropagator(AppView<AppInfoWithLiveness> appView) {
+  private ArgumentPropagator(AppView<AppInfoWithLiveness> appView, Mode mode) {
     assert appView.enableWholeProgramOptimizations();
     assert appView.options().isOptimizing();
     assert appView.options().callSiteOptimizationOptions().isEnabled();
     this.appView = appView;
+    this.mode = mode;
   }
 
   public static ArgumentPropagator create(AppView<AppInfoWithLiveness> appView) {
+    return create(appView, Mode.INITIAL);
+  }
+
+  private static ArgumentPropagator create(AppView<AppInfoWithLiveness> appView, Mode mode) {
     if (!appView.enableWholeProgramOptimizations()
         || !appView.options().callSiteOptimizationOptions().isEnabled()) {
       return null;
     }
-    return new ArgumentPropagator(appView);
+    return new ArgumentPropagator(appView, mode);
+  }
+
+  public static void runIfNecessary(
+      AppView<AppInfoWithLiveness> appView, ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    if (appView.hasCfByteCodePassThroughMethods()) {
+      return;
+    }
+    ArgumentPropagator argumentPropagator = create(appView, Mode.FINAL);
+    if (argumentPropagator != null) {
+      argumentPropagator.run(executorService, timing);
+    }
+  }
+
+  private void run(ExecutorService executorService, Timing timing) throws ExecutionException {
+    try (Timing t0 = timing.begin("Argument propagator")) {
+      initializeCodeScanner(executorService, timing);
+      timing.begin("Scan");
+      ThreadUtils.processItemsThatMatches(
+          appView.appInfo().classes(),
+          alwaysTrue(),
+          (clazz, threadTiming) ->
+              clazz.forEachProgramMethodMatching(
+                  DexEncodedMethod::hasCode,
+                  method -> {
+                    IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
+                    computeUnusedArguments(method, code, getSimpleFeedback(), threadTiming);
+                    scan(method, code, null, threadTiming);
+                  }),
+          appView.options(),
+          executorService,
+          timing,
+          DexProgramClass::getTypeName);
+      timing.end();
+      waveDone();
+      tearDownCodeScanner(null, null, executorService, timing);
+      LirConverter.rewriteLirWithLens(appView, timing, executorService);
+      OptimizationInfoRemover.run(appView, executorService);
+      appView.getTypeElementFactory().clearTypeElementsCache();
+    }
   }
 
   @Override
   public void prepareForPrimaryOptimizationPass(
       GraphLens graphLensForPrimaryOptimizationPass, ExecutorService executorService, Timing timing)
       throws ExecutionException {
-    initializeCodeScanner(executorService, timing);
+    try (Timing t0 = timing.begin("Argument propagator")) {
+      classesWithSingleCallerInlinedInstanceInitializers = ConcurrentHashMap.newKeySet();
+      initializeCodeScanner(executorService, timing);
+    }
   }
 
   /**
@@ -96,48 +164,45 @@ public class ArgumentPropagator implements ReprocessingOptimization {
   public void initializeCodeScanner(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     assert !appView.getSyntheticItems().hasPendingSyntheticClasses();
+    try (Timing t0 = timing.begin("Initialize code scanner")) {
+      reprocessingCriteriaCollection =
+          new ArgumentPropagatorReprocessingCriteriaCollection(appView);
+      effectivelyUnusedArgumentsAnalysis = new EffectivelyUnusedArgumentsAnalysis(appView);
+      codeScanner =
+          new ArgumentPropagatorCodeScanner(
+              appView, effectivelyUnusedArgumentsAnalysis, reprocessingCriteriaCollection);
 
-    timing.begin("Argument propagator");
-    timing.begin("Initialize code scanner");
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo =
+          ImmediateProgramSubtypingInfo.create(appView);
+      List<Set<DexProgramClass>> stronglyConnectedProgramClasses =
+          new ProgramClassesBidirectedGraph(appView, immediateSubtypingInfo)
+              .computeStronglyConnectedComponents();
+      ThreadUtils.processItems(
+          stronglyConnectedProgramClasses,
+          classes -> {
+            // Disable argument propagation for methods that should not be optimized by setting
+            // their
+            // method state to unknown.
+            new ArgumentPropagatorUnoptimizableFieldsAndMethods(
+                    appView,
+                    immediateSubtypingInfo,
+                    codeScanner.getFieldStates(),
+                    codeScanner.getMethodStates())
+                .run(classes);
 
-    reprocessingCriteriaCollection = new ArgumentPropagatorReprocessingCriteriaCollection(appView);
-    classesWithSingleCallerInlinedInstanceInitializers = ConcurrentHashMap.newKeySet();
-    effectivelyUnusedArgumentsAnalysis = new EffectivelyUnusedArgumentsAnalysis(appView);
-    codeScanner =
-        new ArgumentPropagatorCodeScanner(
-            appView, effectivelyUnusedArgumentsAnalysis, reprocessingCriteriaCollection);
+            // Compute the mapping from virtual methods to their root virtual method and the set of
+            // monomorphic virtual methods.
+            new VirtualRootMethodsAnalysis(appView, immediateSubtypingInfo)
+                .initializeVirtualRootMethods(classes, codeScanner);
 
-    ImmediateProgramSubtypingInfo immediateSubtypingInfo =
-        ImmediateProgramSubtypingInfo.create(appView);
-    List<Set<DexProgramClass>> stronglyConnectedProgramClasses =
-        new ProgramClassesBidirectedGraph(appView, immediateSubtypingInfo)
-            .computeStronglyConnectedComponents();
-    ThreadUtils.processItems(
-        stronglyConnectedProgramClasses,
-        classes -> {
-          // Disable argument propagation for methods that should not be optimized by setting their
-          // method state to unknown.
-          new ArgumentPropagatorUnoptimizableFieldsAndMethods(
-                  appView,
-                  immediateSubtypingInfo,
-                  codeScanner.getFieldStates(),
-                  codeScanner.getMethodStates())
-              .run(classes);
-
-          // Compute the mapping from virtual methods to their root virtual method and the set of
-          // monomorphic virtual methods.
-          new VirtualRootMethodsAnalysis(appView, immediateSubtypingInfo)
-              .initializeVirtualRootMethods(classes, codeScanner);
-
-          // Find the virtual methods in the strongly connected component that only have monomorphic
-          // calls.
-          effectivelyUnusedArgumentsAnalysis.initializeOptimizableVirtualMethods(classes);
-        },
-        appView.options().getThreadingModule(),
-        executorService);
-
-    timing.end();
-    timing.end();
+            // Find the virtual methods in the strongly connected component that only have
+            // monomorphic
+            // calls.
+            effectivelyUnusedArgumentsAnalysis.initializeOptimizableVirtualMethods(classes);
+          },
+          appView.options().getThreadingModule(),
+          executorService);
+    }
 
     // Ensure determinism of monomorphic methods.
     appView.testing().checkDeterminism(codeScanner::dump);
@@ -145,32 +210,27 @@ public class ArgumentPropagator implements ReprocessingOptimization {
 
   /** Called by {@link IRConverter} prior to finalizing methods. */
   public void scan(
-      ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
-    if (codeScanner != null) {
-      assert methodProcessor.isPrimaryMethodProcessor();
-      PathConstraintSupplier pathConstraintSupplier =
-          new PathConstraintSupplier(
-              appView,
-              code,
-              codeScanner.getFieldValueFactory(),
-              codeScanner.getMethodParameterFactory());
-      codeScanner.scan(
-          method,
-          code,
-          methodProcessor,
-          AbstractValueSupplier.shallow(),
-          pathConstraintSupplier,
-          timing);
+      ProgramMethod method, IRCode code, PrimaryMethodProcessor methodProcessor, Timing timing) {
+    PathConstraintSupplier pathConstraintSupplier =
+        new PathConstraintSupplier(
+            appView,
+            code,
+            codeScanner.getFieldValueFactory(),
+            codeScanner.getMethodParameterFactory());
+    codeScanner.scan(
+        method,
+        code,
+        methodProcessor,
+        AbstractValueSupplier.shallow(),
+        pathConstraintSupplier,
+        timing);
 
-      assert effectivelyUnusedArgumentsAnalysis != null;
-      effectivelyUnusedArgumentsAnalysis.scan(method, code, pathConstraintSupplier);
+    assert effectivelyUnusedArgumentsAnalysis != null;
+    effectivelyUnusedArgumentsAnalysis.scan(method, code, pathConstraintSupplier, timing);
 
+    if (mode.isInitial()) {
       assert reprocessingCriteriaCollection != null;
-      reprocessingCriteriaCollection.analyzeArgumentUses(method, code);
-    } else {
-      assert !methodProcessor.isPrimaryMethodProcessor();
-      assert effectivelyUnusedArgumentsAnalysis == null;
-      assert !methodProcessor.isPostMethodProcessor() || reprocessingCriteriaCollection == null;
+      reprocessingCriteriaCollection.analyzeArgumentUses(method, code, timing);
     }
   }
 
@@ -220,7 +280,7 @@ public class ArgumentPropagator implements ReprocessingOptimization {
       Timing timing)
       throws ExecutionException {
     assert !appView.getSyntheticItems().hasPendingSyntheticClasses();
-    assert reprocessingCriteriaCollection.verifyNoDelayedReprocessingCriteria();
+    assert mode.isFinal() || reprocessingCriteriaCollection.verifyNoDelayedReprocessingCriteria();
 
     timing.begin("Argument propagator");
 
@@ -265,7 +325,8 @@ public class ArgumentPropagator implements ReprocessingOptimization {
             graphLens, postMethodProcessorBuilder, executorService, timing);
     reprocessingCriteriaCollection = null;
 
-    removePrunedMethods(converter, postMethodProcessorBuilder, prunedMethods, executorService);
+    removePrunedMethods(
+        converter, postMethodProcessorBuilder, prunedMethods, executorService, timing);
 
     // Finally, apply the graph lens to the program (i.e., remove constant parameters from method
     // definitions).
@@ -275,7 +336,9 @@ public class ArgumentPropagator implements ReprocessingOptimization {
     timing.end();
 
     // Ensure determinism of method-to-reprocess set.
-    appView.testing().checkDeterminism(postMethodProcessorBuilder::dump);
+    if (postMethodProcessorBuilder != null) {
+      appView.testing().checkDeterminism(postMethodProcessorBuilder::dump);
+    }
     appView.notifyOptimizationFinished();
   }
 
@@ -297,10 +360,14 @@ public class ArgumentPropagator implements ReprocessingOptimization {
     FieldStateCollection fieldStates = codeScanner.getFieldStates();
     MethodStateCollectionByReference methodStates = codeScanner.getMethodStates();
     InFlowComparator inFlowComparator = codeScanner.getInFlowComparator();
-    appView.testing().argumentPropagatorEventConsumer.acceptCodeScannerResult(methodStates);
+    if (mode.isInitial()) {
+      appView.testing().argumentPropagatorEventConsumer.acceptCodeScannerResult(methodStates);
+    }
     codeScanner = null;
 
-    postMethodProcessorBuilder.rewrittenWithLens(appView);
+    if (postMethodProcessorBuilder != null) {
+      postMethodProcessorBuilder.rewrittenWithLens(appView);
+    }
 
     timing.begin("Compute optimization info");
     new ArgumentPropagatorOptimizationInfoPropagator(
@@ -318,7 +385,12 @@ public class ArgumentPropagator implements ReprocessingOptimization {
 
     ProgramMethodSet prunedMethods =
         new ArgumentPropagatorOptimizationInfoPopulator(
-                appView, converter, fieldStates, methodStates, postMethodProcessorBuilder)
+                appView,
+                converter,
+                effectivelyUnusedArgumentsAnalysis,
+                fieldStates,
+                methodStates,
+                postMethodProcessorBuilder)
             .populateOptimizationInfo(executorService, timing);
     timing.end();
 
@@ -334,22 +406,51 @@ public class ArgumentPropagator implements ReprocessingOptimization {
       PrimaryR8IRConverter converter,
       PostMethodProcessor.Builder postMethodProcessorBuilder,
       ProgramMethodSet prunedMethods,
-      ExecutorService executorService)
+      ExecutorService executorService,
+      Timing timing)
       throws ExecutionException {
+    if (prunedMethods.isEmpty()) {
+      return;
+    }
     Map<DexProgramClass, ProgramMethodSet> prunedMethodsPerClass = new IdentityHashMap<>();
     prunedMethods.forEach(
         prunedMethod ->
             prunedMethodsPerClass
                 .computeIfAbsent(prunedMethod.getHolder(), ignoreKey(ProgramMethodSet::create))
                 .add(prunedMethod));
+    Set<DexType> prunedClasses = new ReferenceOpenHashSet<>();
     prunedMethodsPerClass.forEach(
-        (clazz, prunedMethodsInClass) ->
-            clazz.getMethodCollection().removeMethods(prunedMethodsInClass.toDefinitionSet()));
-    for (ProgramMethod prunedMethod : prunedMethods) {
-      converter.onMethodPruned(prunedMethod);
-      postMethodProcessorBuilder.remove(prunedMethod, appView.graphLens());
+        (clazz, prunedMethodsInClass) -> {
+          clazz.getMethodCollection().removeMethods(prunedMethodsInClass.toDefinitionSet());
+          if (mode.isFinal()
+              && !clazz.hasMethodsOrFields()
+              && appView.getSyntheticItems().isSyntheticMethod(clazz)) {
+            prunedClasses.add(clazz.getType());
+          }
+        });
+    if (mode.isInitial()) {
+      for (ProgramMethod prunedMethod : prunedMethods) {
+        converter.onMethodPruned(prunedMethod);
+        postMethodProcessorBuilder.remove(prunedMethod, appView.graphLens());
+      }
+      converter.pruneItems(executorService);
+    } else {
+      DirectMappedDexApplication prunedApp =
+          prunedClasses.isEmpty()
+              ? appView.app().asDirect()
+              : appView
+                  .app()
+                  .asDirect()
+                  .builder()
+                  .removeProgramClasses(clazz -> prunedClasses.contains(clazz.getType()))
+                  .build(timing);
+      PrunedItems.Builder prunedItemsBuilder =
+          PrunedItems.builder().setPrunedApp(prunedApp).addRemovedClasses(prunedClasses);
+      for (ProgramMethod prunedMethod : prunedMethods) {
+        prunedItemsBuilder.addRemovedMethod(prunedMethod.getReference());
+      }
+      appView.pruneItems(prunedItemsBuilder.build(), executorService, timing);
     }
-    converter.pruneItems(executorService);
   }
 
   @Override
@@ -361,7 +462,9 @@ public class ArgumentPropagator implements ReprocessingOptimization {
   @Override
   public void irAnalysis(
       ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
-    scan(method, code, methodProcessor, timing);
+    if (methodProcessor.isPrimaryMethodProcessor()) {
+      scan(method, code, methodProcessor.asPrimaryMethodProcessor(), timing);
+    }
   }
 
   @Override

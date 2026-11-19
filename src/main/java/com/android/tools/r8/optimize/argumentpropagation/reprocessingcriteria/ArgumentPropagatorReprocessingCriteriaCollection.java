@@ -26,6 +26,7 @@ import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.MapUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.IdentityHashMap;
@@ -63,7 +64,8 @@ public class ArgumentPropagatorReprocessingCriteriaCollection {
    * Analyzes the uses of the method arguments to determine if a given piece of optimization info
    * related to the arguments should or should not lead to reprocessing of the given method.
    */
-  public void analyzeArgumentUses(ProgramMethod method, IRCode code) {
+  public void analyzeArgumentUses(ProgramMethod method, IRCode code, Timing timing) {
+    timing.begin("Analyze argument uses");
     Int2ReferenceMap<ParameterReprocessingCriteria> methodReprocessingCriteria =
         new Int2ReferenceOpenHashMap<>();
 
@@ -85,6 +87,7 @@ public class ArgumentPropagatorReprocessingCriteriaCollection {
       delayedReproccessingCriteria.put(
           method.getReference(), new MethodReprocessingCriteria(methodReprocessingCriteria));
     }
+    timing.end();
   }
 
   @SuppressWarnings("ReferenceEquality")

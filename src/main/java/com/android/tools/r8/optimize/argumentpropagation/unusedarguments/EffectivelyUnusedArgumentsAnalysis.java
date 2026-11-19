@@ -4,16 +4,11 @@
 
 package com.android.tools.r8.optimize.argumentpropagation.unusedarguments;
 
-import static com.android.tools.r8.optimize.argumentpropagation.unusedarguments.UnusedArgumentsAnalysis.computeUnusedArguments;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
-import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.path.PathConstraintSupplier;
 import com.android.tools.r8.ir.analysis.path.state.ConcretePathConstraintAnalysisState;
@@ -29,21 +24,12 @@ import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.LazyDominatorTree;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.LirConverter;
-import com.android.tools.r8.ir.conversion.MethodConversionOptions;
-import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorApplicationFixer;
-import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorGraphLens;
-import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorProgramOptimizer;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeUnopCompareNode;
-import com.android.tools.r8.optimize.argumentpropagation.propagation.InterfaceMethodArgumentPropagator;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ParameterRemovalUtils;
-import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.optimize.compose.ComposeReferences;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.collections.WorkList;
@@ -52,12 +38,9 @@ import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -132,88 +115,6 @@ public class EffectivelyUnusedArgumentsAnalysis {
     this.appView = appView;
   }
 
-  public static void runIfNecessary(
-      AppView<AppInfoWithLiveness> appView, ExecutorService executorService, Timing timing)
-      throws ExecutionException {
-    if (!appView.options().isOptimizing()
-        || !appView.options().isShrinking()
-        || !appView.options().callSiteOptimizationOptions().isEnabled()
-        || appView.hasCfByteCodePassThroughMethods()) {
-      return;
-    }
-    timing.begin("EffectivelyUnusedArgumentsAnalysis");
-    new EffectivelyUnusedArgumentsAnalysis(appView).run(executorService, timing);
-    timing.end();
-  }
-
-  private void run(ExecutorService executorService, Timing timing) throws ExecutionException {
-    // Initialize.
-    ImmediateProgramSubtypingInfo immediateSubtypingInfo =
-        ImmediateProgramSubtypingInfo.create(appView);
-    List<Set<DexProgramClass>> stronglyConnectedProgramComponents =
-        new ProgramClassesBidirectedGraph(appView, immediateSubtypingInfo)
-            .computeStronglyConnectedComponents();
-    Map<Set<DexProgramClass>, DexMethodSignatureSet> interfaceDispatchOutsideProgram =
-        new ConcurrentHashMap<>();
-    ThreadUtils.processItemsThatMatches(
-        stronglyConnectedProgramComponents,
-        alwaysTrue(),
-        (stronglyConnectedComponent, threadTiming) -> {
-          initializeOptimizableVirtualMethods(stronglyConnectedComponent);
-          new InterfaceMethodArgumentPropagator(
-                  appView,
-                  immediateSubtypingInfo,
-                  signature ->
-                      interfaceDispatchOutsideProgram
-                          .computeIfAbsent(
-                              stronglyConnectedComponent, ignoreKey(DexMethodSignatureSet::create))
-                          .add(signature))
-              .run(stronglyConnectedComponent);
-        },
-        appView.options(),
-        executorService,
-        timing,
-        stronglyConnectedComponent -> stronglyConnectedComponent.iterator().next().getTypeName());
-
-    // Run IR analysis.
-    ThreadUtils.processItemsThatMatches(
-        appView.appInfo().classes(),
-        alwaysTrue(),
-        (clazz, threadTiming) ->
-            clazz.forEachProgramMethodMatching(
-                DexEncodedMethod::hasCode,
-                method -> {
-                  IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
-                  computeUnusedArguments(method, code);
-                  scan(method, code);
-                }),
-        appView.options(),
-        executorService,
-        timing,
-        DexClass::getTypeName);
-
-    // Compute unused arguments.
-    try (Timing t0 = timing.begin("Compute unused arguments")) {
-      ProgramMethodSet prunedMethods = ProgramMethodSet.empty();
-      computeEffectivelyUnusedArguments(prunedMethods);
-    }
-
-    // Rewrite application.
-    try (Timing t0 = timing.begin("Rewrite application")) {
-      Set<DexProgramClass> affectedClasses = ConcurrentHashMap.newKeySet();
-      ArgumentPropagatorGraphLens graphLens =
-          new ArgumentPropagatorProgramOptimizer(
-                  appView, immediateSubtypingInfo, interfaceDispatchOutsideProgram)
-              .run(stronglyConnectedProgramComponents, affectedClasses, executorService, timing);
-      new ArgumentPropagatorApplicationFixer(appView, graphLens)
-          .fixupApplication(affectedClasses, executorService, timing);
-    }
-
-    // Rewrite code.
-    LirConverter.rewriteLirWithLens(appView, timing, executorService);
-    appView.getTypeElementFactory().clearTypeElementsCache();
-  }
-
   public ComputationTreeNode getEffectivelyUnusedCondition(MethodParameter methodParameter) {
     if (ignoreComposableArgumentConditions.containsKey(methodParameter)) {
       assert appView.options().callSiteOptimizationOptions().isComposableArgumentRemovalEnabled();
@@ -246,13 +147,14 @@ public class EffectivelyUnusedArgumentsAnalysis {
         });
   }
 
-  public void scan(ProgramMethod method, IRCode code) {
-    scan(method, code, null);
-  }
-
   public void scan(
-      ProgramMethod method, IRCode code, PathConstraintSupplier pathConstraintSupplier) {
+      ProgramMethod method,
+      IRCode code,
+      PathConstraintSupplier pathConstraintSupplier,
+      Timing timing) {
+    timing.begin("Analyze effectively unused arguments");
     new Analyzer(method, code, pathConstraintSupplier).analyze();
+    timing.end();
   }
 
   public void computeEffectivelyUnusedArguments(ProgramMethodSet prunedMethods) {

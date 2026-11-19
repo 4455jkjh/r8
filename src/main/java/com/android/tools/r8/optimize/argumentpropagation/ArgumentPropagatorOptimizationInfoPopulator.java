@@ -31,6 +31,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodState
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodStateCollectionByReference;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.StateCloner;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
+import com.android.tools.r8.optimize.argumentpropagation.unusedarguments.EffectivelyUnusedArgumentsAnalysis;
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
@@ -52,6 +53,7 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
 
   private final AppView<AppInfoWithLiveness> appView;
   private final PrimaryR8IRConverter converter;
+  private final EffectivelyUnusedArgumentsAnalysis effectivelyUnusedArgumentsAnalysis;
   private final FieldStateCollection fieldStates;
   private final MethodStateCollectionByReference methodStates;
   private final InternalOptions options;
@@ -60,11 +62,13 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
   public ArgumentPropagatorOptimizationInfoPopulator(
       AppView<AppInfoWithLiveness> appView,
       PrimaryR8IRConverter converter,
+      EffectivelyUnusedArgumentsAnalysis effectivelyUnusedArgumentsAnalysis,
       FieldStateCollection fieldStates,
       MethodStateCollectionByReference methodStates,
       PostMethodProcessor.Builder postMethodProcessorBuilder) {
     this.appView = appView;
     this.converter = converter;
+    this.effectivelyUnusedArgumentsAnalysis = effectivelyUnusedArgumentsAnalysis;
     this.fieldStates = fieldStates;
     this.methodStates = methodStates;
     this.options = appView.options();
@@ -189,8 +193,12 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
         prunedMethods.add(method);
       } else if (method.getDefinition().hasCode()) {
         method.convertToAbstractOrThrowNullMethod(appView);
-        converter.onMethodCodePruned(method);
-        postMethodProcessorBuilder.remove(method, appView.graphLens());
+        if (converter != null) {
+          converter.onMethodCodePruned(method);
+          postMethodProcessorBuilder.remove(method, appView.graphLens());
+        } else {
+          effectivelyUnusedArgumentsAnalysis.onMethodCodePruned(method);
+        }
       }
       return;
     }
