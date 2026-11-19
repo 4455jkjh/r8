@@ -5,8 +5,8 @@
 import com.google.protobuf.gradle.proto
 
 plugins {
-  id("org.jetbrains.kotlin.jvm")
-  id("r8-conventions")
+  `java-library`
+  id("r8-compiler-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
   id("com.google.protobuf")
@@ -22,21 +22,12 @@ java {
 }
 
 dependencies {
-  compileOnly(libs.guava)
-  compileOnly(libs.protobuf)
-  compileOnly(project(":keepanno", "keepannoClasses"))
-  compileOnly(project(":main", "mainClassesOutput"))
+  implementationInternal(project(":keepanno"))
+  apiInternal(project(":main"))
+  implementationInternal(project(":utils"))
+  implementationExternal(libs.guava)
+  // Compile-only dependency of Guava 32.1.2-jre whose CLASS-retained annotations are referenced in
+  // Guava bytecode.
+  implementationExternal(libs.j2objcAnnotations)
+  apiExternal(libs.protobuf)
 }
-
-configurations.consumable("libanalyzerJar") { outgoing.artifact(tasks.named("jar")) }
-
-configurations.consumable("libanalyzerClasses") {
-  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-  outgoing.artifact(
-    tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin").map {
-      it.destinationDirectory
-    }
-  )
-}
-
-configurations.consumable("libanalyzerSources") { outgoing.artifact(srcDir) }

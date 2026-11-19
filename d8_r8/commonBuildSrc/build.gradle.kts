@@ -37,6 +37,14 @@ gradlePlugin {
     id = "r8-conventions"
     implementationClass = "R8ConventionPlugin"
   }
+  plugins.register("r8-compiler-conventions") {
+    id = "r8-compiler-conventions"
+    implementationClass = "R8CompilerConventionPlugin"
+  }
+  plugins.register("r8-dependency-flavors") {
+    id = "r8-dependency-flavors"
+    implementationClass = "R8DependencyFlavorsPlugin"
+  }
   plugins.register("r8-test-conventions") {
     id = "r8-test-conventions"
     implementationClass = "R8TestConventionPlugin"

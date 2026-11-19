@@ -19,10 +19,10 @@ public class R8NonJava8TestConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     target.pluginManager.apply("r8-test-conventions")
     target.dependencies.apply {
-      add("implementation", project(":main", "mainClassesOutput"))
+      add("implementation", project(":main"))
       add("runtimeOnly", project(":main", "mainResources"))
       add("implementation", project(":testbase"))
-      add("implementation", project(":testbase", "depsJar"))
+      add("runtimeOnly", project(":testbase", "depsJar"))
       add("runtimeOnlyDataScope", project(":testbase", "runtimeOnlyDataElements"))
     }
 

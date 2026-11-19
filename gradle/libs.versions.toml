@@ -94,23 +94,3 @@ toolsLayoutlibApi = { module = "com.android.tools.layoutlib:layoutlib-api", vers
 toolsCommon = { module = "com.android.tools:common", version.ref = "tools" }
 toolsSdkCommon = { module = "com.android.tools:sdk-common", version.ref = "tools" }
 zipflinger = { module = "com.android:zipflinger", version.ref = "zipflinger" }
-
-[bundles]
-compilerDeps = ["androidxCollection",
-    "androidxTracingDriver",
-    "androidxTracingDriverWire",
-    "asm",
-    "asmCommons",
-    "asmUtil",
-    "fastUtil",
-    "gson",
-    "guava",
-    # Compile-only dependency of guava, which is referenced from the included guava classes.
-    "j2objcAnnotations",
-    "kotlinMetadata",
-    "kotlinStdLib",
-    "protobuf",
-    "protobufUtil",
-    "toolsAapt2Proto",
-    "toolsAnnotations",
-    "zipflinger"]

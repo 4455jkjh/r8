@@ -4,7 +4,7 @@
 
 plugins {
   `java-library`
-  id("r8-conventions")
+  id("r8-compiler-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
@@ -24,37 +24,39 @@ val bundledResourcesScope = configurations.dependencyScope("bundledResourcesScop
 val bundledResourcesConfig =
   configurations.resolvable("bundledResourcesConfig") { extendsFrom(bundledResourcesScope.get()) }
 
-dependencies { bundledResourcesScope(project(":third_party", "apiDatabase")) }
-
-val internalJarScope = configurations.dependencyScope("internalJarScope")
-val internalJarResolvable =
-  configurations.resolvable("internalJarResolvable") { extendsFrom(internalJarScope.get()) }
-val internalClassesScope = configurations.dependencyScope("internalClassesScope")
-val internalClassesResolvable =
-  configurations.resolvable("internalClassesResolvable") { extendsFrom(internalClassesScope.get()) }
-val internalSourcesScope = configurations.dependencyScope("internalSourcesScope")
-val internalSourcesResolvable =
-  configurations.resolvable("internalSourcesResolvable") { extendsFrom(internalSourcesScope.get()) }
-
 dependencies {
-  internalJarScope(project(":utils", "isolatedJar"))
-  internalClassesScope(project(":utils", "isolatedClasses"))
-  internalSourcesScope(project(":utils", "isolatedSources"))
-  implementation(project(":assistant", "assistantJar"))
-  implementation(project(":keepradius", "keepradiusJar"))
-  implementation(project(":keepanno", "keepannoClasses"))
-  implementation(project(":utils"))
-  compileOnly(libs.bundles.compilerDeps)
-  compileOnly(libs.toolsCommon) {
+  bundledResourcesScope(project(":third_party", "apiDatabase"))
+  apiInternal(project(":assistant"))
+  apiInternal(project(":keepradius"))
+  apiInternal(project(":keepanno"))
+  apiInternal(project(":utils"))
+  implementationExternal(libs.androidxCollection)
+  implementationExternal(libs.androidxTracingDriver)
+  implementationExternal(libs.androidxTracingDriverWire)
+  apiExternal(libs.asm)
+  implementationExternal(libs.asmCommons)
+  implementationExternal(libs.asmUtil)
+  apiExternal(libs.fastUtil)
+  apiExternal(libs.gson)
+  apiExternal(libs.guava)
+  // Compile-only dependency of Guava 32.1.2-jre whose CLASS-retained annotations are referenced in
+  // Guava bytecode.
+  implementationExternal(libs.j2objcAnnotations)
+  implementationExternal(libs.kotlinMetadata)
+  implementationExternal(libs.protobuf)
+  implementationExternal(libs.protobufUtil)
+  apiExternal(libs.toolsAapt2Proto)
+  implementationExternal(libs.toolsAnnotations)
+  implementationExternal(libs.toolsCommon) {
     // R8's resource shrinker does not use JNA native platform helpers in tools:common.
     exclude(group = "net.java.dev.jna", module = "jna-platform")
   }
-  compileOnly(libs.toolsLayoutlibApi) {
+  implementationExternal(libs.toolsLayoutlibApi) {
     // R8 only uses layoutlib resource model types, not its kxml2 parser or JNA via tools:common.
     exclude(group = "net.java.dev.jna", module = "jna-platform")
     exclude(group = "net.sf.kxml", module = "kxml2")
   }
-  compileOnly(libs.toolsSdkCommon) {
+  implementationExternal(libs.toolsSdkCommon) {
     // R8's resource shrinker only uses a subset of sdk-common and never invokes Studio SDK
     // management, ADB/ddmlib, kxml2, JAXB, BouncyCastle, analytics, JNA, or kotlin-reflect.
     exclude(group = "com.android.tools", module = "sdklib")
@@ -68,6 +70,7 @@ dependencies {
     exclude(group = "org.jetbrains.intellij.deps", module = "trove4j")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-reflect")
   }
+  implementationExternal(libs.zipflinger)
 }
 
 tasks {
@@ -85,24 +88,6 @@ tasks.withType<JavaCompile> {
 tasks.named<Jar>("sourcesJar") { from(bundledResourcesConfig) }
 
 tasks.withType<ProcessResources> { from(bundledResourcesConfig) }
-
-// Contains both :main jar and :utils jar but not third party dependencies.
-configurations.consumable("mainJar") {
-  extendsFrom(internalJarResolvable.get())
-  outgoing.artifact(tasks.named("jar"))
-}
-
-// Contains partial class files of :main and all class files of :utils but not third party
-// dependencies.
-configurations.consumable("mainClassesOutput") {
-  extendsFrom(internalClassesResolvable.get())
-  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-}
-
-configurations.consumable("mainSources") {
-  extendsFrom(internalSourcesResolvable.get())
-  outgoing.artifact(srcDir)
-}
 
 configurations.consumable("mainResources") {
   outgoing.artifact(tasks.named<ProcessResources>("processResources").map { it.destinationDir })

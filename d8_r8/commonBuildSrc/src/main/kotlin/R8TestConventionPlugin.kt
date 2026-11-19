@@ -4,6 +4,7 @@
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 import org.gradle.api.tasks.Delete
@@ -19,6 +20,10 @@ public abstract class SerialTestService : BuildService<BuildServiceParameters.No
 
 public class R8TestConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
+    target.pluginManager.apply("r8-dependency-flavors")
+    // Java 8 test modules compile targeting Java 8 for test inputs, while running against Java 11
+    // :main.
+    target.extensions.getByType<JavaPluginExtension>().disableAutoTargetJvm()
     target.pluginManager.apply("jacoco")
     target.tasks.named("jacocoTestReport").configure { enabled = false }
 

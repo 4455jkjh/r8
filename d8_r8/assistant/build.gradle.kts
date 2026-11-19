@@ -4,15 +4,17 @@
 
 plugins {
   `java-library`
-  id("r8-conventions")
+  id("r8-compiler-conventions")
   id("dependencies-plugin")
 }
 
-dependencies { compileOnly(project(":keepanno", "keepannoClasses")) }
+dependencies { compileOnly(project(":keepanno")) }
 
 val srcDir = getRoot().resolveAll("src", "assistant", "java")
 
 java {
+  // Compiled with --release 8 for dexing at min-api 1, while depending on Java 11 :keepanno.
+  disableAutoTargetJvm()
   sourceSets.main.configure { java.srcDir(srcDir) }
   tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
 }
@@ -25,9 +27,3 @@ val jarTask =
   }
 
 configurations.consumable("assistantJar") { outgoing.artifact(jarTask) }
-
-configurations.consumable("assistantClasses") {
-  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-}
-
-configurations.consumable("assistantSources") { outgoing.artifact(srcDir) }

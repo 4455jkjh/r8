@@ -25,19 +25,13 @@ val distSwissArmyKnife = project(":swissarmyknife").tasks.getByName("jar")
 val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles =
   configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
-
-dependencies { distDepsFilesScope(project(":dist", "filteredDepsJarConfig")) }
-
-val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
-val keepAnnoClassesConfig =
-  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
+val internalClassesConfig = configurations.named("internalClassesConfig")
 
 dependencies {
-  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
-  implementation(project(":keepanno", "keepannoClasses"))
-  implementation(project(":main", "mainJar"))
+  distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
+  implementation(project(":main"))
   implementation(project(":testbase"))
-  implementation(project(":testbase", "depsJar"))
+  runtimeOnly(project(":testbase", "depsJar"))
   runtimeOnlyData(project(":third_party", "java8Runtime"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
 }
@@ -45,7 +39,7 @@ dependencies {
 tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
-    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife, distDepsFiles)
+    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife, distDepsFiles, internalClassesConfig)
     systemProperty("R8_DEPS", distDepsFiles.get().asPath)
     systemProperty(
       "TEST_DATA_LOCATION",
@@ -66,7 +60,7 @@ tasks {
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
+      extractClassesPaths("keepanno" + File.separator, internalClassesConfig.get().asPath),
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
     systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)

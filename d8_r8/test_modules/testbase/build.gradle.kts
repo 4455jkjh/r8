@@ -2,12 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import java.util.concurrent.Callable
 import org.gradle.api.JavaVersion
 
 plugins {
   `java-library`
   id("dependencies-plugin")
+  id("r8-dependency-flavors")
 }
 
 val root = getRoot()
@@ -15,6 +15,8 @@ val root = getRoot()
 java {
   sourceSets.main.configure { java { srcDir(root.resolveAll("src", "test", "testbase", "java")) } }
 
+  // Compiled targeting Java 8 for test inputs, while running on JDK 11+ against Java 11 :main.
+  disableAutoTargetJvm()
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
@@ -23,14 +25,7 @@ java {
 val keepAnnoJarScope = configurations.dependencyScope("keepAnnoJarScope")
 val keepAnnoJarConfig =
   configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope.get()) }
-val distDepsJarScope = configurations.dependencyScope("distDepsJarScope")
-val distDepsJarConfig =
-  configurations.resolvable("distDepsJarConfig") { extendsFrom(distDepsJarScope.get()) }
-val thirdPartyDepsJarsScope = configurations.dependencyScope("thirdPartyDepsJarsScope")
-val thirdPartyDepsJarsConfig =
-  configurations.resolvable("thirdPartyDepsJarsConfig") {
-    extendsFrom(thirdPartyDepsJarsScope.get())
-  }
+val externalRuntimeConfig = configurations.named("externalRuntimeConfig")
 
 dependencies {
   // Declare local runtime dependencies.
@@ -125,45 +120,26 @@ dependencies {
 
 dependencies {
   keepAnnoJarScope(project(":keepanno", "keepannoJar"))
-  implementation(project(":keepanno", "keepannoJar"))
-  implementation(project(":libanalyzer", "libanalyzerJar"))
-  implementation(project(":main", "mainClassesOutput"))
-  runtimeOnly(project(":main", "mainResources"))
-  distDepsJarScope(project(":dist", "filteredDepsJarConfig"))
-  implementation(project(":dist", "filteredDepsJarConfig"))
-  implementation(libs.androidxCollection)
-  implementation(libs.androidxTracingDriver)
-  implementation(libs.androidxTracingDriverWire)
-  implementation(libs.asm)
-  implementation(libs.asmCommons)
-  implementation(libs.asmUtil)
-  implementation(libs.gson)
-  implementation(libs.guava)
-  implementation(libs.javassist)
-  implementation(libs.junitJupiter)
-  implementation(libs.junitVintageEngine)
-  implementation(libs.kotlinMetadata)
-  implementation(libs.kotlinReflect)
-  implementation(libs.kotlinStdLib)
-  implementation(libs.playwright)
-  implementation(libs.protobufUtil)
-  implementation(libs.ddmLib)
-  thirdPartyDepsJarsScope(project(":third_party", "jasminJar"))
-  thirdPartyDepsJarsScope(project(":third_party", "jdwpTestsJar"))
-  implementation(project(":third_party", "jasminJar"))
-  implementation(project(":third_party", "jdwpTestsJar"))
-  implementation(libs.fastUtil)
-  implementation(libs.smali)
-  implementation(libs.smaliUtil)
+  implementation(project(":libanalyzer"))
+  api(project(":main"))
+  api(project(":third_party", "jasminJar"))
+  api(project(":third_party", "jdwpTestsJar"))
+  api(libs.asm)
+  api(libs.asmUtil)
+  api(libs.ddmLib)
+  api(libs.fastUtil)
+  api(libs.guava)
+  api(libs.javassist)
+  api(libs.junitJupiter)
+  api(libs.junitVintageEngine)
+  api(libs.kotlinMetadata)
+  api(libs.kotlinReflect)
+  api(libs.playwright)
+  api(libs.protobuf)
+  api(libs.smali)
+  api(libs.smaliUtil)
+  api(libs.toolsAapt2Proto)
   runtimeOnly(libs.junitPlatform)
-}
-
-fun testDependencies(): FileCollection {
-  return sourceSets.test.get().compileClasspath.filter {
-    "$it".contains("third_party") &&
-      "$it".contains("dependencies") &&
-      !"$it".contains("third_party/gradle")
-  }
 }
 
 tasks {
@@ -185,10 +161,11 @@ tasks {
   }
 
   register<Jar>("assembleDepsJar") {
-    from(Callable { testDependencies().map(::zipTree) })
+    from(zipTrees(externalRuntimeConfig))
     from(zipTrees(keepAnnoJarConfig))
-    from(zipTrees(distDepsJarConfig))
-    from(zipTrees(thirdPartyDepsJarsConfig))
+    exclude("**/*.proto")
+    exclude("versions-offline/**")
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
     exclude("com/android/tools/r8/keepanno/annotations/**")
     exclude("androidx/annotation/keep/**")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

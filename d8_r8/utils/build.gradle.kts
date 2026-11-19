@@ -4,25 +4,17 @@
 
 plugins {
   `java-library`
-  id("r8-conventions")
+  id("r8-compiler-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
 
-// :utils is assumed to use a subset of :main's dependencies.
 dependencies {
-  compileOnly(libs.guava)
-  compileOnly(libs.fastUtil)
+  apiExternal(libs.guava)
+  // Compile-only dependency of Guava 32.1.2-jre whose CLASS-retained annotations are referenced in
+  // Guava bytecode.
+  implementationExternal(libs.j2objcAnnotations)
+  apiExternal(libs.fastUtil)
 }
 
-val srcDir = getRoot().resolveAll("src", "utils", "java")
-
-java { sourceSets.main.configure { java.srcDir(srcDir) } }
-
-configurations.consumable("isolatedJar") { outgoing.artifact(tasks.named("jar")) }
-
-configurations.consumable("isolatedClasses") {
-  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-}
-
-configurations.consumable("isolatedSources") { outgoing.artifact(srcDir) }
+java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) } }

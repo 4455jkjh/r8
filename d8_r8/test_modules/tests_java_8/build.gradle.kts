@@ -28,39 +28,25 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(11) }
 }
 
-// If we depend on keepanno by referencing the project source outputs we get an error regarding
-// incompatible java class file version. By depending on the jar we circumvent that.
-val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
-val keepAnnoClassesConfig =
-  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
-val assistantClassesScope = configurations.dependencyScope("assistantClassesScope")
-val assistantClassesOutput =
-  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope.get()) }
 val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles =
   configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
-val mainClassesScope = configurations.dependencyScope("mainClassesScope")
-val mainClassesOutput =
-  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope.get()) }
 val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResources =
   configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
+val internalClassesConfig = configurations.named("internalClassesConfig")
 
 dependencies {
-  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
-  assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
-  mainClassesScope(project(":main", "mainClassesOutput"))
-
   mainResourcesScope(project(":main", "mainResources"))
-  implementation(project(":assistant", "assistantJar"))
-  implementation(project(":keepradius", "keepradiusJar"))
-  implementation(project(":keepanno", "keepannoClasses"))
-  implementation(project(":libanalyzer", "libanalyzerJar"))
-  implementation(project(":main", "mainClassesOutput"))
+  implementation(project(":libanalyzer"))
+  implementation(project(":main"))
   runtimeOnly(project(":main", "mainResources"))
   implementation(project(":testbase"))
-  implementation(project(":testbase", "depsJar"))
+  runtimeOnly(project(":testbase", "depsJar"))
+  testCompileOnly(libs.androidxTracingDriverWire)
+  testCompileOnly(libs.asmCommons)
+  testCompileOnly(libs.toolsCommon)
   runtimeOnlyData(project(":third_party", "agsa"))
   runtimeOnlyData(project(":third_party", "art5_1_1"))
   runtimeOnlyData(project(":third_party", "artTests"))
@@ -144,7 +130,6 @@ dependencies {
     runtimeOnlyData(project(childProject.path, "runtimeOnlyDataElements"))
     add("jacocoExecScope", project(childProject.path, "jacocoExecElements"))
   }
-  implementation(libs.playwright)
 }
 
 tasks {
@@ -223,22 +208,14 @@ fun Test.setupTestTask() {
       .split(File.pathSeparator)[0],
   )
   dependsOn(distDepsFiles)
+  dependsOn(internalClassesConfig)
   dependsOn(project(":dist").tasks.named("r8AssistantLib"))
   systemProperty(
     "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-    extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
+    extractClassesPaths("keepanno" + File.separator, internalClassesConfig.get().asPath),
   )
   // This path is set when compiling examples jar task in DependenciesPlugin.
-  val r8RuntimePath =
-    project
-      .files(
-        mainClassesOutput,
-        distDepsFiles,
-        mainResources,
-        keepAnnoClassesConfig,
-        assistantClassesOutput,
-      )
-      .asPath
+  val r8RuntimePath = project.files(internalClassesConfig, distDepsFiles, mainResources).asPath
   systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
   systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
   systemProperty("R8_DEPS", distDepsFiles.get().asPath)
@@ -269,11 +246,10 @@ subprojects {
   }
 
   dependencies {
-    add("implementation", project(":main", "mainClassesOutput"))
+    add("implementation", project(":main"))
     add("runtimeOnly", project(":main", "mainResources"))
-    add("implementation", project(":keepanno", "keepannoClasses"))
     add("implementation", project(":testbase"))
-    add("implementation", project(":testbase", "depsJar"))
+    add("runtimeOnly", project(":testbase", "depsJar"))
     runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   }
 

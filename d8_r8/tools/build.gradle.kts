@@ -5,10 +5,14 @@
 plugins {
   `java-library`
   id("r8-conventions")
+  id("r8-dependency-flavors")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
 
-dependencies { compileOnly(project(":main", "mainClassesOutput")) }
+dependencies {
+  compileOnly(project(":main"))
+  compileOnly(project(":utils"))
+}
 
 java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "tools", "java")) } }

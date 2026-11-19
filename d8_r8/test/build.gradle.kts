@@ -8,6 +8,7 @@ plugins {
   `java-library`
   jacoco
   id("r8-conventions")
+  id("r8-dependency-flavors")
   id("dependencies-plugin")
 }
 
@@ -50,40 +51,22 @@ val keepAnnoAndroidXAnnotationsJarConfig =
   configurations.resolvable("keepAnnoAndroidXAnnotationsJarConfig") {
     extendsFrom(keepAnnoAndroidXAnnotationsJarScope.get())
   }
-val keepAnnoClassesScope = configurations.dependencyScope("keepAnnoClassesScope")
-val keepAnnoClassesConfig =
-  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope.get()) }
 val jdk25HomeScope = configurations.dependencyScope("jdk25HomeScope")
 val jdk25HomeConfig =
   configurations.resolvable("jdk25HomeConfig") { extendsFrom(jdk25HomeScope.get()) }
 
-val coverageClassesScope = configurations.dependencyScope("coverageClassesScope")
-val coverageClassesConfig =
-  configurations.resolvable("coverageClassesConfig") { extendsFrom(coverageClassesScope.get()) }
-
-val coverageSourcesScope = configurations.dependencyScope("coverageSourcesScope")
-val coverageSourcesConfig =
-  configurations.resolvable("coverageSourcesConfig") { extendsFrom(coverageSourcesScope.get()) }
-
 val coverageExecScope = configurations.dependencyScope("coverageExecScope")
 val coverageExecConfig =
   configurations.resolvable("coverageExecConfig") { extendsFrom(coverageExecScope.get()) }
+val internalClassesConfig = configurations.named("internalClassesConfig")
+val internalSourcesConfig = configurations.named("internalSourcesConfig")
 
 dependencies {
+  implementation(project(":libanalyzer"))
+  implementation(project(":main"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
-  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   jdk25HomeScope(project(":third_party", "jdk25Home"))
-  coverageClassesScope(project(":assistant", "assistantClasses"))
-  coverageClassesScope(project(":keepanno", "keepannoClasses"))
-  coverageClassesScope(project(":keepradius", "keepradiusClasses"))
-  coverageClassesScope(project(":libanalyzer", "libanalyzerClasses"))
-  coverageClassesScope(project(":main", "mainClassesOutput"))
-  coverageSourcesScope(project(":assistant", "assistantSources"))
-  coverageSourcesScope(project(":keepanno", "keepannoSources"))
-  coverageSourcesScope(project(":keepradius", "keepradiusSources"))
-  coverageSourcesScope(project(":libanalyzer", "libanalyzerSources"))
-  coverageSourcesScope(project(":main", "mainSources"))
   coverageExecScope(project(":tests_java_8", "jacocoExecElements"))
   coverageExecScope(project(":tests_java_11", "jacocoExecElements"))
   coverageExecScope(project(":tests_java_17", "jacocoExecElements"))
@@ -552,7 +535,7 @@ tasks {
 
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.get().asPath),
+      extractClassesPaths("keepanno" + File.separator, internalClassesConfig.get().asPath),
     )
     systemProperty("R8_DEPS", mainDepsJarFilesConfig.get().asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
@@ -611,28 +594,8 @@ tasks {
       )
     }
 
-  val sourceConfiguration =
-    configurations.create("sourceConfiguration") {
-      attributes {
-        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
-        attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.SOURCES))
-      }
-      isTransitive = false
-    }
-  dependencies {
-    sourceConfiguration(project(":assistant"))
-    sourceConfiguration(project(":keepradius"))
-    sourceConfiguration(project(":keepanno"))
-    sourceConfiguration(project(":libanalyzer"))
-    sourceConfiguration(project(":main"))
-  }
   register<Jar>("packageSources") {
-    val injected = project.objects.newInstance<InjectedArcOps>()
-    from(
-      sourceConfiguration.elements.map { element ->
-        element.map { injected.arcOps.zipTree(it.asFile) }
-      }
-    )
+    from(zipTrees(internalSourcesConfig))
     archiveClassifier.set("sources")
     archiveFileName.set("r8-src.jar")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -645,19 +608,21 @@ tasks {
     executionData(
       coverageExecConfig.map { dirs -> dirs.map { dir -> fileTree(dir) { include("*.exec") } } }
     )
-    sourceDirectories.setFrom(coverageSourcesConfig)
+    sourceDirectories.setFrom(zipTrees(internalSourcesConfig))
     classDirectories.setFrom(
-      coverageClassesConfig.map { config ->
-        config.map { dir ->
-          fileTree(dir) {
-            exclude(
-              "com/android/tools/r8/keepanno/proto/**",
-              "com/android/tools/r8/keepradius/proto/**",
-              "com/android/tools/r8/libanalyzer/proto/**",
-            )
+      internalClassesConfig
+        .flatMap { it.elements }
+        .map { dirs ->
+          dirs.map { dir ->
+            fileTree(dir) {
+              exclude(
+                "com/android/tools/r8/keepanno/proto/**",
+                "com/android/tools/r8/keepradius/proto/**",
+                "com/android/tools/r8/libanalyzer/proto/**",
+              )
+            }
           }
         }
-      }
     )
     reports {
       xml.required.set(true)
@@ -696,7 +661,7 @@ tasks {
       configureCommon(project)
       testDataLocation.set(layout.dir(unzipTests.map { it.destinationDir }))
       testBaseDataLocation.set(layout.dir(unzipTestBase.map { it.destinationDir }))
-      keepAnnoRuntimeClasspath.from(keepAnnoClassesConfig)
+      keepAnnoRuntimeClasspath.from(internalClassesConfig)
       if (useCustomR8Jar) {
         configureCustomR8Jar()
       }
@@ -707,7 +672,7 @@ tasks {
       configureCommon(project)
       testDataLocation.set(unzipTests.get().destinationDir)
       testBaseDataLocation.set(unzipTestBase.get().destinationDir)
-      keepAnnoRuntimeClasspath.from(keepAnnoClassesConfig.get().files)
+      keepAnnoRuntimeClasspath.from(internalClassesConfig.get().files)
       if (useCustomR8Jar) {
         configureCustomR8Jar()
       }

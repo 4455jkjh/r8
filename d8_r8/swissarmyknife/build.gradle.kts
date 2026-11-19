@@ -3,25 +3,21 @@
 // BSD-style license that can be found in the LICENSE file.
 
 plugins {
-  id("org.jetbrains.kotlin.jvm")
-  id("r8-conventions")
+  `java-library`
+  id("r8-compiler-conventions")
   id("dependencies-plugin")
 }
 
-val bundleScope = configurations.dependencyScope("bundleScope")
-val bundleConfig = configurations.resolvable("bundleConfig") { extendsFrom(bundleScope.get()) }
-
 dependencies {
-  bundleScope(project(":assistant", "assistantJar"))
-  bundleScope(project(":keepradius", "keepradiusJar"))
-  bundleScope(project(":keepanno", "keepannoJar"))
-  bundleScope(project(":libanalyzer", "libanalyzerJar"))
-  bundleScope(project(":main", "mainJar"))
+  implementationInternal(project(":libanalyzer"))
+  implementationInternal(project(":main"))
 }
+
+val internalRuntimeConfig = configurations.named("internalRuntimeConfig")
 
 tasks {
   named<Jar>("jar") {
-    from(zipTrees(bundleConfig)) {
+    from(zipTrees(internalRuntimeConfig)) {
       exclude("com/android/tools/r8/threading/providers/**")
       exclude("com/android/tools/r8/keepradius/proto/**")
       exclude("com/android/tools/r8/libanalyzer/proto/**")

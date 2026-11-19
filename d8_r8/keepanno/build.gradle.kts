@@ -3,12 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import com.google.protobuf.gradle.proto
-import java.util.concurrent.Callable
 
 plugins {
+  id("r8-compiler-conventions")
   // Kotlin version is fixed by create_local_maven_dependencies.py
   id("org.jetbrains.kotlin.jvm")
-  id("r8-conventions")
   id("dependencies-plugin")
   id("com.google.protobuf")
 }
@@ -23,10 +22,15 @@ java {
 }
 
 dependencies {
-  compileOnly(libs.asm)
-  compileOnly(libs.guava)
-  compileOnly(libs.protobuf)
+  apiExternal(libs.asm)
+  implementationExternal(libs.guava)
+  // Compile-only dependency of Guava 32.1.2-jre whose CLASS-retained annotations are referenced in
+  // Guava bytecode.
+  implementationExternal(libs.j2objcAnnotations)
+  implementationExternal(libs.protobuf)
 }
+
+val externalRuntimeConfig = configurations.named("externalRuntimeConfig")
 
 tasks {
   register<Jar>("keepAnnoAnnotationsJar") {
@@ -55,26 +59,8 @@ tasks {
     include("com/android/tools/r8/keepanno/annotations/*")
   }
 
-  fun dependenciesExceptAsm(): FileCollection {
-    return sourceSets.main
-      .get()
-      .compileClasspath
-      .filter({
-        "$it".contains("third_party") && "$it".contains("dependencies") && !"$it".contains("ow2")
-      })
-  }
-
-  fun dependenciesOnlyAsm(): FileCollection {
-    return sourceSets.main
-      .get()
-      .compileClasspath
-      .filter({
-        "$it".contains("third_party") && "$it".contains("dependencies") && "$it".contains("ow2")
-      })
-  }
-
-  register<Jar>("depsJarExceptAsm") {
-    from(Callable { dependenciesExceptAsm().map(::zipTree) })
+  register<Jar>("depsJar") {
+    from(zipTrees(externalRuntimeConfig))
     // TODO(b/428166503): Add license information.
     exclude("META-INF/*.kotlin_module")
     exclude("META-INF/com.android.tools/**")
@@ -87,24 +73,7 @@ tasks {
     exclude("javax/annotation/**")
     exclude("google/protobuf/**")
     duplicatesStrategy = DuplicatesStrategy.FAIL
-    archiveFileName.set("keepanno-deps-except-asm.jar")
-  }
-
-  register<Jar>("depsJarOnlyAsm") {
-    from(Callable { dependenciesOnlyAsm().map(::zipTree) })
-    // TODO(b/428166503): Add license information if needed.
-    exclude("META-INF/*.kotlin_module")
-    exclude("META-INF/com.android.tools/**")
-    exclude("META-INF/LICENSE*")
-    exclude("META-INF/MANIFEST.MF")
-    exclude("META-INF/maven/**")
-    exclude("META-INF/proguard/**")
-    exclude("META-INF/versions/**")
-    exclude("META-INF/services/kotlin.reflect.**")
-    exclude("javax/annotation/**")
-    exclude("google/protobuf/**")
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    archiveFileName.set("keepanno-deps-only-asm.jar")
+    archiveFileName.set("keepanno-deps.jar")
   }
 
   register<Jar>("toolsJar") {
@@ -122,27 +91,10 @@ tasks {
 
 configurations.consumable("keepannoJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
 
-configurations.consumable("keepannoDepsJarExceptAsm") {
-  outgoing.artifact(tasks.named<Jar>("depsJarExceptAsm"))
-}
+configurations.consumable("keepannoDepsJar") { outgoing.artifact(tasks.named<Jar>("depsJar")) }
 
 configurations.consumable("keepannoToolsJar") { outgoing.artifact(tasks.named<Jar>("toolsJar")) }
 
 configurations.consumable("keepannoAndroidXAnnotationsJar") {
   outgoing.artifact(tasks.named<Jar>("keepAnnoAndroidXAnnotationsJar"))
 }
-
-configurations.consumable("keepannoDepsJarOnlyAsm") {
-  outgoing.artifact(tasks.named<Jar>("depsJarOnlyAsm"))
-}
-
-configurations.consumable("keepannoClasses") {
-  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-  outgoing.artifact(
-    tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin").map {
-      it.destinationDirectory
-    }
-  )
-}
-
-configurations.consumable("keepannoSources") { outgoing.artifact(srcDir) }

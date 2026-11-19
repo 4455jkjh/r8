@@ -7,14 +7,14 @@ import java.net.URI
 import java.nio.file.Files.readString
 import java.nio.file.Paths
 import java.util.UUID
-import java.util.concurrent.Callable
 import org.gradle.api.tasks.bundling.Jar
 import org.spdx.sbom.gradle.SpdxSbomTask
 import org.spdx.sbom.gradle.extensions.DefaultSpdxSbomTaskExtension
+import org.spdx.sbom.gradle.project.ProjectInfo
 
 plugins {
-  id("org.jetbrains.kotlin.jvm")
-  id("r8-conventions")
+  `java-library`
+  id("r8-compiler-conventions")
   id("dependencies-plugin")
   id("org.spdx.sbom")
 }
@@ -23,45 +23,19 @@ if (project.hasProperty("spdxVersion")) {
   project.version = project.property("spdxVersion")!!
 }
 
-// Dependencies that are included with their transitive (runtime) dependencies.
-val r8Deps =
-  configurations.create("r8Deps") {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-  }
-
+// We need all the runtime deps for SPDX generation.
 dependencies {
-  r8Deps(libs.bundles.compilerDeps)
-  r8Deps(libs.toolsCommon) {
-    // R8's resource shrinker does not use JNA native platform helpers in tools:common.
-    exclude(group = "net.java.dev.jna", module = "jna-platform")
-  }
-  r8Deps(libs.toolsLayoutlibApi) {
-    // R8 only uses layoutlib resource model types, not its kxml2 parser or JNA via tools:common.
-    exclude(group = "net.java.dev.jna", module = "jna-platform")
-    exclude(group = "net.sf.kxml", module = "kxml2")
-  }
-  r8Deps(libs.toolsSdkCommon) {
-    // R8's resource shrinker only uses a subset of sdk-common and never invokes Studio SDK
-    // management, ADB/ddmlib, kxml2, JAXB, BouncyCastle, analytics, JNA, or kotlin-reflect.
-    exclude(group = "com.android.tools", module = "sdklib")
-    exclude(group = "com.android.tools.analytics-library")
-    exclude(group = "com.android.tools.ddms", module = "ddmlib")
-    exclude(group = "javax.inject", module = "javax.inject")
-    exclude(group = "net.java.dev.jna", module = "jna-platform")
-    exclude(group = "net.sf.kxml", module = "kxml2")
-    exclude(group = "org.bouncycastle")
-    exclude(group = "org.glassfish.jaxb", module = "jaxb-runtime")
-    exclude(group = "org.jetbrains.intellij.deps", module = "trove4j")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-reflect")
-  }
+  implementationInternal(project(":libanalyzer"))
+  implementationInternal(project(":main"))
 }
+
+val internalRuntimeConfig = configurations.named("internalRuntimeConfig")
+val externalRuntimeConfig = configurations.named("externalRuntimeConfig")
 
 spdxSbom {
   targets {
     create("r8") {
-      // The dependencies that are included in the dependencies jar.
-      configurations.set(listOf(r8Deps.name))
+      configurations.set(listOf("externalRuntimeConfig"))
       scm {
         uri.set("https://r8.googlesource.com/r8/")
         if (project.hasProperty("spdxRevision")) {
@@ -88,19 +62,15 @@ spdxSbom {
   }
 }
 
-val protoJarSourcesScope = configurations.dependencyScope("protoJarSourcesScope")
-val protoJarSourcesConfig =
-  configurations.resolvable("protoJarSourcesConfig") { extendsFrom(protoJarSourcesScope.get()) }
-val keepAnnoDepsJarExceptAsmScope = configurations.dependencyScope("keepAnnoDepsJarExceptAsmScope")
-val keepAnnoDepsJarExceptAsmConfig =
-  configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
-    extendsFrom(keepAnnoDepsJarExceptAsmScope.get())
+val keepAnnoApiExternalScope = configurations.dependencyScope("keepAnnoApiExternalScope")
+val keepAnnoApiExternalConfig =
+  configurations.resolvable("keepAnnoApiExternalConfig") {
+    extendsFrom(keepAnnoApiExternalScope.get())
+    attributes { attribute(R8_FLAVOR_ATTRIBUTE, "api-external") }
   }
-val keepAnnoDepsJarOnlyAsmScope = configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
-val keepAnnoDepsJarOnlyAsmConfig =
-  configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
-    extendsFrom(keepAnnoDepsJarOnlyAsmScope.get())
-  }
+val keepAnnoDepsJarScope = configurations.dependencyScope("keepAnnoDepsJarScope")
+val keepAnnoDepsJarConfig =
+  configurations.resolvable("keepAnnoDepsJarConfig") { extendsFrom(keepAnnoDepsJarScope.get()) }
 val keepAnnoToolsJarScope = configurations.dependencyScope("keepAnnoToolsJarScope")
 val keepAnnoToolsJarConfig =
   configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope.get()) }
@@ -108,8 +78,6 @@ val keepAnnoToolsJarConfig =
 val assistantJarScope = configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig =
   configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope.get()) }
-val mainJarScope = configurations.dependencyScope("mainJarScope")
-val mainJarConfig = configurations.resolvable("mainJarConfig") { extendsFrom(mainJarScope.get()) }
 val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResourcesConfig =
   configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope.get()) }
@@ -119,13 +87,10 @@ val swissArmyKnifeConfig =
 
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
-  keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
-  keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
+  keepAnnoApiExternalScope(project(":keepanno"))
+  keepAnnoDepsJarScope(project(":keepanno", "keepannoDepsJar"))
   keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
-  mainJarScope(project(":main", "mainJar"))
   mainResourcesScope(project(":main", "mainResources"))
-  protoJarSourcesScope(project(":keepradius", "keepradiusJar"))
-  protoJarSourcesScope(project(":libanalyzer", "libanalyzerJar"))
   swissArmyKnifeScope(project(":swissarmyknife", "swissArmyKnifeJar"))
 }
 
@@ -189,18 +154,7 @@ fun relocateDepsExceptAsm(pkg: String): List<String> {
 tasks {
   val filteredDepsJar =
     register<Jar>("filteredDepsJar") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(
-        Callable {
-          r8Deps.incoming.files
-            .filter {
-              val path = it.absolutePath
-              path.contains("third_party") && path.contains("dependencies")
-            }
-            .map { injected.arcOps.zipTree(it) }
-        }
-      )
-
+      from(zipTrees(externalRuntimeConfig))
       exclude("**/*.proto")
       exclude("versions-offline/**")
       archiveFileName.set("r8-deps-merged.jar")
@@ -208,9 +162,16 @@ tasks {
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 
+  val distProjectPath = project.path
   withType<SpdxSbomTask> {
     taskExtension.set(
       object : DefaultSpdxSbomTaskExtension() {
+        // Internal R8 subprojects are packaged into the distribution jar and are not meaningful as
+        // standalone SPDX packages; returning false omits them while keeping their transitive
+        // external dependencies attached directly to :dist.
+        override fun shouldCreatePackageForProject(projectInfo: ProjectInfo): Boolean =
+          projectInfo.path == distProjectPath
+
         override fun mapRepoUri(input: URI?, moduleId: ModuleVersionIdentifier): URI? {
 
           // Locate the file origin.json with URL for download location.
@@ -257,12 +218,14 @@ tasks {
       libraryLicenses = File(getRootDir(), "library-licensing")
       // The artifacts that are included in the dependencies jar.
       dependencies =
-        r8Deps.incoming.artifacts.resolvedArtifacts.map { artifacts ->
-          artifacts.mapNotNull {
-            val compId = it.id.componentIdentifier
-            if (compId is ModuleComponentIdentifier) {
-              "${compId.group}:${compId.module}"
-            } else null
+        externalRuntimeConfig.flatMap { config ->
+          config.incoming.artifacts.resolvedArtifacts.map { artifacts ->
+            artifacts.mapNotNull {
+              val compId = it.id.componentIdentifier
+              if (compId is ModuleComponentIdentifier) {
+                "${compId.group}:${compId.module}"
+              } else null
+            }
           }
         }
       consolidatedOutputFile = File(getRootDir(), "build/generatedLicense/LICENSE")
@@ -270,7 +233,7 @@ tasks {
 
   val threadingModuleBlockingJar =
     register<Zip>("threadingModuleBlockingJar") {
-      from(zipTrees(mainJarConfig))
+      from(zipTrees(internalRuntimeConfig))
       include("com/android/tools/r8/threading/providers/blocking/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-blocking.jar")
@@ -278,7 +241,7 @@ tasks {
 
   val threadingModuleSingleThreadedJar =
     register<Zip>("threadingModuleSingleThreadedJar") {
-      from(zipTrees(mainJarConfig))
+      from(zipTrees(internalRuntimeConfig))
       include("com/android/tools/r8/threading/providers/singlethreaded/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-single-threaded.jar")
@@ -320,7 +283,7 @@ tasks {
 
   val protoJar =
     register<Zip>("protoJar") {
-      from(zipTrees(protoJarSourcesConfig))
+      from(zipTrees(internalRuntimeConfig))
       include(
         "com/android/tools/r8/keepradius/proto/**",
         "com/android/tools/r8/libanalyzer/proto/**",
@@ -384,7 +347,7 @@ tasks {
       outputs.doNotCacheIf("Large standalone artifact (~8MB)") { true }
       swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
       compiler = "relocator"
-      inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
+      inputNoResFiles.from(keepAnnoDepsJarConfig)
       inputNoResFiles.from(keepAnnoToolsJarConfig)
       val pkg = "com.android.tools.r8.keepanno"
       extraArgs =
@@ -398,7 +361,7 @@ tasks {
     r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
     inputJar = keepAnnoToolsWithRelocatedDeps.flatMap { it.outputFile }
     pgConfigs.from(File(rootDir, "src/keepanno/keep.txt"))
-    inputClasspath.from(keepAnnoDepsJarOnlyAsmConfig)
+    inputClasspath.from(keepAnnoApiExternalConfig)
     enableKeepAnnotations = true
 
     setOutputJarFile(File(rootDir, "build/libs/keepanno-toolslib.jar"))

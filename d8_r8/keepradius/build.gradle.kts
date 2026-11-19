@@ -6,7 +6,7 @@ import com.google.protobuf.gradle.proto
 
 plugins {
   `java-library`
-  id("r8-conventions")
+  id("r8-compiler-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
   id("com.google.protobuf")
@@ -22,15 +22,7 @@ java {
 }
 
 dependencies {
-  compileOnly(project(":keepanno", "keepannoClasses"))
-  compileOnly(libs.protobuf)
-  compileOnly(libs.protobufUtil)
+  implementationInternal(project(":keepanno"))
+  apiExternal(libs.protobuf)
+  implementationExternal(libs.protobufUtil)
 }
-
-configurations.consumable("keepradiusJar") { outgoing.artifact(tasks.named("jar")) }
-
-configurations.consumable("keepradiusClasses") {
-  outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
-}
-
-configurations.consumable("keepradiusSources") { outgoing.artifact(srcDir) }

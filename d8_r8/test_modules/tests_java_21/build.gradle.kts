@@ -15,22 +15,13 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
-val assistantClassesScope = configurations.dependencyScope("assistantClassesScope")
-val assistantClassesOutput =
-  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope.get()) }
-
-val mainClassesScope = configurations.dependencyScope("mainClassesScope")
-val mainClassesOutput =
-  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope.get()) }
+val internalClassesConfig = configurations.named("internalClassesConfig")
 val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResources =
   configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
 
 dependencies {
-  assistantClassesScope(project(":assistant", "assistantJar"))
-  mainClassesScope(project(":main", "mainClassesOutput"))
   mainResourcesScope(project(":main", "mainResources"))
-  implementation(project(":assistant", "assistantJar"))
   runtimeOnlyData(project(":third_party", "jdk21"))
   runtimeOnlyData(project(":third_party", "jdk21Float16Test"))
 }
@@ -38,14 +29,11 @@ dependencies {
 tasks {
   withType<Test> {
     dependsOn(project(":dist").tasks.named("compileAssistantRuntimeDex"))
+    dependsOn(internalClassesConfig, mainResources)
     javaLauncher = getJavaLauncher(Jdk.JDK_21)
     systemProperty(
       "BUILD_PROP_R8_RUNTIME_PATH",
-      project.files(mainClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        project.files(mainResources).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        project.files(assistantClassesOutput).asPath.split(File.pathSeparator)[0],
+      project.files(internalClassesConfig, mainResources).asPath,
     )
   }
 }
