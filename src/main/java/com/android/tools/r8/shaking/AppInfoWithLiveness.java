@@ -253,7 +253,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     this.lockCandidates = lockCandidates;
     this.initClassReferences = initClassReferences;
     this.recordFieldValuesReferences = recordFieldValuesReferences;
-    assert verify();
   }
 
   private AppInfoWithLiveness(AppInfoWithLiveness previous, CommittedItems committedItems) {
@@ -407,13 +406,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     targetedMethods = ThrowingSet.get();
   }
 
-  private boolean verify() {
-    assert keepInfo.verifyPinnedTypesAreLive(liveTypes, options());
-    assert objectAllocationInfoCollection.verifyAllocatedTypesAreLive(
-        liveTypes, getMissingClasses(), this);
-    return true;
-  }
-
   @Override
   public AppInfoWithLiveness rebuildWithMainDexInfo(MainDexInfo mainDexInfo, Timing timing) {
     return new AppInfoWithLiveness(
@@ -481,7 +473,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     this.initClassReferences = previous.initClassReferences;
     this.recordFieldValuesReferences = previous.recordFieldValuesReferences;
     previous.markObsolete();
-    assert verify();
   }
 
   public static AppInfoWithLivenessModifier modifier() {

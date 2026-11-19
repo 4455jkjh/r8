@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -240,8 +239,6 @@ public abstract class KeepInfoCollection {
   }
 
   public abstract KeepInfoCollection rebuildWithoutEventConsumer();
-
-  public abstract boolean verifyPinnedTypesAreLive(Set<DexType> liveTypes, InternalOptions options);
 
   // TODO(b/156715504): We should try to avoid the need for iterating pinned items.
   @Deprecated
@@ -692,15 +689,6 @@ public abstract class KeepInfoCollection {
           materializedRules,
           canonicalizer,
           new EmptyKeepInfoCollectionEventConsumer());
-    }
-
-    @Override
-    public boolean verifyPinnedTypesAreLive(Set<DexType> liveTypes, InternalOptions options) {
-      keepClassInfo.forEach(
-          (type, info) -> {
-            assert !info.isPinned(options) || liveTypes.contains(type);
-          });
-      return true;
     }
 
     @Override

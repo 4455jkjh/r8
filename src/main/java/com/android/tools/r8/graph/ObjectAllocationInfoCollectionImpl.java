@@ -14,7 +14,6 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.GraphReporter;
 import com.android.tools.r8.shaking.InstantiationReason;
 import com.android.tools.r8.shaking.KeepReason;
-import com.android.tools.r8.shaking.MissingClasses;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.LensUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
@@ -303,28 +302,6 @@ public abstract class ObjectAllocationInfoCollectionImpl implements ObjectAlloca
     assert !removed || options.isForceProguardCompatibilityEnabled()
         : "Unexpected removal of an interface marking an unknown hierarchy.";
     removedClasses.forEach(instantiatedLambdas::remove);
-  }
-
-  public boolean verifyAllocatedTypesAreLive(
-      Set<DexType> liveTypes, MissingClasses missingClasses, DexDefinitionSupplier definitions) {
-    for (DexProgramClass clazz : classesWithAllocationSiteTracking.keySet()) {
-      assert liveTypes.contains(clazz.getType());
-    }
-    for (DexProgramClass clazz : classesWithoutAllocationSiteTracking) {
-      assert liveTypes.contains(clazz.getType());
-    }
-    for (DexProgramClass annotation : annotationsWithUnknownSubtypeHierarchy) {
-      assert liveTypes.contains(annotation.getType());
-    }
-    for (DexProgramClass iface : interfacesWithUnknownSubtypeHierarchy) {
-      assert liveTypes.contains(iface.getType());
-    }
-    for (DexType iface : instantiatedLambdas.keySet()) {
-      assert missingClasses.contains(iface)
-          || definitions.definitionFor(iface).isNotProgramClass()
-          || liveTypes.contains(iface);
-    }
-    return true;
   }
 
   public static class Builder extends ObjectAllocationInfoCollectionImpl {
