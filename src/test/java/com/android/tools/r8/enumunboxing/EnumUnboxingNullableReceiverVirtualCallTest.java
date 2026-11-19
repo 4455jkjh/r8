@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.enumunboxing;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
@@ -29,7 +31,7 @@ public class EnumUnboxingNullableReceiverVirtualCallTest extends EnumUnboxingTes
 
   @Parameters(name = "{0}, value opt.: {1}, keep: {2}")
   public static List<Object[]> data() {
-    return enumUnboxingTestParameters();
+    return enumUnboxingTestParameters(getTestParameters().withAllRuntimesAndApiLevels().build());
   }
 
   private static final List<String> EXPECTED =
@@ -41,7 +43,20 @@ public class EnumUnboxingNullableReceiverVirtualCallTest extends EnumUnboxingTes
           "Simple",
           "NPE_Simple",
           "custom",
-          "NPE_ToString");
+          "NPE_ToString",
+          "Ordinal",
+          "0",
+          "Ordinal",
+          "1",
+          "NPE_Ordinal",
+          "DefaultToString",
+          "A",
+          "DefaultToString",
+          "B",
+          "NPE_DefaultToString",
+          "a",
+          "b",
+          "NPE_CustomToString");
 
   private static final List<String> UNEXPECTED =
       ImmutableList.of(
@@ -53,10 +68,29 @@ public class EnumUnboxingNullableReceiverVirtualCallTest extends EnumUnboxingTes
           "Simple",
           "NPE_Simple",
           "custom",
-          "NPE_ToString");
+          "NPE_ToString",
+          "Ordinal",
+          "0",
+          "Ordinal",
+          "1",
+          "Ordinal", // <-- Additional.
+          "UNEXPECTED_NPE_Ordinal", // <-- Additional.
+          "ERROR_NO_NPE_Ordinal", // <-- Difference.
+          "DefaultToString",
+          "A",
+          "DefaultToString",
+          "B",
+          "DefaultToString", // <-- Additional.
+          "UNEXPECTED_NPE_DefaultToString", // <-- Additional.
+          "ERROR_NO_NPE_DefaultToString", // <-- Difference.
+          "a",
+          "b",
+          "b", // <-- Additional.
+          "ERROR_NO_NPE_CustomToString"); // <-- Difference.
 
   @Test
   public void testRuntime() throws Exception {
+    assumeTrue(enumValueOptimization && enumKeepRules.isNone());
     testForRuntime(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), Main.class)
@@ -66,12 +100,18 @@ public class EnumUnboxingNullableReceiverVirtualCallTest extends EnumUnboxingTes
   @Test
   public void testR8() throws Exception {
     testForR8(parameters)
-        .addInnerClasses(EnumUnboxingNullableReceiverVirtualCallTest.class)
+        .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .addKeepRules(enumKeepRules.getKeepRules())
         .addEnumUnboxingInspector(
             inspector ->
-                inspector.assertUnboxed(Handler.class, SimpleEnum.class, ToStringEnum.class))
+                inspector.assertUnboxed(
+                    Handler.class,
+                    SimpleEnum.class,
+                    ToStringEnum.class,
+                    OrdinalEnum.class,
+                    DefaultToStringEnum.class,
+                    CustomToStringEnum.class))
         .enableNeverClassInliningAnnotations()
         .enableInliningAnnotations()
         .addOptionsModification(options -> enableEnumOptions(options, enumValueOptimization))
@@ -124,6 +164,53 @@ public class EnumUnboxingNullableReceiverVirtualCallTest extends EnumUnboxingTes
     }
   }
 
+  @NeverClassInline
+  public enum OrdinalEnum {
+    A,
+    B;
+
+    // References 'this' so ArgumentPropagator does not strip the receiver before enum unboxing.
+    @NeverInline
+    public void action() {
+      System.out.println("Ordinal");
+      try {
+        System.out.println(ordinal());
+      } catch (NullPointerException e) {
+        System.out.println("UNEXPECTED_NPE_Ordinal");
+      }
+    }
+  }
+
+  @NeverClassInline
+  public enum DefaultToStringEnum {
+    A,
+    B;
+
+    // References 'this' so ArgumentPropagator does not strip the receiver before enum unboxing.
+    @NeverInline
+    public void action() {
+      System.out.println("DefaultToString");
+      try {
+        System.out.println(toString());
+      } catch (NullPointerException e) {
+        System.out.println("UNEXPECTED_NPE_DefaultToString");
+      }
+    }
+  }
+
+  @NeverClassInline
+  public enum CustomToStringEnum {
+    A,
+    B;
+
+    // References 'this' so ArgumentPropagator does not strip the receiver before enum unboxing.
+    @Override
+    @NeverInline
+    public String toString() {
+      return this == A ? "a" : "b";
+    }
+  }
+
   public static class Req {
     @NeverInline
     public void validate() {
@@ -155,6 +242,23 @@ public class EnumUnboxingNullableReceiverVirtualCallTest extends EnumUnboxingTes
       return "x".equals(src) ? ToStringEnum.X : "y".equals(src) ? ToStringEnum.Y : null;
     }
 
+    @NeverInline
+    static OrdinalEnum lookupOrdinal(String src) {
+      return "a".equals(src) ? OrdinalEnum.A : "b".equals(src) ? OrdinalEnum.B : null;
+    }
+
+    @NeverInline
+    static DefaultToStringEnum lookupDefaultToString(String src) {
+      return "a".equals(src)
+          ? DefaultToStringEnum.A
+          : "b".equals(src) ? DefaultToStringEnum.B : null;
+    }
+
+    @NeverInline
+    static CustomToStringEnum lookupCustomToString(String src) {
+      return "a".equals(src) ? CustomToStringEnum.A : "b".equals(src) ? CustomToStringEnum.B : null;
+    }
+
     public static void main(String[] args) {
       Req req = new Req();
       lookupHandler("web").handle(req);
@@ -179,6 +283,33 @@ public class EnumUnboxingNullableReceiverVirtualCallTest extends EnumUnboxingTes
         System.out.println(lookupToString("evil").toString());
       } catch (NullPointerException e) {
         System.out.println("NPE_ToString");
+      }
+
+      lookupOrdinal("a").action();
+      lookupOrdinal("b").action();
+      try {
+        lookupOrdinal("evil").action();
+        System.out.println("ERROR_NO_NPE_Ordinal");
+      } catch (NullPointerException e) {
+        System.out.println("NPE_Ordinal");
+      }
+
+      lookupDefaultToString("a").action();
+      lookupDefaultToString("b").action();
+      try {
+        lookupDefaultToString("evil").action();
+        System.out.println("ERROR_NO_NPE_DefaultToString");
+      } catch (NullPointerException e) {
+        System.out.println("NPE_DefaultToString");
+      }
+
+      System.out.println(lookupCustomToString("a").toString());
+      System.out.println(lookupCustomToString("b").toString());
+      try {
+        System.out.println(lookupCustomToString("evil").toString());
+        System.out.println("ERROR_NO_NPE_CustomToString");
+      } catch (NullPointerException e) {
+        System.out.println("NPE_CustomToString");
       }
     }
   }
