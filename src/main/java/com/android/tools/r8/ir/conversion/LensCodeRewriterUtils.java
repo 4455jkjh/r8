@@ -160,11 +160,15 @@ public class LensCodeRewriterUtils {
         newType = oldType;
         if (oldType.isInvokeDirect()) {
           // For an invoke direct, the rewritten target must have the same holder as the original.
-          // If the method has changed from private to public we need to use virtual instead of
-          // direct. If the method has been staticized we need to use static instead of direct.
+          // If the method has changed from private to public we need to use virtual (or interface)
+          // instead of direct. If the method has been staticized we need to use static instead of
+          // direct.
           assert rewrittenTarget.getHolderType().isIdenticalTo(actualTarget.getHolderType());
           newType = lensLookup.getType().toMethodHandle(actualTarget);
-          assert newType.isInvokeDirect() || newType.isInvokeInstance() || newType.isInvokeStatic();
+          assert newType.isInvokeDirect()
+              || newType.isInvokeInstance()
+              || newType.isInvokeInterface()
+              || newType.isInvokeStatic();
         } else if (!oldType.isInvokeStatic()
             && lensLookup.getType().isStatic()
             && rewrittenTarget.getHolderType().isIdenticalTo(actualTarget.getHolderType())) {
