@@ -21,6 +21,7 @@ import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneMap
 import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyToOneMap;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntMaps;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -135,14 +136,9 @@ public class HorizontalMergeGroup extends MergeGroup implements Collection<DexPr
     this.classIdField = classIdField;
   }
 
-  public int getClassId(DexProgramClass clazz) {
-    return getClassId(clazz.getType());
-  }
-
-  public int getClassId(DexType type) {
+  public Reference2IntMap<DexType> getClassIdentifiers() {
     assert classIdentifiers != null;
-    assert classIdentifiers.containsKey(type);
-    return classIdentifiers.getInt(type);
+    return Reference2IntMaps.unmodifiable(classIdentifiers);
   }
 
   public void setClassIdentifiers(Reference2IntMap<DexType> classIdentifiers) {

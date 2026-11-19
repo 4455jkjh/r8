@@ -13,11 +13,11 @@ import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.verticalclassmerging.VerticallyMergedClasses;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.function.ToIntFunction;
 
 /**
  * Records when and how classes are merged across compilation.
@@ -26,6 +26,17 @@ import java.util.function.ToIntFunction;
  * from the input program (or initial synthetic names). This means that this structure itself is
  * insufficient to generate the merged class mapping information, as the final residual name is
  * tracked separately.
+ *
+ * <p>Each merge group is either identified (distinguishing participants via a {@code classIdField})
+ * or unidentified. Instantiation is tracked conservatively per participant: uninstantiated is
+ * definite (never instantiated directly, though possibly indirectly by a subclass instantiation),
+ * whereas instantiated means it might be instantiated directly.
+ *
+ * <p>Merges are recorded as immutable events rather than mutating prior groups. Consequently, a
+ * child's instantiation status may become inconsistent with a later merge (e.g., if a class is
+ * later proven uninstantiated); when they conflict, the enclosing parent is the source of truth (an
+ * uninstantiated parent overrides maybe-instantiated children; see {@link
+ * #compress(ProvenanceGroup)}).
  *
  * <p>For example, given input classes {@code A}, {@code B}, and {@code C}:
  *
@@ -43,35 +54,83 @@ import java.util.function.ToIntFunction;
  */
 public abstract class MergedClassesProvenance {
 
-  public abstract ProvenanceGroup getGroupForOriginalType(DexType originalType);
+  public static class ClassIdInfo {
 
-  public abstract void recordVerticalMerge(
-      AppView<?> appView, DexType target, Iterable<DexType> sources);
+    private final DexField field;
+    private final Reference2IntMap<DexType> classIdentifiers;
 
-  public abstract void recordHorizontalMerge(
-      AppView<?> appView,
-      DexType target,
-      Iterable<DexType> sources,
-      DexField classIdField,
-      ToIntFunction<DexType> classIdGetter);
+    public ClassIdInfo(DexField field, Reference2IntMap<DexType> classIdentifiers) {
+      assert field != null;
+      assert classIdentifiers != null;
+      this.field = field;
+      this.classIdentifiers = classIdentifiers;
+    }
 
-  public final void recordVerticalMerges(
-      AppView<?> appView, VerticallyMergedClasses verticallyMergedClasses) {
-    verticallyMergedClasses.forEachMergeGroup(
-        (sources, target) ->
-            recordVerticalMerge(appView, target, IterableUtils.prependSingleton(target, sources)));
+    public DexField getField() {
+      return field;
+    }
+
+    public int getClassId(DexType type) {
+      assert classIdentifiers.containsKey(type);
+      return classIdentifiers.getInt(type);
+    }
   }
 
-  public final void recordHorizontalMerges(
-      AppView<?> appView, Collection<HorizontalMergeGroup> mergeGroups) {
+  public abstract ProvenanceGroup getGroupForOriginalType(DexType originalType);
+
+  /**
+   * Records a class merge into {@code target}. Either participant iterable may be {@code null};
+   * {@code classIdInfo} covers all participants, or is {@code null} for an unidentified merge.
+   */
+  public abstract void recordMerge(
+      AppView<?> appView,
+      DexType target,
+      Iterable<DexType> maybeInstantiatedParticipants,
+      Iterable<DexType> definitelyUninstantiatedParticipants,
+      ClassIdInfo classIdInfo);
+
+  public void recordMerges(AppView<?> appView, VerticallyMergedClasses verticallyMergedClasses) {
+    verticallyMergedClasses.forEachMergeGroup(
+        (sources, target) -> {
+          if (isInstantiable(appView, target)) {
+            recordMerge(appView, target, Collections.singleton(target), sources, null);
+          } else {
+            recordMerge(
+                appView, target, null, IterableUtils.prependSingleton(target, sources), null);
+          }
+        });
+  }
+
+  public void recordMerges(AppView<?> appView, Collection<HorizontalMergeGroup> mergeGroups) {
     for (HorizontalMergeGroup group : mergeGroups) {
-      recordHorizontalMerge(
+      List<DexType> maybeInstantiated = new ArrayList<>();
+      List<DexType> definitelyUninstantiated = new ArrayList<>();
+      for (DexProgramClass clazz : group.getClasses()) {
+        if (isInstantiable(clazz)) {
+          maybeInstantiated.add(clazz.getType());
+        } else {
+          definitelyUninstantiated.add(clazz.getType());
+        }
+      }
+      ClassIdInfo classIdInfo =
+          group.hasClassIdField()
+              ? new ClassIdInfo(group.getClassIdField(), group.getClassIdentifiers())
+              : null;
+      recordMerge(
           appView,
           group.getTarget().getType(),
-          Iterables.transform(group.getClasses(), DexProgramClass::getType),
-          group.hasClassIdField() ? group.getClassIdField() : null,
-          group::getClassId);
+          maybeInstantiated,
+          definitelyUninstantiated,
+          classIdInfo);
     }
+  }
+
+  private static boolean isInstantiable(AppView<?> appView, DexType type) {
+    return isInstantiable(appView.definitionFor(type).asProgramClass());
+  }
+
+  private static boolean isInstantiable(DexProgramClass clazz) {
+    return !clazz.isInterface() && !clazz.isAbstract();
   }
 
   public static MergedClassesProvenance create(AppView<?> appView) {
@@ -88,18 +147,23 @@ public abstract class MergedClassesProvenance {
       }
 
       @Override
-      public void recordVerticalMerge(
-          AppView<?> appView, DexType target, Iterable<DexType> sources) {
+      public void recordMerge(
+          AppView<?> appView,
+          DexType target,
+          Iterable<DexType> maybeInstantiatedParticipants,
+          Iterable<DexType> definitelyUninstantiatedParticipants,
+          ClassIdInfo classIdInfo) {
         // Intentionally empty.
       }
 
       @Override
-      public void recordHorizontalMerge(
-          AppView<?> appView,
-          DexType target,
-          Iterable<DexType> sources,
-          DexField classIdField,
-          ToIntFunction<DexType> classIdGetter) {
+      public void recordMerges(
+          AppView<?> appView, VerticallyMergedClasses verticallyMergedClasses) {
+        // Intentionally empty.
+      }
+
+      @Override
+      public void recordMerges(AppView<?> appView, Collection<HorizontalMergeGroup> mergeGroups) {
         // Intentionally empty.
       }
     };
@@ -117,18 +181,23 @@ public abstract class MergedClassesProvenance {
       }
 
       @Override
-      public void recordVerticalMerge(
-          AppView<?> appView, DexType target, Iterable<DexType> sources) {
+      public void recordMerge(
+          AppView<?> appView,
+          DexType target,
+          Iterable<DexType> maybeInstantiatedParticipants,
+          Iterable<DexType> definitelyUninstantiatedParticipants,
+          ClassIdInfo classIdInfo) {
         throw fail();
       }
 
       @Override
-      public void recordHorizontalMerge(
-          AppView<?> appView,
-          DexType target,
-          Iterable<DexType> sources,
-          DexField classIdField,
-          ToIntFunction<DexType> classIdGetter) {
+      public void recordMerges(
+          AppView<?> appView, VerticallyMergedClasses verticallyMergedClasses) {
+        throw fail();
+      }
+
+      @Override
+      public void recordMerges(AppView<?> appView, Collection<HorizontalMergeGroup> mergeGroups) {
         throw fail();
       }
     };
@@ -139,6 +208,7 @@ public abstract class MergedClassesProvenance {
     private final DexType type;
 
     protected ProvenanceNode(DexType type) {
+      assert type != null;
       this.type = type;
     }
 
@@ -190,7 +260,11 @@ public abstract class MergedClassesProvenance {
       return getType();
     }
 
-    public abstract List<? extends Participant> getParticipants();
+    /**
+     * Returns the participants in this merge group. Iteration order is unspecified; consumers
+     * requiring deterministic order should sort explicitly.
+     */
+    public abstract Collection<? extends Participant> getParticipants();
 
     @Override
     public boolean isGroup() {
@@ -202,69 +276,11 @@ public abstract class MergedClassesProvenance {
       return this;
     }
 
-    public boolean isVertical() {
-      return false;
-    }
-
-    public VerticalProvenanceGroup asVertical() {
-      return null;
-    }
-
-    public boolean isHorizontal() {
-      return false;
-    }
-
-    public HorizontalProvenanceGroup asHorizontal() {
-      return null;
-    }
-  }
-
-  public static class VerticalProvenanceGroup extends ProvenanceGroup {
-
-    private final List<UnidentifiedParticipant> participants;
-
-    public VerticalProvenanceGroup(DexType target, List<UnidentifiedParticipant> participants) {
-      super(target);
-      this.participants = participants;
-    }
-
-    @Override
-    public List<UnidentifiedParticipant> getParticipants() {
-      return participants;
-    }
-
-    @Override
-    public boolean isVertical() {
-      return true;
-    }
-
-    @Override
-    public VerticalProvenanceGroup asVertical() {
-      return this;
-    }
-  }
-
-  public abstract static class HorizontalProvenanceGroup extends ProvenanceGroup {
-
-    protected HorizontalProvenanceGroup(DexType target) {
-      super(target);
-    }
-
-    @Override
-    public boolean isHorizontal() {
-      return true;
-    }
-
-    @Override
-    public HorizontalProvenanceGroup asHorizontal() {
-      return this;
-    }
-
     public boolean isIdentified() {
       return false;
     }
 
-    public IdentifiedHorizontalProvenanceGroup asIdentified() {
+    public IdentifiedProvenanceGroup asIdentified() {
       return null;
     }
 
@@ -272,20 +288,21 @@ public abstract class MergedClassesProvenance {
       return false;
     }
 
-    public UnidentifiedHorizontalProvenanceGroup asUnidentified() {
+    public UnidentifiedProvenanceGroup asUnidentified() {
       return null;
     }
   }
 
-  public static class IdentifiedHorizontalProvenanceGroup extends HorizontalProvenanceGroup {
+  public static class IdentifiedProvenanceGroup extends ProvenanceGroup {
 
     private final DexField classIdField;
-    private final List<Participant> participants;
+    private final Collection<IdentifiedParticipant> participants;
 
-    public IdentifiedHorizontalProvenanceGroup(
-        DexType target, DexField classIdField, List<Participant> participants) {
+    public IdentifiedProvenanceGroup(
+        DexType target, DexField classIdField, Collection<IdentifiedParticipant> participants) {
       super(target);
       assert classIdField != null;
+      assert participants != null;
       this.classIdField = classIdField;
       this.participants = participants;
     }
@@ -295,7 +312,7 @@ public abstract class MergedClassesProvenance {
     }
 
     @Override
-    public List<Participant> getParticipants() {
+    public Collection<IdentifiedParticipant> getParticipants() {
       return participants;
     }
 
@@ -305,23 +322,24 @@ public abstract class MergedClassesProvenance {
     }
 
     @Override
-    public IdentifiedHorizontalProvenanceGroup asIdentified() {
+    public IdentifiedProvenanceGroup asIdentified() {
       return this;
     }
   }
 
-  public static class UnidentifiedHorizontalProvenanceGroup extends HorizontalProvenanceGroup {
+  public static class UnidentifiedProvenanceGroup extends ProvenanceGroup {
 
-    private final List<UnidentifiedParticipant> participants;
+    private final Collection<UnidentifiedParticipant> participants;
 
-    public UnidentifiedHorizontalProvenanceGroup(
-        DexType target, List<UnidentifiedParticipant> participants) {
+    public UnidentifiedProvenanceGroup(
+        DexType target, Collection<UnidentifiedParticipant> participants) {
       super(target);
+      assert participants != null;
       this.participants = participants;
     }
 
     @Override
-    public List<UnidentifiedParticipant> getParticipants() {
+    public Collection<UnidentifiedParticipant> getParticipants() {
       return participants;
     }
 
@@ -331,7 +349,7 @@ public abstract class MergedClassesProvenance {
     }
 
     @Override
-    public UnidentifiedHorizontalProvenanceGroup asUnidentified() {
+    public UnidentifiedProvenanceGroup asUnidentified() {
       return this;
     }
   }
@@ -339,9 +357,12 @@ public abstract class MergedClassesProvenance {
   public abstract static class Participant {
 
     private final ProvenanceNode node;
+    private final boolean instantiated;
 
-    protected Participant(ProvenanceNode node) {
+    protected Participant(ProvenanceNode node, boolean instantiated) {
+      assert node != null;
       this.node = node;
+      this.instantiated = instantiated;
     }
 
     public ProvenanceNode getNode() {
@@ -350,6 +371,19 @@ public abstract class MergedClassesProvenance {
 
     public DexType getType() {
       return node.getType();
+    }
+
+    /**
+     * Applies to the entire subtree rooted at {@link #getNode()}: {@code false} acts as a pending
+     * demotion when wrapping a {@link ProvenanceGroup}. A leaf class may be directly instantiated
+     * iff every participant on the path from root to leaf returns {@code true}.
+     */
+    public boolean isInstantiated() {
+      return instantiated;
+    }
+
+    public final boolean isUninstantiated() {
+      return !isInstantiated();
     }
 
     public boolean isIdentified() {
@@ -373,8 +407,8 @@ public abstract class MergedClassesProvenance {
 
     private final int classId;
 
-    public IdentifiedParticipant(ProvenanceNode node, int classId) {
-      super(node);
+    public IdentifiedParticipant(ProvenanceNode node, int classId, boolean instantiated) {
+      super(node, instantiated);
       this.classId = classId;
     }
 
@@ -395,8 +429,8 @@ public abstract class MergedClassesProvenance {
 
   public static class UnidentifiedParticipant extends Participant {
 
-    public UnidentifiedParticipant(ProvenanceNode node) {
-      super(node);
+    public UnidentifiedParticipant(ProvenanceNode node, boolean instantiated) {
+      super(node, instantiated);
     }
 
     @Override
@@ -410,77 +444,56 @@ public abstract class MergedClassesProvenance {
     }
   }
 
+  /**
+   * Flattens nested {@link UnidentifiedProvenanceGroup}s into their enclosing unidentified parent
+   * and flushes pending uninstantiated demotions down the tree so every participant reflects its
+   * effective status. {@link IdentifiedProvenanceGroup}s are always preserved.
+   */
   public static ProvenanceGroup compress(ProvenanceGroup group) {
-    if (group.isVertical()) {
-      return compressVertical(group.asVertical());
+    return compress(group, false);
+  }
+
+  private static ProvenanceGroup compress(ProvenanceGroup group, boolean demoteToUninstantiated) {
+    if (group.isIdentified()) {
+      return compressIdentified(group.asIdentified(), demoteToUninstantiated);
     }
-    if (group.isHorizontal()) {
-      return compressHorizontal(group.asHorizontal());
+    if (group.isUnidentified()) {
+      return compressUnidentified(group.asUnidentified(), demoteToUninstantiated);
     }
     throw new Unreachable();
   }
 
-  private static VerticalProvenanceGroup compressVertical(VerticalProvenanceGroup verticalGroup) {
-    ImmutableList.Builder<UnidentifiedParticipant> compressedParticipants = ImmutableList.builder();
-    for (UnidentifiedParticipant participant : verticalGroup.getParticipants()) {
-      ProvenanceNode node = participant.getNode();
-      if (node.isClass()) {
-        compressedParticipants.add(participant);
-      } else if (node.isGroup()) {
-        ProvenanceGroup nestedGroup = compress(node.asGroup());
-        if (nestedGroup.isVertical()) {
-          compressedParticipants.addAll(nestedGroup.asVertical().getParticipants());
-        } else if (nestedGroup.isHorizontal()) {
-          compressedParticipants.add(new UnidentifiedParticipant(nestedGroup));
-        } else {
-          throw new Unreachable();
-        }
-      } else {
-        throw new Unreachable();
-      }
-    }
-    return new VerticalProvenanceGroup(verticalGroup.getTarget(), compressedParticipants.build());
-  }
-
-  private static HorizontalProvenanceGroup compressHorizontal(
-      HorizontalProvenanceGroup horizontalGroup) {
-    if (horizontalGroup.isIdentified()) {
-      return compressIdentifiedHorizontal(horizontalGroup.asIdentified());
-    }
-    if (horizontalGroup.isUnidentified()) {
-      return compressUnidentifiedHorizontal(horizontalGroup.asUnidentified());
-    }
-    throw new Unreachable();
-  }
-
-  private static IdentifiedHorizontalProvenanceGroup compressIdentifiedHorizontal(
-      IdentifiedHorizontalProvenanceGroup identified) {
-    return new IdentifiedHorizontalProvenanceGroup(
+  private static IdentifiedProvenanceGroup compressIdentified(
+      IdentifiedProvenanceGroup identified, boolean demoteToUninstantiated) {
+    return new IdentifiedProvenanceGroup(
         identified.getTarget(),
         identified.getClassIdField(),
-        ListUtils.map(identified.getParticipants(), MergedClassesProvenance::compressParticipant));
+        ListUtils.unmodifiableForTesting(
+            ListUtils.map(
+                identified.getParticipants(),
+                participant -> {
+                  boolean uninstantiated = demoteToUninstantiated || participant.isUninstantiated();
+                  return new IdentifiedParticipant(
+                      compressNode(participant.getNode(), uninstantiated),
+                      participant.getClassId(),
+                      !uninstantiated);
+                })));
   }
 
-  private static UnidentifiedHorizontalProvenanceGroup compressUnidentifiedHorizontal(
-      UnidentifiedHorizontalProvenanceGroup unidentified) {
-    ImmutableList.Builder<UnidentifiedParticipant> compressedParticipants = ImmutableList.builder();
+  private static UnidentifiedProvenanceGroup compressUnidentified(
+      UnidentifiedProvenanceGroup unidentified, boolean demoteToUninstantiated) {
+    List<UnidentifiedParticipant> compressedParticipants = new ArrayList<>();
     for (UnidentifiedParticipant participant : unidentified.getParticipants()) {
+      boolean uninstantiated = demoteToUninstantiated || participant.isUninstantiated();
       ProvenanceNode node = participant.getNode();
       if (node.isClass()) {
-        compressedParticipants.add(participant);
+        compressedParticipants.add(new UnidentifiedParticipant(node, !uninstantiated));
       } else if (node.isGroup()) {
-        ProvenanceGroup nestedGroup = compress(node.asGroup());
-        if (nestedGroup.isVertical()) {
-          compressedParticipants.add(new UnidentifiedParticipant(nestedGroup));
-        } else if (nestedGroup.isHorizontal()) {
-          HorizontalProvenanceGroup nestedHorizontal = nestedGroup.asHorizontal();
-          if (nestedHorizontal.isIdentified()) {
-            compressedParticipants.add(new UnidentifiedParticipant(nestedHorizontal));
-          } else if (nestedHorizontal.isUnidentified()) {
-            compressedParticipants.addAll(nestedHorizontal.asUnidentified().getParticipants());
-          } else {
-            throw new Unreachable();
-          }
+        ProvenanceGroup nestedGroup = compress(node.asGroup(), uninstantiated);
+        if (nestedGroup.isIdentified()) {
+          compressedParticipants.add(new UnidentifiedParticipant(nestedGroup, !uninstantiated));
+        } else if (nestedGroup.isUnidentified()) {
+          compressedParticipants.addAll(nestedGroup.asUnidentified().getParticipants());
         } else {
           throw new Unreachable();
         }
@@ -488,32 +501,16 @@ public abstract class MergedClassesProvenance {
         throw new Unreachable();
       }
     }
-    return new UnidentifiedHorizontalProvenanceGroup(
-        unidentified.getTarget(), compressedParticipants.build());
+    return new UnidentifiedProvenanceGroup(
+        unidentified.getTarget(), ListUtils.unmodifiableForTesting(compressedParticipants));
   }
 
-  private static Participant compressParticipant(Participant participant) {
-    if (participant.isIdentified()) {
-      IdentifiedParticipant identified = participant.asIdentified();
-      return new IdentifiedParticipant(compressNode(identified.getNode()), identified.getClassId());
-    }
-    if (participant.isUnidentified()) {
-      return compressUnidentifiedParticipant(participant.asUnidentified());
-    }
-    throw new Unreachable();
-  }
-
-  private static UnidentifiedParticipant compressUnidentifiedParticipant(
-      UnidentifiedParticipant participant) {
-    return new UnidentifiedParticipant(compressNode(participant.getNode()));
-  }
-
-  private static ProvenanceNode compressNode(ProvenanceNode node) {
+  private static ProvenanceNode compressNode(ProvenanceNode node, boolean demoteToUninstantiated) {
     if (node.isClass()) {
       return node;
     }
     if (node.isGroup()) {
-      return compress(node.asGroup());
+      return compress(node.asGroup(), demoteToUninstantiated);
     }
     throw new Unreachable();
   }

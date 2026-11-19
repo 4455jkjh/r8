@@ -4,19 +4,18 @@
 package com.android.tools.r8.graph.classmerging;
 
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.utils.internal.ListUtils;
-import com.android.tools.r8.utils.internal.collections.Pair;
-import com.google.common.collect.Iterables;
+import com.android.tools.r8.utils.internal.SetUtils;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
-import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.ToIntFunction;
+import java.util.Set;
 
 public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
 
@@ -33,7 +32,8 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
 
     void addGroup(ProvenanceGroup group) {
       DexType target = group.getTarget();
-      assert !indexedGroups.containsKey(target) : target + " already bound to a group";
+      assert !indexedGroups.containsKey(target)
+          : target.getTypeName() + " already bound to a group";
       indexedGroups.put(target, group);
     }
   }
@@ -50,85 +50,119 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
     return existingGroup != null ? existingGroup : new ClassProvenance(originalType);
   }
 
-  private DexType getOriginalType(AppView<?> appView, DexType type) {
+  private static DexType getOriginalType(AppView<?> appView, DexType type) {
     return appView.graphLens().getOriginalType(type, GraphLens.getIdentityLens());
   }
 
-  private List<UnidentifiedParticipant> getSortedUnidentifiedParticipants(
-      AppView<?> appView, Iterable<DexType> sources) {
-    Iterable<DexType> originalSources =
-        Iterables.transform(sources, source -> getOriginalType(appView, source));
-    Iterable<UnidentifiedParticipant> participants =
-        Iterables.transform(
-            originalSources,
-            originalType -> new UnidentifiedParticipant(removeOrCreateNode(originalType)));
-    List<UnidentifiedParticipant> sortedParticipants =
-        ListUtils.sort(participants, Comparator.comparing(Participant::getType));
-    assert assertNoDuplicateTypes(sortedParticipants);
-    return sortedParticipants;
+  @FunctionalInterface
+  private interface ParticipantFactory<P extends Participant> {
+    P create(DexType source, ProvenanceNode node, boolean instantiated);
   }
 
   @Override
-  public void recordVerticalMerge(AppView<?> appView, DexType target, Iterable<DexType> sources) {
-    DexType originalTarget = getOriginalType(appView, target);
-    List<UnidentifiedParticipant> sortedParticipants =
-        getSortedUnidentifiedParticipants(appView, sources);
-    groups.addGroup(new VerticalProvenanceGroup(originalTarget, sortedParticipants));
-  }
-
-  @Override
-  public void recordHorizontalMerge(
+  public void recordMerge(
       AppView<?> appView,
       DexType target,
-      Iterable<DexType> sources,
-      DexField classIdField,
-      ToIntFunction<DexType> classIdGetter) {
+      Iterable<DexType> maybeInstantiatedParticipants,
+      Iterable<DexType> definitelyUninstantiatedParticipants,
+      ClassIdInfo classIdInfo) {
+    assert target != null;
     DexType originalTarget = getOriginalType(appView, target);
-    if (classIdField == null) {
-      List<UnidentifiedParticipant> sortedParticipants =
-          getSortedUnidentifiedParticipants(appView, sources);
-      groups.addGroup(
-          new UnidentifiedHorizontalProvenanceGroup(originalTarget, sortedParticipants));
-      return;
+    ProvenanceGroup group;
+    if (classIdInfo == null) {
+      group =
+          createUnidentifiedGroup(
+              appView,
+              originalTarget,
+              maybeInstantiatedParticipants,
+              definitelyUninstantiatedParticipants);
+    } else {
+      group =
+          createIdentifiedGroup(
+              appView,
+              originalTarget,
+              maybeInstantiatedParticipants,
+              definitelyUninstantiatedParticipants,
+              classIdInfo);
     }
-    Iterable<Pair<DexType, Integer>> originalSources =
-        Iterables.transform(
-            sources,
-            source ->
-                Pair.create(getOriginalType(appView, source), classIdGetter.applyAsInt(source)));
-    Iterable<Participant> participants =
-        Iterables.transform(
-            originalSources,
-            pair -> {
-              DexType originalType = pair.getFirst();
-              int classId = pair.getSecond();
-              return new IdentifiedParticipant(removeOrCreateNode(originalType), classId);
-            });
-    List<Participant> sortedParticipants =
-        ListUtils.sort(participants, Comparator.comparing(Participant::getType));
-    assert assertNoDuplicateTypes(sortedParticipants);
-    assert assertNoDuplicateClassIds(sortedParticipants);
-    groups.addGroup(
-        new IdentifiedHorizontalProvenanceGroup(originalTarget, classIdField, sortedParticipants));
+    groups.addGroup(group);
   }
 
-  private static boolean assertNoDuplicateTypes(List<? extends Participant> sortedParticipants) {
-    DexType previous = null;
-    for (Participant participant : sortedParticipants) {
-      DexType current = participant.getType();
-      assert previous == null || current.isNotIdenticalTo(previous);
-      previous = current;
+  private UnidentifiedProvenanceGroup createUnidentifiedGroup(
+      AppView<?> appView,
+      DexType originalTarget,
+      Iterable<DexType> maybeInstantiatedParticipants,
+      Iterable<DexType> definitelyUninstantiatedParticipants) {
+    List<UnidentifiedParticipant> participants =
+        collectParticipants(
+            appView,
+            maybeInstantiatedParticipants,
+            definitelyUninstantiatedParticipants,
+            (source, node, instantiated) -> new UnidentifiedParticipant(node, instantiated));
+    return new UnidentifiedProvenanceGroup(
+        originalTarget, ListUtils.unmodifiableForTesting(participants));
+  }
+
+  private IdentifiedProvenanceGroup createIdentifiedGroup(
+      AppView<?> appView,
+      DexType originalTarget,
+      Iterable<DexType> maybeInstantiatedParticipants,
+      Iterable<DexType> definitelyUninstantiatedParticipants,
+      ClassIdInfo classIdInfo) {
+    List<IdentifiedParticipant> participants =
+        collectParticipants(
+            appView,
+            maybeInstantiatedParticipants,
+            definitelyUninstantiatedParticipants,
+            (source, node, instantiated) ->
+                new IdentifiedParticipant(node, classIdInfo.getClassId(source), instantiated));
+    assert assertNoDuplicateClassIds(participants);
+    return new IdentifiedProvenanceGroup(
+        originalTarget, classIdInfo.getField(), ListUtils.unmodifiableForTesting(participants));
+  }
+
+  private <P extends Participant> List<P> collectParticipants(
+      AppView<?> appView,
+      Iterable<DexType> maybeInstantiatedParticipants,
+      Iterable<DexType> definitelyUninstantiatedParticipants,
+      ParticipantFactory<P> factory) {
+    List<P> participants = new ArrayList<>();
+    addParticipants(appView, maybeInstantiatedParticipants, true, factory, participants);
+    addParticipants(appView, definitelyUninstantiatedParticipants, false, factory, participants);
+    assert !participants.isEmpty();
+    assert assertNoDuplicateTypes(participants);
+    return participants;
+  }
+
+  private <P extends Participant> void addParticipants(
+      AppView<?> appView,
+      Iterable<DexType> participantTypes,
+      boolean instantiated,
+      ParticipantFactory<P> factory,
+      List<P> result) {
+    if (participantTypes == null) {
+      return;
+    }
+    for (DexType source : participantTypes) {
+      DexType originalType = getOriginalType(appView, source);
+      result.add(factory.create(source, removeOrCreateNode(originalType), instantiated));
+    }
+  }
+
+  private static boolean assertNoDuplicateTypes(Collection<? extends Participant> participants) {
+    Set<DexType> seen = SetUtils.newIdentityHashSet(participants.size());
+    for (Participant participant : participants) {
+      boolean firstOccurrence = seen.add(participant.getType());
+      assert firstOccurrence : "Duplicate participant type " + participant.getType().getTypeName();
     }
     return true;
   }
 
-  private static boolean assertNoDuplicateClassIds(List<Participant> participants) {
+  private static boolean assertNoDuplicateClassIds(Collection<IdentifiedParticipant> participants) {
     IntSet seen = new IntOpenHashSet(participants.size());
-    for (Participant participant : participants) {
-      if (participant.isIdentified()) {
-        boolean firstOccurrence = seen.add(participant.asIdentified().getClassId());
-        assert firstOccurrence;
-      }
+    for (IdentifiedParticipant participant : participants) {
+      boolean firstOccurrence = seen.add(participant.getClassId());
+      assert firstOccurrence : "Duplicate class id " + participant.getClassId();
     }
     return true;
   }

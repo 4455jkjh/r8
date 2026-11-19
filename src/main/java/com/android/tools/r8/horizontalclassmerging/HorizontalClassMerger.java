@@ -132,6 +132,9 @@ public class HorizontalClassMerger {
 
     // Merge classes.
     List<ClassMerger> classMergers = createClassMergers(classMergerBuilders, lensBuilder);
+    // Record provenance before applyClassMergers() mutates target access flags (e.g.
+    // demoteFromAbstract()).
+    appView.getMergedClassesProvenance().recordMerges(appView, groups);
     ProfileCollectionAdditions profileCollectionAdditions =
         ProfileCollectionAdditions.create(appView);
     SyntheticInitializerConverter.Builder syntheticInitializerConverterBuilder =
@@ -154,7 +157,6 @@ public class HorizontalClassMerger {
     HorizontallyMergedClasses mergedClasses =
         HorizontallyMergedClasses.builder().addMergeGroups(groups).build();
     appView.setHorizontallyMergedClasses(mergedClasses);
-    appView.getMergedClassesProvenance().recordHorizontalMerges(appView, groups);
 
     HorizontalClassMergerGraphLens horizontalClassMergerGraphLens =
         createLens(
