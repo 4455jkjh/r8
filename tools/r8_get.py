@@ -30,6 +30,9 @@ def parse_arguments():
 
 
 def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     args = parse_arguments()
     outdir = args.outdir if args.outdir else ''
     print(compiledump.download_distribution(args.version, args, outdir))

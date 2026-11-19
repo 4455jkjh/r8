@@ -9,6 +9,9 @@ import toolhelper
 
 
 def extractmarker(apk_or_dex, build=True):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     stdout = toolhelper.run('extractmarker', [apk_or_dex],
                             build=build,
                             return_stdout=True)
@@ -27,6 +30,9 @@ def parse_options(argv):
 
 
 def main(argv):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     options, args = parse_options(argv)
     build = not options.no_build
     for apk_or_dex in args:

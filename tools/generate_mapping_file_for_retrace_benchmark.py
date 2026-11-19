@@ -45,6 +45,9 @@ def ensure_unique(name, indices):
 
 
 def main():
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     options = parse_options()
     header = []
     sections = []

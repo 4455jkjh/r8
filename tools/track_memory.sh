@@ -6,6 +6,9 @@
 # Tracks the peak resident memory being used by running the supplied command.
 # The output is written to the first argument of the script every second.
 
+echo "This script has been marked as unused and will be deleted unless somebody is against it." >&2
+exit 1
+
 function Logger() {
   output="$1"
   while sleep 1

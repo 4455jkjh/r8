@@ -456,6 +456,11 @@ def _print_perfetto_summary(entries):
 
 def main(argv):
     (options, args) = parse_options(argv)
+    if options.track_memory_to_file or options.print_memoryuse:
+        raise Exception(
+            'The --track-memory-to-file and --print-memoryuse options have '
+            'been marked as unused and will be deleted unless somebody is '
+            'against it.')
     if options.expect_oom and not options.max_memory:
         raise Exception(
             'You should only use --expect-oom if also specifying --max-memory')

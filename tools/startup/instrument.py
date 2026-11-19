@@ -111,6 +111,9 @@ def should_instrument_dex_file(dex_name, options):
 
 
 def main(argv):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     options, args = parse_options(argv)
     with utils.TempDir() as tmp_dir:
         # Extract the dex files of the apk.

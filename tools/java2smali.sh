@@ -20,6 +20,9 @@
 
 set -e
 
+echo "This script has been marked as unused and will be deleted unless somebody is against it." >&2
+exit 1
+
 JAVA_FILE=Test.java
 
 ANDROID_HOME="$HOME/android/master"

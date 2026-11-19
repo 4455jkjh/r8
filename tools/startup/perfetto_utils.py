@@ -7,6 +7,10 @@ import os
 import subprocess
 import sys
 
+raise Exception(
+    'This script has been marked as unused and will be deleted unless '
+    'somebody is against it.')
+
 
 def get_trace_processor():
     try:

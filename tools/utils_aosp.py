@@ -5,6 +5,10 @@
 from os.path import join
 import utils
 
+raise Exception(
+    'This script has been marked as unused and will be deleted unless '
+    'somebody is against it.')
+
 DEFAULT_ROOT = join(utils.REPO_ROOT, 'build', 'aosp')
 
 

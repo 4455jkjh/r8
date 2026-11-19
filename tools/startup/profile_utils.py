@@ -98,6 +98,9 @@ def parse_options(argv):
 
 
 def main(argv):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     (options, args) = parse_options(argv)
     with open(options.art_profile, 'r') as f:
         art_profile = parse_art_profile(f.read().splitlines())

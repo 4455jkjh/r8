@@ -29,6 +29,10 @@ def run(tool,
         time_consumer=None,
         debug_agent=None,
         worker_id=None):
+    if track_memory_file:
+        raise Exception(
+            'The track_memory_file option has been marked as unused and will '
+            'be deleted unless somebody is against it.')
     cmd = []
     if cmd_prefix:
         cmd.extend(cmd_prefix)

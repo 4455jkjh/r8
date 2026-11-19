@@ -59,6 +59,9 @@ def run(args,
         track_memory_file=None,
         stdout=None,
         stderr=None):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     cmd = []
     if track_memory_file:
         cmd.extend(['tools/track_memory.sh', track_memory_file])

@@ -463,6 +463,9 @@ def run_on_device(device, options, startup_descriptors):
 
 
 def main(argv):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     (options, args) = parse_options(argv)
     startup_descriptors = {}
     for device in options.devices:

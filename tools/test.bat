@@ -4,6 +4,9 @@
 :: BSD-style license that can be found in the LICENSE file.
 setlocal
 
+echo This script has been marked as unused and will be deleted unless somebody is against it. 1>&2
+exit /b 1
+
 PATH=%~dp0;%PATH%
 
 python "%~dp0\test.py" %*

@@ -64,6 +64,9 @@ def get_dex_to_relayout(options, temp):
 
 
 def main(argv):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     (options, args) = parse_options(argv)
     with utils.TempDir() as temp:
         dex = os.path.join(temp, 'dex.zip')

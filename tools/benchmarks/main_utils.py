@@ -5,6 +5,10 @@
 import os
 import sys
 
+raise Exception(
+    'This script has been marked as unused and will be deleted unless '
+    'somebody is against it.')
+
 TOOLS_DIR = os.path.abspath(os.path.normpath(os.path.join(__file__, '..',
                                                           '..')))
 

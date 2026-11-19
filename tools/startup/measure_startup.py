@@ -436,6 +436,9 @@ def global_teardown(options, teardown_options):
 
 
 def main(argv):
+    raise Exception(
+        'This script has been marked as unused and will be deleted unless '
+        'somebody is against it.')
     (options, args) = parse_options(argv)
     with utils.TempDir() as tmp_dir:
         apk_or_apks = {'apk': options.apk, 'apks': options.apks}
