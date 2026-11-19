@@ -36,11 +36,6 @@ abstract class TimingImplBase extends Timing {
   }
 
   @Override
-  public final TimingMerger beginMerger(String title, int numberOfThreads) {
-    return EmptyTimingMerger.get();
-  }
-
-  @Override
   public final <E extends Exception> void time(String title, ThrowingAction<E> action) throws E {
     begin(title);
     try {

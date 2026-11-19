@@ -22,7 +22,6 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -110,8 +109,7 @@ public class RelocatorMapping {
             computeTypeMapping(type, factory, typeMappings, packageMappingForResourceRewriting),
         appView.options(),
         executorService,
-        Timing.empty(),
-        TimingMerger.empty());
+        Timing.empty());
     return typeMappings;
   }
 

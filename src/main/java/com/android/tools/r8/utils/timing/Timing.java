@@ -5,7 +5,6 @@ package com.android.tools.r8.utils.timing;
 
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.internal.ThrowingSupplier;
 import java.util.concurrent.ExecutorService;
@@ -64,12 +63,6 @@ public abstract class Timing implements AutoCloseable {
   public abstract Timing begin(int value, IntFunction<String> titleSupplier);
 
   public abstract Timing end();
-
-  public abstract TimingMerger beginMerger(String title, int numberOfThreads);
-
-  public final TimingMerger beginMerger(String title, ExecutorService executorService) {
-    return beginMerger(title, ThreadUtils.getNumberOfThreads(executorService));
-  }
 
   public boolean isEmpty() {
     return false;

@@ -51,13 +51,7 @@ public class JumboStringRewriter {
   protected void processVirtualFiles(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     ThreadUtils.processItemsThatMatches(
-        virtualFiles,
-        alwaysTrue(),
-        this::processVirtualFile,
-        options,
-        executorService,
-        timing,
-        timing.beginMerger("Pre-write phase", executorService));
+        virtualFiles, alwaysTrue(), this::processVirtualFile, options, executorService, timing);
   }
 
   protected final void processVirtualFile(VirtualFile virtualFile, Timing timing) {

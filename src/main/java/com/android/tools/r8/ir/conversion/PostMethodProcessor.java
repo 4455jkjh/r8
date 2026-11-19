@@ -24,7 +24,6 @@ import com.android.tools.r8.utils.collections.LongLivedProgramMethodSetBuilder;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -223,7 +222,6 @@ public class PostMethodProcessor extends MethodProcessorWithWave {
       ExecutorService executorService,
       Timing timing)
       throws ExecutionException {
-    TimingMerger merger = timing.beginMerger("secondary-processor", executorService);
     int waveIndex = 0;
     while (!waves.isEmpty()) {
       wave = waves.removeFirst();
@@ -236,25 +234,20 @@ public class PostMethodProcessor extends MethodProcessorWithWave {
       do {
         assert feedback.noUpdatesLeft();
         converter.waveStart(wave, ++waveIndex);
-        Collection<Timing> timings =
-            processWave(
-                method -> {
-                  Timing time =
-                      consumer.apply(
-                          method, processorContext.createMethodProcessingContext(method));
-                  time.end().notifyThreadTimingFinished();
-                  return time;
-                },
-                threadingModule,
-                executorService);
+        processWave(
+            method -> {
+              Timing time =
+                  consumer.apply(method, processorContext.createMethodProcessingContext(method));
+              time.end().notifyThreadTimingFinished();
+            },
+            threadingModule,
+            executorService);
         converter.waveDone(wave, executorService);
-        merger.add(timings);
         processed.addAll(wave);
         prepareForWaveExtensionProcessing();
       } while (!wave.isEmpty());
     }
     clear();
-    merger.end();
   }
 
   private void clear() {

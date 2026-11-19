@@ -78,7 +78,6 @@ public class ArgumentPropagatorOptimizationInfoPropagator {
         appView.options(),
         executorService,
         timing,
-        timing.beginMerger("Fork", executorService),
         classes ->
             classes.iterator().next().getTypeName()
                 + " ("

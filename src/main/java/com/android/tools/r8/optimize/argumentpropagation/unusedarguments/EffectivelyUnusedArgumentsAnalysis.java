@@ -173,7 +173,6 @@ public class EffectivelyUnusedArgumentsAnalysis {
         appView.options(),
         executorService,
         timing,
-        timing.beginMerger("Initialize", executorService),
         stronglyConnectedComponent -> stronglyConnectedComponent.iterator().next().getTypeName());
 
     // Run IR analysis.
@@ -191,7 +190,6 @@ public class EffectivelyUnusedArgumentsAnalysis {
         appView.options(),
         executorService,
         timing,
-        timing.beginMerger("IR analysis", executorService),
         DexClass::getTypeName);
 
     // Compute unused arguments.

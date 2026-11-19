@@ -142,7 +142,6 @@ public abstract class ClassConverter {
         appView.options(),
         executorService,
         timing,
-        timing.beginMerger("Class conversion", executorService),
         DexClass::getTypeName);
     methodProcessor.awaitMethodProcessing();
 

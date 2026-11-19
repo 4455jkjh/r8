@@ -197,7 +197,6 @@ public class DexDistributionRefinement {
         appView.options(),
         executorService,
         timing,
-        timing.beginMerger("Fork", executorService),
         DexClass::getTypeName);
     timing.end();
 

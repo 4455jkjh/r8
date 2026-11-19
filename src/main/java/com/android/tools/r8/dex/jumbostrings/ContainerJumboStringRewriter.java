@@ -49,8 +49,7 @@ public class ContainerJumboStringRewriter extends JumboStringRewriter {
                 virtualFile, lastFile.getObjectMapping(), threadTiming),
         appView.options(),
         executorService,
-        timing,
-        timing.beginMerger("Pre-write phase", executorService));
+        timing);
   }
 
   private void rewriteJumboStringsAndComputeDebugRepresentationWithExternalStringIds(

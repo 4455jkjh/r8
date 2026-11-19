@@ -21,11 +21,6 @@ abstract class TimingDelegate extends Timing {
   }
 
   @Override
-  public TimingMerger beginMerger(String title, int numberOfThreads) {
-    return delegate.beginMerger(title, numberOfThreads);
-  }
-
-  @Override
   public Timing begin(String title) {
     delegate.begin(title);
     return this;

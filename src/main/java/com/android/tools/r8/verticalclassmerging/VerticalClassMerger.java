@@ -32,7 +32,6 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -186,31 +185,26 @@ public class VerticalClassMerger {
       Timing timing)
       throws ExecutionException {
     timing.begin("Compute classes to merge");
-    TimingMerger merger = timing.beginMerger("Compute classes to merge", executorService);
     List<ConnectedComponentVerticalClassMerger> connectedComponentMergers =
         new ArrayList<>(connectedComponents.size());
     Collection<Policy> policies = VerticalClassMergerPolicyScheduler.getPolicies(appView);
-    Collection<Timing> timings =
-        ThreadUtils.processItemsWithResults(
-            connectedComponents,
-            connectedComponent -> {
-              Timing threadTiming =
-                  timing.createThreadTiming("Compute classes to merge in component", options);
-              ConnectedComponentVerticalClassMerger connectedComponentMerger =
-                  new VerticalClassMergerPolicyExecutor(appView, immediateSubtypingInfo)
-                      .run(connectedComponent, policies, executorService, threadTiming);
-              if (!connectedComponentMerger.isEmpty()) {
-                synchronized (connectedComponentMergers) {
-                  connectedComponentMergers.add(connectedComponentMerger);
-                }
-              }
-              threadTiming.end();
-              return threadTiming;
-            },
-            appView.options().getThreadingModule(),
-            executorService);
-    merger.add(timings);
-    merger.end();
+    ThreadUtils.processItems(
+        connectedComponents,
+        connectedComponent -> {
+          Timing threadTiming =
+              timing.createThreadTiming("Compute classes to merge in component", options);
+          ConnectedComponentVerticalClassMerger connectedComponentMerger =
+              new VerticalClassMergerPolicyExecutor(appView, immediateSubtypingInfo)
+                  .run(connectedComponent, policies, executorService, threadTiming);
+          if (!connectedComponentMerger.isEmpty()) {
+            synchronized (connectedComponentMergers) {
+              connectedComponentMergers.add(connectedComponentMerger);
+            }
+          }
+          threadTiming.end().notifyThreadTimingFinished();
+        },
+        appView.options().getThreadingModule(),
+        executorService);
     timing.end();
     return connectedComponentMergers;
   }
@@ -222,25 +216,19 @@ public class VerticalClassMerger {
       Timing timing)
       throws ExecutionException {
     timing.begin("Merge classes");
-    TimingMerger merger = timing.beginMerger("Merge classes", executorService);
     VerticalClassMergerResult.Builder verticalClassMergerResult =
         VerticalClassMergerResult.builder();
-    Collection<Timing> timings =
-        ThreadUtils.processItemsWithResults(
-            connectedComponentMergers,
-            connectedComponentMerger -> {
-              Timing threadTiming =
-                  timing.createThreadTiming("Merge classes in component", options);
-              VerticalClassMergerResult.Builder verticalClassMergerComponentResult =
-                  connectedComponentMerger.run(classMergerSharedData);
-              verticalClassMergerResult.merge(verticalClassMergerComponentResult);
-              threadTiming.end();
-              return threadTiming;
-            },
-            appView.options().getThreadingModule(),
-            executorService);
-    merger.add(timings);
-    merger.end();
+    ThreadUtils.processItems(
+        connectedComponentMergers,
+        connectedComponentMerger -> {
+          Timing threadTiming = timing.createThreadTiming("Merge classes in component", options);
+          VerticalClassMergerResult.Builder verticalClassMergerComponentResult =
+              connectedComponentMerger.run(classMergerSharedData);
+          verticalClassMergerResult.merge(verticalClassMergerComponentResult);
+          threadTiming.end().notifyThreadTimingFinished();
+        },
+        appView.options().getThreadingModule(),
+        executorService);
     timing.end();
     return verticalClassMergerResult.build();
   }

@@ -37,9 +37,6 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet.ConcurrentProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -133,46 +130,34 @@ public class R8LibraryDesugaring {
     ProcessorContext processorContext = appView.createProcessorContext();
     LensCodeRewriterUtils emptyRewriterUtils = LensCodeRewriterUtils.empty();
     timing.end();
-    TimingMerger merger = timing.beginMerger("Lir-to-lir desugaring", executorService);
-    Collection<Collection<Timing>> timings =
-        ThreadUtils.processItemsWithResults(
-            appView.appInfo().classes(),
-            clazz -> {
-              Collection<Timing> threadTimings = new ArrayList<>();
-              clazz.forEachProgramMethodMatching(
-                  method -> method.hasCode() && method.getCode().isLirCode(),
-                  method -> {
-                    Timing threadTiming =
-                        timing.createThreadTiming(method, options).begin("Desugar");
-                    MethodProcessingContext methodProcessingContext =
-                        processorContext.createMethodProcessingContext(method);
-                    R8LibraryDesugaringGraphLens libraryDesugaringGraphLens =
-                        new R8LibraryDesugaringGraphLens(
-                            appView,
-                            apiOutliner,
-                            desugaredLibraryApiConverter,
-                            desugaredLibraryDisableDesugarer,
-                            desugaredLibraryLibRewriter,
-                            desugaredLibraryRetargeter,
-                            interfaceMethodRewriter,
-                            eventConsumer,
-                            method,
-                            methodProcessingContext);
-                    LirConverter.rewriteLirMethodWithLens(
-                        method,
+    ThreadUtils.processItems(
+        appView.appInfo().classes(),
+        clazz -> {
+          clazz.forEachProgramMethodMatching(
+              method -> method.hasCode() && method.getCode().isLirCode(),
+              method -> {
+                Timing threadTiming = timing.createThreadTiming(method, options).begin("Desugar");
+                MethodProcessingContext methodProcessingContext =
+                    processorContext.createMethodProcessingContext(method);
+                R8LibraryDesugaringGraphLens libraryDesugaringGraphLens =
+                    new R8LibraryDesugaringGraphLens(
                         appView,
-                        libraryDesugaringGraphLens,
-                        emptyRewriterUtils,
-                        threadTiming);
-                    threadTiming.endAll().notifyThreadTimingFinished();
-                    threadTimings.add(threadTiming);
-                  });
-              return threadTimings;
-            },
-            options.getThreadingModule(),
-            executorService);
-    timings.forEach(merger::add);
-    merger.end();
+                        apiOutliner,
+                        desugaredLibraryApiConverter,
+                        desugaredLibraryDisableDesugarer,
+                        desugaredLibraryLibRewriter,
+                        desugaredLibraryRetargeter,
+                        interfaceMethodRewriter,
+                        eventConsumer,
+                        method,
+                        methodProcessingContext);
+                LirConverter.rewriteLirMethodWithLens(
+                    method, appView, libraryDesugaringGraphLens, emptyRewriterUtils, threadTiming);
+                threadTiming.endAll().notifyThreadTimingFinished();
+              });
+        },
+        options.getThreadingModule(),
+        executorService);
     appView.getTypeElementFactory().clearTypeElementsCache();
 
     // Move the pending methods and mark them live and ready for tracing.

@@ -179,7 +179,6 @@ public class UseCollector implements UseCollectorEventConsumer {
         appView.options(),
         executorService,
         timing,
-        timing.beginMerger("Trace classes", executorService),
         DexClass::getTypeName);
     nativeIdentification.processWorklist(executorService);
   }

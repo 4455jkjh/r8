@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.google.common.base.Predicates.alwaysTrue;
-
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.threading.TaskCollection;
@@ -20,7 +18,6 @@ import com.android.tools.r8.utils.internal.ThrowingReferenceIntConsumer;
 import com.android.tools.r8.utils.internal.ThrowingReferenceIntFunction;
 import com.android.tools.r8.utils.internal.exceptions.UncheckedExecutionException;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -135,11 +132,9 @@ public class ThreadUtils {
       ThrowingBiConsumer<T, Timing, E> consumer,
       InternalOptions options,
       ExecutorService executorService,
-      Timing timing,
-      TimingMerger timingMerger)
+      Timing timing)
       throws ExecutionException {
-    TaskCollection<Timing> tasks =
-        new TaskCollection<>(options.getThreadingModule(), executorService);
+    TaskCollection<?> tasks = new TaskCollection<>(options.getThreadingModule(), executorService);
     int i = 0;
     for (T item : items) {
       if (itemPredicate.test(item)) {
@@ -148,14 +143,12 @@ public class ThreadUtils {
             () -> {
               Timing threadTiming = timing.createThreadTiming(taskIndex, j -> "Task " + j, options);
               consumer.accept(item, threadTiming);
-              return threadTiming.end();
+              threadTiming.end().notifyThreadTimingFinished();
             });
       }
       i++;
     }
-    Collection<Timing> timings = tasks.awaitWithResults(alwaysTrue());
-    timingMerger.add(timings);
-    timingMerger.end();
+    tasks.await();
   }
 
   /** Does not process items where preprocessing returns null. */
@@ -187,35 +180,31 @@ public class ThreadUtils {
       InternalOptions options,
       ExecutorService executorService,
       Timing timing,
-      TimingMerger timingMerger,
       Function<T, String> taskNameFunction)
       throws ExecutionException {
-    TaskCollection<Timing> tasks =
-        new TaskCollection<>(options.getThreadingModule(), executorService);
+    TaskCollection<?> tasks = new TaskCollection<>(options.getThreadingModule(), executorService);
     for (T item : items) {
       if (itemPredicate.test(item)) {
         tasks.submitUnchecked(
             () -> {
               Timing threadTiming = timing.createThreadTiming(item, taskNameFunction, options);
               consumer.accept(item, threadTiming);
-              return threadTiming.end();
+              threadTiming.end().notifyThreadTimingFinished();
             });
       }
     }
-    Collection<Timing> timings = tasks.awaitWithResults(alwaysTrue());
-    timingMerger.add(timings);
-    timingMerger.end();
+    tasks.await();
   }
 
-  public static <T> void processItems(
+  public static <T, E extends Exception> void processItems(
       Collection<T> items,
-      Consumer<T> consumer,
+      ThrowingConsumer<T, E> consumer,
       ThreadingModule threadingModule,
       ExecutorService executorService)
       throws ExecutionException {
     processItems(
         items,
-        (item, i) -> consumer.accept(item),
+        (item, i) -> consumer.acceptWithRuntimeException(item),
         threadingModule,
         executorService,
         WorkLoad.LIGHT);

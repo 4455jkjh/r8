@@ -24,7 +24,6 @@ import com.android.tools.r8.shaking.ProguardTypeMatcher.MatchSpecificTypes;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.Collection;
@@ -328,8 +327,7 @@ public class RootSetBuilderAnnotationIndex {
                 }),
         appView.options(),
         executorService,
-        Timing.empty(),
-        TimingMerger.empty());
+        Timing.empty());
   }
 
   private static void handleMemberAnnotations(

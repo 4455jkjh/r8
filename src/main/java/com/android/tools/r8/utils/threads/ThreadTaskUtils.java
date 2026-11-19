@@ -6,22 +6,14 @@ package com.android.tools.r8.utils.threads;
 
 import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 public class ThreadTaskUtils {
 
   public static void processTasks(
-      ExecutorService executorService,
-      InternalOptions options,
-      Timing timing,
-      TimingMerger timingMerger,
-      ThreadTask... tasks)
+      ExecutorService executorService, InternalOptions options, Timing timing, ThreadTask... tasks)
       throws ExecutionException {
     assert tasks.length > 0;
     int tasksToRun = 0;
@@ -31,27 +23,12 @@ public class ThreadTaskUtils {
       }
     }
     TaskCollection<?> taskCollection = new TaskCollection<>(options, executorService, tasksToRun);
-    if (timingMerger.isEmpty()) {
-      for (ThreadTask task : tasks) {
-        if (task.shouldRun()) {
-          processTask(task, taskCollection);
-        }
+    for (ThreadTask task : tasks) {
+      if (task.shouldRun()) {
+        processTask(task, taskCollection);
       }
-      taskCollection.await();
-    } else {
-      List<Timing> timings =
-          Arrays.asList(ArrayUtils.filled(new Timing[tasksToRun], Timing.empty()));
-      int taskIndex = 0;
-      for (ThreadTask task : tasks) {
-        if (task.shouldRun()) {
-          processTaskWithTiming(options, task, taskIndex++, taskCollection, timing, timings);
-        }
-      }
-      assert tasksToRun == taskIndex;
-      taskCollection.await();
-      timingMerger.add(timings);
-      timingMerger.end();
     }
+    taskCollection.await();
     for (ThreadTask task : tasks) {
       if (task.shouldRun()) {
         task.onJoin();
@@ -66,34 +43,5 @@ public class ThreadTaskUtils {
     } else {
       task.runWithRuntimeException(Timing.empty());
     }
-  }
-
-  private static void processTaskWithTiming(
-      InternalOptions options,
-      ThreadTask task,
-      int taskIndex,
-      TaskCollection<?> taskCollection,
-      Timing timing,
-      List<Timing> timings)
-      throws ExecutionException {
-    if (task.shouldRunOnThread()) {
-      taskCollection.submit(() -> executeTask(options, task, taskIndex, timing, timings));
-    } else {
-      executeTask(options, task, taskIndex, timing, timings);
-    }
-  }
-
-  private static void executeTask(
-      InternalOptions options,
-      ThreadTask task,
-      int taskIndex,
-      Timing timing,
-      List<Timing> timings) {
-    Timing threadTiming = timing.createThreadTiming("Timing", options);
-    timings.set(taskIndex, threadTiming);
-    threadTiming.begin(taskIndex + 1, i -> "Task " + i);
-    task.runWithRuntimeException(threadTiming);
-    threadTiming.end();
-    threadTiming.end();
   }
 }

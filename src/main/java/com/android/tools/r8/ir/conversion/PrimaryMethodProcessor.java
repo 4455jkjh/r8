@@ -13,9 +13,7 @@ import com.android.tools.r8.ir.conversion.callgraph.CallSiteInformation;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -119,10 +117,8 @@ public class PrimaryMethodProcessor extends MethodProcessorWithWave {
       MethodAction<E> consumer,
       WaveStartAction waveStartAction,
       WaveDoneAction waveDoneAction,
-      Timing timing,
       ExecutorService executorService)
       throws ExecutionException {
-    TimingMerger merger = timing.beginMerger("primary-processor", executorService);
     int waveIndex = 0;
     while (!waves.isEmpty()) {
       wave = waves.removeFirst();
@@ -131,22 +127,17 @@ public class PrimaryMethodProcessor extends MethodProcessorWithWave {
       do {
         processorContext = appView.createProcessorContext();
         waveStartAction.notifyWaveStart(wave, ++waveIndex);
-        Collection<Timing> timings =
-            processWave(
-                method -> {
-                  Timing time =
-                      consumer.apply(
-                          method, processorContext.createMethodProcessingContext(method));
-                  time.end().notifyThreadTimingFinished();
-                  return time;
-                },
-                appView.options().getThreadingModule(),
-                executorService);
+        processWave(
+            method -> {
+              Timing time =
+                  consumer.apply(method, processorContext.createMethodProcessingContext(method));
+              time.end().notifyThreadTimingFinished();
+            },
+            appView.options().getThreadingModule(),
+            executorService);
         waveDoneAction.notifyWaveDone(wave, executorService);
-        merger.add(timings);
         prepareForWaveExtensionProcessing();
       } while (!wave.isEmpty());
     }
-    merger.end();
   }
 }

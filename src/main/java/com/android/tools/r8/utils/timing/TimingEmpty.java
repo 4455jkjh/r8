@@ -20,11 +20,6 @@ class TimingEmpty extends Timing {
   private TimingEmpty() {}
 
   @Override
-  public TimingMerger beginMerger(String title, int numberOfThreads) {
-    return EmptyTimingMerger.get();
-  }
-
-  @Override
   public Timing createThreadTiming(String title, InternalOptions options) {
     return this;
   }

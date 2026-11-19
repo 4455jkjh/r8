@@ -9,11 +9,7 @@ import com.android.tools.r8.ir.conversion.callgraph.CallSiteInformation;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.internal.ThrowingFunction;
-import com.android.tools.r8.utils.timing.Timing;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -74,22 +70,21 @@ public abstract class MethodProcessorWithWave extends MethodProcessor {
     return true;
   }
 
-  protected <E extends Exception> Collection<Timing> processWave(
-      ThrowingFunction<ProgramMethod, Timing, E> consumer,
+  protected <E extends Exception> void processWave(
+      ThrowingConsumer<ProgramMethod, E> consumer,
       ThreadingModule threadingModule,
       ExecutorService executorService)
       throws ExecutionException {
     if (shouldProcessWaveSequentially()) {
-      List<Timing> timings = new ArrayList<>(wave.size());
       try {
         for (ProgramMethod method : wave) {
-          timings.add(consumer.apply(method));
+          consumer.accept(method);
         }
       } catch (Throwable t) {
         throw new ExecutionException(t);
       }
-      return timings;
+      return;
     }
-    return ThreadUtils.processItemsWithResults(wave, consumer, threadingModule, executorService);
+    ThreadUtils.processItems(wave, consumer, threadingModule, executorService);
   }
 }

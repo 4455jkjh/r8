@@ -52,10 +52,7 @@ import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import com.android.tools.r8.verticalclassmerging.IncompleteVerticalClassMergerBridgeCode;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -238,27 +235,20 @@ public class LirConverter {
             new RecordInvokeDynamicInvokeCustomRewriter(appView),
             new StringConcatRemover(appView),
             new FilledNewArrayRewriter(appView));
-    TimingMerger merger = timing.beginMerger("LirToOutputFormatConverter", executorService);
-    Collection<Collection<Timing>> timings =
-        ThreadUtils.processItemsWithResults(
-            appView.appInfo().classes(),
-            clazz -> {
-              Collection<Timing> threadTimings = new ArrayList<>();
-              clazz.forEachProgramMethodMatching(
-                  DexEncodedMethod::hasCode,
-                  m -> {
-                    Timing threadTiming = timing.createThreadTiming(m, appView.options());
-                    finalizeLirMethodToOutputFormat(
-                        m, deadCodeRemover, appView, codeRewriterPassCollection, threadTiming);
-                    threadTiming.end().notifyThreadTimingFinished();
-                    threadTimings.add(threadTiming);
-                  });
-              return threadTimings;
-            },
-            appView.options().getThreadingModule(),
-            executorService);
-    timings.forEach(merger::add);
-    merger.end();
+    ThreadUtils.processItems(
+        appView.appInfo().classes(),
+        clazz -> {
+          clazz.forEachProgramMethodMatching(
+              DexEncodedMethod::hasCode,
+              m -> {
+                Timing threadTiming = timing.createThreadTiming(m, appView.options());
+                finalizeLirMethodToOutputFormat(
+                    m, deadCodeRemover, appView, codeRewriterPassCollection, threadTiming);
+                threadTiming.end().notifyThreadTimingFinished();
+              });
+        },
+        appView.options().getThreadingModule(),
+        executorService);
     timing.end();
     profileCollectionAdditions.commit(appView);
     // Clear the reference type cache after conversion to reduce memory pressure.

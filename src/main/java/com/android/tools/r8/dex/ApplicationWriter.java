@@ -70,7 +70,6 @@ import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.PredicateUtils;
 import com.android.tools.r8.utils.internal.SupplierUtils;
 import com.android.tools.r8.utils.timing.Timing;
-import com.android.tools.r8.utils.timing.TimingMerger;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
@@ -272,23 +271,18 @@ public class ApplicationWriter {
       List<DexString> forcedStrings,
       Timing timing)
       throws ExecutionException {
-    TimingMerger merger = timing.beginMerger("Write files", executorService);
     Supplier<StartupProfile> startupProfileForWriting =
         Suppliers.memoize(() -> appView.getStartupProfile().toStartupProfileForWriting(appView));
-    Collection<Timing> timings =
-        ThreadUtils.processItemsWithResults(
-            virtualFiles,
-            virtualFile -> {
-              Timing fileTiming =
-                  timing.createThreadTiming(virtualFile, f -> "VirtualFile " + f.getId(), options);
-              writeVirtualFile(virtualFile, fileTiming, forcedStrings, startupProfileForWriting);
-              fileTiming.end();
-              return fileTiming;
-            },
-            appView.options().getThreadingModule(),
-            executorService);
-    merger.add(timings);
-    merger.end();
+    ThreadUtils.processItems(
+        virtualFiles,
+        virtualFile -> {
+          Timing fileTiming =
+              timing.createThreadTiming(virtualFile, f -> "VirtualFile " + f.getId(), options);
+          writeVirtualFile(virtualFile, fileTiming, forcedStrings, startupProfileForWriting);
+          fileTiming.end().notifyThreadTimingFinished();
+        },
+        appView.options().getThreadingModule(),
+        executorService);
     if (globalsSyntheticsConsumer != null) {
       globalsSyntheticsConsumer.finished(appView);
     } else if (options.hasGlobalSyntheticsConsumer()) {
@@ -402,8 +396,7 @@ public class ApplicationWriter {
         (clazz, unusedTiming) -> convertPcBasedDebugInfoToNative(clazz),
         options,
         executorService,
-        timing,
-        timing.beginMerger("Convert PcEncodedDebugInfo to native encoding", executorService));
+        timing);
   }
 
   private void convertPcBasedDebugInfoToNative(DexProgramClass clazz) {

@@ -86,8 +86,7 @@ public class BottomUpOutliner {
         this::scan,
         appView.options(),
         executorService,
-        timing,
-        timing.beginMerger("Scan for throw block outlines", executorService));
+        timing);
   }
 
   private void scan(DexProgramClass clazz, Timing timing) {

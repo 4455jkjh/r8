@@ -1184,9 +1184,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
               executorService,
               appView.options(),
               timing,
-              timing
-                  .beginMerger("Rewrite AppView concurrently", executorService)
-                  .disableSlowestReporting(),
               new ThreadTask() {
 
                 private AppInfoWithClassHierarchy result;

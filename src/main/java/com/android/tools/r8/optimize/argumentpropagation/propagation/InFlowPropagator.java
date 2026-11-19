@@ -145,13 +145,7 @@ public class InFlowPropagator {
       List<FlowGraph> flowGraphs, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     ThreadUtils.processItemsThatMatches(
-        flowGraphs,
-        alwaysTrue(),
-        this::process,
-        appView.options(),
-        executorService,
-        timing,
-        timing.beginMerger("Process flow graphs", executorService));
+        flowGraphs, alwaysTrue(), this::process, appView.options(), executorService, timing);
   }
 
   private void processWorklists(
@@ -166,8 +160,7 @@ public class InFlowPropagator {
         (entry, threadTiming) -> process(entry.getKey(), threadTiming, entry.getValue()),
         appView.options(),
         executorService,
-        timing,
-        timing.beginMerger("Process worklists", executorService));
+        timing);
     timing.end();
   }
 
@@ -381,8 +374,7 @@ public class InFlowPropagator {
         this::postProcessMethodStates,
         appView.options(),
         executorService,
-        timing,
-        timing.beginMerger("Post-process method states", executorService));
+        timing);
     timing.end();
   }
 

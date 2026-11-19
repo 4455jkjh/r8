@@ -163,8 +163,7 @@ public class AtomicFieldUpdaterInstrumentor {
         (clazz, threadTiming) -> findUpdaterFields(clazz, updaterClassesConcurrent, threadTiming),
         appView.options(),
         service,
-        timing,
-        timing.beginMerger("AtomicFieldUpdaterInstrumentor", service));
+        timing);
     return ImmutableMap.copyOf(updaterClassesConcurrent);
   }
 
@@ -487,8 +486,7 @@ public class AtomicFieldUpdaterInstrumentor {
                 clazz, classesWithAtomics.get(clazz), offsetFields, threadTiming),
         appView.options(),
         service,
-        timing,
-        timing.beginMerger("AtomicFieldUpdaterInstrumentor", service));
+        timing);
     var builder = FieldAccessInfoCollectionModifier.builder();
     offsetFields.values().forEach(builder::addField);
     builder.build().modify(appView);

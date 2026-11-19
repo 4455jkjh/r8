@@ -103,7 +103,6 @@ public class PrimaryR8IRConverter extends IRConverter {
                   timing.createThreadTiming(method, options)),
           this::waveStart,
           this::waveDone,
-          timing,
           executorService);
       lastWaveDone(postMethodProcessorBuilder, executorService);
       eventConsumer.finished(appView);
