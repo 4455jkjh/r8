@@ -17,8 +17,6 @@ import com.android.tools.r8.graph.lens.InitClassLens;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Visibility;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -27,7 +25,6 @@ public class ClassInitFieldSynthesizer {
   private final AppView<AppInfoWithLiveness> appView;
   private final DexField clinitField;
   private final InitClassLens.Builder lensBuilder = InitClassLens.builder();
-  private final Set<DexField> synthesizedFields = ConcurrentHashMap.newKeySet();
 
   public ClassInitFieldSynthesizer(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
@@ -40,12 +37,6 @@ public class ClassInitFieldSynthesizer {
         this::synthesizeClassInitField,
         appView.options().getThreadingModule(),
         executorService);
-    if (!synthesizedFields.isEmpty()) {
-      FieldAccessInfoCollectionModifier.Builder fieldAccessInfoCollectionModifierBuilder =
-          FieldAccessInfoCollectionModifier.builder();
-      synthesizedFields.forEach(fieldAccessInfoCollectionModifierBuilder::addField);
-      fieldAccessInfoCollectionModifierBuilder.build().modify(appView);
-    }
     appView.setInitClassLens(lensBuilder.build());
     appView.notifyOptimizationFinished();
   }
@@ -104,7 +95,6 @@ public class ClassInitFieldSynthesizer {
                   !appView.options().apiModelingOptions().isApiCallerIdentificationEnabled())
               .build();
       clazz.appendStaticField(encodedClinitField);
-      synthesizedFields.add(encodedClinitField.getReference());
     }
     lensBuilder.map(type, encodedClinitField.getReference());
   }

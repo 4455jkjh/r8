@@ -160,7 +160,7 @@ public class ArgumentPropagatorCodeScanner {
 
   public ComputationTreeNode getEffectivelyUnusedArgumentCondition(
       ProgramMethod method, int argumentIndex, MethodProcessor methodProcessor) {
-    if (methodProcessor == null || methodProcessor.isProcessedConcurrently(method)) {
+    if (methodProcessor.isProcessedConcurrently(method)) {
       // The optimization info for the given method is nondeterministic.
       return AbstractValue.unknown();
     }
@@ -578,7 +578,7 @@ public class ArgumentPropagatorCodeScanner {
     protected boolean isMethodParameterAlreadyUnknown(
         MethodParameter methodParameter, ProgramMethod method) {
       assert methodParameter.getMethod().isIdenticalTo(method.getReference());
-      if (methodProcessor == null || methodParameter.getType().isNotIdenticalTo(staticType)) {
+      if (methodParameter.getType().isNotIdenticalTo(staticType)) {
         // Only allow early graph pruning when the two nodes have the same type. If the given method
         // parameter is unknown, but flows to a field or method parameter with a less precise type,
         // we still want this type propagation to happen.

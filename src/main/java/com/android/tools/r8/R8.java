@@ -76,8 +76,8 @@ import com.android.tools.r8.optimize.MemberRebindingAnalysis;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLensFactory;
 import com.android.tools.r8.optimize.accessmodification.AccessModifier;
-import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagator;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.VirtualRootMethodsAnalysis;
+import com.android.tools.r8.optimize.argumentpropagation.unusedarguments.EffectivelyUnusedArgumentsAnalysis;
 import com.android.tools.r8.optimize.bridgehoisting.BridgeHoisting;
 import com.android.tools.r8.optimize.fields.FieldFinalizer;
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
@@ -772,19 +772,6 @@ public class R8 {
         assert !options.isShrinking();
       }
 
-      // Rewrite LIR with lens to allow building IR from LIR.
-      LirConverter.rewriteLirWithLens(appView, timing, executorService);
-      appView.getTypeElementFactory().clearTypeElementsCache();
-
-      // Remove optimization info before remaining optimizations, since these optimization currently
-      // do not rewrite the optimization info, which is OK since the optimization info should
-      // already have been leveraged.
-      OptimizationInfoRemover.run(appView, executorService);
-
-      // Rerun argument propagation.
-      ArgumentPropagator.runIfNecessary(appView.withLiveness(), executorService, timing);
-      assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
-
       appView.setArtProfileCollection(
           appView.getArtProfileCollection().withoutMissingItems(appView));
       appView.setStartupProfile(appView.getStartupProfile().withoutMissingItems(appView));
@@ -794,6 +781,20 @@ public class R8 {
       R8LibraryDesugaring.runIfNecessary(appView, executorService, timing);
 
       appView.withBottomUpOutliner(outliner -> outliner.runForR8(executorService, timing));
+
+      // Rewrite LIR with lens to allow building IR from LIR.
+      LirConverter.rewriteLirWithLens(appView, timing, executorService);
+      appView.getTypeElementFactory().clearTypeElementsCache();
+
+      // Remove optimization info before remaining optimizations, since these optimization currently
+      // do not rewrite the optimization info, which is OK since the optimization info should
+      // already have been leveraged.
+      OptimizationInfoRemover.run(appView, executorService);
+
+      // Remove unused arguments.
+      EffectivelyUnusedArgumentsAnalysis.runIfNecessary(
+          appView.withLiveness(), executorService, timing);
+      assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
 
       if (appView.appInfo().hasLiveness()) {
         SyntheticFinalization.finalizeWithLiveness(appView.withLiveness(), executorService, timing);

@@ -8,7 +8,6 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import com.android.tools.r8.KeepConstantArguments;
 import com.android.tools.r8.NeverInline;
@@ -98,7 +97,9 @@ public class VerticalClassMergingWithMissingTypeArgsSubstitutionTest extends Tes
                 assertThat(fooBridge, isAbsent());
               } else {
                 assertThat(fooBridge, isPresentAndRenamed());
-                assertNull(fooBridge.getFinalSignatureAttribute());
+                assertEquals(
+                    "(Ljava/lang/Object;)Ljava/lang/Object;",
+                    fooBridge.getFinalSignatureAttribute());
               }
             });
   }

@@ -81,23 +81,21 @@ public class ArgumentPropagatorMethodReprocessingEnqueuer {
       throws ExecutionException {
     timing.begin("Enqueue methods for reprocessing");
 
-    if (postMethodProcessorBuilder != null) {
-      // Bring the methods to reprocess set up-to-date with the current graph lens (i.e., the one
-      // prior to the argument propagator lens, which has not yet been installed!).
-      timing.begin("Rewrite methods to reprocess");
-      postMethodProcessorBuilder.rewrittenWithLens(appView);
-      timing.end();
+    // Bring the methods to reprocess set up-to-date with the current graph lens (i.e., the one
+    // prior to the argument propagator lens, which has not yet been installed!).
+    timing.begin("Rewrite methods to reprocess");
+    postMethodProcessorBuilder.rewrittenWithLens(appView);
+    timing.end();
 
-      timing.begin("Enqueue methods with non-trivial info");
-      enqueueAffectedCallees(graphLens, postMethodProcessorBuilder);
-      timing.end();
+    timing.begin("Enqueue methods with non-trivial info");
+    enqueueAffectedCallees(graphLens, postMethodProcessorBuilder);
+    timing.end();
 
-      timing.begin("Enqueue affected methods");
-      if (graphLens != null) {
-        enqueueAffectedCallers(graphLens, postMethodProcessorBuilder, executorService);
-      }
-      timing.end();
+    timing.begin("Enqueue affected methods");
+    if (graphLens != null) {
+      enqueueAffectedCallers(graphLens, postMethodProcessorBuilder, executorService);
     }
+    timing.end();
 
     timing.begin("Eliminate dead field accesses");
     eliminateDeadFieldAndMethodAccesses(executorService);

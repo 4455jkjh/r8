@@ -45,7 +45,12 @@ public class B134462736 extends TestBase {
         outlineClass.method(
             "void",
             SyntheticItemsTestUtils.syntheticMethodName(),
-            ImmutableList.of(StringBuilder.class.getTypeName(), TestClass.class.getTypeName()));
+            ImmutableList.of(
+                StringBuilder.class.getTypeName(),
+                String.class.getTypeName(),
+                String.class.getTypeName(),
+                TestClass.class.getTypeName(),
+                String.class.getTypeName()));
     assertThat(outline0Method, isPresent());
     ClassSubject classSubject = inspector.clazz(TestClass.class);
     assertThat(
