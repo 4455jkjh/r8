@@ -1808,21 +1808,30 @@ public class KeepEdgeReader implements Opcodes {
 
   private static class UsesReflectionToXXXVisitor extends AnnotationVisitorBase {
 
+    protected static final String UNSPECIFIED_DESCRIPTOR = "Landroidx/annotation/keep/Unspecified;";
+    private static final String UsesReflectionToXXXClassSelectionGroup = "class-selection";
     private static final String UsesReflectionToXXXClassConstant = "classConstant";
     private static final String UsesReflectionToXXXClassName = "className";
     // NOTE: includeSubclasses is currently not part of the annotation specification, however it
     // is still procesed if seen for testing until deciding on the final semantics for this.
     private static final String UsesReflectionToXXXIncludeSubclasses = "includeSubclasses";
 
-    protected final ParsingContext parsingContext;
+    protected final AnnotationParsingContext parsingContext;
 
     protected KeepQualifiedClassNamePattern qualifiedName;
     protected boolean includeSubclasses = true;
+    private String classSelectionProperty;
 
     UsesReflectionToXXXVisitor(
         AnnotationParsingContext parsingContext, AnnotationVisitor annotationVisitor) {
       super(parsingContext, annotationVisitor);
       this.parsingContext = parsingContext;
+      assert UsesReflectionToXXXClassSelectionGroup.equals(
+          UsesReflectionToConstruct.classSelectionGroup);
+      assert UsesReflectionToXXXClassSelectionGroup.equals(
+          UsesReflectionToAccessMethod.classSelectionGroup);
+      assert UsesReflectionToXXXClassSelectionGroup.equals(
+          UsesReflectionToAccessField.classSelectionGroup);
       assert UsesReflectionToXXXClassConstant.equals(UsesReflectionToConstruct.classConstant);
       assert UsesReflectionToXXXClassConstant.equals(UsesReflectionToAccessMethod.classConstant);
       assert UsesReflectionToXXXClassConstant.equals(UsesReflectionToAccessField.classConstant);
@@ -1833,12 +1842,39 @@ public class KeepEdgeReader implements Opcodes {
 
     protected boolean maybeVisitQualifiedName(String name, Object value) {
       if (name.equals(UsesReflectionToXXXClassConstant) && value instanceof Type) {
-        qualifiedName =
-            KeepQualifiedClassNamePattern.exactFromDescriptor(((Type) value).getDescriptor());
+        String descriptor = ((Type) value).getDescriptor();
+        if (!UNSPECIFIED_DESCRIPTOR.equals(descriptor)) {
+          if (classSelectionProperty != null) {
+            throw parsingContext
+                .group(UsesReflectionToXXXClassSelectionGroup)
+                .error(
+                    "Mutually exclusive properties: '"
+                        + classSelectionProperty
+                        + "' and '"
+                        + name
+                        + "' specified");
+          }
+          classSelectionProperty = name;
+          qualifiedName = KeepQualifiedClassNamePattern.exactFromDescriptor(descriptor);
+        }
         return true;
       }
       if (name.equals(UsesReflectionToXXXClassName) && value instanceof String) {
-        qualifiedName = KeepQualifiedClassNamePattern.exact((String) value);
+        String className = (String) value;
+        if (!className.isEmpty()) {
+          if (classSelectionProperty != null) {
+            throw parsingContext
+                .group(UsesReflectionToXXXClassSelectionGroup)
+                .error(
+                    "Mutually exclusive properties: '"
+                        + classSelectionProperty
+                        + "' and '"
+                        + name
+                        + "' specified");
+          }
+          classSelectionProperty = name;
+          qualifiedName = KeepQualifiedClassNamePattern.exact(className);
+        }
         return true;
       }
       return false;
@@ -1853,6 +1889,16 @@ public class KeepEdgeReader implements Opcodes {
     }
 
     protected KeepClassItemPattern getKeepClassItemPattern() {
+      if (qualifiedName == null) {
+        throw parsingContext
+            .group(UsesReflectionToXXXClassSelectionGroup)
+            .error(
+                "Expected one of '"
+                    + UsesReflectionToXXXClassConstant
+                    + "' or '"
+                    + UsesReflectionToXXXClassName
+                    + "' to be specified");
+      }
       return includeSubclasses
           ? KeepClassItemPattern.builder()
               .setInstanceOfPattern(
@@ -2038,8 +2084,6 @@ public class KeepEdgeReader implements Opcodes {
     private KeepMethodParametersPattern parameters = KeepMethodParametersPattern.any();
     private final UserBindingsHelper bindingsHelper = new UserBindingsHelper();
 
-    private KeepQualifiedClassNamePattern qualifiedName;
-    private boolean includeSubclasses = true;
     private KeepMethodNamePattern methodName;
     private KeepMethodNamePattern methodNameKotlinDefault;
     private KeepMethodReturnTypePattern returnType = KeepMethodReturnTypePattern.any();
@@ -2250,8 +2294,6 @@ public class KeepEdgeReader implements Opcodes {
     private KeepMethodParametersPattern parameters = KeepMethodParametersPattern.any();
     private final UserBindingsHelper bindingsHelper = new UserBindingsHelper();
 
-    private KeepQualifiedClassNamePattern qualifiedName;
-    private boolean includeSubclasses = true;
     private KeepFieldNamePattern fieldName;
     private KeepFieldTypePattern fieldType = KeepFieldTypePattern.any();
 

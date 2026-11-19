@@ -4,10 +4,15 @@
 package com.android.tools.r8.keepanno.androidx;
 
 import static com.android.tools.r8.ToolHelper.getFilesInTestFolderRelativeToClass;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import androidx.annotation.keep.UsesReflectionToAccessMethod;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
+import com.android.tools.r8.keepanno.ast.KeepAnnotationParserException;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationBuilder;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationContentBuilder;
@@ -508,6 +513,30 @@ public class KeepUsesReflectionToAccessMethodTest extends KeepAnnoTestExtractedR
             ImmutableList.of("{ *** m(int, int); }", "{ *** m$default(...); }")),
         // TODO(b/392865072): Should be:
         r -> r.assertSuccessWithOutput(StringUtils.lines("3", "4", "5", "6", "7")));
+  }
+
+  @Test
+  public void testInvalidBothClassConstantAndClassName() throws Exception {
+    // TODO(b/587855480): Extend error handling scope.
+    assumeTrue(parameters.isExtractRules());
+    assumeFalse(parameters.isPG());
+    byte[] bytes =
+        setAnnotationOnMethod(
+            ClassWithAnnotation.class,
+            MethodPredicate.onName("foo"),
+            builder ->
+                builder
+                    .setAnnotationClass(
+                        Reference.classFromClass(UsesReflectionToAccessMethod.class))
+                    .setField("classConstant", KeptClass.class)
+                    .setField("className", KeptClass.class.getTypeName()));
+    KeepAnnotationParserException error =
+        assertThrows(
+            KeepAnnotationParserException.class,
+            () -> testExtractedRules(ImmutableList.of(bytes), ExpectedRules.builder().build()));
+    assertThat(error.getMessage(), containsString("Mutually exclusive"));
+    assertThat(error.getMessage(), containsString("classConstant"));
+    assertThat(error.getMessage(), containsString("className"));
   }
 
   // Test class without annotation to be used by multiple tests inserting annotations using a
