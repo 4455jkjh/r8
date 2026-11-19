@@ -38,6 +38,12 @@ public class LirToLirDesugaredLibraryRetargeter extends DesugaredLibraryRetarget
     return previous;
   }
 
+  public boolean needsRewriting(
+      DexMethod method, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
+    return isApplicableToContext(context)
+        && getRetargetMethodSupplier(method, invokeType, isInterface, context) != null;
+  }
+
   public MethodLookupResult lookupMethod(
       MethodLookupResult previous,
       ProgramMethod context,

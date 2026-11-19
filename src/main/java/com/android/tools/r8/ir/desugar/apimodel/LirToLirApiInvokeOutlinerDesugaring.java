@@ -26,24 +26,33 @@ public class LirToLirApiInvokeOutlinerDesugaring extends ApiInvokeOutlinerDesuga
     this.eventConsumer = eventConsumer;
   }
 
+  private static InstructionKind getInstructionKind(InvokeType type) {
+    switch (type) {
+      case INTERFACE:
+        return InstructionKind.INVOKEINTERFACE;
+      case STATIC:
+        return InstructionKind.INVOKESTATIC;
+      case VIRTUAL:
+        return InstructionKind.INVOKEVIRTUAL;
+      default:
+        return null;
+    }
+  }
+
+  public boolean needsRewriting(DexMethod method, InvokeType type, ProgramMethod context) {
+    InstructionKind instructionKind = getInstructionKind(type);
+    return instructionKind != null
+        && getRetargetMethodSupplier(instructionKind, method, context) != null;
+  }
+
   public MethodLookupResult lookupMethod(
       MethodLookupResult previous,
       ProgramMethod context,
       MethodProcessingContext methodProcessingContext,
       R8LibraryDesugaringGraphLens lens) {
-    InstructionKind instructionKind;
-    switch (previous.getType()) {
-      case INTERFACE:
-        instructionKind = InstructionKind.INVOKEINTERFACE;
-        break;
-      case STATIC:
-        instructionKind = InstructionKind.INVOKESTATIC;
-        break;
-      case VIRTUAL:
-        instructionKind = InstructionKind.INVOKEVIRTUAL;
-        break;
-      default:
-        return previous;
+    InstructionKind instructionKind = getInstructionKind(previous.getType());
+    if (instructionKind == null) {
+      return previous;
     }
     DexMethod retargetMethod =
         getRetargetMethod(

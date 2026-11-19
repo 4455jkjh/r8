@@ -100,7 +100,7 @@ public abstract class DesugaredLibraryAPIConverter {
     return null;
   }
 
-  boolean invokeNeedsDesugaring(
+  public boolean invokeNeedsDesugaring(
       DexMethod invokedMethod, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
     if (isAPIConversionSyntheticType(context.getHolderType(), wrapperSynthesizor, appView)) {
       return false;

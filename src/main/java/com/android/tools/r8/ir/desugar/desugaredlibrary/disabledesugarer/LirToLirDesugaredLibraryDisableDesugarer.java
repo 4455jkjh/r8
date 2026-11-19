@@ -31,6 +31,10 @@ public class LirToLirDesugaredLibraryDisableDesugarer extends DesugaredLibraryDi
     return previous;
   }
 
+  public boolean needsRewriting(DexMethod method, ProgramMethod context) {
+    return isApplicableToContext(context) && helper.needsRewriting(method);
+  }
+
   public MethodLookupResult lookupMethod(
       MethodLookupResult previous, ProgramMethod context, R8LibraryDesugaringGraphLens lens) {
     if (isApplicableToContext(context)) {

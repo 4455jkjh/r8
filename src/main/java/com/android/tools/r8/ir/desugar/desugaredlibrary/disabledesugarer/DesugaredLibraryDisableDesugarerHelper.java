@@ -36,6 +36,12 @@ public class DesugaredLibraryDisableDesugarerHelper {
     return false;
   }
 
+  boolean needsRewriting(DexMethod method) {
+    DexType newHolder = rewriteType(method.getHolderType());
+    DexMethod rewrittenMethod = methodWithVivifiedTypeInSignature(method, newHolder, appView);
+    return method.isNotIdenticalTo(rewrittenMethod);
+  }
+
   DexMethod rewriteMethod(DexMethod method, boolean isInterface, ProgramMethod context) {
     DexType newHolder = rewriteType(method.getHolderType());
     DexMethod rewrittenMethod = methodWithVivifiedTypeInSignature(method, newHolder, appView);

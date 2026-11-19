@@ -963,7 +963,9 @@ public abstract class CfInstructionDesugaringEventConsumer
     public List<ProgramMethod> finalizeDesugaring() {
       for (ProgramMethod synthesizedMethod : synthesizedMethods) {
         // TODO(b/391572031): Should this compute the code API level?
-        synthesizedMethod.getDefinition().setApiLevelForCode(appView.computedMinApiLevel());
+        if (synthesizedMethod.getDefinition().getApiLevelForCode().isNotSetApiLevel()) {
+          synthesizedMethod.getDefinition().setApiLevelForCode(appView.computedMinApiLevel());
+        }
       }
       return Collections.emptyList();
     }

@@ -24,6 +24,12 @@ public class LirToLirInterfaceMethodRewriter extends InterfaceMethodRewriter {
     this.eventConsumer = eventConsumer;
   }
 
+  public boolean needsRewriting(
+      DexMethod method, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
+    return getRetargetMethodSupplier(method, invokeType, isInterface, context)
+        instanceof StaticRetargetMethodSupplier;
+  }
+
   public MethodLookupResult lookupMethod(
       MethodLookupResult previous,
       ProgramMethod context,

@@ -94,6 +94,7 @@ public abstract class NonIdentityGraphLens extends GraphLens {
           .setReference(
               method.withHolder(lookupType(method.getHolderType(), codeLens), dexItemFactory))
           .setType(invokeType)
+          .setIsInterface(isInterface)
           .build();
     }
     assert method.getHolderType().isClassType();

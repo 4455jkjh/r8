@@ -21,7 +21,6 @@ import com.android.tools.r8.utils.internal.OptionalBool;
 public class MethodLookupResult extends MemberLookupResult<DexMethod> {
 
   private final OptionalBool isInterface;
-  private final boolean needsDesugaredLibraryApiConversion;
   private final InvokeType type;
   private final RewrittenPrototypeDescription prototypeChanges;
 
@@ -29,12 +28,10 @@ public class MethodLookupResult extends MemberLookupResult<DexMethod> {
       DexMethod reference,
       DexMethod reboundReference,
       OptionalBool isInterface,
-      boolean needsDesugaredLibraryApiConversion,
       InvokeType type,
       RewrittenPrototypeDescription prototypeChanges) {
     super(reference, reboundReference);
     this.isInterface = isInterface;
-    this.needsDesugaredLibraryApiConversion = needsDesugaredLibraryApiConversion;
     this.type = type;
     this.prototypeChanges = prototypeChanges;
   }
@@ -45,10 +42,6 @@ public class MethodLookupResult extends MemberLookupResult<DexMethod> {
 
   public OptionalBool isInterface() {
     return isInterface;
-  }
-
-  public boolean isNeedsDesugaredLibraryApiConversionSet() {
-    return needsDesugaredLibraryApiConversion;
   }
 
   public InvokeType getType() {
@@ -81,7 +74,6 @@ public class MethodLookupResult extends MemberLookupResult<DexMethod> {
     private final GraphLens codeLens;
 
     private OptionalBool isInterface = OptionalBool.UNKNOWN;
-    private boolean needsDesugaredLibraryApiConversion = false;
     private RewrittenPrototypeDescription prototypeChanges = RewrittenPrototypeDescription.none();
     private InvokeType type;
 
@@ -99,11 +91,6 @@ public class MethodLookupResult extends MemberLookupResult<DexMethod> {
       return this;
     }
 
-    public Builder setNeedsDesugaredLibraryApiConversion() {
-      this.needsDesugaredLibraryApiConversion = true;
-      return this;
-    }
-
     public Builder setPrototypeChanges(RewrittenPrototypeDescription prototypeChanges) {
       this.prototypeChanges = prototypeChanges;
       return this;
@@ -116,12 +103,7 @@ public class MethodLookupResult extends MemberLookupResult<DexMethod> {
 
     public MethodLookupResult build() {
       return new MethodLookupResult(
-              reference,
-              reboundReference,
-              isInterface,
-              needsDesugaredLibraryApiConversion,
-              type,
-              prototypeChanges)
+              reference, reboundReference, isInterface, type, prototypeChanges)
           .verify(lens, codeLens);
     }
 

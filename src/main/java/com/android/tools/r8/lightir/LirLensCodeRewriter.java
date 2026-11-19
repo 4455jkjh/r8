@@ -47,7 +47,6 @@ import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -159,6 +158,15 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   private void onInvoke(DexMethod method, InvokeType type, boolean isInterface) {
+    if (graphLens.isLirToLirDesugaringLens()) {
+      R8LibraryDesugaringGraphLens desugaringLens = graphLens.asLirToLirDesugaringLens();
+      if (desugaringLens.needsInlinedApiConversion(method, type, isInterface, context)) {
+        hasNonTrivialRewritings = true;
+      } else if (desugaringLens.needsInvokeRewriting(method, type, isInterface, context)) {
+        addInvokeInstructionToRewrite(method);
+      }
+      return;
+    }
     MethodLookupResult result =
         graphLens.lookupMethod(method, contextReference, type, codeLens, isInterface);
     if (hasPotentialNonTrivialInvokeRewriting(method, type, result)) {
@@ -208,13 +216,6 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
         }
       }
     }
-    if (graphLens.isLirToLirDesugaringLens()) {
-      if (result.isNeedsDesugaredLibraryApiConversionSet()) {
-        return true;
-      }
-    } else {
-      assert !result.isNeedsDesugaredLibraryApiConversionSet();
-    }
     assert result.getPrototypeChanges().isEmpty();
     return false;
   }
@@ -239,13 +240,18 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
                 // Two invokes with the same symbolic method reference but different invoke types
                 // are rewritten to two different symbolic method references. Record that the
                 // invokes need to be processed.
-                if (invokeInstructionsToRewrite == NO_INVOKE_INSTRUCTIONS_TO_REWRITE) {
-                  invokeInstructionsToRewrite = new HashSet<>();
-                }
-                invokeInstructionsToRewrite.add(method);
+                addInvokeInstructionToRewrite(method);
                 return method;
               }
             });
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  private void addInvokeInstructionToRewrite(DexMethod method) {
+    if (invokeInstructionsToRewrite == NO_INVOKE_INSTRUCTIONS_TO_REWRITE) {
+      invokeInstructionsToRewrite = Sets.newIdentityHashSet();
+    }
+    invokeInstructionsToRewrite.add(method);
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -739,7 +745,9 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
                   methodsToAppend.add(ref);
                   return rewrittenConstants.length + methodsToAppend.size() - 1;
                 });
-        numberOfInvokeOpcodeChanges -= BooleanUtils.intValue(newOpcode != opcode);
+        if (!graphLens.isLirToLirDesugaringLens()) {
+          numberOfInvokeOpcodeChanges -= BooleanUtils.intValue(newOpcode != opcode);
+        }
       }
       int constantIndexSize = ByteUtils.intEncodingSize(constantIndex);
       int remainingSize = view.getRemainingOperandSizeInBytes();

@@ -28,6 +28,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
+import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Opcodes;
 import com.android.tools.r8.ir.code.Phi;
@@ -85,6 +86,39 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
     this.eventConsumer = eventConsumer;
     this.method = method;
     this.methodProcessingContext = methodProcessingContext;
+  }
+
+  private boolean needsLibraryMethodRewriting(
+      DexMethod invokedMethod, InvokeType type, boolean isInterface, ProgramMethod context) {
+    return (desugaredLibraryLibRewriter != null
+            && desugaredLibraryLibRewriter.needsRewriting(invokedMethod, context))
+        || (desugaredLibraryRetargeter != null
+            && desugaredLibraryRetargeter.needsRewriting(invokedMethod, type, isInterface, context))
+        || (desugaredLibraryDisableDesugarer != null
+            && desugaredLibraryDisableDesugarer.needsRewriting(invokedMethod, context))
+        || (interfaceMethodRewriter != null
+            && interfaceMethodRewriter.needsRewriting(invokedMethod, type, isInterface, context));
+  }
+
+  public boolean needsInlinedApiConversion(
+      DexMethod invokedMethod, InvokeType type, boolean isInterface, ProgramMethod context) {
+    return desugaredLibraryApiConverter != null
+        && !needsLibraryMethodRewriting(invokedMethod, type, isInterface, context)
+        && desugaredLibraryApiConverter.needsInlinedApiConversion(
+            invokedMethod, type, isInterface, context);
+  }
+
+  public boolean needsInvokeRewriting(
+      DexMethod invokedMethod, InvokeType type, boolean isInterface, ProgramMethod context) {
+    if (needsLibraryMethodRewriting(invokedMethod, type, isInterface, context)) {
+      return true;
+    }
+    if (desugaredLibraryApiConverter != null
+        && desugaredLibraryApiConverter.needsOutlinedApiConversion(
+            invokedMethod, type, isInterface, context)) {
+      return true;
+    }
+    return apiOutliner != null && apiOutliner.needsRewriting(invokedMethod, type, context);
   }
 
   public boolean needsApiOutlining(
@@ -195,7 +229,12 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
       }
     }
 
-    if (desugaredLibraryApiConverter != null) {
+    if (desugaredLibraryApiConverter != null
+        && desugaredLibraryApiConverter.invokeNeedsDesugaring(
+            previous.getReference(),
+            previous.getType(),
+            previous.isInterface().toBoolean(),
+            method)) {
       return desugaredLibraryApiConverter.lookupMethod(
           previous, method, methodProcessingContext, this);
     }
@@ -219,7 +258,6 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
       boolean changed = false;
       BasicBlockIterator blocks = code.listIterator();
       ProgramMethod context = code.context();
-      GraphLens codeLens = context.getDefinition().getCode().getCodeLens(appView);
       while (blocks.hasNext()) {
         BasicBlock block = blocks.next();
         InstructionListIterator instructions = block.listIterator();
@@ -259,14 +297,14 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
             case Opcodes.INVOKE_VIRTUAL:
               {
                 InvokeMethod invoke = instruction.asInvokeMethod();
-                MethodLookupResult lookupResult =
-                    lookupMethod(
-                        invoke.getInvokedMethod(),
-                        context.getReference(),
-                        invoke.getType(),
-                        codeLens,
-                        invoke.getInterfaceBit());
-                if (lookupResult.isNeedsDesugaredLibraryApiConversionSet()) {
+                // Outlined API conversions only rewrite the invoked method target to a single
+                // static outline call and are handled by LensCodeRewriter#rewritePartialDefault
+                // via lookupMethod after this custom lens code rewriter runs.
+                if (needsInlinedApiConversion(
+                    invoke.getInvokedMethod(),
+                    invoke.getType(),
+                    invoke.getInterfaceBit(),
+                    context)) {
                   instructions = rewriteInvoke(code, blocks, instructions, invoke, affectedValues);
                   changed = true;
                 }

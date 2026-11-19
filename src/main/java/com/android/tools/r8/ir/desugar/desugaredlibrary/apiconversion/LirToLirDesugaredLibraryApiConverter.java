@@ -25,6 +25,18 @@ public class LirToLirDesugaredLibraryApiConverter extends DesugaredLibraryAPICon
     this.eventConsumer = eventConsumer;
   }
 
+  public boolean needsInlinedApiConversion(
+      DexMethod method, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
+    return invokeNeedsDesugaring(method, invokeType, isInterface, context)
+        && !shouldOutlineAPIConversion(method, invokeType, isInterface, context);
+  }
+
+  public boolean needsOutlinedApiConversion(
+      DexMethod method, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
+    return invokeNeedsDesugaring(method, invokeType, isInterface, context)
+        && shouldOutlineAPIConversion(method, invokeType, isInterface, context);
+  }
+
   public MethodLookupResult lookupMethod(
       MethodLookupResult previous,
       ProgramMethod context,
@@ -33,9 +45,7 @@ public class LirToLirDesugaredLibraryApiConverter extends DesugaredLibraryAPICon
     DexMethod method = previous.getReference();
     InvokeType invokeType = previous.getType();
     boolean isInterface = previous.isInterface().toBoolean();
-    if (!invokeNeedsDesugaring(method, invokeType, isInterface, context)) {
-      return previous;
-    }
+    assert invokeNeedsDesugaring(method, invokeType, isInterface, context);
     DexMethod retargetMethod =
         getRetargetMethod(
             method, invokeType, isInterface, eventConsumer, context, methodProcessingContext);
@@ -46,14 +56,7 @@ public class LirToLirDesugaredLibraryApiConverter extends DesugaredLibraryAPICon
           .setIsInterface(false)
           .setType(InvokeType.STATIC)
           .build();
-    } else {
-      return MethodLookupResult.builder(lens, lens.getPrevious())
-          .setReference(previous.getReference())
-          .setReboundReference(previous.getReboundReference())
-          .setIsInterface(isInterface)
-          .setNeedsDesugaredLibraryApiConversion()
-          .setType(previous.getType())
-          .build();
     }
+    return previous;
   }
 }

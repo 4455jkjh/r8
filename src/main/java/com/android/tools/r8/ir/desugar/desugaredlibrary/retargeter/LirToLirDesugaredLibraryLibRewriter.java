@@ -28,6 +28,10 @@ public class LirToLirDesugaredLibraryLibRewriter extends DesugaredLibraryLibRewr
     this.eventConsumer = eventConsumer;
   }
 
+  public boolean needsRewriting(DexMethod method, ProgramMethod context) {
+    return isApplicableToContext(context) && rewritings.containsKey(method);
+  }
+
   public MethodLookupResult lookupMethod(
       MethodLookupResult previous,
       ProgramMethod context,
