@@ -21,6 +21,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFun
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.AppInfoWithLivenessModifier;
 import com.android.tools.r8.threading.ThreadingModule;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.BitSet;
 import java.util.Map;
@@ -105,13 +106,7 @@ public class OptimizationFeedbackDelayed extends OptimizationFeedback {
     // Update field optimization info.
     if (!fieldOptimizationInfos.isEmpty()) {
       fieldOptimizationInfos.forEach(DexEncodedField::setOptimizationInfo);
-      if (fieldOptimizationInfos.size() > 64) {
-        // Create a new map to ensure that small waves do not unnecessarily scan large empty hash
-        // tables.
-        fieldOptimizationInfos = new ConcurrentHashMap<>();
-      } else {
-        fieldOptimizationInfos.clear();
-      }
+      fieldOptimizationInfos = MapUtils.clearOrCreateConcurrent(fieldOptimizationInfos);
     }
 
     // Update method optimization info, skipping methods that have become obsolete. A method may
@@ -125,13 +120,7 @@ public class OptimizationFeedbackDelayed extends OptimizationFeedback {
               method.setOptimizationInfo(info);
             }
           });
-      if (methodOptimizationInfos.size() > 64) {
-        // Create a new map to ensure that small waves do not unnecessarily scan large empty hash
-        // tables.
-        methodOptimizationInfos = new ConcurrentHashMap<>();
-      } else {
-        methodOptimizationInfos.clear();
-      }
+      methodOptimizationInfos = MapUtils.clearOrCreateConcurrent(methodOptimizationInfos);
     }
 
     // Mark the processed methods as processed.
@@ -142,13 +131,7 @@ public class OptimizationFeedbackDelayed extends OptimizationFeedback {
               method.markProcessed(state);
             }
           });
-      if (processed.size() > 64) {
-        // Create a new map to ensure that small waves do not unnecessarily scan large empty hash
-        // tables.
-        processed = new ConcurrentHashMap<>();
-      } else {
-        processed.clear();
-      }
+      processed = MapUtils.clearOrCreateConcurrent(processed);
     }
   }
 

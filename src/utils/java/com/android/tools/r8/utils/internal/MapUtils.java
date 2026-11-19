@@ -16,6 +16,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -25,8 +26,30 @@ import java.util.function.Supplier;
 
 public class MapUtils {
 
+  public static final int CONCURRENT_MAP_MAX_CLEAR_SIZE = 64;
+
   public static <V> Int2ReferenceMap<V> canonicalizeEmptyMap(Int2ReferenceMap<V> map) {
     return map.isEmpty() ? Int2ReferenceMaps.emptyMap() : map;
+  }
+
+  /**
+   * Clears {@code prev} or returns a fresh {@link ConcurrentHashMap} if {@code prev} is large.
+   *
+   * <p>Clearing a {@link ConcurrentHashMap} can be expensive because {@code clear()} scans the
+   * entire internal hash table with a volatile read per slot (even when empty) and never shrinks
+   * the table back down. Reallocating after large waves avoids repeatedly scanning oversized tables
+   * in subsequent small waves.
+   */
+  public static <K, V> Map<K, V> clearOrCreateConcurrent(Map<K, V> prev) {
+    int size = prev.size();
+    if (size == 0) {
+      return prev;
+    }
+    if (size > CONCURRENT_MAP_MAX_CLEAR_SIZE) {
+      return new ConcurrentHashMap<>();
+    }
+    prev.clear();
+    return prev;
   }
 
   public static <K, V> Map<K, V> clone(

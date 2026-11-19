@@ -77,6 +77,7 @@ import com.android.tools.r8.utils.DeterminismChecker.LineCallback;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.TraversalUtils;
 import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -129,8 +130,7 @@ public class ArgumentPropagatorCodeScanner {
    */
   private final FieldStateCollection fieldStates = FieldStateCollection.createConcurrent();
 
-  private final ProgramFieldSet newlyUnknownFieldsInCurrentWave =
-      ProgramFieldSet.createConcurrent();
+  private ProgramFieldSet newlyUnknownFieldsInCurrentWave = ProgramFieldSet.createConcurrent();
 
   /**
    * The abstract program state for this optimization. Intuitively maps each parameter to its
@@ -216,7 +216,14 @@ public class ArgumentPropagatorCodeScanner {
   }
 
   public void waveDone() {
-    newlyUnknownFieldsInCurrentWave.clear();
+    if (newlyUnknownFieldsInCurrentWave.isEmpty()) {
+      return;
+    }
+    if (newlyUnknownFieldsInCurrentWave.size() > MapUtils.CONCURRENT_MAP_MAX_CLEAR_SIZE) {
+      newlyUnknownFieldsInCurrentWave = ProgramFieldSet.createConcurrent();
+    } else {
+      newlyUnknownFieldsInCurrentWave.clear();
+    }
   }
 
   protected class CodeScanner {

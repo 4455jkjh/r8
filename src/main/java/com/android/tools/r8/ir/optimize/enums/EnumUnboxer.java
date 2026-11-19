@@ -156,7 +156,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
   // Map the enum candidates with their dependencies, i.e., the methods to reprocess for the given
   // enum if the optimization eventually decides to unbox it.
   private EnumUnboxingCandidateInfoCollection enumUnboxingCandidatesInfo;
-  private final Set<DexProgramClass> candidatesToRemoveInWave = SetUtils.newConcurrentHashSet();
+  private Set<DexProgramClass> candidatesToRemoveInWave = SetUtils.newConcurrentHashSet();
   private final Map<DexType, EnumStaticFieldValues> staticFieldValuesMap =
       new ConcurrentHashMap<>();
 
@@ -203,10 +203,13 @@ public class EnumUnboxer implements ReprocessingOptimization {
 
   @Override
   public void waveDone() {
+    if (candidatesToRemoveInWave.isEmpty()) {
+      return;
+    }
     for (DexProgramClass candidate : candidatesToRemoveInWave) {
       enumUnboxingCandidatesInfo.removeCandidate(candidate);
     }
-    candidatesToRemoveInWave.clear();
+    candidatesToRemoveInWave = SetUtils.clearOrCreateConcurrent(candidatesToRemoveInWave);
   }
 
   /**

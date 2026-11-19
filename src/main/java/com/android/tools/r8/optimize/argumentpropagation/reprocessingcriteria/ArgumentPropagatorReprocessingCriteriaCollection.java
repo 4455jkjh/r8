@@ -25,6 +25,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.internal.MapUtils;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.IdentityHashMap;
@@ -38,7 +39,7 @@ public class ArgumentPropagatorReprocessingCriteriaCollection {
   private final Map<DexMethod, MethodReprocessingCriteria> reproccessingCriteria =
       new IdentityHashMap<>();
 
-  private final Map<DexMethod, MethodReprocessingCriteria> delayedReproccessingCriteria =
+  private Map<DexMethod, MethodReprocessingCriteria> delayedReproccessingCriteria =
       new ConcurrentHashMap<>();
 
   public ArgumentPropagatorReprocessingCriteriaCollection(AppView<AppInfoWithLiveness> appView) {
@@ -51,8 +52,11 @@ public class ArgumentPropagatorReprocessingCriteriaCollection {
   }
 
   public void publishDelayedReprocessingCriteria() {
+    if (delayedReproccessingCriteria.isEmpty()) {
+      return;
+    }
     reproccessingCriteria.putAll(delayedReproccessingCriteria);
-    delayedReproccessingCriteria.clear();
+    delayedReproccessingCriteria = MapUtils.clearOrCreateConcurrent(delayedReproccessingCriteria);
   }
 
   /**

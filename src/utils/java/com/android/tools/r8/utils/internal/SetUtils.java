@@ -19,6 +19,25 @@ import java.util.function.Function;
 
 public class SetUtils {
 
+  /**
+   * Clears {@code prev} or returns a fresh concurrent hash set if {@code prev} is large.
+   *
+   * <p>Clearing a {@link ConcurrentHashMap}-backed set can be expensive because {@code clear()}
+   * scans the entire backing table (even when empty) and never shrinks it. See {@link
+   * MapUtils#clearOrCreateConcurrent}.
+   */
+  public static <T> Set<T> clearOrCreateConcurrent(Set<T> prev) {
+    int size = prev.size();
+    if (size == 0) {
+      return prev;
+    }
+    if (size > MapUtils.CONCURRENT_MAP_MAX_CLEAR_SIZE) {
+      return newConcurrentHashSet();
+    }
+    prev.clear();
+    return prev;
+  }
+
   public static <T> boolean containsAnyOf(Set<T> set, Iterable<T> elements) {
     if (set.isEmpty()) {
       return false;

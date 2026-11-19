@@ -14,8 +14,8 @@ import java.util.Set;
 /** Used to mutate AppInfoWithLiveness between waves. */
 public class AppInfoWithLivenessModifier {
 
-  private final Set<DexProgramClass> noLongerInstantiatedClasses = SetUtils.newConcurrentHashSet();
-  private final Set<DexField> noLongerWrittenFields = SetUtils.newConcurrentHashSet();
+  private Set<DexProgramClass> noLongerInstantiatedClasses = SetUtils.newConcurrentHashSet();
+  private Set<DexField> noLongerWrittenFields = SetUtils.newConcurrentHashSet();
 
   AppInfoWithLivenessModifier() {}
 
@@ -33,24 +33,23 @@ public class AppInfoWithLivenessModifier {
 
   public void modify(AppInfoWithLiveness appInfo) {
     // Instantiated classes.
-    noLongerInstantiatedClasses.forEach(appInfo::removeFromSingleTargetLookupCache);
-    appInfo.removeNoLongerInstantiatedClasses(noLongerInstantiatedClasses);
+    if (!noLongerInstantiatedClasses.isEmpty()) {
+      noLongerInstantiatedClasses.forEach(appInfo::removeFromSingleTargetLookupCache);
+      appInfo.removeNoLongerInstantiatedClasses(noLongerInstantiatedClasses);
+      noLongerInstantiatedClasses = SetUtils.clearOrCreateConcurrent(noLongerInstantiatedClasses);
+    }
     // Written fields.
-    MutableFieldAccessInfoCollection<?, ? extends MutableFieldAccessInfo>
-        fieldAccessInfoCollection = appInfo.getMutableFieldAccessInfoCollection();
-    noLongerWrittenFields.forEach(
-        field -> {
-          MutableFieldAccessInfo fieldAccessInfo = fieldAccessInfoCollection.get(field);
-          if (fieldAccessInfo != null) {
-            fieldAccessInfo.clearWrites();
-          }
-        });
-
-    clear();
-  }
-
-  private void clear() {
-    noLongerInstantiatedClasses.clear();
-    noLongerWrittenFields.clear();
+    if (!noLongerWrittenFields.isEmpty()) {
+      MutableFieldAccessInfoCollection<?, ? extends MutableFieldAccessInfo>
+          fieldAccessInfoCollection = appInfo.getMutableFieldAccessInfoCollection();
+      noLongerWrittenFields.forEach(
+          field -> {
+            MutableFieldAccessInfo fieldAccessInfo = fieldAccessInfoCollection.get(field);
+            if (fieldAccessInfo != null) {
+              fieldAccessInfo.clearWrites();
+            }
+          });
+      noLongerWrittenFields = SetUtils.clearOrCreateConcurrent(noLongerWrittenFields);
+    }
   }
 }
