@@ -122,6 +122,19 @@ public class GeneratedMessageLiteShrinker {
       disallowOptimization(
           rawMessageInfoClass, references.rawMessageInfoObjectsField, dependentMinimumKeepInfo);
     }
+
+    DexProgramClass mapEntryLiteClass =
+        asProgramClassOrNull(
+            appView.appInfo().definitionForWithoutExistenceAssert(references.mapEntryLite));
+    if (mapEntryLiteClass != null) {
+      dependentMinimumKeepInfo
+          .getOrCreateUnconditionalMinimumKeepInfoFor(references.mapEntryLite)
+          .asClassJoiner()
+          .disallowHorizontalClassMerging()
+          .disallowVerticalClassMerging();
+      disallowOptimization(
+          mapEntryLiteClass, references.mapEntryLiteNewDefaultInstance, dependentMinimumKeepInfo);
+    }
   }
 
   private void disallowSignatureOptimizations(KeepMethodInfo.Joiner methodJoiner) {

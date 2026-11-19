@@ -373,15 +373,22 @@ public class GeneratedMessageLiteBuilderShrinker {
   }
 
   public void extendRootSet(DependentMinimumKeepInfoCollection dependentMinimumKeepInfo) {
-    dependentMinimumKeepInfo
-        .getOrCreateUnconditionalMinimumKeepInfoFor(
-            references.generatedMessageLiteBuilderMethods.constructorMethod)
-        .asMethodJoiner()
-        .disallowInlining();
+    // Dead builder rewriting introduces calls to the base builder constructors after the primary
+    // optimization pass, so they must not be inlined.
+    references.forEachBaseBuilderConstructor(
+        constructor ->
+            dependentMinimumKeepInfo
+                .getOrCreateUnconditionalMinimumKeepInfoFor(constructor)
+                .asMethodJoiner()
+                .disallowInlining());
   }
 
   public void preprocessCallGraphBeforeCycleElimination(Map<DexMethod, Node> nodes) {
-    Node node = nodes.get(references.generatedMessageLiteBuilderMethods.constructorMethod);
+    references.forEachBaseBuilderConstructor(
+        constructor -> preprocessCallGraphBeforeCycleElimination(nodes.get(constructor)));
+  }
+
+  private void preprocessCallGraphBeforeCycleElimination(Node node) {
     if (node != null) {
       List<Node> calleesToBeRemoved = new ArrayList<>();
       for (Node callee : node.getCalleesWithDeterministicOrder()) {
@@ -566,9 +573,12 @@ public class GeneratedMessageLiteBuilderShrinker {
     }
 
     private void neverMergeMessageLite() {
-      // MessageLite is used in several signatures that we use for recognizing methods, so don't
-      // allow it to me merged.
+      // These types are used in the signatures of methods that the proto shrinker recognizes or
+      // introduces calls to after class merging (e.g., newMessageInfo(MessageLite, ...) and the
+      // base builder constructors), so don't allow them to be merged.
       neverMergeClass(references.messageLiteType);
+      neverMergeClass(references.generatedMessageLiteType);
+      neverMergeClass(references.extendableMessageType);
     }
 
     private void neverMergeClass(DexType type) {

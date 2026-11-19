@@ -3,9 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.internal.proto;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
-
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -30,16 +27,16 @@ public class ProtoMapEntryLiteOptimizationTest extends TestBase {
     return getTestParameters().withDefaultDexRuntime().withAllApiLevels().build();
   }
 
-  @Test(expected = CompilationFailedException.class)
+  @Test
   public void test() throws Exception {
     testForR8(parameters)
         .addInnerClasses(getClass())
         .addProgramFiles(ProtoRuntime.LEGACY.getProgramFiles())
         .addKeepMainRule(Main.class)
         .enableProtoShrinking()
-        .compileWithExpectedDiagnostics(
-            diagnostics ->
-                diagnostics.assertErrorsMatch(diagnosticException(AssertionError.class)));
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("0");
   }
 
   static final class Container extends GeneratedMessageLite<Container, Container.Builder> {

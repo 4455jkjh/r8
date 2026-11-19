@@ -3,13 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.internal.proto;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbstract;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.google.protobuf.GeneratedMessageLite;
 import com.google.protobuf.GeneratedMessageLite.ExtendableBuilder;
 import com.google.protobuf.GeneratedMessageLite.ExtendableMessage;
@@ -31,7 +35,7 @@ public class ProtoExtendableBuilderInliningTest extends TestBase {
     return getTestParameters().withDefaultDexRuntime().withAllApiLevels().build();
   }
 
-  @Test(expected = CompilationFailedException.class)
+  @Test
   public void test() throws Exception {
     testForR8(parameters)
         .addInnerClasses(getClass())
@@ -39,9 +43,17 @@ public class ProtoExtendableBuilderInliningTest extends TestBase {
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .enableProtoShrinking()
-        .compileWithExpectedDiagnostics(
-            diagnostics ->
-                diagnostics.assertErrorsMatch(diagnosticException(AssertionError.class)));
+        .compile()
+        .inspect(
+            inspector -> {
+              assertThat(inspector.clazz(ExtendableMessage.class), isPresent());
+              ClassSubject extendableBuilder = inspector.clazz(ExtendableBuilder.class);
+              assertThat(extendableBuilder, not(isAbstract()));
+              assertThat(extendableBuilder.uniqueInstanceInitializer(), isPresent());
+              assertThat(inspector.clazz(SampleExtendableMessage.Builder.class), isAbsent());
+            })
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("true");
   }
 
   static final class SampleExtendableMessage

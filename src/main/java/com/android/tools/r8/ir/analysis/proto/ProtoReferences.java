@@ -174,6 +174,15 @@ public class ProtoReferences {
     consumer.accept(rawMessageInfoConstructor);
   }
 
+  /**
+   * Visits the constructors of the base builders GeneratedMessageLite$Builder and
+   * GeneratedMessageLite$ExtendableBuilder, which dead builder rewriting instantiates directly.
+   */
+  public void forEachBaseBuilderConstructor(Consumer<DexMethod> consumer) {
+    consumer.accept(generatedMessageLiteBuilderMethods.constructorMethod);
+    consumer.accept(generatedMessageLiteExtendableBuilderMethods.constructorMethod);
+  }
+
   public DexField getDefaultInstanceField(DexProgramClass holder) {
     return dexItemFactory.createField(holder.type, holder.type, defaultInstanceFieldName);
   }
