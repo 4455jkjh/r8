@@ -353,13 +353,18 @@ public class DexConstantOptimizer extends CodeRewriterPass<AppInfo> {
 
   private Position getPositionForMovedNonThrowingInstruction(
       Instruction movedInstruction, Instruction insertionPoint) {
-    // If the type of the moved instruction is throwing and we don't have a position at the
-    // insertion point, we use the special synthetic-none position, which is OK as the moved
-    // instruction instance is known not to throw (or we would not be allowed the move it).
-    if (movedInstruction.instructionTypeCanThrow() && !insertionPoint.getPosition().isSome()) {
-      return Position.syntheticNone();
+    // If the type of the moved instruction is throwing, it must have a position, even though the
+    // instruction instance is known not to throw (otherwise moving it would not be allowed). If
+    // the insertion point has no position, or has an outline position (which maps 1-to-1 to a
+    // specific outlined instruction's PC for retracing and must not be duplicated onto an earlier
+    // instruction), use the special synthetic-none position instead.
+    Position insertionPosition = insertionPoint.getPosition();
+    if (movedInstruction.instructionTypeCanThrow()) {
+      if (!insertionPosition.isSome() || insertionPosition.isOutline()) {
+        return Position.syntheticNone();
+      }
     }
-    return insertionPoint.getPosition();
+    return insertionPosition;
   }
 
   @SuppressWarnings({"NonApiType", "ReferenceEquality"})
