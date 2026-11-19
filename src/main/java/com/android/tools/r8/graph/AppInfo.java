@@ -16,6 +16,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -181,7 +182,7 @@ public class AppInfo implements DexDefinitionSupplier {
     return syntheticItems;
   }
 
-  public Collection<DexProgramClass> classes() {
+  public List<DexProgramClass> classes() {
     assert checkIfObsolete();
     return app.classes();
   }

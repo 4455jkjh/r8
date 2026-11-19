@@ -60,7 +60,7 @@ public class KeepAnnotationMatcherPredicates {
       return true;
     }
     if (pattern.isExact()) {
-      return type.toDescriptorString().equals(pattern.getExactDescriptor());
+      return type.getDescriptor().isEqualTo(pattern.getExactDescriptor());
     }
     return matchesPackage(type.getPackageName(), pattern.getPackagePattern())
         && matchesSimpleName(type.getSimpleName(), pattern.getNamePattern());
@@ -82,6 +82,9 @@ public class KeepAnnotationMatcherPredicates {
 
   private boolean matchesInstanceOfPattern(
       DexType type, KeepInstanceOfPattern pattern, AppInfoWithClassHierarchy appInfo) {
+    if (pattern.isAny()) {
+      return true;
+    }
     DexClass dexClass = appInfo.definitionFor(type);
     if (dexClass != null) {
       return matchesInstanceOfPattern(dexClass.asProgramClass(), pattern, appInfo);
@@ -126,11 +129,15 @@ public class KeepAnnotationMatcherPredicates {
     if (pattern.isAnyMethod()) {
       return true;
     }
-    return matchesString(method.getName(), pattern.getNamePattern().asStringPattern())
+    // Check annotations and access flags before name, return type, and parameters: most methods are
+    // unannotated (annotations.isEmpty() is O(1)) and access checks are simple bitmask tests, so
+    // annotation-driven rules (e.g. @Composable) reject non-matching methods immediately before
+    // string decoding, return-type hierarchy walks, and parameter-list iteration.
+    return matchesAnnotatedBy(method.annotations(), pattern.getAnnotatedByPattern())
+        && matchesMethodAccess(method.getAccessFlags(), pattern.getAccessPattern())
+        && matchesString(method.getName(), pattern.getNamePattern().asStringPattern())
         && matchesReturnType(method.getReturnType(), pattern.getReturnTypePattern(), appInfo)
-        && matchesParameters(method.getParameters(), pattern.getParametersPattern(), appInfo)
-        && matchesAnnotatedBy(method.annotations(), pattern.getAnnotatedByPattern())
-        && matchesMethodAccess(method.getAccessFlags(), pattern.getAccessPattern());
+        && matchesParameters(method.getParameters(), pattern.getParametersPattern(), appInfo);
   }
 
   public boolean matchesField(
@@ -138,10 +145,13 @@ public class KeepAnnotationMatcherPredicates {
     if (pattern.isAnyField()) {
       return true;
     }
-    return matchesString(field.getName(), pattern.getNamePattern().asStringPattern())
-        && matchesType(field.getType(), pattern.getTypePattern().asType(), appInfo)
-        && matchesAnnotatedBy(field.annotations(), pattern.getAnnotatedByPattern())
-        && matchesFieldAccess(field.getAccessFlags(), pattern.getAccessPattern());
+    // Check annotations and access flags first for the same reason as in matchesMethod: fast O(1)
+    // annotation emptiness and bitmask checks reject non-matching fields before name matching and
+    // field-type hierarchy checks.
+    return matchesAnnotatedBy(field.annotations(), pattern.getAnnotatedByPattern())
+        && matchesFieldAccess(field.getAccessFlags(), pattern.getAccessPattern())
+        && matchesString(field.getName(), pattern.getNamePattern().asStringPattern())
+        && matchesType(field.getType(), pattern.getTypePattern().asType(), appInfo);
   }
 
   public boolean matchesGeneralMemberAccess(

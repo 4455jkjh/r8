@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMember;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.keepanno.ast.KeepAnnotationPattern;
 import com.android.tools.r8.keepanno.ast.KeepBindingReference;
@@ -38,16 +39,19 @@ import com.android.tools.r8.keepanno.ast.KeepConstraintVisitor;
 import com.android.tools.r8.keepanno.ast.KeepConstraints;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.ast.KeepEdge;
+import com.android.tools.r8.keepanno.ast.KeepInstanceOfPattern;
 import com.android.tools.r8.keepanno.ast.KeepItemPattern;
 import com.android.tools.r8.keepanno.ast.KeepMemberItemPattern;
 import com.android.tools.r8.keepanno.ast.KeepTarget;
 import com.android.tools.r8.shaking.KeepAnnotationCollectionInfo.RetentionInfo;
 import com.android.tools.r8.shaking.KeepInfo.Joiner;
 import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
-import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.shaking.rules.ApplicableRulesEvaluator.InitialRules;
+import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
@@ -68,49 +72,110 @@ public class KeepAnnotationMatcher {
       List<KeepDeclaration> keepDeclarations,
       ExecutorService executorService)
       throws ExecutionException {
+    return computeInitialRules(appView, keepDeclarations, executorService, null);
+  }
+
+  public static ApplicableRulesEvaluator computeInitialRules(
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      List<KeepDeclaration> keepDeclarations,
+      ExecutorService executorService,
+      ImmediateAppSubtypingInfo subtypingInfo)
+      throws ExecutionException {
+    assert executorService != null;
+    if (keepDeclarations.isEmpty()) {
+      return ApplicableRulesEvaluator.empty();
+    }
     KeepAnnotationMatcherPredicates predicates = new KeepAnnotationMatcherPredicates();
     ApplicableRulesEvaluator.Builder builder = ApplicableRulesEvaluator.initialRulesBuilder();
-    ThreadUtils.processItems(
-        keepDeclarations,
-        declaration -> processDeclaration(declaration, appView.appInfo(), predicates, builder),
-        appView.options().getThreadingModule(),
-        executorService);
+    List<NormalizedSchema> fullScanSchemas = new ArrayList<>();
+    TaskCollection<InitialRules> tasks = new TaskCollection<>(appView.options(), executorService);
+    for (KeepDeclaration declaration : keepDeclarations) {
+      // Normalize each declaration once up front into indexed class and member patterns so we can
+      // inspect root class 0 before launching tasks (to separate direct lookups from full program
+      // scans) and share one schema across all partitions.
+      NormalizedSchema schema = new NormalizedSchema(declaration);
+      // EdgeMatcher starts matching at class 0, and schema.classes lists mandatory precondition
+      // classes before optional consequence-only classes. Only partition class 0 across
+      // fullScanSchemas when class 0 is mandatory (!isOptionalClass(0)) or the sole class in the
+      // schema (classes.size() == 1), where failing to match class 0 cannot still match subsequent
+      // optional classes via continueWithNoClass(0).
+      boolean singleOrMandatoryRoot =
+          !schema.classes.isEmpty() && (!schema.isOptionalClass(0) || schema.classes.size() == 1);
+      if (singleOrMandatoryRoot && EdgeMatcher.usesFullClassScanAtRoot(schema, subtypingInfo)) {
+        fullScanSchemas.add(schema);
+      } else {
+        tasks.submit(() -> processSchema(schema, appView.appInfo(), predicates, subtypingInfo));
+      }
+    }
+    if (!fullScanSchemas.isEmpty()) {
+      List<DexProgramClass> classes = appView.appInfo().classes();
+      int partitionSize = Math.max(128, classes.size() / 128);
+      for (List<DexProgramClass> partition : Lists.partition(classes, partitionSize)) {
+        tasks.submit(
+            () ->
+                processRootPartition(
+                    partition, fullScanSchemas, appView.appInfo(), predicates, subtypingInfo));
+      }
+    }
+    tasks.await(builder::merge);
     return builder.build(appView);
   }
 
-  private static void processDeclaration(
-      KeepDeclaration declaration,
+  private static InitialRules processSchema(
+      NormalizedSchema schema,
       AppInfoWithClassHierarchy appInfo,
       KeepAnnotationMatcherPredicates predicates,
-      ApplicableRulesEvaluator.Builder builder) {
-    EdgeMatcher edgeMatcher = new EdgeMatcher(appInfo, predicates);
-    declaration.match(
+      ImmediateAppSubtypingInfo subtypingInfo) {
+    InitialRules initialRules = new InitialRules();
+    EdgeMatcher matcher = new EdgeMatcher(appInfo, predicates, subtypingInfo);
+    matchSchemaIntoInitialRules(schema, matcher, null, predicates, initialRules);
+    return initialRules;
+  }
+
+  private static InitialRules processRootPartition(
+      List<DexProgramClass> classes,
+      List<NormalizedSchema> fullScanSchemas,
+      AppInfoWithClassHierarchy appInfo,
+      KeepAnnotationMatcherPredicates predicates,
+      ImmediateAppSubtypingInfo subtypingInfo) {
+    InitialRules initialRules = new InitialRules();
+    EdgeMatcher matcher = new EdgeMatcher(appInfo, predicates, subtypingInfo);
+    for (NormalizedSchema schema : fullScanSchemas) {
+      matchSchemaIntoInitialRules(schema, matcher, classes, predicates, initialRules);
+    }
+    return initialRules;
+  }
+
+  private static void matchSchemaIntoInitialRules(
+      NormalizedSchema schema,
+      EdgeMatcher matcher,
+      List<DexProgramClass> classes,
+      KeepAnnotationMatcherPredicates predicates,
+      InitialRules initialRules) {
+    schema.declaration.match(
         edge ->
-            edgeMatcher.forEachMatch(
-                edge,
+            matcher.forEachMatch(
+                schema,
+                classes,
                 result -> {
                   if (result.preconditions.isEmpty()) {
-                    builder.addRootRule(
-                        keepInfoCollection ->
-                            createKeepInfo(result, keepInfoCollection, predicates));
+                    createKeepInfo(result, initialRules.getRootConsequences(), predicates);
                   } else {
-                    builder.addConditionalRule(
+                    initialRules.addConditionalRule(
                         new PendingInitialConditionalRule(
                             result.preconditions,
                             createKeepInfo(
                                 result, MinimumKeepInfoCollection.create(), predicates)));
                   }
                 }),
-        check -> {
-          edgeMatcher.forEachMatch(
-              check,
-              result -> {
-                assert result.preconditions.isEmpty();
-                builder.addRootRule(
-                    keepInfoCollection ->
-                        createCheckDiscardInfo(check, result, keepInfoCollection));
-              });
-        });
+        check ->
+            matcher.forEachMatch(
+                schema,
+                classes,
+                result -> {
+                  assert result.preconditions.isEmpty();
+                  createCheckDiscardInfo(check, result, initialRules.getRootConsequences());
+                }));
   }
 
   private static void createCheckDiscardInfo(
@@ -289,6 +354,7 @@ public class KeepAnnotationMatcher {
 
     private final AppInfoWithClassHierarchy appInfo;
     private final KeepAnnotationMatcherPredicates predicates;
+    private final ImmediateAppSubtypingInfo subtypingInfo;
 
     private NormalizedSchema schema;
     private Assignment assignment;
@@ -296,17 +362,63 @@ public class KeepAnnotationMatcher {
 
     public EdgeMatcher(
         AppInfoWithClassHierarchy appInfo, KeepAnnotationMatcherPredicates predicates) {
+      this(appInfo, predicates, null);
+    }
+
+    public EdgeMatcher(
+        AppInfoWithClassHierarchy appInfo,
+        KeepAnnotationMatcherPredicates predicates,
+        ImmediateAppSubtypingInfo subtypingInfo) {
       this.appInfo = appInfo;
       this.predicates = predicates;
+      this.subtypingInfo = subtypingInfo;
     }
 
     public void forEachMatch(KeepDeclaration declaration, Consumer<MatchResult> callback) {
+      forEachMatch(new NormalizedSchema(declaration), null, callback);
+    }
+
+    private void forEachMatch(
+        NormalizedSchema sharedSchema,
+        List<DexProgramClass> classes,
+        Consumer<MatchResult> callback) {
+      this.schema = sharedSchema;
+      this.assignment = new Assignment(sharedSchema);
       this.callback = callback;
-      schema = new NormalizedSchema(declaration);
-      assignment = new Assignment(schema);
-      findMatchingClass(0);
-      schema = null;
-      assignment = null;
+      if (classes != null) {
+        KeepClassItemPattern classPattern = sharedSchema.classes.get(0);
+        for (DexProgramClass clazz : classes) {
+          if (predicates.matchesClass(clazz, classPattern, appInfo)) {
+            continueWithClass(0, clazz);
+          }
+        }
+      } else {
+        findMatchingClass(0);
+      }
+      this.schema = null;
+      this.assignment = null;
+      this.callback = null;
+    }
+
+    private static boolean usesFullClassScanAtRoot(
+        NormalizedSchema schema, ImmediateAppSubtypingInfo subtypingInfo) {
+      assert !schema.classes.isEmpty();
+      KeepClassItemPattern firstClass = schema.classes.get(0);
+      if (firstClass.getClassNamePattern().isExact()) {
+        return false;
+      }
+      if (firstClass.getInstanceOfPattern().getClassNamePattern().isExact()
+          && subtypingInfo != null) {
+        return false;
+      }
+      return true;
+    }
+
+    private boolean matchesClassNameAndAnnotations(
+        DexClass candidate, KeepClassItemPattern classPattern) {
+      return predicates.matchesClassName(candidate.getType(), classPattern.getClassNamePattern())
+          && predicates.matchesAnnotatedBy(
+              candidate.annotations(), classPattern.getAnnotatedByPattern());
     }
 
     private void foundMatch() {
@@ -328,7 +440,11 @@ public class KeepAnnotationMatcher {
         DexType type =
             appInfo
                 .dexItemFactory()
-                .createType(classPattern.getClassNamePattern().getExactDescriptor());
+                .lookupType(classPattern.getClassNamePattern().getExactDescriptor());
+        if (type == null) {
+          continueWithNoClass(classIndex);
+          return;
+        }
         DexClass clazz = appInfo.definitionFor(type);
         if (clazz == null) {
           continueWithNoClass(classIndex);
@@ -340,6 +456,38 @@ public class KeepAnnotationMatcher {
         }
         continueWithClass(classIndex, clazz);
         return;
+      }
+      // Avoid falling through to the full program-class scan (which walks supertypes upward on
+      // every class in appInfo.classes()) when instanceOf targets an exact defined type; instead,
+      // directly visit only its transitive program subclasses via subtypingInfo.
+      KeepInstanceOfPattern instanceOfPattern = classPattern.getInstanceOfPattern();
+      if (instanceOfPattern.getClassNamePattern().isExact() && subtypingInfo != null) {
+        DexType superType =
+            appInfo
+                .dexItemFactory()
+                .lookupType(instanceOfPattern.getClassNamePattern().getExactDescriptor());
+        if (superType == null) {
+          return;
+        }
+        DexClass superClass = appInfo.definitionFor(superType);
+        // If superClass is null, superType is a missing class or interface referenced in the app.
+        // ImmediateAppSubtypingInfo only indexes defined DexClasses, whereas traverseSuperTypes in
+        // matchesClass still visits missing supertype DexTypes, so fall through in that case.
+        if (superClass != null) {
+          if (instanceOfPattern.isInclusive()
+              && superClass.isProgramClass()
+              && matchesClassNameAndAnnotations(superClass, classPattern)) {
+            continueWithClass(classIndex, superClass);
+          }
+          subtypingInfo.forEachTransitiveProgramSubclass(
+              superClass,
+              subClass -> {
+                if (matchesClassNameAndAnnotations(subClass, classPattern)) {
+                  continueWithClass(classIndex, subClass);
+                }
+              });
+          return;
+        }
       }
       // TODO(b/323816623): This repeated iteration on all classes must be avoided.
       for (DexProgramClass clazz : appInfo.classes()) {

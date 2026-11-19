@@ -74,7 +74,7 @@ public class DirectMappedDexApplication extends DexApplication {
   }
 
   @Override
-  Collection<DexProgramClass> programClasses() {
+  List<DexProgramClass> programClasses() {
     return programClasses;
   }
 

@@ -5003,6 +5003,11 @@ public class DexItemFactory {
     return types.get(descriptor);
   }
 
+  public DexType lookupType(String descriptor) {
+    DexString string = lookupString(descriptor);
+    return string != null ? lookupType(string) : null;
+  }
+
   public DexField createField(DexType clazz, DexType type, DexString name) {
     DexField field = new DexField(clazz, type, name, skipNameValidationForTesting);
     return canonicalize(committedFields, fields, field);

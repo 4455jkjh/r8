@@ -10,8 +10,7 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Consumer;
+import java.util.List;
 
 public abstract class ApplicableRulesEvaluator {
 
@@ -51,30 +50,50 @@ public abstract class ApplicableRulesEvaluator {
     }
   }
 
+  public static class InitialRules {
+
+    private final MinimumKeepInfoCollection rootConsequences = MinimumKeepInfoCollection.create();
+    private final List<PendingInitialConditionalRule> conditionalRules = new ArrayList<>();
+
+    MinimumKeepInfoCollection getRootConsequences() {
+      return rootConsequences;
+    }
+
+    void addConditionalRule(PendingInitialConditionalRule rule) {
+      conditionalRules.add(rule);
+    }
+
+    public void merge(InitialRules other) {
+      if (!other.rootConsequences.isEmpty()) {
+        rootConsequences.merge(other.rootConsequences);
+      }
+      if (!other.conditionalRules.isEmpty()) {
+        conditionalRules.addAll(other.conditionalRules);
+      }
+    }
+
+    public boolean isEmpty() {
+      return rootConsequences.isEmpty() && conditionalRules.isEmpty();
+    }
+  }
+
   public static class Builder {
 
-    private MinimumKeepInfoCollection rootConsequences =
-        MinimumKeepInfoCollection.createConcurrent();
-    private ConcurrentLinkedDeque<PendingInitialConditionalRule> rules =
-        new ConcurrentLinkedDeque<>();
+    private final InitialRules rules = new InitialRules();
 
     private Builder() {}
 
-    public void addRootRule(Consumer<MinimumKeepInfoCollection> fn) {
-      fn.accept(rootConsequences);
-    }
-
-    public void addConditionalRule(PendingInitialConditionalRule rule) {
-      rules.add(rule);
+    public void merge(InitialRules other) {
+      rules.merge(other);
     }
 
     public ApplicableRulesEvaluator build(AppView<? extends AppInfoWithClassHierarchy> appView) {
-      if (rootConsequences.isEmpty() && rules.isEmpty()) {
+      if (rules.isEmpty()) {
         return ApplicableRulesEvaluator.empty();
       }
       return new ApplicableRulesEvaluatorImpl<>(
-          rootConsequences,
-          new ArrayList<>(rules),
+          rules.rootConsequences,
+          rules.conditionalRules,
           (rule, enqueuer) -> {
             // When evaluating the initial rules, if a satisfied rule has a field precondition,
             // mark it to maintain its original field witness.

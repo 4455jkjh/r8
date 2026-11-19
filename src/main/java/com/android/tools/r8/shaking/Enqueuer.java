@@ -3927,7 +3927,8 @@ public class Enqueuer {
     assert applicableRules == ApplicableRulesEvaluator.empty();
     if (mode.isInitialTreeShaking()) {
       applicableRules =
-          KeepAnnotationMatcher.computeInitialRules(appView, keepDeclarations, executorService);
+          KeepAnnotationMatcher.computeInitialRules(
+              appView, keepDeclarations, executorService, subtypingInfo);
       // Amend library methods with covariant return types.
       timing.begin("Model library");
       modelLibraryMethodsWithCovariantReturnTypes(appView);
