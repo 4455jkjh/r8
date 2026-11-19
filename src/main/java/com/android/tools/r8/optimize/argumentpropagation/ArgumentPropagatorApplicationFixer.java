@@ -13,6 +13,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.EnclosingMethodAttribute;
 import com.android.tools.r8.graph.GenericSignature.FieldTypeSignature;
 import com.android.tools.r8.graph.GenericSignature.MethodTypeSignature;
 import com.android.tools.r8.graph.MethodCollection;
@@ -62,7 +63,15 @@ public class ArgumentPropagatorApplicationFixer extends TreeFixerBase {
 
     timing.begin("Fixup application");
     ThreadUtils.processItems(
-        affectedClasses, this::fixupClass, appView.options().getThreadingModule(), executorService);
+        appView.appInfo().classes(),
+        clazz -> {
+          if (affectedClasses.contains(clazz)) {
+            fixupClass(clazz);
+          }
+          fixupEnclosingMethodAttribute(clazz);
+        },
+        appView.options().getThreadingModule(),
+        executorService);
     timing.end();
 
     // Fixup optimization info.
@@ -77,6 +86,17 @@ public class ArgumentPropagatorApplicationFixer extends TreeFixerBase {
     fixupFields(clazz);
     fixupMethods(clazz);
     fixupRecordComponents(clazz);
+  }
+
+  private void fixupEnclosingMethodAttribute(DexProgramClass clazz) {
+    EnclosingMethodAttribute enclosingMethodAttribute = clazz.getEnclosingMethodAttribute();
+    if (enclosingMethodAttribute != null && enclosingMethodAttribute.hasEnclosingMethod()) {
+      DexMethod enclosingMethod = enclosingMethodAttribute.getEnclosingMethod();
+      DexMethod newEnclosingMethod = graphLens.getNextMethodSignature(enclosingMethod);
+      if (newEnclosingMethod.isNotIdenticalTo(enclosingMethod)) {
+        clazz.setEnclosingMethodAttribute(new EnclosingMethodAttribute(newEnclosingMethod));
+      }
+    }
   }
 
   private void fixupFields(DexProgramClass clazz) {
