@@ -14,7 +14,9 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
+import com.google.common.collect.Comparators;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -43,7 +45,28 @@ public class DirectMappedDexApplication extends DexApplication {
   private final IdentityHashMap<DexType, DexLibraryClass> libraryClassesLookup;
 
   // Collections of different types for iteration.
-  private final ImmutableList<DexProgramClass> programClasses;
+  //
+  // Program classes are kept sorted by DexType once the initial TreePruner has run, so that
+  // classesWithDeterministicOrder() (called many times per compilation) is O(1) instead of copying
+  // and sorting all program classes on every call.
+  //
+  // Comparing classes (by DexType) is relatively expensive, and there are tens of thousands of
+  // program classes, so this design avoids full sorts and full order checks where possible:
+  // * Classes are not sorted when read. Doing so would sort many classes that the initial
+  //   TreePruner then removes, and would change the order in which the Enqueuer visits classes.
+  //   TreePruner instead removes dead classes first and then sorts only the live ones.
+  // * After that, Builder maintains sorted order incrementally: added classes are sorted on their
+  //   own and merged in (see commitPendingProgramClasses()). Re-checking and re-sorting the whole
+  //   list in build() was measured to cost a large part of what keeping the list sorted saves.
+  private volatile ImmutableList<DexProgramClass> programClasses;
+  private volatile boolean programClassesSorted;
+  // Lazily populated only if classesWithDeterministicOrder() is called before programClasses is
+  // sorted (e.g., in D8 or testing-only checks).
+  private volatile ImmutableList<DexProgramClass> cachedClassesWithDeterministicOrder;
+  // Tracks whether deterministic ordering was already computed on an ancestor application (via
+  // programClassesSorted or classesWithDeterministicOrder()), so R8 can assert that sorting does
+  // not happen prior to initial tree pruning.
+  private final boolean ancestorComputedDeterministicOrder;
   private final ImmutableCollection<DexClasspathClass> classpathClasses;
 
   private DirectMappedDexApplication(
@@ -52,15 +75,20 @@ public class DirectMappedDexApplication extends DexApplication {
       IdentityHashMap<DexType, ProgramOrClasspathClass> programOrClasspathClasses,
       ImmutableMap<DexType, DexLibraryClass> libraryClasses,
       ImmutableList<DexProgramClass> programClasses,
+      boolean programClassesSorted,
+      boolean ancestorComputedDeterministicOrder,
       ImmutableCollection<DexClasspathClass> classpathClasses,
       ImmutableList<DataResourceProvider> dataResourceProviders,
       List<KeepDeclaration> keepDeclarations,
       InternalOptions options) {
     super(proguardMap, flags, dataResourceProviders, options);
+    assert !programClassesSorted || Comparators.isInOrder(programClasses, CLASS_COMPARATOR);
     this.programOrClasspathClasses = programOrClasspathClasses;
     this.libraryClasses = libraryClasses;
     this.libraryClassesLookup = new IdentityHashMap<>(libraryClasses);
     this.programClasses = programClasses;
+    this.programClassesSorted = programClassesSorted;
+    this.ancestorComputedDeterministicOrder = ancestorComputedDeterministicOrder;
     this.classpathClasses = classpathClasses;
     this.keepDeclarations = keepDeclarations;
   }
@@ -76,6 +104,42 @@ public class DirectMappedDexApplication extends DexApplication {
   @Override
   List<DexProgramClass> programClasses() {
     return programClasses;
+  }
+
+  public boolean isProgramClassesSorted() {
+    return programClassesSorted;
+  }
+
+  public boolean hasComputedDeterministicOrder() {
+    return programClassesSorted
+        || cachedClassesWithDeterministicOrder != null
+        || ancestorComputedDeterministicOrder;
+  }
+
+  // Called single-threaded by TreePruner when no program classes were removed, keeping this
+  // DirectMappedDexApplication instance identical for AppView.pruneItems when prunedItems is empty.
+  public void setSortedProgramClasses(List<DexProgramClass> sortedProgramClasses) {
+    assert !programClassesSorted;
+    assert sortedProgramClasses.size() == programClasses.size();
+    assert SetUtils.newIdentityHashSet(sortedProgramClasses)
+        .equals(SetUtils.newIdentityHashSet(programClasses));
+    assert Comparators.isInOrder(sortedProgramClasses, CLASS_COMPARATOR);
+    this.programClasses = ImmutableList.copyOf(sortedProgramClasses);
+    this.programClassesSorted = true;
+    this.cachedClassesWithDeterministicOrder = null;
+  }
+
+  @Override
+  public Collection<DexProgramClass> classesWithDeterministicOrder() {
+    if (programClassesSorted) {
+      return programClasses;
+    }
+    ImmutableList<DexProgramClass> sorted = cachedClassesWithDeterministicOrder;
+    if (sorted == null) {
+      sorted = ImmutableList.sortedCopyOf(CLASS_COMPARATOR, programClasses);
+      cachedClassesWithDeterministicOrder = sorted;
+    }
+    return sorted;
   }
 
   @Override
@@ -228,6 +292,7 @@ public class DirectMappedDexApplication extends DexApplication {
   public static class Builder extends DexApplication.Builder<DirectMappedDexApplication, Builder> {
 
     private final DirectMappedDexApplication previousApplication;
+    private boolean programClassesSorted;
     private ImmutableCollection<DexClasspathClass> classpathClasses;
     private Map<DexType, DexLibraryClass> libraryClasses;
     private List<KeepDeclaration> keepDeclarations = Collections.emptyList();
@@ -239,6 +304,7 @@ public class DirectMappedDexApplication extends DexApplication {
     Builder(LazyLoadedDexApplication application, AllClasses allClasses) {
       super(application, ImmutableList.of());
       previousApplication = null;
+      programClassesSorted = false;
       classpathClasses = ImmutableList.copyOf(allClasses.getClasspathClasses());
       libraryClasses = allClasses.getLibraryClasses();
       replaceProgramClasses(allClasses.getProgramClasses());
@@ -247,6 +313,7 @@ public class DirectMappedDexApplication extends DexApplication {
     private Builder(DirectMappedDexApplication application) {
       super(application, application.programClasses);
       previousApplication = application;
+      programClassesSorted = application.programClassesSorted;
       classpathClasses = application.classpathClasses;
       libraryClasses = application.libraryClasses;
       keepDeclarations = application.keepDeclarations;
@@ -255,6 +322,7 @@ public class DirectMappedDexApplication extends DexApplication {
     private Builder(InternalOptions options) {
       super(options);
       previousApplication = null;
+      programClassesSorted = false;
     }
 
     @Override
@@ -302,6 +370,77 @@ public class DirectMappedDexApplication extends DexApplication {
     @Override
     Builder self() {
       return this;
+    }
+
+    @Override
+    List<DexProgramClass> commitPendingProgramClasses() {
+      if (pendingProgramClasses.isEmpty()) {
+        return Collections.emptyList();
+      }
+      if (!programClassesSorted) {
+        return super.commitPendingProgramClasses();
+      }
+      List<DexProgramClass> committedProgramClasses = pendingProgramClasses;
+      pendingProgramClasses = new ArrayList<>();
+      classesWithDeterministicOrder(committedProgramClasses);
+      programClasses = mergeSortedProgramClasses(programClasses, committedProgramClasses);
+      return committedProgramClasses;
+    }
+
+    // Merges two sorted lists. Comparisons stop once either list is exhausted, so merging a few
+    // added classes into a large sorted list is usually much cheaper than re-sorting the result.
+    private static ImmutableList<DexProgramClass> mergeSortedProgramClasses(
+        List<DexProgramClass> first, List<DexProgramClass> second) {
+      int firstSize = first.size();
+      int secondSize = second.size();
+      ImmutableList.Builder<DexProgramClass> builder =
+          ImmutableList.builderWithExpectedSize(firstSize + secondSize);
+      int i = 0;
+      int j = 0;
+      while (i < firstSize && j < secondSize) {
+        DexProgramClass a = first.get(i);
+        DexProgramClass b = second.get(j);
+        if (a.getType().compareTo(b.getType()) <= 0) {
+          builder.add(a);
+          i++;
+        } else {
+          builder.add(b);
+          j++;
+        }
+      }
+      if (i < firstSize) {
+        builder.addAll(first.subList(i, firstSize));
+      } else if (j < secondSize) {
+        builder.addAll(second.subList(j, secondSize));
+      }
+      return builder.build();
+    }
+
+    @Override
+    public Builder removeProgramClasses(Predicate<DexProgramClass> predicate) {
+      if (programClassesSorted) {
+        commitPendingProgramClasses();
+      }
+      super.removeProgramClasses(predicate);
+      assert !programClassesSorted || Comparators.isInOrder(programClasses, CLASS_COMPARATOR);
+      return this;
+    }
+
+    @Override
+    public Builder replaceProgramClasses(Collection<DexProgramClass> newProgramClasses) {
+      assert newProgramClasses != null;
+      return super.replaceProgramClasses(
+          programClassesSorted
+              ? ImmutableList.sortedCopyOf(CLASS_COMPARATOR, newProgramClasses)
+              : newProgramClasses);
+    }
+
+    public Builder replaceProgramClassesWithDeterministicOrder(
+        Collection<DexProgramClass> newProgramClasses) {
+      assert newProgramClasses != null;
+      assert Comparators.isInOrder(newProgramClasses, CLASS_COMPARATOR);
+      programClassesSorted = true;
+      return super.replaceProgramClasses(newProgramClasses);
     }
 
     @Override
@@ -383,6 +522,8 @@ public class DirectMappedDexApplication extends DexApplication {
             buildProgramAndClasspathClasses(),
             getLibraryClassesAsImmutableMap(),
             programClasses,
+            programClassesSorted,
+            previousApplication != null && previousApplication.hasComputedDeterministicOrder(),
             classpathClasses,
             ImmutableList.copyOf(dataResourceProviders),
             keepDeclarations,

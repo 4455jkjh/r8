@@ -19,6 +19,9 @@ import java.util.function.Predicate;
 
 public abstract class DexApplication implements DexDefinitionSupplier {
 
+  static final Comparator<ClassDefinition> CLASS_COMPARATOR =
+      Comparator.comparing(ClassDefinition::getType);
+
   public final ImmutableList<DataResourceProvider> dataResourceProviders;
 
   private final ClassNameMapper proguardMap;
@@ -88,11 +91,7 @@ public abstract class DexApplication implements DexDefinitionSupplier {
   }
 
   public Collection<DexProgramClass> classesWithDeterministicOrder() {
-    Comparator<ClassDefinition> comparator = Comparator.comparing(ClassDefinition::getType);
-    if (options.testing.reverseClassSortingForDeterminism) {
-      comparator = comparator.reversed();
-    }
-    return classesWithDeterministicOrder(new ArrayList<>(programClasses()), comparator);
+    return classesWithDeterministicOrder(new ArrayList<>(programClasses()));
   }
 
   public static <T extends ClassDefinition> List<T> classesWithDeterministicOrder(
@@ -102,13 +101,7 @@ public abstract class DexApplication implements DexDefinitionSupplier {
 
   public static <T extends ClassDefinition> List<T> classesWithDeterministicOrder(List<T> classes) {
     // To keep the order deterministic, we sort the classes by their type, which is a unique key.
-    classes.sort(Comparator.comparing(ClassDefinition::getType));
-    return classes;
-  }
-
-  private static Collection<DexProgramClass> classesWithDeterministicOrder(
-      List<DexProgramClass> classes, Comparator<ClassDefinition> comparator) {
-    classes.sort(comparator);
+    classes.sort(CLASS_COMPARATOR);
     return classes;
   }
 
@@ -144,7 +137,7 @@ public abstract class DexApplication implements DexDefinitionSupplier {
   public abstract static class Builder<S extends DexApplication, T extends Builder<S, T>> {
 
     ImmutableList<DexProgramClass> programClasses;
-    private List<DexProgramClass> pendingProgramClasses = new ArrayList<>();
+    List<DexProgramClass> pendingProgramClasses = new ArrayList<>();
     boolean hasReplacedOrRemovedProgramClasses = false;
 
     final List<DataResourceProvider> dataResourceProviders = new ArrayList<>();
@@ -209,7 +202,7 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       return committedProgramClasses;
     }
 
-    public synchronized T removeProgramClasses(Predicate<DexProgramClass> predicate) {
+    public T removeProgramClasses(Predicate<DexProgramClass> predicate) {
       ImmutableList.Builder<DexProgramClass> newProgramClasses = ImmutableList.builder();
       for (DexProgramClass clazz : programClasses) {
         if (!predicate.test(clazz)) {
@@ -227,7 +220,7 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       return self();
     }
 
-    public synchronized T replaceProgramClasses(Collection<DexProgramClass> newProgramClasses) {
+    public T replaceProgramClasses(Collection<DexProgramClass> newProgramClasses) {
       assert newProgramClasses != null;
       this.programClasses = ImmutableList.copyOf(newProgramClasses);
       this.pendingProgramClasses.clear();

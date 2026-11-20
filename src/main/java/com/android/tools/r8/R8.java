@@ -88,6 +88,7 @@ import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInliner;
 import com.android.tools.r8.optimize.virtualmethodhoisting.VirtualMethodHoister;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
+import com.android.tools.r8.profile.art.ArtProfileOptions;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
 import com.android.tools.r8.resourceshrinker.ResourceWriter;
@@ -454,6 +455,7 @@ public class R8 {
           appView.protoShrinker().enumLiteProtoShrinker.clearDeadEnumLiteMaps(prunedItemsBuilder);
         }
 
+        assert verifyProgramClassesUnsortedBeforeInitialTreePruner(appViewWithLiveness);
         TreePruner pruner = new EnqueuerTreePruner(appViewWithLiveness);
         pruner.run(executorService, timing, prunedItemsBuilder);
         appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
@@ -470,6 +472,7 @@ public class R8 {
       } else {
         // Also run tree pruner with -dontshrink to eliminate synthetic classes/fields/methods that
         // become unreachable as a result of branch pruning that happen prior to tracing.
+        assert verifyProgramClassesUnsortedBeforeInitialTreePruner(appViewWithLiveness);
         TreePruner pruner = new EnqueuerTreePruner(appViewWithLiveness);
         pruner.run(executorService, timing, PrunedItems.builder());
         appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
@@ -1027,6 +1030,21 @@ public class R8 {
       ExceptionUtils.withConsumeResourceHandler(
           options.reporter, options.configurationConsumer, builder.toString());
     }
+  }
+
+  private static boolean verifyProgramClassesUnsortedBeforeInitialTreePruner(
+      AppView<AppInfoWithLiveness> appView) {
+    // Program classes are intentionally left unsorted until initial TreePruner discards unused
+    // classes; sorting the full unpruned list upfront wastes time on dead classes and perturbs
+    // Enqueuer traversal order. Testing-only ART profile checks may lazily compute deterministic
+    // order earlier, but programClasses itself must never be eagerly sorted before pruning.
+    DirectMappedDexApplication app = appView.app().asDirect();
+    ArtProfileOptions artProfileOptions = appView.options().getArtProfileOptions();
+    assert !app.isProgramClassesSorted();
+    assert !app.hasComputedDeterministicOrder()
+        || artProfileOptions.isCompletenessCheckForTestingEnabled()
+        || artProfileOptions.isNopCheckForTestingEnabled();
+    return true;
   }
 
   private static boolean allReferencesAssignedApiLevel(

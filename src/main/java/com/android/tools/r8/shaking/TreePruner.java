@@ -9,6 +9,7 @@ import static com.google.common.base.Predicates.alwaysFalse;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DefaultInstanceInitializerCode;
 import com.android.tools.r8.graph.DexAnnotation;
+import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMember;
@@ -85,6 +86,7 @@ public abstract class TreePruner {
     PrunedItems prunedItems = prunedItemsBuilder.setPrunedApp(newApplication).build();
     fixupOptimizationInfo(newApplication, executorService, prunedItems.getRemovedClasses());
     appView.pruneItems(prunedItems, executorService, timing);
+    assert appView.appInfo().app().asDirect().isProgramClassesSorted();
     appView.notifyOptimizationFinished();
     timing.end();
   }
@@ -93,35 +95,21 @@ public abstract class TreePruner {
       DirectMappedDexApplication application,
       PrunedItems.Builder prunedItemsBuilder,
       Timing timing) {
-    Collection<DexProgramClass> classes = application.classesWithDeterministicOrder();
-    List<DexProgramClass> newClasses = getNewProgramClasses(classes, prunedItemsBuilder);
-    return newClasses.size() < classes.size()
-        ? application.builder().replaceProgramClasses(newClasses).build(timing)
-        : application;
-  }
-
-  private List<DexProgramClass> getNewProgramClasses(
-      Collection<DexProgramClass> classes, PrunedItems.Builder prunedItemsBuilder) {
-    InternalOptions options = appView.options();
+    // Filter dead classes before sorting when programClasses is not yet sorted. Initial tree
+    // shaking typically discards the majority of input classes, so sorting only the surviving
+    // live classes avoids paying to sort dead classes while still keeping the live-class pruning
+    // loop (e.g., claimNestOwnership) deterministic and leaving programClasses sorted for all
+    // subsequent passes.
+    boolean alreadySorted = application.isProgramClassesSorted();
+    Collection<DexProgramClass> classes =
+        alreadySorted ? application.classesWithDeterministicOrder() : application.classes();
     List<DexProgramClass> newClasses = new ArrayList<>();
     for (DexProgramClass clazz : classes) {
       if (isLiveProgramClass(clazz)) {
         newClasses.add(clazz);
-        // The class is used and must be kept. Remove the unused fields and methods from the class.
-        unusedItemsPrinter.visiting(clazz);
-        if (options.isShrinking()) {
-          fixupAccessFlags(clazz);
-          pruneFields(clazz, prunedItemsBuilder);
-          pruneMethods(clazz, prunedItemsBuilder);
-          pruneAttributes(clazz);
-          pruneUnusedInterfaces(clazz);
-        } else {
-          // Only attempt to remove synthetic methods inserted by desugaring.
-          pruneMethods(clazz, prunedItemsBuilder);
-        }
-        unusedItemsPrinter.visited();
       } else {
-        // The class is completely unused and we can remove it.
+        // The class is completely unused and we can remove it. UnusedItemsPrinter sorts entries by
+        // DexType in finished(), so dead classes need not be visited in sorted order.
         prunedItemsBuilder.addRemovedClass(clazz.type);
         if (clazz.hasSourceFile()) {
           appView.addPrunedClassSourceFile(clazz.type, clazz.getSourceFile().toString());
@@ -131,8 +119,41 @@ public abstract class TreePruner {
         }
       }
     }
+    if (!alreadySorted) {
+      DexApplication.classesWithDeterministicOrder(newClasses);
+    }
+    pruneLiveProgramClasses(newClasses, prunedItemsBuilder);
     unusedItemsPrinter.finished();
-    return newClasses;
+    if (newClasses.size() < classes.size()) {
+      return application
+          .builder()
+          .replaceProgramClassesWithDeterministicOrder(newClasses)
+          .build(timing);
+    }
+    if (!alreadySorted) {
+      application.setSortedProgramClasses(newClasses);
+    }
+    return application;
+  }
+
+  private void pruneLiveProgramClasses(
+      List<DexProgramClass> liveClasses, PrunedItems.Builder prunedItemsBuilder) {
+    InternalOptions options = appView.options();
+    for (DexProgramClass clazz : liveClasses) {
+      // The class is used and must be kept. Remove the unused fields and methods from the class.
+      unusedItemsPrinter.visiting(clazz);
+      if (options.isShrinking()) {
+        fixupAccessFlags(clazz);
+        pruneFields(clazz, prunedItemsBuilder);
+        pruneMethods(clazz, prunedItemsBuilder);
+        pruneAttributes(clazz);
+        pruneUnusedInterfaces(clazz);
+      } else {
+        // Only attempt to remove synthetic methods inserted by desugaring.
+        pruneMethods(clazz, prunedItemsBuilder);
+      }
+      unusedItemsPrinter.visited();
+    }
   }
 
   private void fixupAccessFlags(DexProgramClass clazz) {

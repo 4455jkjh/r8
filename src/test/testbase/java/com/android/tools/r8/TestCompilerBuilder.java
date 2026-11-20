@@ -76,6 +76,7 @@ public abstract class TestCompilerBuilder<
       DEFAULT_OPTIONS.andThen(
           options -> {
             options.enableStringConcatInstruction = true;
+            options.getArtProfileOptions().setEnableCompletenessCheckForTesting(true);
           });
 
   public static final Consumer<InternalOptions> DEFAULT_D8_IN_R8_PARTIAL_OPTIONS =
@@ -87,6 +88,7 @@ public abstract class TestCompilerBuilder<
   public static final Consumer<InternalOptions> DEFAULT_R8_OPTIONS =
       DEFAULT_OPTIONS.andThen(
           options -> {
+            options.getArtProfileOptions().setEnableCompletenessCheckForTesting(true);
             options.testing.allowUnusedDontWarnRules = false;
             options.testing.allowUnnecessaryDontWarnWildcards = false;
             options.testing.enableRepackagingByDefaultForCf = true;
@@ -427,15 +429,15 @@ public abstract class TestCompilerBuilder<
           };
     }
 
-    if (isD8TestBuilder() || isR8TestBuilder()) {
-      addOptionsModification(
-          o -> o.getArtProfileOptions().setEnableCompletenessCheckForTesting(!isBenchmarkRunner));
-    } else if (isR8PartialTestBuilder()) {
-      asR8PartialTestBuilder()
-          .addGlobalOptionsModification(
-              o -> {
-                o.getArtProfileOptions().setEnableCompletenessCheckForTesting(!isBenchmarkRunner);
-              });
+    if (isBenchmarkRunner) {
+      if (isD8TestBuilder() || isR8TestBuilder()) {
+        addOptionsModification(
+            o -> o.getArtProfileOptions().setEnableCompletenessCheckForTesting(false));
+      } else if (isR8PartialTestBuilder()) {
+        asR8PartialTestBuilder()
+            .addGlobalOptionsModification(
+                o -> o.getArtProfileOptions().setEnableCompletenessCheckForTesting(false));
+      }
     }
 
     builder.setOptimizeMultidexForLinearAlloc(optimizeMultidexForLinearAlloc);

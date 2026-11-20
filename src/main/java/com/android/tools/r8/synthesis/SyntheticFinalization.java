@@ -457,14 +457,9 @@ public class SyntheticFinalization {
       assert pruned.isEmpty();
     } else {
       if (!pruned.isEmpty()) {
-        List<DexProgramClass> newProgramClasses = new ArrayList<>();
-        for (DexProgramClass clazz : application.classes()) {
-          if (!pruned.contains(clazz)) {
-            newProgramClasses.add(clazz);
-          }
-        }
-        assert newProgramClasses.size() < application.classes().size();
-        application = application.builder().replaceProgramClasses(newProgramClasses).build(timing);
+        int previousClassCount = application.classes().size();
+        application = application.builder().removeProgramClasses(pruned::contains).build(timing);
+        assert application.classes().size() < previousClassCount;
       }
 
       // Assert that the non-representatives have been removed from the app.

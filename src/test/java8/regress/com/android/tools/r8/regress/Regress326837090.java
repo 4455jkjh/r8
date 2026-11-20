@@ -36,20 +36,22 @@ public class Regress326837090 extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    runTest(false);
-    runTest(true);
+    runTest(TestClassA.class, A.class, C.class, false);
+    runTest(TestClassA.class, C.class, A.class, false);
+    runTest(TestClassD.class, D.class, C.class, true);
+    runTest(TestClassD.class, C.class, D.class, true);
   }
 
-  private void runTest(boolean sortBackwards)
+  private void runTest(
+      Class<?> mainClass, Class<?> firstClass, Class<?> secondClass, boolean expectRenamed)
       throws IOException, ExecutionException, CompilationFailedException {
     testForR8(parameters.getBackend())
         .enableExperimentalKeepAnnotations()
-        .addInnerClasses(getClass())
-        .addKeepMainRule(TestClass.class)
+        .addProgramClasses(mainClass, Foo.class, firstClass, secondClass)
+        .addKeepMainRule(mainClass)
         .enableInliningAnnotations()
-        .addOptionsModification(o -> o.testing.reverseClassSortingForDeterminism = sortBackwards)
         .compile()
-        .run(parameters.getRuntime(), TestClass.class)
+        .run(parameters.getRuntime(), mainClass)
         .assertSuccessWithOutputLines("foo", "foo")
         .inspect(
             codeInspector -> {
@@ -61,13 +63,22 @@ public class Regress326837090 extends TestBase {
                               p.getOriginalMethodName().contains("makeCommand")
                                   && !p.isSynthetic());
               assertEquals(1, makeCommand.size());
-              assertEquals(makeCommand.get(0).isRenamed(), sortBackwards);
+              assertEquals(expectRenamed, makeCommand.get(0).isRenamed());
             });
   }
 
-  public static class TestClass {
+  public static class TestClassA {
     public static void main(String[] args) {
       new A().makeCommand().foo();
+      ArrayList<Foo> arrayList = new ArrayList<>();
+      arrayList.add(new C());
+      arrayList.get(0).makeCommand().foo();
+    }
+  }
+
+  public static class TestClassD {
+    public static void main(String[] args) {
+      new D().makeCommand().foo();
       ArrayList<Foo> arrayList = new ArrayList<>();
       arrayList.add(new C());
       arrayList.get(0).makeCommand().foo();
@@ -96,6 +107,14 @@ public class Regress326837090 extends TestBase {
     @Override
     @NeverInline
     C makeCommand() {
+      return this;
+    }
+  }
+
+  @KeepForApi
+  public static class D extends Foo<D> {
+    @Override
+    protected D makeCommand() {
       return this;
     }
   }

@@ -2451,7 +2451,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableEmbeddedKeepAnnotations =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
-    public boolean reverseClassSortingForDeterminism = false;
     public boolean roundtripThroughLir = false;
 
     public boolean canUseLir(AppView<?> appView) {
