@@ -55,6 +55,7 @@ def main():
                 'UsesReflectionToAccessField.kt',
                 'UsesReflectionToAccessMethod.kt',
                 'UsesReflectionToConstruct.kt',
+                'UsesReflectionToReadClassAnnotation.kt',
             )
             if filename not in files:
                 print('Skipping {filename}'.format(filename=filename))

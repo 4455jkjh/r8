@@ -415,6 +415,7 @@ public class KeepItemAnnotationGenerator {
     final ClassReference USES_REFLECTION_TO_CONSTRUCT;
     final ClassReference USES_REFLECTION_TO_ACCESS_METHOD;
     final ClassReference USES_REFLECTION_TO_ACCESS_FIELD;
+    final ClassReference USES_REFLECTION_TO_READ_CLASS_ANNOTATION;
     final ClassReference UNCONDITIONALLY_KEEP;
     final List<ClassReference> REPEATABLE_ANNOTATIONS;
 
@@ -509,12 +510,14 @@ public class KeepItemAnnotationGenerator {
       USES_REFLECTION_TO_CONSTRUCT = annoClass("UsesReflectionToConstruct");
       USES_REFLECTION_TO_ACCESS_METHOD = annoClass("UsesReflectionToAccessMethod");
       USES_REFLECTION_TO_ACCESS_FIELD = annoClass("UsesReflectionToAccessField");
+      USES_REFLECTION_TO_READ_CLASS_ANNOTATION = annoClass("UsesReflectionToReadClassAnnotation");
       UNCONDITIONALLY_KEEP = annoClass("UnconditionallyKeep");
       REPEATABLE_ANNOTATIONS =
           ImmutableList.of(
               USES_REFLECTION_TO_CONSTRUCT,
               USES_REFLECTION_TO_ACCESS_METHOD,
-              USES_REFLECTION_TO_ACCESS_FIELD);
+              USES_REFLECTION_TO_ACCESS_FIELD,
+              USES_REFLECTION_TO_READ_CLASS_ANNOTATION);
       KEEP_ITEM_KIND = annoClass("KeepItemKind");
       KIND_ONLY_CLASS = enumRef(KEEP_ITEM_KIND, "ONLY_CLASS");
       KIND_ONLY_MEMBERS = enumRef(KEEP_ITEM_KIND, "ONLY_MEMBERS");
@@ -651,7 +654,9 @@ public class KeepItemAnnotationGenerator {
 
     private void printCopyRight(int year, boolean forceR8Copyright) {
       if (pkg.equals(ANDROIDX_ANNO_PKG) && !forceR8Copyright) {
-        println(getHeaderString(2025, KeepItemAnnotationGenerator.class.getSimpleName()));
+        println(
+            getHeaderString(
+                Math.max(year, 2025), KeepItemAnnotationGenerator.class.getSimpleName()));
       } else {
         println(
             CodeGenerationBase.getHeaderString(
@@ -716,6 +721,12 @@ public class KeepItemAnnotationGenerator {
             || target == AnnotationTarget.CONSTRUCTOR;
       }
 
+      private static boolean isClassMethodCtor(AnnotationTarget target) {
+        return target == AnnotationTarget.CLASS
+            || target == AnnotationTarget.FUNCTION
+            || target == AnnotationTarget.CONSTRUCTOR;
+      }
+
       private static boolean isSupportedInJava(AnnotationTarget target) {
         return isClassFieldMethodCtor(target) || target == ANNOTATION_CLASS;
       }
@@ -741,6 +752,10 @@ public class KeepItemAnnotationGenerator {
 
     private void printOpenAnnotationClassTargetingAnnotations(ClassReference clazz) {
       printOpenAnnotationClass(clazz, target -> target == AnnotationTarget.ANNOTATION_CLASS);
+    }
+
+    private void printOpenAnnotationClassTargetingClassMethodCtor(ClassReference clazz) {
+      printOpenAnnotationClass(clazz, AnnotationTarget::isClassMethodCtor);
     }
 
     private void printOpenAnnotationClassTargetingClassFieldMethodCtor(ClassReference clazz) {
@@ -1923,6 +1938,20 @@ public class KeepItemAnnotationGenerator {
       printCloseAnnotationClass();
     }
 
+    private Group createAndroidXAnnotationSelection(
+        Consumer<GroupMember> annotationConstantConsumer,
+        Consumer<GroupMember> annotationNameConsumer) {
+      GroupMember annotationConstant =
+          new GroupMember("annotationConstant").defaultUnspecifiedClass();
+      annotationConstantConsumer.accept(annotationConstant);
+      GroupMember annotationName = new GroupMember("annotationName").defaultEmptyString();
+      annotationNameConsumer.accept(annotationName);
+      return new Group("annotation-selection")
+          .forAndroidX()
+          .addMember(annotationConstant)
+          .addMember(annotationName);
+    }
+
     private Group createAndroidXClassSelection(
         Consumer<GroupMember> classConstantConsumer, Consumer<GroupMember> classNameConsumer) {
       GroupMember classConstant = new GroupMember("classConstant").defaultUnspecifiedClass();
@@ -2145,6 +2174,64 @@ public class KeepItemAnnotationGenerator {
       printCloseAnnotationClass();
     }
 
+    private void generateUsesReflectionToReadClassAnnotation() {
+      printCopyRight(2026);
+      printPackage();
+      printAnnotationImports(true);
+      if (generateKotlin()) {
+        println("import kotlin.reflect.KClass");
+      }
+      DocPrinter.printer()
+          .setDocTitle(
+              "The annotated code uses reflection to inspect a runtime visible annotation on a"
+                  + " class/interface, or its subclasses / interface implementers.")
+          .addSection(
+              "This annotation indicates to optimizers or shrinkers that the specified runtime"
+                  + " annotation should be retained on matching classes that remain in the final"
+                  + " application build, if the annotated code is reachable. Matching classes may"
+                  + " still be shrunk, optimized, or renamed if not otherwise kept.")
+          .addSection(
+              "@see UsesReflectionToConstruct",
+              "@see UsesReflectionToAccessMethod",
+              "@see UsesReflectionToAccessField")
+          .printDoc(this::println);
+      printOpenAnnotationClassTargetingClassMethodCtor(USES_REFLECTION_TO_READ_CLASS_ANNOTATION);
+      println();
+      withIndent(
+          () -> {
+            createAndroidXAnnotationSelection(
+                    g ->
+                        g.setDocTitle("Annotation class read by reflection.")
+                            .addSection(
+                                "Either `annotationConstant` or [annotationName] must be"
+                                    + " specified."),
+                    g ->
+                        g.setDocTitle("Annotation class name read by reflection.")
+                            .addSection(
+                                "Either [annotationConstant] or `annotationName` must be"
+                                    + " specified."))
+                .generate(this);
+            println();
+            createAndroidXClassSelection(
+                    g ->
+                        g.setDocTitle(
+                                "Class (and its subclasses / interface implementers) on which the"
+                                    + " annotation is read by reflection.")
+                            .addSection(
+                                "If neither `classConstant` nor `className` is specified then the"
+                                    + " annotation is retained on all annotated classes."),
+                    g ->
+                        g.setDocTitle(
+                                "Class name (and its subclasses / interface implementers) on which"
+                                    + " the annotation is read by reflection.")
+                            .addSection(
+                                "If neither `classConstant` nor `className` is specified then the"
+                                    + " annotation is retained on all annotated classes."))
+                .generate(this);
+          });
+      printCloseAnnotationClass();
+    }
+
     private void generateUnconditionallyKeep() {
       printCopyRight(2025);
       printPackage();
@@ -2312,6 +2399,7 @@ public class KeepItemAnnotationGenerator {
             generateUsesReflectionToConstructConstants();
             generateUsesReflectionToAccessMethodConstants();
             generateUsesReflectionToAccessFieldConstants();
+            generateUsesReflectionToReadClassAnnotationConstants();
             generateUnconditionallyKeepConstants();
             // Common item fields.
             generateItemConstants();
@@ -2484,6 +2572,11 @@ public class KeepItemAnnotationGenerator {
       fn.accept(createAndroidXFieldTypeSelection());
     }
 
+    private void forEachUsesReflectionToReadClassAnnotationGroup(Consumer<Group> fn) {
+      fn.accept(createAndroidXAnnotationSelection(g -> {}, g -> {}));
+      fn.accept(createAndroidXClassSelection(g -> {}, g -> {}));
+    }
+
     private void generateUsesReflectionToConstructConstants() {
       println("public static final class UsesReflectionToConstruct {");
       withIndent(
@@ -2523,6 +2616,17 @@ public class KeepItemAnnotationGenerator {
           () -> {
             generateAnnotationConstants(USES_REFLECTION_TO_ACCESS_FIELD);
             forEachUsesReflectionToAccessFieldGroup(g -> g.generateConstants(this));
+          });
+      println("}");
+      println();
+    }
+
+    private void generateUsesReflectionToReadClassAnnotationConstants() {
+      println("public static final class UsesReflectionToReadClassAnnotation {");
+      withIndent(
+          () -> {
+            generateAnnotationConstants(USES_REFLECTION_TO_READ_CLASS_ANNOTATION);
+            forEachUsesReflectionToReadClassAnnotationGroup(g -> g.generateConstants(this));
           });
       println("}");
       println();
@@ -2964,6 +3068,11 @@ public class KeepItemAnnotationGenerator {
           ANDROIDX_ANNO_PKG,
           generator -> generator.USES_REFLECTION_TO_ACCESS_FIELD,
           (generator, clazz) -> generator.generateUsesReflectionToAccessField(),
+          write);
+      writeFile(
+          ANDROIDX_ANNO_PKG,
+          generator -> generator.USES_REFLECTION_TO_READ_CLASS_ANNOTATION,
+          (generator, clazz) -> generator.generateUsesReflectionToReadClassAnnotation(),
           write);
       writeFile(
           ANDROIDX_ANNO_PKG,

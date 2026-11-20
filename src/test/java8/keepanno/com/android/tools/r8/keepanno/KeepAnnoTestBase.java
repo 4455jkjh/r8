@@ -36,6 +36,15 @@ public abstract class KeepAnnoTestBase extends TestBase {
     return keepAnnoParams;
   }
 
+  public static List<KeepAnnoParameters> createParametersR8RulesOnly(
+      TestParametersCollection parametersCollection) {
+    List<KeepAnnoParameters> keepAnnoParams = new ArrayList<>();
+    for (TestParameters parameters : parametersCollection) {
+      keepAnnoParams.add(new KeepAnnoParameters(parameters, KeepAnnoConfig.R8_RULES));
+    }
+    return keepAnnoParams;
+  }
+
   private KeepAnnoTestBuilder testForKeepAnno(
       KeepAnnoParameters params, KeepAnnotationLibrary keepAnnotationLibrary) throws IOException {
     return KeepAnnoTestBuilder.forKeepAnnoTest(params, temp, keepAnnotationLibrary);

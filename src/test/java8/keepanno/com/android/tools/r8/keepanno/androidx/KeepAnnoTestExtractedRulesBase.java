@@ -167,6 +167,7 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
     private final String keepVariant;
     private final String conditionClass;
     private final String conditionMembers;
+    private final String consequentClassAnnotation;
     private final String consequentClass;
     private final boolean extendsConsequentClass;
     private final String consequentMembers;
@@ -175,6 +176,7 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
       this.keepVariant = builder.keepVariant;
       this.conditionClass = builder.conditionClass;
       this.conditionMembers = builder.conditionMembers;
+      this.consequentClassAnnotation = builder.consequentClassAnnotation;
       this.consequentClass = builder.consequentClass;
       this.extendsConsequentClass = builder.extendsConsequentClass;
       this.consequentMembers = builder.consequentMembers;
@@ -193,6 +195,7 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
               : "")
           + keepVariant
           + (r8 ? ",allowaccessmodification" : "")
+          + (consequentClassAnnotation != null ? " @" + consequentClassAnnotation : "")
           + " class "
           + (extendsConsequentClass ? "** extends " : "")
           + consequentClass
@@ -209,6 +212,7 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
       private String keepVariant;
       private String conditionClass;
       private String conditionMembers;
+      private String consequentClassAnnotation;
       private String consequentClass;
       private boolean extendsConsequentClass = false;
       private String consequentMembers;
@@ -235,6 +239,16 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
         return this;
       }
 
+      public Builder setConsequentClassAnnotation(Class<?> consequentClassAnnotation) {
+        this.consequentClassAnnotation = consequentClassAnnotation.getTypeName();
+        return this;
+      }
+
+      public Builder setConsequentClassAnnotation(String consequentClassAnnotation) {
+        this.consequentClassAnnotation = consequentClassAnnotation;
+        return this;
+      }
+
       public Builder setConsequentClass(Class<?> consequentClass) {
         this.consequentClass = consequentClass.getTypeName();
         this.extendsConsequentClass = false;
@@ -249,6 +263,7 @@ public abstract class KeepAnnoTestExtractedRulesBase extends KeepAnnoTestBase {
 
       public Builder setConsequentClass(String consequentClass) {
         this.consequentClass = consequentClass;
+        this.extendsConsequentClass = false;
         return this;
       }
 

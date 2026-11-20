@@ -24,6 +24,7 @@ import com.android.tools.r8.keepanno.ast.AnnotationConstants.UsedByReflection;
 import com.android.tools.r8.keepanno.ast.AnnotationConstants.UsesReflectionToAccessField;
 import com.android.tools.r8.keepanno.ast.AnnotationConstants.UsesReflectionToAccessMethod;
 import com.android.tools.r8.keepanno.ast.AnnotationConstants.UsesReflectionToConstruct;
+import com.android.tools.r8.keepanno.ast.AnnotationConstants.UsesReflectionToReadClassAnnotation;
 import com.android.tools.r8.keepanno.ast.KeepAnnotationPattern;
 import com.android.tools.r8.keepanno.ast.KeepBindingReference;
 import com.android.tools.r8.keepanno.ast.KeepBindings;
@@ -70,6 +71,7 @@ import com.android.tools.r8.keepanno.ast.ParsingContext.MethodParsingContext;
 import com.android.tools.r8.keepanno.ast.ParsingContext.PropertyParsingContext;
 import com.android.tools.r8.keepanno.utils.DescriptorUtils;
 import com.google.common.collect.ImmutableList;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,6 +112,7 @@ public class KeepEdgeReader implements Opcodes {
         || AnnotationConstants.UsesReflectionToConstruct.isDescriptor(descriptor)
         || AnnotationConstants.UsesReflectionToAccessMethod.isDescriptor(descriptor)
         || AnnotationConstants.UsesReflectionToAccessField.isDescriptor(descriptor)
+        || AnnotationConstants.UsesReflectionToReadClassAnnotation.isDescriptor(descriptor)
         || AnnotationConstants.UnconditionallyKeep.isDescriptor(descriptor)
         || AnnotationConstants.ForApi.isDescriptor(descriptor)
         || AnnotationConstants.UsedByReflection.isDescriptor(descriptor)
@@ -121,7 +124,9 @@ public class KeepEdgeReader implements Opcodes {
         || AnnotationConstants.UsesReflectionToAccessMethod.isKotlinRepeatableContainerDescriptor(
             descriptor)
         || AnnotationConstants.UsesReflectionToAccessField.isKotlinRepeatableContainerDescriptor(
-            descriptor)) {
+            descriptor)
+        || AnnotationConstants.UsesReflectionToReadClassAnnotation
+            .isKotlinRepeatableContainerDescriptor(descriptor)) {
       return true;
     }
     return false;
@@ -480,6 +485,29 @@ public class KeepEdgeReader implements Opcodes {
                     .build(),
             annotationVisitor);
       }
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation.isDescriptor(descriptor)) {
+        return new UsesReflectionToReadClassAnnotationVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                KeepClassItemPattern.builder()
+                    .setClassNamePattern(KeepQualifiedClassNamePattern.exact(className))
+                    .build(),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation
+          .isKotlinRepeatableContainerDescriptor(descriptor)) {
+        return new UsesReflectionToReadClassAnnotationContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                KeepClassItemPattern.builder()
+                    .setClassNamePattern(KeepQualifiedClassNamePattern.exact(className))
+                    .build(),
+            annotationVisitor);
+      }
       if (AnnotationConstants.UnconditionallyKeep.isDescriptor(descriptor)) {
         return new UnconditionallyKeepClassVisitor(
             parsingContext, parent::accept, setContext, className, annotationVisitor);
@@ -695,6 +723,25 @@ public class KeepEdgeReader implements Opcodes {
       if (AnnotationConstants.UsesReflectionToAccessField.isKotlinRepeatableContainerDescriptor(
           descriptor)) {
         return new UsesReflectionToAccessFieldContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMethodItemContext(className, methodName, methodDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation.isDescriptor(descriptor)) {
+        return new UsesReflectionToReadClassAnnotationVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMethodItemContext(className, methodName, methodDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation
+          .isKotlinRepeatableContainerDescriptor(descriptor)) {
+        return new UsesReflectionToReadClassAnnotationContainerVisitor(
             parsingContext,
             parent::accept,
             setContext,
@@ -933,6 +980,25 @@ public class KeepEdgeReader implements Opcodes {
       if (AnnotationConstants.UsesReflectionToAccessField.isKotlinRepeatableContainerDescriptor(
           descriptor)) {
         return new UsesReflectionToAccessFieldContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation.isDescriptor(descriptor)) {
+        return new UsesReflectionToReadClassAnnotationVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation
+          .isKotlinRepeatableContainerDescriptor(descriptor)) {
+        return new UsesReflectionToReadClassAnnotationContainerVisitor(
             parsingContext,
             parent::accept,
             setContext,
@@ -1812,6 +1878,10 @@ public class KeepEdgeReader implements Opcodes {
     private static final String UsesReflectionToXXXClassSelectionGroup = "class-selection";
     private static final String UsesReflectionToXXXClassConstant = "classConstant";
     private static final String UsesReflectionToXXXClassName = "className";
+    private static final String UsesReflectionToXXXAnnotationSelectionGroup =
+        "annotation-selection";
+    private static final String UsesReflectionToXXXAnnotationConstant = "annotationConstant";
+    private static final String UsesReflectionToXXXAnnotationName = "annotationName";
     // NOTE: includeSubclasses is currently not part of the annotation specification, however it
     // is still procesed if seen for testing until deciding on the final semantics for this.
     private static final String UsesReflectionToXXXIncludeSubclasses = "includeSubclasses";
@@ -1819,8 +1889,10 @@ public class KeepEdgeReader implements Opcodes {
     protected final AnnotationParsingContext parsingContext;
 
     protected KeepQualifiedClassNamePattern qualifiedName;
+    protected KeepQualifiedClassNamePattern annotationNamePattern;
     protected boolean includeSubclasses = true;
     private String classSelectionProperty;
+    private String annotationSelectionProperty;
 
     UsesReflectionToXXXVisitor(
         AnnotationParsingContext parsingContext, AnnotationVisitor annotationVisitor) {
@@ -1832,12 +1904,23 @@ public class KeepEdgeReader implements Opcodes {
           UsesReflectionToAccessMethod.classSelectionGroup);
       assert UsesReflectionToXXXClassSelectionGroup.equals(
           UsesReflectionToAccessField.classSelectionGroup);
+      assert UsesReflectionToXXXClassSelectionGroup.equals(
+          UsesReflectionToReadClassAnnotation.classSelectionGroup);
       assert UsesReflectionToXXXClassConstant.equals(UsesReflectionToConstruct.classConstant);
       assert UsesReflectionToXXXClassConstant.equals(UsesReflectionToAccessMethod.classConstant);
       assert UsesReflectionToXXXClassConstant.equals(UsesReflectionToAccessField.classConstant);
+      assert UsesReflectionToXXXClassConstant.equals(
+          UsesReflectionToReadClassAnnotation.classConstant);
       assert UsesReflectionToXXXClassName.equals(UsesReflectionToConstruct.className);
       assert UsesReflectionToXXXClassName.equals(UsesReflectionToAccessMethod.className);
       assert UsesReflectionToXXXClassName.equals(UsesReflectionToAccessField.className);
+      assert UsesReflectionToXXXClassName.equals(UsesReflectionToReadClassAnnotation.className);
+      assert UsesReflectionToXXXAnnotationSelectionGroup.equals(
+          UsesReflectionToReadClassAnnotation.annotationSelectionGroup);
+      assert UsesReflectionToXXXAnnotationConstant.equals(
+          UsesReflectionToReadClassAnnotation.annotationConstant);
+      assert UsesReflectionToXXXAnnotationName.equals(
+          UsesReflectionToReadClassAnnotation.annotationName);
     }
 
     protected boolean maybeVisitQualifiedName(String name, Object value) {
@@ -1878,6 +1961,64 @@ public class KeepEdgeReader implements Opcodes {
         return true;
       }
       return false;
+    }
+
+    protected boolean maybeVisitAnnotation(String name, Object value) {
+      if (name.equals(UsesReflectionToXXXAnnotationConstant) && value instanceof Type) {
+        String descriptor = ((Type) value).getDescriptor();
+        if (!UNSPECIFIED_DESCRIPTOR.equals(descriptor)) {
+          if (annotationSelectionProperty != null) {
+            throw parsingContext
+                .group(UsesReflectionToXXXAnnotationSelectionGroup)
+                .error(
+                    "Mutually exclusive properties: '"
+                        + annotationSelectionProperty
+                        + "' and '"
+                        + name
+                        + "' specified");
+          }
+          annotationSelectionProperty = name;
+          annotationNamePattern = KeepQualifiedClassNamePattern.exactFromDescriptor(descriptor);
+        }
+        return true;
+      }
+      if (name.equals(UsesReflectionToXXXAnnotationName) && value instanceof String) {
+        String annotationName = (String) value;
+        if (!annotationName.isEmpty()) {
+          if (annotationSelectionProperty != null) {
+            throw parsingContext
+                .group(UsesReflectionToXXXAnnotationSelectionGroup)
+                .error(
+                    "Mutually exclusive properties: '"
+                        + annotationSelectionProperty
+                        + "' and '"
+                        + name
+                        + "' specified");
+          }
+          annotationSelectionProperty = name;
+          annotationNamePattern = KeepQualifiedClassNamePattern.exact(annotationName);
+        }
+        return true;
+      }
+      return false;
+    }
+
+    protected boolean isAnnotationSelectionByName() {
+      return UsesReflectionToXXXAnnotationName.equals(annotationSelectionProperty);
+    }
+
+    protected KeepQualifiedClassNamePattern getAnnotationNamePattern() {
+      if (annotationNamePattern == null) {
+        throw parsingContext
+            .group(UsesReflectionToXXXAnnotationSelectionGroup)
+            .error(
+                "Expected one of '"
+                    + UsesReflectionToXXXAnnotationConstant
+                    + "' or '"
+                    + UsesReflectionToXXXAnnotationName
+                    + "' to be specified");
+      }
+      return annotationNamePattern;
     }
 
     protected boolean maybeVisitIncludeSubclasses(String name, Object value) {
@@ -2367,6 +2508,195 @@ public class KeepEdgeReader implements Opcodes {
               .setBindings(bindingsHelper.build())
               .setPreconditions(preconditions.build())
               .setConsequences(consequencesBuilder.build())
+              .build());
+
+      super.visitEnd();
+    }
+  }
+
+  private static class UsesReflectionToReadClassAnnotationContainerVisitor
+      extends AnnotationVisitorBase {
+
+    private final AnnotationParsingContext parsingContext;
+    private final Parent<KeepEdge> parent;
+    private final Consumer<KeepEdgeMetaInfo.Builder> addContext;
+    private final Function<UserBindingsHelper, KeepItemPattern> contextBuilder;
+
+    UsesReflectionToReadClassAnnotationContainerVisitor(
+        AnnotationParsingContext parsingContext,
+        Parent<KeepEdge> parent,
+        Consumer<KeepEdgeMetaInfo.Builder> addContext,
+        Function<UserBindingsHelper, KeepItemPattern> contextBuilder,
+        AnnotationVisitor annotationVisitor) {
+      super(parsingContext, annotationVisitor);
+      this.parsingContext = parsingContext;
+      this.parent = parent;
+      this.addContext = addContext;
+      this.contextBuilder = contextBuilder;
+    }
+
+    @Override
+    public AnnotationVisitor visitArray(String name) {
+      AnnotationVisitor annotationVisitor = super.visitArray(name);
+      if (name.equals("value")) {
+        return new UsesReflectionToReadClassAnnotationContainerElementVisitor(
+            parsingContext, parent, addContext, contextBuilder, annotationVisitor);
+      }
+      return annotationVisitor;
+    }
+  }
+
+  private static class UsesReflectionToReadClassAnnotationContainerElementVisitor
+      extends AnnotationVisitorBase {
+
+    private final AnnotationParsingContext parsingContext;
+    private final Parent<KeepEdge> parent;
+    private final Consumer<KeepEdgeMetaInfo.Builder> addContext;
+    private final Function<UserBindingsHelper, KeepItemPattern> contextBuilder;
+
+    UsesReflectionToReadClassAnnotationContainerElementVisitor(
+        AnnotationParsingContext parsingContext,
+        Parent<KeepEdge> parent,
+        Consumer<KeepEdgeMetaInfo.Builder> addContext,
+        Function<UserBindingsHelper, KeepItemPattern> contextBuilder,
+        AnnotationVisitor annotationVisitor) {
+      super(parsingContext, annotationVisitor);
+      this.parsingContext = parsingContext;
+      this.parent = parent;
+      this.addContext = addContext;
+      this.contextBuilder = contextBuilder;
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String name, String descriptor) {
+      AnnotationVisitor annotationVisitor = super.visitAnnotation(name, descriptor);
+      assert name == null;
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation.isDescriptor(descriptor)) {
+        return new UsesReflectionToReadClassAnnotationVisitor(
+            parsingContext, parent, addContext, contextBuilder, annotationVisitor);
+      }
+      return annotationVisitor;
+    }
+  }
+
+  private static class UsesReflectionToReadClassAnnotationVisitor
+      extends UsesReflectionToXXXVisitor {
+
+    private final Parent<KeepEdge> parent;
+    private final KeepEdgeMetaInfo.Builder metaInfoBuilder = KeepEdgeMetaInfo.builder();
+    private final Function<UserBindingsHelper, KeepItemPattern> contextBuilder;
+
+    UsesReflectionToReadClassAnnotationVisitor(
+        AnnotationParsingContext parsingContext,
+        Parent<KeepEdge> parent,
+        Consumer<KeepEdgeMetaInfo.Builder> addContext,
+        Function<UserBindingsHelper, KeepItemPattern> contextBuilder,
+        AnnotationVisitor annotationVisitor) {
+      super(parsingContext, annotationVisitor);
+      this.parent = parent;
+      this.contextBuilder = contextBuilder;
+      addContext.accept(metaInfoBuilder);
+    }
+
+    @Override
+    public void visit(String name, Object value) {
+      super.visit(name, value);
+      if (maybeVisitAnnotation(name, value)) {
+        return;
+      }
+      if (maybeVisitQualifiedName(name, value)) {
+        return;
+      }
+      if (maybeVisitIncludeSubclasses(name, value)) {
+        return;
+      }
+      unhandledValue(name, value);
+    }
+
+    @Override
+    public void visitEnd() {
+      KeepQualifiedClassNamePattern annotationPattern = getAnnotationNamePattern();
+      KeepEdgeMetaInfo metaInfo = metaInfoBuilder.build();
+
+      // Retain the runtime annotation on matching surviving classes without preventing
+      // shrinking, optimization, obfuscation, or access modification of those classes.
+      KeepClassItemPattern annotatedClassPattern =
+          qualifiedName == null
+              ? KeepClassItemPattern.builder()
+                  .setAnnotatedByPattern(OptionalPattern.of(annotationPattern))
+                  .build()
+              : KeepClassItemPattern.builder()
+                  .copyFrom(getKeepClassItemPattern())
+                  .setAnnotatedByPattern(OptionalPattern.of(annotationPattern))
+                  .build();
+      KeepConstraints retainAnnotationConstraints =
+          KeepConstraints.builder()
+              .add(
+                  KeepConstraint.annotation(
+                      KeepAnnotationPattern.builder()
+                          .setNamePattern(annotationPattern)
+                          .addRetentionPolicy(RetentionPolicy.RUNTIME)
+                          .build()))
+              .build();
+      UserBindingsHelper annotatedClassBindings = new UserBindingsHelper();
+      KeepBindingReference annotatedClassContext =
+          annotatedClassBindings.defineFreshItemBinding(
+              "CONTEXT", contextBuilder.apply(annotatedClassBindings));
+      KeepClassBindingReference annotatedClassClassBinding =
+          annotatedClassBindings.defineFreshClassBinding(annotatedClassPattern);
+      parent.accept(
+          KeepEdge.builder()
+              .setMetaInfo(metaInfo)
+              .setBindings(annotatedClassBindings.build())
+              .setPreconditions(
+                  KeepPreconditions.builder()
+                      .addCondition(
+                          KeepCondition.builder().setItemReference(annotatedClassContext).build())
+                      .build())
+              .setConsequences(
+                  KeepConsequences.builder()
+                      .addTarget(
+                          KeepTarget.builder()
+                              .setItemReference(annotatedClassClassBinding)
+                              .setConstraints(retainAnnotationConstraints)
+                              .build())
+                      .build())
+              .build());
+
+      // Keep the annotation class (@interface) itself alive so AnnotationRemover does not
+      // prune it as an unreferenced annotation type (preserving its name when annotationName is
+      // used, while allowing obfuscation when annotationConstant is used).
+      KeepConstraints.Builder annotationClassConstraintsBuilder =
+          KeepConstraints.builder().add(KeepConstraint.lookup());
+      if (isAnnotationSelectionByName()) {
+        annotationClassConstraintsBuilder.add(KeepConstraint.name());
+      }
+      UserBindingsHelper annotationClassBindings = new UserBindingsHelper();
+      KeepBindingReference annotationClassContext =
+          annotationClassBindings.defineFreshItemBinding(
+              "CONTEXT", contextBuilder.apply(annotationClassBindings));
+      KeepClassBindingReference annotationClassBinding =
+          annotationClassBindings.defineFreshClassBinding(
+              KeepClassItemPattern.builder()
+                  .setClassPattern(KeepClassPattern.fromName(annotationPattern))
+                  .build());
+      parent.accept(
+          KeepEdge.builder()
+              .setMetaInfo(metaInfo)
+              .setBindings(annotationClassBindings.build())
+              .setPreconditions(
+                  KeepPreconditions.builder()
+                      .addCondition(
+                          KeepCondition.builder().setItemReference(annotationClassContext).build())
+                      .build())
+              .setConsequences(
+                  KeepConsequences.builder()
+                      .addTarget(
+                          KeepTarget.builder()
+                              .setItemReference(annotationClassBinding)
+                              .setConstraints(annotationClassConstraintsBuilder.build())
+                              .build())
+                      .build())
               .build());
 
       super.visitEnd();
