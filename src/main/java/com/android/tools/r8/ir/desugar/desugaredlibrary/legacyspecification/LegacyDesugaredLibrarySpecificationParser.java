@@ -224,7 +224,7 @@ public class LegacyDesugaredLibrarySpecificationParser {
     for (JsonElement jsonFlagSet : jsonFlags) {
       JsonObject flag = jsonFlagSet.getAsJsonObject();
       UncheckedApiLevel api_level_below_or_equal =
-          new UncheckedApiLevel(required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt());
+          new UncheckedApiLevel(required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt(), 0);
       if (minApiLevel.isLessThanOrEqualTo(api_level_below_or_equal)) {
         parseFlags(flag, builder);
       }

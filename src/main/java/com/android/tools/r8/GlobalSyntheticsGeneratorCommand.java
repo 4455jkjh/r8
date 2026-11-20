@@ -37,8 +37,6 @@ public final class GlobalSyntheticsGeneratorCommand {
   private final GlobalSyntheticsConsumer globalsConsumer;
   private final Reporter reporter;
   private final int minMajorApiLevel;
-
-  @SuppressWarnings("UnusedVariable")
   private final int minMinorApiLevel;
 
   private final boolean classfileDesugaringOnly;

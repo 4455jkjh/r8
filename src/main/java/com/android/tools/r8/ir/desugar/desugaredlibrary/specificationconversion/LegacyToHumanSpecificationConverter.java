@@ -29,6 +29,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.legacyspecification.Mult
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
@@ -192,7 +193,10 @@ public class LegacyToHumanSpecificationConverter {
       Int2ObjectMap<LegacyRewritingFlags> libFlags, DexApplication app, Origin origin) {
     Map<ApiLevelRange, HumanRewritingFlags> map = new HashMap<>();
     libFlags.forEach(
-        (key, flags) -> map.put(new ApiLevelRange(key), convertRewritingFlags(flags, app, origin)));
+        (key, flags) ->
+            map.put(
+                new ApiLevelRange(new UncheckedApiLevel(key, 0)),
+                convertRewritingFlags(flags, app, origin)));
     return map;
   }
 

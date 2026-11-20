@@ -129,7 +129,7 @@ public class Marker {
       int minor = jsonObject.has(MIN_API_MINOR) ? jsonObject.get(MIN_API_MINOR).getAsInt() : 0;
       return new UncheckedApiLevel(major, minor);
     }
-    return new UncheckedApiLevel(jsonObject.get(MIN_API).getAsInt());
+    return new UncheckedApiLevel(jsonObject.get(MIN_API).getAsInt(), 0);
   }
 
   public Marker setMinApi(int major, int minor) {

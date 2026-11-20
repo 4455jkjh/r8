@@ -227,7 +227,6 @@ public class BackportedMethodListCommand {
     @Deprecated
     @SuppressWarnings("InlineMeSuggester")
     public Builder setMinApiLevel(int major) {
-      // TODO(b/356841164): Remove all uses of this.
       return setMinApiLevel(major, 0);
     }
 

@@ -546,7 +546,7 @@ public abstract class TestCompilerBuilder<
 
   @Deprecated
   public final T setMinApi(int minApiMajor) {
-    return setMinApi(new UncheckedApiLevel(minApiMajor));
+    return setMinApi(new UncheckedApiLevel(minApiMajor, 0));
   }
 
   public final T setMinApi(AndroidApiLevel minApiLevel) {

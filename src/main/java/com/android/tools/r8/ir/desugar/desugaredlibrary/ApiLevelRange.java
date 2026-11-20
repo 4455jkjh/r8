@@ -14,12 +14,6 @@ public class ApiLevelRange {
   private final UncheckedApiLevel apiLevelBelowOrEqual;
   private final UncheckedApiLevel apiLevelGreaterOrEqual;
 
-  @Deprecated
-  @SuppressWarnings("InlineMeSuggester")
-  public ApiLevelRange(int apiLevelBelowOrEqual) {
-    this(new UncheckedApiLevel(apiLevelBelowOrEqual), null);
-  }
-
   public ApiLevelRange(UncheckedApiLevel apiLevelBelowOrEqual) {
     this(apiLevelBelowOrEqual, null);
   }
