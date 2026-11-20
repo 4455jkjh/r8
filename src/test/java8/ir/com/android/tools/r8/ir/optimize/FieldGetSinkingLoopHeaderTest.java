@@ -27,12 +27,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class FieldGetSinkingLoopHeaderTest extends TestBase {
 
   private static final String[] EXPECTED_EDGE_CASE_LINES = {
-    "0:3", "0:3", "0:3", "2:0", "1:1", "3", "3"
-  };
-
-  // TODO(b/584819109): The first three cases should output "0:3" instead of "3:3".
-  private static final String[] BUGGY_EDGE_CASE_LINES = {
-    "3:3", "3:3", "3:3", "2:0", "1:1", "3", "3"
+    "0:3", "0:3", "0:3", "2:0", "1:1", "0:3", "2:0", "0:1", "3", "3"
   };
 
   @Parameter(0)
@@ -69,8 +64,7 @@ public class FieldGetSinkingLoopHeaderTest extends TestBase {
         .addInnerClasses(getClass())
         .release()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/584819109): Should output "0", "3".
-        .assertSuccessWithOutputLines("3", "3")
+        .assertSuccessWithOutputLines("0", "3")
         .inspect(FieldGetSinkingLoopHeaderTest::inspectMain);
   }
 
@@ -81,8 +75,7 @@ public class FieldGetSinkingLoopHeaderTest extends TestBase {
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/584819109): Should output "0", "3".
-        .assertSuccessWithOutputLines("3", "3")
+        .assertSuccessWithOutputLines("0", "3")
         .inspect(FieldGetSinkingLoopHeaderTest::inspectMain);
   }
 
@@ -112,8 +105,7 @@ public class FieldGetSinkingLoopHeaderTest extends TestBase {
         .addInnerClasses(getClass())
         .release()
         .run(parameters.getRuntime(), EdgeCasesMain.class)
-        // TODO(b/584819109): Should output EXPECTED_EDGE_CASE_LINES.
-        .assertSuccessWithOutputLines(BUGGY_EDGE_CASE_LINES)
+        .assertSuccessWithOutputLines(EXPECTED_EDGE_CASE_LINES)
         .inspect(FieldGetSinkingLoopHeaderTest::inspectEdgeCases);
   }
 
@@ -126,29 +118,26 @@ public class FieldGetSinkingLoopHeaderTest extends TestBase {
         .enableMemberValuePropagationAnnotations()
         .enableNeverClassInliningAnnotations()
         .run(parameters.getRuntime(), EdgeCasesMain.class)
-        // TODO(b/584819109): Should output EXPECTED_EDGE_CASE_LINES.
-        .assertSuccessWithOutputLines(BUGGY_EDGE_CASE_LINES)
+        .assertSuccessWithOutputLines(EXPECTED_EDGE_CASE_LINES)
         .inspect(FieldGetSinkingLoopHeaderTest::inspectEdgeCases);
   }
 
   private static void inspectMain(CodeInspector inspector) {
     MethodSubject mainMethod = inspector.clazz(Main.class).mainMethod();
     assertThat(mainMethod, isPresent());
-    // TODO(b/584819109): Should be 2 once sinking into loop header is prevented.
     assertEquals(
-        1, mainMethod.streamInstructions().filter(InstructionSubject::isInstanceGet).count());
+        2, mainMethod.streamInstructions().filter(InstructionSubject::isInstanceGet).count());
   }
 
   private static void inspectEdgeCases(CodeInspector inspector) {
     ClassSubject clazz = inspector.clazz(EdgeCasesMain.class);
     assertThat(clazz, isPresent());
-    // TODO(b/584819109): Should be 2 once sinking into loop header is prevented.
-    assertEquals(1, countStaticGets(clazz, "staticGetPreheaderUser"));
-    // TODO(b/584819109): Should be 2 once sinking into loop header is prevented.
-    assertEquals(1, countInstanceGets(clazz, "instanceGetLoopExitPhiUser"));
-    // TODO(b/584819109): Should be 2 once sinking into loop header is prevented.
-    assertEquals(1, countStaticGets(clazz, "staticGetLoopExitPhiUser"));
+    assertEquals(2, countStaticGets(clazz, "staticGetPreheaderUser"));
+    assertEquals(2, countInstanceGets(clazz, "instanceGetLoopExitPhiUser"));
+    assertEquals(2, countStaticGets(clazz, "staticGetLoopExitPhiUser"));
     assertEquals(2, countInstanceGets(clazz, "secondPredecessorExtraPhi"));
+    assertEquals(2, countInstanceGets(clazz, "preheaderGetOnlyInLoopExitPhi"));
+    assertEquals(2, countInstanceGets(clazz, "getsInDistinctPhis"));
     assertEquals(1, countInstanceGets(clazz, "sinkableInstanceGetLoop"));
     assertEquals(1, countStaticGets(clazz, "sinkableStaticGetLoop"));
   }
@@ -292,6 +281,40 @@ public class FieldGetSinkingLoopHeaderTest extends TestBase {
     }
 
     @NeverInline
+    static void preheaderGetOnlyInLoopExitPhi(String[] args) {
+      Counter c = new Counter();
+      if (args.length > 0) {
+        c.advance();
+      }
+      int start = c.index;
+      int pos = 0;
+      while (pos < 3) {
+        if (args.length > 0) {
+          start = 42;
+          break;
+        }
+        c.advance();
+        pos = c.index;
+      }
+      printPair(start, pos);
+    }
+
+    @NeverInline
+    static void getsInDistinctPhis(boolean cond) {
+      Counter c = new Counter();
+      c.advance();
+      int first = 0;
+      int second = 0;
+      if (cond) {
+        c.advance();
+        first = c.index;
+      } else {
+        second = c.index;
+      }
+      printPair(first, second);
+    }
+
+    @NeverInline
     static int sinkableInstanceGetLoop(String[] args) {
       Counter c = new Counter();
       if (args.length > 0) {
@@ -324,6 +347,9 @@ public class FieldGetSinkingLoopHeaderTest extends TestBase {
       staticGetLoopExitPhiUser(args);
       secondPredecessorExtraPhi(args.length == 0);
       secondPredecessorExtraPhi(args.length > 0);
+      preheaderGetOnlyInLoopExitPhi(args);
+      getsInDistinctPhis(args.length == 0);
+      getsInDistinctPhis(args.length > 0);
       System.out.println(sinkableInstanceGetLoop(args));
       System.out.println(sinkableStaticGetLoop(args));
     }

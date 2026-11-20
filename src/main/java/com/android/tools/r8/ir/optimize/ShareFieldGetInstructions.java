@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
@@ -95,7 +96,7 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     FieldGet firstFieldGet = getLastFieldGetInstruction(code, firstPredecessor);
     FieldGet secondFieldGet = getLastFieldGetInstruction(code, secondPredecessor);
     if (invalidCandidates(firstFieldGet, secondFieldGet)
-        || hasPhisThatWillBecomeInvalid(
+        || hasUsersThatWillBecomeInvalid(
             block, firstFieldGet.outValue(), secondFieldGet.outValue())) {
       return false;
     }
@@ -271,17 +272,22 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     }
   }
 
-  private boolean hasPhisThatWillBecomeInvalid(
+  // The sunk field get replaces all uses of the two values, so they may only be used by phis in
+  // `block` that merge them. Other uses are either not dominated by `block` or, if `block` is a
+  // loop header, would observe the field value of a later iteration.
+  @SuppressWarnings("ReferenceEquality")
+  private static boolean hasUsersThatWillBecomeInvalid(
       BasicBlock block, Value firstOutValue, Value secondOutValue) {
-    for (Phi phi : block.getPhis()) {
-      if (phi.getOperands().contains(firstOutValue)) {
-        if (phi.getOperands().size() != 2 || !phi.getOperands().contains(secondOutValue)) {
-          return true;
-        }
-      } else if (phi.getOperands().contains(secondOutValue)) {
-        if (phi.getOperands().size() != 2 || !phi.getOperands().contains(firstOutValue)) {
-          return true;
-        }
+    assert !firstOutValue.hasDebugUsers() && !secondOutValue.hasDebugUsers();
+    if (firstOutValue.hasUsers() || secondOutValue.hasUsers()) {
+      return true;
+    }
+    for (Phi phi :
+        Iterables.concat(firstOutValue.uniquePhiUsers(), secondOutValue.uniquePhiUsers())) {
+      if (phi.getBlock() != block
+          || phi.getOperand(0) != firstOutValue
+          || phi.getOperand(1) != secondOutValue) {
+        return true;
       }
     }
     return false;
