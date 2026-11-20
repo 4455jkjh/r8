@@ -11,6 +11,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -35,6 +36,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -665,5 +668,54 @@ public class L8CommandTest extends CommandTestBase<L8Command> {
   @Override
   L8Command parse(DiagnosticsHandler handler, String... args) throws CompilationFailedException {
     return L8Command.parse(args, EmbeddedOrigin.INSTANCE, handler).build();
+  }
+
+  @Test
+  public void testSharedExecutorService() throws Throwable {
+    ExecutorService executor = Executors.newWorkStealingPool(2);
+    try {
+      // CF-only L8 compilation on a caller-supplied executor.
+      L8.run(
+          prepareBuilder(new TestDiagnosticMessagesImpl())
+              .addDesugaredLibraryConfiguration(getDesugaredLibraryConfiguration())
+              .setProgramConsumer(ClassFileConsumer.emptyConsumer())
+              .build(),
+          executor);
+      assertFalse(executor.isShutdown());
+
+      // Non-shrinking DEX L8 compilation (D8 backend) reusing the same executor.
+      L8.run(
+          prepareBuilder(new TestDiagnosticMessagesImpl())
+              .addDesugaredLibraryConfiguration(getDesugaredLibraryConfiguration())
+              .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+              .build(),
+          executor);
+      assertFalse(executor.isShutdown());
+
+      // Shrinking DEX L8 compilation (R8 backend + async map consumer) reusing the same executor.
+      L8.run(
+          prepareBuilder(new TestDiagnosticMessagesImpl())
+              .addDesugaredLibraryConfiguration(getDesugaredLibraryConfiguration())
+              .addProguardConfiguration(
+                  ImmutableList.of("-keep class j$.time.LocalDate { *; }"), Origin.unknown())
+              .setProguardMapConsumer(StringConsumer.emptyConsumer())
+              .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+              .build(),
+          executor);
+      assertFalse(executor.isShutdown());
+
+      // Failing L8 compilation must also leave the caller-supplied executor open.
+      L8Command brokenCommand =
+          L8Command.builder(new TestDiagnosticMessagesImpl())
+              .addClassProgramData(new byte[] {0}, Origin.unknown())
+              .addDesugaredLibraryConfiguration(getDesugaredLibraryConfiguration())
+              .setProgramConsumer(ClassFileConsumer.emptyConsumer())
+              .build();
+      assertThrows(CompilationFailedException.class, () -> L8.run(brokenCommand, executor));
+      assertFalse(executor.isShutdown());
+      assertEquals(42, executor.submit(() -> 42).get().intValue());
+    } finally {
+      executor.shutdown();
+    }
   }
 }

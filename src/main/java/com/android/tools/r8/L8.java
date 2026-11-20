@@ -77,7 +77,11 @@ public class L8 {
       R8Command r8Command)
       throws CompilationFailedException {
     ExecutorService executorService = ThreadUtils.getExecutorService(options);
-    run(app, options, shrink, d8Command, r8Command, executorService);
+    try {
+      run(app, options, shrink, d8Command, r8Command, executorService);
+    } finally {
+      executorService.shutdown();
+    }
   }
 
   private static void run(
@@ -88,35 +92,31 @@ public class L8 {
       R8Command r8Command,
       ExecutorService executorService)
       throws CompilationFailedException {
-    try {
-      ExceptionUtils.withD8CompilationHandler(
-          options.reporter,
-          () -> {
-            // Desugar to class file format and turn off switch optimizations, as the final
-            // compilation with D8 or R8 will do that.
-            assert options.isCfDesugaring();
-            assert options.enableSwitchRewriting;
-            options.enableSwitchRewriting = false;
-            assert options.enableStringSwitchConversion;
-            options.enableStringSwitchConversion = false;
-            assert !options.enableVarHandleDesugaring;
-            options.enableVarHandleDesugaring = true;
-            assert !options.emitLambdaMethodAnnotations;
-            options.tool = Tool.L8;
+    ExceptionUtils.withD8CompilationHandler(
+        options.reporter,
+        () -> {
+          // Desugar to class file format and turn off switch optimizations, as the final
+          // compilation with D8 or R8 will do that.
+          assert options.isCfDesugaring();
+          assert options.enableSwitchRewriting;
+          options.enableSwitchRewriting = false;
+          assert options.enableStringSwitchConversion;
+          options.enableStringSwitchConversion = false;
+          assert !options.enableVarHandleDesugaring;
+          options.enableVarHandleDesugaring = true;
+          assert !options.emitLambdaMethodAnnotations;
+          options.tool = Tool.L8;
 
-            desugar(app, options, executorService);
+          desugar(app, options, executorService);
 
-            options.enableSwitchRewriting = true;
-            options.enableStringSwitchConversion = true;
-            options.enableVarHandleDesugaring = false;
-          });
-      if (shrink) {
-        R8.run(r8Command, executorService);
-      } else if (d8Command != null) {
-        D8.run(d8Command, executorService);
-      }
-    } finally {
-      executorService.shutdown();
+          options.enableSwitchRewriting = true;
+          options.enableStringSwitchConversion = true;
+          options.enableVarHandleDesugaring = false;
+        });
+    if (shrink) {
+      R8.run(r8Command, executorService);
+    } else if (d8Command != null) {
+      D8.run(d8Command, executorService);
     }
   }
 
