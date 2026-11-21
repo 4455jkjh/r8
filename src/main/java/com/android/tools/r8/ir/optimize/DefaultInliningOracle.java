@@ -664,12 +664,6 @@ public class DefaultInliningOracle implements InliningOracle {
         }
       }
     }
-    try (Timing t0 = timing.begin("Class init analysis")) {
-      if (classInitializationAnalysis.isClassDefinitelyLoadedBeforeInstruction(
-          target.getHolderType(), invoke, timing)) {
-        return true;
-      }
-    }
     // Check for class initializer side effects when loading this class, as inlining might remove
     // the load operation.
     //
@@ -677,8 +671,17 @@ public class DefaultInliningOracle implements InliningOracle {
     //
     // For simplicity, we are conservative and consider all interfaces, not only the ones with
     // default methods.
+    //
+    // Check this before ClassInitializationAnalysis so callers do not construct a DominatorTree
+    // when the target class has no class-initialization side effects.
     try (Timing t0 = timing.begin("Clinit may have side effects")) {
       if (!target.getHolder().classInitializationMayHaveSideEffectsInContext(appView, context)) {
+        return true;
+      }
+    }
+    try (Timing t0 = timing.begin("Class init analysis")) {
+      if (classInitializationAnalysis.isClassDefinitelyLoadedBeforeInstruction(
+          target.getHolderType(), invoke, timing)) {
         return true;
       }
     }
