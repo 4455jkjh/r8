@@ -526,14 +526,22 @@ public class AssumeInserter {
           // Find all users of the original value that are dominated by either the current block
           // or the new split-off block. Since NPE can be explicitly caught, nullness should be
           // propagated through dominance.
-          DominatorTree dominatorTree = lazyDominatorTree.get();
           Reference2BooleanMap<BasicBlock> dominatedByInsertionBlockCache =
               new Reference2BooleanOpenHashMap<>();
           Predicate<BasicBlock> dominatedByInsertionBlock =
               b -> {
+                // Fast-path self, entry block (all blocks with live users are reachable), and
+                // leaf blocks to avoid constructing a DominatorTree when unnecessary.
+                if (b == insertionBlock || insertionBlock == code.entryBlock()) {
+                  return true;
+                }
+                if (insertionBlock.getSuccessors().isEmpty()) {
+                  return false;
+                }
                 if (dominatedByInsertionBlockCache.containsKey(b)) {
                   return dominatedByInsertionBlockCache.getBoolean(b);
                 }
+                DominatorTree dominatorTree = lazyDominatorTree.get();
                 boolean result = dominatorTree.dominatedBy(b, insertionBlock);
                 dominatedByInsertionBlockCache.put(b, result);
                 return result;
