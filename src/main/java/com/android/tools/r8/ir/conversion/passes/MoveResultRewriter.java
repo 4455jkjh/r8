@@ -22,9 +22,7 @@ import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.utils.internal.BooleanBox;
-import com.google.common.collect.Sets;
-import java.util.ListIterator;
-import java.util.Set;
+import java.util.List;
 
 public class MoveResultRewriter extends CodeRewriterPass<AppInfo> {
 
@@ -48,20 +46,16 @@ public class MoveResultRewriter extends CodeRewriterPass<AppInfo> {
   protected CodeRewriterResult rewriteCode(IRCode code) {
     boolean changed = false;
     boolean mayHaveRemovedTrivialPhi = false;
-    Set<BasicBlock> blocksToBeRemoved = Sets.newIdentityHashSet();
-    ListIterator<BasicBlock> blockIterator = code.listIterator();
-    TypeAnalysis typeAnalysis =
-        new TypeAnalysis(appView, code).setKeepRedundantBlocksAfterAssumeRemoval(true);
-    while (blockIterator.hasNext()) {
-      BasicBlock block = blockIterator.next();
-      if (blocksToBeRemoved.contains(block)) {
-        continue;
-      }
-
+    AffectedValues affectedValues = null;
+    TypeAnalysis typeAnalysis = null;
+    for (BasicBlock block : code.blocks) {
       InstructionListIterator iterator = block.listIterator();
       while (iterator.hasNext()) {
         InvokeMethod invoke = iterator.next().asInvokeMethod();
-        if (invoke == null || !invoke.hasOutValue() || invoke.outValue().hasLocalInfo()) {
+        if (invoke == null
+            || !invoke.hasOutValue()
+            || invoke.outValue().hasLocalInfo()
+            || !hasMatchingArgumentType(invoke)) {
           continue;
         }
 
@@ -93,43 +87,64 @@ public class MoveResultRewriter extends CodeRewriterPass<AppInfo> {
           continue;
         }
 
-        AffectedValues affectedValues =
-            argument.getType().equals(outValue.getType())
-                ? AffectedValues.empty()
-                : outValue.affectedValues();
-
-        mayHaveRemovedTrivialPhi |= outValue.numberOfPhiUsers() > 0;
-        outValue.replaceUsers(argument);
+        mayHaveRemovedTrivialPhi |= outValue.hasPhiUsers();
         invoke.clearOutValue();
         changed = true;
-
-        if (!affectedValues.isEmpty()) {
-          BooleanBox removedAssumeInstructionInCurrentBlock = new BooleanBox();
-          typeAnalysis
-              .setKeepRedundantBlocksAfterAssumeRemoval(true)
-              .narrowingWithAssumeRemoval(
-                  affectedValues,
-                  assume -> removedAssumeInstructionInCurrentBlock.or(assume.getBlock() == block));
-          if (removedAssumeInstructionInCurrentBlock.isTrue()) {
-            // Workaround ConcurrentModificationException.
-            iterator = block.listIterator();
+        if (argument.getType().equals(outValue.getType())) {
+          outValue.replaceUsers(argument);
+        } else {
+          affectedValues = getOrCreateAffectedValues(affectedValues);
+          outValue.replaceUsers(argument, affectedValues);
+          if (!affectedValues.isEmpty()) {
+            BooleanBox removedAssumeInstructionInCurrentBlock = new BooleanBox();
+            typeAnalysis = getOrCreateTypeAnalysis(typeAnalysis, code);
+            typeAnalysis.narrowingWithAssumeRemoval(
+                affectedValues,
+                assume -> removedAssumeInstructionInCurrentBlock.or(assume.getBlock() == block));
+            affectedValues.clear();
+            if (removedAssumeInstructionInCurrentBlock.isTrue()) {
+              // Workaround ConcurrentModificationException.
+              iterator = block.listIterator();
+            }
           }
         }
       }
     }
-    AffectedValues affectedValues = new AffectedValues();
-    if (!blocksToBeRemoved.isEmpty()) {
-      code.removeBlocks(blocksToBeRemoved);
-      code.removeAllDeadAndTrivialPhis(affectedValues);
-      assert code.getUnreachableBlocks().isEmpty();
-    } else if (mayHaveRemovedTrivialPhi) {
-      code.removeAllDeadAndTrivialPhis(affectedValues);
-    }
-    typeAnalysis.narrowingWithAssumeRemoval(affectedValues);
     if (changed) {
+      if (mayHaveRemovedTrivialPhi) {
+        affectedValues = getOrCreateAffectedValues(affectedValues);
+        code.removeAllDeadAndTrivialPhis(affectedValues);
+        if (!affectedValues.isEmpty()) {
+          typeAnalysis = getOrCreateTypeAnalysis(typeAnalysis, code);
+          typeAnalysis.narrowingWithAssumeRemoval(affectedValues);
+        }
+      }
       code.removeRedundantBlocks();
     }
     return CodeRewriterResult.hasChanged(changed);
+  }
+
+  private static AffectedValues getOrCreateAffectedValues(AffectedValues affectedValues) {
+    return affectedValues != null ? affectedValues : new AffectedValues();
+  }
+
+  private TypeAnalysis getOrCreateTypeAnalysis(TypeAnalysis typeAnalysis, IRCode code) {
+    return typeAnalysis != null
+        ? typeAnalysis
+        : new TypeAnalysis(appView, code).setKeepRedundantBlocksAfterAssumeRemoval(true);
+  }
+
+  // Prefilter: skip target lookup when no argument has a value type compatible with the return
+  // type.
+  private static boolean hasMatchingArgumentType(InvokeMethod invoke) {
+    TypeElement outType = invoke.outValue().getType();
+    List<Value> arguments = invoke.arguments();
+    for (int i = 0; i < arguments.size(); i++) {
+      if (arguments.get(i).getType().isValueTypeCompatible(outType)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean checkArgumentType(InvokeMethod invoke, int argumentIndex) {
