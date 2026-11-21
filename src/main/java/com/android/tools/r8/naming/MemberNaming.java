@@ -23,11 +23,7 @@ import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.CollectionUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Iterables;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -129,7 +125,14 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
 
   @Override
   public String toString() {
-    return signature.toString() + " -> " + residualSignature.getName();
+    StringBuilder builder = new StringBuilder();
+    appendTo(builder);
+    return builder.toString();
+  }
+
+  public void appendTo(StringBuilder builder) {
+    signature.appendTo(builder);
+    builder.append(" -> ").append(residualSignature.getName());
   }
 
   @Override
@@ -203,7 +206,7 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
     @Override
     public abstract int hashCode();
 
-    abstract void write(Writer builder) throws IOException;
+    public abstract void appendTo(StringBuilder builder);
 
     public abstract Signature computeResidualSignature(
         String renamedName, Function<String, String> typeNameMapper);
@@ -244,14 +247,9 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
 
     @Override
     public String toString() {
-      try {
-        StringWriter writer = new StringWriter();
-        write(writer);
-        return writer.toString();
-      } catch (IOException e) {
-        // StringWriter is not throwing IOException
-        throw new Unreachable(e);
-      }
+      StringBuilder builder = new StringBuilder();
+      appendTo(builder);
+      return builder.toString();
     }
 
     public String getName() {
@@ -338,15 +336,8 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
     }
 
     @Override
-    public String toString() {
-      return type + " " + name;
-    }
-
-    @Override
-    void write(Writer writer) throws IOException {
-      writer.append(type);
-      writer.append(' ');
-      writer.append(name);
+    public void appendTo(StringBuilder builder) {
+      builder.append(type).append(' ').append(name);
     }
 
     @Override
@@ -465,20 +456,15 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
     }
 
     @Override
-    public String toString() {
-      return type + ' ' + name + '(' + String.join(",", parameters) + ')';
-    }
-
-    @Override
-    void write(Writer writer) throws IOException {
-      writer.append(type).append(' ').append(name).append('(');
+    public void appendTo(StringBuilder builder) {
+      builder.append(type).append(' ').append(name).append('(');
       for (int i = 0; i < parameters.length; i++) {
-        writer.append(parameters[i]);
-        if (i < parameters.length - 1) {
-          writer.append(',');
+        if (i > 0) {
+          builder.append(',');
         }
+        builder.append(parameters[i]);
       }
-      writer.append(')');
+      builder.append(')');
     }
 
     public String toDescriptor() {

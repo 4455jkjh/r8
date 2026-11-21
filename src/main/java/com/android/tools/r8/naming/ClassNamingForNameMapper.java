@@ -515,33 +515,47 @@ public class ClassNamingForNameMapper implements ClassNaming {
 
     // Sort MappedRanges by sequence number to restore construction order (original Proguard-map
     // input).
-    List<MappedRange> mappedRangesSorted = new ArrayList<>();
+    int totalRanges = 0;
+    for (MappedRangesOfName ranges : mappedRangesByRenamedName.values()) {
+      totalRanges += ranges.mappedRanges.size();
+    }
+    List<MappedRange> mappedRangesSorted = new ArrayList<>(totalRanges);
     for (MappedRangesOfName ranges : mappedRangesByRenamedName.values()) {
       mappedRangesSorted.addAll(ranges.mappedRanges);
     }
     mappedRangesSorted.sort(Comparator.comparingInt(range -> range.sequenceNumber));
 
-    StringBuilder builder = new StringBuilder();
+    // Pre-size for the header (" -> :\n") plus ~64 chars per field/range line.
+    StringBuilder builder =
+        new StringBuilder(
+            originalName.length()
+                + renamedName.length()
+                + 8
+                + (fieldsSorted.size() + mappedRangesSorted.size()) * 64);
     builder.append(originalName).append(" -> ").append(renamedName).append(":\n");
 
     String spacing = "    ";
 
     // Print all additional mapping information.
     additionalMappingInfo.forEach(
-        info -> builder.append("# ").append(info.serialize()).append("\n"));
+        info -> builder.append("# ").append(info.serialize()).append('\n'));
 
     // Print field member namings.
     for (MemberNaming fieldMember : fieldsSorted) {
-      builder.append(spacing).append(fieldMember.toString()).append("\n");
+      builder.append(spacing);
+      fieldMember.appendTo(builder);
+      builder.append('\n');
       for (MappingInformation info : fieldMember.getAdditionalMappingInformation()) {
-        builder.append(spacing).append("  # ").append(info.serialize()).append("\n");
+        builder.append(spacing).append("  # ").append(info.serialize()).append('\n');
       }
     }
 
     for (MappedRange range : mappedRangesSorted) {
-      builder.append(spacing).append(range.toString()).append("\n");
+      builder.append(spacing);
+      range.appendTo(builder);
+      builder.append('\n');
       for (MappingInformation info : range.getAdditionalMappingInformation()) {
-        builder.append(spacing).append("  # ").append(info.serialize()).append("\n");
+        builder.append(spacing).append("  # ").append(info.serialize()).append('\n');
       }
     }
     serializedContent = builder.toString();
@@ -779,15 +793,21 @@ public class ClassNamingForNameMapper implements ClassNaming {
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
+      appendTo(builder);
+      return builder.toString();
+    }
+
+    public void appendTo(StringBuilder builder) {
       if (minifiedRange != null) {
-        builder.append(minifiedRange).append(':');
+        minifiedRange.appendTo(builder);
+        builder.append(':');
       }
-      builder.append(signature);
+      signature.appendTo(builder);
       if (originalRange != null && !originalRange.equals(minifiedRange)) {
-        builder.append(":").append(originalRange);
+        builder.append(':');
+        originalRange.appendTo(builder);
       }
       builder.append(" -> ").append(renamedName);
-      return builder.toString();
     }
 
     @Override

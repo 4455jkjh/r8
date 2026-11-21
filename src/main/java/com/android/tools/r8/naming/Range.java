@@ -35,7 +35,16 @@ public class Range {
 
   @Override
   public String toString() {
-    return isCardinal ? (from + "") : (from + ":" + to);
+    StringBuilder builder = new StringBuilder();
+    appendTo(builder);
+    return builder.toString();
+  }
+
+  public void appendTo(StringBuilder builder) {
+    builder.append(from);
+    if (!isCardinal) {
+      builder.append(':').append(to);
+    }
   }
 
   @Override
