@@ -24,18 +24,29 @@ public class FieldResolution {
   }
 
   public FieldResolutionResult resolveFieldOn(DexType type, DexField field) {
+    ClassResolutionResult classResolutionResult =
+        definitionFor.contextIndependentDefinitionForWithResolutionResult(type);
+    if (!classResolutionResult.isMultipleClassResolutionResult()) {
+      // Fast path: this is called for each field reference, and types almost always resolve to a
+      // single class, which avoids allocating a builder and a capturing lambda.
+      DexClass clazz = classResolutionResult.toSingleClassWithProgramOverLibrary();
+      return clazz != null ? resolveFieldOn(clazz, field) : FieldResolutionResult.failure();
+    }
     FieldResolutionResult.Builder builder = FieldResolutionResult.builder();
-    definitionFor
-        .contextIndependentDefinitionForWithResolutionResult(type)
-        .forEachClassResolutionResult(
-            clazz -> resolveFieldOn(clazz, field, clazz, SetUtils.newIdentityHashSet(8), builder));
+    classResolutionResult.forEachClassResolutionResult(
+        clazz -> resolveFieldOn(clazz, field, clazz, null, builder));
     return builder.buildOrIfEmpty(FieldResolutionResult.failure());
   }
 
   public FieldResolutionResult resolveFieldOn(DexClass holder, DexField field) {
     assert holder != null;
+    // Fast path: most fields are declared on the holder, which avoids allocating a builder.
+    DexEncodedField definition = holder.lookupField(field);
+    if (definition != null) {
+      return createSingleFieldResolutionResult(holder, holder, definition);
+    }
     FieldResolutionResult.Builder builder = FieldResolutionResult.builder();
-    resolveFieldOn(holder, field, holder, SetUtils.newIdentityHashSet(8), builder);
+    resolveFieldOnSupertypes(holder, field, holder, null, builder);
     return builder.buildOrIfEmpty(FieldResolutionResult.failure());
   }
 
@@ -53,27 +64,46 @@ public class FieldResolution {
           createSingleFieldResolutionResult(initialResolutionHolder, holder, definition));
       return;
     }
+    resolveFieldOnSupertypes(holder, field, initialResolutionHolder, visitedInterfaces, builder);
+  }
+
+  private void resolveFieldOnSupertypes(
+      DexClass holder,
+      DexField field,
+      DexClass initialResolutionHolder,
+      Set<DexType> visitedInterfaces,
+      FieldResolutionResult.Builder builder) {
     // Step 2: Apply recursively to direct superinterfaces. First match succeeds.
-    FieldResolutionResult result =
-        resolveFieldOnDirectInterfaces(initialResolutionHolder, holder, field, visitedInterfaces);
-    if (result != null) {
-      builder.addResolutionResult(result);
-      return;
+    if (!holder.interfaces.isEmpty()) {
+      if (visitedInterfaces == null) {
+        visitedInterfaces = SetUtils.newIdentityHashSet(8);
+      }
+      FieldResolutionResult result =
+          resolveFieldOnDirectInterfaces(initialResolutionHolder, holder, field, visitedInterfaces);
+      if (result != null) {
+        builder.addResolutionResult(result);
+        return;
+      }
     }
     // Step 3: Apply recursively to superclass.
     if (holder.superType != null) {
-      definitionFor
-          .contextIndependentDefinitionForWithResolutionResult(holder.superType)
-          .forEachClassResolutionResult(
-              superClass -> {
-                // Check if the subtype is a library type and if it is child of a non-library type.
-                // If that is the case, do not return any results.
-                if (holder.isLibraryClass() && !superClass.isLibraryClass()) {
-                  return;
-                }
-                resolveFieldOn(
-                    superClass, field, initialResolutionHolder, visitedInterfaces, builder);
-              });
+      ClassResolutionResult superClassResolutionResult =
+          definitionFor.contextIndependentDefinitionForWithResolutionResult(holder.superType);
+      // Alternative superclass definitions share the set of visited interfaces.
+      Set<DexType> finalVisitedInterfaces =
+          visitedInterfaces == null && superClassResolutionResult.isMultipleClassResolutionResult()
+              ? SetUtils.newIdentityHashSet(8)
+              : visitedInterfaces;
+      superClassResolutionResult.forEachClassResolutionResult(
+          superClass -> {
+            // Check if the subtype is a library type and if it is child of a non-library type.
+            // If that is the case, do not return any results.
+            if (holder.isLibraryClass() && !superClass.isLibraryClass()) {
+              return;
+            }
+            resolveFieldOn(
+                superClass, field, initialResolutionHolder, finalVisitedInterfaces, builder);
+          });
     } else {
       builder.addResolutionResult(FieldResolutionResult.failure());
     }
