@@ -21,9 +21,6 @@ public class R8NonJava8TestConventionPlugin : Plugin<Project> {
     target.dependencies.apply {
       add("implementation", project(":main"))
       add("runtimeOnly", project(":main", "mainResources"))
-      add("implementation", project(":testbase"))
-      add("runtimeOnly", project(":testbase", "depsJar"))
-      add("runtimeOnlyDataScope", project(":testbase", "runtimeOnlyDataElements"))
     }
 
     target.tasks.withType<Test>().configureEach {

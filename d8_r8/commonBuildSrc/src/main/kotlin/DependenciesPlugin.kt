@@ -4,27 +4,14 @@
 
 import DependenciesPlugin.Companion.computeRoot
 import java.io.File
-import java.io.Serializable
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.UUID
 import kotlin.reflect.full.declaredMemberProperties
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.dsl.DependencyHandler
-import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.JavaExec
-import org.gradle.api.tasks.Nested
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaInstallationMetadata
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -32,57 +19,6 @@ import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.jvm.toolchain.internal.DefaultJavaLanguageVersion
 import org.gradle.nativeplatform.platform.OperatingSystem
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
-import org.gradle.process.CommandLineArgumentProvider
-
-public val TEST_DEP_PROP: Attribute<String> =
-  Attribute.of("com.android.tools.r8.testdep.prop", String::class.java)
-
-public val TEST_DEP_INTERNAL: Attribute<Boolean> =
-  Attribute.of("com.android.tools.r8.testdep.internal", Boolean::class.javaObjectType)
-
-public val TEST_DEP_MISSING_ON_WINDOWS: Attribute<Boolean> =
-  Attribute.of("com.android.tools.r8.testdep.missing_on_windows", Boolean::class.javaObjectType)
-
-public fun DependencyHandler.runtimeOnlyData(dependencyNotation: Any): Dependency? {
-  return add("runtimeOnlyDataScope", dependencyNotation)
-}
-
-public fun DependencyHandler.runtimeOnlyDataScope(dependencyNotation: Any): Dependency? {
-  return add("runtimeOnlyDataScope", dependencyNotation)
-}
-
-public sealed class DependencyPresence : Serializable {
-  public object Present : DependencyPresence()
-
-  public data class Missing(public val reason: String) : DependencyPresence() {
-    init {
-      require(reason.isNotEmpty() && reason.all { it in 'a'..'z' || it in 'A'..'Z' || it == '_' }) {
-        "Invalid missing reason '$reason': must only contain ASCII letters and underscores"
-      }
-    }
-  }
-}
-
-public class TestDepEntry(
-  @get:Input public val prop: String,
-  @get:Input public val presence: DependencyPresence,
-  @get:Optional @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) public val file: File?,
-)
-
-public class TestDepsCommandLineArgumentProvider(
-  @get:Nested public val entries: Provider<List<TestDepEntry>>
-) : CommandLineArgumentProvider {
-  override fun asArguments(): Iterable<String> {
-    return entries.get().map { entry ->
-      val value =
-        when (entry.presence) {
-          is DependencyPresence.Present -> entry.file!!.absolutePath
-          is DependencyPresence.Missing -> "None:${entry.presence.reason}"
-        }
-      "-DTEST_DEP_${entry.prop}=$value"
-    }
-  }
-}
 
 public class DependenciesPlugin : Plugin<Project> {
 
@@ -91,64 +27,8 @@ public class DependenciesPlugin : Plugin<Project> {
     val testTask = target.tasks.findByName("test") as Test?
     testTask?.configure(isR8Lib = false, r8Jar = null, r8LibPartitionMapFile = null)
 
-    // runtimeOnlyData is similar to runtimeOnly where -DTest_DEP_<x> is set to point to the
-    // location.
-    // com.android.tools.r8.TestDeps handles the runtime reading of these properties.
-    val runtimeOnlyDataScope = target.configurations.dependencyScope("runtimeOnlyDataScope")
-    target.configurations.consumable("runtimeOnlyDataElements") {
-      extendsFrom(runtimeOnlyDataScope.get())
-    }
-    val runtimeOnlyDataConfig =
-      target.configurations.resolvable("runtimeOnlyDataConfig") {
-        extendsFrom(runtimeOnlyDataScope.get())
-      }
-
-    val noInternal = target.providers.gradleProperty("no_internal")
-    val testDepsEntries: Provider<List<TestDepEntry>> =
-      runtimeOnlyDataConfig.flatMap { config ->
-        config.incoming.artifacts.resolvedArtifacts.map { artifacts ->
-          val skipInternal = noInternal.isPresent
-          val isWindows = DefaultNativePlatform.getCurrentOperatingSystem().isWindows
-          val seenProps = mutableSetOf<String>()
-          artifacts.mapNotNull { artifact ->
-            val prop = artifact.variant.attributes.getAttribute(TEST_DEP_PROP)
-            if (prop != null) {
-              if (!seenProps.add(prop)) {
-                throw GradleException("Duplicate TEST_DEP_PROP: $prop")
-              }
-              val isInternal = artifact.variant.attributes.getAttribute(TEST_DEP_INTERNAL) == true
-              val isMissingOnWindows =
-                artifact.variant.attributes.getAttribute(TEST_DEP_MISSING_ON_WINDOWS) == true
-              val presence =
-                when {
-                  isInternal && skipInternal -> DependencyPresence.Missing("no_internal")
-                  isMissingOnWindows && isWindows ->
-                    DependencyPresence.Missing("missing_on_windows")
-                  else -> DependencyPresence.Present
-                }
-              val file = if (presence is DependencyPresence.Present) artifact.file else null
-              TestDepEntry(prop, presence, file)
-            } else {
-              null
-            }
-          }
-        }
-      }
-
     target.tasks.withType(Test::class.java).configureEach {
       outputs.doNotCacheIf("Test runs should not and cannot not be cached") { true }
-      dependsOn(runtimeOnlyDataConfig)
-      jvmArgumentProviders.add(TestDepsCommandLineArgumentProvider(entries = testDepsEntries))
-    }
-
-    target.tasks.withType(JavaExec::class.java).configureEach {
-      dependsOn(runtimeOnlyDataConfig)
-      jvmArgumentProviders.add(TestDepsCommandLineArgumentProvider(entries = testDepsEntries))
-    }
-
-    target.tasks.withType(RunBenchmarkTask::class.java).configureEach {
-      dependsOn(runtimeOnlyDataConfig)
-      this.testDepsEntries.set(testDepsEntries)
     }
   }
 

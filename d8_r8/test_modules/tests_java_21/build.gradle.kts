@@ -22,8 +22,8 @@ val mainResources =
 
 dependencies {
   mainResourcesScope(project(":main", "mainResources"))
-  runtimeOnlyData(project(":third_party", "jdk21"))
-  runtimeOnlyData(project(":third_party", "jdk21Float16Test"))
+  runtimeOnlyData(TestRuntimeData.JDK_21)
+  runtimeOnlyData(TestRuntimeData.JDK21_FLOAT16_TEST)
 }
 
 tasks {

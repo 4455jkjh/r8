@@ -38,26 +38,26 @@ dependencies {
   testngScope(libs.testng)
   javaBasePatchSourcesScope(project(":third_party", "jdk11TestJavaBasePatchSources"))
   jdkTestLibrarySourcesScope(project(":third_party", "jdk11TestLibrarySources"))
-  runtimeOnlyData(project(":tests_java_8:desugar", "javaBaseExtension"))
-  runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
-  runtimeOnlyData(project(":third_party", "dependenciesBucket"))
-  runtimeOnlyData(project(":third_party", "desugarJdkLibs8"))
-  runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
-  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_0_9"))
-  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_0_10"))
-  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_1_0"))
-  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_1_1"))
-  runtimeOnlyData(project(":third_party", "desugarLibraryRelease1_1_5"))
-  runtimeOnlyData(project(":third_party", "examplesAndroidO"))
-  runtimeOnlyData(project(":third_party", "gson"))
-  runtimeOnlyData(project(":third_party", "guavaJre"))
-  runtimeOnlyData(project(":third_party", "jacoco"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "jdk8"))
-  runtimeOnlyData(project(":third_party", "jdk11"))
-  runtimeOnlyData(project(":third_party", "jdk11Test"))
-  runtimeOnlyData(project(":third_party", "multidex"))
-  runtimeOnlyData(project(":third_party", "r8v2_0_74"))
+  runtimeOnlyData(TestRuntimeData.JAVA_BASE_EXTENSION)
+  runtimeOnlyData(TestRuntimeData.CORE_LAMBDA_STUBS)
+  runtimeOnlyData(TestRuntimeData.DEPENDENCIES)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_JDK_LIBS_8)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_LIBRARY_CONVERSIONS)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_LIBRARY_RELEASE_1_0_9)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_LIBRARY_RELEASE_1_0_10)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_LIBRARY_RELEASE_1_1_0)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_LIBRARY_RELEASE_1_1_1)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_LIBRARY_RELEASE_1_1_5)
+  runtimeOnlyData(TestRuntimeData.EXAMPLES_ANDROID_O)
+  runtimeOnlyData(TestRuntimeData.GSON)
+  runtimeOnlyData(TestRuntimeData.GUAVA_JRE)
+  runtimeOnlyData(TestRuntimeData.JACOCO)
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.JDK_8)
+  runtimeOnlyData(TestRuntimeData.JDK_11)
+  runtimeOnlyData(TestRuntimeData.JDK11_TEST)
+  runtimeOnlyData(TestRuntimeData.MULTIDEX)
+  runtimeOnlyData(TestRuntimeData.R8_V2_0_74)
 }
 
 val compileJavaBaseExtension =
@@ -89,6 +89,5 @@ val javaBaseExtensionJar =
   }
 
 configurations.consumable("javaBaseExtension") {
-  attributes { attribute(TEST_DEP_PROP, "JAVA_BASE_EXTENSION") }
   outgoing.artifact(javaBaseExtensionJar.flatMap { it.archiveFile })
 }

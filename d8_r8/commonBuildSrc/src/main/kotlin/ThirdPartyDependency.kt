@@ -3,6 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.io.File
+import org.gradle.api.attributes.Attribute
+
+public val ARTIFACT_INTERNAL: Attribute<Boolean> =
+  Attribute.of("com.android.tools.r8.artifact.internal", Boolean::class.javaObjectType)
+
+public val ARTIFACT_MISSING_ON_WINDOWS: Attribute<Boolean> =
+  Attribute.of("com.android.tools.r8.artifact.missing_on_windows", Boolean::class.javaObjectType)
 
 public enum class DependencyType {
   GOOGLE_STORAGE,

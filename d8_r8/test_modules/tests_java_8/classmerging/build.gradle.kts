@@ -10,7 +10,7 @@ java {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "examples"))
-  runtimeOnlyData(project(":third_party", "examplesAndroidO"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
+  runtimeOnlyData(TestRuntimeData.EXAMPLES)
+  runtimeOnlyData(TestRuntimeData.EXAMPLES_ANDROID_O)
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
 }

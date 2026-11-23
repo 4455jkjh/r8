@@ -24,10 +24,10 @@ tasks {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "proguard7_0_0"))
-  runtimeOnlyData(project(":third_party", "r8Mappings"))
-  runtimeOnlyData(project(":third_party", "retraceBinaryCompatibility"))
-  runtimeOnlyData(project(":third_party", "retraceInternal"))
-  runtimeOnlyData(project(":third_party", "retracePartitionFormats"))
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.PROGUARD_7_0_0)
+  runtimeOnlyData(TestRuntimeData.R8_MAPPINGS)
+  runtimeOnlyData(TestRuntimeData.RETRACE_BINARY_COMPATIBILITY)
+  runtimeOnlyData(TestRuntimeData.RETRACE_INTERNAL)
+  runtimeOnlyData(TestRuntimeData.RETRACE_PARTITION_FORMATS)
 }

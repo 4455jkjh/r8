@@ -33,8 +33,8 @@ tasks {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
-  runtimeOnlyData(project(":third_party", "desugarJdkLibs8"))
-  runtimeOnlyData(project(":third_party", "desugarLibraryConversions"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
+  runtimeOnlyData(TestRuntimeData.CORE_LAMBDA_STUBS)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_JDK_LIBS_8)
+  runtimeOnlyData(TestRuntimeData.DESUGAR_LIBRARY_CONVERSIONS)
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
 }

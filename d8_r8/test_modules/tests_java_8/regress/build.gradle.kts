@@ -19,7 +19,7 @@ tasks {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "jdk9"))
-  runtimeOnlyData(project(":third_party", "proguard7_0_0"))
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.JDK_9)
+  runtimeOnlyData(TestRuntimeData.PROGUARD_7_0_0)
 }

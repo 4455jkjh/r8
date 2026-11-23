@@ -13,6 +13,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.project
 import org.gradle.kotlin.dsl.register
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 
@@ -21,6 +22,12 @@ public abstract class SerialTestService : BuildService<BuildServiceParameters.No
 public class R8TestConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     target.pluginManager.apply("r8-dependency-flavors")
+    target.pluginManager.apply("test-runtime-data-dep")
+    target.dependencies.apply {
+      add("implementation", project(":testbase"))
+      add("runtimeOnly", project(":testbase", "depsJar"))
+      runtimeOnlyDataFrom(":testbase")
+    }
     // Java 8 test modules compile targeting Java 8 for test inputs, while running against Java 11
     // :main.
     target.extensions.getByType<JavaPluginExtension>().disableAutoTargetJvm()

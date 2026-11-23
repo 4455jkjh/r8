@@ -7,9 +7,9 @@ java {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "examples"))
-  runtimeOnlyData(project(":third_party", "examplesAndroidN"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "jdk9"))
-  runtimeOnlyData(project(":third_party", "kotlinCompiler2_4_20"))
+  runtimeOnlyData(TestRuntimeData.EXAMPLES)
+  runtimeOnlyData(TestRuntimeData.EXAMPLES_ANDROID_N)
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.JDK_9)
+  runtimeOnlyData(TestRuntimeData.KOTLIN_COMPILER_2_4_20)
 }

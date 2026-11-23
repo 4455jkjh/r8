@@ -15,6 +15,6 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(17) }
 }
 
-dependencies { runtimeOnlyData(project(":third_party", "jdk17")) }
+dependencies { runtimeOnlyData(TestRuntimeData.JDK_17) }
 
 tasks { withType<Test> { javaLauncher = getJavaLauncher(Jdk.JDK_17) } }

@@ -20,8 +20,8 @@ tasks {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "examples"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "jdk11"))
-  runtimeOnlyData(project(":third_party", "smali"))
+  runtimeOnlyData(TestRuntimeData.EXAMPLES)
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.JDK_11)
+  runtimeOnlyData(TestRuntimeData.SMALI)
 }

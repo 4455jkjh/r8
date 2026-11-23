@@ -10,6 +10,7 @@ plugins {
   id("r8-conventions")
   id("r8-dependency-flavors")
   id("dependencies-plugin")
+  id("test-runtime-data-dep")
 }
 
 configure<JacocoPluginExtension> {
@@ -83,13 +84,13 @@ dependencies {
   testJarsScope(project(":tests_bootstrap", "testJar"))
   testbaseTestJarsScope(project(":testbase", "testJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
-  runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
-  runtimeOnlyData(project(":tests_java_8", "runtimeOnlyDataElements"))
-  runtimeOnlyData(project(":tests_java_11", "runtimeOnlyDataElements"))
-  runtimeOnlyData(project(":tests_java_17", "runtimeOnlyDataElements"))
-  runtimeOnlyData(project(":tests_java_21", "runtimeOnlyDataElements"))
-  runtimeOnlyData(project(":tests_java_25", "runtimeOnlyDataElements"))
-  runtimeOnlyData(project(":tests_bootstrap", "runtimeOnlyDataElements"))
+  runtimeOnlyDataFrom(":testbase")
+  runtimeOnlyDataFrom(":tests_java_8")
+  runtimeOnlyDataFrom(":tests_java_11")
+  runtimeOnlyDataFrom(":tests_java_17")
+  runtimeOnlyDataFrom(":tests_java_21")
+  runtimeOnlyDataFrom(":tests_java_25")
+  runtimeOnlyDataFrom(":tests_bootstrap")
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
 }
 

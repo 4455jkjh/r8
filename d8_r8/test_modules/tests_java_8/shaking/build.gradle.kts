@@ -18,12 +18,12 @@ tasks {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "examples"))
-  runtimeOnlyData(project(":third_party", "examplesAndroidN"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "jdk9"))
-  runtimeOnlyData(project(":third_party", "kotlinCompiler1_3_72"))
-  runtimeOnlyData(project(":third_party", "proguard7_0_0"))
-  runtimeOnlyData(project(":third_party", "proguard7_7_0"))
-  runtimeOnlyData(project(":third_party", "r8"))
+  runtimeOnlyData(TestRuntimeData.EXAMPLES)
+  runtimeOnlyData(TestRuntimeData.EXAMPLES_ANDROID_N)
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.JDK_9)
+  runtimeOnlyData(TestRuntimeData.KOTLIN_COMPILER_1_3_72)
+  runtimeOnlyData(TestRuntimeData.PROGUARD_7_0_0)
+  runtimeOnlyData(TestRuntimeData.PROGUARD_7_7_0)
+  runtimeOnlyData(TestRuntimeData.R8)
 }

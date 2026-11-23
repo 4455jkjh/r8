@@ -30,10 +30,7 @@ val internalClassesConfig = configurations.named("internalClassesConfig")
 dependencies {
   distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
   implementation(project(":main"))
-  implementation(project(":testbase"))
-  runtimeOnly(project(":testbase", "depsJar"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
 }
 
 tasks {

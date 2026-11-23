@@ -24,10 +24,10 @@ tasks {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "jdk9"))
-  runtimeOnlyData(project(":third_party", "kotlinCompiler1_3_72"))
-  runtimeOnlyData(project(":third_party", "kotlinCompiler1_4_20"))
-  runtimeOnlyData(project(":third_party", "kotlinxCoroutines"))
+  runtimeOnlyData(TestRuntimeData.CORE_LAMBDA_STUBS)
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.JDK_9)
+  runtimeOnlyData(TestRuntimeData.KOTLIN_COMPILER_1_3_72)
+  runtimeOnlyData(TestRuntimeData.KOTLIN_COMPILER_1_4_20)
+  runtimeOnlyData(TestRuntimeData.KOTLINX_COROUTINES)
 }

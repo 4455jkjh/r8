@@ -9,6 +9,6 @@ java {
 }
 
 dependencies {
-  runtimeOnlyData(project(":third_party", "java8Runtime"))
-  runtimeOnlyData(project(":third_party", "proguard7_0_0"))
+  runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
+  runtimeOnlyData(TestRuntimeData.PROGUARD_7_0_0)
 }

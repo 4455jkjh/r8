@@ -57,6 +57,10 @@ gradlePlugin {
     id = "r8-settings"
     implementationClass = "R8SettingsPlugin"
   }
+  plugins.register("test-runtime-data-dep") {
+    id = "test-runtime-data-dep"
+    implementationClass = "TestRuntimeDataDepPlugin"
+  }
 }
 
 kotlin {

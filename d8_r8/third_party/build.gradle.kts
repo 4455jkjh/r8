@@ -40,489 +40,357 @@ val publicTasks = allPublicDependencies().map { registerDependency(it) }
 val publicTestTasks = allPublicTestDependencies().map { registerDependency(it) }
 val internalTestTasks = allInternalTestDependencies().map { registerDependency(it) }
 
-private fun registerTestDepArtifact(
-  configurationName: String,
-  artifact: Any,
-  propName: String,
-  isInternal: Boolean = false,
-  missingOnWindows: Boolean = false,
-) {
-  configurations.consumable(configurationName) {
-    attributes {
-      attribute(TEST_DEP_PROP, propName)
-      attribute(TEST_DEP_INTERNAL, isInternal)
-      attribute(TEST_DEP_MISSING_ON_WINDOWS, missingOnWindows)
-    }
-    outgoing.artifact(artifact)
-  }
-}
-
-private fun registerTestDep(
-  configurationName: String,
-  dep: ThirdPartyDependency,
-  propName: String,
-) {
+private fun registerConfig(configurationName: String, dep: ThirdPartyDependency) {
   val taskProvider = tasks.named<DownloadDependency>("download_${dep.packageName}")
-  registerTestDepArtifact(
-    configurationName,
-    taskProvider.flatMap { it.outputDir },
-    propName,
-    dep.type == DependencyType.X20,
-    dep.missingOnWindows,
-  )
-}
-
-private fun registerTestDep(configurationName: String, dir: File, propName: String) {
-  registerTestDepArtifact(configurationName, dir, propName)
+  configurations.consumable(configurationName) {
+    outgoing.capability("com.android.tools.r8.third_party:$configurationName:0")
+    attributes {
+      if (dep.type == DependencyType.X20) {
+        attribute(ARTIFACT_INTERNAL, true)
+      }
+      if (dep.missingOnWindows) {
+        attribute(ARTIFACT_MISSING_ON_WINDOWS, true)
+      }
+    }
+    outgoing.artifact(taskProvider.flatMap { it.outputDir })
+  }
 }
 
 // 'dependencies' have to be treated differently since it contains files that Gradle uses to run.
 // This should be called 'dependencies' but that is reserved in gradle, so dependenciesBucket.
-registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencies"), "DEPENDENCIES")
+configurations.consumable("dependenciesBucket") {
+  outgoing.artifact(getRoot().resolve("third_party/dependencies"))
+}
 
-registerTestDep("aapt2", ThirdPartyDeps.aapt2, "AAPT2")
+registerConfig("aapt2", ThirdPartyDeps.aapt2)
 
-registerTestDep("agsa", ThirdPartyDeps.agsa, "AGSA")
+registerConfig("agsa", ThirdPartyDeps.agsa)
 
-registerTestDep("androidJar14", ThirdPartyDeps.androidJar14, "ANDROID_JAR_14")
+registerConfig("androidJar14", ThirdPartyDeps.androidJar14)
 
-registerTestDep("androidJar15", ThirdPartyDeps.androidJar15, "ANDROID_JAR_15")
+registerConfig("androidJar15", ThirdPartyDeps.androidJar15)
 
-registerTestDep("androidJar19", ThirdPartyDeps.androidJar19, "ANDROID_JAR_19")
+registerConfig("androidJar19", ThirdPartyDeps.androidJar19)
 
-registerTestDep("androidJar21", ThirdPartyDeps.androidJar21, "ANDROID_JAR_21")
+registerConfig("androidJar21", ThirdPartyDeps.androidJar21)
 
-registerTestDep("androidJar22", ThirdPartyDeps.androidJar22, "ANDROID_JAR_22")
+registerConfig("androidJar22", ThirdPartyDeps.androidJar22)
 
-registerTestDep("androidJar23", ThirdPartyDeps.androidJar23, "ANDROID_JAR_23")
+registerConfig("androidJar23", ThirdPartyDeps.androidJar23)
 
-registerTestDep("androidJar24", ThirdPartyDeps.androidJar24, "ANDROID_JAR_24")
+registerConfig("androidJar24", ThirdPartyDeps.androidJar24)
 
-registerTestDep("androidJar25", ThirdPartyDeps.androidJar25, "ANDROID_JAR_25")
+registerConfig("androidJar25", ThirdPartyDeps.androidJar25)
 
-registerTestDep("androidJar26", ThirdPartyDeps.androidJar26, "ANDROID_JAR_26")
+registerConfig("androidJar26", ThirdPartyDeps.androidJar26)
 
-registerTestDep("androidJar27", ThirdPartyDeps.androidJar27, "ANDROID_JAR_27")
+registerConfig("androidJar27", ThirdPartyDeps.androidJar27)
 
-registerTestDep("androidJar28", ThirdPartyDeps.androidJar28, "ANDROID_JAR_28")
+registerConfig("androidJar28", ThirdPartyDeps.androidJar28)
 
-registerTestDep("androidJar29", ThirdPartyDeps.androidJar29, "ANDROID_JAR_29")
+registerConfig("androidJar29", ThirdPartyDeps.androidJar29)
 
-registerTestDep("androidJar30", ThirdPartyDeps.androidJar30, "ANDROID_JAR_30")
+registerConfig("androidJar30", ThirdPartyDeps.androidJar30)
 
-registerTestDep("androidJar31", ThirdPartyDeps.androidJar31, "ANDROID_JAR_31")
+registerConfig("androidJar31", ThirdPartyDeps.androidJar31)
 
-registerTestDep("androidJar32", ThirdPartyDeps.androidJar32, "ANDROID_JAR_32")
+registerConfig("androidJar32", ThirdPartyDeps.androidJar32)
 
-registerTestDep("androidJar33", ThirdPartyDeps.androidJar33, "ANDROID_JAR_33")
+registerConfig("androidJar33", ThirdPartyDeps.androidJar33)
 
-registerTestDep("androidJar34", ThirdPartyDeps.androidJar34, "ANDROID_JAR_34")
+registerConfig("androidJar34", ThirdPartyDeps.androidJar34)
 
-registerTestDep("androidJar35", ThirdPartyDeps.androidJar35, "ANDROID_JAR_35")
+registerConfig("androidJar35", ThirdPartyDeps.androidJar35)
 
-registerTestDep("androidJar36", ThirdPartyDeps.androidJar36, "ANDROID_JAR_36")
+registerConfig("androidJar36", ThirdPartyDeps.androidJar36)
 
-registerTestDep("androidJar36_1", ThirdPartyDeps.androidJar36_1, "ANDROID_JAR_36_1")
+registerConfig("androidJar36_1", ThirdPartyDeps.androidJar36_1)
 
-registerTestDep("androidJar37", ThirdPartyDeps.androidJar37, "ANDROID_JAR_37")
+registerConfig("androidJar37", ThirdPartyDeps.androidJar37)
 
-registerTestDep("androidJar37_1", ThirdPartyDeps.androidJar37_1, "ANDROID_JAR_37_1")
+registerConfig("androidJar37_1", ThirdPartyDeps.androidJar37_1)
 
-registerTestDep("androidJar37_2", ThirdPartyDeps.androidJar37_2, "ANDROID_JAR_37_2")
+registerConfig("androidJar37_2", ThirdPartyDeps.androidJar37_2)
 
-registerTestDep(
-  "androidJarLibcoreLatest",
-  ThirdPartyDeps.androidJarLibcoreLatest,
-  "ANDROID_JAR_LIBCORE_LATEST",
-)
+registerConfig("androidJarLibcoreLatest", ThirdPartyDeps.androidJarLibcoreLatest)
 
-registerTestDep("androidJarMain", ThirdPartyDeps.androidJarMain, "ANDROID_JAR_MAIN")
+registerConfig("androidJarMain", ThirdPartyDeps.androidJarMain)
 
-registerTestDep("apiDatabase", ThirdPartyDeps.apiDatabase, "API_DATABASE")
+registerConfig("apiDatabase", ThirdPartyDeps.apiDatabase)
 
-registerTestDep("artDefault", ThirdPartyDeps.artDefault, "ART_DEFAULT")
+registerConfig("artDefault", ThirdPartyDeps.artDefault)
 
-registerTestDep("art5_1_1", ThirdPartyDeps.art5_1_1, "ART_5_1_1")
+registerConfig("art5_1_1", ThirdPartyDeps.art5_1_1)
 
-registerTestDep("art6_0_1", ThirdPartyDeps.art6_0_1, "ART_6_0_1")
+registerConfig("art6_0_1", ThirdPartyDeps.art6_0_1)
 
-registerTestDep("art7_0_0", ThirdPartyDeps.art7_0_0, "ART_7_0_0")
+registerConfig("art7_0_0", ThirdPartyDeps.art7_0_0)
 
-registerTestDep("art8_1_0", ThirdPartyDeps.art8_1_0, "ART_8_1_0")
+registerConfig("art8_1_0", ThirdPartyDeps.art8_1_0)
 
-registerTestDep("art9_0_0", ThirdPartyDeps.art9_0_0, "ART_9_0_0")
+registerConfig("art9_0_0", ThirdPartyDeps.art9_0_0)
 
-registerTestDep("art10_0_0", ThirdPartyDeps.art10_0_0, "ART_10_0_0")
+registerConfig("art10_0_0", ThirdPartyDeps.art10_0_0)
 
-registerTestDep("art12_0_0", ThirdPartyDeps.art12_0_0, "ART_12_0_0")
+registerConfig("art12_0_0", ThirdPartyDeps.art12_0_0)
 
-registerTestDep("art13_0_0", ThirdPartyDeps.art13_0_0, "ART_13_0_0")
+registerConfig("art13_0_0", ThirdPartyDeps.art13_0_0)
 
-registerTestDep("art14_0_0", ThirdPartyDeps.art14_0_0, "ART_14_0_0")
+registerConfig("art14_0_0", ThirdPartyDeps.art14_0_0)
 
-registerTestDep("art15_0_0", ThirdPartyDeps.art15_0_0, "ART_15_0_0")
+registerConfig("art15_0_0", ThirdPartyDeps.art15_0_0)
 
-registerTestDep("art16_0_0", ThirdPartyDeps.art16_0_0, "ART_16_0_0")
+registerConfig("art16_0_0", ThirdPartyDeps.art16_0_0)
 
-registerTestDep("art16_1_0", ThirdPartyDeps.art16_1_0, "ART_16_1_0")
+registerConfig("art16_1_0", ThirdPartyDeps.art16_1_0)
 
-registerTestDep("art17_0_0", ThirdPartyDeps.art17_0_0, "ART_17_0_0")
+registerConfig("art17_0_0", ThirdPartyDeps.art17_0_0)
 
-registerTestDep("art17_1_0", ThirdPartyDeps.art17_1_0, "ART_17_1_0")
+registerConfig("art17_1_0", ThirdPartyDeps.art17_1_0)
 
-registerTestDep("art17_2_0", ThirdPartyDeps.art17_2_0, "ART_17_2_0")
+registerConfig("art17_2_0", ThirdPartyDeps.art17_2_0)
 
-registerTestDep("artMain", ThirdPartyDeps.artMain, "ART_MAIN")
+registerConfig("artMain", ThirdPartyDeps.artMain)
 
-registerTestDep("artTests", ThirdPartyDeps.artTests, "ART_TESTS")
+registerConfig("artTests", ThirdPartyDeps.artTests)
 
-registerTestDep("artTestsLegacy", ThirdPartyDeps.artTestsLegacy, "ART_TESTS_LEGACY")
+registerConfig("artTestsLegacy", ThirdPartyDeps.artTestsLegacy)
 
-registerTestDep("bookstory", ThirdPartyDeps.bookstory, "BOOKSTORY")
+registerConfig("bookstory", ThirdPartyDeps.bookstory)
 
-registerTestDep("bundletool", ThirdPartyDeps.bundletool, "BUNDLETOOL")
+registerConfig("bundletool", ThirdPartyDeps.bundletool)
 
-registerTestDep("chrome", ThirdPartyDeps.chrome, "CHROME")
+registerConfig("chrome", ThirdPartyDeps.chrome)
 
-registerTestDep("chromeBenchmark", ThirdPartyDeps.chromeBenchmark, "CHROME_BENCHMARK")
+registerConfig("chromeBenchmark", ThirdPartyDeps.chromeBenchmark)
 
-registerTestDep("chromeHeadless", ThirdPartyDeps.chromeHeadless, "CHROME_HEADLESS")
+registerConfig("chromeHeadless", ThirdPartyDeps.chromeHeadless)
 
-registerTestDep("chromeInternal", ThirdPartyDeps.chromeInternal, "CHROME_INTERNAL")
+registerConfig("chromeInternal", ThirdPartyDeps.chromeInternal)
 
-registerTestDep("clank", ThirdPartyDeps.clank, "CLANK")
+registerConfig("clank", ThirdPartyDeps.clank)
 
-registerTestDep("compilerApi", ThirdPartyDeps.compilerApi, "COMPILER_API")
+registerConfig("compilerApi", ThirdPartyDeps.compilerApi)
 
-registerTestDep(
+registerConfig(
   "composeExamplesChangedBitwiseValuePropagation",
   ThirdPartyDeps.composeExamplesChangedBitwiseValuePropagation,
-  "COMPOSE_EXAMPLES_CHANGED_BITWISE_VALUE_PROPAGATION",
 )
 
-registerTestDep("composeSamplesCrane", ThirdPartyDeps.composeSamplesCrane, "COMPOSE_SAMPLES_CRANE")
+registerConfig("composeSamplesCrane", ThirdPartyDeps.composeSamplesCrane)
 
-registerTestDep(
-  "composeSamplesJetCaster",
-  ThirdPartyDeps.composeSamplesJetCaster,
-  "COMPOSE_SAMPLES_JETCASTER",
-)
+registerConfig("composeSamplesJetCaster", ThirdPartyDeps.composeSamplesJetCaster)
 
-registerTestDep(
-  "composeSamplesJetChat",
-  ThirdPartyDeps.composeSamplesJetChat,
-  "COMPOSE_SAMPLES_JETCHAT",
-)
+registerConfig("composeSamplesJetChat", ThirdPartyDeps.composeSamplesJetChat)
 
-registerTestDep(
-  "composeSamplesJetLagged",
-  ThirdPartyDeps.composeSamplesJetLagged,
-  "COMPOSE_SAMPLES_JETLAGGED",
-)
+registerConfig("composeSamplesJetLagged", ThirdPartyDeps.composeSamplesJetLagged)
 
-registerTestDep(
-  "composeSamplesJetNews",
-  ThirdPartyDeps.composeSamplesJetNews,
-  "COMPOSE_SAMPLES_JETNEWS",
-)
+registerConfig("composeSamplesJetNews", ThirdPartyDeps.composeSamplesJetNews)
 
-registerTestDep(
-  "composeSamplesJetSnack",
-  ThirdPartyDeps.composeSamplesJetSnack,
-  "COMPOSE_SAMPLES_JETSNACK",
-)
+registerConfig("composeSamplesJetSnack", ThirdPartyDeps.composeSamplesJetSnack)
 
-registerTestDep("composeSamplesOwl", ThirdPartyDeps.composeSamplesOwl, "COMPOSE_SAMPLES_OWL")
+registerConfig("composeSamplesOwl", ThirdPartyDeps.composeSamplesOwl)
 
-registerTestDep("composeSamplesReply", ThirdPartyDeps.composeSamplesReply, "COMPOSE_SAMPLES_REPLY")
+registerConfig("composeSamplesReply", ThirdPartyDeps.composeSamplesReply)
 
-registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
+registerConfig("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs)
 
-registerTestDep("dagger", ThirdPartyDeps.dagger, "DAGGER")
+registerConfig("dagger", ThirdPartyDeps.dagger)
 
-registerTestDep("dalvik4_0_4", ThirdPartyDeps.dalvik4_0_4, "DALVIK_4_0_4")
+registerConfig("dalvik4_0_4", ThirdPartyDeps.dalvik4_0_4)
 
-registerTestDep("dalvik4_4_4", ThirdPartyDeps.dalvik4_4_4, "DALVIK_4_4_4")
+registerConfig("dalvik4_4_4", ThirdPartyDeps.dalvik4_4_4)
 
-registerTestDep("desugarJdkLibs11", ThirdPartyDeps.desugarJdkLibs11, "DESUGAR_JDK_LIBS_11")
+registerConfig("desugarJdkLibs11", ThirdPartyDeps.desugarJdkLibs11)
 
-registerTestDep("desugarJdkLibs8", ThirdPartyDeps.desugarJdkLibs8, "DESUGAR_JDK_LIBS_8")
+registerConfig("desugarJdkLibs8", ThirdPartyDeps.desugarJdkLibs8)
 
-registerTestDep(
-  "desugarLibraryConversions",
-  ThirdPartyDeps.desugarLibraryConversions,
-  "DESUGAR_LIBRARY_CONVERSIONS",
-)
+registerConfig("desugarLibraryConversions", ThirdPartyDeps.desugarLibraryConversions)
 
-registerTestDep(
-  "desugarLibraryRelease1_0_9",
-  ThirdPartyDeps.desugarLibraryRelease1_0_9,
-  "DESUGAR_LIBRARY_RELEASE_1_0_9",
-)
+registerConfig("desugarLibraryRelease1_0_9", ThirdPartyDeps.desugarLibraryRelease1_0_9)
 
-registerTestDep(
-  "desugarLibraryRelease1_0_10",
-  ThirdPartyDeps.desugarLibraryRelease1_0_10,
-  "DESUGAR_LIBRARY_RELEASE_1_0_10",
-)
+registerConfig("desugarLibraryRelease1_0_10", ThirdPartyDeps.desugarLibraryRelease1_0_10)
 
-registerTestDep(
-  "desugarLibraryRelease1_1_0",
-  ThirdPartyDeps.desugarLibraryRelease1_1_0,
-  "DESUGAR_LIBRARY_RELEASE_1_1_0",
-)
+registerConfig("desugarLibraryRelease1_1_0", ThirdPartyDeps.desugarLibraryRelease1_1_0)
 
-registerTestDep(
-  "desugarLibraryRelease1_1_1",
-  ThirdPartyDeps.desugarLibraryRelease1_1_1,
-  "DESUGAR_LIBRARY_RELEASE_1_1_1",
-)
+registerConfig("desugarLibraryRelease1_1_1", ThirdPartyDeps.desugarLibraryRelease1_1_1)
 
-registerTestDep(
-  "desugarLibraryRelease1_1_5",
-  ThirdPartyDeps.desugarLibraryRelease1_1_5,
-  "DESUGAR_LIBRARY_RELEASE_1_1_5",
-)
+registerConfig("desugarLibraryRelease1_1_5", ThirdPartyDeps.desugarLibraryRelease1_1_5)
 
-registerTestDep(
-  "desugarLibraryRelease2_0_3",
-  ThirdPartyDeps.desugarLibraryRelease2_0_3,
-  "DESUGAR_LIBRARY_RELEASE_2_0_3",
-)
+registerConfig("desugarLibraryRelease2_0_3", ThirdPartyDeps.desugarLibraryRelease2_0_3)
 
-registerTestDep("dex2Oat33_10", ThirdPartyDeps.dex2Oat33_10, "DEX2OAT_33_10")
+registerConfig("dex2Oat33_10", ThirdPartyDeps.dex2Oat33_10)
 
-registerTestDep("dex2Oat35_14", ThirdPartyDeps.dex2Oat35_14, "DEX2OAT_35_14")
+registerConfig("dex2Oat35_14", ThirdPartyDeps.dex2Oat35_14)
 
-registerTestDep("dex2Oat36_0", ThirdPartyDeps.dex2Oat36_0, "DEX2OAT_36_0")
+registerConfig("dex2Oat36_0", ThirdPartyDeps.dex2Oat36_0)
 
-registerTestDep("dex2OatHead", ThirdPartyDeps.dex2OatHead, "DEX2OAT_HEAD")
+registerConfig("dex2OatHead", ThirdPartyDeps.dex2OatHead)
 
-registerTestDep("examples", ThirdPartyDeps.examples, "EXAMPLES")
+registerConfig("examples", ThirdPartyDeps.examples)
 
-registerTestDep("examplesAndroidN", ThirdPartyDeps.examplesAndroidN, "EXAMPLES_ANDROID_N")
+registerConfig("examplesAndroidN", ThirdPartyDeps.examplesAndroidN)
 
-registerTestDep("examplesAndroidO", ThirdPartyDeps.examplesAndroidO, "EXAMPLES_ANDROID_O")
+registerConfig("examplesAndroidO", ThirdPartyDeps.examplesAndroidO)
 
-registerTestDep(
-  "examplesAndroidOGenerated",
-  ThirdPartyDeps.examplesAndroidOGenerated,
-  "EXAMPLES_ANDROID_O_GENERATED",
-)
+registerConfig("examplesAndroidOGenerated", ThirdPartyDeps.examplesAndroidOGenerated)
 
-registerTestDep(
-  "examplesAndroidOLegacy",
-  ThirdPartyDeps.examplesAndroidOLegacy,
-  "EXAMPLES_ANDROID_O_LEGACY",
-)
+registerConfig("examplesAndroidOLegacy", ThirdPartyDeps.examplesAndroidOLegacy)
 
-registerTestDep("examplesAndroidP", ThirdPartyDeps.examplesAndroidP, "EXAMPLES_ANDROID_P")
+registerConfig("examplesAndroidP", ThirdPartyDeps.examplesAndroidP)
 
-registerTestDep("feeder", ThirdPartyDeps.feeder, "FEEDER")
+registerConfig("feeder", ThirdPartyDeps.feeder)
 
-registerTestDep("fossifyFileManager", ThirdPartyDeps.fossifyFileManager, "FOSSIFY_FILE_MANAGER")
+registerConfig("fossifyFileManager", ThirdPartyDeps.fossifyFileManager)
 
-registerTestDep("framework", ThirdPartyDeps.framework, "FRAMEWORK")
+registerConfig("framework", ThirdPartyDeps.framework)
 
-registerTestDep("gmscoreLatest", ThirdPartyDeps.gmscoreLatest, "GMSCORE_LATEST")
+registerConfig("gmscoreLatest", ThirdPartyDeps.gmscoreLatest)
 
-registerTestDep("gmscoreV10", ThirdPartyDeps.gmscoreV10, "GMSCORE_V10")
+registerConfig("gmscoreV10", ThirdPartyDeps.gmscoreV10)
 
-registerTestDep("googleJavaFormat", ThirdPartyDeps.googleJavaFormat, "GOOGLE_JAVA_FORMAT")
+registerConfig("googleJavaFormat", ThirdPartyDeps.googleJavaFormat)
 
-registerTestDep("googleKotlinFormat", ThirdPartyDeps.googleKotlinFormat, "GOOGLE_KOTLIN_FORMAT")
+registerConfig("googleKotlinFormat", ThirdPartyDeps.googleKotlinFormat)
 
-registerTestDep("gson", ThirdPartyDeps.gson, "GSON")
+registerConfig("gson", ThirdPartyDeps.gson)
 
-registerTestDep("guavaJre", ThirdPartyDeps.guavaJre, "GUAVA_JRE")
+registerConfig("guavaJre", ThirdPartyDeps.guavaJre)
 
-registerTestDep(
-  "internalIssue127524985",
-  ThirdPartyDeps.internalIssue127524985,
-  "INTERNAL_ISSUE_127524985",
-)
+registerConfig("internalIssue127524985", ThirdPartyDeps.internalIssue127524985)
 
-registerTestDep("jacoco", ThirdPartyDeps.jacoco, "JACOCO")
+registerConfig("jacoco", ThirdPartyDeps.jacoco)
 
-registerTestDep("java8Runtime", ThirdPartyDeps.java8Runtime, "JAVA_8_RUNTIME")
+registerConfig("java8Runtime", ThirdPartyDeps.java8Runtime)
 
-registerTestDep("jdk8", ThirdPartyDeps.jdk8, "JDK_8")
+registerConfig("jdk8", ThirdPartyDeps.jdk8)
 
-registerTestDep("jdk9", ThirdPartyDeps.jdk9, "JDK_9")
+registerConfig("jdk9", ThirdPartyDeps.jdk9)
 
-registerTestDep("jdk11", ThirdPartyDeps.jdk11, "JDK_11")
+registerConfig("jdk11", ThirdPartyDeps.jdk11)
 
-registerTestDep("jdk11Test", ThirdPartyDeps.jdk11Test, "JDK11_TEST")
+registerConfig("jdk11Test", ThirdPartyDeps.jdk11Test)
 
-registerTestDep("jdk17", ThirdPartyDeps.jdk17, "JDK_17")
+registerConfig("jdk17", ThirdPartyDeps.jdk17)
 
-registerTestDep("jdk21", ThirdPartyDeps.jdk21, "JDK_21")
+registerConfig("jdk21", ThirdPartyDeps.jdk21)
 
-registerTestDep("jdk21Float16Test", ThirdPartyDeps.jdk21Float16Test, "JDK21_FLOAT16_TEST")
+registerConfig("jdk21Float16Test", ThirdPartyDeps.jdk21Float16Test)
 
-registerTestDep("jdk25", ThirdPartyDeps.jdk25, "JDK_25")
+registerConfig("jdk25", ThirdPartyDeps.jdk25)
 
-registerTestDep("jdk27", ThirdPartyDeps.jdk27, "JDK_27")
+registerConfig("jdk27", ThirdPartyDeps.jdk27)
 
-registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
+registerConfig("jdwpTests", ThirdPartyDeps.jdwpTests)
 
-registerTestDep("jsr223", ThirdPartyDeps.jsr223, "JSR223")
+registerConfig("jsr223", ThirdPartyDeps.jsr223)
 
-registerTestDep("keepassdx", ThirdPartyDeps.keepassdx, "KEEPASSDX")
+registerConfig("keepassdx", ThirdPartyDeps.keepassdx)
 
-registerTestDep(
-  "kotlinCompiler1_3_72",
-  ThirdPartyDeps.kotlinCompiler1_3_72,
-  "KOTLIN_COMPILER_1_3_72",
-)
+registerConfig("kotlinCompiler1_3_72", ThirdPartyDeps.kotlinCompiler1_3_72)
 
-registerTestDep(
-  "kotlinCompiler1_4_20",
-  ThirdPartyDeps.kotlinCompiler1_4_20,
-  "KOTLIN_COMPILER_1_4_20",
-)
+registerConfig("kotlinCompiler1_4_20", ThirdPartyDeps.kotlinCompiler1_4_20)
 
-registerTestDep("kotlinCompiler1_5_0", ThirdPartyDeps.kotlinCompiler1_5_0, "KOTLIN_COMPILER_1_5_0")
+registerConfig("kotlinCompiler1_5_0", ThirdPartyDeps.kotlinCompiler1_5_0)
 
-registerTestDep("kotlinCompiler1_6_0", ThirdPartyDeps.kotlinCompiler1_6_0, "KOTLIN_COMPILER_1_6_0")
+registerConfig("kotlinCompiler1_6_0", ThirdPartyDeps.kotlinCompiler1_6_0)
 
-registerTestDep("kotlinCompiler1_7_0", ThirdPartyDeps.kotlinCompiler1_7_0, "KOTLIN_COMPILER_1_7_0")
+registerConfig("kotlinCompiler1_7_0", ThirdPartyDeps.kotlinCompiler1_7_0)
 
-registerTestDep("kotlinCompiler1_8_0", ThirdPartyDeps.kotlinCompiler1_8_0, "KOTLIN_COMPILER_1_8_0")
+registerConfig("kotlinCompiler1_8_0", ThirdPartyDeps.kotlinCompiler1_8_0)
 
-registerTestDep(
-  "kotlinCompiler1_9_21",
-  ThirdPartyDeps.kotlinCompiler1_9_21,
-  "KOTLIN_COMPILER_1_9_21",
-)
+registerConfig("kotlinCompiler1_9_21", ThirdPartyDeps.kotlinCompiler1_9_21)
 
-registerTestDep(
-  "kotlinCompiler2_0_20",
-  ThirdPartyDeps.kotlinCompiler2_0_20,
-  "KOTLIN_COMPILER_2_0_20",
-)
+registerConfig("kotlinCompiler2_0_20", ThirdPartyDeps.kotlinCompiler2_0_20)
 
-registerTestDep(
-  "kotlinCompiler2_1_10",
-  ThirdPartyDeps.kotlinCompiler2_1_10,
-  "KOTLIN_COMPILER_2_1_10",
-)
+registerConfig("kotlinCompiler2_1_10", ThirdPartyDeps.kotlinCompiler2_1_10)
 
-registerTestDep("kotlinCompiler2_2_0", ThirdPartyDeps.kotlinCompiler2_2_0, "KOTLIN_COMPILER_2_2_0")
+registerConfig("kotlinCompiler2_2_0", ThirdPartyDeps.kotlinCompiler2_2_0)
 
-registerTestDep(
-  "kotlinCompiler2_3_10",
-  ThirdPartyDeps.kotlinCompiler2_3_10,
-  "KOTLIN_COMPILER_2_3_10",
-)
+registerConfig("kotlinCompiler2_3_10", ThirdPartyDeps.kotlinCompiler2_3_10)
 
-registerTestDep(
-  "kotlinCompiler2_4_20",
-  ThirdPartyDeps.kotlinCompiler2_4_20,
-  "KOTLIN_COMPILER_2_4_20",
-)
+registerConfig("kotlinCompiler2_4_20", ThirdPartyDeps.kotlinCompiler2_4_20)
 
-registerTestDep("kotlinCompilerDev", ThirdPartyDeps.kotlinCompilerDev, "KOTLIN_COMPILER_DEV")
+registerConfig("kotlinCompilerDev", ThirdPartyDeps.kotlinCompilerDev)
 
-registerTestDep(
-  "kotlinR8TestResources",
-  ThirdPartyDeps.kotlinR8TestResources,
-  "KOTLIN_R8_TEST_RESOURCES",
-)
+registerConfig("kotlinR8TestResources", ThirdPartyDeps.kotlinR8TestResources)
 
-registerTestDep("kotlinxCoroutines", ThirdPartyDeps.kotlinxCoroutines, "KOTLINX_COROUTINES")
+registerConfig("kotlinxCoroutines", ThirdPartyDeps.kotlinxCoroutines)
 
-registerTestDep("multidex", ThirdPartyDeps.multidex, "MULTIDEX")
+registerConfig("multidex", ThirdPartyDeps.multidex)
 
-registerTestDep("nest", ThirdPartyDeps.nest, "NEST")
+registerConfig("nest", ThirdPartyDeps.nest)
 
-registerTestDep("newpipe", ThirdPartyDeps.newpipe, "NEWPIPE")
+registerConfig("newpipe", ThirdPartyDeps.newpipe)
 
-registerTestDep("nowinandroid", ThirdPartyDeps.nowinandroid, "NOWINANDROID")
+registerConfig("nowinandroid", ThirdPartyDeps.nowinandroid)
 
-registerTestDep("omninotes", ThirdPartyDeps.omninotes, "OMNINOTES")
+registerConfig("omninotes", ThirdPartyDeps.omninotes)
 
-registerTestDep("opentracks", ThirdPartyDeps.opentracks, "OPENTRACKS")
+registerConfig("opentracks", ThirdPartyDeps.opentracks)
 
-registerTestDep(
+registerConfig(
   "processKeepRulesBinaryCompatibility",
   ThirdPartyDeps.processKeepRulesBinaryCompatibility,
-  "PROCESS_KEEP_RULES_BINARY_COMPATIBILITY",
 )
 
-registerTestDep("proguard7_0_0", ThirdPartyDeps.proguard7_0_0, "PROGUARD_7_0_0")
+registerConfig("proguard7_0_0", ThirdPartyDeps.proguard7_0_0)
 
-registerTestDep("proguard7_7_0", ThirdPartyDeps.proguard7_7_0, "PROGUARD_7_7_0")
+registerConfig("proguard7_7_0", ThirdPartyDeps.proguard7_7_0)
 
-registerTestDep("proguardsettings", ThirdPartyDeps.proguardsettings, "PROGUARD_SETTINGS")
+registerConfig("proguardsettings", ThirdPartyDeps.proguardsettings)
 
-registerTestDep(
-  "protoRuntimeEdition2023",
-  ThirdPartyDeps.protoRuntimeEdition2023,
-  "PROTO_RUNTIME_EDITION2023",
-)
+registerConfig("protoRuntimeEdition2023", ThirdPartyDeps.protoRuntimeEdition2023)
 
-registerTestDep("protoRuntimeLegacy", ThirdPartyDeps.protoRuntimeLegacy, "PROTO_RUNTIME_LEGACY")
+registerConfig("protoRuntimeLegacy", ThirdPartyDeps.protoRuntimeLegacy)
 
-registerTestDep(
-  "protoTestEdition2023",
-  ThirdPartyDeps.protoTestEdition2023,
-  "PROTO_TEST_EDITION2023",
-)
+registerConfig("protoTestEdition2023", ThirdPartyDeps.protoTestEdition2023)
 
-registerTestDep("protoTestProto2", ThirdPartyDeps.protoTestProto2, "PROTO_TEST_PROTO2")
+registerConfig("protoTestProto2", ThirdPartyDeps.protoTestProto2)
 
-registerTestDep("protoTestProto3", ThirdPartyDeps.protoTestProto3, "PROTO_TEST_PROTO3")
+registerConfig("protoTestProto3", ThirdPartyDeps.protoTestProto3)
 
-registerTestDep("r8", ThirdPartyDeps.r8, "R8")
+registerConfig("r8", ThirdPartyDeps.r8)
 
-registerTestDep("r8Mappings", ThirdPartyDeps.r8Mappings, "R8_MAPPINGS")
+registerConfig("r8Mappings", ThirdPartyDeps.r8Mappings)
 
-registerTestDep("r8v2_0_74", ThirdPartyDeps.r8v2_0_74, "R8_V2_0_74")
+registerConfig("r8v2_0_74", ThirdPartyDeps.r8v2_0_74)
 
-registerTestDep("r8v3_2_54", ThirdPartyDeps.r8v3_2_54, "R8_V3_2_54")
+registerConfig("r8v3_2_54", ThirdPartyDeps.r8v3_2_54)
 
-registerTestDep("r8v8_0_46", ThirdPartyDeps.r8v8_0_46, "R8_V8_0_46")
+registerConfig("r8v8_0_46", ThirdPartyDeps.r8v8_0_46)
 
-registerTestDep("readyou", ThirdPartyDeps.readyou, "READYOU")
+registerConfig("readyou", ThirdPartyDeps.readyou)
 
-registerTestDep("retraceBenchmark", ThirdPartyDeps.retraceBenchmark, "RETRACE_BENCHMARK")
+registerConfig("retraceBenchmark", ThirdPartyDeps.retraceBenchmark)
 
-registerTestDep(
-  "retraceBinaryCompatibility",
-  ThirdPartyDeps.retraceBinaryCompatibility,
-  "RETRACE_BINARY_COMPATIBILITY",
-)
+registerConfig("retraceBinaryCompatibility", ThirdPartyDeps.retraceBinaryCompatibility)
 
-registerTestDep("retraceInternal", ThirdPartyDeps.retraceInternal, "RETRACE_INTERNAL")
+registerConfig("retraceInternal", ThirdPartyDeps.retraceInternal)
 
-registerTestDep(
-  "retracePartitionFormats",
-  ThirdPartyDeps.retracePartitionFormats,
-  "RETRACE_PARTITION_FORMATS",
-)
+registerConfig("retracePartitionFormats", ThirdPartyDeps.retracePartitionFormats)
 
-registerTestDep("rhino", ThirdPartyDeps.rhino, "RHINO")
+registerConfig("rhino", ThirdPartyDeps.rhino)
 
-registerTestDep("rhinoAndroid", ThirdPartyDeps.rhinoAndroid, "RHINO_ANDROID")
+registerConfig("rhinoAndroid", ThirdPartyDeps.rhinoAndroid)
 
-registerTestDep("smali", ThirdPartyDeps.smali, "SMALI")
+registerConfig("smali", ThirdPartyDeps.smali)
 
-registerTestDep("opensourceNewpipe", ThirdPartyDeps.opensourceNewpipe, "OPENSOURCE_NEWPIPE")
+registerConfig("opensourceNewpipe", ThirdPartyDeps.opensourceNewpipe)
 
-registerTestDep("signalAndroid", ThirdPartyDeps.signalAndroid, "SIGNAL_ANDROID")
+registerConfig("signalAndroid", ThirdPartyDeps.signalAndroid)
 
-registerTestDep("systemUI", ThirdPartyDeps.systemUI, "SYSTEM_UI")
+registerConfig("systemUI", ThirdPartyDeps.systemUI)
 
-registerTestDep("tachiyomi", ThirdPartyDeps.tachiyomi, "TACHIYOMI")
+registerConfig("tachiyomi", ThirdPartyDeps.tachiyomi)
 
-registerTestDep("tivi", ThirdPartyDeps.tivi, "TIVI")
+registerConfig("tivi", ThirdPartyDeps.tivi)
 
-registerTestDep("tusky", ThirdPartyDeps.tusky, "TUSKY")
+registerConfig("tusky", ThirdPartyDeps.tusky)
 
-registerTestDep("youtube2140", ThirdPartyDeps.youtube2140, "YOUTUBE_21_40")
+registerConfig("youtube2140", ThirdPartyDeps.youtube2140)
 
-registerTestDep("youtube2140D8Merge", ThirdPartyDeps.youtube2140D8Merge, "YOUTUBE_21_40_D8_MERGE")
+registerConfig("youtube2140D8Merge", ThirdPartyDeps.youtube2140D8Merge)
 
 configurations.consumable("examplesClasses") {
   val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.examples.packageName}")
