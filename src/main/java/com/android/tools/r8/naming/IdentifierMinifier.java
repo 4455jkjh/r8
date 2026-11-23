@@ -45,18 +45,15 @@ public class IdentifierMinifier {
         appView.appInfo().classes(),
         clazz -> {
           if (appView.getKeepInfo(clazz).isAdaptClassStringsEnabled()) {
-            for (DexEncodedField field : clazz.staticFields()) {
-              adaptClassStringsInStaticField(field);
-            }
+            clazz.forEachProgramStaticField(this::adaptClassStringsInStaticField);
           }
         },
         appView.options().getThreadingModule(),
         executorService);
   }
 
-  private void adaptClassStringsInStaticField(DexEncodedField field) {
-    assert field.isStatic();
-    DexValueString staticValue = field.getStaticValue().asDexValueString();
+  private void adaptClassStringsInStaticField(ProgramField field) {
+    DexValueString staticValue = field.getDefinition().getStaticValue().asDexValueString();
     if (staticValue != null) {
       field.setStaticValue(
           new DexValueString(getRenamedStringLiteral(appView, staticValue.getValue())));
@@ -104,7 +101,7 @@ public class IdentifierMinifier {
         field.getDefinition().getStaticValue().asDexItemBasedValueString();
     DexString replacement =
         staticValue.getNameComputationInfo().computeNameFor(staticValue.getValue(), appView);
-    field.getDefinition().setStaticValue(new DexValueString(replacement));
+    field.setStaticValue(new DexValueString(replacement));
   }
 
   public void rewriteDexItemBasedConstStringInStaticFields(ExecutorService executorService)
@@ -128,10 +125,8 @@ public class IdentifierMinifier {
         staticValue
             .getNameComputationInfo()
             .rewrittenWithLens(appView.graphLens(), appView.codeLens());
-    field
-        .getDefinition()
-        .setStaticValue(
-            new DexItemBasedValueString(rewrittenReference, rewrittenNameComputationInfo));
+    field.setStaticValue(
+        new DexItemBasedValueString(rewrittenReference, rewrittenNameComputationInfo));
   }
 
   private static boolean hasExplicitStaticDexItemBasedValueString(DexEncodedField field) {

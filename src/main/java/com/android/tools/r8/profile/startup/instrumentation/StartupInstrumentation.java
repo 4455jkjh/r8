@@ -137,17 +137,18 @@ public class StartupInstrumentation {
     DexProgramClass instrumentationServerImplClass =
         InstrumentationServerImplFactory.createClass(dexItemFactory);
     if (instrumentationOptions.hasTag()) {
-      instrumentationServerImplClass
-          .lookupUniqueStaticFieldWithName(dexItemFactory.createString("writeToLogcat"))
-          .setStaticValue(DexValueBoolean.create(true));
-      instrumentationServerImplClass
-          .lookupUniqueStaticFieldWithName(
-              dexItemFactory.createString("writeToLogcatIncludeDuplicates"))
-          .setStaticValue(DexValueBoolean.create(true));
-      instrumentationServerImplClass
-          .lookupUniqueStaticFieldWithName(dexItemFactory.createString("logcatTag"))
-          .setStaticValue(
-              new DexValueString(dexItemFactory.createString(instrumentationOptions.getTag())));
+      instrumentationServerImplClass.setStaticValue(
+          instrumentationServerImplClass.lookupUniqueStaticFieldWithName(
+              dexItemFactory.createString("writeToLogcat")),
+          DexValueBoolean.create(true));
+      instrumentationServerImplClass.setStaticValue(
+          instrumentationServerImplClass.lookupUniqueStaticFieldWithName(
+              dexItemFactory.createString("writeToLogcatIncludeDuplicates")),
+          DexValueBoolean.create(true));
+      instrumentationServerImplClass.setStaticValue(
+          instrumentationServerImplClass.lookupUniqueStaticFieldWithName(
+              dexItemFactory.createString("logcatTag")),
+          new DexValueString(dexItemFactory.createString(instrumentationOptions.getTag())));
     }
 
     return ImmutableList.of(

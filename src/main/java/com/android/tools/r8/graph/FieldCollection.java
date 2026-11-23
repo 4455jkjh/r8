@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,6 +41,8 @@ public class FieldCollection {
 
   private final DexClass holder;
   private FieldCollectionBacking backing;
+  private volatile OptionalBool cachedDefaultValuesForStaticFieldsMayTriggerAllocation =
+      OptionalBool.unknown();
 
   private FieldCollection(DexClass holder, FieldCollectionBacking backing) {
     this.holder = holder;
@@ -150,6 +153,41 @@ public class FieldCollection {
     return true;
   }
 
+  private synchronized void resetStaticFieldCaches() {
+    cachedDefaultValuesForStaticFieldsMayTriggerAllocation = OptionalBool.unknown();
+  }
+
+  public boolean defaultValuesForStaticFieldsMayTriggerAllocation() {
+    OptionalBool cached = cachedDefaultValuesForStaticFieldsMayTriggerAllocation;
+    if (!cached.isUnknown()) {
+      assert verifyCachedDefaultValuesForStaticFieldsMayTriggerAllocation();
+      return cached.isTrue();
+    }
+    synchronized (this) {
+      cached = cachedDefaultValuesForStaticFieldsMayTriggerAllocation;
+      if (cached.isUnknown()) {
+        cached = OptionalBool.of(computeDefaultValuesForStaticFieldsMayTriggerAllocation());
+        cachedDefaultValuesForStaticFieldsMayTriggerAllocation = cached;
+      }
+      return cached.isTrue();
+    }
+  }
+
+  private synchronized boolean verifyCachedDefaultValuesForStaticFieldsMayTriggerAllocation() {
+    OptionalBool cached = cachedDefaultValuesForStaticFieldsMayTriggerAllocation;
+    return cached.isUnknown()
+        || cached.isTrue() == computeDefaultValuesForStaticFieldsMayTriggerAllocation();
+  }
+
+  private boolean computeDefaultValuesForStaticFieldsMayTriggerAllocation() {
+    for (DexEncodedField field : backing.staticFieldsAsList()) {
+      if (field.hasExplicitStaticValue() && field.getStaticValue().mayHaveSideEffects()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public boolean hasStaticFields() {
     return backing.numberOfStaticFields() > 0;
   }
@@ -161,22 +199,32 @@ public class FieldCollection {
   public void appendStaticField(DexEncodedField field) {
     assert verifyCorrectnessOfFieldHolder(field);
     backing.appendStaticField(field);
+    resetStaticFieldCaches();
     assert backing.verify();
   }
 
   public void appendStaticFields(Collection<DexEncodedField> fields) {
     assert verifyCorrectnessOfFieldHolders(fields);
     backing.appendStaticFields(fields);
+    resetStaticFieldCaches();
     assert backing.verify();
   }
 
   public void clearStaticFields() {
     backing.clearStaticFields();
+    resetStaticFieldCaches();
   }
 
   public void setStaticFields(DexEncodedField[] fields) {
     backing.setStaticFields(fields);
+    resetStaticFieldCaches();
     assert backing.verify();
+  }
+
+  public synchronized void setStaticValue(DexEncodedField field, DexValue value) {
+    assert verifyCorrectnessOfFieldHolder(field);
+    field.setStaticValue(value);
+    cachedDefaultValuesForStaticFieldsMayTriggerAllocation = OptionalBool.unknown();
   }
 
   public boolean hasInstanceFields() {
@@ -222,6 +270,7 @@ public class FieldCollection {
 
   public void replaceFields(Function<DexEncodedField, DexEncodedField> replacement) {
     backing.replaceFields(replacement);
+    resetStaticFieldCaches();
   }
 
   public List<DexEncodedField> allFieldsSorted() {

@@ -135,7 +135,7 @@ public class IRConverter {
   protected final CodeRewriterPassCollection initialRewriterPassCollection;
   protected final CodeRewriterPassCollection rewriterPassCollection;
   public final ReprocessingOptimizationCollection reprocessingOptimizationCollection;
-  private final ClassInitializerDefaultsOptimization classInitializerDefaultsOptimization;
+  protected final ClassInitializerDefaultsOptimization classInitializerDefaultsOptimization;
   protected final CfInstructionDesugaringCollectionSupplier instructionDesugaring;
   protected FieldAccessAnalysis fieldAccessAnalysis;
   protected final LibraryMethodOverrideAnalysis libraryMethodOverrideAnalysis;

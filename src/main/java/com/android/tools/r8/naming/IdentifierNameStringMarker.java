@@ -18,6 +18,7 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
@@ -104,30 +105,28 @@ public class IdentifierNameStringMarker extends CodeRewriterPass<AppInfoWithClas
       throws ExecutionException {
     ThreadUtils.processItems(
         appView.appInfo().classes(),
-        clazz -> {
-          for (DexEncodedField field : clazz.staticFields()) {
-            decoupleIdentifierNameStringInStaticField(field);
-          }
-        },
+        this::decoupleIdentifierNameStringsInStaticFields,
         appView.options().getThreadingModule(),
         executorService);
   }
 
-  private void decoupleIdentifierNameStringInStaticField(DexEncodedField encodedField) {
-    assert encodedField.accessFlags.isStatic();
-    if (!identifierNameStrings.contains(encodedField.getReference())) {
-      return;
-    }
-    DexValueString staticValue = encodedField.getStaticValue().asDexValueString();
-    if (staticValue == null) {
-      return;
-    }
-    DexString original = staticValue.getValue();
-    Definition itemBasedString = inferMemberOrTypeFromNameString(appView(), original);
-    if (itemBasedString != null) {
-      encodedField.setStaticValue(
-          new DexItemBasedValueString(
-              itemBasedString.getReference(), ClassNameComputationInfo.none()));
+  private void decoupleIdentifierNameStringsInStaticFields(DexProgramClass clazz) {
+    for (DexEncodedField encodedField : clazz.staticFields()) {
+      if (!identifierNameStrings.contains(encodedField.getReference())) {
+        continue;
+      }
+      DexValueString staticValue = encodedField.getStaticValue().asDexValueString();
+      if (staticValue == null) {
+        continue;
+      }
+      DexString original = staticValue.getValue();
+      Definition itemBasedString = inferMemberOrTypeFromNameString(appView(), original);
+      if (itemBasedString != null) {
+        clazz.setStaticValue(
+            encodedField,
+            new DexItemBasedValueString(
+                itemBasedString.getReference(), ClassNameComputationInfo.none()));
+      }
     }
   }
 

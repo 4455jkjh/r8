@@ -69,4 +69,8 @@ public abstract class DexClassAndField extends DexClassAndMember<DexEncodedField
   public boolean isEffectivelyFinal(AppView<AppInfoWithLiveness> appView) {
     return false;
   }
+
+  public void setStaticValue(DexValue staticValue) {
+    getHolder().setStaticValue(getDefinition(), staticValue);
+  }
 }

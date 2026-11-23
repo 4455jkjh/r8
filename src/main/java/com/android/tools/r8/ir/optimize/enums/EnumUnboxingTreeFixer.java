@@ -15,7 +15,6 @@ import com.android.tools.r8.graph.CfCodeWithLens;
 import com.android.tools.r8.graph.DexArrayType;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexEncodedField;
-import com.android.tools.r8.graph.DexEncodedField.Builder;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -1051,7 +1050,7 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
                     method.isNonPrivateVirtualMethod(), OptionalBool.FALSE));
   }
 
-  @SuppressWarnings({"BadImport", "ReferenceEquality"})
+  @SuppressWarnings("ReferenceEquality")
   private DexEncodedField fixupEncodedField(DexEncodedField encodedField) {
     DexField field = encodedField.getReference();
     DexType newType = fixupType(field.type);
@@ -1060,14 +1059,17 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
     }
     DexField newField = field.withType(newType, factory);
     lensBuilder.move(field, newField);
-    DexEncodedField newEncodedField =
-        encodedField.toTypeSubstitutedField(appView, newField, Builder::clearDynamicType);
-    if (encodedField.isStatic() && encodedField.hasExplicitStaticValue()) {
-      assert encodedField.getStaticValue() == DexValue.DexValueNull.NULL;
-      newEncodedField.setStaticValue(DexValue.DexValueInt.DEFAULT);
-      // TODO(b/150593449): Support conversion from DexValueEnum to DexValueInt.
-    }
-    return newEncodedField;
+    return encodedField.toTypeSubstitutedField(
+        appView,
+        newField,
+        builder -> {
+          builder.clearDynamicType();
+          if (encodedField.isStatic() && encodedField.hasExplicitStaticValue()) {
+            assert encodedField.getStaticValue() == DexValue.DexValueNull.NULL;
+            builder.clearStaticValue();
+            // TODO(b/150593449): Support conversion from DexValueEnum to DexValueInt.
+          }
+        });
   }
 
   private DexProto fixupProto(DexProto proto) {

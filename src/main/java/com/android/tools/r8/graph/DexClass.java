@@ -453,6 +453,10 @@ public abstract class DexClass extends DexDefinition
     setStaticFields(fields.toArray(DexEncodedField.EMPTY_ARRAY));
   }
 
+  public void setStaticValue(DexEncodedField field, DexValue value) {
+    fieldCollection.setStaticValue(field, value);
+  }
+
   public List<DexEncodedField> instanceFields() {
     return fieldCollection.instanceFieldsAsList();
   }
@@ -1003,9 +1007,7 @@ public abstract class DexClass extends DexDefinition
   }
 
   public boolean defaultValuesForStaticFieldsMayTriggerAllocation() {
-    return staticFields().stream()
-        .anyMatch(
-            field -> field.hasExplicitStaticValue() && field.getStaticValue().mayHaveSideEffects());
+    return fieldCollection.defaultValuesForStaticFieldsMayTriggerAllocation();
   }
 
   public List<InnerClassAttribute> getInnerClasses() {

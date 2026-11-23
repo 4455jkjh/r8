@@ -254,15 +254,11 @@ public class DexEncodedField extends DexEncodedMember<DexEncodedField, DexField>
     return staticValue != null;
   }
 
-  public void setStaticValue(DexValue staticValue) {
+  // Should not be used directly - all updates must go through FieldCollection.
+  void setStaticValue(DexValue staticValue) {
     assert accessFlags.isStatic();
     assert staticValue != null;
     this.staticValue = staticValue;
-  }
-
-  public void clearStaticValue() {
-    assert accessFlags.isStatic();
-    this.staticValue = null;
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -485,6 +481,10 @@ public class DexEncodedField extends DexEncodedMember<DexEncodedField, DexField>
     public Builder setGenericSignature(FieldTypeSignature genericSignature) {
       this.genericSignature = genericSignature;
       return this;
+    }
+
+    public Builder clearStaticValue() {
+      return setStaticValue(null);
     }
 
     public Builder setStaticValue(DexValue staticValue) {

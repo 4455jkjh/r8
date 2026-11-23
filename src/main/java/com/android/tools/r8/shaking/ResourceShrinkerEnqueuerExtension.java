@@ -657,8 +657,8 @@ public class ResourceShrinkerEnqueuerExtension
       DexValue staticValue = staticField.getStaticValue();
       if (staticValue.isDexValueInt()) {
         Integer value = staticValue.asDexValueInt().getValue();
-        staticField.setStaticValue(
-            DexValue.DexValueResourceNumber.create(staticValue.asDexValueInt().value));
+        programClass.setStaticValue(
+            staticField, DexValue.DexValueResourceNumber.create(staticValue.asDexValueInt().value));
         assert !valueMapping.containsKey(staticField.getReference());
         valueMapping.put(staticField.getReference(), value);
       } else if (staticValue.isDexValueResourceNumber()) {

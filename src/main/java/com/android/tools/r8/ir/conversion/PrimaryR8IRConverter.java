@@ -258,6 +258,7 @@ public class PrimaryR8IRConverter extends IRConverter {
       }
       reprocessingOptimizationCollection.waveDone();
       assert delayedOptimizationFeedback.noUpdatesLeft();
+      classInitializerDefaultsOptimization.onWaveDone();
       if (onWaveDoneActions != null) {
         onWaveDoneActions.forEach(Action::execute);
         onWaveDoneActions = null;

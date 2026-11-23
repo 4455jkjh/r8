@@ -53,7 +53,6 @@ import com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo;
 import com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.ClassNameMapping;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepClassInfo;
-import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Maps;
@@ -61,6 +60,7 @@ import com.google.common.collect.Sets;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -113,30 +113,11 @@ public class ClassInitializerDefaultsOptimization {
     }
   }
 
-  private static class WaveDoneAction implements Action {
-
-    private final Map<DexEncodedField, DexValue> fieldsWithStaticValues = new IdentityHashMap<>();
-
-    WaveDoneAction(Map<DexEncodedField, DexValue> fieldsWithStaticValues) {
-      this.fieldsWithStaticValues.putAll(fieldsWithStaticValues);
-    }
-
-    synchronized void join(Map<DexEncodedField, DexValue> fieldsWithStaticValues) {
-      this.fieldsWithStaticValues.putAll(fieldsWithStaticValues);
-    }
-
-    @Override
-    public void execute() {
-      // Update static field values of classes.
-      fieldsWithStaticValues.forEach(DexEncodedField::setStaticValue);
-    }
-  }
-
   private final AppView<?> appView;
   private final IRConverter converter;
   private final DexItemFactory dexItemFactory;
-
-  private WaveDoneAction waveDoneAction = null;
+  private final Map<DexProgramClass, Map<DexEncodedField, DexValue>> pendingStaticFieldValues =
+      new ConcurrentHashMap<>();
 
   public ClassInitializerDefaultsOptimization(AppView<?> appView, IRConverter converter) {
     this.appView = appView;
@@ -288,31 +269,32 @@ public class ClassInitializerDefaultsOptimization {
         // Remove these fields from the set of assigned static fields.
         feedback.modifyAppInfoWithLiveness(
             modifier -> candidates.forEach(modifier::removeWrittenField));
-
-        // Update the static value of the fields when the wave ends.
-        synchronized (this) {
-          if (waveDoneAction == null) {
-            waveDoneAction = new WaveDoneAction(fieldsWithStaticValues);
-            converter.addWaveDoneAction(
-                () -> {
-                  waveDoneAction.execute();
-                  waveDoneAction = null;
-                });
-          } else {
-            waveDoneAction.join(fieldsWithStaticValues);
-          }
-        }
       } else {
         assert false;
       }
-    } else {
-      fieldsWithStaticValues.forEach(DexEncodedField::setStaticValue);
     }
 
     if (!fieldsWithStaticValues.isEmpty()) {
+      if (converter.isInWave()) {
+        // Update the static value of the fields when the wave ends.
+        Map<DexEncodedField, DexValue> previous =
+            pendingStaticFieldValues.put(context.getHolder(), fieldsWithStaticValues);
+        assert previous == null;
+      } else {
+        fieldsWithStaticValues.forEach(context.getHolder()::setStaticValue);
+      }
       code.removeRedundantBlocks();
     }
     return new ClassInitializerDefaultsResult(fieldsWithStaticValues);
+  }
+
+  public void onWaveDone() {
+    if (pendingStaticFieldValues.isEmpty()) {
+      return;
+    }
+    pendingStaticFieldValues.forEach(
+        (holder, fieldsWithStaticValues) -> fieldsWithStaticValues.forEach(holder::setStaticValue));
+    pendingStaticFieldValues.clear();
   }
 
   private DexValue getDexStringValue(Value inValue, DexProgramClass holder) {
