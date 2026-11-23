@@ -1886,18 +1886,106 @@ public class KeepEdgeReader implements Opcodes {
     // is still procesed if seen for testing until deciding on the final semantics for this.
     private static final String UsesReflectionToXXXIncludeSubclasses = "includeSubclasses";
 
+    private static class QualifiedNameSelection {
+
+      private final AnnotationParsingContext parsingContext;
+      private final String selectionGroup;
+      private final String constantProperty;
+      private final String nameProperty;
+      private String selectedProperty;
+      private KeepQualifiedClassNamePattern pattern;
+
+      QualifiedNameSelection(
+          AnnotationParsingContext parsingContext,
+          String selectionGroup,
+          String constantProperty,
+          String nameProperty) {
+        this.parsingContext = parsingContext;
+        this.selectionGroup = selectionGroup;
+        this.constantProperty = constantProperty;
+        this.nameProperty = nameProperty;
+      }
+
+      boolean maybeVisit(String name, Object value) {
+        if (name.equals(constantProperty) && value instanceof Type) {
+          String descriptor = ((Type) value).getDescriptor();
+          if (!UNSPECIFIED_DESCRIPTOR.equals(descriptor)) {
+            checkNotAlreadySpecified(name);
+            selectedProperty = name;
+            pattern = KeepQualifiedClassNamePattern.exactFromDescriptor(descriptor);
+          }
+          return true;
+        }
+        if (name.equals(nameProperty) && value instanceof String) {
+          String typeName = (String) value;
+          if (!typeName.isEmpty()) {
+            checkNotAlreadySpecified(name);
+            selectedProperty = name;
+            pattern = KeepQualifiedClassNamePattern.exact(typeName);
+          }
+          return true;
+        }
+        return false;
+      }
+
+      private void checkNotAlreadySpecified(String name) {
+        if (selectedProperty != null) {
+          throw parsingContext
+              .group(selectionGroup)
+              .error(
+                  "Mutually exclusive properties: '"
+                      + selectedProperty
+                      + "' and '"
+                      + name
+                      + "' specified");
+        }
+      }
+
+      boolean isPresent() {
+        return pattern != null;
+      }
+
+      boolean isSelectionByName() {
+        return nameProperty.equals(selectedProperty);
+      }
+
+      KeepQualifiedClassNamePattern getRequiredPattern() {
+        if (pattern == null) {
+          throw parsingContext
+              .group(selectionGroup)
+              .error(
+                  "Expected one of '"
+                      + constantProperty
+                      + "' or '"
+                      + nameProperty
+                      + "' to be specified");
+        }
+        return pattern;
+      }
+    }
+
     protected final AnnotationParsingContext parsingContext;
 
-    protected KeepQualifiedClassNamePattern qualifiedName;
-    protected KeepQualifiedClassNamePattern annotationNamePattern;
+    private final QualifiedNameSelection classSelection;
+    private final QualifiedNameSelection annotationSelection;
     protected boolean includeSubclasses = true;
-    private String classSelectionProperty;
-    private String annotationSelectionProperty;
 
     UsesReflectionToXXXVisitor(
         AnnotationParsingContext parsingContext, AnnotationVisitor annotationVisitor) {
       super(parsingContext, annotationVisitor);
       this.parsingContext = parsingContext;
+      this.classSelection =
+          new QualifiedNameSelection(
+              parsingContext,
+              UsesReflectionToXXXClassSelectionGroup,
+              UsesReflectionToXXXClassConstant,
+              UsesReflectionToXXXClassName);
+      this.annotationSelection =
+          new QualifiedNameSelection(
+              parsingContext,
+              UsesReflectionToXXXAnnotationSelectionGroup,
+              UsesReflectionToXXXAnnotationConstant,
+              UsesReflectionToXXXAnnotationName);
       assert UsesReflectionToXXXClassSelectionGroup.equals(
           UsesReflectionToConstruct.classSelectionGroup);
       assert UsesReflectionToXXXClassSelectionGroup.equals(
@@ -1924,101 +2012,23 @@ public class KeepEdgeReader implements Opcodes {
     }
 
     protected boolean maybeVisitQualifiedName(String name, Object value) {
-      if (name.equals(UsesReflectionToXXXClassConstant) && value instanceof Type) {
-        String descriptor = ((Type) value).getDescriptor();
-        if (!UNSPECIFIED_DESCRIPTOR.equals(descriptor)) {
-          if (classSelectionProperty != null) {
-            throw parsingContext
-                .group(UsesReflectionToXXXClassSelectionGroup)
-                .error(
-                    "Mutually exclusive properties: '"
-                        + classSelectionProperty
-                        + "' and '"
-                        + name
-                        + "' specified");
-          }
-          classSelectionProperty = name;
-          qualifiedName = KeepQualifiedClassNamePattern.exactFromDescriptor(descriptor);
-        }
-        return true;
-      }
-      if (name.equals(UsesReflectionToXXXClassName) && value instanceof String) {
-        String className = (String) value;
-        if (!className.isEmpty()) {
-          if (classSelectionProperty != null) {
-            throw parsingContext
-                .group(UsesReflectionToXXXClassSelectionGroup)
-                .error(
-                    "Mutually exclusive properties: '"
-                        + classSelectionProperty
-                        + "' and '"
-                        + name
-                        + "' specified");
-          }
-          classSelectionProperty = name;
-          qualifiedName = KeepQualifiedClassNamePattern.exact(className);
-        }
-        return true;
-      }
-      return false;
+      return classSelection.maybeVisit(name, value);
+    }
+
+    protected boolean hasQualifiedName() {
+      return classSelection.isPresent();
     }
 
     protected boolean maybeVisitAnnotation(String name, Object value) {
-      if (name.equals(UsesReflectionToXXXAnnotationConstant) && value instanceof Type) {
-        String descriptor = ((Type) value).getDescriptor();
-        if (!UNSPECIFIED_DESCRIPTOR.equals(descriptor)) {
-          if (annotationSelectionProperty != null) {
-            throw parsingContext
-                .group(UsesReflectionToXXXAnnotationSelectionGroup)
-                .error(
-                    "Mutually exclusive properties: '"
-                        + annotationSelectionProperty
-                        + "' and '"
-                        + name
-                        + "' specified");
-          }
-          annotationSelectionProperty = name;
-          annotationNamePattern = KeepQualifiedClassNamePattern.exactFromDescriptor(descriptor);
-        }
-        return true;
-      }
-      if (name.equals(UsesReflectionToXXXAnnotationName) && value instanceof String) {
-        String annotationName = (String) value;
-        if (!annotationName.isEmpty()) {
-          if (annotationSelectionProperty != null) {
-            throw parsingContext
-                .group(UsesReflectionToXXXAnnotationSelectionGroup)
-                .error(
-                    "Mutually exclusive properties: '"
-                        + annotationSelectionProperty
-                        + "' and '"
-                        + name
-                        + "' specified");
-          }
-          annotationSelectionProperty = name;
-          annotationNamePattern = KeepQualifiedClassNamePattern.exact(annotationName);
-        }
-        return true;
-      }
-      return false;
+      return annotationSelection.maybeVisit(name, value);
     }
 
     protected boolean isAnnotationSelectionByName() {
-      return UsesReflectionToXXXAnnotationName.equals(annotationSelectionProperty);
+      return annotationSelection.isSelectionByName();
     }
 
     protected KeepQualifiedClassNamePattern getAnnotationNamePattern() {
-      if (annotationNamePattern == null) {
-        throw parsingContext
-            .group(UsesReflectionToXXXAnnotationSelectionGroup)
-            .error(
-                "Expected one of '"
-                    + UsesReflectionToXXXAnnotationConstant
-                    + "' or '"
-                    + UsesReflectionToXXXAnnotationName
-                    + "' to be specified");
-      }
-      return annotationNamePattern;
+      return annotationSelection.getRequiredPattern();
     }
 
     protected boolean maybeVisitIncludeSubclasses(String name, Object value) {
@@ -2030,16 +2040,7 @@ public class KeepEdgeReader implements Opcodes {
     }
 
     protected KeepClassItemPattern getKeepClassItemPattern() {
-      if (qualifiedName == null) {
-        throw parsingContext
-            .group(UsesReflectionToXXXClassSelectionGroup)
-            .error(
-                "Expected one of '"
-                    + UsesReflectionToXXXClassConstant
-                    + "' or '"
-                    + UsesReflectionToXXXClassName
-                    + "' to be specified");
-      }
+      KeepQualifiedClassNamePattern qualifiedName = classSelection.getRequiredPattern();
       return includeSubclasses
           ? KeepClassItemPattern.builder()
               .setInstanceOfPattern(
@@ -2621,12 +2622,12 @@ public class KeepEdgeReader implements Opcodes {
       // Retain the runtime annotation on matching surviving classes without preventing
       // shrinking, optimization, obfuscation, or access modification of those classes.
       KeepClassItemPattern annotatedClassPattern =
-          qualifiedName == null
+          hasQualifiedName()
               ? KeepClassItemPattern.builder()
+                  .copyFrom(getKeepClassItemPattern())
                   .setAnnotatedByPattern(OptionalPattern.of(annotationPattern))
                   .build()
               : KeepClassItemPattern.builder()
-                  .copyFrom(getKeepClassItemPattern())
                   .setAnnotatedByPattern(OptionalPattern.of(annotationPattern))
                   .build();
       KeepConstraints retainAnnotationConstraints =
