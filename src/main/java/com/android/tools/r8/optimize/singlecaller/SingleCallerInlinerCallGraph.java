@@ -18,7 +18,7 @@ import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -34,19 +34,7 @@ public class SingleCallerInlinerCallGraph extends CallGraphBase<Node> {
   }
 
   public ProgramMethodSet extractLeaves() {
-    ProgramMethodSet result = ProgramMethodSet.create();
-    Set<Node> removed = Sets.newIdentityHashSet();
-    Iterator<Node> nodeIterator = getNodes().iterator();
-    while (nodeIterator.hasNext()) {
-      Node node = nodeIterator.next();
-      if (node.isLeaf()) {
-        result.add(node.getProgramMethod());
-        nodeIterator.remove();
-        removed.add(node);
-      }
-    }
-    removed.forEach(Node::cleanForRemoval);
-    return result;
+    return extractNodes(Node::getOutDegree, Node::cleanForRemoval);
   }
 
   public static class Builder extends CallGraphBuilderBase<Node> {
@@ -98,16 +86,15 @@ public class SingleCallerInlinerCallGraph extends CallGraphBase<Node> {
       caller.callees.add(this);
     }
 
-    public void cleanForRemoval() {
-      assert callees.isEmpty();
-      if (caller != null) {
-        caller.callees.remove(this);
-        caller = null;
+    public void cleanForRemoval(List<Node> newLeaves) {
+      assert getRemainingDegree() == 0;
+      if (caller != null && caller.decrementRemainingDegree() == 0) {
+        newLeaves.add(caller);
       }
     }
 
-    public boolean isLeaf() {
-      return callees.isEmpty();
+    public int getOutDegree() {
+      return callees.size();
     }
 
     @Override

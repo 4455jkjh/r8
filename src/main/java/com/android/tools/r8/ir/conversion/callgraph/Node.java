@@ -110,41 +110,39 @@ public class Node extends NodeBase<Node> implements Comparable<Node>, CycleElimi
   }
 
   public void cleanCalleesAndWritersForRemoval(List<Node> newRoots) {
-    assert callers.isEmpty();
-    assert readers.isEmpty();
+    assert getRemainingDegree() == 0;
     for (Node callee : callees) {
-      boolean changed = callee.callers.remove(this);
-      assert changed;
-      if (callee.isRoot()) {
+      if (callee.decrementRemainingDegree() == 0) {
         newRoots.add(callee);
       }
     }
     for (Node writer : writers) {
-      boolean changed = writer.readers.remove(this);
-      assert changed;
-      if (writer.isRoot()) {
+      if (writer.decrementRemainingDegree() == 0) {
         newRoots.add(writer);
       }
     }
   }
 
   public void cleanCallersAndReadersForRemoval(List<Node> newLeaves) {
-    assert callees.isEmpty();
-    assert writers.isEmpty();
+    assert getRemainingDegree() == 0;
     for (Node caller : callers) {
-      boolean changed = caller.callees.remove(this);
-      assert changed;
-      if (caller.isLeaf()) {
+      if (caller.decrementRemainingDegree() == 0) {
         newLeaves.add(caller);
       }
     }
     for (Node reader : readers) {
-      boolean changed = reader.writers.remove(this);
-      assert changed;
-      if (reader.isLeaf()) {
+      if (reader.decrementRemainingDegree() == 0) {
         newLeaves.add(reader);
       }
     }
+  }
+
+  public int getInDegree() {
+    return callers.size() + readers.size();
+  }
+
+  public int getOutDegree() {
+    return callees.size() + writers.size();
   }
 
   public Set<Node> getCallers() {
@@ -191,10 +189,6 @@ public class Node extends NodeBase<Node> implements Comparable<Node>, CycleElimi
   @Override
   public boolean hasWriter(Node method) {
     return writers.contains(method);
-  }
-
-  public boolean isRoot() {
-    return callers.isEmpty() && readers.isEmpty();
   }
 
   public boolean isLeaf() {

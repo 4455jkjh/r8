@@ -10,9 +10,23 @@ import com.android.tools.r8.graph.ProgramMethod;
 public abstract class NodeBase<N extends NodeBase<N>> {
 
   private final ProgramMethod method;
+  private int remainingDegree;
 
   public NodeBase(ProgramMethod method) {
     this.method = method;
+  }
+
+  public final int getRemainingDegree() {
+    return remainingDegree;
+  }
+
+  final void setRemainingDegree(int remainingDegree) {
+    this.remainingDegree = remainingDegree;
+  }
+
+  public final int decrementRemainingDegree() {
+    assert remainingDegree > 0;
+    return --remainingDegree;
   }
 
   public abstract void addCallerConcurrently(N caller, boolean likelySpuriousCallEdge);
