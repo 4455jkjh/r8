@@ -278,8 +278,10 @@ public class DexCode extends Code
   }
 
   public DexDebugInfo debugInfoWithFakeThisParameter(DexMethod method, DexItemFactory factory) {
+    // The method already includes the fake this parameter, which is added below.
+    assert method.getArity() > 0;
     EventBasedDebugInfo eventBasedInfo =
-        DexDebugInfo.convertToEventBased(this, factory, method.getArity());
+        DexDebugInfo.convertToEventBased(this, factory, method.getArity() - 1);
     if (eventBasedInfo == null) {
       return eventBasedInfo;
     }
@@ -298,9 +300,11 @@ public class DexCode extends Code
 
     String fakeThisName = FAKE_THIS_PREFIX.repeat(largestPrefix + 1) + FAKE_THIS_SUFFIX;
     DexString[] parameters = eventBasedInfo.parameters;
-    DexString[] newParameters = new DexString[parameters.length + 1];
+    // The parameter names in the debug info may omit trailing unnamed parameters.
+    DexString[] newParameters = new DexString[method.getArity()];
     newParameters[0] = factory.createString(fakeThisName);
-    System.arraycopy(parameters, 0, newParameters, 1, parameters.length);
+    System.arraycopy(
+        parameters, 0, newParameters, 1, Math.min(parameters.length, method.getArity() - 1));
     return new EventBasedDebugInfo(eventBasedInfo.startLine, newParameters, eventBasedInfo.events);
   }
 

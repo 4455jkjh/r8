@@ -136,10 +136,11 @@ public class PrivateInterfaceMethodStaticizer {
   }
 
   // Kept methods are also staticized, like private interface methods are moved to the companion
-  // class when desugaring interface methods. Invalid private native or abstract interface methods
-  // have no code and are skipped, so that the FileWriter reports a CompilationError for them.
+  // class when desugaring interface methods. Interface constructors and private native or abstract
+  // interface methods are invalid and skipped, so that the FileWriter reports a CompilationError
+  // for them.
   private boolean shouldStaticize(DexEncodedMethod method) {
-    return method.isPrivate() && !method.isStatic() && method.hasCode();
+    return method.isNonStaticPrivateMethod() && !method.isInstanceInitializer() && method.hasCode();
   }
 
   // The new static method must not collide with a method on the holder, except for the methods that

@@ -184,6 +184,18 @@ public class ZipUtils {
     }
   }
 
+  /**
+   * Reads up to {@code bytes.length} bytes from the start of the entry {@code name} into {@code
+   * bytes}, and returns the number of bytes read.
+   */
+  public static int readSingleEntry(Path zipFilePath, String name, byte[] bytes)
+      throws IOException {
+    try (ZipFile zipFile = new ZipFile(zipFilePath.toFile(), StandardCharsets.UTF_8);
+        InputStream stream = zipFile.getInputStream(zipFile.getEntry(name))) {
+      return ByteStreams.read(stream, bytes, 0, bytes.length);
+    }
+  }
+
   @SuppressWarnings("StreamResourceLeak")
   public static void zip(Path zipFile, Path inputDirectory) throws IOException {
     List<Path> files =

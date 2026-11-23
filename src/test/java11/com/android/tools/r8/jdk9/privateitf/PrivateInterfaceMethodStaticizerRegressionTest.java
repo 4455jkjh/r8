@@ -3,26 +3,41 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.jdk9.privateitf;
 
-import static com.android.tools.r8.jdk9.privateitf.DexVersion35UpToApi30Test.assertDexVersion;
-import static com.android.tools.r8.jdk9.privateitf.DexVersion35UpToApi30Test.getDefaultDexVersion;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.R8TestBuilder;
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.dex.code.DexConstMethodHandle;
 import com.android.tools.r8.dex.code.DexInstruction;
+import com.android.tools.r8.dex.code.DexMonitorEnter;
+import com.android.tools.r8.dex.code.DexReturnVoid;
 import com.android.tools.r8.graph.DexAnnotationSet;
+import com.android.tools.r8.graph.DexCode;
+import com.android.tools.r8.graph.DexCode.Try;
+import com.android.tools.r8.graph.DexCode.TryHandler;
+import com.android.tools.r8.graph.DexDebugEvent;
+import com.android.tools.r8.graph.DexDebugInfo;
+import com.android.tools.r8.graph.DexDebugInfo.EventBasedDebugInfo;
+import com.android.tools.r8.graph.DexDebugInfo.NativePcBasedDebugInfo;
+import com.android.tools.r8.graph.DexDebugInfo.PcBasedDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
+import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexMethodHandle.MethodHandleType;
+import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.origin.Origin;
@@ -36,6 +51,7 @@ import com.android.tools.r8.transformers.ClassTransformer;
 import com.android.tools.r8.transformers.MethodTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DexVersion;
+import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
@@ -57,13 +73,15 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /** Regression tests for corner cases of {@code PrivateInterfaceMethodStaticizer}. */
 @RunWith(Parameterized.class)
-public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
+public class PrivateInterfaceMethodStaticizerRegressionTest
+    extends PrivateInterfaceMethodStaticizerTestBase {
 
   enum Compiler {
     D8,
@@ -89,10 +107,6 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
         Compiler.values());
   }
 
-  private boolean isStaticized() {
-    return parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R);
-  }
-
   @Test
   public void testConstMethodHandle() throws Exception {
     testConstMethodHandle(false);
@@ -109,7 +123,7 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
     // handle of the private interface method.
     assumeTrue(
         parameters.getApiLevel().isGreaterThanOrEqualTo(apiLevelWithConstMethodHandleSupport())
-            && isStaticized());
+            && isStaticized(parameters));
     List<byte[]> programClassFileData =
         programClassFileData(
             MethodHandleImpl.class, SpecialMethodHandleMain.class, MethodHandleMain.class);
@@ -221,7 +235,8 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
     // The startup method rule is rewritten when the method is staticized, so that its code is laid
     // out first in the startup DEX file.
     assertEquals(
-        isStaticized() ? "syncCheck$staticized" : "syncCheck", firstCodeInStartupDex.get());
+        isStaticized(parameters) ? "syncCheck$staticized" : "syncCheck",
+        firstCodeInStartupDex.get());
   }
 
   @Test
@@ -246,8 +261,8 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
                       inspector,
                       method ->
                           method.streamInstructions().anyMatch(InstructionSubject::isMonitorEnter));
-              assertEquals(isStaticized(), syncCheck.isStatic());
-              assertEquals(!isStaticized(), syncCheck.isSynchronized());
+              assertEquals(isStaticized(parameters), syncCheck.isStatic());
+              assertEquals(!isStaticized(parameters), syncCheck.isSynchronized());
             })
         .run(parameters.getRuntime(), SyncMain.class)
         .assertSuccessWithOutputLines("true");
@@ -275,7 +290,7 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
                   findUniqueMethod(
                       inspector, method -> !method.getMethod().getParameterAnnotations().isEmpty());
               int arity = annotated.getMethod().getParameters().size();
-              assertEquals(isStaticized() ? 3 : 2, arity);
+              assertEquals(isStaticized(parameters) ? 3 : 2, arity);
               ParameterAnnotationsList parameterAnnotations =
                   annotated.getMethod().getParameterAnnotations();
               assertEquals(arity, parameterAnnotations.size());
@@ -290,6 +305,221 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
             })
         .run(parameters.getRuntime(), AnnotatedMain.class)
         .assertSuccessWithOutputLines("3");
+  }
+
+  @Test
+  public void testR8DexInput() throws Exception {
+    // On API > 30, private interface methods are not staticized and R8 DEX input does not set
+    // isInterface on invoke-direct (IRBuilder.addInvokeRegisters).
+    assumeTrue(compiler == Compiler.R8 && isStaticized(parameters));
+    // The invoke-direct of the private interface method in the DEX input has no interface bit.
+    Path dexInput =
+        testForD8(parameters)
+            .addProgramClassFileData(
+                programClassFileData(SyncItf.class, SyncImpl.class, SyncMain.class))
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = false)
+            .compile()
+            .writeToZip();
+    // R8 ignores DEX in program archives, so pass the DEX file data directly.
+    TestCompileResult<?, ?> compileResult =
+        testForR8(parameters)
+            .addProgramDexFileData(ZipUtils.readSingleEntry(dexInput, "classes.dex"))
+            .addKeepMainRule(SyncMain.class)
+            .addKeepRules(
+                "-keepclassmembers interface " + SyncItf.class.getTypeName() + " {",
+                "  private boolean syncCheck();",
+                "}")
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
+            .compile()
+            .inspect(
+                inspector ->
+                    findUniqueMethod(
+                        inspector,
+                        method ->
+                            method
+                                .streamInstructions()
+                                .anyMatch(
+                                    instruction ->
+                                        instruction.isInvokeStatic()
+                                            && instruction
+                                                .getMethod()
+                                                .getName()
+                                                .isEqualTo("syncCheck$staticized"))));
+    assertDexVersion(DexVersion.V35, compileResult);
+    compileResult
+        .run(parameters.getRuntime(), SyncMain.class)
+        .assertSuccessWithOutputLines("false");
+  }
+
+  @Test
+  public void testInvokeSuper() throws Exception {
+    List<byte[]> programClassFileData = programClassFileData(SuperImpl.class);
+    programClassFileData.add(
+        programClassTransformer(SuperItf.class)
+            .setAccessFlags(
+                MethodPredicate.onName("target"),
+                flags -> {
+                  flags.unsetPublic();
+                  flags.setPrivate();
+                })
+            .transform());
+    boolean isStaticized = isStaticized(parameters);
+    // The invoke-super of the private interface method fails at runtime, so only compile it.
+    compile(
+            SuperImpl.class,
+            programClassFileData,
+            builder ->
+                builder.addKeepRules(
+                    "-keepclassmembers interface " + SuperItf.class.getTypeName() + " {",
+                    "  private int target();",
+                    "}"))
+        .inspect(
+            inspector ->
+                assertTrue(
+                    inspector
+                        .clazz(SuperImpl.class)
+                        .uniqueMethodWithOriginalName("callTarget")
+                        .streamInstructions()
+                        .anyMatch(
+                            instruction ->
+                                isStaticized
+                                    ? instruction.isInvokeStatic()
+                                        && instruction
+                                            .getMethod()
+                                            .getName()
+                                            .isEqualTo("target$staticized")
+                                    : instruction.asDexInstruction().isInvokeSuper()
+                                        && instruction.getMethod().getName().isEqualTo("target"))));
+  }
+
+  @Test
+  public void testD8ReleaseDexInput() throws Exception {
+    assumeTrue(compiler == Compiler.D8_DEX_INPUT);
+    // Use R8 with forced pc based encoding to have PcBasedDebugInfo for annotated(int, int) in the
+    // DEX input.
+    Path dexInput =
+        testForR8(parameters.getBackend())
+            .setMinApi(AndroidApiLevel.N)
+            .addProgramClassFileData(
+                programClassFileData(
+                    ParamAnno.class, AnnotatedItf.class, AnnotatedImpl.class, AnnotatedMain.class))
+            .addKeepMainRule(AnnotatedMain.class)
+            .addKeepRules(
+                "-keepclassmembers interface " + AnnotatedItf.class.getTypeName() + " {",
+                "  private int annotated(int, int);",
+                "}")
+            .addOptionsModification(
+                options -> {
+                  options.getTestingOptions().enableDexVersion35UpToApi30 = false;
+                  options.getTestingOptions().forcePcBasedEncoding = true;
+                })
+            .enableInliningAnnotations()
+            .enableNoVerticalClassMergingAnnotations()
+            .compile()
+            .inspect(
+                inspector ->
+                    assertTrue(
+                        inspector
+                            .clazz(AnnotatedItf.class)
+                            .uniqueMethodWithOriginalName("annotated")
+                            .getMethod()
+                            .getCode()
+                            .asDexCode()
+                            .getDebugInfo()
+                            .isPcBasedInfo()))
+            .writeToZip();
+    TestCompileResult<?, ?> compileResult =
+        testForD8(parameters)
+            .addProgramFiles(dexInput)
+            .addOptionsModification(
+                options -> {
+                  options.getTestingOptions().enableDexVersion35UpToApi30 = true;
+                  options.getTestingOptions().enableShareDebugInfoForDifferentParameterSizes = true;
+                })
+            .release()
+            .compile();
+    assertExpectedDexVersion(parameters, compileResult);
+    compileResult
+        .run(parameters.getRuntime(), AnnotatedMain.class)
+        .assertSuccessWithOutputLines("3");
+  }
+
+  @Test
+  public void testDebugInfoWithFakeThisParameter() {
+    assumeTrue(compiler == Compiler.D8 && parameters.getApiLevel().isEqualTo(AndroidApiLevel.N));
+    DexItemFactory factory = new DexItemFactory();
+    DexType holder = factory.createType("LI;");
+    // The staticized methods have the fake this parameter and two or zero original parameters.
+    DexMethod method =
+        factory.createMethod(
+            holder,
+            factory.createProto(factory.voidType, holder, factory.intType, factory.intType),
+            "m$staticized");
+    DexMethod methodWithoutParameters =
+        factory.createMethod(
+            holder, factory.createProto(factory.voidType, holder), "m0$staticized");
+    assertDebugInfoWithFakeThisParameter(new PcBasedDebugInfo(2, 1), method, 3, 1, factory);
+    assertDebugInfoWithFakeThisParameter(new PcBasedDebugInfo(0, 1), method, 3, 1, factory);
+    assertDebugInfoWithFakeThisParameter(new NativePcBasedDebugInfo(2), method, 3, 0, factory);
+    // Event based debug info may omit trailing unnamed parameters.
+    assertDebugInfoWithFakeThisParameter(
+        new EventBasedDebugInfo(7, DexString.EMPTY_ARRAY, DexDebugEvent.EMPTY_ARRAY),
+        method,
+        3,
+        7,
+        factory);
+    assertDebugInfoWithFakeThisParameter(
+        new PcBasedDebugInfo(0, 1), methodWithoutParameters, 1, 1, factory);
+  }
+
+  private static void assertDebugInfoWithFakeThisParameter(
+      DexDebugInfo debugInfo,
+      DexMethod method,
+      int expectedParameterCount,
+      int expectedStartLine,
+      DexItemFactory factory) {
+    // A throwing instruction followed by a return.
+    DexInstruction returnVoid = new DexReturnVoid();
+    returnVoid.setOffset(1);
+    DexCode code =
+        new DexCode(
+            3,
+            3,
+            0,
+            new DexInstruction[] {new DexMonitorEnter(0), returnVoid},
+            Try.EMPTY_ARRAY,
+            TryHandler.EMPTY_ARRAY,
+            debugInfo);
+    EventBasedDebugInfo newDebugInfo =
+        code.debugInfoWithFakeThisParameter(method, factory).asEventBasedInfo();
+    assertEquals(expectedParameterCount, newDebugInfo.getParameterCount());
+    assertEquals(expectedStartLine, newDebugInfo.getStartLine());
+    assertEquals("_this", newDebugInfo.parameters[0].toString());
+  }
+
+  @Test
+  public void testInterfaceConstructor() {
+    assumeTrue(compiler != Compiler.D8_DEX_INPUT && isStaticized(parameters));
+    TestCompilerBuilder<?, ?, ?, ?, ?> builder =
+        compiler == Compiler.D8
+            ? testForD8(parameters)
+            : testForR8(parameters)
+                .addKeepRules(
+                    "-keep interface ConstructorInterface { <init>(); private void m(); }");
+    assertThrows(
+        CompilationFailedException.class,
+        () ->
+            builder
+                .addProgramClassFileData(createInterfaceWithConstructor())
+                .addOptionsModification(
+                    options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
+                .compileWithExpectedDiagnostics(
+                    diagnostics ->
+                        diagnostics.assertErrorsMatch(
+                            diagnosticMessage(
+                                containsString("Interface must not have constructors")))));
   }
 
   private TestCompileResult<?, ?> compile(
@@ -313,7 +543,7 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
             testForD8(parameters)
                 .addProgramClassFileData(programClassFileData)
                 .addOptionsModification(
-                    options -> options.testing.enableDexVersion35UpToApi30 = true)
+                    options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
                 .apply(configuration)
                 .compile();
         break;
@@ -322,14 +552,14 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
             testForD8(parameters)
                 .addProgramClassFileData(programClassFileData)
                 .addOptionsModification(
-                    options -> options.testing.enableDexVersion35UpToApi30 = false)
+                    options -> options.getTestingOptions().enableDexVersion35UpToApi30 = false)
                 .compile()
                 .writeToZip();
         compileResult =
             testForD8(parameters)
                 .addProgramFiles(dexInput)
                 .addOptionsModification(
-                    options -> options.testing.enableDexVersion35UpToApi30 = true)
+                    options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
                 .apply(configuration)
                 .compile();
         break;
@@ -340,7 +570,7 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
                 .addProgramClassFileData(programClassFileData)
                 .addKeepMainRule(mainClass)
                 .addOptionsModification(
-                    options -> options.testing.enableDexVersion35UpToApi30 = true)
+                    options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
                 .apply(configuration)
                 .apply(r8Configuration)
                 .enableInliningAnnotations()
@@ -348,8 +578,7 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
                 .compile();
         break;
     }
-    assertDexVersion(
-        isStaticized() ? DexVersion.V35 : getDefaultDexVersion(parameters), compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     return compileResult;
   }
 
@@ -454,6 +683,28 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
         .transform();
   }
 
+  // Interface with a private instance initializer and a private instance method. Such interfaces
+  // cannot be written in Java source.
+  private static byte[] createInterfaceWithConstructor() {
+    ClassWriter cw = new ClassWriter(0);
+    cw.visit(
+        Opcodes.V11,
+        Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE,
+        "ConstructorInterface",
+        null,
+        "java/lang/Object",
+        null);
+    for (String name : new String[] {"<init>", "m"}) {
+      MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PRIVATE, name, "()V", null, null);
+      mv.visitCode();
+      mv.visitInsn(Opcodes.RETURN);
+      mv.visitMaxs(0, 1);
+      mv.visitEnd();
+    }
+    cw.visitEnd();
+    return cw.toByteArray();
+  }
+
   @NoVerticalClassMerging
   interface MethodHandleItf {
 
@@ -519,6 +770,27 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
 
     public static void main(String[] args) {
       System.out.println(new SyncImpl().callSyncCheck());
+    }
+  }
+
+  @NoVerticalClassMerging
+  interface SuperItf {
+
+    // Made private by the transformer.
+    default int target() {
+      return 42;
+    }
+  }
+
+  static class SuperImpl implements SuperItf {
+
+    @NeverInline
+    int callTarget() {
+      return SuperItf.super.target();
+    }
+
+    public static void main(String[] args) {
+      System.out.println(new SuperImpl().callTarget());
     }
   }
 

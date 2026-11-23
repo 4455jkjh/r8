@@ -13,11 +13,13 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.collections.BidirectionalManyToManyRepresentativeMap;
 import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeMap;
 import com.android.tools.r8.utils.internal.collections.EmptyBidirectionalOneToOneMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -182,30 +184,40 @@ public class NestedGraphLens extends DefaultNonIdentityGraphLens {
   }
 
   @Override
-  @SuppressWarnings("ReferenceEquality")
   public MethodLookupResult internalDescribeLookupMethod(
       MethodLookupResult previous, DexMethod context, GraphLens codeLens) {
+    return internalDescribeLookupMethod(previous, context, codeLens, ConsumerUtils.emptyConsumer());
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  protected MethodLookupResult internalDescribeLookupMethod(
+      MethodLookupResult previous,
+      DexMethod context,
+      GraphLens codeLens,
+      Consumer<MethodLookupResult.Builder> resultBuilderConsumer) {
     if (previous.hasReboundReference()) {
       // TODO(sgjesse): Should we always do interface to virtual mapping? Is it a performance win
       //  that only subclasses which are known to need it actually do it?
       DexMethod rewrittenReboundReference = previous.getRewrittenReboundReference(methodMap);
       DexMethod rewrittenReference =
           internalDescribeLookupMethodReference(previous, rewrittenReboundReference);
-      return MethodLookupResult.builder(this, codeLens)
-          .setReference(rewrittenReference)
-          .setReboundReference(rewrittenReboundReference)
-          .setPrototypeChanges(
-              internalDescribePrototypeChanges(
-                  previous.getPrototypeChanges(),
-                  previous.getReboundReference(),
-                  rewrittenReboundReference))
-          .setType(
-              mapInvocationType(
-                  rewrittenReference,
-                  rewrittenReboundReference,
-                  previous.getReference(),
-                  previous.getType()))
-          .build();
+      MethodLookupResult.Builder resultBuilder =
+          MethodLookupResult.builder(this, codeLens)
+              .setReference(rewrittenReference)
+              .setReboundReference(rewrittenReboundReference)
+              .setPrototypeChanges(
+                  internalDescribePrototypeChanges(
+                      previous.getPrototypeChanges(),
+                      previous.getReboundReference(),
+                      rewrittenReboundReference))
+              .setType(
+                  mapInvocationType(
+                      rewrittenReference,
+                      rewrittenReboundReference,
+                      previous.getReference(),
+                      previous.getType()));
+      resultBuilderConsumer.accept(resultBuilder);
+      return resultBuilder.build();
     } else {
       // TODO(b/168282032): We should always have the rebound reference, so this should become
       //  unreachable.
@@ -222,12 +234,15 @@ public class NestedGraphLens extends DefaultNonIdentityGraphLens {
       }
       // TODO(sgjesse): Should we always do interface to virtual mapping? Is it a performance win
       //  that only subclasses which are known to need it actually do it?
-      return MethodLookupResult.builder(this, codeLens)
-          .setReference(newMethod)
-          .setPrototypeChanges(newPrototypeChanges)
-          .setType(
-              mapInvocationType(newMethod, newMethod, previous.getReference(), previous.getType()))
-          .build();
+      MethodLookupResult.Builder resultBuilder =
+          MethodLookupResult.builder(this, codeLens)
+              .setReference(newMethod)
+              .setPrototypeChanges(newPrototypeChanges)
+              .setType(
+                  mapInvocationType(
+                      newMethod, newMethod, previous.getReference(), previous.getType()));
+      resultBuilderConsumer.accept(resultBuilder);
+      return resultBuilder.build();
     }
   }
 

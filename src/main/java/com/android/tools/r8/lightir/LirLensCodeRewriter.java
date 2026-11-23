@@ -464,22 +464,9 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     if (opcode == LirOpcodes.INVOKEINTERFACE) {
       return true;
     }
-    if (hasPrivateInterfaceMethodLens && LirOpcodeUtils.isInvokeDirect(opcode)) {
+    if ((hasPrivateInterfaceMethodLens || isNonStartupInStartupOutlinerLens)
+        && (LirOpcodeUtils.isInvokeDirect(opcode) || LirOpcodeUtils.isInvokeSuper(opcode))) {
       return true;
-    }
-    if (isNonStartupInStartupOutlinerLens) {
-      if (LirOpcodeUtils.isInvokeDirect(opcode)) {
-        return true;
-      }
-      if (LirOpcodeUtils.isInvokeInterface(opcode)) {
-        return true;
-      }
-      if (LirOpcodeUtils.isInvokeSuper(opcode)) {
-        return true;
-      }
-      if (LirOpcodeUtils.isInvokeVirtual(opcode)) {
-        return true;
-      }
     }
     if (graphLens.isVerticalClassMergerLens()) {
       if (opcode == LirOpcodes.INVOKESTATIC_ITF) {

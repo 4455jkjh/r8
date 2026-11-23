@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.jdk9.privateitf;
 
-import static com.android.tools.r8.jdk9.privateitf.DexVersion35UpToApi30Test.assertDexVersion;
-import static com.android.tools.r8.jdk9.privateitf.DexVersion35UpToApi30Test.getDefaultDexVersion;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndNotRenamed;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
@@ -17,7 +15,6 @@ import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.R8PartialTestBuilder;
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -41,7 +38,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class PrivateInterfaceMethodStaticizerTest extends TestBase {
+public class PrivateInterfaceMethodStaticizerTest extends PrivateInterfaceMethodStaticizerTestBase {
 
   private static final String EXPECTED_OUTPUT =
       StringUtils.lines("1", "2", "3", "4", "5", "6", "7", "8");
@@ -71,10 +68,11 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
     TestCompileResult<?, ?> compileResult =
         testForD8(parameters)
             .addInnerClassesAndStrippedOuter(getClass())
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .setMode(mode)
             .compile();
-    assertExpectedDexVersion(compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     compileResult
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
@@ -88,7 +86,8 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
     TestCompileResult<?, ?> dexInputCompileResult =
         testForD8(parameters)
             .addInnerClassesAndStrippedOuter(getClass())
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = false)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = false)
             .compile();
     DexVersion expectedInputDexVersion = getDefaultDexVersion(parameters);
     assertTrue(expectedInputDexVersion.isGreaterThanOrEqualTo(DexVersion.V37));
@@ -97,9 +96,10 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
     TestCompileResult<?, ?> compileResult =
         testForD8(parameters)
             .addProgramFiles(dexInput)
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .compile();
-    assertExpectedDexVersion(compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     compileResult
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
@@ -119,14 +119,16 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
             .addProgramClasses(I.class)
             .addClasspathClasses(getClass())
             .addClasspathClasses(otherNestClasses)
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .compile();
-    assertExpectedDexVersion(ifaceCompileResult);
+    assertExpectedDexVersion(parameters, ifaceCompileResult);
     testForD8(parameters)
         .addStrippedOuter(getClass())
         .addProgramClasses(otherNestClasses)
         .addClasspathClasses(I.class)
-        .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+        .addOptionsModification(
+            options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
         .compile()
         .addRunClasspathFiles(ifaceCompileResult.writeToZip())
         .run(parameters.getRuntime(), TestClass.class)
@@ -139,11 +141,12 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
         testForR8(parameters)
             .addInnerClassesAndStrippedOuter(getClass())
             .addKeepMainRule(TestClass.class)
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .enableInliningAnnotations()
             .enableNoVerticalClassMergingAnnotations()
             .compile();
-    assertExpectedDexVersion(compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     compileResult
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
@@ -156,12 +159,13 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
             .addInnerClassesAndStrippedOuter(getClass())
             .addKeepMainRules(TestClass.class, EnclosingMethodTestClass.class)
             .addKeepAttributeInnerClassesAndEnclosingMethod()
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .debug()
             .enableInliningAnnotations()
             .enableNoVerticalClassMergingAnnotations()
             .compile();
-    assertExpectedDexVersion(compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     compileResult
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
@@ -180,20 +184,24 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
             .addKeepAttributeInnerClassesAndEnclosingMethod()
             .addDontOptimize()
             .addDontObfuscate()
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .enableInliningAnnotations()
             .enableNoVerticalClassMergingAnnotations()
             .compile();
-    assertExpectedDexVersion(compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     compileResult
         .inspect(
             inspector -> {
               ClassSubject iface = inspector.clazz(I.class);
               assertThat(iface, isPresent());
+              List<FoundMethodSubject> privateMethods =
+                  iface.allMethods(FoundMethodSubject::isPrivate);
+              // I declares 5 private methods.
+              assertEquals(5, privateMethods.size());
               assertEquals(
-                  parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R),
-                  iface.allMethods(FoundMethodSubject::isPrivate).stream()
-                      .allMatch(FoundMethodSubject::isStatic));
+                  isStaticized(parameters),
+                  privateMethods.stream().allMatch(FoundMethodSubject::isStatic));
             })
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
@@ -212,17 +220,18 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
                 "-keep interface " + I.class.getTypeName() + " {",
                 "  private int compute(int);",
                 "}")
-            .addOptionsModification(options -> options.testing.enableDexVersion35UpToApi30 = true)
+            .addOptionsModification(
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .enableInliningAnnotations()
             .enableNoVerticalClassMergingAnnotations()
             .compile();
-    assertExpectedDexVersion(compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     compileResult
         .inspect(
             inspector -> {
               MethodSubject compute =
                   inspector.clazz(I.class).uniqueMethodWithOriginalName("compute");
-              if (parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R)) {
+              if (isStaticized(parameters)) {
                 assertThat(compute, isPresentAndRenamed());
                 assertEquals("compute$staticized", compute.getFinalName());
                 assertTrue(compute.isStatic());
@@ -277,13 +286,13 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
         builder
             .addKeepAttributeInnerClassesAndEnclosingMethod()
             .addR8PartialOptionsModification(
-                options -> options.testing.enableDexVersion35UpToApi30 = true)
+                options -> options.getTestingOptions().enableDexVersion35UpToApi30 = true)
             .applyIf(
                 isInterfaceInR8,
                 b -> b.enableInliningAnnotations().enableNoVerticalClassMergingAnnotations(),
                 b -> b.addKeepMainRules(TestClass.class, EnclosingMethodTestClass.class))
             .compile();
-    assertExpectedDexVersion(compileResult);
+    assertExpectedDexVersion(parameters, compileResult);
     compileResult
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
@@ -296,17 +305,7 @@ public class PrivateInterfaceMethodStaticizerTest extends TestBase {
   }
 
   private String getExpectedEnclosingMethodName() {
-    return parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R)
-        ? "describe$staticized"
-        : "describe";
-  }
-
-  private void assertExpectedDexVersion(TestCompileResult<?, ?> compileResult) throws Exception {
-    assertDexVersion(
-        parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.R)
-            ? DexVersion.V35
-            : getDefaultDexVersion(parameters),
-        compileResult);
+    return isStaticized(parameters) ? "describe$staticized" : "describe";
   }
 
   @NoVerticalClassMerging

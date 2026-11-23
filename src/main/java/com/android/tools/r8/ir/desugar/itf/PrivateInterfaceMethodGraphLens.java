@@ -38,10 +38,20 @@ public class PrivateInterfaceMethodGraphLens extends NestedGraphLens {
       MethodLookupResult previous, DexMethod context, GraphLens codeLens) {
     // Leave invalid static invokes of private instance methods unchanged, since the staticized
     // method takes the receiver as an additional argument.
-    if (previous.getType() == InvokeType.STATIC) {
+    if (previous.getType().isStatic()) {
       return previous.verify(this, codeLens);
     }
-    return super.internalDescribeLookupMethod(previous, context, codeLens);
+    return internalDescribeLookupMethod(
+        previous,
+        context,
+        codeLens,
+        resultBuilder -> {
+          // The staticized method is on an interface. Set the interface bit, since invokes in DEX
+          // input do not have it. Invokes of unmapped methods are left unchanged.
+          if (resultBuilder.getReference().isNotIdenticalTo(previous.getReference())) {
+            resultBuilder.setIsInterface(true);
+          }
+        });
   }
 
   @Override
