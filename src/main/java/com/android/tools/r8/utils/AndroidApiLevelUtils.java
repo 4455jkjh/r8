@@ -11,6 +11,7 @@ import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.ClassResolutionResult;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -332,15 +333,33 @@ public class AndroidApiLevelUtils {
 
   private static DexClass firstLibraryClassOrProgramClassWithDefinition(
       AppInfoWithClassHierarchy appInfo, DexClass originalClass, DexMember<?, ?> reference) {
-    if (originalClass.isLibraryClass()) {
-      return originalClass;
+    DexClass current = originalClass;
+    // Fast path: this is called for each member reference when computing API levels of code, and
+    // superclass chains are almost always linear, so walking them directly avoids allocating a
+    // WorkList (and its identity set) per call. Fall back to the WorkList when a type resolves to
+    // multiple classes.
+    while (true) {
+      if (isLibraryClassOrDefinesMember(current, reference)) {
+        return current;
+      }
+      DexType superType = current.getSuperType();
+      if (superType == null) {
+        return null;
+      }
+      ClassResolutionResult resolutionResult =
+          appInfo.contextIndependentDefinitionForWithResolutionResult(superType);
+      if (!resolutionResult.hasClassResolutionResult()) {
+        return null;
+      }
+      if (resolutionResult.isMultipleClassResolutionResult()) {
+        break;
+      }
+      current = resolutionResult.toSingleClassWithProgramOverLibrary();
     }
-    return WorkList.newIdentityWorkList(originalClass)
+    return WorkList.newIdentityWorkList(current)
         .run(
             (clazz, workList) -> {
-              if (clazz.isLibraryClass()) {
-                return TraversalContinuation.doBreak(clazz);
-              } else if (clazz.lookupMember(reference) != null) {
+              if (isLibraryClassOrDefinesMember(clazz, reference)) {
                 return TraversalContinuation.doBreak(clazz);
               } else if (clazz.getSuperType() != null) {
                 appInfo
@@ -351,6 +370,10 @@ public class AndroidApiLevelUtils {
             })
         .asBreakOrDefault(null)
         .getValue();
+  }
+
+  private static boolean isLibraryClassOrDefinesMember(DexClass clazz, DexMember<?, ?> reference) {
+    return clazz.isLibraryClass() || clazz.lookupMember(reference) != null;
   }
 
   @SuppressWarnings("MixedMutabilityReturnType")
