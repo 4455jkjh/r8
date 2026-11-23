@@ -139,15 +139,6 @@ tasks {
       archiveFileName.set("r8test_base.jar")
     }
 
-  val packageTestBaseExcludeKeep =
-    register<Jar>("packageTestBaseExcludeKeep") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      from(packageTestBase.map { injected.arcOps.zipTree(it.archiveFile) })
-      // TODO(b/328353718): we have com.android.tools.r8.Keep in both test_base and main
-      exclude("com/android/tools/r8/Keep.class")
-      archiveFileName.set("r8test_base_no_keep.jar")
-    }
-
   fun SwissArmyKnifeTask.executeRelocator(jarProvider: TaskProvider<Jar>, artifactName: String) {
     swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     compiler = "relocator"
@@ -304,7 +295,7 @@ tasks {
     libs.from(jdk25HomeConfig)
     classpath.from(r8JarProvider, packageTestDeps)
     if (addTestBaseClasspath) {
-      classpath.from(packageTestBaseExcludeKeep)
+      classpath.from(packageTestBase)
     }
     pgConfigs.from(keepRulesFileProvider.flatMap { it.keepRules })
     outputFile = File(rootDir, "build/libs/$artifactName")

@@ -4,14 +4,15 @@
 package com.android.tools.r8.features.diagnostic;
 
 import com.android.tools.r8.Diagnostic;
-import com.android.tools.r8.Keep;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.keepanno.annotations.KeepItemKind;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 
-@Keep
+@KeepForApi(kind = KeepItemKind.ONLY_CLASS)
 public class IllegalAccessWithIsolatedFeatureSplitsDiagnostic implements Diagnostic {
 
   private final DexReference accessedItem;
