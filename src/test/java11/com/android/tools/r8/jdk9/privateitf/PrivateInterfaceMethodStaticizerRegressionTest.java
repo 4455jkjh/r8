@@ -22,6 +22,7 @@ import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethodHandle;
+import com.android.tools.r8.graph.DexMethodHandle.MethodHandleType;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.origin.Origin;
@@ -120,11 +121,12 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
                 MethodHandleMain.class,
                 programClassFileData,
                 builder ->
-                    builder.applyIf(
-                        keepTargetPrivate,
-                        b ->
-                            b.addKeepMainRule(SpecialMethodHandleMain.class)
-                                .addKeepRules(
+                    builder
+                        .addKeepMainRule(SpecialMethodHandleMain.class)
+                        .applyIf(
+                            keepTargetPrivate,
+                            b ->
+                                b.addKeepRules(
                                     "-keepclassmembers,allowobfuscation interface "
                                         + MethodHandleItf.class.getTypeName()
                                         + " {",
@@ -133,10 +135,13 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
             .inspect(
                 inspector -> {
                   List<DexMethodHandle> methodHandles = getConstMethodHandles(inspector);
-                  assertEquals(
-                      compiler == Compiler.R8 && !keepTargetPrivate ? 1 : 2, methodHandles.size());
+                  assertEquals(2, methodHandles.size());
                   for (DexMethodHandle methodHandle : methodHandles) {
-                    assertEquals(isTargetPrivate, methodHandle.isStaticHandle());
+                    assertEquals(
+                        isTargetPrivate
+                            ? MethodHandleType.INVOKE_STATIC
+                            : MethodHandleType.INVOKE_INTERFACE,
+                        methodHandle.type);
                     if (methodHandle.isStaticHandle() && compiler != Compiler.R8) {
                       assertEquals(
                           "target$staticized", methodHandle.asMethod().getName().toString());
@@ -152,13 +157,9 @@ public class PrivateInterfaceMethodStaticizerRegressionTest extends TestBase {
     compileResult
         .run(parameters.getRuntime(), MethodHandleMain.class)
         .assertSuccessWithOutputLines("11");
-    // TODO(b/587727449): Enable for R8. R8 fails an assertion in LensCodeRewriterUtils for
-    //  H_INVOKESPECIAL method handles of private interface methods that are made public.
-    if (isTargetPrivate) {
-      compileResult
-          .run(parameters.getRuntime(), SpecialMethodHandleMain.class)
-          .assertSuccessWithOutputLines("12");
-    }
+    compileResult
+        .run(parameters.getRuntime(), SpecialMethodHandleMain.class)
+        .assertSuccessWithOutputLines("12");
   }
 
   @Test
