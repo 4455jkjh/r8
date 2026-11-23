@@ -15,6 +15,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationBuilder;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationContentBuilder;
+import com.android.tools.r8.transformers.ClassFileTransformer.FieldPredicate;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.google.common.collect.ImmutableList;
 import java.lang.annotation.ElementType;
@@ -682,6 +683,34 @@ public class KeepUsesReflectionToReadClassAnnotationTest extends KeepAnnoTestExt
     assertThrows(
         KeepAnnotationParserException.class,
         () -> testExtractedRules(ImmutableList.of(bytes), ExpectedRules.builder().build()));
+  }
+
+  @Test
+  public void testInvalidAnnotatedOnField() throws Exception {
+    byte[] singleOnField =
+        setAnnotationOnField(
+            ClassWithAnnotation.class,
+            FieldPredicate.onName("bar"),
+            builder ->
+                buildUsesReflectionToReadClassAnnotation(builder, Anno1.class, KeptClass.class));
+    byte[] multipleOnField =
+        setAnnotationOnField(
+            ClassWithAnnotation.class,
+            FieldPredicate.onName("bar"),
+            builder ->
+                buildUsesReflectionToReadClassAnnotationMultiple(
+                    builder, Anno1.class, KeptClass.class, Anno2.class, KeptClass.class));
+    for (byte[] bytes : ImmutableList.of(singleOnField, multipleOnField)) {
+      KeepAnnotationParserException error =
+          assertThrows(
+              KeepAnnotationParserException.class,
+              () -> testExtractedRules(ImmutableList.of(bytes), ExpectedRules.builder().build()));
+      assertThat(
+          error.getMessage(),
+          containsString(
+              "Annotation @UsesReflectionToReadClassAnnotation cannot be used on fields"));
+      assertThat(error.getMessage(), containsString("at field: int bar"));
+    }
   }
 
   @Target(ElementType.TYPE)

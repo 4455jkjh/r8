@@ -987,24 +987,11 @@ public class KeepEdgeReader implements Opcodes {
                 createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
             annotationVisitor);
       }
-      if (AnnotationConstants.UsesReflectionToReadClassAnnotation.isDescriptor(descriptor)) {
-        return new UsesReflectionToReadClassAnnotationVisitor(
-            parsingContext,
-            parent::accept,
-            setContext,
-            bindingsHelper ->
-                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
-            annotationVisitor);
-      }
-      if (AnnotationConstants.UsesReflectionToReadClassAnnotation
-          .isKotlinRepeatableContainerDescriptor(descriptor)) {
-        return new UsesReflectionToReadClassAnnotationContainerVisitor(
-            parsingContext,
-            parent::accept,
-            setContext,
-            bindingsHelper ->
-                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
-            annotationVisitor);
+      if (AnnotationConstants.UsesReflectionToReadClassAnnotation.isDescriptor(descriptor)
+          || AnnotationConstants.UsesReflectionToReadClassAnnotation
+              .isKotlinRepeatableContainerDescriptor(descriptor)) {
+        throw parsingContext.error(
+            "Annotation @UsesReflectionToReadClassAnnotation cannot be used on fields");
       }
       if (AnnotationConstants.CheckRemoved.isDescriptor(descriptor)) {
         return new CheckRemovedMemberVisitor(
