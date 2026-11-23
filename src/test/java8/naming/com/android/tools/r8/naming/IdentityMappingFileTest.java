@@ -48,6 +48,8 @@ public class IdentityMappingFileTest extends TestBase {
     assertThat(mapping, containsString("# compiler: R8"));
     assertThat(mapping, containsString("# compiler_version: "));
     assertThat(mapping, containsString("# min_api: 1"));
+    assertThat(mapping, containsString("# min_api_major: 1"));
+    assertThat(mapping, containsString("# min_api_minor: 0"));
     assertThat(mapping, containsString("# compiler_hash: "));
     assertThat(mapping, containsString("# common_typos_disable"));
     assertThat(mapping, containsString("# {\"id\":\"com.android.tools.r8.mapping\",\"version\":"));

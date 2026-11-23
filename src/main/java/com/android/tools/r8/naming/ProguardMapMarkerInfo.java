@@ -16,7 +16,11 @@ public class ProguardMapMarkerInfo {
   private static final String MARKER_KEY_COMPILER = "compiler";
   private static final String MARKER_KEY_COMPILER_VERSION = "compiler_version";
   private static final String MARKER_KEY_COMPILER_HASH = "compiler_hash";
+  // MARKER_KEY_MIN_API is deprecated in favor of MARKER_KEY_MIN_API_MAJOR and
+  // MARKER_KEY_MIN_API_MINOR.
   private static final String MARKER_KEY_MIN_API = "min_api";
+  private static final String MARKER_KEY_MIN_API_MAJOR = "min_api_major";
+  private static final String MARKER_KEY_MIN_API_MINOR = "min_api_minor";
   private static final String MARKER_KEY_PG_MAP_ID = "pg_map_id";
   public static final String MARKER_KEY_PG_MAP_HASH = "pg_map_hash";
   public static final String SHA_256_KEY = "SHA-256";
@@ -46,6 +50,8 @@ public class ProguardMapMarkerInfo {
     preamble.add("# " + MARKER_KEY_COMPILER_VERSION + ": " + Version.LABEL);
     if (isGeneratingDex) {
       preamble.add("# " + MARKER_KEY_MIN_API + ": " + apiLevel.getMajor());
+      preamble.add("# " + MARKER_KEY_MIN_API_MAJOR + ": " + apiLevel.getMajor());
+      preamble.add("# " + MARKER_KEY_MIN_API_MINOR + ": " + apiLevel.getMinor());
     }
     if (Version.isDevelopmentVersion()) {
       preamble.add("# " + MARKER_KEY_COMPILER_HASH + ": " + VersionProperties.INSTANCE.getSha());
