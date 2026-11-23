@@ -15,8 +15,7 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
-import com.android.tools.r8.graph.MethodResolutionResult;
-import com.android.tools.r8.ir.analysis.type.DynamicType;
+import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Add;
 import com.android.tools.r8.ir.code.Assume;
@@ -219,6 +218,21 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
       return false;
     }
     DexType valueType = listValue.getType().asClassType().toDexType(dexItemFactory);
+    if (isWellBehavedListType(valueType)) {
+      return true;
+    }
+    // Check dynamic upper bound type only when the static type is a List subtype, because
+    // rewriteInstance emits List.{size,get} using the static type without inserting a check-cast.
+    if (!appView.hasClassHierarchy() || !appInfo().isSubtype(valueType, listType)) {
+      return false;
+    }
+    TypeElement dynamicUpperBoundType =
+        listValue.getDynamicUpperBoundType(appView.withClassHierarchy());
+    return dynamicUpperBoundType.isClassType()
+        && isWellBehavedListType(dynamicUpperBoundType.asClassType().toDexType(dexItemFactory));
+  }
+
+  private boolean isWellBehavedListType(DexType valueType) {
     if (options.testing.listIterationRewritingRewriteInterfaces) {
       // In Chrome in Nov 2024, enabling for all list types causes the number of iteration rewrites
       // go to from 1010 to 1731.
@@ -226,9 +240,9 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
       // expensive intra-procedural analysis to track when it is safe.
       return appInfo().isSubtype(valueType, listType)
           // LinkedList.get() is not O(1).
-          && valueType.isNotIdenticalTo(linkedListType)
+          && !appInfo().isSubtype(valueType, linkedListType)
           // CopyOnWriteArrayList.iterator() provides a snapshot of the list.
-          && valueType.isNotIdenticalTo(copyOnWriteArrayListType);
+          && !appInfo().isSubtype(valueType, copyOnWriteArrayListType);
     }
     // TODO(b/145280859): Add support for kotlin.collections.ArrayList.
     return appInfo().isSubtype(valueType, arrayListType)
@@ -402,23 +416,19 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
     DexClass listClass = appView().definitionFor(listType);
     Value sizeValue = code.createValue(TypeElement.getInt());
     List<Value> sizeArgs = Collections.singletonList(listValue);
-    // Use invoke-virtual when list is a non-abstract concrete class.
-    MethodResolutionResult resolvedSizeMethod =
-        listClass == null || listClass.isInterface()
-            ? null
-            : appInfo().resolveMethodOnClass(listClass, sizeMethod);
+    // Use invoke-virtual when the static type resolves to a non-interface class method.
+    DexMethod resolvedSizeMethod = resolveListVirtualMethod(listClass, sizeMethod);
     InvokeMethodWithReceiver sizeInstr =
-        resolvedSizeMethod == null || resolvedSizeMethod.getResolvedHolder().isInterface()
+        resolvedSizeMethod == null
             ? new InvokeInterface(sizeMethod, sizeValue, sizeArgs)
-            : new InvokeVirtual(
-                resolvedSizeMethod.getResolvedMethod().getReference(), sizeValue, sizeArgs);
+            : new InvokeVirtual(resolvedSizeMethod, sizeValue, sizeArgs);
     iteratorInstr.replace(sizeInstr);
 
-    // Update List's assume-not-null to update its origin.
+    // Update List's assume-not-null to update its origin while preserving any dynamic type info.
     if (listAssumeInstr != null) {
       Assume newAssume =
           Assume.create(
-              DynamicType.definitelyNotNull(),
+              listAssumeInstr.getDynamicType(),
               listAssumeInstr.outValue(),
               listValue,
               sizeInstr,
@@ -449,16 +459,12 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
     // Replace "x = iterator.next()" with "x = list.get(i)".
     Value elementValue = nextInstr.outValue();
     ImmutableList<Value> getArgs = ImmutableList.of(listValue, indexPhi);
-    // Use invoke-virtual when list is a non-abstract concrete class.
-    MethodResolutionResult resolvedGetMethod =
-        listClass == null || listClass.isInterface()
-            ? null
-            : appInfo().resolveMethodOnClass(listClass, getMethod);
+    // Use invoke-virtual when the static type resolves to a non-interface class method.
+    DexMethod resolvedGetMethod = resolveListVirtualMethod(listClass, getMethod);
     InvokeMethodWithReceiver getInstr =
-        resolvedGetMethod == null || resolvedGetMethod.getResolvedHolder().isInterface()
+        resolvedGetMethod == null
             ? new InvokeInterface(getMethod, elementValue, getArgs)
-            : new InvokeVirtual(
-                resolvedGetMethod.getResolvedMethod().getReference(), elementValue, getArgs);
+            : new InvokeVirtual(resolvedGetMethod, elementValue, getArgs);
     nextInstr.replace(getInstr);
 
     // Add "i = i + 1" right after "x = iterator.next()".
@@ -492,6 +498,18 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
         indexPhi.appendOperand(incrementIndexInstr.outValue());
       }
     }
+  }
+
+  private DexMethod resolveListVirtualMethod(DexClass listClass, DexMethod method) {
+    if (listClass == null || listClass.isInterface()) {
+      return null;
+    }
+    SingleResolutionResult<?> resolution =
+        appInfo().resolveMethodOnClass(listClass, method).asSingleResolution();
+    if (resolution == null || resolution.getResolvedHolder().isInterface()) {
+      return null;
+    }
+    return resolution.getResolvedMethod().getReference();
   }
 
   private static class AnalysisResult {

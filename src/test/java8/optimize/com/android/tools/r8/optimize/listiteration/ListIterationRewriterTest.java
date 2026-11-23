@@ -4,16 +4,26 @@
 
 package com.android.tools.r8.optimize.listiteration;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoFieldTypeStrengthening;
+import com.android.tools.r8.NoParameterTypeStrengthening;
+import com.android.tools.r8.NoReturnTypeStrengthening;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
+import com.android.tools.r8.utils.codeinspector.Matchers;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.ListUtils;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -698,5 +708,245 @@ public class ListIterationRewriterTest extends TestBase {
         .inspect(
             inspector ->
                 inspector.forAllClasses(ListIterationRewriterTest::checkIteratorInvokeExists));
+  }
+
+  public static class DynamicUpperBoundRewrites {
+    @NoFieldTypeStrengthening public static List<Integer> arrayListField = new ArrayList<>();
+
+    static {
+      Collections.addAll(arrayListField, 1, 2);
+    }
+
+    @NeverInline
+    @NoReturnTypeStrengthening
+    private static List<Integer> getArrayList(boolean empty) {
+      ArrayList<Integer> list = new ArrayList<>();
+      if (!empty) {
+        Collections.addAll(list, 3, 4);
+      }
+      return list;
+    }
+
+    @NeverInline
+    private static void iterateInstanceOf(List<Integer> list) {
+      if (list instanceof ArrayList) {
+        for (Integer x : list) {
+          System.out.println(x);
+        }
+      } else {
+        for (Integer x : list) {
+          System.out.println(x);
+        }
+      }
+    }
+
+    @NeverInline
+    private static void iteratePhi(boolean useField) {
+      List<Integer> list = useField ? arrayListField : getArrayList(false);
+      for (Integer x : list) {
+        System.out.println(x);
+      }
+    }
+
+    @NeverInline
+    private static void iterateNonWellBehavedOrMixed(boolean linked) {
+      List<Integer> mixed = linked ? new LinkedList<>(Arrays.asList(5)) : getArrayList(false);
+      for (Integer x : mixed) {
+        System.out.println(x);
+      }
+    }
+
+    @NeverInline
+    @NoReturnTypeStrengthening
+    private static Collection<Integer> getArrayListAsCollection() {
+      ArrayList<Integer> list = new ArrayList<>();
+      Collections.addAll(list, 6, 7);
+      return list;
+    }
+
+    @NeverInline
+    private static void iterateCollectionNotStaticList() {
+      Collection<Integer> collection = getArrayListAsCollection();
+      for (Integer x : collection) {
+        System.out.println(x);
+      }
+    }
+
+    @NeverInline
+    @NoParameterTypeStrengthening
+    private static void iterateCollectionInstanceOf(Collection<Integer> collection) {
+      if (collection instanceof ArrayList) {
+        for (Integer x : collection) {
+          System.out.println(x);
+        }
+      }
+    }
+
+    @NeverInline
+    @NoReturnTypeStrengthening
+    private static List<Integer> getNullableArrayList() {
+      if (System.currentTimeMillis() <= 0) {
+        return null;
+      }
+      return getArrayList(false);
+    }
+
+    @NeverInline
+    private static void iterateNullableSequential() {
+      List<Integer> list = getNullableArrayList();
+      for (Integer x : list) {
+        System.out.println(x);
+      }
+      for (Integer x : list) {
+        System.out.println(x);
+      }
+    }
+
+    @NeverInline
+    @NoParameterTypeStrengthening
+    private static void iterateListParam(List<Integer> list) {
+      for (Integer x : list) {
+        System.out.println(x);
+      }
+    }
+
+    @NeverInline
+    @NoReturnTypeStrengthening
+    private static AbstractList<Integer> getAbstractArrayList() {
+      ArrayList<Integer> list = new ArrayList<>();
+      Collections.addAll(list, 9, 10);
+      return list;
+    }
+
+    public static void main(String[] args) {
+      for (Integer x : arrayListField) {
+        System.out.println(x);
+      }
+      for (Integer x : getArrayList(System.currentTimeMillis() <= 0)) {
+        System.out.println(x);
+      }
+      for (Integer x : getAbstractArrayList()) {
+        System.out.println(x);
+      }
+      iterateInstanceOf(getArrayList(false));
+      iterateInstanceOf(new LinkedList<>(Arrays.asList(8)));
+      iteratePhi(System.currentTimeMillis() > 0);
+      iteratePhi(System.currentTimeMillis() <= 0);
+      iterateNonWellBehavedOrMixed(System.currentTimeMillis() <= 0);
+      iterateNonWellBehavedOrMixed(System.currentTimeMillis() > 0);
+      iterateCollectionNotStaticList();
+      iterateCollectionInstanceOf(getArrayListAsCollection());
+      iterateCollectionInstanceOf(Collections.singleton(11));
+      iterateNullableSequential();
+      iterateListParam(getArrayList(false));
+    }
+  }
+
+  // Also test with devirtualization disabled to exercise receivers Devirtualizer cannot rewrite
+  // (e.g. non-exact upper bounds or stripped library stubs omitting ArrayList.iterator()).
+  @Test
+  public void testDynamicUpperBoundType() throws Exception {
+    runDynamicUpperBoundTest(false);
+  }
+
+  @Test
+  public void testDynamicUpperBoundTypeWithDefaultDevirtualization() throws Exception {
+    runDynamicUpperBoundTest(true);
+  }
+
+  private void runDynamicUpperBoundTest(boolean enableDevirtualization) throws Exception {
+    testForR8(parameters)
+        .addProgramClasses(DynamicUpperBoundRewrites.class)
+        .addKeepMainRule(DynamicUpperBoundRewrites.class)
+        .addOptionsModification(o -> o.enableDevirtualization = enableDevirtualization)
+        .enableInliningAnnotations()
+        .enableNoFieldTypeStrengtheningAnnotations()
+        .enableNoParameterTypeStrengtheningAnnotations()
+        .enableNoReturnTypeStrengtheningAnnotations()
+        .compile()
+        .run(parameters.getRuntime(), DynamicUpperBoundRewrites.class)
+        .assertSuccessWithOutputLines(
+            "1", "2", "3", "4", "9", "10", "3", "4", "8", "1", "2", "3", "4", "3", "4", "5", "6",
+            "7", "6", "7", "3", "4", "3", "4", "3", "4")
+        .inspect(
+            inspector -> {
+              ClassSubject clazz = inspector.clazz(DynamicUpperBoundRewrites.class);
+              assertThat(clazz, Matchers.isPresent());
+              assertEquals(
+                  "java.util.List",
+                  clazz.uniqueFieldWithOriginalName("arrayListField").getType().getTypeName());
+              assertEquals(
+                  "java.util.List",
+                  clazz.uniqueMethodWithOriginalName("getArrayList").getReturnType().getTypeName());
+              assertEquals(
+                  "java.util.AbstractList",
+                  clazz
+                      .uniqueMethodWithOriginalName("getAbstractArrayList")
+                      .getReturnType()
+                      .getTypeName());
+              assertEquals(
+                  "java.util.Collection",
+                  clazz
+                      .uniqueMethodWithOriginalName("getArrayListAsCollection")
+                      .getReturnType()
+                      .getTypeName());
+              assertEquals(
+                  "java.util.List",
+                  clazz
+                      .uniqueMethodWithOriginalName("iterateListParam")
+                      .getParameter(0)
+                      .getTypeName());
+              assertEquals(
+                  "java.util.Collection",
+                  clazz
+                      .uniqueMethodWithOriginalName("iterateCollectionInstanceOf")
+                      .getParameter(0)
+                      .getTypeName());
+              assertEquals(0, countIterators(clazz.mainMethod()));
+              if (!enableDevirtualization) {
+                // Only arrayListField and getArrayList() emit List.size(); getAbstractArrayList()
+                // resolves invoke-virtual AbstractCollection.size().
+                assertEquals(2, countListSizes(clazz.mainMethod()));
+                assertEquals(
+                    2,
+                    countListSizes(
+                        clazz.uniqueMethodWithOriginalName("iterateNullableSequential")));
+              }
+              assertEquals(0, countIterators(clazz.uniqueMethodWithOriginalName("iteratePhi")));
+              assertEquals(
+                  0,
+                  countIterators(clazz.uniqueMethodWithOriginalName("iterateNullableSequential")));
+              assertEquals(
+                  0, countIterators(clazz.uniqueMethodWithOriginalName("iterateListParam")));
+              assertEquals(
+                  1, countIterators(clazz.uniqueMethodWithOriginalName("iterateInstanceOf")));
+              assertEquals(
+                  1, countListSizes(clazz.uniqueMethodWithOriginalName("iterateInstanceOf")));
+              assertEquals(
+                  1,
+                  countIterators(
+                      clazz.uniqueMethodWithOriginalName("iterateNonWellBehavedOrMixed")));
+              assertEquals(
+                  enableDevirtualization ? 0 : 1,
+                  countIterators(
+                      clazz.uniqueMethodWithOriginalName("iterateCollectionNotStaticList")));
+              assertEquals(
+                  1,
+                  countIterators(
+                      clazz.uniqueMethodWithOriginalName("iterateCollectionInstanceOf")));
+            });
+  }
+
+  private static long countIterators(MethodSubject method) {
+    assertThat(method, Matchers.isPresent());
+    return method.streamInstructions().filter(ListIterationRewriterTest::isIteratorInvoke).count();
+  }
+
+  private static long countListSizes(MethodSubject method) {
+    assertThat(method, Matchers.isPresent());
+    return method
+        .streamInstructions()
+        .filter(CodeMatchers.isInvokeWithTarget("java.util.List", "size"))
+        .count();
   }
 }
