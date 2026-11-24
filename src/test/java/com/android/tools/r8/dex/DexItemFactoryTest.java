@@ -5,7 +5,11 @@
 package com.android.tools.r8.dex;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -14,6 +18,9 @@ import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -76,5 +83,75 @@ public class DexItemFactoryTest extends TestBase {
     assertEquals("float", factory.floatType.getName());
     assertEquals("long", factory.longType.getName());
     assertEquals("double", factory.doubleType.getName());
+  }
+
+  @Test
+  public void stringAndTypeIdentityAndCanonicalization() {
+    DexItemFactory factory1 = new DexItemFactory();
+    DexItemFactory factory2 = new DexItemFactory();
+
+    DexString s1 = factory1.createString("Lfoo/Bar;");
+    DexString s2 = factory2.createString("Lfoo/Bar;");
+    assertNotEquals(s1, s2);
+    assertEquals(System.identityHashCode(s1), s1.hashCode());
+    assertSame(s1, factory1.createString("Lfoo/Bar;"));
+    assertSame(s1, factory1.lookupString("Lfoo/Bar;"));
+    assertTrue(s1.isEqualToAscii("Lfoo/Bar;"));
+    assertFalse(s1.isEqualToAscii("Lfoo/Baz;"));
+
+    DexType t1 = factory1.createType(s1);
+    DexType t2 = factory2.createType(s2);
+    assertNotEquals(t1, t2);
+    assertEquals(System.identityHashCode(t1), t1.hashCode());
+    assertSame(t1, factory1.createType("Lfoo/Bar;"));
+    assertSame(t1, factory1.lookupType(s1));
+
+    assertEquals(-1, Arrays.hashCode(DexString.encodeToMutf8("SfaNaFg")));
+    assertEquals(DexString.NON_ASCII_MUTF8_HASH, DexString.tryComputeAsciiMutf8Hash("SfaNaFg"));
+
+    String[] samples =
+        new String[] {"", "\u0000", "a\u0000b", "\u00e6\u00f8\u00e5", "\ud800\udc00", "SfaNaFg"};
+    List<DexString> expectedPending = new ArrayList<>();
+    for (String sample : samples) {
+      DexString fromString = factory1.createString(sample);
+      DexString fromBytes = factory1.createString(sample.length(), DexString.encodeToMutf8(sample));
+      assertSame(fromString, fromBytes);
+      assertSame(fromString, factory1.lookupString(sample));
+      expectedPending.add(fromString);
+    }
+
+    DexString malformedEmpty = factory1.createString(0, new byte[0]);
+    assertNotEquals(factory1.emptyString, malformedEmpty);
+    assertSame(malformedEmpty, factory1.createString(0, new byte[0]));
+    assertTrue(factory1.emptyString.isEqualToAscii(""));
+    assertFalse(malformedEmpty.isEqualToAscii(""));
+    assertNull(factory1.lookupString("not_present_pending"));
+
+    factory1.commitPendingItems();
+
+    for (int i = 0; i < samples.length; i++) {
+      String sample = samples[i];
+      DexString expected = expectedPending.get(i);
+      assertSame(expected, factory1.createString(sample));
+      assertSame(expected, factory1.createString(sample.length(), DexString.encodeToMutf8(sample)));
+      assertSame(expected, factory1.lookupString(sample));
+    }
+    assertSame(malformedEmpty, factory1.createString(0, new byte[0]));
+    assertSame(t1, factory1.lookupType(s1));
+    assertSame(t1, factory1.createType(s1));
+    assertNull(factory1.lookupString("not_present_committed"));
+
+    List<DexString> bulkAscii = new ArrayList<>();
+    for (int i = 0; i < 250; i++) {
+      bulkAscii.add(factory1.createString("Lcom/example/Generated" + i + ";"));
+    }
+    factory1.commitPendingItems();
+    for (int i = 0; i < 250; i++) {
+      String value = "Lcom/example/Generated" + i + ";";
+      assertSame(bulkAscii.get(i), factory1.createString(value));
+      assertSame(bulkAscii.get(i), factory1.lookupString(value));
+    }
+    assertSame(s1, factory1.createString("Lfoo/Bar;"));
+    assertSame(t1, factory1.lookupType(s1));
   }
 }

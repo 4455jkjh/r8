@@ -96,11 +96,11 @@ public class DexItemFactory {
   private Map<DexMethodHandle, DexMethodHandle> methodHandles = new ConcurrentHashMap<>();
   private Map<DexMethodHandle, DexMethodHandle> committedMethodHandles = new HashMap<>();
 
-  private Map<DexString, DexString> strings = new ConcurrentHashMap<>();
-  private Map<DexString, DexString> committedStrings = new HashMap<>();
+  private final Map<DexStringCanonicalizationKey, DexString> strings = new ConcurrentHashMap<>();
+  private final DexStringStorage committedStrings = new DexStringStorage();
 
-  private Map<DexString, DexType> types = new ConcurrentHashMap<>();
-  private Map<DexString, DexType> committedTypes = new HashMap<>();
+  private final Map<DexString, DexType> types = new ConcurrentHashMap<>();
+  private final Map<DexString, DexType> committedTypes = new IdentityHashMap<>();
 
   private Map<DexField, DexField> fields = new ConcurrentHashMap<>();
   private Map<DexField, DexField> committedFields = new HashMap<>();
@@ -4592,11 +4592,43 @@ public class DexItemFactory {
   }
 
   public DexString createString(int size, byte[] content) {
-    return canonicalize(committedStrings, strings, new DexString(size, content));
+    int hash = Arrays.hashCode(content);
+    DexString committed = committedStrings.get(content, hash);
+    if (committed != null) {
+      return committed;
+    }
+    return getOrCreatePendingString(size, content, hash);
   }
 
   public DexString createString(String source) {
-    return canonicalize(committedStrings, strings, new DexString(source));
+    int asciiHash = DexString.tryComputeAsciiMutf8Hash(source);
+    if (asciiHash != DexString.NON_ASCII_MUTF8_HASH) {
+      DexString committed = committedStrings.getAscii(source, asciiHash);
+      if (committed != null) {
+        return committed;
+      }
+      return getOrCreatePendingString(
+          source.length(), DexString.encodeAsciiToMutf8(source), asciiHash);
+    }
+    byte[] content = DexString.encodeToMutf8(source);
+    int hash = Arrays.hashCode(content);
+    DexString committed = committedStrings.get(content, hash);
+    if (committed != null) {
+      return committed;
+    }
+    return getOrCreatePendingString(source.length(), content, hash);
+  }
+
+  private DexString getOrCreatePendingString(int size, byte[] content, int hash) {
+    DexStringCanonicalizationKey key = new DexStringCanonicalizationKey(content, hash);
+    DexString pending = strings.get(key);
+    if (pending != null) {
+      return pending;
+    }
+    DexString item = new DexString(size, content);
+    assert !DexItemFactory.isInternalSentinel(item);
+    DexString previous = strings.putIfAbsent(key, item);
+    return previous != null ? previous : item;
   }
 
   public static String escapeMemberString(String str) {
@@ -4901,12 +4933,22 @@ public class DexItemFactory {
   }
 
   public DexString lookupString(String source) {
-    DexString key = new DexString(source);
-    DexString committed = committedStrings.get(key);
+    int asciiHash = DexString.tryComputeAsciiMutf8Hash(source);
+    if (asciiHash != DexString.NON_ASCII_MUTF8_HASH) {
+      DexString committed = committedStrings.getAscii(source, asciiHash);
+      if (committed != null) {
+        return committed;
+      }
+      return strings.get(
+          new DexStringCanonicalizationKey(DexString.encodeAsciiToMutf8(source), asciiHash));
+    }
+    byte[] content = DexString.encodeToMutf8(source);
+    int hash = Arrays.hashCode(content);
+    DexString committed = committedStrings.get(content, hash);
     if (committed != null) {
       return committed;
     }
-    return strings.get(key);
+    return strings.get(new DexStringCanonicalizationKey(content, hash));
   }
 
   // Debugging support to extract marking string.
@@ -5255,7 +5297,7 @@ public class DexItemFactory {
 
   public void commitPendingItems() {
     commitPendingItems(committedMethodHandles, methodHandles);
-    commitPendingItems(committedStrings, strings);
+    committedStrings.commit(strings);
     commitPendingItems(committedTypes, types);
     commitPendingItems(committedFields, fields);
     commitPendingItems(committedProtos, protos);

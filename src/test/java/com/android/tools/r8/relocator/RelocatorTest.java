@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -126,8 +127,8 @@ public class RelocatorTest extends TestBase {
                 ClassSubject relocatedClass = inspector.clazz(clazz.getFinalName());
                 assertThat(relocatedClass, isPresent());
                 assertEquals(
-                    clazz.getDexProgramClass().sourceFile,
-                    relocatedClass.getDexProgramClass().sourceFile);
+                    Objects.toString(clazz.getDexProgramClass().sourceFile, null),
+                    Objects.toString(relocatedClass.getDexProgramClass().sourceFile, null));
                 for (FoundMethodSubject originalMethod : clazz.allMethods()) {
                   MethodSubject relocatedMethod =
                       relocatedClass.method(originalMethod.asMethodReference());
@@ -305,8 +306,8 @@ public class RelocatorTest extends TestBase {
                 assertEquals(originalClass.isNestMember(), relocatedClass.isNestMember());
                 if (originalClass.isInANest()) {
                   assertEquals(
-                      originalClass.getNestHost().descriptor,
-                      relocatedClass.getNestHost().descriptor);
+                      originalClass.getNestHost().descriptor.toString(),
+                      relocatedClass.getNestHost().descriptor.toString());
                 }
               }
             });

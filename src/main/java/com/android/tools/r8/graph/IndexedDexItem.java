@@ -6,7 +6,7 @@ package com.android.tools.r8.graph;
 import com.android.tools.r8.dex.MixedSectionCollection;
 
 /** Subset of dex items that are referenced by some table index. */
-public abstract class IndexedDexItem extends CachedHashValueDexItem {
+public abstract class IndexedDexItem extends DexItem {
 
   @Override
   protected void collectMixedSectionItems(MixedSectionCollection mixedItems) {
@@ -15,11 +15,4 @@ public abstract class IndexedDexItem extends CachedHashValueDexItem {
   }
 
   public abstract int getOffset(ObjectToOffsetMapping mapping);
-
-  // Partial implementation of PresortedComparable.
-
-  @Override
-  public void flushCachedValues() {
-    super.flushCachedValues();
-  }
 }

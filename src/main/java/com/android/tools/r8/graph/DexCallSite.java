@@ -140,19 +140,19 @@ public final class DexCallSite extends IndexedDexItem
   }
 
   @Override
-  public int computeHashCode() {
-    // Call sites are equal only when this == other, which was already computed by the caller of
-    // computeEquals. Do not share call site entries, each invoke-custom must have its own
-    // call site, but the content of the entry (encoded array) in the data section can be shared.
+  public int hashCode() {
+    // Call sites are equal only when this == other. Do not share call site entries, each
+    // invoke-custom must have its own call site, but the content of the entry (encoded array) in
+    // the data section can be shared.
     return System.identityHashCode(this);
   }
 
   @Override
-  public boolean computeEquals(Object other) {
-    // Call sites are equal only when this == other, which was already computed by the caller of
-    // computeEquals. Do not share call site entries, each invoke-custom must have its own
-    // call site, but the content of the entry (encoded array) in the data section can be shared.
-    return false;
+  public boolean equals(Object other) {
+    // Call sites are equal only when this == other. Do not share call site entries, each
+    // invoke-custom must have its own call site, but the content of the entry (encoded array) in
+    // the data section can be shared.
+    return this == other;
   }
 
   @Override

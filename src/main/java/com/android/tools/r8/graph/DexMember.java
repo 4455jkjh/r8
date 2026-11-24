@@ -19,11 +19,50 @@ public abstract class DexMember<D extends DexEncodedMember<D, R>, R extends DexM
   public final DexType holder;
   public final DexString name;
 
+  private static final int NOT_COMPUTED_HASH_VALUE = -1;
+  private static final int SENTINEL_HASH_VALUE = 0;
+  private volatile int hash = NOT_COMPUTED_HASH_VALUE;
+
   public DexMember(DexType holder, DexString name) {
     assert holder != null;
     this.holder = holder;
     assert name != null;
     this.name = name;
+  }
+
+  // TODO: Remove this by making DexField and DexMethod use reference equality and identity hash
+  //  code.
+  protected abstract int computeHashCode();
+
+  protected abstract boolean computeEquals(Object other);
+
+  @Override
+  public final int hashCode() {
+    int cache = hash;
+    if (cache == NOT_COMPUTED_HASH_VALUE) {
+      cache = computeHashCode();
+      if (cache == NOT_COMPUTED_HASH_VALUE) {
+        cache = SENTINEL_HASH_VALUE;
+      }
+      hash = cache;
+    }
+    assert verifyHashCodeConsistent(cache);
+    return cache;
+  }
+
+  private boolean verifyHashCodeConsistent(int computedValue) {
+    int newComputedValue = computeHashCode();
+    if (newComputedValue == NOT_COMPUTED_HASH_VALUE) {
+      newComputedValue = SENTINEL_HASH_VALUE;
+    }
+    assert computedValue == newComputedValue
+        : "Hash code for " + this + " has changed from " + hash + " to " + newComputedValue;
+    return true;
+  }
+
+  @Override
+  public final boolean equals(Object other) {
+    return this == other || computeEquals(other);
   }
 
   public abstract <T> T apply(

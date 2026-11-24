@@ -341,7 +341,7 @@ public class Inliner {
       if (targetHolder == null) {
         return constraint.ordinal();
       }
-      return constraint.ordinal() * targetHolder.computeHashCode();
+      return constraint.ordinal() * targetHolder.hashCode();
     }
 
     @Override

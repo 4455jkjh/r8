@@ -35,6 +35,7 @@ public class DexString extends IndexedDexItem
   }
 
   public static final DexString[] EMPTY_ARRAY = {};
+  public static final int NON_ASCII_MUTF8_HASH = -1;
   private static final int ARRAY_CHARACTER = '[';
 
   private final int javaLangStringLength; // size of this string, in UTF-16
@@ -112,6 +113,24 @@ public class DexString extends IndexedDexItem
       index++;
     }
     assert index == javaLangStringLength;
+    return true;
+  }
+
+  /**
+   * Checks whether this {@link DexString} is equal to {@code string}, assuming {@code string}
+   * contains only non-NUL ASCII characters ({@code 0x01..0x7f}).
+   */
+  public boolean isEqualToAscii(String string) {
+    assert verifyIsAscii(string);
+    int length = string.length();
+    if (content.length != length + 1 || content[length] != 0) {
+      return false;
+    }
+    for (int i = 0; i < length; i++) {
+      if ((content[i] & 0xff) != string.charAt(i)) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -257,17 +276,13 @@ public class DexString extends IndexedDexItem
   }
 
   @Override
-  public int computeHashCode() {
-    return javaLangStringLength * 7 + Arrays.hashCode(content);
+  public final int hashCode() {
+    return System.identityHashCode(this);
   }
 
   @Override
-  public boolean computeEquals(Object other) {
-    if (other instanceof DexString) {
-      DexString o = (DexString) other;
-      return javaLangStringLength == o.javaLangStringLength && Arrays.equals(content, o.content);
-    }
-    return false;
+  public final boolean equals(Object other) {
+    return this == other;
   }
 
   @Override
@@ -447,6 +462,51 @@ public class DexString extends IndexedDexItem
       array[offset++] = (byte) (0x80 | (0x3f & ch));
     }
     return offset;
+  }
+
+  /**
+   * Computes {@code Arrays.hashCode(encodeToMutf8(string))} without allocating a {@code byte[]} if
+   * {@code string} contains only non-NUL ASCII characters ({@code 0x01..0x7f}).
+   *
+   * <p>Returns {@link #NON_ASCII_MUTF8_HASH} ({@code -1}) if {@code string} contains NUL or any
+   * non-ASCII character, or if the computed 32-bit hash itself equals {@code -1} (in which case
+   * callers fall back to full MUTF-8 encoding with the same {@code -1} hash).
+   */
+  public static int tryComputeAsciiMutf8Hash(String string) {
+    int h = 1;
+    int length = string.length();
+    for (int i = 0; i < length; i++) {
+      char ch = string.charAt(i);
+      if (ch == 0 || ch > 0x7f) {
+        return NON_ASCII_MUTF8_HASH;
+      }
+      h = 31 * h + ch;
+    }
+    // Account for the trailing 0 terminator in MUTF-8.
+    return 31 * h;
+  }
+
+  /**
+   * Encodes {@code string} to MUTF-8 assuming it contains only non-NUL ASCII characters ({@code
+   * 0x01..0x7f}).
+   */
+  public static byte[] encodeAsciiToMutf8(String string) {
+    assert verifyIsAscii(string);
+    int length = string.length();
+    byte[] result = new byte[length + 1];
+    for (int i = 0; i < length; i++) {
+      result[i] = (byte) string.charAt(i);
+    }
+    return result;
+  }
+
+  private static boolean verifyIsAscii(String string) {
+    for (int i = 0; i < string.length(); i++) {
+      char ch = string.charAt(i);
+      assert ch != 0;
+      assert ch <= 0x7f;
+    }
+    return true;
   }
 
   @Override

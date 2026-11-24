@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.graph.lens;
 
+import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.timing.Timing;
@@ -26,7 +27,8 @@ public abstract class InitClassLens {
     return false;
   }
 
-  public abstract InitClassLens rewrittenWithLens(GraphLens lens, Timing timing);
+  public abstract InitClassLens rewrittenWithLens(
+      DexDefinitionSupplier definitions, GraphLens lens, Timing timing);
 
   public static class Builder {
 

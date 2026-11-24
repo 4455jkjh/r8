@@ -171,16 +171,13 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
   }
 
   @Override
-  public int computeHashCode() {
-    return descriptor.hashCode();
+  public final int hashCode() {
+    return System.identityHashCode(this);
   }
 
   @Override
-  public boolean computeEquals(Object other) {
-    if (other instanceof DexType) {
-      return descriptor.equals(((DexType) other).descriptor);
-    }
-    return false;
+  public final boolean equals(Object other) {
+    return this == other;
   }
 
   public boolean classInitializationMayHaveSideEffectsInContext(
@@ -300,12 +297,6 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
     if (collection.addType(this)) {
       appView.getNamingLens().lookupDescriptor(this).collectIndexedItems(collection);
     }
-  }
-
-  @Override
-  public void flushCachedValues() {
-    super.flushCachedValues();
-    toStringCache = null;
   }
 
   @Override

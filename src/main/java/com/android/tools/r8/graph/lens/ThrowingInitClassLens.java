@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.graph.lens;
 
+import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -25,7 +26,8 @@ public class ThrowingInitClassLens extends InitClassLens {
   }
 
   @Override
-  public InitClassLens rewrittenWithLens(GraphLens lens, Timing timing) {
+  public InitClassLens rewrittenWithLens(
+      DexDefinitionSupplier definitions, GraphLens lens, Timing timing) {
     return this;
   }
 }

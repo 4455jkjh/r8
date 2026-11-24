@@ -170,8 +170,7 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
                 Arrays.stream(method.proto.parameters.values)
                     .map(DexType::toSourceString)
                     .collect(Collectors.toList()));
-        if (foundInAndroidJar.isPresent()
-            && backportedBeyond.containsKey(foundInAndroidJar.getMethod().getReference())) {
+        if (foundInAndroidJar.isPresent() && backportedBeyond.containsKey(method)) {
           assertTrue(apiLevel.isLessThanOrEqualTo(backportedBeyond.get(method)));
         } else {
           assertThat(

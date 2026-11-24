@@ -4,10 +4,14 @@
 
 package com.android.tools.r8.graph.lens;
 
+import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexDefinitionSupplier;
+import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 public class FinalInitClassLens extends InitClassLens {
@@ -33,18 +37,49 @@ public class FinalInitClassLens extends InitClassLens {
   }
 
   @Override
-  public InitClassLens rewrittenWithLens(GraphLens lens, Timing timing) {
-    return timing.time("Rewrite FinalInitClassLens", () -> rewrittenWithLens(lens));
+  public InitClassLens rewrittenWithLens(
+      DexDefinitionSupplier definitions, GraphLens lens, Timing timing) {
+    return timing.time("Rewrite FinalInitClassLens", () -> rewrittenWithLens(definitions, lens));
   }
 
-  private InitClassLens rewrittenWithLens(GraphLens lens) {
-    InitClassLens.Builder builder = InitClassLens.builder();
+  private InitClassLens rewrittenWithLens(DexDefinitionSupplier definitions, GraphLens lens) {
+    Map<DexType, DexField> rewrittenMapping = new IdentityHashMap<>(mapping.size());
     mapping.forEach(
         (type, field) -> {
           DexType rewrittenType = lens.lookupType(type);
           DexField rewrittenField = lens.lookupField(field);
-          builder.map(rewrittenType, rewrittenField);
+          assert rewrittenField.getHolderType().isIdenticalTo(rewrittenType);
+          rewrittenMapping.compute(
+              rewrittenType,
+              (unused, existingField) ->
+                  selectInitClassField(definitions, rewrittenType, existingField, rewrittenField));
         });
-    return builder.build();
+    return new FinalInitClassLens(rewrittenMapping);
+  }
+
+  private static DexField selectInitClassField(
+      DexDefinitionSupplier definitions,
+      DexType rewrittenType,
+      DexField existingField,
+      DexField candidateField) {
+    if (existingField == null || existingField.isIdenticalTo(candidateField)) {
+      return candidateField;
+    }
+    DexClass holder = definitions.contextIndependentDefinitionFor(rewrittenType);
+    if (holder != null) {
+      int visibilityComparison =
+          Integer.compare(
+              getVisibilityOrdinal(holder, candidateField),
+              getVisibilityOrdinal(holder, existingField));
+      if (visibilityComparison != 0) {
+        return visibilityComparison > 0 ? candidateField : existingField;
+      }
+    }
+    return candidateField.compareTo(existingField) < 0 ? candidateField : existingField;
+  }
+
+  private static int getVisibilityOrdinal(DexClass holder, DexField field) {
+    DexEncodedField definition = holder.lookupField(field);
+    return definition != null ? definition.getAccessFlags().getVisibilityOrdinal() : -1;
   }
 }

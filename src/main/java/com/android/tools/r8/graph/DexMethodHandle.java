@@ -18,7 +18,7 @@ import java.util.Objects;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 
-public class DexMethodHandle extends IndexedDexItem
+public class DexMethodHandle extends CachedHashValueIndexedDexItem
     implements NamingLensComparable<DexMethodHandle>, LirConstant {
 
   public static final DexMethodHandle[] EMPTY_ARRAY = {};

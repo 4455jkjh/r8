@@ -1259,7 +1259,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                 @Override
                 public void run(Timing threadTiming) {
                   appView.setInitClassLens(
-                      appView.initClassLens().rewrittenWithLens(lens, threadTiming));
+                      appView.initClassLens().rewrittenWithLens(application, lens, threadTiming));
                 }
 
                 @Override

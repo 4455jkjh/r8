@@ -18,6 +18,8 @@ public class ProguardIfRulePreconditionMatch {
   private final DexClassAndMethodSet methodsMatch;
   private final DexClassAndFieldSet fieldsMatch;
 
+  private volatile ProguardIfRule ifRuleWithPrecondition;
+
   public ProguardIfRulePreconditionMatch(ProguardIfRule ifRule, DexClass classMatch) {
     this(ifRule, classMatch, DexClassAndMethodSet.empty(), DexClassAndFieldSet.empty());
   }
@@ -34,7 +36,16 @@ public class ProguardIfRulePreconditionMatch {
   }
 
   public ProguardIfRule getIfRuleWithPreconditionSet() {
-    return ifRule.withPrecondition(classMatch);
+    ProguardIfRule result = ifRuleWithPrecondition;
+    if (result == null) {
+      synchronized (this) {
+        result = ifRuleWithPrecondition;
+        if (result == null) {
+          ifRuleWithPrecondition = result = ifRule.withPrecondition(classMatch);
+        }
+      }
+    }
+    return result;
   }
 
   public void disallowOptimizationsForReevaluation(

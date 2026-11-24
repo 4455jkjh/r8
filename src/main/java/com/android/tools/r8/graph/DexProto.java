@@ -16,7 +16,7 @@ import com.google.common.collect.Iterables;
 import java.util.Collections;
 import java.util.function.Consumer;
 
-public class DexProto extends IndexedDexItem
+public class DexProto extends CachedHashValueIndexedDexItem
     implements NamingLensComparable<DexProto>, LirConstant {
 
   @SuppressWarnings("ReferenceEquality")
