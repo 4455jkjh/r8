@@ -402,9 +402,10 @@ public class AndroidApiLevelUtils {
 
   /**
    * A lot of functionality has already been outlined in androidx. The ordinary pattern for manual
-   * outlining is to create a class with the name ApiXXImpl where XX is the api level. This method
-   * will check the context to see if it matches this pattern in androidx and extract the api level
-   * for comparison with the computed api level.
+   * outlining is to create a class with the name ApiXXImpl where XX is the major api level
+   * (corresponding to XX.0, so minor api levels above XX.0 are still outlined). This method will
+   * check the context to see if it matches this pattern in androidx and extract the api level for
+   * comparison with the computed api level.
    */
   public static boolean isOutlinedAtSameOrLowerLevel(
       DexProgramClass clazz, ComputedApiLevel apiLevel) {
@@ -417,7 +418,7 @@ public class AndroidApiLevelUtils {
     if (apiIndex < 0) {
       return false;
     }
-    int endApiIndex = apiIndex += 3;
+    int endApiIndex = apiIndex + 3;
     int implIndex = simpleName.indexOf("Impl");
     if (implIndex < 0 || implIndex < endApiIndex || (implIndex - endApiIndex) != 2) {
       return false;
@@ -430,7 +431,9 @@ public class AndroidApiLevelUtils {
     if (apiLevelAsInt < 10 || apiLevelAsInt > AndroidApiLevel.LATEST.getMajor()) {
       return false;
     }
-    return apiLevel.asKnownApiLevel().getApiLevel().getMajor() <= apiLevelAsInt;
+    AndroidApiLevel knownApiLevel = apiLevel.asKnownApiLevel().getApiLevel();
+    return knownApiLevel.getMajor() < apiLevelAsInt
+        || (knownApiLevel.getMajor() == apiLevelAsInt && knownApiLevel.getMinor() == 0);
   }
 
   public static boolean isApiLevelLessThanOrEqualToG(ComputedApiLevel apiLevel) {
