@@ -13,8 +13,7 @@ import org.spdx.sbom.gradle.extensions.DefaultSpdxSbomTaskExtension
 import org.spdx.sbom.gradle.project.ProjectInfo
 
 plugins {
-  `java-library`
-  id("r8-compiler-conventions")
+  `java-base`
   id("dependencies-plugin")
   id("org.spdx.sbom")
 }
@@ -23,19 +22,17 @@ if (project.hasProperty("spdxVersion")) {
   project.version = project.property("spdxVersion")!!
 }
 
-// We need all the runtime deps for SPDX generation.
-dependencies {
-  implementationInternal(project(":libanalyzer"))
-  implementationInternal(project(":main"))
-}
-
-val internalRuntimeConfig = configurations.named("internalRuntimeConfig")
-val externalRuntimeConfig = configurations.named("externalRuntimeConfig")
+val internalJarsScope = configurations.dependencyScope("internalJarsScope")
+val internalJarsConfig =
+  configurations.resolvableFlavor("internalJarsConfig", R8Flavor.INTERNAL, internalJarsScope)
+val externalDepsScope = configurations.dependencyScope("externalDepsScope")
+val externalDepsConfig =
+  configurations.resolvableFlavor("externalDepsConfig", R8Flavor.EXTERNAL, externalDepsScope)
 
 spdxSbom {
   targets {
     create("r8") {
-      configurations.set(listOf("externalRuntimeConfig"))
+      configurations.set(listOf("externalDepsConfig"))
       scm {
         uri.set("https://r8.googlesource.com/r8/")
         if (project.hasProperty("spdxRevision")) {
@@ -64,10 +61,11 @@ spdxSbom {
 
 val keepAnnoApiExternalScope = configurations.dependencyScope("keepAnnoApiExternalScope")
 val keepAnnoApiExternalConfig =
-  configurations.resolvable("keepAnnoApiExternalConfig") {
-    extendsFrom(keepAnnoApiExternalScope.get())
-    attributes { attribute(R8_FLAVOR_ATTRIBUTE, "api-external") }
-  }
+  configurations.resolvableFlavor(
+    "keepAnnoApiExternalConfig",
+    R8Flavor.API_EXTERNAL,
+    keepAnnoApiExternalScope,
+  )
 val keepAnnoDepsJarScope = configurations.dependencyScope("keepAnnoDepsJarScope")
 val keepAnnoDepsJarConfig =
   configurations.resolvable("keepAnnoDepsJarConfig") { extendsFrom(keepAnnoDepsJarScope.get()) }
@@ -86,6 +84,8 @@ val swissArmyKnifeConfig =
   configurations.resolvable("swissArmyKnifeConfig") { extendsFrom(swissArmyKnifeScope.get()) }
 
 dependencies {
+  internalJarsScope(project(":swissarmyknife"))
+  externalDepsScope(project(":swissarmyknife"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoApiExternalScope(project(":keepanno"))
   keepAnnoDepsJarScope(project(":keepanno", "keepannoDepsJar"))
@@ -154,7 +154,7 @@ fun relocateDepsExceptAsm(pkg: String): List<String> {
 tasks {
   val filteredDepsJar =
     register<Jar>("filteredDepsJar") {
-      from(zipTrees(externalRuntimeConfig))
+      from(zipTrees(externalDepsConfig))
       exclude("**/*.proto")
       exclude("versions-offline/**")
       archiveFileName.set("r8-deps-merged.jar")
@@ -218,7 +218,7 @@ tasks {
       libraryLicenses = File(getRootDir(), "library-licensing")
       // The artifacts that are included in the dependencies jar.
       dependencies =
-        externalRuntimeConfig.flatMap { config ->
+        externalDepsConfig.flatMap { config ->
           config.incoming.artifacts.resolvedArtifacts.map { artifacts ->
             artifacts.mapNotNull {
               val compId = it.id.componentIdentifier
@@ -233,7 +233,7 @@ tasks {
 
   val threadingModuleBlockingJar =
     register<Zip>("threadingModuleBlockingJar") {
-      from(zipTrees(internalRuntimeConfig))
+      from(zipTrees(internalJarsConfig))
       include("com/android/tools/r8/threading/providers/blocking/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-blocking.jar")
@@ -241,7 +241,7 @@ tasks {
 
   val threadingModuleSingleThreadedJar =
     register<Zip>("threadingModuleSingleThreadedJar") {
-      from(zipTrees(internalRuntimeConfig))
+      from(zipTrees(internalJarsConfig))
       include("com/android/tools/r8/threading/providers/singlethreaded/**")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
       archiveFileName.set("threading-module-single-threaded.jar")
@@ -283,7 +283,7 @@ tasks {
 
   val protoJar =
     register<Zip>("protoJar") {
-      from(zipTrees(internalRuntimeConfig))
+      from(zipTrees(internalJarsConfig))
       include(
         "com/android/tools/r8/keepradius/proto/**",
         "com/android/tools/r8/libanalyzer/proto/**",

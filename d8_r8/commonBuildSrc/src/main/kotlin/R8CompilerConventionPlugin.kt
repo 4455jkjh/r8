@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /**
- * Convention plugin for modules that contribute code to or package the R8 compiler.
+ * Convention plugin for Java/Kotlin modules that contribute code to the R8 compiler.
  *
  * Applies both `r8-conventions` (JVM/Kotlin/Protobuf/ErrorProne toolchain setup) and
  * `r8-dependency-flavors`, and publishes compiled class directories, sources jars, and the Kotlin

@@ -2,22 +2,30 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import org.gradle.api.tasks.bundling.Jar
+
 plugins {
-  `java-library`
-  id("r8-compiler-conventions")
+  `java-base`
   id("dependencies-plugin")
 }
 
+val compilerModules = configurations.dependencyScope("compilerModules")
+
 dependencies {
-  implementationInternal(project(":libanalyzer"))
-  implementationInternal(project(":main"))
+  compilerModules(project(":libanalyzer"))
+  compilerModules(project(":main"))
 }
 
-val internalRuntimeConfig = configurations.named("internalRuntimeConfig")
+val internalJars =
+  configurations.resolvableFlavor("internalJars", R8Flavor.INTERNAL, compilerModules)
 
-tasks {
-  named<Jar>("jar") {
-    from(zipTrees(internalRuntimeConfig)) {
+configurations.consumableFlavor("internalElements", R8Flavor.INTERNAL, compilerModules)
+
+configurations.consumableFlavor("externalElements", R8Flavor.EXTERNAL, compilerModules)
+
+val jarTask =
+  tasks.register<Jar>("jar") {
+    from(zipTrees(internalJars)) {
       exclude("com/android/tools/r8/threading/providers/**")
       exclude("com/android/tools/r8/keepradius/proto/**")
       exclude("com/android/tools/r8/libanalyzer/proto/**")
@@ -38,6 +46,5 @@ tasks {
     destinationDirectory.set(File(getRootDir(), "build/libs"))
     archiveFileName.set("r8-full-exclude-deps.jar")
   }
-}
 
-configurations.consumable("swissArmyKnifeJar") { outgoing.artifact(tasks.named("jar")) }
+configurations.consumable("swissArmyKnifeJar") { outgoing.artifact(jarTask) }
