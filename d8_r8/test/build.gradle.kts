@@ -64,6 +64,8 @@ val internalSourcesConfig = configurations.named("internalSourcesConfig")
 dependencies {
   implementation(project(":libanalyzer"))
   implementation(project(":main"))
+  implementation(project(":threading_blocking"))
+  implementation(project(":threading_single_threaded"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   jdk25HomeScope(project(":third_party", "jdk25Home"))

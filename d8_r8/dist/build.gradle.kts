@@ -86,6 +86,8 @@ val swissArmyKnifeConfig =
 dependencies {
   internalJarsScope(project(":swissarmyknife"))
   externalDepsScope(project(":swissarmyknife"))
+  externalDepsScope(project(":threading_blocking"))
+  externalDepsScope(project(":threading_single_threaded"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoApiExternalScope(project(":keepanno"))
   keepAnnoDepsJarScope(project(":keepanno", "keepannoDepsJar"))
@@ -231,26 +233,10 @@ tasks {
       consolidatedOutputFile = File(getRootDir(), "build/generatedLicense/LICENSE")
     }
 
-  val threadingModuleBlockingJar =
-    register<Zip>("threadingModuleBlockingJar") {
-      from(zipTrees(internalJarsConfig))
-      include("com/android/tools/r8/threading/providers/blocking/**")
-      destinationDirectory.set(File(getRootDir(), "build/libs"))
-      archiveFileName.set("threading-module-blocking.jar")
-    }
-
-  val threadingModuleSingleThreadedJar =
-    register<Zip>("threadingModuleSingleThreadedJar") {
-      from(zipTrees(internalJarsConfig))
-      include("com/android/tools/r8/threading/providers/singlethreaded/**")
-      destinationDirectory.set(File(getRootDir(), "build/libs"))
-      archiveFileName.set("threading-module-single-threaded.jar")
-    }
-
   dependencies {
     add(depsJarFilesScope.name, files(filteredDepsJar))
-    add(depsJarFilesScope.name, files(threadingModuleBlockingJar))
-    add(depsJarFilesScope.name, files(threadingModuleSingleThreadedJar))
+    add(depsJarFilesScope.name, project(":threading_blocking", "threadingModuleJar"))
+    add(depsJarFilesScope.name, project(":threading_single_threaded", "threadingModuleJar"))
   }
 
   configurations.consumable("filteredDepsJarConfig") { outgoing.artifact(filteredDepsJar) }

@@ -5,6 +5,7 @@ package com.android.tools.r8.libanalyzer.utils;
 
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.threading.ThreadingModule;
+import com.android.tools.r8.threading.ThreadingModuleLoader;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Reporter;
 import java.nio.file.Path;
@@ -35,7 +36,7 @@ public class LibraryAnalyzerOptions {
 
   public ThreadingModule getThreadingModule() {
     if (lazyThreadingModule == null) {
-      lazyThreadingModule = ThreadingModule.Loader.load().create();
+      lazyThreadingModule = ThreadingModuleLoader.load().create();
     }
     return lazyThreadingModule;
   }

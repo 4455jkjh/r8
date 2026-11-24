@@ -29,6 +29,7 @@ dependencies {
   apiInternal(project(":assistant"))
   apiInternal(project(":keepradius"))
   apiInternal(project(":keepanno"))
+  apiInternal(project(":threading"))
   apiInternal(project(":utils"))
   implementationExternal(libs.androidxCollection)
   implementationExternal(libs.androidxTracingDriver)

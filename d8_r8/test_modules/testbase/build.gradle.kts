@@ -139,6 +139,7 @@ dependencies {
   api(libs.smali)
   api(libs.smaliUtil)
   api(libs.toolsAapt2Proto)
+  runtimeOnly(project(":threading_blocking"))
   runtimeOnly(libs.junitPlatform)
 }
 

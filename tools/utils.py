@@ -55,8 +55,8 @@ GRADLE_TASK_R8 = ':dist:r8WithRelocatedDeps'
 GRADLE_TASK_R8_ASSISTANT = ':dist:r8AssistantLib'
 GRADLE_TASK_R8LIB = ':test:assembleR8LibWithRelocatedDeps'
 GRADLE_TASK_R8LIB_NO_DEPS = ':test:assembleR8LibNoDeps'
-GRADLE_TASK_THREADING_MODULE_BLOCKING = ':dist:threadingModuleBlockingJar'
-GRADLE_TASK_THREADING_MODULE_SINGLE_THREADED = ':dist:threadingModuleSingleThreadedJar'
+GRADLE_TASK_THREADING_MODULE_BLOCKING = ':threading_blocking:jar'
+GRADLE_TASK_THREADING_MODULE_SINGLE_THREADED = ':threading_single_threaded:jar'
 GRADLE_TASK_SOURCE_JAR = ':test:packageSources'
 GRADLE_TASK_SWISS_ARMY_KNIFE = ':swissarmyknife:jar'
 GRADLE_TASK_KEEPANNOTOOLS = ':dist:keepAnnoToolsWithRelocatedDeps'
@@ -83,10 +83,13 @@ R8LIB_PARTITION_MAP = '%s_map.zip' % R8LIB_JAR
 R8_SRC_JAR = os.path.join(LIBS, 'r8-src.jar')
 R8LIB_EXCLUDE_DEPS_JAR = os.path.join(LIBS, 'r8lib-exclude-deps.jar')
 R8_FULL_EXCLUDE_DEPS_JAR = os.path.join(LIBS, 'r8-full-exclude-deps.jar')
-THREADING_MODULE_BLOCKING_JAR = os.path.join(LIBS,
+THREADING_MODULE_BLOCKING_JAR = os.path.join(REPO_ROOT, 'd8_r8',
+                                             'threading_blocking', 'build',
+                                             'libs',
                                              'threading-module-blocking.jar')
 THREADING_MODULE_SINGLE_THREADED_JAR = os.path.join(
-    LIBS, 'threading-module-single-threaded.jar')
+    REPO_ROOT, 'd8_r8', 'threading_single_threaded', 'build', 'libs',
+    'threading-module-single-threaded.jar')
 KEEPANNOTOOLS_JAR = os.path.join(LIBS, 'keepanno-tools.jar')
 KEEPANNOTOOLSLIB_JAR = os.path.join(LIBS, 'keepanno-toolslib.jar')
 KEEPANNOTOOLSLIB_MAP = '%s.map' % R8LIB_JAR

@@ -26,7 +26,6 @@ configurations.consumableFlavor("externalElements", R8Flavor.EXTERNAL, compilerM
 val jarTask =
   tasks.register<Jar>("jar") {
     from(zipTrees(internalJars)) {
-      exclude("com/android/tools/r8/threading/providers/**")
       exclude("com/android/tools/r8/keepradius/proto/**")
       exclude("com/android/tools/r8/libanalyzer/proto/**")
       exclude("META-INF/*.kotlin_module")

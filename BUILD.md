@@ -31,13 +31,13 @@ The build setup follows these core principles:
 |                                   R8 COMPILER SUITE                                   |
 +---------------------------------------------------------------------------------------+
 
-  [main] ───────────────────────────> threading-module-blocking.jar ───────┐
-  [main] ───────────────────────────> threading-module-single-threaded.jar ┼──> deps.jar
+  [threading_blocking] ─────────────> threading-module-blocking.jar ───────┐
+  [threading_single_threaded] ──────> threading-module-single-threaded.jar ┼──> deps.jar
   [third_party] ───────────────────────────────────────────────────────────┘       │
                                                                                    │
   [keepradius], [libanalyzer] ────────────────────────────────────────> proto.jar  │
                                                                            │       │
-  [main], [keepanno],                                                      │       │
+  [main], [threading], [keepanno],                                         │       │
   [keepradius], [libanalyzer], [assistant] ──┬──> r8-src.jar               │       │
                                              │                             │       │
                                              └──> r8-full-exclude-deps.jar │       │
@@ -107,6 +107,7 @@ The build setup follows these core principles:
   - What: The compiler JAR without dependencies.
   - How: Compile classes from
     [`main`](./d8_r8/main),
+    [`threading`](./d8_r8/threading),
     [`keepanno`](./d8_r8/keepanno),
     [`keepradius`](./d8_r8/keepradius),
     [`libanalyzer`](./d8_r8/libanalyzer),
@@ -117,6 +118,9 @@ The build setup follows these core principles:
   - What: The compiler sources JAR.
   - How: Package sources from
     [`main`](./d8_r8/main),
+    [`threading`](./d8_r8/threading),
+    [`threading_blocking`](./d8_r8/threading_blocking),
+    [`threading_single_threaded`](./d8_r8/threading_single_threaded),
     [`keepanno`](./d8_r8/keepanno),
     [`keepradius`](./d8_r8/keepradius),
     [`libanalyzer`](./d8_r8/libanalyzer),
@@ -125,8 +129,8 @@ The build setup follows these core principles:
   - What: The JAR containing third-party dependencies, threading modules, and
     consolidated licensing.
   - How: Runtime dependencies from [`third_party/`](./third_party),
-    [`threading-module-blocking.jar`](./build/libs/threading-module-blocking.jar),
-    [`threading-module-single-threaded.jar`](./build/libs/threading-module-single-threaded.jar),
+    [`threading-module-blocking.jar`](./d8_r8/threading_blocking/build/libs/threading-module-blocking.jar),
+    [`threading-module-single-threaded.jar`](./d8_r8/threading_single_threaded/build/libs/threading-module-single-threaded.jar),
     and the consolidated `LICENSE` file are merged together.
 - [`proto.jar`](./build/libs/proto.jar):
   - What: The JAR containing compiled protobuf classes used for keep rule
@@ -135,20 +139,20 @@ The build setup follows these core principles:
     `.proto` schemas directly using their own toolchains.
   - How: Protobuf classes from [`keepradius`](./d8_r8/keepradius) and
     [`libanalyzer`](./d8_r8/libanalyzer) are bundled together.
-- [`threading-module-blocking.jar`](./build/libs/threading-module-blocking.jar):
+- [`threading-module-blocking.jar`](./d8_r8/threading_blocking/build/libs/threading-module-blocking.jar):
   - Released: Published as an optional runtime module providing multi-threaded
     execution for modular classpath environments.
   - What: The multi-threaded execution provider. It is packaged separately so
     the concurrency model can be controlled via classpath. This is useful to
     have a compiler without code even mentioning blocking code (for aggressive
     code checkers).
-  - How: Package blocking provider classes from [`main`](./d8_r8/main).
-- [`threading-module-single-threaded.jar`](./build/libs/threading-module-single-threaded.jar):
+  - How: Package blocking provider classes from [`threading_blocking`](./d8_r8/threading_blocking).
+- [`threading-module-single-threaded.jar`](./d8_r8/threading_single_threaded/build/libs/threading-module-single-threaded.jar):
   - Released: Published as an optional runtime module providing single-threaded
     execution for environments that prohibit blocking code.
   - What: The single-threaded execution provider. (see
-    [`threading-module-blocking.jar`](./build/libs/threading-module-blocking.jar))
-  - How: Package single-threaded provider classes from [`main`](./d8_r8/main).
+    [`threading-module-blocking.jar`](./d8_r8/threading_blocking/build/libs/threading-module-blocking.jar))
+  - How: Package single-threaded provider classes from [`threading_single_threaded`](./d8_r8/threading_single_threaded).
 - [`processkeepruleslib.jar`](./build/libs/processkeepruleslib.jar):
   - Released: Published as a standalone optimized tool for parsing, evaluating,
     and filtering ProGuard keep rules.

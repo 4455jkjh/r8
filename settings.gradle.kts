@@ -79,6 +79,12 @@ includeProject(":libanalyzer")
 
 includeProject(":main")
 
+includeProject(":threading")
+
+includeProject(":threading_blocking")
+
+includeProject(":threading_single_threaded")
+
 includeProject(":utils")
 
 includeProject(":dist")

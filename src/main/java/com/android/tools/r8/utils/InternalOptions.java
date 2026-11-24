@@ -110,6 +110,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.synthesis.SyntheticItemsOptions;
 import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
 import com.android.tools.r8.threading.ThreadingModule;
+import com.android.tools.r8.threading.ThreadingModuleLoader;
 import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsumer;
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
@@ -361,7 +362,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public ThreadingModule getThreadingModule() {
     if (lazyThreadingModule == null) {
-      lazyThreadingModule = ThreadingModule.Loader.load().create();
+      lazyThreadingModule = ThreadingModuleLoader.load().create();
     }
     return lazyThreadingModule;
   }
