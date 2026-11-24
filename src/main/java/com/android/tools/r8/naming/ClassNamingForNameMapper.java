@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -53,16 +52,14 @@ public class ClassNamingForNameMapper implements ClassNaming {
     private final Map<String, List<MappedRange>> mappedRangesByName = Maps.newHashMap();
     private final Map<String, List<MemberNaming>> mappedFieldNamingsByName = Maps.newHashMap();
     private List<MappingInformation> additionalMappingInfo = EMPTY_MAPPING_INFORMATION;
-    private final BiConsumer<String, String> originalSourceFileConsumer;
+    private final Map<String, String> originalSourceFiles;
     private int nextSequenceNumber = 0;
 
     private Builder(
-        String renamedName,
-        String originalName,
-        BiConsumer<String, String> originalSourceFileConsumer) {
+        String renamedName, String originalName, Map<String, String> originalSourceFiles) {
       this.originalName = originalName;
       this.renamedName = renamedName;
-      this.originalSourceFileConsumer = originalSourceFileConsumer;
+      this.originalSourceFiles = originalSourceFiles;
     }
 
     @Override
@@ -142,7 +139,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
       }
       additionalMappingInfo.add(info);
       if (info.isFileNameInformation()) {
-        originalSourceFileConsumer.accept(originalName, info.asFileNameInformation().getFileName());
+        originalSourceFiles.put(originalName, info.asFileNameInformation().getFileName());
       }
     }
 
@@ -321,11 +318,9 @@ public class ClassNamingForNameMapper implements ClassNaming {
     }
   }
 
-  static Builder builder(
-      String renamedName,
-      String originalName,
-      BiConsumer<String, String> originalSourceFileConsumer) {
-    return new Builder(renamedName, originalName, originalSourceFileConsumer);
+  public static Builder builder(
+      String renamedName, String originalName, Map<String, String> originalSourceFiles) {
+    return new Builder(renamedName, originalName, originalSourceFiles);
   }
 
   public final String originalName;

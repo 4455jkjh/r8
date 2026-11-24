@@ -18,6 +18,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.OutlineCallerPosition;
 import com.android.tools.r8.naming.ClassNameMapper;
+import com.android.tools.r8.naming.ClassNamingForNameMapper;
 import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.MappingComposeException;
 import com.android.tools.r8.naming.MappingComposer;
@@ -152,56 +153,34 @@ public class LineNumberOptimizer {
 
   /** Optimizes line numbers and returns a corresponding mapping. */
   private ClassNameMapper run(Timing timing) throws ExecutionException {
-    timing.begin("Line number remapping");
-    PositionToMappedRangeMapper positionToMappedRangeMapper =
-        PositionToMappedRangeMapper.create(appView);
-
-    var optimizedClasses = optimizePositions(positionToMappedRangeMapper, timing);
-    ClassNameMapper mapper = buildMapper(optimizedClasses, timing);
-
-    timing.end();
-    return mapper;
-  }
-
-  /** Optimize line numbers and return the resulting mapping. */
-  private Iterable<ClassPositionMapping> optimizePositions(
-      PositionToMappedRangeMapper positionToMappedRangeMapper, Timing timing)
-      throws ExecutionException {
-    timing.begin("Process classes");
-    AppPositionRemapper positionRemapper = AppPositionRemapper.create(appView, timing);
-    Deque<ClassPositionMapping> worklist = new ConcurrentLinkedDeque<>();
-    ThreadUtils.processItemsThatMatches(
-        appView.appInfo().classes(),
-        this::shouldRunForClass,
-        (clazz, threadTiming) -> {
-          ClassPositionMapping classResult =
-              optimizePositionsForClass(
-                  clazz, positionRemapper, positionToMappedRangeMapper, threadTiming);
-          worklist.addLast(classResult);
-        },
-        appView.options(),
-        executorService,
-        timing);
-    timing.end();
-    return worklist;
-  }
-
-  private ClassNameMapper buildMapper(Iterable<ClassPositionMapping> results, Timing timing) {
-    try (Timing ignored = timing.begin("Add class naming")) {
-      // TODO(b/552916515): Do this concurrently.
+    try (Timing t0 = timing.begin("Line number remapping")) {
+      PositionToMappedRangeMapper positionToMappedRangeMapper =
+          PositionToMappedRangeMapper.create(appView);
       MappedPositionToClassNameMapperBuilder builder =
           MappedPositionToClassNameMapperBuilder.builder(appView, originalSourceFiles);
-      for (ClassPositionMapping classResult : results) {
-        MappedPositionToClassNamingBuilder classNamingBuilder =
-            builder.addClassNaming(classResult.clazz);
-        for (MethodPositionMapping methodResult : classResult.methodMappings) {
-          classNamingBuilder.addMappedPositions(
-              methodResult.method,
-              methodResult.mappedPositions,
-              methodResult.outlineCalleePositions);
-        }
+      Deque<ClassNamingForNameMapper> classNamings = new ConcurrentLinkedDeque<>();
+
+      try (Timing t1 = timing.begin("Process classes")) {
+        AppPositionRemapper positionRemapper = AppPositionRemapper.create(appView, timing);
+        ThreadUtils.processItemsThatMatches(
+            appView.appInfo().classes(),
+            this::shouldRunForClass,
+            (clazz, threadTiming) -> {
+              ClassNamingForNameMapper classNaming =
+                  optimizePositionsForClass(
+                      clazz, positionRemapper, positionToMappedRangeMapper, builder, threadTiming);
+              if (classNaming != null) {
+                classNamings.addLast(classNaming);
+              }
+            },
+            appView.options(),
+            executorService,
+            timing);
       }
-      return builder.build();
+
+      try (Timing t1 = timing.begin("Build mapper")) {
+        return builder.build(classNamings);
+      }
     }
   }
 
@@ -215,10 +194,11 @@ public class LineNumberOptimizer {
     }
   }
 
-  private ClassPositionMapping optimizePositionsForClass(
+  private ClassNamingForNameMapper optimizePositionsForClass(
       DexProgramClass clazz,
       AppPositionRemapper positionRemapper,
       PositionToMappedRangeMapper positionToMappedRangeMapper,
+      MappedPositionToClassNameMapperBuilder builder,
       Timing timing) {
     timing.begin("Prelude");
     IdentityHashMap<DexString, List<ProgramMethod>> methodsByRenamedName =
@@ -227,25 +207,29 @@ public class LineNumberOptimizer {
     // Process methods ordered by renamed name.
     List<DexString> renamedMethodNames = new ArrayList<>(methodsByRenamedName.keySet());
     renamedMethodNames.sort(DexString::compareTo);
+    MappedPositionToClassNamingBuilder classNamingBuilder = builder.createClassNamingBuilder(clazz);
     timing.end();
 
     var classPositionRemapper = positionRemapper.createClassPositionRemapper(clazz);
-    List<MethodPositionMapping> methodPositionMappings = new ArrayList<>();
     for (DexString newMethodName : renamedMethodNames) {
       List<ProgramMethod> methods = methodsByRenamedName.get(newMethodName);
-      var results =
-          optimizePositionsForOverloads(
-              newMethodName, methods, classPositionRemapper, positionToMappedRangeMapper, timing);
-      methodPositionMappings.addAll(results);
+      optimizePositionsForOverloads(
+          newMethodName,
+          methods,
+          classPositionRemapper,
+          positionToMappedRangeMapper,
+          classNamingBuilder,
+          timing);
     }
-    return new ClassPositionMapping(clazz, methodPositionMappings);
+    return classNamingBuilder.build();
   }
 
-  private List<MethodPositionMapping> optimizePositionsForOverloads(
+  private void optimizePositionsForOverloads(
       DexString newMethodName,
       List<ProgramMethod> methods,
       ClassPositionRemapper classPositionRemapper,
       PositionToMappedRangeMapper positionToMappedRangeMapper,
+      MappedPositionToClassNamingBuilder classNamingBuilder,
       Timing timing) {
     // Sort the methods for deterministic numbering.
     OverloadedMethodOrdering.sortOverloadedMethods(methods);
@@ -255,16 +239,18 @@ public class LineNumberOptimizer {
     timing.begin("Process methods");
     MethodPositionRemapper methodPositionRemapper =
         classPositionRemapper.createMethodPositionRemapper();
-    List<MethodPositionMapping> results = new ArrayList<>(methods.size());
     for (ProgramMethod method : methods) {
       if (shouldOptimizeMethod(newMethodName, method, methods)) {
-        results.add(
-            optimizePositionsForMethod(
-                method, methods, methodPositionRemapper, positionToMappedRangeMapper, timing));
+        optimizePositionsForMethod(
+            method,
+            methods,
+            methodPositionRemapper,
+            positionToMappedRangeMapper,
+            classNamingBuilder,
+            timing);
       }
     }
     timing.end();
-    return results;
   }
 
   private boolean shouldOptimizeMethod(
@@ -277,29 +263,40 @@ public class LineNumberOptimizer {
         || methods.size() > 1;
   }
 
-  private MethodPositionMapping optimizePositionsForMethod(
+  private void optimizePositionsForMethod(
       ProgramMethod method,
       List<ProgramMethod> methods,
       MethodPositionRemapper positionRemapper,
       PositionToMappedRangeMapper positionToMappedRangeMapper,
+      MappedPositionToClassNamingBuilder classNamingBuilder,
       Timing timing) {
     assert method.getDefinition() != null : "Method has no definition " + method;
     Code code = method.getDefinition().getCode();
     if (code == null
         || !(code.isCfCode() || code.isDexCode())
         || appView.isCfByteCodePassThrough(method)) {
-      return MethodPositionMapping.empty(method);
+      classNamingBuilder.addMappedPositions(method, Collections.emptyList(), null);
+      return;
     }
+    List<MappedPosition> mappedPositions;
+    Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions = null;
     try (Timing ignored = timing.begin("Get mapped positions")) {
       int pcEncodingCutoff =
           ObjectUtils.identical(method, methods.get(0))
               ? representation.getDexPcEncodingCutoff(method)
               : -1;
       boolean canUseDexPc = pcEncodingCutoff > 0;
-      List<MappedPosition> mappedPositions =
+      mappedPositions =
           positionToMappedRangeMapper.getMappedPositions(
               method, positionRemapper, methods.size() > 1, canUseDexPc, pcEncodingCutoff, timing);
-      return MethodPositionMapping.create(method, mappedPositions, positionRemapper, canUseDexPc);
+      if (!mappedPositions.isEmpty()) {
+        mappedPositions.sort(Comparator.comparingInt(MappedPosition::getObfuscatedLine));
+        outlineCalleePositions =
+            computeOutlineCalleePositions(mappedPositions, positionRemapper, canUseDexPc);
+      }
+    }
+    try (Timing ignored = timing.begin("Add mapped positions")) {
+      classNamingBuilder.addMappedPositions(method, mappedPositions, outlineCalleePositions);
     }
   }
 
@@ -347,92 +344,56 @@ public class LineNumberOptimizer {
     return true;
   }
 
-  private static class ClassPositionMapping {
-
-    private final DexProgramClass clazz;
-    private final List<MethodPositionMapping> methodMappings;
-
-    private ClassPositionMapping(
-        DexProgramClass clazz, List<MethodPositionMapping> methodMappings) {
-      this.clazz = clazz;
-      this.methodMappings = methodMappings;
-    }
-  }
-
-  private static class MethodPositionMapping {
-
-    private final ProgramMethod method;
-    private final List<MappedPosition> mappedPositions;
-    private final Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions;
-
-    private MethodPositionMapping(
-        ProgramMethod method,
-        List<MappedPosition> mappedPositions,
-        Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions) {
-      this.method = method;
-      this.mappedPositions = mappedPositions;
-      this.outlineCalleePositions = outlineCalleePositions;
-    }
-
-    static MethodPositionMapping empty(ProgramMethod method) {
-      return new MethodPositionMapping(method, Collections.emptyList(), Collections.emptyMap());
-    }
-
-    static MethodPositionMapping create(
-        ProgramMethod method,
-        List<MappedPosition> mappedPositions,
-        MethodPositionRemapper positionRemapper,
-        boolean canUsePc) {
-      if (mappedPositions.isEmpty()) {
-        return empty(method);
-      }
-      mappedPositions.sort(Comparator.comparingInt(MappedPosition::getObfuscatedLine));
-      // Allocate synthetic placeholder line numbers for outline callee positions immediately after
-      // remapping this method's instruction positions, before moving on to the next overload in
-      // optimizePositionsForOverloads (which shares the same MethodPositionRemapper). This ensures
-      // that a method's outline callee placeholder positions are contiguous with its instruction
-      // positions rather than being allocated after subsequent overloads (see b/579315508).
-      Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions = Collections.emptyMap();
-      IntBox maxPc = new IntBox(ListUtils.last(mappedPositions).getObfuscatedLine());
-      for (MappedPosition mappedPosition : mappedPositions) {
-        Position position = mappedPosition.getPosition();
-        if (position.isOutlineCaller()) {
-          OutlineCallerPosition outlineCallerPosition = position.asOutlineCaller();
-          if (outlineCalleePositions.isEmpty()) {
-            outlineCalleePositions = new LinkedHashMap<>();
-          }
-          outlineCalleePositions.computeIfAbsent(
-              outlineCallerPosition,
-              key -> {
-                Int2IntMap positionMap = new Int2IntArrayMap();
-                key.getOutlinePositions()
-                    .forEach(
-                        (line, outlinePosition) -> {
-                          int placeHolderLineToBeFixed;
-                          if (canUsePc) {
-                            placeHolderLineToBeFixed = maxPc.get() + line + 1;
-                          } else {
-                            placeHolderLineToBeFixed =
-                                positionRemapper
-                                    .createRemappedPosition(outlinePosition)
-                                    .getSecond()
-                                    .getLine();
-                          }
-                          positionMap.put((int) line, placeHolderLineToBeFixed);
-                          maxPc.set(placeHolderLineToBeFixed);
-                        });
-                return positionMap;
-              });
+  private static Map<OutlineCallerPosition, Int2IntMap> computeOutlineCalleePositions(
+      List<MappedPosition> mappedPositions,
+      MethodPositionRemapper positionRemapper,
+      boolean canUsePc) {
+    assert !mappedPositions.isEmpty();
+    // Allocate synthetic placeholder line numbers for outline callee positions immediately after
+    // remapping this method's instruction positions, before moving on to the next overload in
+    // optimizePositionsForOverloads (which shares the same MethodPositionRemapper). This ensures
+    // that a method's outline callee placeholder positions are contiguous with its instruction
+    // positions rather than being allocated after subsequent overloads (see b/579315508).
+    Map<OutlineCallerPosition, Int2IntMap> outlineCalleePositions = null;
+    IntBox maxPc = new IntBox(ListUtils.last(mappedPositions).getObfuscatedLine());
+    for (MappedPosition mappedPosition : mappedPositions) {
+      Position position = mappedPosition.getPosition();
+      if (position.isOutlineCaller()) {
+        OutlineCallerPosition outlineCallerPosition = position.asOutlineCaller();
+        if (outlineCalleePositions == null) {
+          outlineCalleePositions = new LinkedHashMap<>();
         }
+        outlineCalleePositions.computeIfAbsent(
+            outlineCallerPosition,
+            key -> {
+              Int2IntMap positionMap = new Int2IntArrayMap();
+              key.getOutlinePositions()
+                  .forEach(
+                      (line, outlinePosition) -> {
+                        int placeHolderLineToBeFixed;
+                        if (canUsePc) {
+                          placeHolderLineToBeFixed = maxPc.get() + line + 1;
+                        } else {
+                          placeHolderLineToBeFixed =
+                              positionRemapper
+                                  .createRemappedPosition(outlinePosition)
+                                  .getSecond()
+                                  .getLine();
+                        }
+                        positionMap.put((int) line, placeHolderLineToBeFixed);
+                        maxPc.set(placeHolderLineToBeFixed);
+                      });
+              return positionMap;
+            });
       }
-      if (canUsePc && !outlineCalleePositions.isEmpty()) {
-        // When PC-based encoding is used (for the first overload), DexPositionToPcMappedRangeMapper
-        // only advances positionRemapper up to the method's last instruction PC. Advance
-        // positionRemapper past the outline callee placeholder positions allocated above so that
-        // subsequent overloads do not reuse those line numbers.
-        positionRemapper.setNextOptimizedLineNumber(maxPc.get() + 1);
-      }
-      return new MethodPositionMapping(method, mappedPositions, outlineCalleePositions);
     }
+    if (canUsePc && outlineCalleePositions != null) {
+      // When PC-based encoding is used (for the first overload), DexPositionToPcMappedRangeMapper
+      // only advances positionRemapper up to the method's last instruction PC. Advance
+      // positionRemapper past the outline callee placeholder positions allocated above so that
+      // subsequent overloads do not reuse those line numbers.
+      positionRemapper.setNextOptimizedLineNumber(maxPc.get() + 1);
+    }
+    return outlineCalleePositions;
   }
 }

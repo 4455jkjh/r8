@@ -58,7 +58,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -224,13 +223,11 @@ public class ComposingBuilder {
     Collection<ClassNamingForNameMapper> builtNamings =
         ThreadUtils.processItemsWithResults(
             classBuilders,
-            classBuilder -> classBuilder.buildClassNamingForNameMapper(concurrentSourceFiles::put),
+            classBuilder -> classBuilder.buildClassNamingForNameMapper(concurrentSourceFiles),
             options.getThreadingModule(),
             executorService);
     concurrentSourceFiles.forEach(builder::addFileName);
-    for (ClassNamingForNameMapper classNaming : builtNamings) {
-      builder.putClassNaming(classNaming.renamedName, classNaming);
-    }
+    builder.putClassNamings(builtNamings);
     return builder.build();
   }
 
@@ -1602,9 +1599,9 @@ public class ComposingBuilder {
     }
 
     public ClassNamingForNameMapper buildClassNamingForNameMapper(
-        BiConsumer<String, String> originalSourceFileConsumer) {
+        Map<String, String> originalSourceFiles) {
       ClassNamingForNameMapper.Builder builder =
-          ClassNamingForNameMapper.builder(renamedName, originalName, originalSourceFileConsumer);
+          ClassNamingForNameMapper.builder(renamedName, originalName, originalSourceFiles);
       additionalMappingInfo.forEach(
           info -> builder.addMappingInformation(info, ConsumerUtils.emptyConsumer()));
       writeFieldsToMapper(builder);

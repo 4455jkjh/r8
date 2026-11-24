@@ -20,6 +20,7 @@ import com.android.tools.r8.ir.code.Position.OutlineCallerPosition;
 import com.android.tools.r8.ir.code.Position.OutlinePosition;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.ClassNaming;
+import com.android.tools.r8.naming.ClassNamingForNameMapper;
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRange;
 import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.MemberNaming;
@@ -55,12 +56,16 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class MappedPositionToClassNameMapperBuilder {
@@ -73,8 +78,9 @@ public class MappedPositionToClassNameMapperBuilder {
   private final AppView<?> appView;
 
   private final ClassNameMapper.Builder classNameMapperBuilder;
-  private final Map<DexMethod, OutlineFixupBuilder> outlinesToFix = new IdentityHashMap<>();
-  private final Map<DexType, String> prunedInlinedClasses = new IdentityHashMap<>();
+  private final Map<DexMethod, OutlineFixupBuilder> outlinesToFix = new ConcurrentHashMap<>();
+  private final Map<DexType, String> prunedInlinedClasses = new ConcurrentHashMap<>();
+  private final Map<String, String> recordedOriginalSourceFiles = new ConcurrentHashMap<>();
 
   private final CardinalPositionRangeAllocator cardinalRangeCache =
       PositionRangeAllocator.createCardinalPositionRangeAllocator();
@@ -101,20 +107,32 @@ public class MappedPositionToClassNameMapperBuilder {
     return new MappedPositionToClassNameMapperBuilder(appView, originalSourceFiles);
   }
 
-  public ClassNameMapper build() {
+  public ClassNameMapper build(Collection<ClassNamingForNameMapper> classNamings) {
     // Fixup all outline positions
     outlinesToFix.values().forEach(OutlineFixupBuilder::fixup);
-    addSourceFileLinesForPrunedClasses();
+    recordedOriginalSourceFiles.forEach(classNameMapperBuilder::addFileName);
+    addSourceFileLinesForPrunedClasses(classNamings);
+    classNameMapperBuilder.putClassNamings(classNamings);
     return classNameMapperBuilder.build();
   }
 
-  private void addSourceFileLinesForPrunedClasses() {
+  private void addSourceFileLinesForPrunedClasses(
+      Collection<ClassNamingForNameMapper> classNamings) {
+    if (prunedInlinedClasses.isEmpty()) {
+      return;
+    }
     // Add all pruned inline classes to the mapping to recover source files.
     List<Entry<DexType, String>> prunedEntries = new ArrayList<>(prunedInlinedClasses.entrySet());
     String prunedInlinedClassObfuscatedPrefix =
         appView.options().getLibraryDesugaringOptions().isL8()
             ? L8_PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX
             : PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX;
+    Set<String> existingRemovedClassNames = new HashSet<>();
+    for (ClassNamingForNameMapper classNaming : classNamings) {
+      if (classNaming.renamedName.startsWith(prunedInlinedClassObfuscatedPrefix)) {
+        existingRemovedClassNames.add(classNaming.renamedName);
+      }
+    }
     IntBox counter = new IntBox();
     prunedEntries.sort(Entry.comparingByKey());
     prunedEntries.forEach(
@@ -127,7 +145,7 @@ public class MappedPositionToClassNameMapperBuilder {
           String renamedName;
           do {
             renamedName = prunedInlinedClassObfuscatedPrefix + counter.getAndIncrement();
-          } while (classNameMapperBuilder.hasMapping(renamedName));
+          } while (existingRemovedClassNames.contains(renamedName));
           classNameMapperBuilder
               .classNamingBuilder(
                   renamedName, typeName, com.android.tools.r8.position.Position.UNKNOWN)
@@ -135,7 +153,7 @@ public class MappedPositionToClassNameMapperBuilder {
         });
   }
 
-  public MappedPositionToClassNamingBuilder addClassNaming(DexProgramClass clazz) {
+  public MappedPositionToClassNamingBuilder createClassNamingBuilder(DexProgramClass clazz) {
     DexType originalType = appView.graphLens().getOriginalType(clazz.type);
     DexString renamedDescriptor = appView.getNamingLens().lookupDescriptor(clazz.getType());
     return new MappedPositionToClassNamingBuilder(
@@ -149,19 +167,25 @@ public class MappedPositionToClassNameMapperBuilder {
 
     private final DexProgramClass clazz;
     private final DexType originalType;
+    private final String originalName;
     private final String renamedName;
 
-    private ClassNaming.Builder builder;
+    private ClassNamingForNameMapper.Builder builder;
 
     private MappedPositionToClassNamingBuilder(
         DexProgramClass clazz, DexType originalType, String renamedName) {
       this.clazz = clazz;
       this.originalType = originalType;
+      this.originalName = originalType.toSourceString();
       this.renamedName = renamedName;
       // If the class is renamed trigger an entry in the builder.
-      if (!originalType.toSourceString().equals(renamedName)) {
+      if (!originalName.equals(renamedName)) {
         getBuilder();
       }
+    }
+
+    public ClassNamingForNameMapper build() {
+      return builder != null ? builder.build() : null;
     }
 
     public MappedPositionToClassNamingBuilder addSourceFile(
@@ -407,7 +431,7 @@ public class MappedPositionToClassNameMapperBuilder {
         i = j;
       }
       // Emit mapped ranges for the inlined positions of each outline callsite using the synthetic
-      // placeholder line numbers pre-allocated in MethodPositionMapping.create, and register the
+      // placeholder line numbers pre-allocated in computeOutlineCalleePositions, and register the
       // callsite with outlinesToFix so its OutlineCallsiteMappingInformation can be attached once
       // the outline callee's obfuscated positions are known.
       for (Map.Entry<OutlineCallerPosition, MappedRange> outlinePositionEntry :
@@ -672,13 +696,11 @@ public class MappedPositionToClassNameMapperBuilder {
       return code.isDexCode() && code.asDexCode().hasThrowingInstructions();
     }
 
-    private ClassNaming.Builder getBuilder() {
+    private ClassNamingForNameMapper.Builder getBuilder() {
       if (builder == null) {
         builder =
-            classNameMapperBuilder.classNamingBuilder(
-                renamedName,
-                originalType.toSourceString(),
-                com.android.tools.r8.position.Position.UNKNOWN);
+            ClassNamingForNameMapper.builder(
+                renamedName, originalName, recordedOriginalSourceFiles);
       }
       return builder;
     }
@@ -758,11 +780,11 @@ public class MappedPositionToClassNameMapperBuilder {
       this.outlineMethod = outlineMethod;
     }
 
-    void setMappedPositionsOutline(List<MappedPosition> mappedPositionsOutline) {
+    synchronized void setMappedPositionsOutline(List<MappedPosition> mappedPositionsOutline) {
       this.mappedOutlinePositions = mappedPositionsOutline;
     }
 
-    void addMappedRangeForOutlineCallee(
+    synchronized void addMappedRangeForOutlineCallee(
         MappedRange mappedRangeForOutline, Int2IntMap calleePositions) {
       mappedOutlineCalleePositions.add(Pair.create(mappedRangeForOutline, calleePositions));
     }

@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -81,16 +82,19 @@ public class ClassNameMapper implements ProguardMap {
     public ClassNamingForNameMapper.Builder classNamingBuilder(
         String renamedName, String originalName, Position position) {
       ClassNamingForNameMapper.Builder classNamingBuilder =
-          ClassNamingForNameMapper.builder(renamedName, originalName, originalSourceFiles::put);
+          ClassNamingForNameMapper.builder(renamedName, originalName, originalSourceFiles);
       mapping.put(renamedName, classNamingBuilder);
       return classNamingBuilder;
     }
 
-    public Builder putClassNaming(String renamedName, ClassNamingForNameMapper classNaming) {
+    public Builder putClassNamings(Collection<ClassNamingForNameMapper> classNamings) {
       if (prebuiltClassMappings == null) {
-        prebuiltClassMappings = ImmutableMap.builder();
+        prebuiltClassMappings =
+            ImmutableMap.builderWithExpectedSize(classNamings.size() + mapping.size());
       }
-      prebuiltClassMappings.put(renamedName, classNaming);
+      for (ClassNamingForNameMapper classNaming : classNamings) {
+        prebuiltClassMappings.put(classNaming.renamedName, classNaming);
+      }
       return this;
     }
 
@@ -109,10 +113,6 @@ public class ClassNameMapper implements ProguardMap {
       if (buildPreamble) {
         preamble.add(line);
       }
-    }
-
-    public boolean hasMapping(String obfuscatedName) {
-      return mapping.containsKey(obfuscatedName);
     }
 
     @Override
@@ -141,7 +141,7 @@ public class ClassNameMapper implements ProguardMap {
     }
 
     @Override
-    ProguardMap.Builder addFileName(String originalName, String fileName) {
+    public ProguardMap.Builder addFileName(String originalName, String fileName) {
       originalSourceFiles.put(originalName, fileName);
       return this;
     }
