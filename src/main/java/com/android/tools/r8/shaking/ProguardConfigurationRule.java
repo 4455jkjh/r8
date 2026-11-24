@@ -330,9 +330,7 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
   }
 
   public boolean testClassCondition(
-      DexClass clazz,
-      AppView<?> appView,
-      Consumer<AnnotationMatchResult> annotationMatchResultConsumer) {
+      DexClass clazz, AppView<?> appView, RootSetBuilder matchedAnnotationConsumer) {
     if (!satisfyNonSyntheticClass(clazz, appView)) {
       return false;
     }
@@ -346,32 +344,28 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
     if (annotationMatchResult == null) {
       return false;
     }
-    annotationMatchResultConsumer.accept(annotationMatchResult);
+    matchedAnnotationConsumer.handleMatchedAnnotation(annotationMatchResult);
     // In principle it should make a difference whether the user specified in a class
     // spec that a class either extends or implements another type. However, proguard
     // seems not to care, so users have started to use this inconsistently. We are thus
     // inconsistent, as well, but tell them.
     // TODO(herhut): One day make this do what it says.
     if (hasInheritanceClassName()
-        && !satisfyInheritanceRule(clazz, appView, annotationMatchResultConsumer)) {
+        && !satisfyInheritanceRule(clazz, appView, matchedAnnotationConsumer)) {
       return false;
     }
     return getClassNames().matches(clazz.type);
   }
 
   public boolean satisfyInheritanceRule(
-      DexClass clazz,
-      AppView<?> appView,
-      Consumer<AnnotationMatchResult> annotationMatchResultConsumer) {
-    return satisfyExtendsRule(clazz, appView, annotationMatchResultConsumer)
-        || satisfyImplementsRule(clazz, appView, annotationMatchResultConsumer);
+      DexClass clazz, AppView<?> appView, RootSetBuilder matchedAnnotationConsumer) {
+    return satisfyExtendsRule(clazz, appView, matchedAnnotationConsumer)
+        || satisfyImplementsRule(clazz, appView, matchedAnnotationConsumer);
   }
 
   private boolean satisfyExtendsRule(
-      DexClass clazz,
-      AppView<?> appView,
-      Consumer<AnnotationMatchResult> annotationMatchResultConsumer) {
-    if (anySuperTypeMatchesExtendsRule(clazz.superType, appView, annotationMatchResultConsumer)) {
+      DexClass clazz, AppView<?> appView, RootSetBuilder matchedAnnotationConsumer) {
+    if (anySuperTypeMatchesExtendsRule(clazz.superType, appView, matchedAnnotationConsumer)) {
       return true;
     }
     // It is possible that this class used to inherit from another class X, but no longer does it,
@@ -380,9 +374,7 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
   }
 
   private boolean anySuperTypeMatchesExtendsRule(
-      DexType type,
-      AppView<?> appView,
-      Consumer<AnnotationMatchResult> annotationMatchResultConsumer) {
+      DexType type, AppView<?> appView, RootSetBuilder matchedAnnotationConsumer) {
     while (type != null) {
       DexClass clazz = appView.definitionFor(type);
       if (clazz == null) {
@@ -396,7 +388,7 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
         AnnotationMatchResult annotationMatchResult =
             RootSetBuilder.containsAllAnnotations(getInheritanceAnnotations(), clazz);
         if (annotationMatchResult != null) {
-          annotationMatchResultConsumer.accept(annotationMatchResult);
+          matchedAnnotationConsumer.handleMatchedAnnotation(annotationMatchResult);
           return true;
         }
       }
@@ -406,11 +398,8 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
   }
 
   private boolean satisfyImplementsRule(
-      DexClass clazz,
-      AppView<?> appView,
-      Consumer<AnnotationMatchResult> annotationMatchResultConsumer) {
-    if (anyImplementedInterfaceMatchesImplementsRule(
-        clazz, appView, annotationMatchResultConsumer)) {
+      DexClass clazz, AppView<?> appView, RootSetBuilder matchedAnnotationConsumer) {
+    if (anyImplementedInterfaceMatchesImplementsRule(clazz, appView, matchedAnnotationConsumer)) {
       return true;
     }
     // It is possible that this class used to implement an interface I, but no longer does it,
@@ -419,9 +408,7 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
   }
 
   private boolean anyImplementedInterfaceMatchesImplementsRule(
-      DexClass clazz,
-      AppView<?> appView,
-      Consumer<AnnotationMatchResult> annotationMatchResultConsumer) {
+      DexClass clazz, AppView<?> appView, RootSetBuilder matchedAnnotationConsumer) {
     // TODO(herhut): Maybe it would be better to do this breadth first.
     for (DexType iface : clazz.getInterfaces()) {
       DexClass ifaceClass = appView.definitionFor(iface);
@@ -436,12 +423,12 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
         AnnotationMatchResult annotationMatchResult =
             RootSetBuilder.containsAllAnnotations(getInheritanceAnnotations(), ifaceClass);
         if (annotationMatchResult != null) {
-          annotationMatchResultConsumer.accept(annotationMatchResult);
+          matchedAnnotationConsumer.handleMatchedAnnotation(annotationMatchResult);
           return true;
         }
       }
       if (anyImplementedInterfaceMatchesImplementsRule(
-          ifaceClass, appView, annotationMatchResultConsumer)) {
+          ifaceClass, appView, matchedAnnotationConsumer)) {
         return true;
       }
     }
@@ -451,7 +438,7 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
     DexClass superClass = appView.definitionFor(clazz.getSuperType());
     return superClass != null
         && anyImplementedInterfaceMatchesImplementsRule(
-            superClass, appView, annotationMatchResultConsumer);
+            superClass, appView, matchedAnnotationConsumer);
   }
 
   private boolean anySourceMatchesInheritanceRuleDirectly(

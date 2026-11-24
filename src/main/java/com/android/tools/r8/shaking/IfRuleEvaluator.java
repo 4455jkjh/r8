@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class IfRuleEvaluator {
 
@@ -235,8 +234,7 @@ public class IfRuleEvaluator {
     assert classNameResult;
     if (memberRule.hasInheritanceClassName()) {
       boolean inheritanceResult =
-          memberRule.satisfyInheritanceRule(
-              target, appView, rootSetBuilder::handleMatchedAnnotation);
+          memberRule.satisfyInheritanceRule(target, appView, rootSetBuilder);
       assert inheritanceResult;
     }
   }
@@ -286,7 +284,7 @@ public class IfRuleEvaluator {
     }
     if (rule.hasInheritanceClassName()) {
       // Try another live type since the current one doesn't satisfy the inheritance rule.
-      return rule.satisfyInheritanceRule(clazz, appView, rootSetBuilder::handleMatchedAnnotation);
+      return rule.satisfyInheritanceRule(clazz, appView, rootSetBuilder);
     }
     return true;
   }
@@ -367,36 +365,37 @@ public class IfRuleEvaluator {
     // TODO(b/206086945): Consider ways of reducing the size of this set computation.
     for (Set<DexDefinition> combination :
         Sets.combinations(filteredMembers, memberKeepRules.size())) {
-      Collection<DexClassAndField> fieldsInCombination =
-          DexDefinition.filterDexEncodedField(
-                  combination.stream(), field -> DexClassAndField.create(clazz, field))
-              .collect(Collectors.toList());
-      Collection<DexClassAndMethod> methodsInCombination =
-          DexDefinition.filterDexEncodedMethod(
-                  combination.stream(), method -> DexClassAndMethod.create(clazz, method))
-              .collect(Collectors.toList());
+      List<DexClassAndField> fieldsInCombination = new ArrayList<>();
+      List<DexClassAndMethod> methodsInCombination = new ArrayList<>();
+      for (DexDefinition member : combination) {
+        if (member.isDexEncodedField()) {
+          fieldsInCombination.add(DexClassAndField.create(clazz, member.asDexEncodedField()));
+        } else {
+          assert member.isDexEncodedMethod();
+          methodsInCombination.add(DexClassAndMethod.create(clazz, member.asDexEncodedMethod()));
+        }
+      }
       // Member rules are combined as AND logic: if found unsatisfied member rule, this
       // combination of live members is not a good fit.
       DexClassAndMethodSet methodsSatisfyingRule = DexClassAndMethodSet.create();
       DexClassAndFieldSet fieldsSatisfyingRule = DexClassAndFieldSet.create();
-      boolean satisfied =
-          memberKeepRules.stream()
-              .allMatch(
-                  memberRule -> {
-                    DexClassAndField fieldSatisfiedByRule =
-                        rootSetBuilder.getFieldSatisfiedByRule(memberRule, fieldsInCombination);
-                    if (fieldSatisfiedByRule != null) {
-                      fieldsSatisfyingRule.add(fieldSatisfiedByRule);
-                      return true;
-                    }
-                    DexClassAndMethod methodSatisfyingRule =
-                        rootSetBuilder.getMethodSatisfyingRule(memberRule, methodsInCombination);
-                    if (methodSatisfyingRule != null) {
-                      methodsSatisfyingRule.add(methodSatisfyingRule);
-                      return true;
-                    }
-                    return false;
-                  });
+      boolean satisfied = true;
+      for (ProguardMemberRule memberRule : memberKeepRules) {
+        DexClassAndField fieldSatisfiedByRule =
+            rootSetBuilder.getFieldSatisfiedByRule(memberRule, fieldsInCombination);
+        if (fieldSatisfiedByRule != null) {
+          fieldsSatisfyingRule.add(fieldSatisfiedByRule);
+          continue;
+        }
+        DexClassAndMethod methodSatisfyingRule =
+            rootSetBuilder.getMethodSatisfyingRule(memberRule, methodsInCombination);
+        if (methodSatisfyingRule != null) {
+          methodsSatisfyingRule.add(methodSatisfyingRule);
+          continue;
+        }
+        satisfied = false;
+        break;
+      }
       if (satisfied) {
         ProguardIfRulePreconditionMatch ifRulePreconditionMatch =
             new ProguardIfRulePreconditionMatch(

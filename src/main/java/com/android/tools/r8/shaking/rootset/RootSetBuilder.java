@@ -152,7 +152,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class RootSetBuilder {
@@ -242,7 +241,7 @@ public class RootSetBuilder {
     return false;
   }
 
-  void handleMatchedAnnotation(AnnotationMatchResult annotation) {
+  public void handleMatchedAnnotation(AnnotationMatchResult annotation) {
     // Intentionally empty.
   }
 
@@ -363,7 +362,7 @@ public class RootSetBuilder {
       ProguardConfigurationRule rule,
       ProguardIfRulePreconditionMatch ifRulePreconditionMatch,
       Timing timing) {
-    if (!rule.testClassCondition(clazz, appView, this::handleMatchedAnnotation)) {
+    if (!rule.testClassCondition(clazz, appView, this)) {
       return;
     }
     Collection<ProguardMemberRule> memberKeepRules = rule.getMemberRules();
@@ -920,10 +919,6 @@ public class RootSetBuilder {
       this.ifRulePreconditionMatch = ifRulePreconditionMatch;
     }
 
-    void handleMatchedAnnotation(AnnotationMatchResult annotationMatchResult) {
-      // Intentionally empty.
-    }
-
     void run() {
       visitAllSuperInterfaces(originalClazz.type);
     }
@@ -956,7 +951,7 @@ public class RootSetBuilder {
               return;
             }
             for (ProguardMemberRule rule : memberKeepRules) {
-              if (rule.matches(method, appView, this::handleMatchedAnnotation, dexStringCache)) {
+              if (rule.matches(method, appView, null, dexStringCache)) {
                 tryAndKeepMethodOnClass(method, rule);
               }
             }
@@ -1233,8 +1228,10 @@ public class RootSetBuilder {
    * Checks whether the given rule is satisfied by this clazz, not taking superclasses into account.
    */
   private boolean ruleSatisfied(ProguardMemberRule rule, DexClass clazz) {
-    return ruleSatisfiedByMethods(rule, clazz.classMethods())
-        || ruleSatisfiedByFields(rule, clazz.classFields());
+    return (rule.getRuleType().includesMethods()
+            && ruleSatisfiedByMethods(rule, clazz.classMethods()))
+        || (rule.getRuleType().includesFields()
+            && ruleSatisfiedByFields(rule, clazz.classFields()));
   }
 
   boolean ruleSatisfiedByMethods(ProguardMemberRule rule, Iterable<DexClassAndMethod> methods) {
@@ -1245,7 +1242,7 @@ public class RootSetBuilder {
       ProguardMemberRule rule, Iterable<DexClassAndMethod> methods) {
     if (rule.getRuleType().includesMethods()) {
       for (DexClassAndMethod method : methods) {
-        if (rule.matches(method, appView, this::handleMatchedAnnotation, dexStringCache)) {
+        if (rule.matches(method, appView, this, dexStringCache)) {
           return method;
         }
       }
@@ -1257,7 +1254,7 @@ public class RootSetBuilder {
       ProguardMemberRule rule, Iterable<DexClassAndField> fields) {
     if (rule.getRuleType().includesFields()) {
       for (DexClassAndField field : fields) {
-        if (rule.matches(field, appView, this::handleMatchedAnnotation, dexStringCache)) {
+        if (rule.matches(field, appView, this, dexStringCache)) {
           return field;
         }
       }
@@ -1271,7 +1268,7 @@ public class RootSetBuilder {
 
   public boolean sideEffectFreeIsRuleSatisfiedByField(
       ProguardMemberRule rule, DexClassAndField field) {
-    return rule.matches(field, appView, ignore -> {}, dexStringCache);
+    return rule.matches(field, appView, null, dexStringCache);
   }
 
   public static AnnotationMatchResult containsAllAnnotations(
@@ -1284,7 +1281,7 @@ public class RootSetBuilder {
       boolean containsAllAnnotations(
           List<ProguardTypeMatcher> annotationMatchers,
           DexClassAndMember<D, R> member,
-          Consumer<AnnotationMatchResult> matchedAnnotationsConsumer) {
+          RootSetBuilder matchedAnnotationConsumer) {
     AnnotationMatchResult annotationMatchResult =
         containsAllAnnotations(
             annotationMatchers,
@@ -1292,7 +1289,9 @@ public class RootSetBuilder {
             member.getAnnotations(),
             member.isField() ? AnnotatedKind.FIELD : AnnotatedKind.METHOD);
     if (annotationMatchResult != null) {
-      matchedAnnotationsConsumer.accept(annotationMatchResult);
+      if (matchedAnnotationConsumer != null) {
+        matchedAnnotationConsumer.handleMatchedAnnotation(annotationMatchResult);
+      }
       return true;
     }
     if (member.isMethod()) {
@@ -1305,7 +1304,9 @@ public class RootSetBuilder {
                 method.getParameterAnnotation(i),
                 AnnotatedKind.PARAMETER);
         if (annotationMatchResult != null) {
-          matchedAnnotationsConsumer.accept(annotationMatchResult);
+          if (matchedAnnotationConsumer != null) {
+            matchedAnnotationConsumer.handleMatchedAnnotation(annotationMatchResult);
+          }
           return true;
         }
       }
@@ -1361,7 +1362,7 @@ public class RootSetBuilder {
       return;
     }
     for (ProguardMemberRule rule : rules) {
-      if (rule.matches(method, appView, this::handleMatchedAnnotation, dexStringCache)) {
+      if (rule.matches(method, appView, this, dexStringCache)) {
         if (methodsMarked != null) {
           methodsMarked.add(method);
         }
@@ -1382,7 +1383,7 @@ public class RootSetBuilder {
       }
     }
     for (ProguardMemberRule rule : rules) {
-      if (rule.matches(field, appView, this::handleMatchedAnnotation, dexStringCache)) {
+      if (rule.matches(field, appView, this, dexStringCache)) {
         addItemToSets(field, context, rule, precondition, ifRulePreconditionMatch);
       }
     }

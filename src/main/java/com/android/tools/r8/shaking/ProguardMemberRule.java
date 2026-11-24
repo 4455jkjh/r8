@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -247,7 +246,7 @@ public class ProguardMemberRule {
   public boolean matches(
       DexClassAndField field,
       AppView<?> appView,
-      Consumer<AnnotationMatchResult> matchedAnnotationsConsumer,
+      RootSetBuilder matchedAnnotationConsumer,
       DexStringCache stringCache) {
     DexField originalSignature =
         appView.graphLens().getOriginalFieldSignature(field.getReference());
@@ -262,7 +261,7 @@ public class ProguardMemberRule {
           }
           // Annotations check.
           return RootSetBuilder.containsAllAnnotations(
-              annotations, field, matchedAnnotationsConsumer);
+              annotations, field, matchedAnnotationConsumer);
         }
 
       case FIELD:
@@ -283,7 +282,7 @@ public class ProguardMemberRule {
           }
           // Annotations check
           return RootSetBuilder.containsAllAnnotations(
-              annotations, field, matchedAnnotationsConsumer);
+              annotations, field, matchedAnnotationConsumer);
         }
 
       case ALL_METHODS:
@@ -299,7 +298,7 @@ public class ProguardMemberRule {
   public boolean matches(
       DexClassAndMethod method,
       AppView<?> appView,
-      Consumer<AnnotationMatchResult> matchedAnnotationsConsumer,
+      RootSetBuilder matchedAnnotationConsumer,
       DexStringCache stringCache) {
     DexMethod originalSignature =
         appView.graphLens().getOriginalMethodSignature(method.getReference());
@@ -319,7 +318,7 @@ public class ProguardMemberRule {
           }
           // Annotations check.
           return RootSetBuilder.containsAllAnnotations(
-              annotations, method, matchedAnnotationsConsumer);
+              annotations, method, matchedAnnotationConsumer);
         }
 
       case METHOD:
@@ -345,7 +344,7 @@ public class ProguardMemberRule {
           }
           // Annotations check.
           if (!RootSetBuilder.containsAllAnnotations(
-              annotations, method, matchedAnnotationsConsumer)) {
+              annotations, method, matchedAnnotationConsumer)) {
             return false;
           }
           // Parameter types check.

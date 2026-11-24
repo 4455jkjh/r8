@@ -5,9 +5,7 @@ package com.android.tools.r8.graph;
 
 import com.android.tools.r8.graph.DexAnnotation.AnnotatedKind;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * A common interface for {@link DexClass}, {@link DexEncodedField}, and {@link DexEncodedMethod}.
@@ -107,35 +105,6 @@ public abstract class DexDefinition extends DexItem {
   }
 
   public abstract DexReference getReference();
-
-  private static <T> Stream<T> filter(
-      Stream<DexDefinition> stream, Predicate<DexDefinition> pred, Function<DexDefinition, T> f) {
-    return stream.filter(pred).map(f);
-  }
-
-  public static Stream<DexEncodedField> filterDexEncodedField(Stream<DexDefinition> stream) {
-    return filterDexEncodedField(stream, DexDefinition::asDexEncodedField);
-  }
-
-  public static <T> Stream<T> filterDexEncodedField(
-      Stream<DexDefinition> stream, Function<DexEncodedField, T> transform) {
-    return filter(
-        stream,
-        DexDefinition::isDexEncodedField,
-        field -> transform.apply(field.asDexEncodedField()));
-  }
-
-  public static Stream<DexEncodedMethod> filterDexEncodedMethod(Stream<DexDefinition> stream) {
-    return filterDexEncodedMethod(stream, DexDefinition::asDexEncodedMethod);
-  }
-
-  public static <T> Stream<T> filterDexEncodedMethod(
-      Stream<DexDefinition> stream, Function<DexEncodedMethod, T> transform) {
-    return filter(
-        stream,
-        DexDefinition::isDexEncodedMethod,
-        field -> transform.apply(field.asDexEncodedMethod()));
-  }
 
   public abstract boolean isStatic();
 
