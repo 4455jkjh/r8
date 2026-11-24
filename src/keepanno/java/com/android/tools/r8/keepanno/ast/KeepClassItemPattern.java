@@ -8,6 +8,7 @@ import com.android.tools.r8.keepanno.proto.KeepSpecProtos.ClassItemPattern;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class KeepClassItemPattern extends KeepItemPattern {
 
@@ -37,6 +38,23 @@ public class KeepClassItemPattern extends KeepItemPattern {
         OptionalPattern.absent();
 
     private Builder() {}
+
+    public Builder applyIf(boolean condition, Consumer<Builder> thenConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      }
+      return this;
+    }
+
+    public Builder applyIf(
+        boolean condition, Consumer<Builder> thenConsumer, Consumer<Builder> elseConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      } else {
+        elseConsumer.accept(this);
+      }
+      return this;
+    }
 
     public Builder applyProto(ClassItemPattern protoItem) {
       assert classPattern.build().isAny();

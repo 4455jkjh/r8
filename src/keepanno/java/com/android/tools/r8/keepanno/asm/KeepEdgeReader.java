@@ -1403,15 +1403,17 @@ public class KeepEdgeReader implements Opcodes {
         assert constraintsParser.isDeclared();
         return constraintsParser.getValue();
       }
-      KeepConstraints.Builder builder;
-      if (constraintsParser.isDeclared()) {
-        // If constraints are set use it as the initial set.
-        builder = KeepConstraints.builder().copyFrom(constraintsParser.getValue());
-        assert builder.verifyNoAnnotations();
-      } else {
-        // If only the annotations are set, add them as an extension of the defaults.
-        builder = KeepConstraints.builder().copyFrom(KeepConstraints.defaultConstraints());
-      }
+      KeepConstraints.Builder builder =
+          KeepConstraints.builder()
+              .applyIf(
+                  constraintsParser.isDeclared(),
+                  b -> {
+                    // If constraints are set use it as the initial set.
+                    b.copyFrom(constraintsParser.getValue());
+                    assert b.verifyNoAnnotations();
+                  },
+                  // If only the annotations are set, add them as an extension of the defaults.
+                  b -> b.copyFrom(KeepConstraints.defaultConstraints()));
       annotationsParser
           .getValue()
           .forEach(pattern -> builder.add(KeepConstraint.annotation(pattern)));
@@ -1627,17 +1629,21 @@ public class KeepEdgeReader implements Opcodes {
       KeepMemberItemPattern memberContext = context.asMemberItemPattern();
       KeepMemberBindingReference contextBinding =
           bindingsHelper.defineFreshMemberBinding(memberContext);
-      if (kind.includesClass()) {
-        consequences.addTarget(
-            KeepTarget.builder().setItemReference(memberContext.getClassReference()).build());
-      }
       validateConsistentKind(memberContext.getMemberPattern());
-      consequences.addTarget(
-          KeepTarget.builder()
-              .setConstraints(
-                  constraintsParser.getValueOrDefault(KeepConstraints.defaultConstraints()))
-              .setItemReference(contextBinding)
-              .build());
+      consequences
+          .applyIf(
+              kind.includesClass(),
+              b ->
+                  b.addTarget(
+                      KeepTarget.builder()
+                          .setItemReference(memberContext.getClassReference())
+                          .build()))
+          .addTarget(
+              KeepTarget.builder()
+                  .setConstraints(
+                      constraintsParser.getValueOrDefault(KeepConstraints.defaultConstraints()))
+                  .setItemReference(contextBinding)
+                  .build());
       parent.accept(
           builder
               .setMetaInfo(metaInfoBuilder.build())
@@ -2028,18 +2034,19 @@ public class KeepEdgeReader implements Opcodes {
 
     protected KeepClassItemPattern getKeepClassItemPattern() {
       KeepQualifiedClassNamePattern qualifiedName = classSelection.getRequiredPattern();
-      return includeSubclasses
-          ? KeepClassItemPattern.builder()
-              .setInstanceOfPattern(
-                  KeepInstanceOfPattern.builder()
-                      .classPattern(qualifiedName)
-                      .setInclusive(true)
-                      .build())
-              .build()
-          : KeepClassItemPattern.builder()
-              .setClassPattern(
-                  KeepClassPattern.builder().setClassNamePattern(qualifiedName).build())
-              .build();
+      return KeepClassItemPattern.builder()
+          .applyIf(
+              includeSubclasses,
+              b ->
+                  b.setInstanceOfPattern(
+                      KeepInstanceOfPattern.builder()
+                          .classPattern(qualifiedName)
+                          .setInclusive(true)
+                          .build()),
+              b ->
+                  b.setClassPattern(
+                      KeepClassPattern.builder().setClassNamePattern(qualifiedName).build()))
+          .build();
     }
   }
 
@@ -2609,14 +2616,10 @@ public class KeepEdgeReader implements Opcodes {
       // Retain the runtime annotation on matching surviving classes without preventing
       // shrinking, optimization, obfuscation, or access modification of those classes.
       KeepClassItemPattern annotatedClassPattern =
-          hasQualifiedName()
-              ? KeepClassItemPattern.builder()
-                  .copyFrom(getKeepClassItemPattern())
-                  .setAnnotatedByPattern(OptionalPattern.of(annotationPattern))
-                  .build()
-              : KeepClassItemPattern.builder()
-                  .setAnnotatedByPattern(OptionalPattern.of(annotationPattern))
-                  .build();
+          KeepClassItemPattern.builder()
+              .applyIf(hasQualifiedName(), b -> b.copyFrom(getKeepClassItemPattern()))
+              .setAnnotatedByPattern(OptionalPattern.of(annotationPattern))
+              .build();
       KeepConstraints retainAnnotationConstraints =
           KeepConstraints.builder()
               .add(
@@ -2654,11 +2657,11 @@ public class KeepEdgeReader implements Opcodes {
       // Keep the annotation class (@interface) itself alive so AnnotationRemover does not
       // prune it as an unreferenced annotation type (preserving its name when annotationName is
       // used, while allowing obfuscation when annotationConstant is used).
-      KeepConstraints.Builder annotationClassConstraintsBuilder =
-          KeepConstraints.builder().add(KeepConstraint.lookup());
-      if (isAnnotationSelectionByName()) {
-        annotationClassConstraintsBuilder.add(KeepConstraint.name());
-      }
+      KeepConstraints annotationClassConstraints =
+          KeepConstraints.builder()
+              .add(KeepConstraint.lookup())
+              .applyIf(isAnnotationSelectionByName(), b -> b.add(KeepConstraint.name()))
+              .build();
       UserBindingsHelper annotationClassBindings = new UserBindingsHelper();
       KeepBindingReference annotationClassContext =
           annotationClassBindings.defineFreshItemBinding(
@@ -2682,7 +2685,7 @@ public class KeepEdgeReader implements Opcodes {
                       .addTarget(
                           KeepTarget.builder()
                               .setItemReference(annotationClassBinding)
-                              .setConstraints(annotationClassConstraintsBuilder.build())
+                              .setConstraints(annotationClassConstraints)
                               .build())
                       .build())
               .build());
@@ -3281,12 +3284,10 @@ public class KeepEdgeReader implements Opcodes {
           throw parsingContext.error(
               "Cannot define common member access as well as field or method pattern");
         }
-        KeepMemberPattern.Builder builder = KeepMemberPattern.memberBuilder();
-        if (accessBuilder != null) {
-          builder.setAccessPattern(accessBuilder.build());
-        }
-        builder.setAnnotatedByPattern(OptionalPattern.ofNullable(annotatedByParser.getValue()));
-        return builder.build();
+        return KeepMemberPattern.memberBuilder()
+            .applyIf(accessBuilder != null, b -> b.setAccessPattern(accessBuilder.build()))
+            .setAnnotatedByPattern(OptionalPattern.ofNullable(annotatedByParser.getValue()))
+            .build();
       }
       if (method != null && field != null) {
         throw parsingContext.error("Cannot define both a field and a method pattern");

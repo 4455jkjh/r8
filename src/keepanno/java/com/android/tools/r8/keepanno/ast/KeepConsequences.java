@@ -30,6 +30,23 @@ public final class KeepConsequences {
 
     private Builder() {}
 
+    public Builder applyIf(boolean condition, Consumer<Builder> thenConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      }
+      return this;
+    }
+
+    public Builder applyIf(
+        boolean condition, Consumer<Builder> thenConsumer, Consumer<Builder> elseConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      } else {
+        elseConsumer.accept(this);
+      }
+      return this;
+    }
+
     public Builder applyProto(List<Target> protoList, BindingResolver resolver) {
       for (Target target : protoList) {
         addTarget(KeepTarget.fromProto(target, resolver));

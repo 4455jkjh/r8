@@ -8,6 +8,7 @@ import com.android.tools.r8.keepanno.proto.KeepSpecProtos.AnnotationPattern;
 import com.android.tools.r8.keepanno.proto.KeepSpecProtos.AnnotationRetention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class KeepAnnotationPattern {
 
@@ -61,6 +62,23 @@ public class KeepAnnotationPattern {
     private int retentionPolicies = 0x0;
 
     private Builder() {}
+
+    public Builder applyIf(boolean condition, Consumer<Builder> thenConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      }
+      return this;
+    }
+
+    public Builder applyIf(
+        boolean condition, Consumer<Builder> thenConsumer, Consumer<Builder> elseConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      } else {
+        elseConsumer.accept(this);
+      }
+      return this;
+    }
 
     public Builder applyProto(AnnotationPattern proto) {
       assert namePattern.isAny();

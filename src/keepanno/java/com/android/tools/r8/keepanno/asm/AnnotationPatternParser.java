@@ -130,14 +130,11 @@ public class AnnotationPatternParser
       if (isDefault()) {
         return null;
       }
-      KeepAnnotationPattern.Builder builder = KeepAnnotationPattern.builder();
-      if (retentionParser.isDeclared()) {
-        List<RetentionPolicy> policies = retentionParser.getValue();
-        policies.forEach(builder::addRetentionPolicy);
-      } else {
-        builder.addRetentionPolicy(RetentionPolicy.RUNTIME);
-      }
-      return builder
+      return KeepAnnotationPattern.builder()
+          .applyIf(
+              retentionParser.isDeclared(),
+              b -> retentionParser.getValue().forEach(b::addRetentionPolicy),
+              b -> b.addRetentionPolicy(RetentionPolicy.RUNTIME))
           .setNamePattern(nameParser.getValueOrDefault(KeepQualifiedClassNamePattern.any()))
           .build();
     }

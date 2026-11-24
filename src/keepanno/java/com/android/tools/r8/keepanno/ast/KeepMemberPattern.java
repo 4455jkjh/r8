@@ -24,6 +24,23 @@ public abstract class KeepMemberPattern {
         OptionalPattern.absent();
     private KeepMemberAccessPattern accessPattern = KeepMemberAccessPattern.anyMemberAccess();
 
+    public Builder applyIf(boolean condition, Consumer<Builder> thenConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      }
+      return this;
+    }
+
+    public Builder applyIf(
+        boolean condition, Consumer<Builder> thenConsumer, Consumer<Builder> elseConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      } else {
+        elseConsumer.accept(this);
+      }
+      return this;
+    }
+
     public Builder applyProto(MemberPatternGeneral proto) {
       assert annotatedByPattern.isAbsent();
       if (proto.hasAnnotatedBy()) {

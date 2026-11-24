@@ -50,22 +50,16 @@ public class InstanceOfParser
   private KeepInstanceOfPattern parse(InstanceOfProperties property, Object value) {
     switch (property) {
       case NAME:
-        return KeepInstanceOfPattern.builder()
-            .classPattern(KeepQualifiedClassNamePattern.exact(((String) value)))
-            .build();
       case NAME_EXCL:
         return KeepInstanceOfPattern.builder()
             .classPattern(KeepQualifiedClassNamePattern.exact(((String) value)))
-            .setInclusive(false)
+            .applyIf(property == InstanceOfProperties.NAME_EXCL, b -> b.setInclusive(false))
             .build();
       case CONSTANT:
-        return KeepInstanceOfPattern.builder()
-            .classPattern(KeepQualifiedClassNamePattern.exact(((Type) value).getClassName()))
-            .build();
       case CONSTANT_EXCL:
         return KeepInstanceOfPattern.builder()
             .classPattern(KeepQualifiedClassNamePattern.exact(((Type) value).getClassName()))
-            .setInclusive(false)
+            .applyIf(property == InstanceOfProperties.CONSTANT_EXCL, b -> b.setInclusive(false))
             .build();
       default:
         return null;

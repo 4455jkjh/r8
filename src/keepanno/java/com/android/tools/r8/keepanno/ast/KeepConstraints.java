@@ -55,12 +55,12 @@ public abstract class KeepConstraints {
     if (proto == null && protoAdditions.isEmpty()) {
       return;
     }
-    Builder builder = builder();
-    if (proto == null) {
-      builder.copyFrom(defaultConstraints());
-    } else {
-      proto.getConstraintsList().forEach(c -> KeepConstraint.fromProto(c, builder::add));
-    }
+    Builder builder =
+        builder()
+            .applyIf(
+                proto == null,
+                b -> b.copyFrom(defaultConstraints()),
+                b -> proto.getConstraintsList().forEach(c -> KeepConstraint.fromProto(c, b::add)));
     protoAdditions.forEach(c -> KeepConstraint.fromProto(c, builder::add));
     setConstraints.accept(builder.build());
   }
@@ -71,6 +71,23 @@ public abstract class KeepConstraints {
     private final Set<KeepConstraint> constraints = new HashSet<>();
 
     private Builder() {}
+
+    public Builder applyIf(boolean condition, Consumer<Builder> thenConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      }
+      return this;
+    }
+
+    public Builder applyIf(
+        boolean condition, Consumer<Builder> thenConsumer, Consumer<Builder> elseConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      } else {
+        elseConsumer.accept(this);
+      }
+      return this;
+    }
 
     public Builder copyFrom(KeepConstraints fromConstraints) {
       if (fromConstraints instanceof Defaults) {

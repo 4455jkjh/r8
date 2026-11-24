@@ -33,17 +33,18 @@ public final class KeepQualifiedClassNamePattern {
     if (pkgSeparator == 0) {
       throw new KeepEdgeException("Unexpected '.' at index 0 in '" + qualifiedClassName + "'");
     }
-    if (pkgSeparator > 0) {
-      return KeepQualifiedClassNamePattern.builder()
-          .setPackagePattern(
-              KeepPackagePattern.exact(qualifiedClassName.substring(0, pkgSeparator)))
-          .setNamePattern(
-              KeepUnqualfiedClassNamePattern.exact(qualifiedClassName.substring(pkgSeparator + 1)))
-          .build();
-    }
     return KeepQualifiedClassNamePattern.builder()
-        .setPackagePattern(KeepPackagePattern.top())
-        .setNamePattern(KeepUnqualfiedClassNamePattern.exact(qualifiedClassName))
+        .applyIf(
+            pkgSeparator > 0,
+            b ->
+                b.setPackagePattern(
+                        KeepPackagePattern.exact(qualifiedClassName.substring(0, pkgSeparator)))
+                    .setNamePattern(
+                        KeepUnqualfiedClassNamePattern.exact(
+                            qualifiedClassName.substring(pkgSeparator + 1))),
+            b ->
+                b.setPackagePattern(KeepPackagePattern.top())
+                    .setNamePattern(KeepUnqualfiedClassNamePattern.exact(qualifiedClassName)))
         .build();
   }
 
@@ -65,6 +66,23 @@ public final class KeepQualifiedClassNamePattern {
     private KeepUnqualfiedClassNamePattern namePattern = KeepUnqualfiedClassNamePattern.any();
 
     private Builder() {}
+
+    public Builder applyIf(boolean condition, Consumer<Builder> thenConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      }
+      return this;
+    }
+
+    public Builder applyIf(
+        boolean condition, Consumer<Builder> thenConsumer, Consumer<Builder> elseConsumer) {
+      if (condition) {
+        thenConsumer.accept(this);
+      } else {
+        elseConsumer.accept(this);
+      }
+      return this;
+    }
 
     public Builder applyProto(ClassNamePattern proto) {
       assert packagePattern.isAny();
