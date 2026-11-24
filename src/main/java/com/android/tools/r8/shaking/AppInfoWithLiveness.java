@@ -70,6 +70,7 @@ import com.android.tools.r8.utils.internal.collections.PredicateSet;
 import com.android.tools.r8.utils.internal.collections.ThrowingSet;
 import com.android.tools.r8.utils.internal.structural.Ordered;
 import com.android.tools.r8.utils.timing.Timing;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.util.ArrayDeque;
@@ -287,43 +288,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
         previous.recordFieldValuesReferences);
   }
 
-  private AppInfoWithLiveness(
-      AppInfoWithLiveness previous, PrunedItems prunedItems, TaskCollection<?> tasks, Timing timing)
-      throws ExecutionException {
-    this(
-        previous.getSyntheticItems().commitPrunedItems(prunedItems, timing),
-        previous.getClassToFeatureSplitMap().withoutPrunedItems(prunedItems),
-        previous.getMainDexInfo().withoutPrunedItems(prunedItems),
-        previous.getMissingClasses(),
-        previous.deadProtoTypes,
-        pruneClasses(previous.liveTypes, prunedItems, tasks),
-        pruneMethods(previous.targetedMethods, prunedItems, tasks),
-        pruneClasses(previous.failedClassResolutionTargets, prunedItems, tasks),
-        pruneMethods(previous.failedMethodResolutionTargets, prunedItems, tasks),
-        pruneFields(previous.failedFieldResolutionTargets, prunedItems, tasks),
-        pruneMethods(previous.bootstrapMethods, prunedItems, tasks),
-        pruneMethods(previous.virtualMethodsTargetedByInvokeDirect, prunedItems, tasks),
-        pruneMethods(previous.liveMethods, prunedItems, tasks),
-        previous.fieldAccessInfoCollection.withoutPrunedItems(prunedItems),
-        previous.objectAllocationInfoCollection.withoutPrunedItems(prunedItems),
-        pruneCallSites(previous.callSites, prunedItems),
-        previous.keepInfo,
-        previous.mayHaveSideEffects,
-        pruneMethods(previous.alwaysInline, prunedItems, tasks),
-        pruneMethods(previous.reprocess, prunedItems, tasks),
-        previous.alwaysClassInline,
-        previous.identifierNameStrings.prune(prunedItems, tasks),
-        prunedItems.hasRemovedClasses()
-            ? CollectionUtils.mergeSets(previous.prunedTypes, prunedItems.getRemovedClasses())
-            : previous.prunedTypes,
-        previous.prunedClasspathTypes,
-        previous.switchMaps,
-        pruneClasses(previous.lockCandidates, prunedItems, tasks),
-        pruneMapFromClasses(previous.initClassReferences, prunedItems, tasks),
-        previous.recordFieldValuesReferences);
-  }
-
-  private static Map<DexCallSite, ProgramMethodSet> pruneCallSites(
+  private static void pruneCallSites(
       Map<DexCallSite, ProgramMethodSet> callSites, PrunedItems prunedItems) {
     callSites
         .entrySet()
@@ -337,28 +302,27 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
               entry.setValue(prunedContexts);
               return false;
             });
-    return callSites;
   }
 
-  private static Set<DexType> pruneClasses(
+  private static void pruneClasses(
       Set<DexType> methods, PrunedItems prunedItems, TaskCollection<?> tasks)
       throws ExecutionException {
-    return pruneItems(methods, prunedItems.getRemovedClasses(), tasks);
+    pruneItems(methods, prunedItems.getRemovedClasses(), tasks);
   }
 
-  private static Set<DexField> pruneFields(
+  private static void pruneFields(
       Set<DexField> fields, PrunedItems prunedItems, TaskCollection<?> tasks)
       throws ExecutionException {
-    return pruneItems(fields, prunedItems.getRemovedFields(), tasks);
+    pruneItems(fields, prunedItems.getRemovedFields(), tasks);
   }
 
-  private static Set<DexMethod> pruneMethods(
+  private static void pruneMethods(
       Set<DexMethod> methods, PrunedItems prunedItems, TaskCollection<?> tasks)
       throws ExecutionException {
-    return pruneItems(methods, prunedItems.getRemovedMethods(), tasks);
+    pruneItems(methods, prunedItems.getRemovedMethods(), tasks);
   }
 
-  private static <T> Set<T> pruneItems(Set<T> items, Set<T> removedItems, TaskCollection<?> tasks)
+  private static <T> void pruneItems(Set<T> items, Set<T> removedItems, TaskCollection<?> tasks)
       throws ExecutionException {
     if (!isThrowingSet(items) && !removedItems.isEmpty()) {
       tasks.submit(
@@ -370,17 +334,16 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
             }
           });
     }
-    return items;
   }
 
-  private static <V> Map<DexType, V> pruneMapFromClasses(
+  private static <V> void pruneMapFromClasses(
       Map<DexType, V> map, PrunedItems prunedItems, TaskCollection<?> tasks)
       throws ExecutionException {
-    return pruneMap(map, prunedItems.getRemovedClasses(), tasks);
+    pruneMap(map, prunedItems.getRemovedClasses(), tasks);
   }
 
-  private static <K, V> Map<K, V> pruneMap(
-      Map<K, V> map, Set<K> removedItems, TaskCollection<?> tasks) throws ExecutionException {
+  private static <K, V> void pruneMap(Map<K, V> map, Set<K> removedItems, TaskCollection<?> tasks)
+      throws ExecutionException {
     if (!removedItems.isEmpty()) {
       tasks.submit(
           () -> {
@@ -391,7 +354,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
             }
           });
     }
-    return map;
   }
 
   @Override
@@ -895,20 +857,87 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
       return this;
     }
     timing.begin("Pruning AppInfoWithLiveness");
-    if (prunedItems.hasRemovedClasses()) {
-      // Rebuild the hierarchy.
-      objectAllocationInfoCollection.mutate(
-          mutator -> mutator.removeAllocationsForPrunedItems(prunedItems, options()), this);
-      keepInfo.mutate(keepInfo -> keepInfo.removeKeepInfoForPrunedItems(prunedItems));
-    } else if (prunedItems.hasRemovedMembers()) {
-      keepInfo.mutate(keepInfo -> keepInfo.removeKeepInfoForPrunedItems(prunedItems));
-    }
     TaskCollection<?> tasks = new TaskCollection<>(options(), executorService);
-    AppInfoWithLiveness appInfoWithLiveness =
-        new AppInfoWithLiveness(this, prunedItems, tasks, timing);
+    // The following collections are pruned in place.
+    tasks.submit(() -> getClassToFeatureSplitMap().withoutPrunedItems(prunedItems));
+    tasks.submit(() -> fieldAccessInfoCollection.withoutPrunedItems(prunedItems));
+    tasks.submit(
+        () -> {
+          if (prunedItems.hasRemovedClasses()) {
+            // Rebuild the hierarchy.
+            objectAllocationInfoCollection.mutate(
+                mutator -> mutator.removeAllocationsForPrunedItems(prunedItems, options()), this);
+          }
+          objectAllocationInfoCollection.withoutPrunedItems(prunedItems);
+        });
+    tasks.submit(
+        () -> keepInfo.mutate(keepInfo -> keepInfo.removeKeepInfoForPrunedItems(prunedItems)));
+    pruneClasses(liveTypes, prunedItems, tasks);
+    pruneMethods(targetedMethods, prunedItems, tasks);
+    pruneClasses(failedClassResolutionTargets, prunedItems, tasks);
+    pruneMethods(failedMethodResolutionTargets, prunedItems, tasks);
+    pruneFields(failedFieldResolutionTargets, prunedItems, tasks);
+    pruneMethods(bootstrapMethods, prunedItems, tasks);
+    pruneMethods(virtualMethodsTargetedByInvokeDirect, prunedItems, tasks);
+    pruneMethods(liveMethods, prunedItems, tasks);
+    pruneMethods(alwaysInline, prunedItems, tasks);
+    pruneMethods(reprocess, prunedItems, tasks);
+    IdentifierNameStringCollection prunedIdentifierNameStrings =
+        identifierNameStrings.prune(prunedItems, tasks);
+    pruneClasses(lockCandidates, prunedItems, tasks);
+    pruneMapFromClasses(initClassReferences, prunedItems, tasks);
+    MainDexInfo prunedMainDexInfo = getMainDexInfo().withoutPrunedItems(prunedItems);
+    pruneCallSites(callSites, prunedItems);
+    Set<DexType> newPrunedTypes = mergePrunedTypes(prunedTypes, prunedItems.getRemovedClasses());
     tasks.await();
+    // Committing may update app() in place, so must not run concurrently with the tasks above,
+    // which read app() (e.g. when rebuilding the instantiated hierarchy).
+    CommittedItems committedItems = getSyntheticItems().commitPrunedItems(prunedItems, timing);
+    AppInfoWithLiveness appInfoWithLiveness =
+        new AppInfoWithLiveness(
+            committedItems,
+            getClassToFeatureSplitMap(),
+            prunedMainDexInfo,
+            getMissingClasses(),
+            deadProtoTypes,
+            liveTypes,
+            targetedMethods,
+            failedClassResolutionTargets,
+            failedMethodResolutionTargets,
+            failedFieldResolutionTargets,
+            bootstrapMethods,
+            virtualMethodsTargetedByInvokeDirect,
+            liveMethods,
+            fieldAccessInfoCollection,
+            objectAllocationInfoCollection,
+            callSites,
+            keepInfo,
+            mayHaveSideEffects,
+            alwaysInline,
+            reprocess,
+            alwaysClassInline,
+            prunedIdentifierNameStrings,
+            newPrunedTypes,
+            prunedClasspathTypes,
+            switchMaps,
+            lockCandidates,
+            initClassReferences,
+            recordFieldValuesReferences);
     timing.end();
     return appInfoWithLiveness;
+  }
+
+  private static Set<DexType> mergePrunedTypes(Set<DexType> first, Set<DexType> second) {
+    if (second.isEmpty()) {
+      return first;
+    }
+    if (first.isEmpty()) {
+      return ImmutableSet.copyOf(second);
+    }
+    return ImmutableSet.<DexType>builderWithExpectedSize(first.size() + second.size())
+        .addAll(first)
+        .addAll(second)
+        .build();
   }
 
   @Override

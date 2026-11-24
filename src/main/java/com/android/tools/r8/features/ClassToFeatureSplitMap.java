@@ -271,15 +271,15 @@ public class ClassToFeatureSplitMap {
   }
 
   public ClassToFeatureSplitMap withoutPrunedItems(PrunedItems prunedItems) {
-    Map<DexType, FeatureSplit> rewrittenClassToFeatureSplitMap = new IdentityHashMap<>();
-    classToFeatureSplitMap.forEach(
-        (type, featureSplit) -> {
-          if (!prunedItems.getRemovedClasses().contains(type)) {
-            rewrittenClassToFeatureSplitMap.put(type, featureSplit);
-          }
-        });
-    return new ClassToFeatureSplitMap(
-        rewrittenClassToFeatureSplitMap, representativeStringsForFeatureSplit);
+    if (prunedItems.hasRemovedClasses() && !classToFeatureSplitMap.isEmpty()) {
+      Set<DexType> removedClasses = prunedItems.getRemovedClasses();
+      if (classToFeatureSplitMap.size() > removedClasses.size()) {
+        removedClasses.forEach(classToFeatureSplitMap::remove);
+      } else {
+        classToFeatureSplitMap.keySet().removeIf(removedClasses::contains);
+      }
+    }
+    return this;
   }
 
   // Static helpers to avoid verbose predicates.

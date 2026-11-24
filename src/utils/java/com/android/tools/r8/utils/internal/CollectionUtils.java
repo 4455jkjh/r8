@@ -4,12 +4,10 @@
 
 package com.android.tools.r8.utils.internal;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -27,13 +25,6 @@ public class CollectionUtils {
 
   public static <T> T getFirstOrDefault(Collection<T> collection, T defaultValue) {
     return collection.isEmpty() ? defaultValue : getFirst(collection);
-  }
-
-  public static <T> Set<T> mergeSets(Collection<T> first, Collection<T> second) {
-    ImmutableSet.Builder<T> builder = ImmutableSet.builder();
-    builder.addAll(first);
-    builder.addAll(second);
-    return builder.build();
   }
 
   @SafeVarargs
