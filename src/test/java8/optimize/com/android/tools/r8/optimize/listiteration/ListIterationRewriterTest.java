@@ -921,7 +921,10 @@ public class ListIterationRewriterTest extends TestBase {
               assertEquals(
                   1, countIterators(clazz.uniqueMethodWithOriginalName("iterateInstanceOf")));
               assertEquals(
-                  1, countListSizes(clazz.uniqueMethodWithOriginalName("iterateInstanceOf")));
+                  1,
+                  countSizes(
+                      clazz.uniqueMethodWithOriginalName("iterateInstanceOf"),
+                      enableDevirtualization ? "java.util.ArrayList" : "java.util.List"));
               assertEquals(
                   1,
                   countIterators(
@@ -931,7 +934,7 @@ public class ListIterationRewriterTest extends TestBase {
                   countIterators(
                       clazz.uniqueMethodWithOriginalName("iterateCollectionNotStaticList")));
               assertEquals(
-                  1,
+                  enableDevirtualization ? 0 : 1,
                   countIterators(
                       clazz.uniqueMethodWithOriginalName("iterateCollectionInstanceOf")));
             });
@@ -943,10 +946,14 @@ public class ListIterationRewriterTest extends TestBase {
   }
 
   private static long countListSizes(MethodSubject method) {
+    return countSizes(method, "java.util.List");
+  }
+
+  private static long countSizes(MethodSubject method, String holderTypeName) {
     assertThat(method, Matchers.isPresent());
     return method
         .streamInstructions()
-        .filter(CodeMatchers.isInvokeWithTarget("java.util.List", "size"))
+        .filter(CodeMatchers.isInvokeWithTarget(holderTypeName, "size"))
         .count();
   }
 }

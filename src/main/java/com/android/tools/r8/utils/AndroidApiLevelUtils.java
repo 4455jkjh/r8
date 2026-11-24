@@ -12,6 +12,7 @@ import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ClassResolutionResult;
+import com.android.tools.r8.graph.Definition;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -211,6 +212,28 @@ public class AndroidApiLevelUtils {
         androidApiLevelCompute.computeApiLevelForLibraryReference(
             definition.getReference(), ComputedApiLevel.unknown());
     return apiLevel.isLessThanOrEqualTo(options.getMinApiLevel()).isTrue();
+  }
+
+  public static boolean isApiSafeForReference(
+      LibraryDefinition newDefinition, Definition oldDefinition, AppView<?> appView) {
+    if (!appView.options().apiModelingOptions().isApiModelingEnabled()) {
+      return true;
+    }
+    AndroidApiLevelCompute apiLevelCompute = appView.apiLevelCompute();
+    ComputedApiLevel apiLevel =
+        apiLevelCompute.computeApiLevelForLibraryReference(newDefinition.getReference());
+    if (apiLevel.isLessThanOrEqualTo(appView.computedMinApiLevel()).isTrue()) {
+      return true;
+    }
+    if (apiLevel.isUnknownApiLevel()) {
+      return false;
+    }
+    if (oldDefinition.isLibraryDefinition()) {
+      ComputedApiLevel apiLevelOfOriginal =
+          apiLevelCompute.computeApiLevelForLibraryReference(oldDefinition.getReference());
+      return apiLevel.isLessThanOrEqualTo(apiLevelOfOriginal).isTrue();
+    }
+    return false;
   }
 
   private static boolean isApiSafeForReference(

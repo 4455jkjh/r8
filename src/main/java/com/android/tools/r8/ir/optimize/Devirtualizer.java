@@ -3,17 +3,21 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize;
 
+import static com.android.tools.r8.graph.DexLibraryClass.asLibraryClassOrNull;
 import static com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult.isOverriding;
 
 import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMethod;
+import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DispatchTargetLookupResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.analysis.type.DynamicType;
+import com.android.tools.r8.ir.analysis.type.TypeAnalysis;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
@@ -31,6 +35,7 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.AndroidApiLevelUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -207,13 +212,24 @@ public class Devirtualizer extends CodeRewriterPass<AppInfoWithLiveness> {
         }
         InvokeInterface invoke = current.asInvokeInterface();
         DexClassAndMethod target = invoke.lookupSingleTarget(appView(), context);
-        if (target == null) {
-          continue;
-        }
-        DexClass holderClass = target.getHolder();
-        // Make sure we are not landing on another interface, e.g., interface's default method.
-        if (holderClass == null || holderClass.isInterface()) {
-          continue;
+        DexClass holderClass;
+        DexMethod targetReference;
+        if (target != null) {
+          holderClass = target.getHolder();
+          targetReference = target.getReference();
+          // Make sure we are not landing on another interface, e.g., interface's default method.
+          if (holderClass == null || holderClass.isInterface()) {
+            continue;
+          }
+        } else {
+          // Fall back when lookupSingleTarget misses library class receivers: it only matches
+          // methods declared directly on an exact library class, missing inherited methods (e.g.,
+          // stripped platform from-text stubs) and non-exact dynamic upper bounds.
+          holderClass = lookupLibraryVirtualTargetHolder(invoke, context);
+          if (holderClass == null) {
+            continue;
+          }
+          targetReference = invoke.getInvokedMethod().withHolder(holderClass, dexItemFactory);
         }
 
         // Due to the potential downcast below, make sure the new target holder is visible.
@@ -222,12 +238,12 @@ public class Devirtualizer extends CodeRewriterPass<AppInfoWithLiveness> {
         }
 
         // Ensure that we are not adding a new main dex root
-        if (isRebindingNewClassIntoMainDex(context, target.getReference())) {
+        if (isRebindingNewClassIntoMainDex(context, targetReference)) {
           continue;
         }
 
         InvokeVirtual devirtualizedInvoke =
-            new InvokeVirtual(target.getReference(), invoke.outValue(), invoke.inValues());
+            new InvokeVirtual(targetReference, invoke.outValue(), invoke.inValues());
         it.replaceCurrentInstruction(devirtualizedInvoke);
         changed = true;
         devirtualizedCall.put(invoke, devirtualizedInvoke);
@@ -441,6 +457,67 @@ public class Devirtualizer extends CodeRewriterPass<AppInfoWithLiveness> {
 
     // Change the invoke-virtual instruction to target the refined resolution result instead.
     return newResolutionResult.getResolvedMethod().getReference();
+  }
+
+  private DexLibraryClass lookupLibraryVirtualTargetHolder(
+      InvokeInterface invoke, ProgramMethod context) {
+    DexMethod invokedMethod = invoke.getInvokedMethod();
+
+    // Refine the receiver to a non-interface library class upper bound.
+    DynamicType dynamicReceiverType = invoke.getReceiver().getDynamicType(appView());
+    TypeElement staticReceiverType = invokedMethod.getHolderType().toTypeElement(appView());
+    if (!appView()
+        .getOpenClosedInterfacesCollection()
+        .isDefinitelyInstanceOfStaticType(
+            appView(), () -> dynamicReceiverType, staticReceiverType)) {
+      return null;
+    }
+    DexType refinedReceiverType =
+        TypeAnalysis.toRefinedReceiverType(dynamicReceiverType, invokedMethod, appView());
+    if (refinedReceiverType.isIdenticalTo(invokedMethod.getHolderType())) {
+      return null;
+    }
+    DexLibraryClass refinedReceiverClass =
+        asLibraryClassOrNull(appView().definitionFor(refinedReceiverType));
+    if (refinedReceiverClass == null || refinedReceiverClass.isInterface()) {
+      return null;
+    }
+
+    // Verify the original interface call is valid for virtual dispatch and resolves to a public,
+    // accessible non-interface library class method on refinedReceiverClass or its superclasses.
+    // Rewriting to refinedReceiverClass (rather than the resolved superclass) preserves dynamic
+    // dispatch to overrides while keeping the check-cast as specific as possible.
+    SingleResolutionResult<?> interfaceResolution =
+        invoke.resolveMethod(appView()).asSingleResolution();
+    if (interfaceResolution == null
+        || interfaceResolution
+            .isAccessibleForVirtualDispatchFrom(context.getHolder(), appView())
+            .isPossiblyFalse()) {
+      return null;
+    }
+    SingleResolutionResult<?> classResolution =
+        appInfo().resolveMethodOnClass(refinedReceiverClass, invokedMethod).asSingleResolution();
+    if (classResolution == null
+        || !classResolution.getResolvedHolder().isLibraryClass()
+        || classResolution.getResolvedHolder().isInterface()
+        || !classResolution.getResolvedMethod().isPublic()
+        || classResolution
+            .isAccessibleForVirtualDispatchFrom(context.getHolder(), appView())
+            .isPossiblyFalse()) {
+      return null;
+    }
+
+    // Ensure both the refined library class and resolved method are available wherever the
+    // original interface invoke is valid.
+    if (!AndroidApiLevelUtils.isApiSafeForReference(
+            refinedReceiverClass, interfaceResolution.getInitialResolutionHolder(), appView())
+        || !AndroidApiLevelUtils.isApiSafeForReference(
+            classResolution.getResolutionPair().asLibraryMethod(),
+            interfaceResolution.getResolutionPair(),
+            appView())) {
+      return null;
+    }
+    return refinedReceiverClass;
   }
 
   private boolean isRebindingNewClassIntoMainDex(ProgramMethod context, DexMethod reboundMethod) {
