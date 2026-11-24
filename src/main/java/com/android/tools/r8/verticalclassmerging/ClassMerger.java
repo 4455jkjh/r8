@@ -181,8 +181,8 @@ class ClassMerger {
     DexMethodSignatureSet existingMethods = DexMethodSignatureSet.create();
     existingMethods.addAllMethods(target.methods());
 
-    DexMethodSignatureMap<DexEncodedMethod> directMethods = DexMethodSignatureMap.create();
-    DexMethodSignatureMap<DexEncodedMethod> virtualMethods = DexMethodSignatureMap.create();
+    DexMethodSignatureMap<DexEncodedMethod> directMethods = DexMethodSignatureMap.createLinked();
+    DexMethodSignatureMap<DexEncodedMethod> virtualMethods = DexMethodSignatureMap.createLinked();
 
     Predicate<DexMethod> availableMethodSignatures =
         method ->
