@@ -9,6 +9,7 @@ import com.android.tools.r8.utils.DexClassAndMethodEquivalence;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -35,6 +36,10 @@ public class DexClassAndMethodMap<V> extends DexClassAndMemberMap<DexClassAndMet
 
   public static <V> DexClassAndMethodMap<V> createConcurrent() {
     return new DexClassAndMethodMap<>(ConcurrentHashMap::new);
+  }
+
+  public static <V> DexClassAndMethodMap<V> createLinked() {
+    return new DexClassAndMethodMap<>(LinkedHashMap::new);
   }
 
   @SuppressWarnings("unchecked")

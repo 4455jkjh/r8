@@ -6,8 +6,8 @@ package com.android.tools.r8.utils.internal.collections;
 
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -19,7 +19,8 @@ import java.util.function.BiConsumer;
 public class DisjointSets<T> {
   // Forrest represented in a set. Each element maps to its parent. A root of a tree in
   // the forest maps to itself. Each tree in the forrest represent a set in the disjoint sets.
-  private final Map<T, T> parent = new HashMap<>();
+  // Use a linked map so consumeSets() and collectSet() iterate elements deterministically.
+  private final Map<T, T> parent = new LinkedHashMap<>();
 
   /**
    * Create a new set containing only <code>element</code>.
@@ -75,7 +76,8 @@ public class DisjointSets<T> {
     if (representative == null) {
       return null;
     }
-    Set<T> result = new HashSet<>();
+    // Preserve deterministic iteration order from parent.keySet().
+    Set<T> result = new LinkedHashSet<>();
     for (T t : parent.keySet()) {
       // Find root with path-compression.
       if (findSet(t).equals(representative)) {
@@ -140,10 +142,13 @@ public class DisjointSets<T> {
 
   /** Returns the sets currently represented. */
   public Map<T, Set<T>> collectSets() {
-    Map<T, Set<T>> unification = new HashMap<>();
+    // Preserve deterministic iteration order from consumeSets().
+    Map<T, Set<T>> unification = new LinkedHashMap<>();
     consumeSets(
         (representative, element) ->
-            unification.computeIfAbsent(representative, ignoreKey(HashSet::new)).add(element));
+            unification
+                .computeIfAbsent(representative, ignoreKey(LinkedHashSet::new))
+                .add(element));
     return unification;
   }
 

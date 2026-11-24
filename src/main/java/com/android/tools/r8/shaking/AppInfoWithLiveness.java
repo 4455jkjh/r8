@@ -588,7 +588,9 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     if (callSiteInterfaces == null || callSiteInterfaces.isEmpty()) {
       return DexClassAndMethodSet.empty();
     }
-    DexClassAndMethodSet result = DexClassAndMethodSet.create();
+    // Use a linked set to preserve the deterministic interface traversal order for callers such
+    // as InterfaceMethodNameMinifier.
+    DexClassAndMethodSet result = DexClassAndMethodSet.createLinked();
     Deque<DexType> worklist = new ArrayDeque<>(callSiteInterfaces);
     Set<DexType> visited = Sets.newIdentityHashSet();
     while (!worklist.isEmpty()) {

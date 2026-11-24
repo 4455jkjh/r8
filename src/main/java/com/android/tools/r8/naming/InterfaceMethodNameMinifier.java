@@ -20,6 +20,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.MethodJavaSignatureEquivalence;
 import com.android.tools.r8.utils.collections.DexClassAndMethodMap;
 import com.android.tools.r8.utils.collections.DexClassAndMethodSet;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.collections.DisjointSets;
 import com.android.tools.r8.utils.timing.Timing;
@@ -31,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -237,8 +240,10 @@ class InterfaceMethodNameMinifier {
   class InterfaceMethodGroupState implements Comparable<InterfaceMethodGroupState> {
 
     private final Set<DexCallSite> callSites = new HashSet<>();
+    // Use a linked map so reserveName() traverses entries in deterministic order while mutating
+    // shared frontier reservation states.
     private final DexClassAndMethodMap<Set<InterfaceReservationState>> methodStates =
-        DexClassAndMethodMap.create();
+        DexClassAndMethodMap.createLinked();
     private final List<DexClassAndMethod> callSiteCollidingMethods = new ArrayList<>();
 
     void addState(DexClassAndMethod method, InterfaceReservationState interfaceState) {
@@ -398,7 +403,9 @@ class InterfaceMethodNameMinifier {
   }
 
   private static <V> DexClassAndMethodMap<V> createDexClassAndMethodMap() {
-    return new DexClassAndMethodMap<>(new HashMap<>()) {
+    // Use a linked map because InterfaceMethodGroupState#compareTo only compares group sizes,
+    // breaking equal-size ties via globalStateMap iteration order.
+    return new DexClassAndMethodMap<>(new LinkedHashMap<>()) {
 
       @Override
       protected Wrapper<DexClassAndMethod> wrap(DexClassAndMethod method) {
@@ -452,7 +459,8 @@ class InterfaceMethodNameMinifier {
     // desugared lambdas this is a conservative estimate, as we don't track if the generated
     // lambda classes survive into the output. As multi-interface lambda expressions are rare
     // this is not a big deal.
-    Set<DexCallSite> liveCallSites = appView.appInfo().callSites.keySet();
+    List<DexCallSite> liveCallSites =
+        ListUtils.sort(appView.appInfo().callSites.keySet(), DexCallSite::compareTo);
     // If the input program contains a multi-interface lambda expression that implements
     // interface methods with different protos, we need to make sure tha the implemented lambda
     // methods are renamed to the same name.
@@ -464,7 +472,9 @@ class InterfaceMethodNameMinifier {
 
     liveCallSites.forEach(
         callSite -> {
-          Set<Wrapper<DexClassAndMethod>> callSiteMethods = new HashSet<>();
+          // Use a linked set so callSiteMethods.iterator().next() deterministically picks the
+          // union-find representative.
+          Set<Wrapper<DexClassAndMethod>> callSiteMethods = new LinkedHashSet<>();
           // Don't report errors, as the set of call sites is a conservative estimate, and can
           // refer to interfaces which has been removed.
           DexClassAndMethodSet implementedMethods =
@@ -521,9 +531,11 @@ class InterfaceMethodNameMinifier {
     // for the unions to allow consistent naming across different protos.
     timing.begin("States for union");
     DexClassAndMethodMap<Set<Wrapper<DexClassAndMethod>>> unions = createDexClassAndMethodMap();
+    // Use linked sets so appendMethodGroupState() appends into callSiteCollidingMethods and
+    // methodStates in deterministic order.
     unification.consumeSets(
         (representative, element) ->
-            unions.computeIfAbsent(representative, ignoreKey(HashSet::new)).add(element));
+            unions.computeIfAbsent(representative, ignoreKey(LinkedHashSet::new)).add(element));
     unions.forEach(
         (representative, elements) -> {
           InterfaceMethodGroupState groupState = globalStateMap.get(representative);
