@@ -545,6 +545,11 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   }
 
   @Override
+  public final DexProgramClass definitionForProgramType(DexType type) {
+    return appInfo().definitionForProgramType(type);
+  }
+
+  @Override
   public final boolean hasDefinitionFor(DexType type) {
     return appInfo().hasDefinitionFor(type);
   }

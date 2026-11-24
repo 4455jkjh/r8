@@ -4,16 +4,14 @@
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -26,33 +24,46 @@ import java.util.function.Predicate;
 public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexClass> {
 
   final AppView<? extends AppInfoWithClassHierarchy> appView;
-  final Map<S, Set<T>> immediateSubtypes;
+  // Most supertypes have a single immediate subtype; store T directly until a second distinct
+  // subtype upgrades the bucket to a LinkedHashSet<T>.
+  final Map<S, Object> immediateSubtypes;
 
   ImmediateSubtypingInfo(
-      AppView<? extends AppInfoWithClassHierarchy> appView, Map<S, Set<T>> immediateSubtypes) {
+      AppView<? extends AppInfoWithClassHierarchy> appView, Map<S, Object> immediateSubtypes) {
     this.appView = appView;
     this.immediateSubtypes = immediateSubtypes;
   }
 
-  static <S extends DexClass, T extends DexClass, U extends ImmediateSubtypingInfo<S, T>>
-      U internalCreate(
-          AppView<? extends AppInfoWithClassHierarchy> appView,
-          Iterable<T> classes,
-          Function<DexClass, S> cast,
-          Function<Map<S, Set<T>>, U> factory) {
-    Map<S, Set<T>> immediateSubtypes = new IdentityHashMap<>();
-    for (T clazz : classes) {
-      clazz.forEachImmediateSupertype(
-          supertype -> {
-            S superclass = cast.apply(appView.definitionFor(supertype));
-            if (superclass != null) {
-              immediateSubtypes
-                  .computeIfAbsent(superclass, ignoreKey(LinkedHashSet::new))
-                  .add(clazz);
-            }
-          });
+  @SuppressWarnings({"ReferenceEquality", "unchecked"})
+  static <S extends DexClass, T extends DexClass> void addImmediateSuperclass(
+      Map<S, Object> immediateSubtypes, S superclass, T subclass) {
+    if (superclass == null) {
+      return;
     }
-    return factory.apply(immediateSubtypes);
+    Object existing = immediateSubtypes.get(superclass);
+    if (existing == null) {
+      immediateSubtypes.put(superclass, subclass);
+    } else if (existing instanceof Set) {
+      ((Set<T>) existing).add(subclass);
+    } else if (existing != subclass) {
+      Set<T> subtypes = Sets.newLinkedHashSetWithExpectedSize(2);
+      subtypes.add((T) existing);
+      subtypes.add(subclass);
+      immediateSubtypes.put(superclass, subtypes);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void addSubclassesToWorkList(S clazz, WorkList<? super T> worklist) {
+    Object existing = immediateSubtypes.get(clazz);
+    if (existing == null) {
+      return;
+    }
+    if (existing instanceof Set) {
+      worklist.addIfNotSeen((Set<T>) existing);
+    } else {
+      worklist.addIfNotSeen((T) existing);
+    }
   }
 
   abstract S toS(DexClass clazz);
@@ -106,15 +117,25 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
         });
   }
 
+  @SuppressWarnings("unchecked")
   public void forEachImmediateSubClassMatching(
       S clazz, Predicate<? super T> predicate, Consumer<? super T> consumer) {
-    getSubclasses(clazz)
-        .forEach(
-            subclass -> {
-              if (predicate.test(subclass)) {
-                consumer.accept(subclass);
-              }
-            });
+    Object existing = immediateSubtypes.get(clazz);
+    if (existing == null) {
+      return;
+    }
+    if (existing instanceof Set) {
+      for (T subclass : (Set<T>) existing) {
+        if (predicate.test(subclass)) {
+          consumer.accept(subclass);
+        }
+      }
+    } else {
+      T subclass = (T) existing;
+      if (predicate.test(subclass)) {
+        consumer.accept(subclass);
+      }
+    }
   }
 
   public void forEachTransitiveSubclass(S clazz, Consumer<? super T> consumer) {
@@ -124,7 +145,8 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
   @SuppressWarnings("unchecked")
   public <U extends DexClass> void forEachTransitiveSubclassMatching(
       S clazz, Predicate<? super T> predicate, Consumer<? super U> consumer) {
-    WorkList<T> worklist = WorkList.newIdentityWorkList(getSubclasses(clazz));
+    WorkList<T> worklist = WorkList.newIdentityWorkList();
+    addSubclassesToWorkList(clazz, worklist);
     worklist.process(
         subclass -> {
           if (predicate.test(subclass)) {
@@ -132,7 +154,7 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
           }
           S subclassOrNull = toS(subclass);
           if (subclassOrNull != null) {
-            worklist.addIfNotSeen(getSubclasses(subclassOrNull));
+            addSubclassesToWorkList(subclassOrNull, worklist);
           }
         });
   }
@@ -153,8 +175,16 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
         consumer);
   }
 
+  @SuppressWarnings("unchecked")
   public Set<T> getSubclasses(S clazz) {
-    return immediateSubtypes.getOrDefault(clazz, Collections.emptySet());
+    Object existing = immediateSubtypes.get(clazz);
+    if (existing == null) {
+      return Collections.emptySet();
+    }
+    if (existing instanceof Set) {
+      return (Set<T>) existing;
+    }
+    return Collections.singleton((T) existing);
   }
 
   public Iterable<T> getSubinterfaces(S clazz) {
@@ -171,13 +201,14 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
   }
 
   public boolean hasSubclasses(S clazz) {
-    return !getSubclasses(clazz).isEmpty();
+    return immediateSubtypes.containsKey(clazz);
   }
 
   public <TB, TC> TraversalContinuation<TB, TC> traverseTransitiveSubclasses(
       S clazz, Function<? super DexClass, TraversalContinuation<TB, TC>> fn) {
     TraversalContinuation<TB, TC> traversalContinuation = TraversalContinuation.doContinue();
-    WorkList<DexClass> worklist = WorkList.newIdentityWorkList(getSubclasses(clazz));
+    WorkList<DexClass> worklist = WorkList.newIdentityWorkList();
+    addSubclassesToWorkList(clazz, worklist);
     while (worklist.hasNext()) {
       DexClass subclass = worklist.next();
       traversalContinuation = fn.apply(subclass);
@@ -186,7 +217,7 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
       }
       S subclassOrNull = toS(subclass);
       if (subclassOrNull != null) {
-        worklist.addIfNotSeen(getSubclasses(subclassOrNull));
+        addSubclassesToWorkList(subclassOrNull, worklist);
       }
     }
     return traversalContinuation;

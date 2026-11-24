@@ -458,6 +458,13 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   @Override
+  public DexProgramClass definitionForProgramType(DexType type) {
+    DexProgramClass definition = super.definitionForProgramType(type);
+    assert definition != null || asProgramClassOrNull(definitionFor(type)) == null;
+    return definition;
+  }
+
+  @Override
   public final boolean hasDefinitionFor(DexType type) {
     // Avoid assertion added in our definitionFor().
     return super.definitionFor(type) != null;

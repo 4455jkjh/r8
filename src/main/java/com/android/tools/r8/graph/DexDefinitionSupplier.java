@@ -56,7 +56,9 @@ public interface DexDefinitionSupplier {
    * @return Definition of the type if it is a program type or null if not or no definition exists.
    */
   default DexProgramClass programDefinitionFor(DexType type, ProgramDefinition context) {
-    return asProgramClassOrNull(definitionFor(type, context));
+    return type.isIdenticalTo(context.getContextType())
+        ? context.getContextClass()
+        : definitionForProgramType(type);
   }
 
   default <D extends DexEncodedMember<D, R>, R extends DexMember<D, R>>

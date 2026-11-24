@@ -459,6 +459,9 @@ public class SyntheticItems {
 
   // Predicates and accessors.
   public ClassResolutionResult definitionFor(DexType type, DexApplication app) {
+    if (pending.isEmpty()) {
+      return app.contextIndependentDefinitionForWithResolutionResult(type);
+    }
     ProgramOrClasspathClass programOrClasspathClassNotOnLibrary =
         app.definitionForProgramOrClasspathClassNotOnLibrary(type);
     if (programOrClasspathClassNotOnLibrary != null) {

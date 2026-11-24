@@ -129,6 +129,12 @@ public abstract class DexApplication implements DexDefinitionSupplier {
   public abstract DexProgramClass programDefinitionFor(DexType type);
 
   @Override
+  public DexProgramClass definitionForProgramType(DexType type) {
+    assert type.isClassType() : "Cannot lookup definition for type: " + type;
+    return programDefinitionFor(type);
+  }
+
+  @Override
   public abstract String toString();
 
   public ClassNameMapper getProguardMap() {

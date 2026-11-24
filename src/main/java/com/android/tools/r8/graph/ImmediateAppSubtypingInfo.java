@@ -4,22 +4,19 @@
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.graph.DexApplication.classesWithDeterministicOrder;
-import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class ImmediateAppSubtypingInfo extends ImmediateSubtypingInfo<DexClass, DexClass> {
 
   private ImmediateAppSubtypingInfo(
       AppView<? extends AppInfoWithClassHierarchy> appView,
-      Map<DexClass, Set<DexClass>> immediateSubtypes) {
+      Map<DexClass, Object> immediateSubtypes) {
     super(appView, immediateSubtypes);
   }
 
@@ -29,16 +26,22 @@ public class ImmediateAppSubtypingInfo extends ImmediateSubtypingInfo<DexClass, 
     DirectMappedDexApplication app = appView.app().asDirect();
     Iterable<DexClass> classes =
         Iterables.concat(app.programClasses(), app.classpathClasses(), app.libraryClasses());
-    return create(appView, classes);
+    Map<DexClass, Object> immediateSubtypes = new IdentityHashMap<>();
+    for (DexClass clazz : classes) {
+      addImmediateSupertypes(immediateSubtypes, clazz, appView);
+    }
+    return new ImmediateAppSubtypingInfo(appView, immediateSubtypes);
   }
 
-  public static ImmediateAppSubtypingInfo create(
-      AppView<? extends AppInfoWithClassHierarchy> appView, Iterable<DexClass> classes) {
-    return internalCreate(
-        appView,
-        classes,
-        Function.identity(),
-        immediateSubtypes -> new ImmediateAppSubtypingInfo(appView, immediateSubtypes));
+  private static void addImmediateSupertypes(
+      Map<DexClass, Object> immediateSubtypes, DexClass clazz, AppView<?> appView) {
+    DexType superType = clazz.getSuperType();
+    if (superType != null) {
+      addImmediateSuperclass(immediateSubtypes, appView.definitionFor(superType), clazz);
+    }
+    for (DexType iface : clazz.getInterfaces().getBacking()) {
+      addImmediateSuperclass(immediateSubtypes, appView.definitionFor(iface), clazz);
+    }
   }
 
   @Override
@@ -63,13 +66,7 @@ public class ImmediateAppSubtypingInfo extends ImmediateSubtypingInfo<DexClass, 
       return;
     }
     for (DexClass clazz : appView.getSyntheticItems().getAllPendingSyntheticClasses()) {
-      for (DexType supertype : clazz.allImmediateSupertypes()) {
-        DexClass superclass = appView.definitionFor(supertype);
-        if (superclass == null) {
-          continue;
-        }
-        immediateSubtypes.computeIfAbsent(superclass, ignoreKey(LinkedHashSet::new)).add(clazz);
-      }
+      addImmediateSupertypes(immediateSubtypes, clazz, appView);
     }
   }
 

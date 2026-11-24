@@ -210,11 +210,24 @@ public class AppInfo implements DexDefinitionSupplier {
   }
 
   public final DexClass definitionForWithoutExistenceAssert(DexType type) {
+    assert checkIfObsolete();
+    if (!syntheticItems.hasPendingSyntheticClasses() && app.isDirect()) {
+      return app.definitionFor(type);
+    }
     return contextIndependentDefinitionForWithResolutionResult(type)
         .toSingleClassWithProgramOverLibrary();
   }
 
+  @Override
+  public DexProgramClass definitionForProgramType(DexType type) {
+    return definitionForProgramTypeWithoutExistenceAssert(type);
+  }
+
   public final DexProgramClass definitionForProgramTypeWithoutExistenceAssert(DexType type) {
+    assert checkIfObsolete();
+    if (!syntheticItems.hasPendingSyntheticClasses()) {
+      return app.definitionForProgramType(type);
+    }
     return DexProgramClass.asProgramClassOrNull(definitionForWithoutExistenceAssert(type));
   }
 

@@ -4,34 +4,43 @@
 
 package com.android.tools.r8.graph;
 
+import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class ImmediateProgramSubtypingInfo
     extends ImmediateSubtypingInfo<DexProgramClass, DexProgramClass> {
 
   private ImmediateProgramSubtypingInfo(
       AppView<? extends AppInfoWithClassHierarchy> appView,
-      Map<DexProgramClass, Set<DexProgramClass>> immediateSubtypes) {
+      Map<DexProgramClass, Object> immediateSubtypes) {
     super(appView, immediateSubtypes);
   }
 
   public static ImmediateProgramSubtypingInfo create(
       AppView<? extends AppInfoWithClassHierarchy> appView) {
-    return internalCreate(
-        appView,
-        appView.appInfo().classes(),
-        DexProgramClass::asProgramClassOrNull,
-        immediateSubtypes -> new ImmediateProgramSubtypingInfo(appView, immediateSubtypes));
+    return create(appView, appView.appInfo().classes());
   }
 
   public static ImmediateProgramSubtypingInfo createWithDeterministicOrder(
       AppView<? extends AppInfoWithClassHierarchy> appView) {
-    return internalCreate(
-        appView,
-        appView.appInfo().classesWithDeterministicOrder(),
-        DexProgramClass::asProgramClassOrNull,
-        immediateSubtypes -> new ImmediateProgramSubtypingInfo(appView, immediateSubtypes));
+    return create(appView, appView.appInfo().classesWithDeterministicOrder());
+  }
+
+  private static ImmediateProgramSubtypingInfo create(
+      AppView<? extends AppInfoWithClassHierarchy> appView, Collection<DexProgramClass> classes) {
+    Map<DexProgramClass, Object> immediateSubtypes = new IdentityHashMap<>();
+    for (DexProgramClass clazz : classes) {
+      DexType superType = clazz.getSuperType();
+      if (superType != null) {
+        addImmediateSuperclass(
+            immediateSubtypes, appView.definitionForProgramType(superType), clazz);
+      }
+      for (DexType iface : clazz.getInterfaces().getBacking()) {
+        addImmediateSuperclass(immediateSubtypes, appView.definitionForProgramType(iface), clazz);
+      }
+    }
+    return new ImmediateProgramSubtypingInfo(appView, immediateSubtypes);
   }
 
   @Override
