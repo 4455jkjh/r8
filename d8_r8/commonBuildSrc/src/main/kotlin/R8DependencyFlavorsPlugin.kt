@@ -43,12 +43,10 @@ public fun ConfigurationContainer.consumableFlavor(
   name: String,
   flavor: R8Flavor,
   vararg scopes: NamedDomainObjectProvider<out Configuration>,
-  configure: Action<in ConsumableConfiguration> = Action {},
 ): NamedDomainObjectProvider<ConsumableConfiguration> =
   consumable(name) {
     scopes.forEach { extendsFrom(it.get()) }
     attributes { attribute(R8_FLAVOR_ATTRIBUTE, flavor.attributeValue) }
-    configure.execute(this)
   }
 
 public fun DependencyHandler.apiInternal(dependencyNotation: Any): Dependency? {
@@ -122,8 +120,9 @@ public fun <T : Any> DependencyHandler.runtimeOnlyExternal(
  * Java modules.
  *
  * This plugin must be applied to Java:
- * - **Participants** (compiler modules, via `r8-compiler-conventions`), which declare dependencies
- *   using the custom scopes below and expose consumable `*Elements` variants.
+ * - **Participants** (compiler modules, via `r8-compiler-conventions` or directly), which declare
+ *   dependencies using the custom scopes below and attach outgoing artifacts to the `*Elements`
+ *   variants they contribute to.
  * - **Consumers** (tool and test modules, via `r8-test-conventions` or direct plugin application),
  *   which need `R8_FLAVOR_ATTRIBUTE = "standard"` on their Java compile/runtime classpaths for
  *   variant disambiguation and/or resolve the `*Config` views below.
@@ -133,10 +132,10 @@ public fun <T : Any> DependencyHandler.runtimeOnlyExternal(
  * [resolvableFlavor] and [consumableFlavor] with [R8Flavor].
  *
  * The custom dependency scopes mirror Gradle's `api`, `implementation`, and `runtimeOnly` semantics
- * for modules that contribute code to the compiler:
+ * for modules that participate in the compiler build:
  * - `apiInternal` / `implementationInternal` / `runtimeOnlyInternal`: First-party R8 project
- *   dependencies whose jars, classes, and sources belong in `r8-full-exclude-deps.jar`, `r8.jar`,
- *   `r8-src.jar`, and coverage, and whose external dependencies propagate when encapsulated.
+ *   dependencies whose flavor views (`internalElements`, `internalClassesElements`,
+ *   `internalSourcesElements`, `externalElements`) are traversed transitively.
  * - `apiExternal` / `implementationExternal` / `runtimeOnlyExternal`: Third-party library
  *   dependencies. A module's own `apiExternal` is exposed on its compile API (`apiElements`) and
  *   `apiExternalElements` (transitively across `apiInternal`) rather than its own standalone
@@ -213,9 +212,7 @@ public class R8DependencyFlavorsPlugin : Plugin<Project> {
         apiInternal,
         implementationInternal,
         runtimeOnlyInternal,
-      ) {
-        outgoing.artifact(target.tasks.named("jar"))
-      }
+      )
       target.configurations.resolvableFlavor(
         "internalRuntimeConfig",
         R8Flavor.INTERNAL,

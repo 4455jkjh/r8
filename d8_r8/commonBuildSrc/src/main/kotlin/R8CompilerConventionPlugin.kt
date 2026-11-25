@@ -15,8 +15,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * Convention plugin for Java/Kotlin modules that contribute code to the R8 compiler.
  *
  * Applies both `r8-conventions` (JVM/Kotlin/Protobuf/ErrorProne toolchain setup) and
- * `r8-dependency-flavors`, and publishes compiled class directories, sources jars, and the Kotlin
- * standard library into the corresponding flavor configurations.
+ * `r8-dependency-flavors`, and publishes the module's jar, compiled class directories, sources
+ * jars, and the Kotlin standard library into the corresponding flavor configurations.
  */
 public class R8CompilerConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
@@ -35,6 +35,9 @@ public class R8CompilerConventionPlugin : Plugin<Project> {
     target.plugins.configureEach {
       when (this) {
         is JavaPlugin -> {
+          target.configurations.named("internalElements") {
+            outgoing.artifact(target.tasks.named("jar"))
+          }
           target.configurations.named("internalClassesElements") {
             outgoing.artifact(
               target.tasks.named("compileJava", JavaCompile::class.java).map {
