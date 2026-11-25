@@ -45,6 +45,8 @@ dependencies {
   testCompileOnly(libs.androidxTracingDriverWire)
   testCompileOnly(libs.asmCommons)
   testCompileOnly(libs.toolsCommon)
+  runtimeOnlyData(TestRuntimeData.KEEPANNO_ANNOTATIONS_JAR)
+  runtimeOnlyData(TestRuntimeData.KEEPANNO_ANDROIDX_ANNOTATIONS_JAR)
   runtimeOnlyData(TestRuntimeData.AGSA)
   runtimeOnlyData(TestRuntimeData.ART_5_1_1)
   runtimeOnlyData(TestRuntimeData.ART_TESTS)
@@ -207,10 +209,6 @@ fun Test.setupTestTask() {
   dependsOn(distDepsFiles)
   dependsOn(internalClassesConfig)
   dependsOn(project(":dist").tasks.named("r8AssistantLib"))
-  systemProperty(
-    "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-    extractClassesPaths("keepanno" + File.separator, internalClassesConfig.get().asPath),
-  )
   // This path is set when compiling examples jar task in DependenciesPlugin.
   val r8RuntimePath = project.files(internalClassesConfig, distDepsFiles, mainResources).asPath
   systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)

@@ -173,6 +173,8 @@ public class TestDeps {
     dependencies.put("JDK_27", null);
     dependencies.put("JDWP_TESTS", null);
     dependencies.put("JSR223", null);
+    dependencies.put("KEEPANNO_ANDROIDX_ANNOTATIONS_JAR", null);
+    dependencies.put("KEEPANNO_ANNOTATIONS_JAR", null);
     dependencies.put("KEEPASSDX", null);
     dependencies.put("KOTLIN_COMPILER_1_3_72", null);
     dependencies.put("KOTLIN_COMPILER_1_4_20", null);
@@ -787,6 +789,14 @@ public class TestDeps {
 
   public static Path getJsr223RiJar() {
     return getDependencyPath("JSR223", "jsr223-api-1.0.jar");
+  }
+
+  public static Path getKeepAnnoAndroidXAnnotationsJar() {
+    return getDependency("KEEPANNO_ANDROIDX_ANNOTATIONS_JAR");
+  }
+
+  public static Path getKeepAnnoAnnotationsJar() {
+    return getDependency("KEEPANNO_ANNOTATIONS_JAR");
   }
 
   public static Path getKeePassDXDir() {

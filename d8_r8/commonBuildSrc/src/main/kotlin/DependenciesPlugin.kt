@@ -787,13 +787,3 @@ public fun allPublicTestDependencies(): List<ThirdPartyDependency> {
 public fun allInternalTestDependencies(): List<ThirdPartyDependency> {
   return allDependencies().filter { x -> x.testOnly && x.type == DependencyType.X20 }
 }
-
-public fun extractClassesPaths(prefix: String, vararg paths: String): String {
-  val result: MutableList<String> = ArrayList()
-  paths.forEach { it ->
-    result.addAll(
-      it.split(File.pathSeparator).filter { it.contains("${prefix}build${File.separator}classes") }
-    )
-  }
-  return result.joinToString(File.pathSeparator)
-}

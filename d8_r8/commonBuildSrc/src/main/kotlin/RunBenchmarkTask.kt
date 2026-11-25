@@ -37,7 +37,6 @@ public abstract class RunBenchmarkTask : DefaultTask() {
   @get:Inject public abstract val execOperations: ExecOperations
 
   @get:InputFiles public abstract val benchmarkClasspath: ConfigurableFileCollection
-  @get:InputFiles public abstract val keepAnnoRuntimeClasspath: ConfigurableFileCollection
   @get:InputFiles public abstract val testDataLocation: DirectoryProperty
   @get:InputFiles public abstract val testBaseDataLocation: DirectoryProperty
 
@@ -115,14 +114,11 @@ public abstract class RunBenchmarkTask : DefaultTask() {
     val baseTempDir = configuredTempDir?.apply { mkdirs() } ?: managedTempDir!!
 
     try {
-      val keepAnnoRuntimePath =
-        extractClassesPaths("keepanno" + File.separator, keepAnnoRuntimeClasspath.asPath)
       val runner =
         BenchmarkProcessRunner(
           execOperations = execOperations,
           jdkExecutable = javaLauncher.get().executablePath.asFile.absolutePath,
           repoRoot = repoRoot.get().asFile,
-          keepAnnoRuntimePath = keepAnnoRuntimePath,
           testDataLocation = testDataDir,
           testBaseDataLocation = testBaseDataDir,
           testDepArgs = TestDepsCommandLineArgumentProvider(testDepsEntries).asArguments().toList(),

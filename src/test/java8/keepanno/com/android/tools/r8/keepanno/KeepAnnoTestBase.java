@@ -14,7 +14,6 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.keepanno.KeepAnnoParameters.KeepAnnoConfig;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,13 +60,9 @@ public abstract class KeepAnnoTestBase extends TestBase {
   protected static KotlinCompileMemoizer getCompileMemoizerWithKeepAnnoLib(
       Collection<Path> sources) {
     assert sources.size() > 0;
-    Path keepAnnoLib;
-    try {
-      keepAnnoLib = KeepAnnoTestUtils.getKeepAnnoLib(getStaticTemp());
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
     return new KotlinCompileMemoizer(sources)
-        .configure(kotlinCompilerTool -> kotlinCompilerTool.addClasspathFiles(keepAnnoLib));
+        .configure(
+            kotlinCompilerTool ->
+                kotlinCompilerTool.addClasspathFiles(KeepAnnoTestUtils.getKeepAnnoLib()));
   }
 }

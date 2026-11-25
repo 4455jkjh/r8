@@ -95,6 +95,10 @@ configurations.consumable("keepannoDepsJar") { outgoing.artifact(tasks.named<Jar
 
 configurations.consumable("keepannoToolsJar") { outgoing.artifact(tasks.named<Jar>("toolsJar")) }
 
+configurations.consumable("keepannoAnnotationsJar") {
+  outgoing.artifact(tasks.named<Jar>("keepAnnoAnnotationsJar"))
+}
+
 configurations.consumable("keepannoAndroidXAnnotationsJar") {
   outgoing.artifact(tasks.named<Jar>("keepAnnoAndroidXAnnotationsJar"))
 }

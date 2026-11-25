@@ -39,6 +39,8 @@ public enum class TestRuntimeData(
 
   // Project-built test data artifacts.
   JAVA_BASE_EXTENSION(":tests_java_8:desugar", "javaBaseExtension"),
+  KEEPANNO_ANNOTATIONS_JAR(":keepanno", "keepannoAnnotationsJar"),
+  KEEPANNO_ANDROIDX_ANNOTATIONS_JAR(":keepanno", "keepannoAndroidXAnnotationsJar"),
 
   // Third-party test data artifacts.
   DEPENDENCIES(":third_party", "dependenciesBucket"),

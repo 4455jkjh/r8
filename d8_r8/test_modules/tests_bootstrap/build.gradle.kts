@@ -25,18 +25,18 @@ val distSwissArmyKnife = project(":swissarmyknife").tasks.getByName("jar")
 val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles =
   configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
-val internalClassesConfig = configurations.named("internalClassesConfig")
 
 dependencies {
   distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
   implementation(project(":main"))
+  runtimeOnlyData(TestRuntimeData.KEEPANNO_ANDROIDX_ANNOTATIONS_JAR)
   runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
 }
 
 tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
-    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife, distDepsFiles, internalClassesConfig)
+    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife, distDepsFiles)
     systemProperty("R8_DEPS", distDepsFiles.get().asPath)
     systemProperty(
       "TEST_DATA_LOCATION",
@@ -54,10 +54,6 @@ tasks {
           .asPath
           .split(File.pathSeparator)[0]
       },
-    )
-    systemProperty(
-      "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, internalClassesConfig.get().asPath),
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
     systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)

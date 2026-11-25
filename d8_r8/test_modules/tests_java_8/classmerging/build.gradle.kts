@@ -10,6 +10,7 @@ java {
 }
 
 dependencies {
+  runtimeOnlyData(TestRuntimeData.KEEPANNO_ANNOTATIONS_JAR)
   runtimeOnlyData(TestRuntimeData.EXAMPLES)
   runtimeOnlyData(TestRuntimeData.EXAMPLES_ANDROID_O)
   runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)

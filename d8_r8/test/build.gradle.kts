@@ -527,10 +527,6 @@ tasks {
       )
     }
 
-    systemProperty(
-      "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, internalClassesConfig.get().asPath),
-    )
     systemProperty("R8_DEPS", mainDepsJarFilesConfig.get().asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
 
@@ -655,7 +651,6 @@ tasks {
       configureCommon(project)
       testDataLocation.set(layout.dir(unzipTests.map { it.destinationDir }))
       testBaseDataLocation.set(layout.dir(unzipTestBase.map { it.destinationDir }))
-      keepAnnoRuntimeClasspath.from(internalClassesConfig)
       if (useCustomR8Jar) {
         configureCustomR8Jar()
       }
@@ -666,7 +661,6 @@ tasks {
       configureCommon(project)
       testDataLocation.set(unzipTests.get().destinationDir)
       testBaseDataLocation.set(unzipTestBase.get().destinationDir)
-      keepAnnoRuntimeClasspath.from(internalClassesConfig.get().files)
       if (useCustomR8Jar) {
         configureCustomR8Jar()
       }

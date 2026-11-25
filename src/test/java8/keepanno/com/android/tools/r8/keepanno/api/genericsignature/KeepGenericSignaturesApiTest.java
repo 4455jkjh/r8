@@ -70,7 +70,7 @@ public class KeepGenericSignaturesApiTest extends KeepAnnoTestBase {
             .addSourceFiles(
                 ListUtils.map(
                     getClientClasses(), ToolHelper::getSourceFileForTestClassFromResources))
-            .addClasspathFiles(lib.get(), KeepAnnoTestUtils.getKeepAnnoLib(temp, LEGACY))
+            .addClasspathFiles(lib.get(), KeepAnnoTestUtils.getKeepAnnoLib(LEGACY))
             .compile();
 
     testForRuntime(parameters.parameters())

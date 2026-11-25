@@ -27,6 +27,8 @@ tasks {
 }
 
 dependencies {
+  runtimeOnlyData(TestRuntimeData.KEEPANNO_ANNOTATIONS_JAR)
+  runtimeOnlyData(TestRuntimeData.KEEPANNO_ANDROIDX_ANNOTATIONS_JAR)
   runtimeOnlyData(TestRuntimeData.JAVA_8_RUNTIME)
   runtimeOnlyData(TestRuntimeData.PROGUARD_7_7_0)
   runtimeOnlyData(TestRuntimeData.R8_V8_0_46)

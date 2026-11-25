@@ -14,7 +14,6 @@ public class BenchmarkProcessRunner(
   private val execOperations: ExecOperations,
   private val jdkExecutable: String,
   private val repoRoot: File,
-  private val keepAnnoRuntimePath: String,
   private val testDataLocation: File,
   private val testBaseDataLocation: File,
   private val testDepArgs: List<String>,
@@ -51,7 +50,6 @@ public class BenchmarkProcessRunner(
       // compiled methods during inter-iteration System.gc() calls.
       add("-XX:-UseCodeCacheFlushing")
       add("-DBENCHMARK_IGNORE_CODE_SIZE_DIFFERENCES")
-      add("-DBUILD_PROP_KEEPANNO_RUNTIME_PATH=$keepAnnoRuntimePath")
       add("-DREPO_ROOT=${repoRoot.absolutePath}")
       add("-DTEST_DATA_LOCATION=${testDataLocation.absolutePath}")
       add("-DTESTBASE_DATA_LOCATION=${testBaseDataLocation.absolutePath}")

@@ -140,10 +140,6 @@ public class ToolHelper {
     return getBuildPropPaths("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH");
   }
 
-  public static List<Path> getBuildPropKeepAnnoRuntimePath() {
-    return getBuildPropPaths("BUILD_PROP_KEEPANNO_RUNTIME_PATH");
-  }
-
   public enum TestDataSourceSet {
     LEGACY(null),
     TESTS_JAVA_8("tests_java_8/build/classes/java/test"),

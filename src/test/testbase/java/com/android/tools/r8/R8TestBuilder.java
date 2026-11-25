@@ -852,13 +852,8 @@ public abstract class R8TestBuilder<
   }
 
   public T addKeepAnnoLibToClasspath(KeepAnnotationLibrary keepAnnotationLibrary) {
-    try {
-      builder.addClasspathFiles(
-          KeepAnnoTestUtils.getKeepAnnoLib(getState().getTempFolder(), keepAnnotationLibrary));
-      return self();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    builder.addClasspathFiles(KeepAnnoTestUtils.getKeepAnnoLib(keepAnnotationLibrary));
+    return self();
   }
 
   public T addKeepAnnoLibToClasspath() {

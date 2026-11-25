@@ -8,19 +8,16 @@ import static com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary.ANDROIDX;
 import static com.android.tools.r8.utils.internal.FileUtils.isClassFile;
 import static com.android.tools.r8.utils.internal.FileUtils.isJarFile;
 import static com.android.tools.r8.utils.internal.FileUtils.isZipFile;
-import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.ByteDataView;
-import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.ProguardVersion;
 import com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractor;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractorOptions;
 import com.android.tools.r8.utils.ZipUtils;
-import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
@@ -29,48 +26,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
-import org.junit.rules.TemporaryFolder;
 
 public class KeepAnnoTestUtils {
 
   public static ProguardVersion PG_VERSION = ProguardVersion.V7_7_0;
 
-  public static final String DESCRIPTOR_PREFIX = "Landroidx/annotation/keep/";
-  public static final String DESCRIPTOR_LEGACY_PREFIX =
-      "Lcom/android/tools/r8/keepanno/annotations/";
-
-  public static Path getKeepAnnoLib(
-      TemporaryFolder temp, KeepAnnotationLibrary keepAnnotationLibrary) throws IOException {
-    Path archive = temp.newFolder().toPath().resolve("keepanno.jar");
-    ArchiveConsumer consumer = new ArchiveConsumer(archive);
-    // TODO(b/397387189): Find a better way to locate the keep annotation classes in tests.
-    for (Path root : ToolHelper.getBuildPropKeepAnnoRuntimePath()) {
-      String descriptorPrefix =
-          (keepAnnotationLibrary == ANDROIDX ? DESCRIPTOR_PREFIX : DESCRIPTOR_LEGACY_PREFIX);
-      Path annoDir = root.resolve(descriptorPrefix.substring(1, descriptorPrefix.length() - 1));
-      assertTrue(Files.isDirectory(root));
-      if (Files.isDirectory(annoDir)) {
-        try (Stream<Path> paths = Files.list(annoDir)) {
-          paths.forEach(
-              p -> {
-                if (isClassFile(p)) {
-                  byte[] data = FileUtils.uncheckedReadAllBytes(p);
-                  String fileName = p.getFileName().toString();
-                  String className = fileName.substring(0, fileName.lastIndexOf('.'));
-                  String desc = descriptorPrefix + className + ";";
-                  consumer.accept(ByteDataView.of(data), desc, null);
-                }
-              });
-        }
-      }
-    }
-    consumer.finished(null);
-    return archive;
+  public static Path getKeepAnnoLib(KeepAnnotationLibrary keepAnnotationLibrary) {
+    return keepAnnotationLibrary == ANDROIDX
+        ? TestDeps.getKeepAnnoAndroidXAnnotationsJar()
+        : TestDeps.getKeepAnnoAnnotationsJar();
   }
 
-  public static Path getKeepAnnoLib(TemporaryFolder temp) throws IOException {
-    return getKeepAnnoLib(temp, ANDROIDX);
+  public static Path getKeepAnnoLib() {
+    return getKeepAnnoLib(ANDROIDX);
   }
 
   public static List<String> extractRulesFromFiles(

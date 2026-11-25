@@ -579,7 +579,7 @@ public abstract class KeepAnnoTestBuilder {
           TestBase.testForExternalR8(temp, parameters().getBackend())
               // Track support for R8 version 8.0.46 which is included in AGP 8.0.2
               .useProvidedR8(TestDeps.getR8V8_0_46LibJar())
-              .addProgramFiles(KeepAnnoTestUtils.getKeepAnnoLib(temp, keepAnnotationLibrary))
+              .addProgramFiles(KeepAnnoTestUtils.getKeepAnnoLib(keepAnnotationLibrary))
               .setMinApi(parameters());
     }
 
@@ -698,7 +698,7 @@ public abstract class KeepAnnoTestBuilder {
           TestBase.testForProguard(KeepAnnoTestUtils.PG_VERSION, temp)
               .applyIf(
                   keepAnnotationLibrary == ANDROIDX, b -> b.addDefaultRuntimeLibrary(parameters()))
-              .addProgramFiles(KeepAnnoTestUtils.getKeepAnnoLib(temp, keepAnnotationLibrary))
+              .addProgramFiles(KeepAnnoTestUtils.getKeepAnnoLib(keepAnnotationLibrary))
               .setMinApi(parameters());
     }
 
