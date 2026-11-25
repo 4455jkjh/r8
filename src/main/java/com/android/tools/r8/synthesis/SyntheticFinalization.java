@@ -104,6 +104,11 @@ public class SyntheticFinalization {
     }
 
     @Override
+    public DexType getPreviousClassTypeThroughSyntheticFinalization(DexType type) {
+      return super.getPreviousClassType(type);
+    }
+
+    @Override
     public boolean isSyntheticFinalizationGraphLens() {
       return true;
     }
@@ -141,6 +146,10 @@ public class SyntheticFinalization {
 
     void move(DexMethod from, DexMethod to) {
       methodMap.put(from, to);
+    }
+
+    void setRepresentative(DexType externalType, DexType representative) {
+      typeMap.setRepresentative(externalType, representative);
     }
 
     void setRepresentative(DexField field, DexField representative) {
@@ -524,22 +533,26 @@ public class SyntheticFinalization {
     Iterables.<EquivalenceGroup<? extends SyntheticDefinition<?, ?, DexProgramClass>>>concat(
             syntheticClassGroups.values(), syntheticMethodGroups.values())
         .forEach(
-            syntheticGroup ->
-                syntheticGroup
-                    .getRepresentative()
-                    .getHolder()
-                    .forEachProgramMember(
-                        member -> {
-                          if (member.isProgramField()) {
-                            DexField field = member.asProgramField().getReference();
-                            DexField rewrittenField = treeFixer.fixupFieldReference(field);
-                            lensBuilder.setRepresentative(rewrittenField, field);
-                          } else {
-                            DexMethod method = member.asProgramMethod().getReference();
-                            DexMethod rewrittenMethod = treeFixer.fixupMethodReference(method);
-                            lensBuilder.setRepresentative(rewrittenMethod, method);
-                          }
-                        }));
+            syntheticGroup -> {
+              DexProgramClass representative = syntheticGroup.getRepresentative().getHolder();
+              if (!syntheticGroup.members.isEmpty()) {
+                DexType representativeType = representative.getType();
+                lensBuilder.setRepresentative(
+                    treeFixer.mapClassType(representativeType), representativeType);
+              }
+              representative.forEachProgramMember(
+                  member -> {
+                    if (member.isProgramField()) {
+                      DexField field = member.asProgramField().getReference();
+                      DexField rewrittenField = treeFixer.fixupFieldReference(field);
+                      lensBuilder.setRepresentative(rewrittenField, field);
+                    } else {
+                      DexMethod method = member.asProgramMethod().getReference();
+                      DexMethod rewrittenMethod = treeFixer.fixupMethodReference(method);
+                      lensBuilder.setRepresentative(rewrittenMethod, method);
+                    }
+                  });
+            });
     timing.end();
 
     for (DexType key : syntheticMethodGroups.keySet()) {

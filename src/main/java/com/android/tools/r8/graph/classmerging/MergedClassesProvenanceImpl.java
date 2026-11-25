@@ -51,7 +51,9 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
   }
 
   private static DexType getOriginalType(AppView<?> appView, DexType type) {
-    return appView.graphLens().getOriginalType(type, GraphLens.getIdentityLens());
+    return appView
+        .graphLens()
+        .getOriginalTypeThroughSyntheticFinalization(type, GraphLens.getIdentityLens());
   }
 
   @FunctionalInterface

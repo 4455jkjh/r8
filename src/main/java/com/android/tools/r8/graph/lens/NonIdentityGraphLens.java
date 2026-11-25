@@ -188,6 +188,14 @@ public abstract class NonIdentityGraphLens extends GraphLens {
 
   public abstract DexType getPreviousClassType(DexType type);
 
+  /**
+   * Like {@link #getPreviousClassType(DexType)}, except synthetic finalization lenses also step
+   * back from finalized external synthetic names to their pre-finalization representative types.
+   */
+  public DexType getPreviousClassTypeThroughSyntheticFinalization(DexType type) {
+    return getPreviousClassType(type);
+  }
+
   /***
    * The previous mapping for a method often coincides with the previous method signature, but it
    * may not, for example for bridges inserted in vertically merged classes where the original

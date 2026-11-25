@@ -7,6 +7,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.IterableUtils;
@@ -14,10 +15,12 @@ import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.verticalclassmerging.VerticallyMergedClasses;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Records when and how classes are merged across compilation.
@@ -66,6 +69,14 @@ public abstract class MergedClassesProvenance {
       this.classIdentifiers = classIdentifiers;
     }
 
+    public static ClassIdInfo createForTesting(
+        DexField field, Map<DexType, Integer> classIdentifiers) {
+      assert classIdentifiers != null;
+      Reference2IntMap<DexType> map = new Reference2IntOpenHashMap<>(classIdentifiers.size());
+      classIdentifiers.forEach((type, id) -> map.put(type, id.intValue()));
+      return new ClassIdInfo(field, map);
+    }
+
     public DexField getField() {
       return field;
     }
@@ -77,6 +88,13 @@ public abstract class MergedClassesProvenance {
   }
 
   public abstract ProvenanceGroup getGroupForOriginalType(DexType originalType);
+
+  public final ProvenanceGroup getGroup(AppView<?> appView, DexType currentType) {
+    return getGroupForOriginalType(
+        appView
+            .graphLens()
+            .getOriginalTypeThroughSyntheticFinalization(currentType, GraphLens.getIdentityLens()));
+  }
 
   /**
    * Records a class merge into {@code target}. Either participant iterable may be {@code null};

@@ -949,6 +949,11 @@ public class R8 {
         options.nativeReferencesConsumer.finished(appView.reporter());
       }
 
+      options
+          .getTestingOptions()
+          .mergedClassesProvenanceConsumer
+          .accept(appView, appView.getMergedClassesProvenance());
+
       options.dumpHeap("pre-write");
 
       // Generate the resulting application resources.

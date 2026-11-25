@@ -106,6 +106,12 @@ public abstract class GraphLens {
     return getOriginalReference(type, appliedLens, NonIdentityGraphLens::getPreviousClassType);
   }
 
+  public final DexType getOriginalTypeThroughSyntheticFinalization(
+      DexType type, GraphLens appliedLens) {
+    return getOriginalReference(
+        type, appliedLens, NonIdentityGraphLens::getPreviousClassTypeThroughSyntheticFinalization);
+  }
+
   public abstract Iterable<DexType> getOriginalTypes(DexType type);
 
   @Deprecated
