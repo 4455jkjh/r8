@@ -3,17 +3,28 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.synthesis;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.UnorderedCollectionMatcher;
+import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
+import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.graph.DexAnnotation;
+import com.android.tools.r8.graph.DexAnnotation.SynthesizedAnnotationClassInfo;
+import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexEncodedAnnotation;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,6 +69,42 @@ public class SyntheticMarkerDexTest extends TestBase {
         .assertSuccessWithOutput(EXPECTED);
   }
 
+  @Test
+  public void testApiLevelSerializationRoundTrip() {
+    DexItemFactory factory = new DexItemFactory();
+    SyntheticNaming naming = factory.getSyntheticNaming();
+    AndroidApiLevelCompute apiLevelCompute = AndroidApiLevelCompute.noAndroidApiLevelCompute();
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
+      ComputedApiLevel expected = apiLevelCompute.of(apiLevel);
+      DexAnnotation annotation =
+          DexAnnotation.createAnnotationSynthesizedClass(
+              naming.API_MODEL_OUTLINE, factory, expected);
+      SynthesizedAnnotationClassInfo info =
+          DexAnnotation.getSynthesizedClassAnnotationInfo(
+              DexAnnotationSet.create(new DexAnnotation[] {annotation}),
+              factory,
+              naming,
+              apiLevelCompute);
+      assertNotNull(info);
+      assertSame(naming.API_MODEL_OUTLINE, info.getSyntheticKind());
+      assertEquals(expected, info.getComputedApiLevel());
+    }
+    for (ComputedApiLevel expected :
+        ImmutableList.of(ComputedApiLevel.notSet(), ComputedApiLevel.unknown())) {
+      DexAnnotation annotation =
+          DexAnnotation.createAnnotationSynthesizedClass(naming.LAMBDA, factory, expected);
+      SynthesizedAnnotationClassInfo info =
+          DexAnnotation.getSynthesizedClassAnnotationInfo(
+              DexAnnotationSet.create(new DexAnnotation[] {annotation}),
+              factory,
+              naming,
+              apiLevelCompute);
+      assertNotNull(info);
+      assertSame(naming.LAMBDA, info.getSyntheticKind());
+      assertEquals(expected, info.getComputedApiLevel());
+    }
+  }
+
   private void checkSyntheticClassIsMarked(CodeInspector inspector) {
     // Compilation gives rise to the main class plus one lambda.
     assertEquals(2, inspector.allClasses().size());
@@ -65,13 +112,14 @@ public class SyntheticMarkerDexTest extends TestBase {
         clazz -> {
           if (!clazz.getFinalReference().equals(Reference.classFromClass(TestClass.class))) {
             // This should be the lambda class.
-            DexAnnotation[] annotations = clazz.getDexProgramClass().annotations().annotations;
-            assertEquals(1, annotations.length);
-            DexEncodedAnnotation annotation = annotations[0].annotation;
-            assertEquals(3, annotation.elements.length);
+            assertThat(
+                ListUtils.map(clazz.annotations(), a -> a.getType().getTypeName()),
+                UnorderedCollectionMatcher.matchesItemsOneToOne(
+                    ImmutableList.of("com.android.tools.r8.annotations.SynthesizedClassV2")));
+            DexEncodedAnnotation annotation = clazz.annotations().get(0).getAnnotation();
             assertEquals(
-                "com.android.tools.r8.annotations.SynthesizedClassV2",
-                annotation.type.toSourceString());
+                ImmutableList.of("apiLevelMajor", "apiLevelMinor", "kind", "versionHash"),
+                ListUtils.map(annotation.elements, element -> element.name.toString()));
           }
         });
   }

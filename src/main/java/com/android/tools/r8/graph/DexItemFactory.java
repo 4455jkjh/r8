@@ -376,7 +376,8 @@ public class DexItemFactory {
   public final DexString valueString = createString("value");
   public final DexString kindString = createString("kind");
   public final DexString versionHashString = createString("versionHash");
-  public final DexString apiLevelString = createString("apiLevel");
+  public final DexString apiLevelMajorString = createString("apiLevelMajor");
+  public final DexString apiLevelMinorString = createString("apiLevelMinor");
   public final DexString namesString = createString("names");
   public final DexString accessFlagsString = createString("accessFlags");
 
