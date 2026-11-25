@@ -287,10 +287,7 @@ public final class LambdaClass {
       fields.add(
           DexEncodedField.syntheticBuilder()
               .setField(getCaptureField(i))
-              .setAccessFlags(
-                  appView.options().desugarSpecificOptions().lambdaClassFieldsFinal
-                      ? FieldAccessFlags.createPublicFinalSynthetic()
-                      : FieldAccessFlags.createPublicSynthetic())
+              .setAccessFlags(FieldAccessFlags.createPublicFinalSynthetic())
               // The api level is computed when tracing.
               .disableAndroidApiLevelCheck()
               .build());
