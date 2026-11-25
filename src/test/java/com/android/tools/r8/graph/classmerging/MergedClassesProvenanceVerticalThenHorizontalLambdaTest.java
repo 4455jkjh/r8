@@ -3,16 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph.classmerging;
 
-import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.group;
 import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.internalSyntheticVerticalGroup;
-import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.matchesGroups;
-import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.participant;
+import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.matchesMergedFieldContributors;
+import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.matchesParticipants;
+import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.participantWithOwnMergedField;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import org.junit.Test;
@@ -51,12 +52,18 @@ public class MergedClassesProvenanceVerticalThenHorizontalLambdaTest
                 (appView, provenance) -> {
                   DexType typeI = toDexType(Main.I.class, appView.dexItemFactory());
                   DexType typeJ = toDexType(Main.J.class, appView.dexItemFactory());
+                  MergedClassAndGroup merged = findGroupWithMergedFields(appView, provenance);
+                  DexField mergedField = singleOriginalInstanceField(appView, merged);
                   assertThat(
-                      allProvenanceGroups(appView, provenance),
-                      matchesGroups(
-                          group(
-                              participant(internalSyntheticVerticalGroup(typeI)),
-                              participant(internalSyntheticVerticalGroup(typeJ)))));
+                      merged.group.getParticipants(),
+                      matchesParticipants(
+                          participantWithOwnMergedField(
+                              internalSyntheticVerticalGroup(typeI), mergedField),
+                          participantWithOwnMergedField(
+                              internalSyntheticVerticalGroup(typeJ), mergedField)));
+                  assertThat(
+                      mergedFieldContributors(merged.group, mergedField),
+                      matchesMergedFieldContributors(mergedField));
                 }))
         .compile()
         .run(parameters.getRuntime(), Main.class)

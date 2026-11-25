@@ -4,8 +4,9 @@
 package com.android.tools.r8.graph.classmerging;
 
 import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.internalSyntheticClassNode;
+import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.matchesMergedFieldContributors;
 import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.matchesParticipants;
-import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.participant;
+import static com.android.tools.r8.graph.classmerging.MergedClassesProvenanceMatchers.participantWithOwnMergedField;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -13,8 +14,8 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.classmerging.MergedClassesProvenance.Participant;
-import com.android.tools.r8.graph.classmerging.MergedClassesProvenance.ProvenanceGroup;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -47,12 +48,16 @@ public class MergedClassesProvenanceSharedLambdaHorizontalMergeTest
             withProvenanceConsumer(
                 checked,
                 (appView, provenance) -> {
-                  ProvenanceGroup merged = findIdentifiedGroup(appView, provenance);
+                  MergedClassAndGroup merged = findGroupWithMergedFields(appView, provenance);
+                  DexField mergedField = singleOriginalInstanceField(appView, merged);
                   Matcher<Participant> syntheticParticipant =
-                      participant(internalSyntheticClassNode());
+                      participantWithOwnMergedField(internalSyntheticClassNode(), mergedField);
                   assertThat(
-                      merged.getParticipants(),
+                      merged.group.getParticipants(),
                       matchesParticipants(syntheticParticipant, syntheticParticipant));
+                  assertThat(
+                      mergedFieldContributors(merged.group, mergedField),
+                      matchesMergedFieldContributors(mergedField));
                 }))
         .compile()
         .run(parameters.getRuntime(), Main.class)

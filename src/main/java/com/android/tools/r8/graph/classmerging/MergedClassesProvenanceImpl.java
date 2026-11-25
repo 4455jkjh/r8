@@ -4,14 +4,17 @@
 package com.android.tools.r8.graph.classmerging;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +59,19 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
         .getOriginalTypeThroughSyntheticFinalization(type, GraphLens.getIdentityLens());
   }
 
+  private static DexField getOriginalFieldSignature(AppView<?> appView, DexField field) {
+    // Unlike getPreviousClassType, SyntheticFinalizationGraphLens inherits NestedGraphLens's
+    // getPreviousFieldSignature, so this already resolves through synthetic finalization.
+    return appView.graphLens().getOriginalFieldSignature(field, GraphLens.getIdentityLens());
+  }
+
   @FunctionalInterface
   private interface ParticipantFactory<P extends Participant> {
-    P create(DexType source, ProvenanceNode node, boolean instantiated);
+    P create(
+        DexType source,
+        ProvenanceNode node,
+        boolean instantiated,
+        Map<DexField, DexField> mergedFields);
   }
 
   @Override
@@ -67,7 +80,8 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
       DexType target,
       Iterable<DexType> maybeInstantiatedParticipants,
       Iterable<DexType> definitelyUninstantiatedParticipants,
-      ClassIdInfo classIdInfo) {
+      ClassIdInfo classIdInfo,
+      Map<DexField, ? extends Iterable<DexField>> mergedFields) {
     assert target != null;
     DexType originalTarget = getOriginalType(appView, target);
     ProvenanceGroup group;
@@ -77,7 +91,8 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
               appView,
               originalTarget,
               maybeInstantiatedParticipants,
-              definitelyUninstantiatedParticipants);
+              definitelyUninstantiatedParticipants,
+              mergedFields);
     } else {
       group =
           createIdentifiedGroup(
@@ -85,7 +100,8 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
               originalTarget,
               maybeInstantiatedParticipants,
               definitelyUninstantiatedParticipants,
-              classIdInfo);
+              classIdInfo,
+              mergedFields);
     }
     groups.addGroup(group);
   }
@@ -94,13 +110,16 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
       AppView<?> appView,
       DexType originalTarget,
       Iterable<DexType> maybeInstantiatedParticipants,
-      Iterable<DexType> definitelyUninstantiatedParticipants) {
+      Iterable<DexType> definitelyUninstantiatedParticipants,
+      Map<DexField, ? extends Iterable<DexField>> mergedFields) {
     List<UnidentifiedParticipant> participants =
         collectParticipants(
             appView,
             maybeInstantiatedParticipants,
             definitelyUninstantiatedParticipants,
-            (source, node, instantiated) -> new UnidentifiedParticipant(node, instantiated));
+            mergedFields,
+            (source, node, instantiated, participantMergedFields) ->
+                new UnidentifiedParticipant(node, instantiated, participantMergedFields));
     return new UnidentifiedProvenanceGroup(
         originalTarget, ListUtils.unmodifiableForTesting(participants));
   }
@@ -110,14 +129,17 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
       DexType originalTarget,
       Iterable<DexType> maybeInstantiatedParticipants,
       Iterable<DexType> definitelyUninstantiatedParticipants,
-      ClassIdInfo classIdInfo) {
+      ClassIdInfo classIdInfo,
+      Map<DexField, ? extends Iterable<DexField>> mergedFields) {
     List<IdentifiedParticipant> participants =
         collectParticipants(
             appView,
             maybeInstantiatedParticipants,
             definitelyUninstantiatedParticipants,
-            (source, node, instantiated) ->
-                new IdentifiedParticipant(node, classIdInfo.getClassId(source), instantiated));
+            mergedFields,
+            (source, node, instantiated, participantMergedFields) ->
+                new IdentifiedParticipant(
+                    node, classIdInfo.getClassId(source), instantiated, participantMergedFields));
     assert assertNoDuplicateClassIds(participants);
     return new IdentifiedProvenanceGroup(
         originalTarget, classIdInfo.getField(), ListUtils.unmodifiableForTesting(participants));
@@ -127,12 +149,29 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
       AppView<?> appView,
       Iterable<DexType> maybeInstantiatedParticipants,
       Iterable<DexType> definitelyUninstantiatedParticipants,
+      Map<DexField, ? extends Iterable<DexField>> mergedFields,
       ParticipantFactory<P> factory) {
+    Map<DexType, Map<DexField, DexField>> mergedFieldsByParticipant =
+        buildMergedFieldsByParticipant(appView, mergedFields);
     List<P> participants = new ArrayList<>();
-    addParticipants(appView, maybeInstantiatedParticipants, true, factory, participants);
-    addParticipants(appView, definitelyUninstantiatedParticipants, false, factory, participants);
+    addParticipants(
+        appView,
+        maybeInstantiatedParticipants,
+        true,
+        mergedFieldsByParticipant,
+        factory,
+        participants);
+    addParticipants(
+        appView,
+        definitelyUninstantiatedParticipants,
+        false,
+        mergedFieldsByParticipant,
+        factory,
+        participants);
     assert !participants.isEmpty();
     assert assertNoDuplicateTypes(participants);
+    assert mergedFieldsByParticipant.isEmpty()
+        : "Merged fields reference non-participant holders: " + mergedFieldsByParticipant.keySet();
     return participants;
   }
 
@@ -140,6 +179,7 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
       AppView<?> appView,
       Iterable<DexType> participantTypes,
       boolean instantiated,
+      Map<DexType, Map<DexField, DexField>> mergedFieldsByParticipant,
       ParticipantFactory<P> factory,
       List<P> result) {
     if (participantTypes == null) {
@@ -147,8 +187,47 @@ public class MergedClassesProvenanceImpl extends MergedClassesProvenance {
     }
     for (DexType source : participantTypes) {
       DexType originalType = getOriginalType(appView, source);
-      result.add(factory.create(source, removeOrCreateNode(originalType), instantiated));
+      Map<DexField, DexField> participantMergedFields =
+          mergedFieldsByParticipant.isEmpty()
+              ? null
+              : mergedFieldsByParticipant.remove(originalType);
+      result.add(
+          factory.create(
+              source, removeOrCreateNode(originalType), instantiated, participantMergedFields));
     }
+  }
+
+  private static Map<DexType, Map<DexField, DexField>> buildMergedFieldsByParticipant(
+      AppView<?> appView, Map<DexField, ? extends Iterable<DexField>> mergedFields) {
+    if (mergedFields == null || mergedFields.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Set<DexField> seenOriginalTargets =
+        AssertionUtils.assertionsEnabled() && mergedFields.size() > 1
+            ? SetUtils.newIdentityHashSet(mergedFields.size())
+            : null;
+    Map<DexType, Map<DexField, DexField>> result = new IdentityHashMap<>();
+    for (Map.Entry<DexField, ? extends Iterable<DexField>> entry : mergedFields.entrySet()) {
+      DexField originalTargetField = getOriginalFieldSignature(appView, entry.getKey());
+      assert seenOriginalTargets == null || seenOriginalTargets.add(originalTargetField)
+          : "Duplicate merged field target " + originalTargetField;
+      int contributorCount = 0;
+      for (DexField currentSourceField : entry.getValue()) {
+        DexType originalHolder = getOriginalType(appView, currentSourceField.getHolderType());
+        DexField originalField = getOriginalFieldSignature(appView, currentSourceField);
+        Map<DexField, DexField> participantMergedFields =
+            result.computeIfAbsent(originalHolder, k -> new IdentityHashMap<>());
+        DexField existing = participantMergedFields.put(originalTargetField, originalField);
+        assert existing == null
+            : "Multiple fields from participant "
+                + originalHolder
+                + " merged into "
+                + originalTargetField;
+        contributorCount++;
+      }
+      assert contributorCount > 1 : "Expected at least 2 merged fields for " + originalTargetField;
+    }
+    return result;
   }
 
   private static boolean assertNoDuplicateTypes(Collection<? extends Participant> participants) {
