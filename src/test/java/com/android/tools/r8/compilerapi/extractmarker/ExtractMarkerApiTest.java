@@ -12,6 +12,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ByteDataView;
+import com.android.tools.r8.D8;
+import com.android.tools.r8.D8Command;
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.ExtractMarker;
@@ -25,10 +27,14 @@ import com.android.tools.r8.compilerapi.CompilerApiTest;
 import com.android.tools.r8.compilerapi.CompilerApiTestRunner;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
-import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.smali.SmaliBuilder;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.IntBox;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.junit.Test;
@@ -60,41 +66,21 @@ public class ExtractMarkerApiTest extends CompilerApiTestRunner {
     }
   }
 
+  private byte[] compileDex(AndroidApiLevel minApi) throws Exception {
+    Path dexFile =
+        testForD8(Backend.DEX)
+            .addProgramClasses(SomeClass.class)
+            .setMinApi(minApi)
+            .compile()
+            .writeSingleDexOutputToFile();
+    return Files.readAllBytes(dexFile);
+  }
+
   @Test
   public void test() throws Exception {
-
     Path inputFile = ToolHelper.getClassFileForTestClass(SomeClass.class);
     byte[] inputCf = ToolHelper.getClassAsBytes(SomeClass.class);
-    Box<byte[]> inputDex = new Box<>();
-
-    // Compile DEX code for use as byte input.
-    testForD8(Backend.DEX)
-        .addProgramClasses(SomeClass.class)
-        .setMinApi(1)
-        .setProgramConsumer(
-            new DexIndexedConsumer() {
-              byte[] bytes = null;
-
-              @Override
-              public void accept(
-                  int fileIndex,
-                  ByteDataView data,
-                  Set<String> descriptors,
-                  DiagnosticsHandler handler) {
-                assertEquals(0, fileIndex);
-                assertNull(bytes);
-                bytes = data.copyByteData();
-              }
-
-              @Override
-              public void finished(DiagnosticsHandler handler) {
-                assertNotNull(bytes);
-                inputDex.set(bytes);
-              }
-            })
-        .compile();
-
-    assertNotNull(inputDex.get());
+    byte[] inputDex = compileDex(AndroidApiLevel.B);
 
     Origin originDex = new SomeOrigin("dex bytes");
     Origin originCf = new SomeOrigin("cf bytes");
@@ -102,7 +88,7 @@ public class ExtractMarkerApiTest extends CompilerApiTestRunner {
     new ApiTest(ApiTest.PARAMETERS)
         .run(
             inputFile,
-            inputDex.get(),
+            inputDex,
             originDex,
             inputCf,
             originCf,
@@ -114,6 +100,8 @@ public class ExtractMarkerApiTest extends CompilerApiTestRunner {
                 assertFalse(marker.isR8());
                 assertFalse(marker.isL8());
                 assertEquals(1, marker.getMinApi());
+                assertEquals(1, marker.getMinApiMajor());
+                assertEquals(0, marker.getMinApiMinor());
                 assertTrue(marker.hasBackend());
                 assertTrue(marker.isBackendDexFiles());
                 assertFalse(marker.isBackendClassFiles());
@@ -130,6 +118,90 @@ public class ExtractMarkerApiTest extends CompilerApiTestRunner {
               }
             });
     assertEquals(4, calls.get());
+  }
+
+  @Test
+  public void testMinorApiLevel() throws Exception {
+    byte[] inputDex = compileDex(AndroidApiLevel.BAKLAVA_1);
+    Origin originDex = new SomeOrigin("dex minor bytes");
+    IntBox calls = new IntBox(0);
+    new ApiTest(ApiTest.PARAMETERS)
+        .run(
+            null,
+            inputDex,
+            originDex,
+            null,
+            null,
+            (origin, marker) -> {
+              calls.increment();
+              assertEquals(originDex, origin);
+              assertNotNull(marker);
+              assertEquals(36, marker.getMinApi());
+              assertEquals(36, marker.getMinApiMajor());
+              assertEquals(1, marker.getMinApiMinor());
+            });
+    assertEquals(1, calls.get());
+  }
+
+  @Test
+  public void testNoMinApiLevel() throws Exception {
+    Path cfZip =
+        testForR8(Backend.CF)
+            .addProgramClasses(SomeClass.class)
+            .addKeepAllClassesRule()
+            .compile()
+            .writeToZip();
+    IntBox calls = new IntBox(0);
+    new ApiTest(ApiTest.PARAMETERS)
+        .run(
+            cfZip,
+            null,
+            null,
+            null,
+            null,
+            (origin, marker) -> {
+              calls.increment();
+              assertEquals(new PathOrigin(cfZip), origin);
+              assertNotNull(marker);
+              assertTrue(marker.isR8());
+              assertTrue(marker.isBackendClassFiles());
+              assertEquals(-1, marker.getMinApi());
+              assertEquals(-1, marker.getMinApiMajor());
+              assertEquals(-1, marker.getMinApiMinor());
+            });
+    assertEquals(2, calls.get());
+  }
+
+  @Test
+  public void testLegacyMinApiOnlyMarker() throws Exception {
+    SmaliBuilder smaliBuilder = new SmaliBuilder("LegacyMarker");
+    smaliBuilder.addStaticField(
+        "MARKER",
+        "Ljava/lang/String;",
+        "~~D8{\\\"compilation-mode\\\":\\\"debug\\\",\\\"has-checksums\\\":false,"
+            + "\\\"min-api\\\":21,\\\"sha-1\\\":\\\"engineering\\\",\\\"version\\\":\\\"main\\\"}");
+    byte[] legacyMarkerDex = smaliBuilder.compile();
+
+    Origin originDex = new SomeOrigin("legacy marker dex bytes");
+    IntBox calls = new IntBox(0);
+    new ApiTest(ApiTest.PARAMETERS)
+        .run(
+            null,
+            legacyMarkerDex,
+            originDex,
+            null,
+            null,
+            (origin, marker) -> {
+              calls.increment();
+              assertEquals(originDex, origin);
+              assertNotNull(marker);
+              assertTrue(marker.isD8());
+              assertTrue(marker.isBackendDexFiles());
+              assertEquals(21, marker.getMinApi());
+              assertEquals(21, marker.getMinApiMajor());
+              assertEquals(0, marker.getMinApiMinor());
+            });
+    assertEquals(1, calls.get());
   }
 
   public static class ApiTest extends CompilerApiTest {
@@ -180,21 +252,42 @@ public class ExtractMarkerApiTest extends CompilerApiTestRunner {
     @Test
     public void test() throws Exception {
       byte[] inputCf = getBytesForClass(getMockClass());
+      List<byte[]> dexOutputs = new ArrayList<>();
+      D8.run(
+          D8Command.builder()
+              .addClassProgramData(inputCf, Origin.unknown())
+              .addLibraryFiles(getAndroidJar())
+              .setMinApiLevel(1)
+              .setProgramConsumer(
+                  new DexIndexedConsumer.ForwardingConsumer(null) {
+                    @Override
+                    public void accept(
+                        int fileIndex,
+                        ByteDataView data,
+                        Set<String> descriptors,
+                        DiagnosticsHandler handler) {
+                      dexOutputs.add(data.copyByteData());
+                    }
+                  })
+              .build());
+      boolean[] sawNonNullMarker = new boolean[] {false};
       run(
           null,
-          null,
-          null,
+          dexOutputs.get(0),
+          Origin.root(),
           inputCf,
           Origin.root(),
           (origin, marker) -> {
-            // Marker is null here but use all currently defined methods on marker info to force
-            // binary compatible usage.
             if (marker != null) {
+              sawNonNullMarker[0] = true;
               String tool = marker.getTool();
+              String version = marker.getVersion();
               boolean d8 = marker.isD8();
               boolean r8 = marker.isR8();
               boolean l8 = marker.isL8();
               int minApi = marker.getMinApi();
+              int minApiMajor = marker.getMinApiMajor();
+              int minApiMinor = marker.getMinApiMinor();
               boolean hasBackend = marker.hasBackend();
               boolean backendDexFiles = marker.isBackendDexFiles();
               boolean backendClassFiles = marker.isBackendClassFiles();
@@ -206,6 +299,7 @@ public class ExtractMarkerApiTest extends CompilerApiTestRunner {
               String raw = marker.getRawEncoding();
             }
           });
+      assertTrue(sawNonNullMarker[0]);
     }
   }
 }
