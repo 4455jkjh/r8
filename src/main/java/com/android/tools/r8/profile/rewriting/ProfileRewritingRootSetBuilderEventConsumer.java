@@ -45,9 +45,8 @@ public class ProfileRewritingRootSetBuilderEventConsumer implements RootSetBuild
         method,
         additionsBuilder ->
             additionsBuilder
-                .addRule(companionMethod)
-                .addRule(companionMethod.getHolder())
-                .removeMovedMethodRule(method, companionMethod));
+                .moveMethodRule(method, companionMethod)
+                .addRule(companionMethod.getHolder()));
     parent.acceptPrivateAsCompanionMethod(method, companionMethod);
   }
 
@@ -57,9 +56,8 @@ public class ProfileRewritingRootSetBuilderEventConsumer implements RootSetBuild
         method,
         additionsBuilder ->
             additionsBuilder
-                .addRule(companionMethod)
-                .addRule(companionMethod.getHolder())
-                .removeMovedMethodRule(method, companionMethod));
+                .moveMethodRule(method, companionMethod)
+                .addRule(companionMethod.getHolder()));
     parent.acceptStaticAsCompanionMethod(method, companionMethod);
   }
 }

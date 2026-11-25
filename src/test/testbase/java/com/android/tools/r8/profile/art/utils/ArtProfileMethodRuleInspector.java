@@ -4,10 +4,14 @@
 
 package com.android.tools.r8.profile.art.utils;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.profile.art.ArtProfileInlineCacheData;
+import com.android.tools.r8.profile.art.ArtProfileInlineCacheData.EntryValue;
 import com.android.tools.r8.profile.art.model.ExternalArtProfileMethodRule;
+import com.android.tools.r8.references.TypeReference;
 
 public class ArtProfileMethodRuleInspector {
 
@@ -15,6 +19,32 @@ public class ArtProfileMethodRuleInspector {
 
   ArtProfileMethodRuleInspector(ExternalArtProfileMethodRule methodRule) {
     this.methodRule = methodRule;
+  }
+
+  public ArtProfileInlineCacheData getInlineCacheData() {
+    return methodRule.getInlineCacheData();
+  }
+
+  public ArtProfileMethodRuleInspector assertHasNoInlineCaches() {
+    return assertHasInlineCacheData(ArtProfileInlineCacheData.empty());
+  }
+
+  public ArtProfileMethodRuleInspector assertHasInlineCacheData(
+      ArtProfileInlineCacheData expected) {
+    assertEquals(expected, methodRule.getInlineCacheData());
+    return this;
+  }
+
+  public ArtProfileMethodRuleInspector assertHasSingleInlineCache(TypeReference... expectedTypes) {
+    return assertHasInlineCacheData(
+        ArtProfileInlineCacheData.createSingle(EntryValue.ofTypes(expectedTypes)));
+  }
+
+  public ArtProfileMethodRuleInspector assertHasTargetedInlineCache(
+      TypeReference receiver, TypeReference... expectedTypes) {
+    EntryValue actual = methodRule.getInlineCacheData().getTargetedInlineCaches().get(receiver);
+    assertEquals(EntryValue.ofTypes(expectedTypes), actual);
+    return this;
   }
 
   public ArtProfileMethodRuleInspector assertIsHot() {

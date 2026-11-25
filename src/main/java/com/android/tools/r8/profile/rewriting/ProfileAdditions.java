@@ -70,11 +70,12 @@ public abstract class ProfileAdditions<
 
     ProfileAdditionsBuilder addMethodRule(DexMethod method);
 
-    default void removeMovedMethodRule(ProgramMethod oldMethod, ProgramMethod newMethod) {
-      removeMovedMethodRule(oldMethod.getReference(), newMethod);
+    default ProfileAdditionsBuilder moveMethodRule(
+        ProgramMethod oldMethod, ProgramMethod newMethod) {
+      return moveMethodRule(oldMethod.getReference(), newMethod);
     }
 
-    void removeMovedMethodRule(DexMethod oldMethod, ProgramMethod newMethod);
+    ProfileAdditionsBuilder moveMethodRule(DexMethod oldMethod, ProgramMethod newMethod);
   }
 
   protected Profile profile;
@@ -109,8 +110,10 @@ public abstract class ProfileAdditions<
             }
 
             @Override
-            public void removeMovedMethodRule(DexMethod oldMethod, ProgramMethod newMethod) {
-              ProfileAdditions.this.removeMovedMethodRule(oldMethod, newMethod);
+            public ProfileAdditionsBuilder moveMethodRule(
+                DexMethod oldMethod, ProgramMethod newMethod) {
+              ProfileAdditions.this.moveMethodRule(oldMethod, newMethod);
+              return this;
             }
           });
     }
@@ -141,13 +144,15 @@ public abstract class ProfileAdditions<
             @Override
             public ProfileAdditionsBuilder addMethodRule(DexMethod method) {
               ProfileAdditions.this.addMethodRule(
-                  method, methodRuleBuilder -> methodRuleBuilder.join(contextMethodRule));
+                  method, methodRuleBuilder -> methodRuleBuilder.joinFlags(contextMethodRule));
               return this;
             }
 
             @Override
-            public void removeMovedMethodRule(DexMethod oldMethod, ProgramMethod newMethod) {
-              ProfileAdditions.this.removeMovedMethodRule(oldMethod, newMethod);
+            public ProfileAdditionsBuilder moveMethodRule(
+                DexMethod oldMethod, ProgramMethod newMethod) {
+              ProfileAdditions.this.moveMethodRule(oldMethod, newMethod);
+              return this;
             }
           });
     } else if (methodRuleAdditions.containsKey(context)) {
@@ -169,14 +174,16 @@ public abstract class ProfileAdditions<
             public ProfileAdditionsBuilder addMethodRule(DexMethod method) {
               MethodRuleBuilder contextRuleBuilder = methodRuleAdditions.get(context);
               ProfileAdditions.this.addMethodRule(
-                  method, methodRuleBuilder -> methodRuleBuilder.join(contextRuleBuilder));
+                  method, methodRuleBuilder -> methodRuleBuilder.joinFlags(contextRuleBuilder));
               nestedMethodRuleAdditionsGraph.recordMethodRuleInfoFlagsLargerThan(method, context);
               return this;
             }
 
             @Override
-            public void removeMovedMethodRule(DexMethod oldMethod, ProgramMethod newMethod) {
-              ProfileAdditions.this.removeMovedMethodRule(oldMethod, newMethod);
+            public ProfileAdditionsBuilder moveMethodRule(
+                DexMethod oldMethod, ProgramMethod newMethod) {
+              ProfileAdditions.this.moveMethodRule(oldMethod, newMethod);
+              return this;
             }
           });
     }
@@ -215,9 +222,23 @@ public abstract class ProfileAdditions<
     return self();
   }
 
-  void removeMovedMethodRule(DexMethod oldMethod, ProgramMethod newMethod) {
-    assert profile.containsMethodRule(oldMethod) || methodRuleAdditions.containsKey(oldMethod);
-    assert methodRuleAdditions.containsKey(newMethod.getReference());
+  void moveMethodRule(DexMethod oldMethod, ProgramMethod newMethod) {
+    MethodRule oldMethodRule = profile.getMethodRule(oldMethod);
+    MethodRuleBuilder oldMethodRuleBuilder = methodRuleAdditions.get(oldMethod);
+    assert oldMethodRule != null || oldMethodRuleBuilder != null;
+    addMethodRule(
+        newMethod,
+        methodRuleBuilder -> {
+          if (oldMethodRule != null) {
+            methodRuleBuilder.join(oldMethodRule);
+          }
+          if (oldMethodRuleBuilder != null) {
+            methodRuleBuilder.join(oldMethodRuleBuilder);
+          }
+        });
+    if (oldMethodRuleBuilder != null) {
+      nestedMethodRuleAdditionsGraph.recordMethodRuleMoved(newMethod.getReference(), oldMethod);
+    }
     methodRuleRemovals.add(oldMethod);
   }
 
@@ -322,6 +343,7 @@ public abstract class ProfileAdditions<
 
     private final Map<DexMethod, Set<DexMethod>> successors = new ConcurrentHashMap<>();
     private final Map<DexMethod, Set<DexMethod>> predecessors = new ConcurrentHashMap<>();
+    private final Map<DexMethod, Set<DexMethod>> movedSuccessors = new ConcurrentHashMap<>();
     private final Map<DexMethod, Set<DexType>> dependentStartupClassRules =
         new ConcurrentHashMap<>();
 
@@ -356,20 +378,32 @@ public abstract class ProfileAdditions<
           .add(largerFlags);
     }
 
+    public void recordMethodRuleMoved(DexMethod newMethod, DexMethod oldMethod) {
+      recordMethodRuleInfoFlagsLargerThan(newMethod, oldMethod);
+      movedSuccessors
+          .computeIfAbsent(oldMethod, ignoreKey(Sets::newConcurrentHashSet))
+          .add(newMethod);
+    }
+
     public void propagateMethodRuleInfoFlags(
         Map<DexMethod, MethodRuleBuilder> methodRuleAdditions) {
       WorkList.newIdentityWorkList(successors.keySet())
           .process(
               (method, worklist) -> {
                 MethodRuleBuilder methodRuleBuilder = methodRuleAdditions.get(method);
+                Set<DexMethod> movedForMethod =
+                    movedSuccessors.getOrDefault(method, Collections.emptySet());
                 for (DexMethod successor :
                     successors.getOrDefault(method, Collections.emptySet())) {
                   MethodRuleBuilder successorMethodRuleBuilder = methodRuleAdditions.get(successor);
-                  successorMethodRuleBuilder.join(
-                      methodRuleBuilder,
-                      // If the successor's flags changed, then reprocess the successor to propagate
-                      // its flags to the successors of the successor.
-                      () -> worklist.addIgnoringSeenSet(successor));
+                  // If the successor changed, then reprocess the successor to propagate to the
+                  // successors of the successor.
+                  Runnable onChangedHandler = () -> worklist.addIgnoringSeenSet(successor);
+                  if (movedForMethod.contains(successor)) {
+                    successorMethodRuleBuilder.join(methodRuleBuilder, onChangedHandler);
+                  } else {
+                    successorMethodRuleBuilder.joinFlags(methodRuleBuilder, onChangedHandler);
+                  }
                 }
               });
     }

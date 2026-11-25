@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.profile.art.model;
 
+import com.android.tools.r8.profile.art.ArtProfileInlineCacheData;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfo;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfoImpl;
 import com.android.tools.r8.references.ClassReference;
@@ -145,10 +146,18 @@ public class ExternalArtProfile {
 
     public Builder addMethodRule(
         MethodReference methodReference, ArtProfileMethodRuleInfo methodRuleInfo) {
+      return addMethodRule(methodReference, methodRuleInfo, ArtProfileInlineCacheData.empty());
+    }
+
+    public Builder addMethodRule(
+        MethodReference methodReference,
+        ArtProfileMethodRuleInfo methodRuleInfo,
+        ArtProfileInlineCacheData inlineCacheData) {
       return addRule(
           ExternalArtProfileMethodRule.builder()
               .setMethodReference(methodReference)
               .setMethodRuleInfo(methodRuleInfo)
+              .setInlineCacheData(inlineCacheData)
               .build());
     }
 

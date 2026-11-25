@@ -44,7 +44,8 @@ public class EmptyArtProfileCollection extends ArtProfileCollection {
   }
 
   @Override
-  public ArtProfileCollection rewrittenWithLens(AppView<?> appView, GraphLens lens, Timing timing) {
+  public ArtProfileCollection rewrittenWithLens(
+      AppView<?> appView, GraphLens lens, GraphLens appliedLens, Timing timing) {
     return this;
   }
 

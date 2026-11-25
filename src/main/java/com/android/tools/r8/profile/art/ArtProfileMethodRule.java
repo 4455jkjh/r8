@@ -6,6 +6,8 @@ package com.android.tools.r8.profile.art;
 
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.profile.AbstractProfileMethodRule;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.MethodReferenceUtils;
@@ -14,16 +16,21 @@ import com.android.tools.r8.utils.internal.ThrowingFunction;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProfileMethodRule {
 
   private final DexMethod method;
   private final ArtProfileMethodRuleInfoImpl info;
+  private final ArtProfileInlineCaches inlineCaches;
 
-  ArtProfileMethodRule(DexMethod method, ArtProfileMethodRuleInfoImpl info) {
+  ArtProfileMethodRule(
+      DexMethod method, ArtProfileMethodRuleInfoImpl info, ArtProfileInlineCaches inlineCaches) {
     assert info.getFlags() != 0;
+    assert inlineCaches != null;
     this.method = method;
     this.info = info;
+    this.inlineCaches = inlineCaches;
   }
 
   public static Builder builder() {
@@ -50,6 +57,10 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
     return methodRuleFunction.apply(this);
   }
 
+  public ArtProfileInlineCaches getInlineCaches() {
+    return inlineCaches;
+  }
+
   public DexMethod getMethod() {
     return method;
   }
@@ -72,10 +83,27 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
     return info.isStartup();
   }
 
+  @SuppressWarnings("ReferenceEquality")
+  public ArtProfileMethodRule withoutMissingItems(Predicate<DexType> hasDefinitionFor) {
+    ArtProfileInlineCaches newInlineCaches = inlineCaches.withoutMissingItems(hasDefinitionFor);
+    return newInlineCaches == inlineCaches
+        ? this
+        : new ArtProfileMethodRule(method, info, newInlineCaches);
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  public ArtProfileMethodRule withoutPrunedItems(PrunedItems prunedItems) {
+    ArtProfileInlineCaches newInlineCaches = inlineCaches.withoutPrunedItems(prunedItems);
+    return newInlineCaches == inlineCaches
+        ? this
+        : new ArtProfileMethodRule(method, info, newInlineCaches);
+  }
+
   @Override
   public void writeHumanReadableRuleString(OutputStreamWriter writer) throws IOException {
     info.writeHumanReadableFlags(writer);
     writer.write(method.toSmaliString());
+    inlineCaches.writeHumanReadableInlineCaches(writer);
   }
 
   @Override
@@ -88,7 +116,9 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
       return false;
     }
     ArtProfileMethodRule that = (ArtProfileMethodRule) o;
-    return method.equals(that.method) && info.equals(that.info);
+    return method.equals(that.method)
+        && info.equals(that.info)
+        && inlineCaches.equals(that.inlineCaches);
   }
 
   @Override
@@ -100,11 +130,11 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
 
   @Override
   public String toString() {
-    return info.toString() + method.toSmaliString();
+    return info.toString() + method.toSmaliString() + inlineCaches.toString();
   }
 
   public static class Builder extends ArtProfileRule.Builder
-      implements ArtProfileMethodRuleBuilder,
+      implements InternalArtProfileMethodRuleBuilder,
           AbstractProfileMethodRule.Builder<ArtProfileMethodRule, Builder> {
 
     private final DexItemFactory dexItemFactory;
@@ -112,6 +142,7 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
     private DexMethod method;
     private final ArtProfileMethodRuleInfoImpl.Builder methodRuleInfoBuilder =
         ArtProfileMethodRuleInfoImpl.builder();
+    private volatile ArtProfileInlineCaches inlineCaches = ArtProfileInlineCaches.empty();
 
     Builder() {
       this(null);
@@ -143,14 +174,16 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
     @Override
     public Builder join(Builder builder) {
       methodRuleInfoBuilder.joinFlags(builder);
+      inlineCaches = inlineCaches.join(builder.inlineCaches);
       return this;
     }
 
     @Override
     public Builder join(Builder builder, Runnable onChangedHandler) {
       int oldFlags = methodRuleInfoBuilder.getFlags();
+      ArtProfileInlineCaches oldInlineCaches = inlineCaches;
       join(builder);
-      if (methodRuleInfoBuilder.getFlags() != oldFlags) {
+      if (methodRuleInfoBuilder.getFlags() != oldFlags || !inlineCaches.equals(oldInlineCaches)) {
         onChangedHandler.run();
       }
       return this;
@@ -159,7 +192,42 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
     @Override
     public Builder join(ArtProfileMethodRule methodRule) {
       methodRuleInfoBuilder.joinFlags(methodRule.getMethodRuleInfo());
+      inlineCaches = inlineCaches.join(methodRule.getInlineCaches());
       return this;
+    }
+
+    @Override
+    public Builder joinFlags(Builder builder) {
+      methodRuleInfoBuilder.joinFlags(builder);
+      return this;
+    }
+
+    @Override
+    public Builder joinFlags(Builder builder, Runnable onChangedHandler) {
+      int oldFlags = methodRuleInfoBuilder.getFlags();
+      joinFlags(builder);
+      if (methodRuleInfoBuilder.getFlags() != oldFlags) {
+        onChangedHandler.run();
+      }
+      return this;
+    }
+
+    @Override
+    public Builder joinFlags(ArtProfileMethodRule methodRule) {
+      methodRuleInfoBuilder.joinFlags(methodRule.getMethodRuleInfo());
+      return this;
+    }
+
+    public Builder setInlineCaches(ArtProfileInlineCaches inlineCaches) {
+      assert inlineCaches != null;
+      this.inlineCaches = inlineCaches;
+      return this;
+    }
+
+    @Override
+    public Builder setInlineCacheData(ArtProfileInlineCacheData inlineCacheData) {
+      assert dexItemFactory != null;
+      return setInlineCaches(ArtProfileInlineCaches.fromData(inlineCacheData, dexItemFactory));
     }
 
     @Override
@@ -195,7 +263,7 @@ public class ArtProfileMethodRule extends ArtProfileRule implements AbstractProf
 
     @Override
     public ArtProfileMethodRule build() {
-      return new ArtProfileMethodRule(method, methodRuleInfoBuilder.build());
+      return new ArtProfileMethodRule(method, methodRuleInfoBuilder.build(), inlineCaches);
     }
   }
 }

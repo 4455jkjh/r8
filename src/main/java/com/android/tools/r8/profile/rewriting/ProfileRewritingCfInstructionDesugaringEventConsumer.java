@@ -134,10 +134,7 @@ public class ProfileRewritingCfInstructionDesugaringEventConsumer
       ProgramMethod bootstrapMethod, DexMethod oldSignature) {
     additionsCollection.applyIfContextIsInProfile(
         oldSignature,
-        additionsBuilder ->
-            additionsBuilder
-                .addRule(bootstrapMethod)
-                .removeMovedMethodRule(oldSignature, bootstrapMethod));
+        additionsBuilder -> additionsBuilder.moveMethodRule(oldSignature, bootstrapMethod));
     parent.acceptConstantDynamicRewrittenBootstrapMethod(bootstrapMethod, oldSignature);
   }
 
@@ -347,9 +344,8 @@ public class ProfileRewritingCfInstructionDesugaringEventConsumer
         method,
         additionsBuilder -> {
           additionsBuilder
-              .addRule(companionMethod)
-              .addRule(companionMethod.getHolder())
-              .removeMovedMethodRule(method, companionMethod);
+              .moveMethodRule(method, companionMethod)
+              .addRule(companionMethod.getHolder());
           companionMethod.getHolder().acceptProgramClassInitializer(additionsBuilder::addRule);
         });
     parent.acceptPrivateAsCompanionMethod(method, companionMethod);
@@ -410,9 +406,8 @@ public class ProfileRewritingCfInstructionDesugaringEventConsumer
         method,
         additionsBuilder -> {
           additionsBuilder
-              .addRule(companionMethod)
-              .addRule(companionMethod.getHolder())
-              .removeMovedMethodRule(method, companionMethod);
+              .moveMethodRule(method, companionMethod)
+              .addRule(companionMethod.getHolder());
           companionMethod.getHolder().acceptProgramClassInitializer(additionsBuilder::addRule);
         });
     parent.acceptStaticAsCompanionMethod(method, companionMethod);

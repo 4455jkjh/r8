@@ -1232,7 +1232,8 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                   appView.setArtProfileCollection(
                       appView
                           .getArtProfileCollection()
-                          .rewrittenWithLens(appView, lens, threadTiming));
+                          .rewrittenWithLens(
+                              appView, lens, appliedLensInModifiedLens, threadTiming));
                 }
 
                 @Override
@@ -1447,7 +1448,9 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
         appInfo.rebuildWithMainDexInfo(
             appInfo.getMainDexInfo().rewrittenWithLens(syntheticItems, lens, timing), timing));
     appView.setArtProfileCollection(
-        appView.getArtProfileCollection().rewrittenWithLens(appView, lens, timing));
+        appView
+            .getArtProfileCollection()
+            .rewrittenWithLens(appView, lens, lens.getPrevious(), timing));
   }
 
   public void setAlreadyLibraryDesugared(Set<DexType> alreadyLibraryDesugared) {

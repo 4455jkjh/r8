@@ -84,7 +84,7 @@ public abstract class ArtProfileCollection implements Iterable<ArtProfile> {
   public abstract NonEmptyArtProfileCollection asNonEmpty();
 
   public abstract ArtProfileCollection rewrittenWithLens(
-      AppView<?> appView, GraphLens lens, Timing timing);
+      AppView<?> appView, GraphLens lens, GraphLens appliedLens, Timing timing);
 
   public abstract ArtProfileCollection rewrittenWithLens(AppView<?> appView, NamingLens lens);
 

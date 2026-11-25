@@ -75,8 +75,10 @@ public class ArtProfileProviderUtils {
             public ArtProfileBuilder addMethodRule(
                 Consumer<ArtProfileMethodRuleBuilder> methodRuleBuilderConsumer) {
               Box<MethodReference> methodReferenceBox = new Box<>();
+              Box<ArtProfileInlineCacheData> inlineCacheDataBox =
+                  new Box<>(ArtProfileInlineCacheData.empty());
               methodRuleBuilderConsumer.accept(
-                  new ArtProfileMethodRuleBuilder() {
+                  new InternalArtProfileMethodRuleBuilder() {
 
                     @Override
                     public ArtProfileMethodRuleBuilder setMethodReference(
@@ -100,9 +102,19 @@ public class ArtProfileProviderUtils {
                       }
                       return this;
                     }
+
+                    @Override
+                    public InternalArtProfileMethodRuleBuilder setInlineCacheData(
+                        ArtProfileInlineCacheData inlineCacheData) {
+                      assert inlineCacheData != null;
+                      inlineCacheDataBox.set(inlineCacheData);
+                      return this;
+                    }
                   });
               writeLine(
-                  outputStreamWriter, MethodReferenceUtils.toSmaliString(methodReferenceBox.get()));
+                  outputStreamWriter,
+                  MethodReferenceUtils.toSmaliString(methodReferenceBox.get())
+                      + inlineCacheDataBox.get().toString());
               return this;
             }
 

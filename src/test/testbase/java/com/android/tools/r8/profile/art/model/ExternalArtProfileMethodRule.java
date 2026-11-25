@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.profile.art.model;
 
+import com.android.tools.r8.profile.art.ArtProfileInlineCacheData;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfo;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfoImpl;
 import com.android.tools.r8.references.MethodReference;
@@ -16,13 +17,23 @@ public class ExternalArtProfileMethodRule extends ExternalArtProfileRule {
 
   private final MethodReference methodReference;
   private final ArtProfileMethodRuleInfo methodRuleInfo;
+  private final ArtProfileInlineCacheData inlineCacheData;
 
   ExternalArtProfileMethodRule(
       MethodReference methodReference, ArtProfileMethodRuleInfo methodRuleInfo) {
+    this(methodReference, methodRuleInfo, ArtProfileInlineCacheData.empty());
+  }
+
+  ExternalArtProfileMethodRule(
+      MethodReference methodReference,
+      ArtProfileMethodRuleInfo methodRuleInfo,
+      ArtProfileInlineCacheData inlineCacheData) {
     assert methodReference != null;
     assert methodRuleInfo != null;
+    assert inlineCacheData != null;
     this.methodReference = methodReference;
     this.methodRuleInfo = methodRuleInfo;
+    this.inlineCacheData = inlineCacheData;
   }
 
   public static Builder builder() {
@@ -44,6 +55,10 @@ public class ExternalArtProfileMethodRule extends ExternalArtProfileRule {
     return methodRuleInfo;
   }
 
+  public ArtProfileInlineCacheData getInlineCacheData() {
+    return inlineCacheData;
+  }
+
   @Override
   public boolean test(
       Predicate<ExternalArtProfileClassRule> classRuleConsumer,
@@ -61,7 +76,8 @@ public class ExternalArtProfileMethodRule extends ExternalArtProfileRule {
     }
     ExternalArtProfileMethodRule methodRule = (ExternalArtProfileMethodRule) obj;
     return methodReference.equals(methodRule.methodReference)
-        && methodRuleInfo.equals(methodRule.methodRuleInfo);
+        && methodRuleInfo.equals(methodRule.methodRuleInfo)
+        && inlineCacheData.equals(methodRule.inlineCacheData);
   }
 
   @Override
@@ -71,13 +87,16 @@ public class ExternalArtProfileMethodRule extends ExternalArtProfileRule {
 
   @Override
   public String toString() {
-    return methodRuleInfo.toString() + MethodReferenceUtils.toSmaliString(methodReference);
+    return methodRuleInfo.toString()
+        + MethodReferenceUtils.toSmaliString(methodReference)
+        + inlineCacheData.toString();
   }
 
   public static class Builder {
 
     private MethodReference methodReference;
     private ArtProfileMethodRuleInfo methodRuleInfo = ArtProfileMethodRuleInfoImpl.empty();
+    private ArtProfileInlineCacheData inlineCacheData = ArtProfileInlineCacheData.empty();
 
     public Builder setMethodReference(MethodReference methodReference) {
       this.methodReference = methodReference;
@@ -89,8 +108,13 @@ public class ExternalArtProfileMethodRule extends ExternalArtProfileRule {
       return this;
     }
 
+    public Builder setInlineCacheData(ArtProfileInlineCacheData inlineCacheData) {
+      this.inlineCacheData = inlineCacheData;
+      return this;
+    }
+
     public ExternalArtProfileMethodRule build() {
-      return new ExternalArtProfileMethodRule(methodReference, methodRuleInfo);
+      return new ExternalArtProfileMethodRule(methodReference, methodRuleInfo, inlineCacheData);
     }
   }
 }

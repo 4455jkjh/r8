@@ -121,6 +121,21 @@ public class StartupProfileMethodRule extends StartupProfileRule
     }
 
     @Override
+    public Builder joinFlags(Builder builder) {
+      return this;
+    }
+
+    @Override
+    public Builder joinFlags(Builder builder, Runnable onChangedHandler) {
+      return this;
+    }
+
+    @Override
+    public Builder joinFlags(StartupProfileMethodRule methodRule) {
+      return this;
+    }
+
+    @Override
     public Builder setIsStartup() {
       // Intentionally empty, startup profile rules do not have any flags.
       return this;

@@ -52,13 +52,15 @@ public class NonEmptyArtProfileCollection extends ArtProfileCollection {
 
   @Override
   public NonEmptyArtProfileCollection rewrittenWithLens(
-      AppView<?> appView, GraphLens lens, Timing timing) {
+      AppView<?> appView, GraphLens lens, GraphLens appliedLens, Timing timing) {
     return timing.time(
-        "Rewrite NonEmptyArtProfileCollection", () -> rewrittenWithLens(appView, lens));
+        "Rewrite NonEmptyArtProfileCollection",
+        () -> rewrittenWithLens(appView, lens, appliedLens));
   }
 
-  private NonEmptyArtProfileCollection rewrittenWithLens(AppView<?> appView, GraphLens lens) {
-    return map(artProfile -> artProfile.rewrittenWithLens(appView, lens));
+  private NonEmptyArtProfileCollection rewrittenWithLens(
+      AppView<?> appView, GraphLens lens, GraphLens appliedLens) {
+    return map(artProfile -> artProfile.rewrittenWithLens(appView, lens, appliedLens));
   }
 
   @Override

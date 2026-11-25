@@ -9,9 +9,12 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileBuilder;
 import com.android.tools.r8.profile.art.ArtProfileClassRuleInfo;
 import com.android.tools.r8.profile.art.ArtProfileConsumer;
+import com.android.tools.r8.profile.art.ArtProfileInlineCacheData;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfo;
 import com.android.tools.r8.profile.art.ArtProfileProvider;
 import com.android.tools.r8.profile.art.ArtProfileRuleConsumer;
+import com.android.tools.r8.profile.art.InternalArtProfileMethodRuleBuilder;
+import com.android.tools.r8.profile.art.InternalArtProfileRuleConsumer;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.model.ExternalArtProfileClassRule;
 import com.android.tools.r8.profile.art.model.ExternalArtProfileMethodRule;
@@ -34,16 +37,23 @@ public class ArtProfileTestingUtils {
                         classRuleBuilder.setClassReference(classRule.getClassReference())),
             methodRule ->
                 profileBuilder.addMethodRule(
-                    methodRuleBuilder ->
-                        methodRuleBuilder
-                            .setMethodReference(methodRule.getMethodReference())
-                            .setMethodRuleInfo(
-                                methodRuleInfoBuilder ->
-                                    methodRuleInfoBuilder
-                                        .setIsHot(methodRule.getMethodRuleInfo().isHot())
-                                        .setIsStartup(methodRule.getMethodRuleInfo().isStartup())
-                                        .setIsPostStartup(
-                                            methodRule.getMethodRuleInfo().isPostStartup()))));
+                    methodRuleBuilder -> {
+                      methodRuleBuilder
+                          .setMethodReference(methodRule.getMethodReference())
+                          .setMethodRuleInfo(
+                              methodRuleInfoBuilder ->
+                                  methodRuleInfoBuilder
+                                      .setIsHot(methodRule.getMethodRuleInfo().isHot())
+                                      .setIsStartup(methodRule.getMethodRuleInfo().isStartup())
+                                      .setIsPostStartup(
+                                          methodRule.getMethodRuleInfo().isPostStartup()));
+                      // TODO(b/590031234): Expose a public API for adding inline cache data.
+                      if (!methodRule.getInlineCacheData().isEmpty()
+                          && methodRuleBuilder instanceof InternalArtProfileMethodRuleBuilder) {
+                        ((InternalArtProfileMethodRuleBuilder) methodRuleBuilder)
+                            .setInlineCacheData(methodRule.getInlineCacheData());
+                      }
+                    }));
       }
 
       @Override
@@ -62,7 +72,7 @@ public class ArtProfileTestingUtils {
 
       @Override
       public ArtProfileRuleConsumer getRuleConsumer() {
-        return new ArtProfileRuleConsumer() {
+        return new InternalArtProfileRuleConsumer() {
 
           @Override
           public void acceptClassRule(
@@ -73,11 +83,14 @@ public class ArtProfileTestingUtils {
 
           @Override
           public void acceptMethodRule(
-              MethodReference methodReference, ArtProfileMethodRuleInfo methodRuleInfo) {
+              MethodReference methodReference,
+              ArtProfileMethodRuleInfo methodRuleInfo,
+              ArtProfileInlineCacheData inlineCacheData) {
             residualArtProfileBuilder.addRule(
                 ExternalArtProfileMethodRule.builder()
                     .setMethodReference(methodReference)
                     .setMethodRuleInfo(methodRuleInfo)
+                    .setInlineCacheData(inlineCacheData)
                     .build());
           }
         };

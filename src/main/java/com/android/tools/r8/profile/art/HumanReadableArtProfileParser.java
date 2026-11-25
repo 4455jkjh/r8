@@ -21,6 +21,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class HumanReadableArtProfileParser {
@@ -148,8 +150,10 @@ public class HumanReadableArtProfileParser {
 
   private boolean parseMethodRule(
       String rule, ArtProfileMethodRuleInfoImpl methodRuleInfo, int arrowStartIndex) {
-    int inlineCacheStartIndex = rule.indexOf('+', arrowStartIndex + 2);
-    String descriptor = inlineCacheStartIndex > 0 ? rule.substring(0, inlineCacheStartIndex) : rule;
+    int inlineCacheStartIndex =
+        rule.indexOf(ArtProfileInlineCacheData.INLINE_CACHE_SEPARATOR, arrowStartIndex + 2);
+    String descriptor =
+        inlineCacheStartIndex >= 0 ? rule.substring(0, inlineCacheStartIndex) : rule;
     MethodReference methodReference =
         MethodReferenceUtils.parseSmaliString(descriptor, arrowStartIndex);
     if (methodReference == null) {
@@ -167,19 +171,149 @@ public class HumanReadableArtProfileParser {
         && !DescriptorUtils.isValidDescriptor(methodReference.getReturnType().getDescriptor())) {
       return false;
     }
+    ArtProfileInlineCacheData inlineCacheData =
+        inlineCacheStartIndex >= 0
+            ? parseInlineCacheData(rule.substring(inlineCacheStartIndex + 1))
+            : ArtProfileInlineCacheData.empty();
+    if (inlineCacheData == null) {
+      return false;
+    }
     if (rulePredicate.testMethodRule(methodReference, methodRuleInfo)) {
       profileBuilder.addMethodRule(
-          methodRuleBuilder ->
-              methodRuleBuilder
-                  .setMethodReference(methodReference)
-                  .setMethodRuleInfo(
-                      methodRuleInfoBuilder ->
-                          methodRuleInfoBuilder
-                              .setIsHot(methodRuleInfo.isHot())
-                              .setIsStartup(methodRuleInfo.isStartup())
-                              .setIsPostStartup(methodRuleInfo.isPostStartup())));
+          methodRuleBuilder -> {
+            methodRuleBuilder
+                .setMethodReference(methodReference)
+                .setMethodRuleInfo(
+                    methodRuleInfoBuilder ->
+                        methodRuleInfoBuilder
+                            .setIsHot(methodRuleInfo.isHot())
+                            .setIsStartup(methodRuleInfo.isStartup())
+                            .setIsPostStartup(methodRuleInfo.isPostStartup()));
+            if (!inlineCacheData.isEmpty()
+                && methodRuleBuilder instanceof InternalArtProfileMethodRuleBuilder) {
+              ((InternalArtProfileMethodRuleBuilder) methodRuleBuilder)
+                  .setInlineCacheData(inlineCacheData);
+            }
+          });
     }
     return true;
+  }
+
+  private static ArtProfileInlineCacheData parseInlineCacheData(String icString) {
+    if (icString.isEmpty()
+        || icString.indexOf(ArtProfileInlineCacheData.INLINE_CACHE_SEPARATOR) >= 0) {
+      return null;
+    }
+    if (icString.charAt(0) != ArtProfileInlineCacheData.TARGET_SEPARATOR) {
+      if (icString.indexOf(ArtProfileInlineCacheData.TARGET_SEPARATOR) >= 0) {
+        return null;
+      }
+      ArtProfileInlineCacheData.EntryValue entryValue = parseInlineCacheEntryValue(icString);
+      return entryValue != null ? ArtProfileInlineCacheData.createSingle(entryValue) : null;
+    }
+    ArtProfileInlineCacheData.Builder builder = ArtProfileInlineCacheData.builder();
+    int segmentStart = 1;
+    while (segmentStart <= icString.length()) {
+      int nextTargetIndex =
+          icString.indexOf(ArtProfileInlineCacheData.TARGET_SEPARATOR, segmentStart);
+      String segment =
+          nextTargetIndex >= 0
+              ? icString.substring(segmentStart, nextTargetIndex)
+              : icString.substring(segmentStart);
+      if (!parseTargetedInlineCacheSegment(segment, builder)) {
+        return null;
+      }
+      if (nextTargetIndex < 0) {
+        break;
+      }
+      segmentStart = nextTargetIndex + 1;
+    }
+    return builder.build();
+  }
+
+  private static boolean parseTargetedInlineCacheSegment(
+      String segment, ArtProfileInlineCacheData.Builder builder) {
+    if (segment.isEmpty()) {
+      return false;
+    }
+    int dimensions = 0;
+    while (dimensions < segment.length() && segment.charAt(dimensions) == '[') {
+      dimensions++;
+    }
+    if (dimensions > 255 || dimensions >= segment.length()) {
+      return false;
+    }
+    int receiverEndIndex;
+    if (segment.charAt(dimensions) == 'L') {
+      int semicolonIndex = segment.indexOf(';', dimensions + 1);
+      if (semicolonIndex < 0) {
+        return false;
+      }
+      receiverEndIndex = semicolonIndex + 1;
+    } else if (dimensions > 0) {
+      receiverEndIndex = dimensions + 1;
+    } else {
+      return false;
+    }
+    String receiverDescriptor = segment.substring(0, receiverEndIndex);
+    if (!isValidInlineCacheTypeDescriptor(receiverDescriptor)) {
+      return false;
+    }
+    ArtProfileInlineCacheData.EntryValue entryValue =
+        parseInlineCacheEntryValue(segment.substring(receiverEndIndex));
+    if (entryValue == null) {
+      return false;
+    }
+    builder.addTargetedInlineCache(Reference.typeFromDescriptor(receiverDescriptor), entryValue);
+    return true;
+  }
+
+  private static ArtProfileInlineCacheData.EntryValue parseInlineCacheEntryValue(
+      String valueString) {
+    if (valueString.isEmpty()) {
+      return null;
+    }
+    if (valueString.equals(ArtProfileInlineCacheData.MISSING_TYPES_MARKER)) {
+      return ArtProfileInlineCacheData.EntryValue.missingTypes();
+    }
+    if (valueString.equals(ArtProfileInlineCacheData.MEGAMORPHIC_TYPES_MARKER)) {
+      return ArtProfileInlineCacheData.EntryValue.megamorphicTypes();
+    }
+    Set<TypeReference> types = new LinkedHashSet<>();
+    int start = 0;
+    while (true) {
+      int commaIndex = valueString.indexOf(ArtProfileInlineCacheData.TYPE_SEPARATOR, start);
+      String token =
+          commaIndex >= 0 ? valueString.substring(start, commaIndex) : valueString.substring(start);
+      if (!isValidInlineCacheTypeDescriptor(token)) {
+        return null;
+      }
+      types.add(Reference.typeFromDescriptor(token));
+      if (commaIndex < 0) {
+        break;
+      }
+      start = commaIndex + 1;
+    }
+    return ArtProfileInlineCacheData.EntryValue.ofTypes(types);
+  }
+
+  private static boolean isValidInlineCacheTypeDescriptor(String descriptor) {
+    if (descriptor == null || descriptor.isEmpty()) {
+      return false;
+    }
+    int dimensions = 0;
+    while (dimensions < descriptor.length() && descriptor.charAt(dimensions) == '[') {
+      dimensions++;
+    }
+    if (dimensions == 0) {
+      return DescriptorUtils.isValidClassDescriptor(descriptor);
+    }
+    if (dimensions > 255 || dimensions == descriptor.length()) {
+      return false;
+    }
+    String baseDescriptor = descriptor.substring(dimensions);
+    return DescriptorUtils.isPrimitiveDescriptor(baseDescriptor)
+        || DescriptorUtils.isValidClassDescriptor(baseDescriptor);
   }
 
   private static String removeCommentFromLine(String line) {

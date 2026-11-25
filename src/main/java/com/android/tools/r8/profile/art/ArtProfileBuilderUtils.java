@@ -81,10 +81,11 @@ public class ArtProfileBuilderUtils {
     }
   }
 
-  static class MutableArtProfileMethodRule implements ArtProfileMethodRuleBuilder {
+  static class MutableArtProfileMethodRule implements InternalArtProfileMethodRuleBuilder {
 
     private MethodReference methodReference;
     private ArtProfileMethodRuleInfoImpl methodRuleInfo = ArtProfileMethodRuleInfoImpl.empty();
+    private ArtProfileInlineCacheData inlineCacheData = ArtProfileInlineCacheData.empty();
 
     MutableArtProfileMethodRule() {}
 
@@ -94,6 +95,10 @@ public class ArtProfileBuilderUtils {
 
     public ArtProfileMethodRuleInfo getMethodRuleInfo() {
       return methodRuleInfo;
+    }
+
+    public ArtProfileInlineCacheData getInlineCacheData() {
+      return inlineCacheData;
     }
 
     @Override
@@ -112,9 +117,18 @@ public class ArtProfileBuilderUtils {
       return this;
     }
 
+    @Override
+    public InternalArtProfileMethodRuleBuilder setInlineCacheData(
+        ArtProfileInlineCacheData inlineCacheData) {
+      assert inlineCacheData != null;
+      this.inlineCacheData = inlineCacheData;
+      return this;
+    }
+
     public void writeHumanReadableRuleString(OutputStreamWriter writer) throws IOException {
       methodRuleInfo.writeHumanReadableFlags(writer);
       writer.write(MethodReferenceUtils.toSmaliString(methodReference));
+      inlineCacheData.writeHumanReadableInlineCaches(writer);
     }
   }
 }

@@ -244,11 +244,11 @@ public class NonStartupInStartupOutliner {
       profileCollectionAdditions.applyIfContextIsInProfile(
           method.getReference(),
           additionsBuilder -> {
-            additionsBuilder
-                .addClassRule(syntheticMethod.getHolderType())
-                .addMethodRule(syntheticMethod.getReference());
+            additionsBuilder.addClassRule(syntheticMethod.getHolderType());
             if (isMove) {
-              additionsBuilder.removeMovedMethodRule(method, syntheticMethod);
+              additionsBuilder.moveMethodRule(method, syntheticMethod);
+            } else {
+              additionsBuilder.addMethodRule(syntheticMethod.getReference());
             }
           });
       syntheticMethods.add(syntheticMethod);

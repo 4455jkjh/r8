@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class ArtProfile
     implements AbstractProfile<
@@ -100,30 +101,33 @@ public class ArtProfile
     return rules.size();
   }
 
-  public ArtProfile rewrittenWithLens(AppView<?> appView, GraphLens lens) {
+  public ArtProfile rewrittenWithLens(AppView<?> appView, GraphLens lens, GraphLens appliedLens) {
     if (lens.isEnumUnboxerLens()) {
-      return rewrittenWithLens(appView, lens.asEnumUnboxerLens());
+      return rewrittenWithLens(appView, lens.asEnumUnboxerLens(), appliedLens);
     }
     return transform(
         (classRule, builder) -> {
-          DexType newClassRule = lens.lookupType(classRule.getType());
+          DexType newClassRule = lens.lookupType(classRule.getType(), appliedLens);
           assert newClassRule.isClassType();
           builder.addClassRule(ArtProfileClassRule.builder().setType(newClassRule).build());
         },
         (methodRule, builder) ->
             builder.addMethodRule(
                 ArtProfileMethodRule.builder()
-                    .setMethod(lens.getRenamedMethodSignature(methodRule.getMethod()))
+                    .setMethod(lens.getRenamedMethodSignature(methodRule.getMethod(), appliedLens))
                     .acceptMethodRuleInfoBuilder(
                         methodRuleInfoBuilder ->
                             methodRuleInfoBuilder.merge(methodRule.getMethodRuleInfo()))
+                    .setInlineCaches(
+                        methodRule.getInlineCaches().rewrittenWithLens(lens, appliedLens))
                     .build()));
   }
 
-  public ArtProfile rewrittenWithLens(AppView<?> appView, EnumUnboxingLens lens) {
+  public ArtProfile rewrittenWithLens(
+      AppView<?> appView, EnumUnboxingLens lens, GraphLens appliedLens) {
     return transform(
         (classRule, builder) -> {
-          DexType newClassRule = lens.lookupType(classRule.getType());
+          DexType newClassRule = lens.lookupType(classRule.getType(), appliedLens);
           if (newClassRule.isClassType()) {
             builder.addClassRule(ArtProfileClassRule.builder().setType(newClassRule).build());
           } else {
@@ -131,7 +135,7 @@ public class ArtProfile
           }
         },
         (methodRule, builder) -> {
-          DexMethod newMethod = lens.getRenamedMethodSignature(methodRule.getMethod());
+          DexMethod newMethod = lens.getRenamedMethodSignature(methodRule.getMethod(), appliedLens);
           // When moving non-synthetic startup methods from an enum class to its enum utility class
           // we also add a rule for the utility class.
           if (newMethod.getHolderType().isNotIdenticalTo(methodRule.getMethod().getHolderType())) {
@@ -150,6 +154,8 @@ public class ArtProfile
                   .acceptMethodRuleInfoBuilder(
                       methodRuleInfoBuilder ->
                           methodRuleInfoBuilder.merge(methodRule.getMethodRuleInfo()))
+                  .setInlineCaches(
+                      methodRule.getInlineCaches().rewrittenWithLens(lens, appliedLens))
                   .build());
         });
   }
@@ -173,27 +179,23 @@ public class ArtProfile
                     .acceptMethodRuleInfoBuilder(
                         methodRuleInfoBuilder ->
                             methodRuleInfoBuilder.merge(methodRule.getMethodRuleInfo()))
+                    .setInlineCaches(
+                        methodRule.getInlineCaches().rewrittenWithLens(dexItemFactory, lens))
                     .build()));
   }
 
   public ArtProfile withoutMissingItems(AppView<?> appView) {
     AppInfo appInfo = appView.appInfo();
+    Predicate<DexType> hasDefinitionForType = type -> hasDefinitionFor(appInfo, type);
     return transform(
         (classRule, builder) -> {
           if (hasDefinitionFor(appInfo, classRule.getType())) {
-            builder.addClassRule(
-                ArtProfileClassRule.builder().setType(classRule.getType()).build());
+            builder.addClassRule(classRule);
           }
         },
         (methodRule, builder) -> {
           if (hasDefinitionFor(appInfo, methodRule.getMethod())) {
-            builder.addMethodRule(
-                ArtProfileMethodRule.builder()
-                    .setMethod(methodRule.getMethod())
-                    .acceptMethodRuleInfoBuilder(
-                        methodRuleInfoBuilder ->
-                            methodRuleInfoBuilder.merge(methodRule.getMethodRuleInfo()))
-                    .build());
+            builder.addMethodRule(methodRule.withoutMissingItems(hasDefinitionForType));
           }
         });
   }
@@ -209,8 +211,20 @@ public class ArtProfile
         && subCompilationConfiguration.asR8().hasD8DefinitionFor(reference);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public ArtProfile withoutPrunedItems(PrunedItems prunedItems) {
     rules.keySet().removeIf(prunedItems::isRemoved);
+    if (prunedItems.hasRemovedClasses()) {
+      for (Map.Entry<DexReference, ArtProfileRule> entry : rules.entrySet()) {
+        if (entry.getKey().isDexMethod()) {
+          ArtProfileMethodRule methodRule = (ArtProfileMethodRule) entry.getValue();
+          ArtProfileMethodRule prunedMethodRule = methodRule.withoutPrunedItems(prunedItems);
+          if (prunedMethodRule != methodRule) {
+            entry.setValue(prunedMethodRule);
+          }
+        }
+      }
+    }
     return this;
   }
 
@@ -249,9 +263,18 @@ public class ArtProfile
         classRule ->
             ruleConsumer.acceptClassRule(
                 classRule.getClassReference(), classRule.getClassRuleInfo()),
-        methodRule ->
+        methodRule -> {
+          if (ruleConsumer instanceof InternalArtProfileRuleConsumer) {
+            ((InternalArtProfileRuleConsumer) ruleConsumer)
+                .acceptMethodRule(
+                    methodRule.getMethodReference(),
+                    methodRule.getMethodRuleInfo(),
+                    methodRule.getInlineCaches().toData());
+          } else {
             ruleConsumer.acceptMethodRule(
-                methodRule.getMethodReference(), methodRule.getMethodRuleInfo()));
+                methodRule.getMethodReference(), methodRule.getMethodRuleInfo());
+          }
+        });
   }
 
   public static class Builder
@@ -317,8 +340,8 @@ public class ArtProfile
             ArtProfileMethodRule existingMethodRule = (ArtProfileMethodRule) existingRule;
             return ArtProfileMethodRule.builder()
                 .setMethod(methodRule.getMethod())
-                .join(methodRule)
                 .join(existingMethodRule)
+                .join(methodRule)
                 .build();
           });
       return this;

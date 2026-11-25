@@ -15,6 +15,9 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexItemFactory.ObjectMembers;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.profile.art.ArtProfileInlineCacheData;
+import com.android.tools.r8.profile.art.ArtProfileInlineCacheData.EntryValue;
+import com.android.tools.r8.profile.art.ArtProfileInlineCaches;
 import com.android.tools.r8.profile.art.ArtProfileMethodRule;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfoImpl.Builder;
 import com.android.tools.r8.profile.rewriting.ProfileAdditions.NestedMethodRuleAdditionsGraph;
@@ -117,5 +120,45 @@ public class CyclicFlagPropagationTest extends TestBase {
     graph.propagateMethodRuleInfoFlags(methodRuleBuilders);
     graph.commitDependentStartupClassRules(methodRuleBuilders, committedTypes::add);
     assertEquals(ImmutableList.of(dexItemFactory.objectType), committedTypes);
+  }
+
+  @Test
+  public void testInlineCachePropagationOnlyAcrossMovedEdges() {
+    NestedMethodRuleAdditionsGraph<ArtProfileMethodRule, ArtProfileMethodRule.Builder> graph =
+        new NestedMethodRuleAdditionsGraph<>();
+    DexItemFactory dexItemFactory = new DexItemFactory();
+    ObjectMembers objectMembers = dexItemFactory.objectMembers;
+
+    graph.recordMethodRuleMoved(objectMembers.hashCode, objectMembers.equals);
+    graph.recordMethodRuleInfoFlagsLargerThan(objectMembers.toString, objectMembers.hashCode);
+
+    List<DexMethod> methods =
+        ImmutableList.of(objectMembers.equals, objectMembers.hashCode, objectMembers.toString);
+    Map<DexMethod, ArtProfileMethodRule.Builder> methodRuleBuilders = new IdentityHashMap<>();
+    for (DexMethod method : methods) {
+      methodRuleBuilders.put(method, ArtProfileMethodRule.builder());
+    }
+
+    ArtProfileInlineCaches inlineCaches =
+        ArtProfileInlineCaches.fromData(
+            ArtProfileInlineCacheData.createSingle(
+                EntryValue.ofTypes(dexItemFactory.objectType.asClassReference())),
+            dexItemFactory);
+    methodRuleBuilders
+        .get(objectMembers.equals)
+        .acceptMethodRuleInfoBuilder(builder -> builder.setIsHot().setIsStartup())
+        .setInlineCaches(inlineCaches);
+
+    graph.propagateMethodRuleInfoFlags(methodRuleBuilders);
+
+    ArtProfileMethodRule hashCodeRule = methodRuleBuilders.get(objectMembers.hashCode).build();
+    assertTrue(hashCodeRule.getMethodRuleInfo().isHot());
+    assertTrue(hashCodeRule.getMethodRuleInfo().isStartup());
+    assertEquals(inlineCaches, hashCodeRule.getInlineCaches());
+
+    ArtProfileMethodRule toStringRule = methodRuleBuilders.get(objectMembers.toString).build();
+    assertTrue(toStringRule.getMethodRuleInfo().isHot());
+    assertTrue(toStringRule.getMethodRuleInfo().isStartup());
+    assertTrue(toStringRule.getInlineCaches().isEmpty());
   }
 }
