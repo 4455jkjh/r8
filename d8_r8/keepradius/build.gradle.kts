@@ -2,27 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import com.google.protobuf.gradle.proto
-
 plugins {
   `java-library`
   id("r8-compiler-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
-  id("com.google.protobuf")
 }
 
 val srcDir = getRoot().resolveAll("src", "keepradius", "java")
 
-java {
-  sourceSets.main.configure {
-    java.srcDir(srcDir)
-    proto { srcDir(getRoot().resolveAll("src", "keepradius", "proto")) }
-  }
-}
+java { sourceSets.main.configure { java.srcDir(srcDir) } }
 
 dependencies {
+  apiInternal(project(":keepradius_proto"))
   implementationInternal(project(":keepanno"))
-  apiExternal(libs.protobuf)
+  implementationExternal(libs.protobuf)
   implementationExternal(libs.protobufUtil)
 }

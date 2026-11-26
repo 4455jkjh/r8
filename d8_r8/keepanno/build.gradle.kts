@@ -33,6 +33,8 @@ dependencies {
 val externalRuntimeConfig = configurations.named("externalRuntimeConfig")
 
 tasks {
+  processResources { exclude("**/*.proto") }
+
   register<Jar>("keepAnnoAnnotationsJar") {
     from(sourceSets.main.get().output)
     include("com/android/tools/r8/keepanno/annotations/*")
@@ -82,7 +84,6 @@ tasks {
     entryCompression = ZipEntryCompression.STORED
     exclude("META-INF/*.kotlin_module")
     exclude("**/*.kotlin_metadata")
-    exclude("keepspec.proto")
     exclude("com/android/tools/r8/keepanno/annotations/**")
     exclude("androidx/**")
     archiveFileName.set("keepanno-tools.jar")

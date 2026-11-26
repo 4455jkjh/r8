@@ -22,12 +22,17 @@ if (project.hasProperty("spdxVersion")) {
   project.version = project.property("spdxVersion")!!
 }
 
-val internalJarsScope = configurations.dependencyScope("internalJarsScope")
-val internalJarsConfig =
-  configurations.resolvableFlavor("internalJarsConfig", R8Flavor.INTERNAL, internalJarsScope)
+val compilerModulesScope = configurations.dependencyScope("compilerModulesScope")
+val protoJarsConfig =
+  configurations.resolvableFlavor("protoJarsConfig", R8Flavor.PROTO, compilerModulesScope)
 val externalDepsScope = configurations.dependencyScope("externalDepsScope")
 val externalDepsConfig =
-  configurations.resolvableFlavor("externalDepsConfig", R8Flavor.EXTERNAL, externalDepsScope)
+  configurations.resolvableFlavor(
+    "externalDepsConfig",
+    R8Flavor.EXTERNAL,
+    compilerModulesScope,
+    externalDepsScope,
+  )
 
 spdxSbom {
   targets {
@@ -84,8 +89,7 @@ val swissArmyKnifeConfig =
   configurations.resolvable("swissArmyKnifeConfig") { extendsFrom(swissArmyKnifeScope.get()) }
 
 dependencies {
-  internalJarsScope(project(":swissarmyknife"))
-  externalDepsScope(project(":swissarmyknife"))
+  compilerModulesScope(project(":swissarmyknife"))
   externalDepsScope(project(":threading_blocking"))
   externalDepsScope(project(":threading_single_threaded"))
   assistantJarScope(project(":assistant", "assistantJar"))
@@ -269,12 +273,8 @@ tasks {
 
   val protoJar =
     register<Zip>("protoJar") {
-      from(zipTrees(internalJarsConfig))
-      include(
-        "com/android/tools/r8/keepradius/proto/**",
-        "com/android/tools/r8/libanalyzer/proto/**",
-      )
-      exclude("META-INF/MANIFEST.MF")
+      from(zipTrees(protoJarsConfig))
+      exclude("META-INF/**")
       archiveFileName.set("proto.jar")
       destinationDirectory.set(File(getRootDir(), "build/libs"))
     }

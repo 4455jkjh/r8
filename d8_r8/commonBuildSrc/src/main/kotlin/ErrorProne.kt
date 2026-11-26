@@ -13,7 +13,6 @@ public fun Project.configureErrorProneForJavaCompile() {
   dependencies.add("errorprone", getLibraryByName("errorprone"))
   tasks.withType<JavaCompile>().configureEach {
     options.errorprone.enabled.set(enableErrorProne)
-    options.errorprone.excludedPaths.set(".*/build/generated/source/proto/main/java/.*")
     if (enableErrorProne) {
       // Non-default / Experimental checks - explicitly enforced.
       enableCheck(this, "RemoveUnusedImports", treatWarningsAsErrors)

@@ -19,21 +19,15 @@ dependencies {
 val internalJars =
   configurations.resolvableFlavor("internalJars", R8Flavor.INTERNAL, compilerModules)
 
-configurations.consumableFlavor("internalElements", R8Flavor.INTERNAL, compilerModules)
+configurations.consumableFlavor("protoElements", R8Flavor.PROTO, compilerModules)
 
 configurations.consumableFlavor("externalElements", R8Flavor.EXTERNAL, compilerModules)
 
 val jarTask =
   tasks.register<Jar>("jar") {
     from(zipTrees(internalJars)) {
-      exclude("com/android/tools/r8/keepradius/proto/**")
-      exclude("com/android/tools/r8/libanalyzer/proto/**")
       exclude("META-INF/*.kotlin_module")
       exclude("**/*.kotlin_metadata")
-      exclude("keepradius.proto")
-      exclude("keepradiussummary.proto")
-      exclude("keepspec.proto")
-      exclude("libraryanalyzerresult.proto")
       exclude("LICENSE")
       exclude("androidx/")
       exclude("androidx/annotation/")

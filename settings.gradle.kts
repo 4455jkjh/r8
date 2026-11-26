@@ -73,9 +73,13 @@ includeProject(":assistant")
 
 includeProject(":keepradius")
 
+includeProject(":keepradius_proto")
+
 includeProject(":keepanno")
 
 includeProject(":libanalyzer")
+
+includeProject(":libanalyzer_proto")
 
 includeProject(":main")
 

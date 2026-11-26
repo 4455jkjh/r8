@@ -35,7 +35,7 @@ The build setup follows these core principles:
   [threading_single_threaded] ──────> threading-module-single-threaded.jar ┼──> deps.jar
   [third_party] ───────────────────────────────────────────────────────────┘       │
                                                                                    │
-  [keepradius], [libanalyzer] ────────────────────────────────────────> proto.jar  │
+  [keepradius_proto], [libanalyzer_proto] ────────────────────────────> proto.jar  │
                                                                            │       │
   [main], [threading], [keepanno],                                         │       │
   [keepradius], [libanalyzer], [assistant] ──┬──> r8-src.jar               │       │
@@ -123,7 +123,9 @@ The build setup follows these core principles:
     [`threading_single_threaded`](./d8_r8/threading_single_threaded),
     [`keepanno`](./d8_r8/keepanno),
     [`keepradius`](./d8_r8/keepradius),
+    [`keepradius_proto`](./d8_r8/keepradius_proto),
     [`libanalyzer`](./d8_r8/libanalyzer),
+    [`libanalyzer_proto`](./d8_r8/libanalyzer_proto),
     and [`assistant`](./d8_r8/assistant).
 - [`deps.jar`](./build/libs/deps.jar):
   - What: The JAR containing third-party dependencies, threading modules, and
@@ -137,8 +139,8 @@ The build setup follows these core principles:
     radius and library analysis data models. These are only needed for optional
     analysis features. Users without this dependency must compile the published
     `.proto` schemas directly using their own toolchains.
-  - How: Protobuf classes from [`keepradius`](./d8_r8/keepradius) and
-    [`libanalyzer`](./d8_r8/libanalyzer) are bundled together.
+  - How: Protobuf classes from [`keepradius_proto`](./d8_r8/keepradius_proto) and
+    [`libanalyzer_proto`](./d8_r8/libanalyzer_proto) are bundled together.
 - [`threading-module-blocking.jar`](./d8_r8/threading_blocking/build/libs/threading-module-blocking.jar):
   - Released: Published as an optional runtime module providing multi-threaded
     execution for modular classpath environments.

@@ -23,6 +23,7 @@ public val R8_FLAVOR_ATTRIBUTE: Attribute<String> =
 public enum class R8Flavor(public val attributeValue: String) {
   STANDARD("standard"),
   INTERNAL("internal"),
+  PROTO("proto"),
   API_EXTERNAL("api-external"),
   EXTERNAL("external"),
   INTERNAL_CLASSES("internal-classes"),
@@ -147,6 +148,7 @@ public fun <T : Any> DependencyHandler.runtimeOnlyExternal(
  *   `apiInternal`, and `apiExternal`; `runtimeElements` excludes external jars so consumers control
  *   how third-party deps are bundled).
  * - `internal`: Transitive first-party module jars (`internalElements` -> `internalRuntimeConfig`).
+ * - `proto`: Transitive externalizable proto module jars (`protoElements`).
  * - `api-external`: Unbundled third-party API jars exposed by a module (`apiExternalElements` ->
  *   `apiExternalConfig`).
  * - `external`: Transitive third-party runtime jars across internal modules (`externalElements` ->
@@ -216,6 +218,14 @@ public class R8DependencyFlavorsPlugin : Plugin<Project> {
       target.configurations.resolvableFlavor(
         "internalRuntimeConfig",
         R8Flavor.INTERNAL,
+        apiInternal,
+        implementationInternal,
+        runtimeOnlyInternal,
+      )
+
+      target.configurations.consumableFlavor(
+        "protoElements",
+        R8Flavor.PROTO,
         apiInternal,
         implementationInternal,
         runtimeOnlyInternal,

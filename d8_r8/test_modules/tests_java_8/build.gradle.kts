@@ -31,6 +31,9 @@ java {
 val distDepsFilesScope = configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles =
   configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope.get()) }
+val distProtoJarScope = configurations.dependencyScope("distProtoJarScope")
+val distProtoJar =
+  configurations.resolvable("distProtoJar") { extendsFrom(distProtoJarScope.get()) }
 val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResources =
   configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
@@ -38,6 +41,7 @@ val internalClassesConfig = configurations.named("internalClassesConfig")
 
 dependencies {
   distDepsFilesScope(project(":dist", "depsFiles"))
+  distProtoJarScope(project(":dist", "protoJar"))
   mainResourcesScope(project(":main", "mainResources"))
   implementation(project(":libanalyzer"))
   implementation(project(":main"))
@@ -206,11 +210,12 @@ fun Test.setupTestTask() {
       .asPath
       .split(File.pathSeparator)[0],
   )
-  dependsOn(distDepsFiles)
+  dependsOn(distDepsFiles, distProtoJar)
   dependsOn(internalClassesConfig)
   dependsOn(project(":dist").tasks.named("r8AssistantLib"))
   // This path is set when compiling examples jar task in DependenciesPlugin.
-  val r8RuntimePath = project.files(internalClassesConfig, distDepsFiles, mainResources).asPath
+  val r8RuntimePath =
+    project.files(internalClassesConfig, distDepsFiles, distProtoJar, mainResources).asPath
   systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
   systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
   systemProperty("R8_DEPS", distDepsFiles.get().asPath)

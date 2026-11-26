@@ -612,15 +612,7 @@ tasks {
       internalClassesConfig
         .flatMap { it.elements }
         .map { dirs ->
-          dirs.map { dir ->
-            fileTree(dir) {
-              exclude(
-                "com/android/tools/r8/keepanno/proto/**",
-                "com/android/tools/r8/keepradius/proto/**",
-                "com/android/tools/r8/libanalyzer/proto/**",
-              )
-            }
-          }
+          dirs.map { dir -> fileTree(dir) { exclude("com/android/tools/r8/keepanno/proto/**") } }
         }
     )
     reports {
