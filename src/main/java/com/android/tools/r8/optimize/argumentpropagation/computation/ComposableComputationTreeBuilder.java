@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.path.PathConstraintSupplier;
+import com.android.tools.r8.ir.analysis.path.state.ConcretePathConstraintAnalysisState;
 import com.android.tools.r8.ir.code.And;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.BasicBlock;
@@ -224,9 +225,18 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
       return unknown();
     }
     BasicBlock block = phi.getBlock();
+    ConcretePathConstraintAnalysisState leftPredecessorPathConstraint =
+        pathConstraintSupplier.getPathConstraint(block.getPredecessor(0)).asConcreteState();
+    ConcretePathConstraintAnalysisState rightPredecessorPathConstraint =
+        pathConstraintSupplier.getPathConstraint(block.getPredecessor(1)).asConcreteState();
+    if (leftPredecessorPathConstraint == null || rightPredecessorPathConstraint == null) {
+      return ComputationTreeLogicalBinopIntPhiNode.create(appView, unknown(), left, right);
+    }
     ComputationTreeNode condition =
-        pathConstraintSupplier.getDifferentiatingPathConstraint(
-            block.getPredecessor(0), block.getPredecessor(1));
-    return ComputationTreeLogicalBinopIntPhiNode.create(appView, condition, left, right);
+        leftPredecessorPathConstraint.getDifferentiatingPathConstraint(
+            rightPredecessorPathConstraint);
+    return !condition.isUnknown() && leftPredecessorPathConstraint.isNegated(condition)
+        ? ComputationTreeLogicalBinopIntPhiNode.create(appView, condition, right, left)
+        : ComputationTreeLogicalBinopIntPhiNode.create(appView, condition, left, right);
   }
 }

@@ -60,14 +60,10 @@ public class ComposableChangedFlagsFieldNarrowingTest extends TestBase {
               assertThat(restartLambdaClass, isPresent());
               assertEquals(1, restartLambdaClass.allInstanceFields().size());
               FieldSubject changed1Field = restartLambdaClass.allInstanceFields().get(0);
-              // TODO(b/590638329): Should always be int.
-              assertEquals(
-                  parameters.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug() ? "int" : "byte",
-                  changed1Field.getField().getType().getTypeName());
+              assertEquals("int", changed1Field.getField().getType().getTypeName());
             })
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/590638329): Should succeed with 4*true.
-        .assertSuccessWithOutputLines("false", "false", "false", "false");
+        .assertSuccessWithOutputLines("true", "true", "true", "true");
   }
 
   private static Collection<byte[]> getProgramClassFileData() {
