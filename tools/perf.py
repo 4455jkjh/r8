@@ -16,9 +16,28 @@ import subprocess
 import sys
 import time
 
+import run_stable_benchmark
 import utils
 if utils.is_bot():
     import upload_benchmark_data_to_google_storage
+
+STABLE_BENCHMARKS = {
+    'SystemUIApp': {
+        'iterations': 6,
+        'warmup': 2,
+        'quartets': 2,
+    },
+    'ChromeInternalApp': {
+        'iterations': 6,
+        'warmup': 2,
+        'quartets': 2,
+    },
+    'YouTubeApp': {
+        'iterations': 6,
+        'warmup': 0,
+        'quartets': 1,
+    },
+}
 
 # A collection of benchmarks that should be run on the perf bot.
 EXTERNAL_BENCHMARKS = {
@@ -345,7 +364,7 @@ def parse_options(argv=None):
     result.add_argument('--iterations-inner',
                         help='How many iterations to run inside run_benchmark.',
                         type=int,
-                        default=10)
+                        default=None)
     result.add_argument('--no-upload-benchmark-data-to-google-storage',
                         help='Skip upload to GCS.',
                         action='store_true',
@@ -369,10 +388,15 @@ def parse_options(argv=None):
                         help='Skip if output exists.',
                         action='store_true',
                         default=False)
-    result.add_argument(
-        '--target',
-        help='Specific target to run on.',
-        choices=['d8', 'r8-full', 'r8-force', 'r8-compat', 'retrace'])
+    result.add_argument('--runner',
+                        help='The benchmark runner to use. The stable runner '
+                        'records HEAD vs HEAD~1 compile timings in the same '
+                        'JVM (default: default).',
+                        default='default',
+                        choices=['default', 'stable'])
+    result.add_argument('--target',
+                        help='Specific target to run on.',
+                        choices=['d8', 'r8-full', 'retrace'])
     result.add_argument('--verbose',
                         help='To enable verbose logging.',
                         action='store_true',
@@ -382,9 +406,30 @@ def parse_options(argv=None):
                         help='Use R8 hash for the run (default local build)')
     result.add_argument('--version-jar',
                         help='The r8lib.jar for the given version.')
+    result.add_argument('--quartets',
+                        help='Number of ABBA quartets per JVM '
+                        '(stable runner).',
+                        type=int,
+                        default=None)
+    result.add_argument('--warmup',
+                        '-w',
+                        help='Number of warmup iterations to run inside '
+                        'run_benchmark.',
+                        type=int,
+                        default=None)
     options, args = result.parse_known_args(argv)
+    if options.version_jar and not options.version:
+        result.error('--version-jar requires --version')
+    if options.version_jar and options.runner == 'stable':
+        result.error('--version-jar is not supported with --runner stable')
+    if options.quartets is not None and options.runner != 'stable':
+        result.error('--quartets is only supported with --runner stable')
+    if options.runner == 'stable' and options.version:
+        options.version = run_stable_benchmark.resolve_commit(options.version)
     if options.benchmark:
         options.benchmarks = options.benchmark
+    elif options.runner == 'stable':
+        options.benchmarks = list(STABLE_BENCHMARKS.keys())
     elif options.internal:
         options.benchmarks = INTERNAL_BENCHMARKS.keys()
     elif options.internal_slow:
@@ -411,9 +456,15 @@ def get_run_cmd(benchmark, target, variant, options, args, r8jar=None):
         assert variant == 'lib'
     if options.verbose:
         base_cmd.append('--verbose')
-    if options.version and r8jar is not None:
-        base_cmd.extend(
-            ['--version', options.version, '--version-jar', r8jar, '--nolib'])
+    if options.runner == 'stable':
+        base_cmd.extend(['--runner', 'stable'])
+    if options.version:
+        if options.runner == 'stable':
+            base_cmd.extend(['--version', options.version])
+        elif r8jar is not None:
+            base_cmd.extend([
+                '--version', options.version, '--version-jar', r8jar, '--nolib'
+            ])
     return base_cmd + args
 
 
@@ -646,7 +697,7 @@ def main(argv=None):
     # Results of this run by target and benchmark, for the weekly bundle.
     weekly_bundle_results = {}
     with utils.TempDir() as temp:
-        if options.version:
+        if options.version and options.runner != 'stable':
             # Download r8.jar once instead of once per run_benchmark.py invocation.
             download_options = argparse.Namespace(no_build=True, nolib=True)
             r8jar = options.version_jar or compiledump.download_distribution(
@@ -660,6 +711,10 @@ def main(argv=None):
                       ] if options.target else benchmark_info['targets']
             variant = benchmark_info.get('variant', 'lib')
             for target in targets:
+                # Results of the stable runner are archived separately from
+                # the results of the default runner for the same target.
+                archive_target = (f'{target}-stable'
+                                  if options.runner == 'stable' else target)
                 sub_benchmarks = benchmark_info.get('subBenchmarks', {})
                 sub_benchmarks_for_target = sub_benchmarks.get(target, [])
 
@@ -669,7 +724,7 @@ def main(argv=None):
                         raise NotImplementedError
                     output = get_gs_location(
                         get_artifact_location(benchmark,
-                                              target,
+                                              archive_target,
                                               options.version,
                                               'result.json',
                                               is_try=options.is_try))
@@ -690,6 +745,26 @@ def main(argv=None):
                 os.makedirs(temp_benchmark_target)
 
                 failed = False
+                if options.runner == 'stable':
+                    stable_cfg = STABLE_BENCHMARKS.get(benchmark, {})
+                    iterations_inner = (options.iterations_inner
+                                        if options.iterations_inner is not None
+                                        else stable_cfg.get('iterations', 6))
+                    warmup = (options.warmup if options.warmup is not None else
+                              stable_cfg.get('warmup', 2))
+                    quartets = (options.quartets if options.quartets is not None
+                                else stable_cfg.get('quartets', 2))
+                    extra_args = [
+                        '--warmup',
+                        str(warmup), '--quartets',
+                        str(quartets)
+                    ]
+                else:
+                    iterations_inner = (options.iterations_inner
+                                        if options.iterations_inner is not None
+                                        else 10)
+                    extra_args = (['--warmup', str(options.warmup)]
+                                  if options.warmup is not None else [])
                 for i in range(options.iterations):
                     if not options.quiet:
                         print(
@@ -705,9 +780,9 @@ def main(argv=None):
                     iteration_cmd = get_run_cmd(
                         benchmark_to_run, target, variant, options, [
                             '--iterations',
-                            str(options.iterations_inner), '--output',
+                            str(iterations_inner), '--output',
                             benchmark_result_file
-                        ], r8jar)
+                        ] + extra_args, r8jar)
                     try:
                         subprocess.check_call(iteration_cmd)
                         if sub_benchmarks_for_target:
@@ -730,19 +805,20 @@ def main(argv=None):
                     continue
 
                 # Merge results and write output.
-                target_results = weekly_bundle_results.setdefault(target, {})
+                target_results = weekly_bundle_results.setdefault(
+                    archive_target, {})
                 if sub_benchmarks_for_target:
                     for sub_benchmark in sub_benchmarks_for_target:
                         target_results[
                             benchmark +
                             sub_benchmark] = archive_benchmark_result(
-                                benchmark + sub_benchmark, target,
+                                benchmark + sub_benchmark, archive_target,
                                 benchmark_result_json_files[sub_benchmark],
                                 options, temp)
                 else:
                     target_results[benchmark] = archive_benchmark_result(
-                        benchmark, target, benchmark_result_json_files, options,
-                        temp)
+                        benchmark, archive_target, benchmark_result_json_files,
+                        options, temp)
 
                 # Write metadata.
                 if utils.is_bot():
@@ -754,7 +830,7 @@ def main(argv=None):
                     archive_output_file(meta_file,
                                         get_artifact_location(
                                             benchmark,
-                                            target,
+                                            archive_target,
                                             options.version,
                                             'meta',
                                             is_try=options.is_try),
@@ -774,8 +850,9 @@ def main(argv=None):
                       file=sys.stderr)
 
     # Only upload benchmark data when running on the perf bot.
-    if utils.is_bot(
-    ) and not options.no_upload_benchmark_data_to_google_storage:
+    if (utils.is_bot() and
+            not options.no_upload_benchmark_data_to_google_storage and
+            options.runner != 'stable'):
         upload_benchmark_data_to_google_storage.run_bucket()
 
     if any_failed:

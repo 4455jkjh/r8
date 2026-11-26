@@ -14,12 +14,15 @@ import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.UntrackedTask
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -39,6 +42,7 @@ public abstract class RunBenchmarkTask : DefaultTask() {
   @get:InputFiles public abstract val benchmarkClasspath: ConfigurableFileCollection
   @get:InputFiles public abstract val testDataLocation: DirectoryProperty
   @get:InputFiles public abstract val testBaseDataLocation: DirectoryProperty
+  @get:InputFile @get:Optional public abstract val stableDriverJar: RegularFileProperty
 
   @get:Internal public abstract val javaLauncher: Property<JavaLauncher>
   @get:Internal public abstract val testDepsEntries: ListProperty<TestDepEntry>
@@ -46,6 +50,8 @@ public abstract class RunBenchmarkTask : DefaultTask() {
   @get:Internal public abstract val jobs: ListProperty<BenchmarkJobSpec>
   @get:Internal public abstract val iterations: Property<Int>
   @get:Internal public abstract val warmupIterations: Property<Int>
+  @get:Internal public abstract val runner: Property<String>
+  @get:Internal public abstract val quartets: Property<Int>
   @get:Internal public abstract val heapSize: Property<String>
   @get:Internal public abstract val extraJvmArgs: ListProperty<String>
   @get:Internal public abstract val output: Property<File>
@@ -55,6 +61,8 @@ public abstract class RunBenchmarkTask : DefaultTask() {
   @get:Internal public abstract val verbose: Property<Boolean>
   @get:Internal public abstract val requireCustomR8Jar: Property<Boolean>
   @get:Internal public abstract val customR8Jar: Property<File>
+  @get:Internal public abstract val headClasspath: Property<String>
+  @get:Internal public abstract val baselineClasspath: Property<String>
 
   public fun configureCommon(project: Project) {
     val rootDir = project.getRoot()
@@ -68,6 +76,8 @@ public abstract class RunBenchmarkTask : DefaultTask() {
     jobs.set(createJobsProvider(providers))
     iterations.set(providers.gradleProperty("benchmark_iterations").map { it.toInt() })
     warmupIterations.set(providers.gradleProperty("warmup").map { it.toInt() })
+    runner.set(providers.gradleProperty("runner"))
+    quartets.set(providers.gradleProperty("quartets").map { it.toInt() })
     heapSize.set(providers.gradleProperty("heap_size"))
     output.set(resolveRequiredPathProperty(providers, "output", rootDir))
     outputDir.set(resolveRequiredPathProperty(providers, "output_dir", rootDir))
@@ -76,6 +86,8 @@ public abstract class RunBenchmarkTask : DefaultTask() {
     verbose.set(providers.gradleProperty("verbose").map { true }.orElse(false))
     requireCustomR8Jar.convention(false)
     customR8Jar.set(resolveRequiredPathProperty(providers, "r8_jar", rootDir))
+    headClasspath.set(providers.gradleProperty("head_classpath"))
+    baselineClasspath.set(providers.gradleProperty("baseline_classpath"))
     configureExtraJvmArgs(extraJvmArgs, providers, rootDir)
   }
 
@@ -108,6 +120,35 @@ public abstract class RunBenchmarkTask : DefaultTask() {
       )
     }
 
+    val isStable =
+      when (val runnerName = runner.getOrElse("default")) {
+        "default" -> false
+        "stable" -> true
+        else -> throw GradleException("Unknown runner '$runnerName' in -Prunner")
+      }
+
+    val resolvedExtraJvmArgs = buildList {
+      addAll(extraJvmArgs.get())
+      if (isStable) {
+        val driverFile = stableDriverJar.get().asFile
+        val resolvedHeadCp =
+          headClasspath.orNull ?: classpath.joinToString(File.pathSeparator) { it.absolutePath }
+        val resolvedBaselineCp =
+          baselineClasspath.orNull
+            ?: throw GradleException("Missing required property -Pbaseline_classpath")
+        val resolvedQuartets =
+          quartets.orNull ?: throw GradleException("Missing required property -Pquartets")
+        add("-DBENCHMARK_RUNNER=stable")
+        add("-DSTABLE_DRIVER_JAR=${driverFile.absolutePath}")
+        add("-DSTABLE_HEAD_CLASSPATH=$resolvedHeadCp")
+        add("-DSTABLE_BASELINE_CLASSPATH=$resolvedBaselineCp")
+        add("-DSTABLE_QUARTETS=$resolvedQuartets")
+        if (verbose.get()) {
+          add("-DBENCHMARK_VERBOSE=true")
+        }
+      }
+    }
+
     val configuredTempDir = tempDir.orNull
     val managedTempDir =
       if (configuredTempDir == null) Files.createTempDirectory("r8-benchmark-").toFile() else null
@@ -124,9 +165,10 @@ public abstract class RunBenchmarkTask : DefaultTask() {
           testDepArgs = TestDepsCommandLineArgumentProvider(testDepsEntries).asArguments().toList(),
           iterations = iterations.orNull,
           warmupIterations = warmupIterations.orNull,
-          extraJvmArgs = extraJvmArgs.get(),
+          extraJvmArgs = resolvedExtraJvmArgs,
           heapSize = heapSize.orNull,
           verbose = verbose.get(),
+          isStable = isStable,
         )
 
       if (!outputDir.isPresent) {

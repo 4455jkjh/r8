@@ -57,6 +57,10 @@ public class BenchmarkRunner {
   }
 
   public void run(BenchmarkRunnerFunction fn) throws Exception {
+    if (environment.isStableSingleRun()) {
+      fn.run(environment.getStableResults());
+      return;
+    }
     long warmupTotalTime = 0;
     BenchmarkConfig config = environment.getConfig();
     BenchmarkResultsWarmup warmupResults = null;

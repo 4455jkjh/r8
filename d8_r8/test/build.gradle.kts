@@ -546,6 +546,16 @@ tasks {
       testR8Lib(assembleR8LibNoDeps, unzipRewrittenTestsForR8LibNoDeps)
     }
 
+  val packageStableDriver =
+    register<Jar>("packageStableDriver") {
+      val injected = project.objects.newInstance<InjectedArcOps>()
+      from(packageTests.map { injected.arcOps.zipTree(it.archiveFile) }) {
+        include("com/android/tools/r8/benchmarks/stable/StableBenchmarkDriver*.class")
+      }
+      destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+      archiveFileName.set("r8_stable_driver.jar")
+    }
+
   // Prepares all build and test artifacts required to support use_prebuilt_lib.
   // Note: assembleR8LibNoDeps is required because tests like BootstrapCurrentEqualityTest and
   // SanityCheck verify compatibility between r8lib.jar and r8lib-exclude-deps.jar.
@@ -560,6 +570,7 @@ tasks {
         unzipTests,
         unzipTestBase,
         packageTestDeps,
+        packageStableDriver,
         processKeepRulesLibWithRelocatedDepsTask,
         r8AssistantLibTask,
         swissArmyKnifeTask,
@@ -647,12 +658,16 @@ tasks {
     classpathProviders: List<Provider<RegularFile>>,
     useCustomR8Jar: Boolean = false,
   ) {
+    val useStableRunner = providers.gradleProperty("runner").orNull == "stable"
     register<RunBenchmarkTask>(baseName) {
       configureCommon(project)
       testDataLocation.set(layout.dir(unzipTests.map { it.destinationDir }))
       testBaseDataLocation.set(layout.dir(unzipTestBase.map { it.destinationDir }))
       if (useCustomR8Jar) {
         configureCustomR8Jar()
+      }
+      if (useStableRunner) {
+        stableDriverJar.set(packageStableDriver.flatMap { it.archiveFile })
       }
       benchmarkClasspath.from(classpathProviders)
     }
@@ -663,6 +678,9 @@ tasks {
       testBaseDataLocation.set(unzipTestBase.get().destinationDir)
       if (useCustomR8Jar) {
         configureCustomR8Jar()
+      }
+      if (useStableRunner) {
+        stableDriverJar.set(packageStableDriver.get().archiveFile.get().asFile)
       }
       benchmarkClasspath.from(classpathProviders.map { it.get().asFile })
     }

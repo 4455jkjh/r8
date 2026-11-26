@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks;
 
+import com.android.tools.r8.benchmarks.stable.StableBenchmarkRunner;
 import java.util.stream.Collectors;
 import org.junit.rules.TemporaryFolder;
 
@@ -35,7 +36,11 @@ public class BenchmarkMainEntryRunner {
     try {
       BenchmarkEnvironment environment = new BenchmarkEnvironment(config, temp, true);
       System.out.println("Running benchmark");
-      config.run(environment);
+      if (StableBenchmarkRunner.RUNNER_NAME.equals(System.getProperty("BENCHMARK_RUNNER"))) {
+        StableBenchmarkRunner.run(environment);
+      } else {
+        config.run(environment);
+      }
     } finally {
       temp.delete();
     }

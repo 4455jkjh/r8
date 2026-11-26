@@ -12,11 +12,34 @@ public class BenchmarkEnvironment {
   private final BenchmarkConfig config;
   private final TemporaryFolder temp;
   private final boolean isPerf;
+  private final BenchmarkResults stableResults;
 
   public BenchmarkEnvironment(BenchmarkConfig config, TemporaryFolder temp, boolean isPerf) {
+    this(config, temp, isPerf, null);
+  }
+
+  public BenchmarkEnvironment(
+      BenchmarkConfig config, TemporaryFolder temp, BenchmarkResults stableResults) {
+    this(config, temp, true, stableResults);
+  }
+
+  private BenchmarkEnvironment(
+      BenchmarkConfig config,
+      TemporaryFolder temp,
+      boolean isPerf,
+      BenchmarkResults stableResults) {
     this.config = config;
     this.temp = temp;
     this.isPerf = isPerf;
+    this.stableResults = stableResults;
+  }
+
+  public boolean isStableSingleRun() {
+    return stableResults != null;
+  }
+
+  public BenchmarkResults getStableResults() {
+    return stableResults;
   }
 
   public boolean failOnCodeSizeDifferences() {

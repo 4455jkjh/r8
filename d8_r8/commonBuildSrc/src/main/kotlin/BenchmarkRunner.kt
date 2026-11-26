@@ -22,6 +22,7 @@ public class BenchmarkProcessRunner(
   private val extraJvmArgs: List<String>,
   private val heapSize: String?,
   private val verbose: Boolean,
+  private val isStable: Boolean,
 ) {
   public fun run(
     job: BenchmarkJobSpec,
@@ -33,23 +34,30 @@ public class BenchmarkProcessRunner(
     val heap =
       heapSize
         ?: when {
+          // AGSA and YouTube need 32g even for the stable runner.
           "AGSA" in job.benchmark || "YouTube" in job.benchmark -> "32g"
+          isStable -> "12g"
           job.benchmark == "SystemUIAppGc" -> "1760m"
           else -> "8g"
         }
 
     val jvmArgs = buildList {
-      add("-Xms$heap")
-      add("-Xmx$heap")
-      // Fault in and zero all heap pages at JVM startup to avoid OS page-fault
-      // overhead during warmup and early benchmark iterations.
-      add("-XX:+AlwaysPreTouch")
-      add("-XX:+TieredCompilation")
-      add("-XX:TieredStopAtLevel=4")
-      // Prevent GC-driven code cache flushing (JDK-8290025) from unloading
-      // compiled methods during inter-iteration System.gc() calls.
-      add("-XX:-UseCodeCacheFlushing")
-      add("-DBENCHMARK_IGNORE_CODE_SIZE_DIFFERENCES")
+      if (isStable) {
+        add("-Xmx512m")
+        add("-DSTABLE_HEAP_SIZE=$heap")
+      } else {
+        add("-Xms$heap")
+        add("-Xmx$heap")
+        // Fault in and zero all heap pages at JVM startup to avoid OS page-fault
+        // overhead during warmup and early benchmark iterations.
+        add("-XX:+AlwaysPreTouch")
+        add("-XX:+TieredCompilation")
+        add("-XX:TieredStopAtLevel=4")
+        // Prevent GC-driven code cache flushing (JDK-8290025) from unloading
+        // compiled methods during inter-iteration System.gc() calls.
+        add("-XX:-UseCodeCacheFlushing")
+        add("-DBENCHMARK_IGNORE_CODE_SIZE_DIFFERENCES")
+      }
       add("-DREPO_ROOT=${repoRoot.absolutePath}")
       add("-DTEST_DATA_LOCATION=${testDataLocation.absolutePath}")
       add("-DTESTBASE_DATA_LOCATION=${testBaseDataLocation.absolutePath}")
