@@ -13,7 +13,6 @@ import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
@@ -267,22 +266,14 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
   @Test
   public void testR8KeepAllMembers() throws Exception {
     parameters.assumeDexRuntime();
-    boolean fails =
-        cfVm.isEqualTo(CfVm.JDK27) && parameters.getPartialCompilationTestParameters().isNone();
-    AssertUtils.assertFailsCompilationIf(
-        fails,
-        () ->
-            testForR8(parameters)
-                .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
-                .addProgramClasses(Helper.class)
-                .addKeepClassAndMembersRules("Test")
-                .addKeepMethodRules(Helper.class, "public static void keep()")
-                .allowDiagnosticErrorMessages(fails)
-                .run(parameters.getRuntime(), "Test")
-                .inspect(
-                    DeserializeLambdaMethodsTest
-                        ::expectedCodeAfterLambdaDeserializationMethodsRemoval)
-                .assertSuccessWithOutputLines("OK"));
+    testForR8(parameters)
+        .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
+        .addProgramClasses(Helper.class)
+        .addKeepClassAndMembersRules("Test")
+        .addKeepMethodRules(Helper.class, "public static void keep()")
+        .run(parameters.getRuntime(), "Test")
+        .inspect(DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval)
+        .assertSuccessWithOutputLines("OK");
   }
 
   static class Helper {

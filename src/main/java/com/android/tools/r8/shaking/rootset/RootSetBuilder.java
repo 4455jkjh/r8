@@ -1166,7 +1166,7 @@ public class RootSetBuilder {
               DexProgramClass holder = asProgramClassOrNull(appInfo.definitionForHolder(method));
               DexEncodedMethod definition = method.lookupOnClass(holder);
               if (definition == null) {
-                assert method.match(appInfo.dexItemFactory().deserializeLambdaMethod);
+                assert method.isLambdaDeserializeMethod(appInfo.dexItemFactory());
                 return;
               }
               out.print(method.holder.toSourceString() + ": ");
@@ -1942,7 +1942,9 @@ public class RootSetBuilder {
         return;
       }
       if (options.isGeneratingDex()
-          && method.getReference().isLambdaDeserializeMethod(appView.dexItemFactory())) {
+          && method.getReference().isLambdaDeserializeMethod(appView.dexItemFactory())
+          && method.getAccessFlags().isPrivate()
+          && method.getAccessFlags().isStatic()) {
         // Don't keep lambda deserialization methods.
         return;
       }
