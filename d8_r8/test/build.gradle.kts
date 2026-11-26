@@ -42,6 +42,9 @@ val testDepsJars =
 val mainDepsJarFilesScope = configurations.dependencyScope("mainDepsJarFilesScope")
 val mainDepsJarFilesConfig =
   configurations.resolvable("mainDepsJarFilesConfig") { extendsFrom(mainDepsJarFilesScope.get()) }
+val mainProtoJarScope = configurations.dependencyScope("mainProtoJarScope")
+val mainProtoJarConfig =
+  configurations.resolvable("mainProtoJarConfig") { extendsFrom(mainProtoJarScope.get()) }
 
 val assistantJarScope = configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig =
@@ -67,6 +70,7 @@ dependencies {
   implementation(project(":main"))
   implementation(project(":threading_blocking"))
   implementation(project(":threading_single_threaded"))
+  mainProtoJarScope(project(":dist", "protoJar"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   jdk25HomeScope(project(":third_party", "jdk25Home"))
@@ -94,7 +98,6 @@ dependencies {
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
 }
 
-val mainProtoJarTask = project(":dist").tasks.named<Zip>("protoJar")
 val mainDepsJarTask = project(":dist").tasks.named<Zip>("depsJar")
 val swissArmyKnifeTask = project(":swissarmyknife").tasks.named<Jar>("jar")
 val processKeepRulesLibWithRelocatedDepsTask =
@@ -168,15 +171,15 @@ tasks {
     }
 
   fun SwissArmyKnifeTask.generateKeepRulesForR8Lib(
-    targetJarProviders: List<Provider<RegularFile>>,
-    testJarProviders: List<Provider<RegularFile>>,
+    targetJars: FileCollection,
+    testJars: FileCollection,
     artifactName: String,
   ) {
     swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     compiler = "tracereferences"
     libs.from(jdk25HomeConfig, packageTestDeps.flatMap { it.archiveFile }, mainDepsJarFilesConfig)
-    targetJarProviders.forEach { targets.from(it) }
-    testJarProviders.forEach { sources.from(it) }
+    targets.from(targetJars)
+    sources.from(testJars)
     outputFile = layout.buildDirectory.file("libs/$artifactName")
     extraArgs = listOf("--keep-rules", "--allowobfuscation")
     obfuscateAllEnums = true
@@ -185,8 +188,8 @@ tasks {
   val generateKeepRulesForR8LibWithRelocatedDeps =
     register<SwissArmyKnifeTask>("generateKeepRulesForR8LibWithRelocatedDeps") {
       generateKeepRulesForR8Lib(
-        listOf(r8WithRelocatedDepsTask.flatMap { it.outputFile }),
-        listOf(
+        files(r8WithRelocatedDepsTask.flatMap { it.outputFile }),
+        files(
           relocateTestsForR8LibWithRelocatedDeps.flatMap { it.outputFile },
           relocateTestBaseForR8LibWithRelocatedDeps.flatMap { it.outputFile },
         ),
@@ -197,11 +200,8 @@ tasks {
   val generateKeepRulesForR8LibNoDeps =
     register<SwissArmyKnifeTask>("generateKeepRulesForR8LibNoDeps") {
       generateKeepRulesForR8Lib(
-        listOf(
-          swissArmyKnifeTask.flatMap { it.archiveFile },
-          mainProtoJarTask.flatMap { it.archiveFile },
-        ),
-        listOf(packageTests.flatMap { it.archiveFile }, packageTestBase.flatMap { it.archiveFile }),
+        files(swissArmyKnifeTask.flatMap { it.archiveFile }, mainProtoJarConfig),
+        files(packageTests.flatMap { it.archiveFile }, packageTestBase.flatMap { it.archiveFile }),
         "generated-keep-rules-r8lib-exclude-deps.txt",
       )
     }
@@ -209,12 +209,15 @@ tasks {
   fun CreateR8LibraryTask.assembleR8Lib(
     inputJarProvider: Provider<RegularFile>,
     generatedKeepRulesProvider: TaskProvider<SwissArmyKnifeTask>,
-    classpath: List<Provider<RegularFile>>,
+    classpath: FileCollection?,
     artifactName: String,
   ) {
     r8compilerClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     inputJar = inputJarProvider
-    inputClasspath.from(classpath)
+    if (classpath != null) {
+      inputClasspath.from(classpath)
+      excludingDepsVariant = true
+    }
     replaceInOutputJar = assistantJarConfig.flatMap { it.elements }.map { it.single().asFile }
     pgConfigs.from(
       File(rootDir, "src/main/keep.txt"),
@@ -225,7 +228,6 @@ tasks {
     )
     enableKeepAnnotations = true
     enableHorizontalClassMerging = true
-    if (classpath.isNotEmpty()) excludingDepsVariant = true
 
     setOutputJarFile(File(rootDir, "build/libs/$artifactName"))
   }
@@ -235,11 +237,7 @@ tasks {
       assembleR8Lib(
         inputJarProvider = swissArmyKnifeTask.flatMap { it.archiveFile },
         generatedKeepRulesProvider = generateKeepRulesForR8LibNoDeps,
-        classpath =
-          listOf(
-            mainDepsJarTask.flatMap { it.archiveFile },
-            mainProtoJarTask.flatMap { it.archiveFile },
-          ),
+        classpath = files(mainDepsJarTask.flatMap { it.archiveFile }, mainProtoJarConfig),
         artifactName = r8LibNoDepsArtifactName,
       )
     }
@@ -249,7 +247,7 @@ tasks {
       assembleR8Lib(
         inputJarProvider = r8WithRelocatedDepsTask.flatMap { it.outputFile },
         generatedKeepRulesProvider = generateKeepRulesForR8LibWithRelocatedDeps,
-        classpath = listOf(),
+        classpath = null,
         artifactName = r8LibArtifactName,
       )
     }

@@ -279,6 +279,8 @@ tasks {
       destinationDirectory.set(File(getRootDir(), "build/libs"))
     }
 
+  configurations.consumable("protoJar") { outgoing.artifact(protoJar) }
+
   val r8WithRelocatedDepsManifest =
     register<Jar>("r8WithRelocatedDepsManifest") {
       manifest { attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife" }
