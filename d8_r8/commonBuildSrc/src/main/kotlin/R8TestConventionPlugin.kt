@@ -25,7 +25,6 @@ public class R8TestConventionPlugin : Plugin<Project> {
     target.pluginManager.apply("test-runtime-data-dep")
     target.dependencies.apply {
       add("implementation", project(":testbase"))
-      add("runtimeOnly", project(":testbase", "depsJar"))
       runtimeOnlyDataFrom(":testbase")
     }
     // Java 8 test modules compile targeting Java 8 for test inputs, while running against Java 11

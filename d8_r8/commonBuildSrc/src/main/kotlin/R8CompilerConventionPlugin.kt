@@ -21,10 +21,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 public class R8CompilerConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     // Prevent org.jetbrains.kotlin.jvm plugin from auto-adding kotlin-stdlib to `api` (which
-    // would leak it onto apiElements, runtimeElements, externalRuntimeConfig, and
-    // internal*Config); we add libs.kotlinStdLib to implementationExternal below instead. KGP
-    // reads this property when applied, so r8-compiler-conventions must be applied before
-    // org.jetbrains.kotlin.jvm.
+    // would leak it onto apiElements, apiExternalElements, and internal*Config); we add
+    // libs.kotlinStdLib to implementationExternal below instead. KGP reads this property when
+    // applied, so r8-compiler-conventions must be applied before org.jetbrains.kotlin.jvm.
     check(!target.plugins.hasPlugin(KotlinBasePluginWrapper::class.java)) {
       "Apply r8-compiler-conventions before org.jetbrains.kotlin.jvm so " +
         "kotlin.stdlib.default.dependency=false takes effect."

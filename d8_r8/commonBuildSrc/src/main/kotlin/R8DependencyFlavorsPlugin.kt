@@ -145,8 +145,8 @@ public fun <T : Any> DependencyHandler.runtimeOnlyExternal(
  *
  * Resolution flavors selected via [R8_FLAVOR_ATTRIBUTE]:
  * - `standard`: Default Gradle compile/runtime classpaths (`apiElements` exposes `api`,
- *   `apiInternal`, and `apiExternal`; `runtimeElements` excludes external jars so consumers control
- *   how third-party deps are bundled).
+ *   `apiInternal`, and `apiExternal`; `runtimeElements` exposes all internal and external runtime
+ *   dependencies).
  * - `internal`: Transitive first-party module jars (`internalElements` -> `internalRuntimeConfig`).
  * - `proto`: Transitive externalizable proto module jars (`protoElements`).
  * - `api-external`: Unbundled third-party API jars exposed by a module (`apiExternalElements` ->
@@ -188,6 +188,7 @@ public class R8DependencyFlavorsPlugin : Plugin<Project> {
         attributes { attribute(R8_FLAVOR_ATTRIBUTE, R8Flavor.STANDARD.attributeValue) }
       }
       target.configurations.named("runtimeElements") {
+        extendsFrom(apiExternal.get(), implementationExternal.get(), runtimeOnlyExternal.get())
         attributes { attribute(R8_FLAVOR_ATTRIBUTE, R8Flavor.STANDARD.attributeValue) }
       }
       target.configurations.named("compileClasspath") {
