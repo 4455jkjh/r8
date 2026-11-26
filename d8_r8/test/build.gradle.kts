@@ -252,40 +252,8 @@ tasks {
       )
     }
 
-  abstract class GenerateKeepRulesForR8LibTask : DefaultTask() {
-    @get:InputFile abstract val r8LibJarMap: RegularFileProperty
-    @get:OutputFile abstract val keepRules: RegularFileProperty
-
-    @TaskAction
-    fun writeKeepRules() {
-      keepRules
-        .get()
-        .asFile
-        .writeText(
-          """-keep class ** { *; }
--dontshrink
--dontoptimize
--keepattributes *
--applymapping ${r8LibJarMap.get().asFile.absolutePath}
-"""
-        )
-    }
-  }
-
-  val generateTestKeepRulesR8LibWithRelocatedDeps =
-    register<GenerateKeepRulesForR8LibTask>("generateTestKeepRulesR8LibWithRelocatedDeps") {
-      r8LibJarMap = assembleR8LibWithRelocatedDeps.flatMap { it.outputPgMap }
-      keepRules = File(rootDir, "build/libs/r8lib-tests-keep.txt")
-    }
-
-  val generateTestKeepRulesR8LibNoDeps =
-    register<GenerateKeepRulesForR8LibTask>("generateTestKeepRulesR8LibNoDeps") {
-      r8LibJarMap = assembleR8LibNoDeps.flatMap { it.outputPgMap }
-      keepRules = File(rootDir, "build/libs/r8lib-exclude-deps-tests-keep.txt")
-    }
-
   fun SwissArmyKnifeTask.rewriteTestsForR8Lib(
-    keepRulesFileProvider: TaskProvider<GenerateKeepRulesForR8LibTask>,
+    r8LibJarMapProvider: Provider<RegularFile>,
     r8JarProvider: Provider<RegularFile>,
     testJarProvider: Provider<RegularFile>,
     artifactName: String,
@@ -298,7 +266,8 @@ tasks {
     if (addTestBaseClasspath) {
       classpath.from(packageTestBase)
     }
-    pgConfigs.from(keepRulesFileProvider.flatMap { it.keepRules })
+    pgRules = listOf("-keep class ** { *; }", "-dontshrink", "-dontoptimize", "-keepattributes *")
+    applyMapping = r8LibJarMapProvider
     outputFile = File(rootDir, "build/libs/$artifactName")
     extraArgs = listOf("--classfile", "--debug")
     jar = testJarProvider
@@ -308,7 +277,7 @@ tasks {
   val rewriteTestsForR8LibWithRelocatedDeps =
     register<SwissArmyKnifeTask>("rewriteTestsForR8LibWithRelocatedDeps") {
       rewriteTestsForR8Lib(
-        generateTestKeepRulesR8LibWithRelocatedDeps,
+        assembleR8LibWithRelocatedDeps.flatMap { it.outputPgMap },
         r8WithRelocatedDepsTask.flatMap { it.outputFile },
         relocateTestsForR8LibWithRelocatedDeps.flatMap { it.outputFile },
         "r8libtestdeps-cf.jar",
@@ -319,7 +288,7 @@ tasks {
   val rewriteTestBaseForR8LibWithRelocatedDeps =
     register<SwissArmyKnifeTask>("rewriteTestBaseForR8LibWithRelocatedDeps") {
       rewriteTestsForR8Lib(
-        generateTestKeepRulesR8LibWithRelocatedDeps,
+        assembleR8LibWithRelocatedDeps.flatMap { it.outputPgMap },
         r8WithRelocatedDepsTask.flatMap { it.outputFile },
         relocateTestBaseForR8LibWithRelocatedDeps.flatMap { it.outputFile },
         rewrittenTestBaseArtifactName,
@@ -330,7 +299,7 @@ tasks {
   val rewriteTestsForR8LibNoDeps =
     register<SwissArmyKnifeTask>("rewriteTestsForR8LibNoDeps") {
       rewriteTestsForR8Lib(
-        generateTestKeepRulesR8LibNoDeps,
+        assembleR8LibNoDeps.flatMap { it.outputPgMap },
         swissArmyKnifeTask.flatMap { it.archiveFile },
         packageTests.flatMap { it.archiveFile },
         "r8lib-exclude-deps-testdeps-cf.jar",

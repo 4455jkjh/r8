@@ -11,6 +11,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
@@ -48,6 +49,11 @@ public abstract class SwissArmyKnifeTask : DefaultTask() {
   @get:[Optional InputFiles PathSensitive(PathSensitivity.NONE)]
   public abstract val pgConfigs: ConfigurableFileCollection
 
+  @get:Input public abstract val pgRules: ListProperty<String>
+
+  @get:[Optional InputFile PathSensitive(PathSensitivity.NONE)]
+  public abstract val applyMapping: RegularFileProperty
+
   @get:[Optional Classpath]
   public abstract val jar: RegularFileProperty
 
@@ -61,6 +67,20 @@ public abstract class SwissArmyKnifeTask : DefaultTask() {
 
   @TaskAction
   public fun relocate() {
+    val generatedPgConfLines = buildList {
+      addAll(pgRules.get())
+      if (applyMapping.isPresent) {
+        add("-applymapping ${applyMapping.get().asFile.absolutePath}")
+      }
+    }
+    val generatedPgConf =
+      if (generatedPgConfLines.isNotEmpty()) {
+        temporaryDir.resolve("generated-pg-conf.txt").apply {
+          writeText(generatedPgConfLines.joinToString("\n", postfix = "\n"))
+        }
+      } else {
+        null
+      }
     execOperations.javaexec {
       classpath = swissArmyKnifeClasspath
       jvmArgs = listOf("-Xmx8g", "-ea")
@@ -78,6 +98,9 @@ public abstract class SwissArmyKnifeTask : DefaultTask() {
         this@SwissArmyKnifeTask.classpath.flatMap { listOf("--classpath", it.absolutePath) }
       )
       myArgs.addAll(pgConfigs.flatMap { listOf("--pg-conf", it.absolutePath) })
+      if (generatedPgConf != null) {
+        myArgs.addAll(listOf("--pg-conf", generatedPgConf.absolutePath))
+      }
       myArgs.add("--output")
       myArgs.add(outputFile.get().asFile.absolutePath)
       myArgs.addAll(extraArgs.get())
