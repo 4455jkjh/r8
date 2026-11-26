@@ -319,15 +319,24 @@ tasks {
       runtimeDex = File(rootDir, "build/libs/assistant-runtime.dex")
     }
 
-  register<CreateR8LibraryTask>("r8AssistantLib") {
-    r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
-    inputJar = r8WithRelocatedDeps.flatMap { it.outputFile }
-    assistantRuntimeDex = compileAssistantRuntimeDex.flatMap { it.runtimeDex }
-    mainClass = "com.android.tools.r8.R8Assistant"
-    pgConfigs.from(File(rootDir, "src/main/keep_assistant.txt"))
-    enableKeepAnnotations = false
+  configurations.consumable("assistantRuntimeDex") {
+    outgoing.artifact(compileAssistantRuntimeDex.flatMap { it.runtimeDex })
+  }
 
-    setOutputJarFile(File(rootDir, "build/libs/r8-assistantlib.jar"))
+  val r8AssistantLib =
+    register<CreateR8LibraryTask>("r8AssistantLib") {
+      r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
+      inputJar = r8WithRelocatedDeps.flatMap { it.outputFile }
+      assistantRuntimeDex = compileAssistantRuntimeDex.flatMap { it.runtimeDex }
+      mainClass = "com.android.tools.r8.R8Assistant"
+      pgConfigs.from(File(rootDir, "src/main/keep_assistant.txt"))
+      enableKeepAnnotations = false
+
+      setOutputJarFile(File(rootDir, "build/libs/r8-assistantlib.jar"))
+    }
+
+  configurations.consumable("r8AssistantLib") {
+    outgoing.artifact(r8AssistantLib.flatMap { it.outputJar })
   }
 
   val keepAnnoToolsWithRelocatedDeps =

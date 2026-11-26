@@ -34,6 +34,9 @@ val distDepsFiles =
 val distProtoJarScope = configurations.dependencyScope("distProtoJarScope")
 val distProtoJar =
   configurations.resolvable("distProtoJar") { extendsFrom(distProtoJarScope.get()) }
+val r8AssistantLibScope = configurations.dependencyScope("r8AssistantLibScope")
+val r8AssistantLib =
+  configurations.resolvable("r8AssistantLib") { extendsFrom(r8AssistantLibScope.get()) }
 val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResources =
   configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
@@ -42,6 +45,7 @@ val internalClassesConfig = configurations.named("internalClassesConfig")
 dependencies {
   distDepsFilesScope(project(":dist", "depsFiles"))
   distProtoJarScope(project(":dist", "protoJar"))
+  r8AssistantLibScope(project(":dist", "r8AssistantLib"))
   mainResourcesScope(project(":main", "mainResources"))
   implementation(project(":libanalyzer"))
   implementation(project(":main"))
@@ -212,7 +216,6 @@ fun Test.setupTestTask() {
   )
   dependsOn(distDepsFiles, distProtoJar)
   dependsOn(internalClassesConfig)
-  dependsOn(project(":dist").tasks.named("r8AssistantLib"))
   // This path is set when compiling examples jar task in DependenciesPlugin.
   val r8RuntimePath =
     project.files(internalClassesConfig, distDepsFiles, distProtoJar, mainResources).asPath
@@ -222,7 +225,10 @@ fun Test.setupTestTask() {
   systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
 }
 
-tasks.withType<Test> { setupTestTask() }
+tasks.withType<Test> {
+  setupTestTask()
+  dependsOn(r8AssistantLib)
+}
 
 tasks.register("testAll") {
   // Added child dependencies to Test directly would force all child tests to run before the

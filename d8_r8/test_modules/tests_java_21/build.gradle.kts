@@ -16,11 +16,15 @@ java {
 }
 
 val internalClassesConfig = configurations.named("internalClassesConfig")
+val assistantRuntimeDexScope = configurations.dependencyScope("assistantRuntimeDexScope")
+val assistantRuntimeDex =
+  configurations.resolvable("assistantRuntimeDex") { extendsFrom(assistantRuntimeDexScope.get()) }
 val mainResourcesScope = configurations.dependencyScope("mainResourcesScope")
 val mainResources =
   configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope.get()) }
 
 dependencies {
+  assistantRuntimeDexScope(project(":dist", "assistantRuntimeDex"))
   mainResourcesScope(project(":main", "mainResources"))
   runtimeOnlyData(TestRuntimeData.JDK_21)
   runtimeOnlyData(TestRuntimeData.JDK21_FLOAT16_TEST)
@@ -28,8 +32,7 @@ dependencies {
 
 tasks {
   withType<Test> {
-    dependsOn(project(":dist").tasks.named("compileAssistantRuntimeDex"))
-    dependsOn(internalClassesConfig, mainResources)
+    dependsOn(assistantRuntimeDex, internalClassesConfig, mainResources)
     javaLauncher = getJavaLauncher(Jdk.JDK_21)
     systemProperty(
       "BUILD_PROP_R8_RUNTIME_PATH",

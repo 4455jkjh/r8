@@ -49,6 +49,9 @@ val mainProtoJarConfig =
 val assistantJarScope = configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig =
   configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope.get()) }
+val r8AssistantLibScope = configurations.dependencyScope("r8AssistantLibScope")
+val r8AssistantLibConfig =
+  configurations.resolvable("r8AssistantLibConfig") { extendsFrom(r8AssistantLibScope.get()) }
 val keepAnnoAndroidXAnnotationsJarScope =
   configurations.dependencyScope("keepAnnoAndroidXAnnotationsJarScope")
 val keepAnnoAndroidXAnnotationsJarConfig =
@@ -72,6 +75,7 @@ dependencies {
   implementation(project(":threading_single_threaded"))
   mainProtoJarScope(project(":dist", "protoJar"))
   assistantJarScope(project(":assistant", "assistantJar"))
+  r8AssistantLibScope(project(":dist", "r8AssistantLib"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   jdk25HomeScope(project(":third_party", "jdk25Home"))
   coverageExecScope(project(":tests_java_8", "jacocoExecElements"))
@@ -102,7 +106,6 @@ val mainDepsJarTask = project(":dist").tasks.named<Zip>("depsJar")
 val swissArmyKnifeTask = project(":swissarmyknife").tasks.named<Jar>("jar")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.named<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps")
-val r8AssistantLibTask = project(":dist").tasks.named<CreateR8LibraryTask>("r8AssistantLib")
 val r8WithRelocatedDepsTask =
   project(":dist").tasks.named<SwissArmyKnifeTask>("r8WithRelocatedDeps")
 
@@ -469,7 +472,7 @@ tasks {
         r8Lib,
         r8WithRelocatedDepsTask,
         assembleR8LibNoDeps,
-        r8AssistantLibTask,
+        r8AssistantLibConfig,
         rewriteTestBaseForR8LibWithRelocatedDeps,
         unzipRewrittenTests,
         unzipTests,
@@ -539,7 +542,7 @@ tasks {
         packageTestDeps,
         packageStableDriver,
         processKeepRulesLibWithRelocatedDepsTask,
-        r8AssistantLibTask,
+        r8AssistantLibConfig,
         swissArmyKnifeTask,
       )
     }
@@ -557,7 +560,7 @@ tasks {
         unzipTestBase,
         packageTestDeps,
         processKeepRulesLibWithRelocatedDepsTask,
-        r8AssistantLibTask,
+        r8AssistantLibConfig,
         swissArmyKnifeTask,
       )
     }
@@ -596,7 +599,6 @@ tasks {
       if (project.hasProperty("only_internal")) {
         dependsOn(processKeepRulesLibWithRelocatedDepsTask)
       }
-      dependsOn(r8AssistantLibTask)
     }
     if (project.hasProperty("r8lib")) {
       dependsOn(testR8LibWithRelocatedDeps)
