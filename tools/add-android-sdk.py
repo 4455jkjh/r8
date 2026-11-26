@@ -118,7 +118,7 @@ def main():
     print('If you want to upload this run:')
     print('  (cd %s; upload_to_google_storage.py -a --bucket r8-deps %s)' %
           (os.path.dirname(destination), os.path.basename(destination)))
-    print('Update d8_r8/commonBuildSrc/src/main/kotlin/DependenciesPlugin.kt'
+    print('Update d8_r8/third_party/build.gradle.kts'
           ' if this is a new dependency.')
     print('Run main method in AndroidApiHashingDatabaseBuilderGeneratorTest'
           ' to generate the API database.')

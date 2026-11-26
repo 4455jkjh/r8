@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import java.io.File
+import java.nio.file.Paths
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
@@ -18,43 +20,125 @@ val downloadLimitService =
     maxParallelUsages.set(30)
   }
 
-private fun registerDependency(dep: ThirdPartyDependency): TaskProvider<DownloadDependency> {
+val publicTasks = mutableListOf<TaskProvider<DownloadDependency>>()
+val publicTestTasks = mutableListOf<TaskProvider<DownloadDependency>>()
+val internalTestTasks = mutableListOf<TaskProvider<DownloadDependency>>()
+
+private fun path(first: String, vararg more: String): File = Paths.get(first, *more).toFile()
+
+private fun registerDownload(
+  packageName: String,
+  path: File,
+  testOnly: Boolean = false,
+  type: DependencyType = DependencyType.GOOGLE_STORAGE,
+  missingOnWindows: Boolean = false,
+): TaskProvider<DownloadDependency> {
   // Task name must be unique and safe. packageNames should be unique.
-  val taskName = "download_${dep.packageName}"
+  val taskName = "download_$packageName"
   val noInternal = providers.gradleProperty("no_internal")
-  return tasks.register(taskName, DownloadDependency::class) {
-    sha1File.set(getRoot().resolve(dep.sha1File))
-    outputDir.set(getRoot().resolve(dep.path))
-    tarGzFile.set(getRoot().resolve(dep.tarGzFile))
-    successFile.set(getRoot().resolve(dep.successFile))
-    dependencyType.set(dep.type)
-    usesService(downloadLimitService)
-    val isInternal = dep.type == DependencyType.X20
-    val isMissingOnWindows = dep.missingOnWindows
-    val isWindows = DefaultNativePlatform.getCurrentOperatingSystem().isWindows
-    onlyIf { !(isInternal && noInternal.isPresent) && !(isMissingOnWindows && isWindows) }
+  val isInternal = type == DependencyType.X20
+  val isMissingOnWindows = missingOnWindows
+  val isWindows = DefaultNativePlatform.getCurrentOperatingSystem().isWindows
+  val taskProvider =
+    tasks.register(taskName, DownloadDependency::class) {
+      sha1File.set(getRoot().resolve(path.resolveSibling("${path.name}.tar.gz.sha1")))
+      outputDir.set(getRoot().resolve(path))
+      tarGzFile.set(getRoot().resolve(path.resolveSibling("${path.name}.tar.gz")))
+      successFile.set(getRoot().resolve(path.resolveSibling("${path.name}.success")))
+      dependencyType.set(type)
+      usesService(downloadLimitService)
+      onlyIf { !(isInternal && noInternal.isPresent) && !(isMissingOnWindows && isWindows) }
+    }
+  when {
+    !testOnly && type == DependencyType.GOOGLE_STORAGE -> publicTasks.add(taskProvider)
+    testOnly && type == DependencyType.GOOGLE_STORAGE -> publicTestTasks.add(taskProvider)
+    testOnly && type == DependencyType.X20 -> internalTestTasks.add(taskProvider)
+    else ->
+      error("Unsupported third-party dependency category: $packageName ($type, testOnly=$testOnly)")
   }
+  return taskProvider
 }
 
-val publicTasks = allPublicDependencies().map { registerDependency(it) }
-val publicTestTasks = allPublicTestDependencies().map { registerDependency(it) }
-val internalTestTasks = allInternalTestDependencies().map { registerDependency(it) }
-
-private fun registerConfig(configurationName: String, dep: ThirdPartyDependency) {
-  val taskProvider = tasks.named<DownloadDependency>("download_${dep.packageName}")
+private fun registerThirdParty(
+  configurationName: String,
+  path: File,
+  packageName: String = configurationName,
+  testOnly: Boolean = false,
+  type: DependencyType = DependencyType.GOOGLE_STORAGE,
+  missingOnWindows: Boolean = false,
+): TaskProvider<DownloadDependency> {
+  val taskProvider = registerDownload(packageName, path, testOnly, type, missingOnWindows)
   configurations.consumable(configurationName) {
     outgoing.capability("com.android.tools.r8.third_party:$configurationName:0")
     attributes {
-      if (dep.type == DependencyType.X20) {
+      if (type == DependencyType.X20) {
         attribute(ARTIFACT_INTERNAL, true)
       }
-      if (dep.missingOnWindows) {
+      if (missingOnWindows) {
         attribute(ARTIFACT_MISSING_ON_WINDOWS, true)
       }
     }
     outgoing.artifact(taskProvider.flatMap { it.outputDir })
   }
+  return taskProvider
 }
+
+private fun registerAndroidJar(configurationName: String, version: String) =
+  registerThirdParty(
+    configurationName,
+    path("third_party", "android_jar", version),
+    packageName = "android_jar_$version",
+  )
+
+private fun registerAndroidVm(configurationName: String, vararg version: String) =
+  registerThirdParty(
+    configurationName,
+    path("tools", "linux", *version),
+    packageName = version.last(),
+    missingOnWindows = true,
+  )
+
+private fun registerDesugarLibraryRelease(configurationName: String, version: String) =
+  registerThirdParty(
+    configurationName,
+    path("third_party", "openjdk", "desugar_jdk_libs_releases", version),
+    packageName = "desugar-library-release-$version",
+  )
+
+private fun registerDex2Oat(configurationName: String, version: String) =
+  registerThirdParty(
+    configurationName,
+    path("third_party", "dex2oat", version),
+    packageName = "dex2oat-$version",
+    missingOnWindows = true,
+  )
+
+private fun registerJdk(configurationName: String, jdk: Jdk): TaskProvider<DownloadDependency> {
+  val os = DefaultNativePlatform.getCurrentOperatingSystem()
+  val isJdk8 = jdk == Jdk.JDK_8
+  val subFolder =
+    when {
+      os.isLinux -> if (isJdk8) "linux-x86" else "linux"
+      os.isMacOsX -> if (isJdk8) "darwin-x86" else "osx"
+      else -> {
+        assert(os.isWindows)
+        "windows"
+      }
+    }
+  return registerThirdParty(
+    configurationName,
+    path("third_party", "openjdk", jdk.folder, subFolder),
+    packageName = jdk.name,
+    missingOnWindows = isJdk8,
+  )
+}
+
+private fun registerKotlinCompiler(configurationName: String, version: String) =
+  registerThirdParty(
+    configurationName,
+    path("third_party", "kotlin", "kotlin-compiler-$version"),
+    packageName = "kotlin-compiler-$version",
+  )
 
 // 'dependencies' have to be treated differently since it contains files that Gradle uses to run.
 // This should be called 'dependencies' but that is reserved in gradle, so dependenciesBucket.
@@ -62,365 +146,639 @@ configurations.consumable("dependenciesBucket") {
   outgoing.artifact(getRoot().resolve("third_party/dependencies"))
 }
 
-registerConfig("aapt2", ThirdPartyDeps.aapt2)
+registerThirdParty("aapt2", path("third_party", "aapt2"))
 
-registerConfig("agsa", ThirdPartyDeps.agsa)
+registerThirdParty(
+  "agsa",
+  path("third_party", "closedsource-apps", "agsa", "20250412-v16.14.47"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("androidJar14", ThirdPartyDeps.androidJar14)
+registerAndroidJar("androidJar14", "lib-v14")
 
-registerConfig("androidJar15", ThirdPartyDeps.androidJar15)
+registerAndroidJar("androidJar15", "lib-v15")
 
-registerConfig("androidJar19", ThirdPartyDeps.androidJar19)
+registerAndroidJar("androidJar19", "lib-v19")
 
-registerConfig("androidJar21", ThirdPartyDeps.androidJar21)
+registerAndroidJar("androidJar21", "lib-v21")
 
-registerConfig("androidJar22", ThirdPartyDeps.androidJar22)
+registerAndroidJar("androidJar22", "lib-v22")
 
-registerConfig("androidJar23", ThirdPartyDeps.androidJar23)
+registerAndroidJar("androidJar23", "lib-v23")
 
-registerConfig("androidJar24", ThirdPartyDeps.androidJar24)
+registerAndroidJar("androidJar24", "lib-v24")
 
-registerConfig("androidJar25", ThirdPartyDeps.androidJar25)
+registerAndroidJar("androidJar25", "lib-v25")
 
-registerConfig("androidJar26", ThirdPartyDeps.androidJar26)
+registerAndroidJar("androidJar26", "lib-v26")
 
-registerConfig("androidJar27", ThirdPartyDeps.androidJar27)
+registerAndroidJar("androidJar27", "lib-v27")
 
-registerConfig("androidJar28", ThirdPartyDeps.androidJar28)
+registerAndroidJar("androidJar28", "lib-v28")
 
-registerConfig("androidJar29", ThirdPartyDeps.androidJar29)
+registerAndroidJar("androidJar29", "lib-v29")
 
-registerConfig("androidJar30", ThirdPartyDeps.androidJar30)
+registerAndroidJar("androidJar30", "lib-v30")
 
-registerConfig("androidJar31", ThirdPartyDeps.androidJar31)
+registerAndroidJar("androidJar31", "lib-v31")
 
-registerConfig("androidJar32", ThirdPartyDeps.androidJar32)
+registerAndroidJar("androidJar32", "lib-v32")
 
-registerConfig("androidJar33", ThirdPartyDeps.androidJar33)
+registerAndroidJar("androidJar33", "lib-v33")
 
-registerConfig("androidJar34", ThirdPartyDeps.androidJar34)
+registerAndroidJar("androidJar34", "lib-v34")
 
-registerConfig("androidJar35", ThirdPartyDeps.androidJar35)
+registerAndroidJar("androidJar35", "lib-v35")
 
-registerConfig("androidJar36", ThirdPartyDeps.androidJar36)
+registerAndroidJar("androidJar36", "lib-v36")
 
-registerConfig("androidJar36_1", ThirdPartyDeps.androidJar36_1)
+registerAndroidJar("androidJar36_1", "lib-v36.1")
 
-registerConfig("androidJar37", ThirdPartyDeps.androidJar37)
+registerAndroidJar("androidJar37", "lib-v37")
 
-registerConfig("androidJar37_1", ThirdPartyDeps.androidJar37_1)
+registerAndroidJar("androidJar37_1", "lib-v37.1")
 
-registerConfig("androidJar37_2", ThirdPartyDeps.androidJar37_2)
+registerAndroidJar("androidJar37_2", "lib-v37.2")
 
-registerConfig("androidJarLibcoreLatest", ThirdPartyDeps.androidJarLibcoreLatest)
+registerAndroidJar("androidJarLibcoreLatest", "libcore_latest")
 
-registerConfig("androidJarMain", ThirdPartyDeps.androidJarMain)
+registerAndroidJar("androidJarMain", "lib-main")
 
-registerConfig("apiDatabase", ThirdPartyDeps.apiDatabase)
+registerThirdParty("apiDatabase", path("third_party", "api_database", "api_database"))
 
-registerConfig("artDefault", ThirdPartyDeps.artDefault)
+registerAndroidVm("artDefault", "art")
 
-registerConfig("art5_1_1", ThirdPartyDeps.art5_1_1)
+registerAndroidVm("art5_1_1", "art-5.1.1")
 
-registerConfig("art6_0_1", ThirdPartyDeps.art6_0_1)
+registerAndroidVm("art6_0_1", "art-6.0.1")
 
-registerConfig("art7_0_0", ThirdPartyDeps.art7_0_0)
+registerAndroidVm("art7_0_0", "art-7.0.0")
 
-registerConfig("art8_1_0", ThirdPartyDeps.art8_1_0)
+registerAndroidVm("art8_1_0", "art-8.1.0")
 
-registerConfig("art9_0_0", ThirdPartyDeps.art9_0_0)
+registerAndroidVm("art9_0_0", "art-9.0.0")
 
-registerConfig("art10_0_0", ThirdPartyDeps.art10_0_0)
+registerAndroidVm("art10_0_0", "art-10.0.0")
 
-registerConfig("art12_0_0", ThirdPartyDeps.art12_0_0)
+registerAndroidVm("art12_0_0", "host", "art-12.0.0-beta4")
 
-registerConfig("art13_0_0", ThirdPartyDeps.art13_0_0)
+registerAndroidVm("art13_0_0", "host", "art-13.0.0")
 
-registerConfig("art14_0_0", ThirdPartyDeps.art14_0_0)
+registerAndroidVm("art14_0_0", "host", "art-14.0.0-beta3")
 
-registerConfig("art15_0_0", ThirdPartyDeps.art15_0_0)
+registerAndroidVm("art15_0_0", "host", "art-15.0.0-beta2")
 
-registerConfig("art16_0_0", ThirdPartyDeps.art16_0_0)
+registerAndroidVm("art16_0_0", "host", "art-16.0.0")
 
-registerConfig("art16_1_0", ThirdPartyDeps.art16_1_0)
+registerAndroidVm("art16_1_0", "host", "art-16.1.0")
 
-registerConfig("art17_0_0", ThirdPartyDeps.art17_0_0)
+registerAndroidVm("art17_0_0", "host", "art-17.0.0-beta4")
 
-registerConfig("art17_1_0", ThirdPartyDeps.art17_1_0)
+registerAndroidVm("art17_1_0", "host", "art-17.1.0")
 
-registerConfig("art17_2_0", ThirdPartyDeps.art17_2_0)
+registerAndroidVm("art17_2_0", "host", "art-17.2.0")
 
-registerConfig("artMain", ThirdPartyDeps.artMain)
+registerAndroidVm("artMain", "host", "art-main")
 
-registerConfig("artTests", ThirdPartyDeps.artTests)
+registerThirdParty("artTests", path("tests", "2017-10-04", "art"), packageName = "art-tests")
 
-registerConfig("artTestsLegacy", ThirdPartyDeps.artTestsLegacy)
+registerThirdParty(
+  "artTestsLegacy",
+  path("tests", "2016-12-19", "art"),
+  packageName = "art-tests-legacy",
+)
 
-registerConfig("bookstory", ThirdPartyDeps.bookstory)
+registerThirdParty("bookstory", path("third_party", "opensource-apps", "android", "bookstory"))
 
-registerConfig("bundletool", ThirdPartyDeps.bundletool)
+registerThirdParty("bundletool", path("third_party", "bundletool", "bundletool-1.11.0"))
 
-registerConfig("chrome", ThirdPartyDeps.chrome)
+registerThirdParty(
+  "chrome",
+  path("third_party", "chrome", "chrome_200430"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("chromeBenchmark", ThirdPartyDeps.chromeBenchmark)
+registerThirdParty(
+  "chromeBenchmark",
+  path("third_party", "opensource-apps", "chrome"),
+  packageName = "chrome-benchmark",
+)
 
-registerConfig("chromeHeadless", ThirdPartyDeps.chromeHeadless)
+registerThirdParty(
+  "chromeHeadless",
+  path(
+    "third_party",
+    "chrome_headless",
+    DefaultNativePlatform.getCurrentOperatingSystem().let { os ->
+      when {
+        os.isLinux -> "linux"
+        os.isMacOsX -> "mac"
+        else -> {
+          assert(os.isWindows)
+          "windows"
+        }
+      }
+    },
+  ),
+  packageName = "chrome_headless",
+  testOnly = true,
+)
 
-registerConfig("chromeInternal", ThirdPartyDeps.chromeInternal)
+registerThirdParty(
+  "chromeInternal",
+  path("third_party", "closedsource-apps", "chrome", "20261116-v160.0.8166.0"),
+  packageName = "chrome-internal",
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("clank", ThirdPartyDeps.clank)
+registerThirdParty(
+  "clank",
+  path("third_party", "chrome", "clank_google3_prebuilt"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("compilerApi", ThirdPartyDeps.compilerApi)
+registerThirdParty(
+  "compilerApi",
+  path("third_party", "binary_compatibility_tests", "compiler_api_tests"),
+  packageName = "compiler-api",
+)
 
-registerConfig(
+registerThirdParty(
   "composeExamplesChangedBitwiseValuePropagation",
-  ThirdPartyDeps.composeExamplesChangedBitwiseValuePropagation,
+  path("third_party", "opensource-apps", "compose-examples", "changed-bitwise-value-propagation"),
+  packageName = "compose-examples-changed-bitwise-value-propagation",
 )
 
-registerConfig("composeSamplesCrane", ThirdPartyDeps.composeSamplesCrane)
+registerThirdParty(
+  "composeSamplesCrane",
+  path("third_party", "opensource-apps", "android", "compose-samples", "crane"),
+  packageName = "compose-samples-crane",
+)
 
-registerConfig("composeSamplesJetCaster", ThirdPartyDeps.composeSamplesJetCaster)
+registerThirdParty(
+  "composeSamplesJetCaster",
+  path("third_party", "opensource-apps", "android", "compose-samples", "jetcaster"),
+  packageName = "compose-samples-jetcaster",
+)
 
-registerConfig("composeSamplesJetChat", ThirdPartyDeps.composeSamplesJetChat)
+registerThirdParty(
+  "composeSamplesJetChat",
+  path("third_party", "opensource-apps", "android", "compose-samples", "jetchat"),
+  packageName = "compose-samples-jetchat",
+)
 
-registerConfig("composeSamplesJetLagged", ThirdPartyDeps.composeSamplesJetLagged)
+registerThirdParty(
+  "composeSamplesJetLagged",
+  path("third_party", "opensource-apps", "android", "compose-samples", "jetlagged"),
+  packageName = "compose-samples-jetlagged",
+)
 
-registerConfig("composeSamplesJetNews", ThirdPartyDeps.composeSamplesJetNews)
+registerThirdParty(
+  "composeSamplesJetNews",
+  path("third_party", "opensource-apps", "android", "compose-samples", "jetnews"),
+  packageName = "compose-samples-jetnews",
+)
 
-registerConfig("composeSamplesJetSnack", ThirdPartyDeps.composeSamplesJetSnack)
+registerThirdParty(
+  "composeSamplesJetSnack",
+  path("third_party", "opensource-apps", "android", "compose-samples", "jetsnack"),
+  packageName = "compose-samples-jetsnack",
+)
 
-registerConfig("composeSamplesOwl", ThirdPartyDeps.composeSamplesOwl)
+registerThirdParty(
+  "composeSamplesOwl",
+  path("third_party", "opensource-apps", "android", "compose-samples", "owl"),
+  packageName = "compose-samples-owl",
+)
 
-registerConfig("composeSamplesReply", ThirdPartyDeps.composeSamplesReply)
+registerThirdParty(
+  "composeSamplesReply",
+  path("third_party", "opensource-apps", "android", "compose-samples", "reply"),
+  packageName = "compose-samples-reply",
+)
 
-registerConfig("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs)
+registerThirdParty("coreLambdaStubs", path("third_party", "core-lambda-stubs"))
 
-registerConfig("dagger", ThirdPartyDeps.dagger)
+registerThirdParty("dagger", path("third_party", "dagger", "2.41"))
 
-registerConfig("dalvik4_0_4", ThirdPartyDeps.dalvik4_0_4)
+registerAndroidVm("dalvik4_0_4", "dalvik-4.0.4")
 
-registerConfig("dalvik4_4_4", ThirdPartyDeps.dalvik4_4_4)
+registerAndroidVm("dalvik4_4_4", "dalvik")
 
-registerConfig("desugarJdkLibs11", ThirdPartyDeps.desugarJdkLibs11)
+registerDownload("dart-sdk", path("third_party", "dart-sdk"))
 
-registerConfig("desugarJdkLibs8", ThirdPartyDeps.desugarJdkLibs8)
+registerThirdParty(
+  "desugarJdkLibs8",
+  path("third_party", "openjdk", "desugar_jdk_libs"),
+  packageName = "desugar-jdk-libs-8",
+)
 
-registerConfig("desugarLibraryConversions", ThirdPartyDeps.desugarLibraryConversions)
+registerThirdParty(
+  "desugarJdkLibs11",
+  path("third_party", "openjdk", "desugar_jdk_libs_11"),
+  packageName = "desugar-jdk-libs-11",
+)
+
+registerThirdParty(
+  "desugarLibraryConversions",
+  path("third_party", "openjdk", "custom_conversion"),
+  packageName = "customConversion",
+)
 
-registerConfig("desugarLibraryRelease1_0_9", ThirdPartyDeps.desugarLibraryRelease1_0_9)
+registerDesugarLibraryRelease("desugarLibraryRelease1_0_9", "1.0.9")
 
-registerConfig("desugarLibraryRelease1_0_10", ThirdPartyDeps.desugarLibraryRelease1_0_10)
+registerDesugarLibraryRelease("desugarLibraryRelease1_0_10", "1.0.10")
 
-registerConfig("desugarLibraryRelease1_1_0", ThirdPartyDeps.desugarLibraryRelease1_1_0)
+registerDesugarLibraryRelease("desugarLibraryRelease1_1_0", "1.1.0")
 
-registerConfig("desugarLibraryRelease1_1_1", ThirdPartyDeps.desugarLibraryRelease1_1_1)
+registerDesugarLibraryRelease("desugarLibraryRelease1_1_1", "1.1.1")
 
-registerConfig("desugarLibraryRelease1_1_5", ThirdPartyDeps.desugarLibraryRelease1_1_5)
+registerDesugarLibraryRelease("desugarLibraryRelease1_1_5", "1.1.5")
 
-registerConfig("desugarLibraryRelease2_0_3", ThirdPartyDeps.desugarLibraryRelease2_0_3)
+registerDesugarLibraryRelease("desugarLibraryRelease2_0_3", "2.0.3")
 
-registerConfig("dex2Oat33_10", ThirdPartyDeps.dex2Oat33_10)
+registerDex2Oat("dex2Oat33_10", "33.10")
 
-registerConfig("dex2Oat35_14", ThirdPartyDeps.dex2Oat35_14)
+registerDex2Oat("dex2Oat35_14", "35.14")
 
-registerConfig("dex2Oat36_0", ThirdPartyDeps.dex2Oat36_0)
+registerDex2Oat("dex2Oat36_0", "36.0")
 
-registerConfig("dex2OatHead", ThirdPartyDeps.dex2OatHead)
+registerDex2Oat("dex2OatHead", "head")
 
-registerConfig("examples", ThirdPartyDeps.examples)
+val examples = registerThirdParty("examples", path("third_party", "examples"))
 
-registerConfig("examplesAndroidN", ThirdPartyDeps.examplesAndroidN)
+registerThirdParty("examplesAndroidN", path("third_party", "examplesAndroidN"))
 
-registerConfig("examplesAndroidO", ThirdPartyDeps.examplesAndroidO)
+registerThirdParty("examplesAndroidO", path("third_party", "examplesAndroidO"))
+
+registerThirdParty("examplesAndroidOGenerated", path("third_party", "examplesAndroidOGenerated"))
+
+registerThirdParty("examplesAndroidOLegacy", path("third_party", "examplesAndroidOLegacy"))
+
+registerThirdParty("examplesAndroidP", path("third_party", "examplesAndroidP"))
 
-registerConfig("examplesAndroidOGenerated", ThirdPartyDeps.examplesAndroidOGenerated)
+registerThirdParty("feeder", path("third_party", "opensource-apps", "android", "feeder"))
+
+registerThirdParty(
+  "fossifyFileManager",
+  path("third_party", "opensource-apps", "android", "fossify-filemanager"),
+  packageName = "fossify-filemanager",
+)
 
-registerConfig("examplesAndroidOLegacy", ThirdPartyDeps.examplesAndroidOLegacy)
+// TODO(b/289363570): This could probably be removed.
+registerThirdParty(
+  "framework",
+  path("third_party", "framework"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("examplesAndroidP", ThirdPartyDeps.examplesAndroidP)
+registerThirdParty(
+  "gmscoreLatest",
+  path("third_party", "gmscore", "latest"),
+  packageName = "gmscore-version-latest",
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("feeder", ThirdPartyDeps.feeder)
+registerThirdParty(
+  "gmscoreV10",
+  path("third_party", "gmscore", "gmscore_v10"),
+  packageName = "gmscore-version-gmscore_v10",
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("fossifyFileManager", ThirdPartyDeps.fossifyFileManager)
+registerThirdParty(
+  "googleJavaFormat",
+  path("third_party", "google", "google-java-format", "1.24.0"),
+  packageName = "google-java-format-1.24",
+)
 
-registerConfig("framework", ThirdPartyDeps.framework)
+registerThirdParty(
+  "googleKotlinFormat",
+  path("third_party", "google", "google-kotlin-format", "0.54"),
+  packageName = "google-kotlin-format-0.54",
+)
 
-registerConfig("gmscoreLatest", ThirdPartyDeps.gmscoreLatest)
+registerDownload("google-yapf-20231013", path("third_party", "google", "yapf", "20231013"))
 
-registerConfig("gmscoreV10", ThirdPartyDeps.gmscoreV10)
+registerThirdParty("gson", path("third_party", "gson", "gson-2.10.1"))
 
-registerConfig("googleJavaFormat", ThirdPartyDeps.googleJavaFormat)
+registerThirdParty(
+  "guavaJre",
+  path("third_party", "guava", "guava-32.1.2-jre"),
+  packageName = "guava-jre",
+)
 
-registerConfig("googleKotlinFormat", ThirdPartyDeps.googleKotlinFormat)
+registerThirdParty(
+  "internalIssue127524985",
+  path("third_party", "internal", "issue-127524985"),
+  packageName = "internal-issue-127524985",
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("gson", ThirdPartyDeps.gson)
+registerThirdParty("jacoco", path("third_party", "jacoco", "0.8.6"))
 
-registerConfig("guavaJre", ThirdPartyDeps.guavaJre)
+val jasmin = registerDownload("jasmin", path("third_party", "jasmin"))
 
-registerConfig("internalIssue127524985", ThirdPartyDeps.internalIssue127524985)
+registerThirdParty(
+  "java8Runtime",
+  path("third_party", "openjdk", "openjdk-rt-1.8"),
+  packageName = "openjdk-rt-1.8",
+)
 
-registerConfig("jacoco", ThirdPartyDeps.jacoco)
+registerJdk("jdk8", Jdk.JDK_8)
 
-registerConfig("java8Runtime", ThirdPartyDeps.java8Runtime)
+registerJdk("jdk9", Jdk.JDK_9)
 
-registerConfig("jdk8", ThirdPartyDeps.jdk8)
+registerJdk("jdk11", Jdk.JDK_11)
 
-registerConfig("jdk9", ThirdPartyDeps.jdk9)
+val jdk11Test =
+  registerThirdParty(
+    "jdk11Test",
+    path("third_party", "openjdk", "jdk-11-test"),
+    packageName = "jdk-11-test",
+  )
 
-registerConfig("jdk11", ThirdPartyDeps.jdk11)
+registerJdk("jdk17", Jdk.JDK_17)
 
-registerConfig("jdk11Test", ThirdPartyDeps.jdk11Test)
+registerJdk("jdk21", Jdk.JDK_21)
 
-registerConfig("jdk17", ThirdPartyDeps.jdk17)
+registerThirdParty(
+  "jdk21Float16Test",
+  path("third_party", "openjdk", "float16-test"),
+  packageName = "float16-test",
+)
 
-registerConfig("jdk21", ThirdPartyDeps.jdk21)
+val jdk25 = registerJdk("jdk25", Jdk.JDK_25)
 
-registerConfig("jdk21Float16Test", ThirdPartyDeps.jdk21Float16Test)
+registerJdk("jdk27", Jdk.JDK_27)
 
-registerConfig("jdk25", ThirdPartyDeps.jdk25)
+val jdwpTests =
+  registerThirdParty("jdwpTests", path("third_party", "jdwp-tests"), packageName = "jdwp-tests")
 
-registerConfig("jdk27", ThirdPartyDeps.jdk27)
+registerThirdParty("jsr223", path("third_party", "jsr223-api-1.0"))
 
-registerConfig("jdwpTests", ThirdPartyDeps.jdwpTests)
+registerThirdParty("keepassdx", path("third_party", "opensource-apps", "android", "keepassdx"))
 
-registerConfig("jsr223", ThirdPartyDeps.jsr223)
+registerKotlinCompiler("kotlinCompiler1_3_72", "1.3.72")
 
-registerConfig("keepassdx", ThirdPartyDeps.keepassdx)
+registerKotlinCompiler("kotlinCompiler1_4_20", "1.4.20")
 
-registerConfig("kotlinCompiler1_3_72", ThirdPartyDeps.kotlinCompiler1_3_72)
+registerKotlinCompiler("kotlinCompiler1_5_0", "1.5.0")
 
-registerConfig("kotlinCompiler1_4_20", ThirdPartyDeps.kotlinCompiler1_4_20)
+registerKotlinCompiler("kotlinCompiler1_6_0", "1.6.0")
 
-registerConfig("kotlinCompiler1_5_0", ThirdPartyDeps.kotlinCompiler1_5_0)
+registerKotlinCompiler("kotlinCompiler1_7_0", "1.7.0")
 
-registerConfig("kotlinCompiler1_6_0", ThirdPartyDeps.kotlinCompiler1_6_0)
+registerKotlinCompiler("kotlinCompiler1_8_0", "1.8.0")
 
-registerConfig("kotlinCompiler1_7_0", ThirdPartyDeps.kotlinCompiler1_7_0)
+registerKotlinCompiler("kotlinCompiler1_9_21", "1.9.21")
 
-registerConfig("kotlinCompiler1_8_0", ThirdPartyDeps.kotlinCompiler1_8_0)
+registerKotlinCompiler("kotlinCompiler2_0_20", "2.0.20")
 
-registerConfig("kotlinCompiler1_9_21", ThirdPartyDeps.kotlinCompiler1_9_21)
+registerKotlinCompiler("kotlinCompiler2_1_10", "2.1.10")
 
-registerConfig("kotlinCompiler2_0_20", ThirdPartyDeps.kotlinCompiler2_0_20)
+registerKotlinCompiler("kotlinCompiler2_2_0", "2.2.0")
 
-registerConfig("kotlinCompiler2_1_10", ThirdPartyDeps.kotlinCompiler2_1_10)
+registerKotlinCompiler("kotlinCompiler2_3_10", "2.3.10")
 
-registerConfig("kotlinCompiler2_2_0", ThirdPartyDeps.kotlinCompiler2_2_0)
+registerKotlinCompiler("kotlinCompiler2_4_20", "2.4.20")
 
-registerConfig("kotlinCompiler2_3_10", ThirdPartyDeps.kotlinCompiler2_3_10)
+registerKotlinCompiler("kotlinCompilerDev", "dev")
 
-registerConfig("kotlinCompiler2_4_20", ThirdPartyDeps.kotlinCompiler2_4_20)
+registerThirdParty("kotlinR8TestResources", path("third_party", "kotlinR8TestResources"))
 
-registerConfig("kotlinCompilerDev", ThirdPartyDeps.kotlinCompilerDev)
+registerThirdParty(
+  "kotlinxCoroutines",
+  path("third_party", "kotlinx-coroutines-1.3.6"),
+  packageName = "kotlinx-coroutines-1.3.6",
+)
 
-registerConfig("kotlinR8TestResources", ThirdPartyDeps.kotlinR8TestResources)
+registerThirdParty("multidex", path("third_party", "multidex"))
 
-registerConfig("kotlinxCoroutines", ThirdPartyDeps.kotlinxCoroutines)
+registerThirdParty(
+  "nest",
+  path("third_party", "nest", "nest_20180926_7c6cfb"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("multidex", ThirdPartyDeps.multidex)
+registerThirdParty("newpipe", path("third_party", "opensource-apps", "android", "newpipe"))
 
-registerConfig("nest", ThirdPartyDeps.nest)
+registerDownload("node", path("third_party", "node", "24.16.0", "linux"))
 
-registerConfig("newpipe", ThirdPartyDeps.newpipe)
+registerThirdParty(
+  "nowinandroid",
+  path("third_party", "opensource-apps", "android", "nowinandroid"),
+)
 
-registerConfig("nowinandroid", ThirdPartyDeps.nowinandroid)
+registerThirdParty("omninotes", path("third_party", "opensource-apps", "android", "omninotes"))
 
-registerConfig("omninotes", ThirdPartyDeps.omninotes)
+registerThirdParty(
+  "opensourceNewpipe",
+  path("third_party", "opensource-apps", "newpipe"),
+  packageName = "opensource-newpipe",
+  testOnly = true,
+)
 
-registerConfig("opentracks", ThirdPartyDeps.opentracks)
+registerThirdParty("opentracks", path("third_party", "opensource-apps", "android", "opentracks"))
 
-registerConfig(
+registerDownload("prettier", path("third_party", "prettier", "3.8.3"))
+
+registerThirdParty(
   "processKeepRulesBinaryCompatibility",
-  ThirdPartyDeps.processKeepRulesBinaryCompatibility,
+  path("third_party", "processkeeprules", "binary_compatibility"),
+  packageName = "processkeeprules-binary-compatibility",
 )
 
-registerConfig("proguard7_0_0", ThirdPartyDeps.proguard7_0_0)
+registerThirdParty(
+  "proguard7_0_0",
+  path("third_party", "proguard", "proguard-7.0.0"),
+  packageName = "proguard-7.0.0",
+)
 
-registerConfig("proguard7_7_0", ThirdPartyDeps.proguard7_7_0)
+registerThirdParty(
+  "proguard7_7_0",
+  path("third_party", "proguard", "proguard-7.7.0"),
+  packageName = "proguard-7.7.0",
+)
 
-registerConfig("proguardsettings", ThirdPartyDeps.proguardsettings)
+registerThirdParty(
+  "proguardsettings",
+  path("third_party", "proguardsettings"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("protoRuntimeEdition2023", ThirdPartyDeps.protoRuntimeEdition2023)
+registerDownload("protoc", path("third_party", "protoc"))
 
-registerConfig("protoRuntimeLegacy", ThirdPartyDeps.protoRuntimeLegacy)
+registerThirdParty(
+  "protoRuntimeEdition2023",
+  path("third_party", "proto", "runtime", "edition2023"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("protoTestEdition2023", ThirdPartyDeps.protoTestEdition2023)
+registerThirdParty(
+  "protoRuntimeLegacy",
+  path("third_party", "proto", "runtime", "legacy"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("protoTestProto2", ThirdPartyDeps.protoTestProto2)
+registerThirdParty(
+  "protoTestEdition2023",
+  path("third_party", "proto", "test", "edition2023"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("protoTestProto3", ThirdPartyDeps.protoTestProto3)
+registerThirdParty(
+  "protoTestProto2",
+  path("third_party", "proto", "test", "proto2"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("r8", ThirdPartyDeps.r8)
+registerThirdParty(
+  "protoTestProto3",
+  path("third_party", "proto", "test", "proto3"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("r8Mappings", ThirdPartyDeps.r8Mappings)
+registerThirdParty("r8", path("third_party", "r8"))
 
-registerConfig("r8v2_0_74", ThirdPartyDeps.r8v2_0_74)
+registerThirdParty("r8Mappings", path("third_party", "r8mappings"), packageName = "r8-mappings")
 
-registerConfig("r8v3_2_54", ThirdPartyDeps.r8v3_2_54)
+registerThirdParty(
+  "r8v2_0_74",
+  path("third_party", "r8-releases", "2.0.74"),
+  packageName = "r8-v2-0-74",
+)
 
-registerConfig("r8v8_0_46", ThirdPartyDeps.r8v8_0_46)
+registerThirdParty(
+  "r8v3_2_54",
+  path("third_party", "r8-releases", "3.2.54"),
+  packageName = "r8-v3-2-54",
+)
 
-registerConfig("readyou", ThirdPartyDeps.readyou)
+registerThirdParty(
+  "r8v8_0_46",
+  path("third_party", "r8-releases", "8.0.46"),
+  packageName = "r8-v8-0-46",
+)
 
-registerConfig("retraceBenchmark", ThirdPartyDeps.retraceBenchmark)
+registerThirdParty("readyou", path("third_party", "opensource-apps", "android", "readyou"))
 
-registerConfig("retraceBinaryCompatibility", ThirdPartyDeps.retraceBinaryCompatibility)
+registerThirdParty(
+  "retraceBenchmark",
+  path("third_party", "retrace_benchmark"),
+  packageName = "retrace-benchmark",
+)
 
-registerConfig("retraceInternal", ThirdPartyDeps.retraceInternal)
+registerThirdParty(
+  "retraceBinaryCompatibility",
+  path("third_party", "retrace", "binary_compatibility"),
+  packageName = "retrace-binary-compatibility",
+)
 
-registerConfig("retracePartitionFormats", ThirdPartyDeps.retracePartitionFormats)
+registerThirdParty(
+  "retraceInternal",
+  path("third_party", "retrace_internal"),
+  packageName = "retrace-internal",
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("rhino", ThirdPartyDeps.rhino)
+registerThirdParty(
+  "retracePartitionFormats",
+  path("third_party", "retrace", "partition_formats"),
+  packageName = "retrace-partition-formats",
+)
 
-registerConfig("rhinoAndroid", ThirdPartyDeps.rhinoAndroid)
+registerThirdParty("rhino", path("third_party", "rhino-1.7.10"))
 
-registerConfig("smali", ThirdPartyDeps.smali)
+registerThirdParty(
+  "rhinoAndroid",
+  path("third_party", "rhino-android-1.1.1"),
+  packageName = "rhino-android",
+)
 
-registerConfig("opensourceNewpipe", ThirdPartyDeps.opensourceNewpipe)
+registerThirdParty(
+  "signalAndroid",
+  path("third_party", "opensource-apps", "signal-android"),
+  packageName = "signal-android",
+  testOnly = true,
+)
 
-registerConfig("signalAndroid", ThirdPartyDeps.signalAndroid)
+registerThirdParty("smali", path("third_party", "smali"))
 
-registerConfig("systemUI", ThirdPartyDeps.systemUI)
+registerThirdParty(
+  "systemUI",
+  path("third_party", "closedsource-apps", "systemui"),
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("tachiyomi", ThirdPartyDeps.tachiyomi)
+registerThirdParty(
+  "tachiyomi",
+  path("third_party", "opensource-apps", "tachiyomi"),
+  testOnly = true,
+)
 
-registerConfig("tivi", ThirdPartyDeps.tivi)
+registerThirdParty("tivi", path("third_party", "opensource-apps", "tivi"))
 
-registerConfig("tusky", ThirdPartyDeps.tusky)
+registerThirdParty("tusky", path("third_party", "opensource-apps", "android", "tusky"))
 
-registerConfig("youtube2140", ThirdPartyDeps.youtube2140)
+registerThirdParty(
+  "youtube2140",
+  path("third_party", "youtube", "youtube.android_21.40"),
+  packageName = "youtube-21.40",
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
-registerConfig("youtube2140D8Merge", ThirdPartyDeps.youtube2140D8Merge)
+registerThirdParty(
+  "youtube2140D8Merge",
+  path("third_party", "youtube", "youtube.android_21.40_d8_merge"),
+  packageName = "youtube-21.40-d8-merge",
+  testOnly = true,
+  type = DependencyType.X20,
+)
 
 configurations.consumable("examplesClasses") {
-  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.examples.packageName}")
-  outgoing.artifact(task.flatMap { it.outputDir.dir("classes") })
+  outgoing.artifact(examples.flatMap { it.outputDir.dir("classes") })
 }
 
 configurations.consumable("jasminJar") {
-  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jasmin.packageName}")
-  outgoing.artifact(task.flatMap { it.outputDir.file("jasmin-2.4.jar") })
+  outgoing.artifact(jasmin.flatMap { it.outputDir.file("jasmin-2.4.jar") })
 }
 
 configurations.consumable("jdk11TestJavaBasePatchSources") {
-  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdk11Test.packageName}")
-  outgoing.artifact(task.flatMap { it.outputDir.dir("lib/testlibrary/bootlib/java.base") })
+  outgoing.artifact(jdk11Test.flatMap { it.outputDir.dir("lib/testlibrary/bootlib/java.base") })
 }
 
 configurations.consumable("jdk11TestLibrarySources") {
-  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdk11Test.packageName}")
-  outgoing.artifact(task.flatMap { it.outputDir.dir("lib/testlibrary/jdk") })
+  outgoing.artifact(jdk11Test.flatMap { it.outputDir.dir("lib/testlibrary/jdk") })
 }
 
 configurations.consumable("jdwpTestsJar") {
-  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdwpTests.packageName}")
-  outgoing.artifact(task.flatMap { it.outputDir.file("apache-harmony-jdwp-tests-host.jar") })
+  outgoing.artifact(jdwpTests.flatMap { it.outputDir.file("apache-harmony-jdwp-tests-host.jar") })
 }
 
 configurations.consumable("jdk25Home") {
-  val task = tasks.named<DownloadDependency>("download_${ThirdPartyDeps.jdk25.packageName}")
   val isMac = DefaultNativePlatform.getCurrentOperatingSystem().isMacOsX
-  outgoing.artifact(task.flatMap { if (isMac) it.outputDir.dir("Contents/Home") else it.outputDir })
+  outgoing.artifact(
+    jdk25.flatMap { if (isMac) it.outputDir.dir("Contents/Home") else it.outputDir }
+  )
 }
 
 tasks.register("downloadDeps") { dependsOn(publicTasks) }

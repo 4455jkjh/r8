@@ -24,6 +24,11 @@ import org.gradle.workers.WorkAction
 import org.gradle.workers.WorkParameters
 import org.gradle.workers.WorkerExecutor
 
+public enum class DependencyType {
+  GOOGLE_STORAGE,
+  X20,
+}
+
 public interface DownloadWorkParameters : WorkParameters {
   public val sha1File: RegularFileProperty
   public val outputDir: DirectoryProperty

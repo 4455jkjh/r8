@@ -10,6 +10,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.dsl.DependencyHandler
+import org.gradle.api.attributes.Attribute
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
@@ -22,6 +23,12 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.project
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 import org.gradle.process.CommandLineArgumentProvider
+
+public val ARTIFACT_INTERNAL: Attribute<Boolean> =
+  Attribute.of("com.android.tools.r8.artifact.internal", Boolean::class.javaObjectType)
+
+public val ARTIFACT_MISSING_ON_WINDOWS: Attribute<Boolean> =
+  Attribute.of("com.android.tools.r8.artifact.missing_on_windows", Boolean::class.javaObjectType)
 
 /**
  * Runtime data dependencies supported by [TestRuntimeDataDepPlugin].
