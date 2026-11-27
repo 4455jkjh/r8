@@ -816,6 +816,10 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return code != null;
   }
 
+  public boolean hasCfCode() {
+    return code != null && code.isCfCode();
+  }
+
   public boolean hasDexCode() {
     return code instanceof DexCode;
   }
@@ -827,6 +831,11 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
   public Code getCode() {
     checkIfObsolete();
     return code;
+  }
+
+  public CfCode getCfCode() {
+    checkIfObsolete();
+    return hasCfCode() ? code.asCfCode() : null;
   }
 
   public DexCode getDexCode() {

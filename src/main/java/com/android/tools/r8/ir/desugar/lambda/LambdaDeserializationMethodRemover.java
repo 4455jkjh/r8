@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir.desugar.lambda;
 
+import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -27,31 +28,31 @@ public class LambdaDeserializationMethodRemover {
     DexItemFactory factory = appView.dexItemFactory();
     DexMethod reference = factory.deserializeLambdaMethod;
     for (DexProgramClass clazz : classes) {
-      DexEncodedMethod method = clazz.lookupMethod(reference);
-      if (method != null && method.getAccessFlags().isPrivate()) {
+      DexEncodedMethod method = clazz.lookupDirectMethod(reference);
+      if (method != null
+          && method.getAccessFlags().isPrivate()
+          && method.getAccessFlags().isStatic()
+          && method.hasCfCode()) {
         // From JDK 27 the synthetic $deserializeLambda$ method is split into multiple methods.
         // These are all outlined from $deserializeLambda$, and prefixed by the same name.
         // See https://bugs.openjdk.org/browse/JDK-8381812. This happens independent of the
         // --release argument passed to javac from JDK-27.
-        method
-            .getCode()
-            .asCfCode()
-            .getInstructions()
-            .forEach(
-                instruction -> {
-                  if (instruction.isInvokeStatic()) {
-                    DexMethod invokedMethod = instruction.asInvoke().getMethod();
-                    if (invokedMethod.getHolderType().isIdenticalTo(clazz.getType())
-                        && invokedMethod.getName().startsWith(factory.deserializeLambdaMethodName)
-                        && invokedMethod
-                            .getProto()
-                            .isIdenticalTo(factory.deserializeLambdaMethodProto)) {
-                      clazz.removeMethod(invokedMethod);
-                    }
-                  }
-                });
+        for (CfInstruction instruction : method.getCfCode().getInstructions()) {
+          if (instruction.isInvokeStatic()) {
+            DexMethod invokedMethod = instruction.asInvoke().getMethod();
+            if (invokedMethod.getHolderType().isIdenticalTo(clazz.getType())
+                && invokedMethod.isLambdaDeserializeMethod(factory)) {
+              DexEncodedMethod target = clazz.lookupDirectMethod(invokedMethod);
+              if (target != null
+                  && target.getAccessFlags().isPrivate()
+                  && target.getAccessFlags().isStatic()) {
+                clazz.removeMethod(invokedMethod);
+              }
+            }
+          }
+        }
+        clazz.removeMethod(method.getReference());
       }
-      clazz.removeMethod(reference);
     }
   }
 }

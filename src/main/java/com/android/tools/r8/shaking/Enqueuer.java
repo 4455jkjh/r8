@@ -3454,8 +3454,9 @@ public class Enqueuer {
 
   public void markDirectStaticOrConstructorMethodAsLive(ProgramMethod method, KeepReason reason) {
     if (appView.options().isGeneratingDex()
-        && method.getReference().match(appView.dexItemFactory().deserializeLambdaMethod)
-        && method.getAccessFlags().isPrivate()) {
+        && method.getReference().isLambdaDeserializeMethod(appView.dexItemFactory())
+        && method.getAccessFlags().isPrivate()
+        && method.getAccessFlags().isStatic()) {
       return;
     }
     if (worklist.enqueueMarkMethodLiveAction(method, method, reason)) {

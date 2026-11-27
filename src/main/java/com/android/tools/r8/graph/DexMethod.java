@@ -327,9 +327,11 @@ public class DexMethod extends DexMember<DexEncodedMethod, DexMethod> {
     return builder.append(")").toString();
   }
 
+  // Matches $deserializeLambda$(SerializedLambda) and JDK-27 outlined
+  // $deserializeLambda$<suffix>(SerializedLambda) methods (JDK-8381812).
   public boolean isLambdaDeserializeMethod(DexItemFactory dexItemFactory) {
-    return dexItemFactory.deserializeLambdaMethodName.isIdenticalTo(name)
-        && dexItemFactory.deserializeLambdaMethodProto.isIdenticalTo(proto);
+    return dexItemFactory.deserializeLambdaMethodProto.isIdenticalTo(proto)
+        && name.startsWith(dexItemFactory.deserializeLambdaMethodName);
   }
 
   public boolean isInstanceInitializer(DexItemFactory factory) {
