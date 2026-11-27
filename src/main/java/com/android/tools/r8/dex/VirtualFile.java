@@ -28,7 +28,6 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
-import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.Collection;
 import java.util.HashMap;
@@ -324,13 +323,14 @@ public class VirtualFile {
     public final Set<DexProgramClass> classes = Sets.newIdentityHashSet();
 
     // Store reference counter for fields, methods, types and strings.
-    public final Reference2IntMap<DexCallSite> callSites = new Reference2IntOpenHashMap<>();
-    public final Reference2IntMap<DexField> fields = new Reference2IntOpenHashMap<>();
-    public final Reference2IntMap<DexMethod> methods = new Reference2IntOpenHashMap<>();
-    public final Reference2IntMap<DexMethodHandle> methodHandles = new Reference2IntOpenHashMap<>();
-    public final Reference2IntMap<DexProto> protos = new Reference2IntOpenHashMap<>();
-    public final Reference2IntMap<DexString> strings = new Reference2IntOpenHashMap<>();
-    public final Reference2IntMap<DexType> types = new Reference2IntOpenHashMap<>();
+    public final Reference2IntOpenHashMap<DexCallSite> callSites = new Reference2IntOpenHashMap<>();
+    public final Reference2IntOpenHashMap<DexField> fields = new Reference2IntOpenHashMap<>();
+    public final Reference2IntOpenHashMap<DexMethod> methods = new Reference2IntOpenHashMap<>();
+    public final Reference2IntOpenHashMap<DexMethodHandle> methodHandles =
+        new Reference2IntOpenHashMap<>();
+    public final Reference2IntOpenHashMap<DexProto> protos = new Reference2IntOpenHashMap<>();
+    public final Reference2IntOpenHashMap<DexString> strings = new Reference2IntOpenHashMap<>();
+    public final Reference2IntOpenHashMap<DexType> types = new Reference2IntOpenHashMap<>();
 
     public boolean addClass(DexProgramClass clazz) {
       return classes.add(clazz);
